@@ -5,7 +5,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Eye, Heart, ShoppingBag, Wallet } from 'lucide-react';
 
-import { CatalogItem, getListingTypeLabel } from '@/components/catalog/catalogHelpers';
+import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CatalogModuleTabs from '@/components/catalog/CatalogModuleTabs';
 import CatalogTopPerformersChart from '@/components/catalog/CatalogTopPerformersChart';
 
@@ -39,19 +39,6 @@ export default function CatalogAnalyticsPage() {
   const totalOrders = items.reduce((sum, i) => sum + (i.order_count || 0), 0);
   const totalRevenue = items.reduce((sum, i) => sum + (i.total_revenue || 0), 0);
 
-  const listingTypes = Array.from(new Set(items.map(i => i.listing_type).filter((v): v is string => !!v)));
-  const breakdown = listingTypes.map(type => {
-    const typeItems = items.filter(i => i.listing_type === type);
-    return {
-      type,
-      label: getListingTypeLabel(type),
-      itemCount: typeItems.length,
-      views: typeItems.reduce((sum, i) => sum + (i.views_count || 0), 0),
-      orders: typeItems.reduce((sum, i) => sum + (i.order_count || 0), 0),
-      revenue: typeItems.reduce((sum, i) => sum + (i.total_revenue || 0), 0),
-    };
-  }).sort((a, b) => b.revenue - a.revenue);
-
   const kpiCards = [
     { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye, color: 'text-[#9A8073]', bg: 'bg-[#9A8073]/10' },
     { label: 'Total Saves', value: totalSaves.toLocaleString(), icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50' },
@@ -63,7 +50,7 @@ export default function CatalogAnalyticsPage() {
     <div className="space-y-6 pb-12 text-[#2D2A26]">
       <div>
         <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Catalog Showcase</h1>
-        <p className="text-[#827A73] text-sm mt-1">Design Catalog, Ready-to-Wear Orders, and performance analytics in one place.</p>
+        <p className="text-[#827A73] text-sm mt-1">Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.</p>
       </div>
 
       <CatalogModuleTabs />
@@ -92,39 +79,6 @@ export default function CatalogAnalyticsPage() {
           </div>
 
           <CatalogTopPerformersChart items={items} loading={false} />
-
-          {breakdown.length > 1 && (
-            <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden">
-              <div className="p-6 pb-0">
-                <h2 className="text-base font-semibold text-[#2D2A26]">Performance by Listing Type</h2>
-                <p className="text-sm text-[#A8A19A] mt-0.5">How Ready-to-Wear, Made-to-Order, Rentals, and other listing types compare.</p>
-              </div>
-              <div className="overflow-x-auto p-6">
-                <table className="w-full text-left text-sm text-[#524A44] min-w-[560px]">
-                  <thead className="bg-[#FAF6F3]/50 text-xs uppercase text-[#A8A19A] border-y border-[#EBE6E0]">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Listing Type</th>
-                      <th className="px-4 py-3 font-medium">Items</th>
-                      <th className="px-4 py-3 font-medium">Views</th>
-                      <th className="px-4 py-3 font-medium">Orders</th>
-                      <th className="px-4 py-3 font-medium">Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F0EAE3]">
-                    {breakdown.map(row => (
-                      <tr key={row.type} className="hover:bg-[#F0EAE3]/20 transition-colors">
-                        <td className="px-4 py-3 font-medium text-[#2D2A26]">{row.label}</td>
-                        <td className="px-4 py-3">{row.itemCount}</td>
-                        <td className="px-4 py-3">{row.views}</td>
-                        <td className="px-4 py-3">{row.orders}</td>
-                        <td className="px-4 py-3">₱{row.revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

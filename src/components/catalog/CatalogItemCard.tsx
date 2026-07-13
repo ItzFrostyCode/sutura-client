@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { Pencil, Trash2, Heart, Eye, Star, Image as ImageIcon, Tag } from 'lucide-react';
-import { CatalogItem, formatCatalogPrice, getCatalogActionLabel, getListingTypeLabel, getActiveSale } from './catalogHelpers';
+import { Pencil, Trash2, Heart, Eye, Star, Image as ImageIcon, Clock } from 'lucide-react';
+import { CatalogItem, formatCatalogPrice } from './catalogHelpers';
 
 interface CatalogItemCardProps {
   readonly item: CatalogItem;
@@ -9,7 +9,6 @@ interface CatalogItemCardProps {
   readonly onView: (id: number) => void;
   readonly onOpenRating: (id: number) => void;
   readonly onOpenDelete: (id: number) => void;
-  readonly onOpenSale: (item: CatalogItem) => void;
 }
 
 export default function CatalogItemCard({
@@ -18,10 +17,8 @@ export default function CatalogItemCard({
   onView,
   onOpenRating,
   onOpenDelete,
-  onOpenSale,
 }: CatalogItemCardProps) {
   const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
-  const activeSale = getActiveSale(item);
 
   return (
     <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden group relative flex flex-col shadow-lg shadow-black/20 text-[#2D2A26]">
@@ -44,20 +41,8 @@ export default function CatalogItemCard({
             Paused
           </div>
         )}
-        {activeSale && (
-          <div className="absolute bottom-3 left-3 px-2 py-0.5 bg-rose-600 rounded-full text-[10px] font-bold text-white uppercase tracking-wider shadow-sm z-20">
-            {activeSale.percentOff}% OFF
-          </div>
-        )}
         <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-lg text-xs font-bold shadow-sm border border-[#EBE6E0] flex items-center gap-1.5">
-          {activeSale ? (
-            <>
-              <span className="line-through text-[#A8A19A] font-normal">₱{activeSale.original.toLocaleString()}</span>
-              <span className="text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
-            </>
-          ) : (
-            <span className="text-[#2D2A26]">{formatCatalogPrice(item.price, item.listing_type)}</span>
-          )}
+          <span className="text-[#2D2A26]">{formatCatalogPrice(item.price)}</span>
         </div>
 
         <div className="absolute top-3 left-3 flex gap-2 z-20">
@@ -67,16 +52,6 @@ export default function CatalogItemCard({
           >
             <Pencil size={16} />
           </Link>
-          <button
-            onClick={e => {
-              e.preventDefault();
-              onOpenSale(item);
-            }}
-            title="Set Sale Price"
-            className={`p-1.5 bg-white/90 backdrop-blur-sm rounded-lg transition-colors shadow-sm cursor-pointer ${activeSale ? 'text-rose-600' : 'text-[#524A44] hover:text-rose-600'}`}
-          >
-            <Tag size={16} />
-          </button>
           <button
             onClick={e => {
               e.preventDefault();
@@ -116,8 +91,8 @@ export default function CatalogItemCard({
       {/* Details Section */}
       <div className="p-4 flex flex-col flex-1 bg-white border-t border-[#EBE6E0]/60">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold text-[#9A8073] bg-[#9A8073]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-            {getListingTypeLabel(item.listing_type)}
+          <span className="text-[10px] font-bold text-[#9A8073] bg-[#9A8073]/10 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+            <Clock size={10} /> Est. {item.estimated_days ?? 7} day{(item.estimated_days ?? 7) === 1 ? '' : 's'}
           </span>
         </div>
         <h3 className="text-sm font-semibold text-[#2D2A26] truncate">{item.name}</h3>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock } from 'lucide-react';
-import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, FulfillmentBadge, CourierTag, ColumnIcon } from './jobHelpers';
+import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT } from './jobHelpers';
 
 interface JobKanbanBoardProps {
   readonly groupedJobs: Record<string, JobItem[]>;
@@ -49,8 +49,7 @@ export default function JobKanbanBoard({
     const paidSoFar = total - balance;
     const noDownpayment = total > 0 && paidSoFar < total * 0.5;
 
-    const PRODUCTION_STAGES = new Set(['cutting', 'sewing', 'fitting']);
-    if (PRODUCTION_STAGES.has(newStatus) && noDownpayment) {
+    if (STAGES_REQUIRING_DOWNPAYMENT.has(newStatus) && noDownpayment) {
       // Block the move — show flash warning on the card
       setDpGateJobId(job.id);
       setTimeout(() => setDpGateJobId(null), 3500);
@@ -65,17 +64,11 @@ export default function JobKanbanBoard({
     onUpdateStatus(job.id, newStatus);
   };
 
+  // Approving a pending job moves it into 'design' — the first pipeline
+  // stage, exempt from the DP gate (no fabric/material is committed yet).
+  // No downpayment pre-check needed here anymore; the gate only kicks in
+  // once the job actually tries to enter a production stage.
   const handleApprove = (job: JobItem) => {
-    const total = Number.parseFloat(String(job.total_amount ?? '0'));
-    const balance = Number.parseFloat(String(job.balance ?? '0'));
-    const paidSoFar = total - balance;
-    const noDownpayment = total > 0 && paidSoFar < total * 0.5;
-
-    if (noDownpayment) {
-      setDpGateJobId(job.id);
-      setTimeout(() => setDpGateJobId(null), 3500);
-      return;
-    }
     onApprove(job.id);
   };
   return (
@@ -114,7 +107,6 @@ export default function JobKanbanBoard({
                       <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                         <span className="text-xs font-bold text-[#827A73] hover:underline">{job.order_number || `#${job.id}`}</span>
                         <TypeBadge type={job.intake_channel} />
-                        <FulfillmentBadge type={job.fulfillment_type} />
                       </div>
                     </Link>
                     <select
@@ -161,8 +153,6 @@ export default function JobKanbanBoard({
                         Bal: ₱{Number.parseFloat(job.balance as string).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </div>
                     )}
-
-                    <CourierTag job={job} />
                   </Link>
 
                   <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#EBE6E0]">
@@ -215,8 +205,8 @@ export default function JobKanbanBoard({
                     </div>
                   )}
 
-                  {/* Passive DP warning — already in cutting but unpaid */}
-                  {job.status === 'cutting' && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
+                  {/* Passive DP warning — already in a production stage but unpaid */}
+                  {STAGES_REQUIRING_DOWNPAYMENT.has(job.status) && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
                     <div className="mt-3 pt-2.5 border-t border-amber-100">
                       <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                         <Lock size={12} className="text-amber-600 mt-0.5 shrink-0" />

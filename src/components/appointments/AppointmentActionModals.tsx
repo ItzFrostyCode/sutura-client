@@ -5,6 +5,8 @@ import {
   Appointment, JobOrderData,
   TypeBadge, StatusBadge
 } from './appointmentHelpers';
+import api from '@/lib/axios';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface AppointmentActionModalsProps {
   // Modal visibility & active records
@@ -34,7 +36,6 @@ interface AppointmentActionModalsProps {
   readonly setViewApt: (a: Appointment | null) => void;
 
   // Reference Data & Statuses
-  readonly jobOrders: JobOrderData[];
   readonly todayStr: string;
   readonly minTimeFor: (dateStr: string) => string;
   readonly isSubmitting: boolean;
@@ -55,16 +56,27 @@ export default function AppointmentActionModals({
   showCompleteModal, setShowCompleteModal, completeApt, setCompleteApt,
   showCancelModal, setShowCancelModal, cancelApt, setCancelApt,
   showViewModal, setShowViewModal, viewApt, setViewApt,
-  jobOrders = [], todayStr, minTimeFor,
+  todayStr, minTimeFor,
   isSubmitting, actionLoadingId,
   onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob
 }: AppointmentActionModalsProps) {
+
+  const { shop } = useAuthStore();
 
   // Local Form States
   const [rescheduleForm, setRescheduleForm] = useState({ scheduled_date: '', scheduled_time: '', notes: '' });
   const [completeForm, setCompleteForm] = useState<{ notes: string; job_order_id: string; measurement_action: 'none' | 'record'; outcome: string }>({
     notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed'
   });
+
+  // Fitting/Pickup completion needs to link a job order, but the `jobOrders`
+  // prop is just whatever page of the shop-wide list happens to be loaded
+  // elsewhere (often only the 15 most recent) — not reliable for an older
+  // order or a customer whose orders have scrolled off that page. Fetch this
+  // customer's own job orders directly, scoped by customer_id, every time
+  // the Complete modal opens for one of these two types.
+  const [completionJobOrders, setCompletionJobOrders] = useState<JobOrderData[]>([]);
+  const [loadingCompletionJobs, setLoadingCompletionJobs] = useState(false);
 
   // Sync Reschedule Form defaults when modal opens
   useEffect(() => {
@@ -86,6 +98,22 @@ export default function AppointmentActionModals({
       setCompleteForm({ notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed' });
     }
   }, [completeApt]);
+
+  // Fetch this specific customer's job orders when the Complete modal opens
+  // for a Fitting or Pickup appointment — see completionJobOrders comment above.
+  useEffect(() => {
+    const customerId = completeApt?.customer?.id;
+    const needsJobOrder = completeApt?.appointment_type === 'fitting' || completeApt?.appointment_type === 'pickup';
+    if (!shop || !customerId || !needsJobOrder) {
+      setCompletionJobOrders([]);
+      return;
+    }
+    setLoadingCompletionJobs(true);
+    api.get(`/shops/${shop.id}/jobs`, { params: { customer_id: customerId, per_page: 100 } })
+      .then(res => setCompletionJobOrders(res.data?.data?.data || res.data?.data || []))
+      .catch(() => setCompletionJobOrders([]))
+      .finally(() => setLoadingCompletionJobs(false));
+  }, [completeApt, shop]);
 
   const handleReschedule = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -300,12 +328,12 @@ export default function AppointmentActionModals({
               <div>
                 <label htmlFor="complete_job_order_id" className="block text-sm font-medium text-[#524A44] mb-1">Link to Job Order <span className="text-rose-500">*</span></label>
                 <p className="text-xs text-[#827A73] mb-2">Fitting sessions must be linked to an existing job order.</p>
-                <select id="complete_job_order_id" required value={completeForm.job_order_id}
+                <select id="complete_job_order_id" required disabled={loadingCompletionJobs} value={completeForm.job_order_id}
                   onChange={e => setCompleteForm(f => ({ ...f, job_order_id: e.target.value }))}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
-                  <option value="" disabled>Select job order...</option>
-                  {jobOrders
-                    .filter(j => j.customer?.name === completeApt.customer?.name)
+                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] disabled:opacity-60">
+                  <option value="" disabled>{loadingCompletionJobs ? 'Loading job orders...' : 'Select job order...'}</option>
+                  {completionJobOrders
+                    .filter(j => !['completed', 'cancelled'].includes(j.status || ''))
                     .map(j => <option key={j.id} value={j.id}>#{j.id} — {j.title || j.status}</option>)}
                 </select>
               </div>
@@ -314,12 +342,12 @@ export default function AppointmentActionModals({
             {completeApt.appointment_type === 'pickup' && (
               <div>
                 <label htmlFor="pickup_job_order_id" className="block text-sm font-medium text-[#524A44] mb-1">Linked Job Order <span className="text-rose-500">*</span></label>
-                <select id="pickup_job_order_id" required value={completeForm.job_order_id}
+                <select id="pickup_job_order_id" required disabled={loadingCompletionJobs} value={completeForm.job_order_id}
                   onChange={e => setCompleteForm(f => ({ ...f, job_order_id: e.target.value }))}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
-                  <option value="" disabled>Select the job order being picked up...</option>
-                  {jobOrders
-                    .filter(j => j.customer?.name === completeApt.customer?.name)
+                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] disabled:opacity-60">
+                  <option value="" disabled>{loadingCompletionJobs ? 'Loading job orders...' : 'Select the job order being picked up...'}</option>
+                  {completionJobOrders
+                    .filter(j => j.status === 'ready_for_pickup')
                     .map(j => <option key={j.id} value={j.id}>#{j.id} — {j.title || j.status}</option>)}
                 </select>
               </div>

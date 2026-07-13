@@ -2,10 +2,9 @@
 
 import { useEffect, useState, use } from 'react';
 import api from '@/lib/axios';
-import { Ruler, Info, ShieldCheck, Calendar as CalendarIcon, ArrowLeft, Star, MessageSquare } from 'lucide-react';
+import { Ruler, Info, ShieldCheck, ArrowLeft, Star, MessageSquare, Clock } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getActiveSale } from '@/components/catalog/catalogHelpers';
 
 interface CatalogItemImage {
   id: number;
@@ -37,11 +36,8 @@ interface CatalogItem {
   id: number;
   name: string;
   price: string | number;
-  sale_price?: string | number | null;
-  sale_starts_at?: string | null;
-  sale_ends_at?: string | null;
+  estimated_days?: number | null;
   description?: string;
-  listing_type: string;
   material?: string;
   color?: string;
   garment_type?: string;
@@ -59,35 +55,6 @@ interface CatalogItem {
   reviews?: CatalogItemReview[];
 }
 
-const LISTING_TYPE_LABELS: Record<string, string> = {
-  made_to_order: 'Made to Order',
-  bulk_order: 'Bulk Order',
-  ready_to_wear: 'Ready to Wear',
-  portfolio: 'Portfolio Showcase',
-  for_rent: 'For Rent',
-  for_sale: 'For Sale',
-  rent_or_sale: 'For Rent or Sale',
-  used_liquidated: 'Pre-Loved / Liquidated',
-};
-
-function ListingTypeBadge({ type }: Readonly<{ type: string }>) {
-  const styles: Record<string, string> = {
-    made_to_order: 'bg-[#FAF6F3] text-[#827A73] border-[#EBE6E0]',
-    bulk_order: 'bg-orange-50 text-orange-700 border-orange-200',
-    ready_to_wear: 'bg-blue-50 text-blue-700 border-blue-200',
-    portfolio: 'bg-purple-50 text-purple-700 border-purple-200',
-    for_rent: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    for_sale: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    rent_or_sale: 'bg-pink-50 text-pink-700 border-pink-200',
-  };
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[type] || 'bg-zinc-100 text-zinc-800 border-zinc-200'}`}>
-      {LISTING_TYPE_LABELS[type] || type}
-    </span>
-  );
-}
-
 export default function PublicProductDetailPage({ params }: Readonly<{ params: Promise<{ shop_id: string; item_id: string; }> }>) {
   const { shop_id: shopId, item_id: itemId } = use(params);
   const [item, setItem] = useState<CatalogItem | null>(null);
@@ -97,7 +64,6 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
   const [selectedVariation, setSelectedVariation] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [showFAQ, setShowFAQ] = useState(false);
-  const [rentalDates, setRentalDates] = useState<{ start: string; end: string }[]>([]);
 
   useEffect(() => {
     api.get(`/catalog/${shopId}/${itemId}`)
@@ -122,15 +88,6 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
       });
   }, [shopId, itemId]);
 
-  useEffect(() => {
-    if (!item || (item.listing_type !== 'for_rent' && item.listing_type !== 'rent_or_sale')) return;
-    api.get(`/catalog/${shopId}/${itemId}/rental-dates`)
-      .then(res => setRentalDates(res.data.data || []))
-      .catch(() => {
-        // Fall back silently — booked-dates list just won't show
-      });
-  }, [shopId, itemId, item]);
-
   if (loading) {
     return <div className="py-32 text-center text-[#A8A19A] animate-pulse">Loading garment details...</div>;
   }
@@ -138,26 +95,6 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
   if (!item) {
     return <div className="py-32 text-center text-[#A8A19A]">Item not found.</div>;
   }
-
-  const getButtonText = () => {
-    switch (item.listing_type) {
-      case 'for_rent':
-        return 'Inquire Rental';
-      case 'for_sale':
-      case 'used_liquidated':
-        return 'Inquire Purchase';
-      case 'rent_or_sale':
-        return 'Rent or Purchase';
-      case 'ready_to_wear':
-        return 'Reserve for Pickup';
-      case 'bulk_order':
-        return 'Request a Quote';
-      case 'made_to_order':
-        return 'Book a Fitting';
-      default:
-        return 'Inquire About This Item';
-    }
-  };
 
   // Parsing helper for structured lists and visual guides
   let featuresList: string[] = [];
@@ -186,8 +123,6 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
   const sizeChartColumns = item.size_chart_columns || [];
   const sizeChartRows = item.size_chart_rows || [];
   const sizeChartImage = item.size_chart_image_url || '';
-
-  const activeSale = getActiveSale(item);
 
   let careText = '';
   let careImage = '';
@@ -259,11 +194,14 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
 
         {/* Product Details Column */}
         <div className="py-8">
-          {item.listing_type && (
-            <div className="mb-3">
-              <ListingTypeBadge type={item.listing_type} />
-            </div>
-          )}
+          <div className="mb-3 flex items-center gap-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-[#FAF6F3] text-[#827A73] border-[#EBE6E0]">
+              Made to Order
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-[#FAF6F3] text-[#827A73] border-[#EBE6E0]">
+              <Clock size={11} /> Est. {item.estimated_days ?? 7} day{(item.estimated_days ?? 7) === 1 ? '' : 's'}
+            </span>
+          </div>
           <h1 className="text-3xl font-serif font-semibold text-zinc-900">{item.name}</h1>
           {!!item.reviews_count && (
             <div className="flex items-center gap-1.5 mt-2 text-sm">
@@ -276,27 +214,19 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
               <span className="text-[#A8A19A]">({item.reviews_count} review{item.reviews_count === 1 ? '' : 's'})</span>
             </div>
           )}
-          {activeSale ? (
-            <p className="mt-3 flex items-center gap-2 flex-wrap">
-              <span className="text-lg text-[#A8A19A] line-through">₱{activeSale.original.toLocaleString()}</span>
-              <span className="text-xl font-bold text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
-              <span className="text-xs font-bold text-white bg-rose-600 px-2 py-0.5 rounded-full uppercase tracking-wider">{activeSale.percentOff}% Off</span>
-            </p>
-          ) : (
-            <p className="text-xl text-[#827A73] mt-3">₱{Number(item.price).toLocaleString()} <span className="text-sm text-[#827A73] font-normal">PHP</span></p>
-          )}
+          <p className="text-xl text-[#827A73] mt-3">₱{Number(item.price).toLocaleString()} <span className="text-sm text-[#827A73] font-normal">starting price</span></p>
 
           {item.sizes && item.sizes.length > 0 && (
             <div className="mt-8 pt-8 border-t border-zinc-200">
               <h3 className="text-sm font-semibold text-zinc-900 mb-3">
-                Select Size <span className="text-[#B26959]">*</span>
+                Reference Size <span className="text-[#A8A19A] font-normal">(optional — we&apos;ll take your real measurements at the fitting)</span>
               </h3>
               <div className="flex flex-wrap gap-2">
                 {item.sizes.map(size => (
                   <button
                     key={size}
                     type="button"
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => setSelectedSize(prev => (prev === size ? '' : size))}
                     className={`px-4 py-2 rounded-lg border text-sm font-semibold transition-all ${
                       selectedSize === size
                         ? 'border-zinc-900 bg-zinc-900 text-white'
@@ -307,9 +237,6 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
                   </button>
                 ))}
               </div>
-              {!selectedSize && (
-                <p className="text-xs text-[#B26959] mt-2">Please select a size to continue.</p>
-              )}
             </div>
           )}
 
@@ -330,7 +257,7 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
                 if (item.material) specRows.push(['Material', item.material]);
                 if (item.color) specRows.push(['Color', item.color]);
                 if (item.sizes && item.sizes.length > 0) specRows.push(['Sizes Available', item.sizes.join(', ')]);
-                specRows.push(['Listing Type', LISTING_TYPE_LABELS[item.listing_type] || item.listing_type]);
+                specRows.push(['Estimated Completion', `${item.estimated_days ?? 7} day${(item.estimated_days ?? 7) === 1 ? '' : 's'}`]);
                 return specRows.length > 0 ? (
                   <table className="w-full text-sm">
                     <tbody>
@@ -398,43 +325,6 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
               )}
             </div>
 
-            {/* Rental Availability Calendar widget */}
-            {(item.listing_type === 'for_rent' || item.listing_type === 'rent_or_sale') && (
-              <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-xl space-y-4">
-                <h3 className="font-semibold text-emerald-950 flex items-center gap-2">
-                  <CalendarIcon size={18} /> Rental Availability
-                </h3>
-                <p className="text-xs text-emerald-700">
-                  You choose your own pickup and return dates when booking. Below are the currently reserved dates:
-                </p>
-                <div className="bg-white rounded-lg p-3 border border-emerald-100 text-xs space-y-2">
-                  {item.listing_type === 'for_rent' && (
-                    <div className="flex justify-between">
-                      <span className="text-[#827A73]">Security Deposit:</span>
-                      <span className="font-semibold text-zinc-950">₱{(Number(item.price) * 0.5).toLocaleString(undefined, { minimumFractionDigits: 2 })} (Refundable)</span>
-                    </div>
-                  )}
-                  <div className="pt-2 border-t border-zinc-100">
-                    <span className="font-semibold text-emerald-800 block mb-1">Booked Dates:</span>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {rentalDates.length === 0 ? (
-                        <span className="text-[10px] text-emerald-600 font-semibold">✓ No dates currently reserved — fully open</span>
-                      ) : (
-                        <>
-                          {rentalDates.map(d => (
-                            <span key={`${d.start}-${d.end}`} className="bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100 font-mono text-[10px]">
-                              {new Date(d.start).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} – {new Date(d.end).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                            </span>
-                          ))}
-                          <span className="text-[10px] text-emerald-600 font-semibold self-center ml-auto text-right w-full">✓ All other dates open</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Garment Care & Alterations Collapsible */}
             <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
               <button 
@@ -475,22 +365,12 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
             </a>
           )}
 
-          {item.sizes && item.sizes.length > 0 && !selectedSize ? (
-            <button
-              type="button"
-              disabled
-              className="w-full bg-zinc-300 text-white font-medium tracking-wide py-4 mt-4 rounded-xl uppercase cursor-not-allowed"
-            >
-              Select a Size to Continue
-            </button>
-          ) : (
-            <Link
-              href={`/shop/${shopId}/book?item_id=${item.id}&intent=${item.listing_type}${selectedVariation ? `&variation=${encodeURIComponent(selectedVariation)}` : ''}${selectedSize ? `&selected_size=${encodeURIComponent(selectedSize)}` : ''}`}
-              className="w-full bg-[#2D2A26] hover:bg-black text-white font-medium tracking-wide py-4 mt-4 transition-colors flex items-center justify-center rounded-xl shadow-lg uppercase"
-            >
-              {getButtonText()}
-            </Link>
-          )}
+          <Link
+            href={`/shop/${shopId}/book?ref=${encodeURIComponent(item.name)}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}`}
+            className="w-full bg-[#2D2A26] hover:bg-black text-white font-medium tracking-wide py-4 mt-4 transition-colors flex items-center justify-center rounded-xl shadow-lg uppercase"
+          >
+            Book Appointment
+          </Link>
         </div>
       </div>
 

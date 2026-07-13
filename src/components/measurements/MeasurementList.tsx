@@ -3,17 +3,7 @@
 import React from 'react';
 import { ChevronDown, ChevronUp, Copy, Pencil, Trash2, StickyNote, RefreshCw } from 'lucide-react';
 import { MeasurementRecord } from './measurementTypes';
-import { METRIC_FIELDS, MetricPill, CustomerInitial } from './measurementHelpers';
-
-// Custom fields are stored verbatim (e.g. "Sleeve to Wrist"), but legacy
-// profiles still use short-code keys (e.g. "sleeve_length") from before
-// fields were freely nameable — look those up for a nicer label, otherwise
-// just title-case whatever key is actually there.
-function humanizeMetricKey(key: string): string {
-  const known = METRIC_FIELDS.find(f => f.key === key);
-  if (known) return known.label;
-  return key.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
+import { MetricPill, CustomerInitial, humanizeMetricKey } from './measurementHelpers';
 
 interface MeasurementListProps {
   readonly grouped: Record<string, MeasurementRecord[]>;

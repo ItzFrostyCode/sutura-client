@@ -2,24 +2,18 @@ import React from 'react';
 import api from '@/lib/axios';
 import { BulletItem, ImageItem, CatalogFormData, CatalogItemResponse } from './catalogTypes';
 import type { SizeChartValue } from '@/components/shared/SizeChartEditor';
-export { getActiveSale } from '@/lib/salePricing';
 
 export interface CatalogItem {
   id: number;
   name: string;
   price: string;
-  sale_price?: string | number | null;
-  sale_starts_at?: string | null;
-  sale_ends_at?: string | null;
-  rental_price?: string | number | null;
-  rental_deposit?: string | number | null;
+  estimated_days?: number | null;
   material: string;
   color?: string;
   fabric_image_url?: string;
   sizes?: string[] | null;
   description?: string;
   garment_type?: string;
-  listing_type?: string;
   images: { id: number; image_url: string; is_primary: boolean }[];
   views_count: number;
   saves_count: number;
@@ -36,55 +30,11 @@ export interface CatalogItem {
   is_active?: boolean;
 }
 
-export function formatCatalogPrice(price: string | number, listingType?: string): string {
+/** Made-to-order only — the price is the real tailoring price, not a sale price. */
+export function formatCatalogPrice(price: string | number): string {
   const numericPrice = Number(price);
-
   const formattedPrice = Number.isNaN(numericPrice) ? '0' : numericPrice.toLocaleString();
-
-  if (listingType === 'made_to_order') {
-    return `Starting at ₱${formattedPrice}`;
-  }
-  
-  if (listingType === 'for_rent' || listingType === 'rent_or_sale') {
-    return `Rent from ₱${formattedPrice}`;
-  }
-
-  return `₱${formattedPrice}`;
-}
-
-export function getCatalogActionLabel(listingType?: string): string {
-  switch (listingType) {
-    case 'made_to_order':
-      return 'Book / Measure';
-    case 'for_rent':
-    case 'rent_or_sale':
-      return 'Book Fitting / Rent';
-    case 'ready_to_wear':
-    case 'for_sale':
-    default:
-      return 'Buy / View Details';
-  }
-}
-
-export function getListingTypeLabel(listingType?: string): string {
-  switch (listingType) {
-    case 'made_to_order':
-      return 'Made to Order';
-    case 'bulk_order':
-      return 'Bulk Order';
-    case 'ready_to_wear':
-      return 'Ready to Wear';
-    case 'for_rent':
-      return 'For Rent';
-    case 'for_sale':
-      return 'For Sale';
-    case 'rent_or_sale':
-      return 'For Rent/Sale';
-    case 'used_liquidated':
-      return 'Used / Liquidated';
-    default:
-      return 'Showcase';
-  }
+  return `Starting at ₱${formattedPrice}`;
 }
 
 export function parseFeatures(featuresInput?: unknown): { bullets: BulletItem[]; imageUrl: string } {
@@ -159,15 +109,13 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
   const form = {
     name: item.name,
     price: item.price.toString(),
+    estimated_days: item.estimated_days != null ? String(item.estimated_days) : '',
     material: item.material ?? '',
     color: item.color ?? '',
     fabric_image_url: item.fabric_image_url ?? '',
     description: item.description ?? '',
     care_instructions: careText,
     garment_type: item.garment_type ?? '',
-    listing_type: item.listing_type ?? 'made_to_order',
-    rental_price: item.rental_price != null ? String(item.rental_price) : '',
-    rental_deposit: item.rental_deposit != null ? String(item.rental_deposit) : '',
     sizes: Array.isArray(item.sizes) ? item.sizes : [],
     external_gallery_url: item.external_gallery_url ?? '',
     is_active: item.is_active ?? true,
@@ -230,37 +178,33 @@ export async function uploadSectionImage({
 export async function uploadCatalogImage({
   file,
   shopId,
-  index,
-  images,
+  imageId,
   setImages,
 }: {
   file: File;
   shopId: number;
-  index: number;
-  images: ImageItem[];
+  imageId: string;
   setImages: React.Dispatch<React.SetStateAction<ImageItem[]>>;
 }) {
   const fd = new FormData();
   fd.append('file', file);
-  
-  const uploadStart = [...images];
-  uploadStart[index].uploading = true;
-  setImages(uploadStart);
+
+  // Functional updates matched by the slot's stable id (not array index) —
+  // an index snapshot taken when the upload started can point at the wrong
+  // slot (or silently discard other edits) if a slot is added/removed while
+  // this upload is still in flight.
+  setImages(prev => prev.map(img => (img.id === imageId ? { ...img, uploading: true } : img)));
 
   try {
     const res = await api.post(`/shops/${shopId}/upload`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    const newI = [...images];
-    newI[index].url = res.data.data.url;
-    newI[index].uploading = false;
-    setImages(newI);
+    const url = res.data.data.url;
+    setImages(prev => prev.map(img => (img.id === imageId ? { ...img, url, uploading: false } : img)));
   } catch (err) {
     console.error('Upload failed', err);
     alert('Failed to upload image. File may be too large.');
-    const newI = [...images];
-    newI[index].uploading = false;
-    setImages(newI);
+    setImages(prev => prev.map(img => (img.id === imageId ? { ...img, uploading: false } : img)));
   }
 }
 
@@ -277,9 +221,6 @@ export function buildSavePayload(
 
   return {
     ...formData,
-    // sale_price is intentionally NOT sent here — it's managed separately via
-    // the "Set Sale" quick action on the catalog card, not the main form, so
-    // saving this form must never overwrite an existing discount.
     fabric_image_url: formData.fabric_image_url || null,
     sizes: formData.sizes,
     features: {

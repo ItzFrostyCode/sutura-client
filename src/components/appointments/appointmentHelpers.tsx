@@ -1,8 +1,21 @@
 import React from 'react';
-import { MessageSquare, Ruler, ShirtIcon, Scissors, Package, Users } from 'lucide-react';
+import { MessageSquare, Ruler, ShirtIcon, Scissors, Package } from 'lucide-react';
 
-export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup', 'bulk_custom'] as const;
+export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup'] as const;
 export type AppointmentType = typeof APPOINTMENT_TYPES[number];
+
+/**
+ * Default duration (minutes) per appointment type — the Schedule Appointment
+ * form auto-calculates duration from this instead of a manual selector.
+ * Mirrors Appointment::TYPE_DEFAULT_DURATIONS on the backend exactly.
+ */
+export const TYPE_DEFAULT_DURATIONS: Record<AppointmentType, number> = {
+  consultation: 30,
+  measurement: 45,
+  fitting: 45,
+  alteration: 30,
+  pickup: 15,
+};
 
 export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
 
@@ -11,7 +24,7 @@ export const TYPES_REQUIRING_SERVICE = new Set<AppointmentType>(['measurement', 
 export interface Appointment {
   id: number;
   appointment_type: AppointmentType;
-  intake_channel?: 'walkin' | 'online';
+  intake_channel?: 'walk_in' | 'online';
   customer: { id: number; name: string; email: string };
   service: { id: number; name: string } | null;
   branch: { id: number; name: string } | null;
@@ -66,11 +79,6 @@ export const TYPE_CONFIG: Record<AppointmentType, {
     label: 'Pickup', icon: <Package size={12} />,
     bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500',
     text: 'text-emerald-900', badgeBg: 'bg-emerald-50', badgeBorder: 'border-emerald-200', badgeText: 'text-emerald-700',
-  },
-  bulk_custom: {
-    label: 'Bulk/Custom Order', icon: <Users size={12} />,
-    bg: 'bg-teal-50', border: 'border-teal-200', dot: 'bg-teal-500',
-    text: 'text-teal-900', badgeBg: 'bg-teal-50', badgeBorder: 'border-teal-200', badgeText: 'text-teal-700',
   },
 };
 

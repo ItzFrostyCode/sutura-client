@@ -1,39 +1,81 @@
 import React from 'react';
-import { Truck, Store, ShoppingBag, Navigation, Scissors } from 'lucide-react';
-import { parseCourierName, formatFulfillmentLabel } from '@/lib/fulfillment';
+import { Store, ShoppingBag, Scissors } from 'lucide-react';
 
 // Unified with the Multi-Stage Staff Assignment stages (design/pattern_making/
-// cutting/sewing/fitting/finishing) so the customer-facing timeline and the
-// internal "who's assigned to what" tracking describe the same production
-// process instead of two different vocabularies.
+// cutting/sewing/qc_ironing) so the customer-facing timeline and the internal
+// "who's assigned to what" tracking describe the same production process
+// instead of two different vocabularies. Store pickup is the only
+// fulfillment path — the approved thesis excludes logistics/courier/delivery
+// management from the system's scope.
+//
+// 'mass_cutting_printing' is the Bulk Order Override: a job with a Team
+// Roster / Size Sheet skips 'pattern_making' and goes straight here instead
+// — see columnsForJobs(), which only shows whichever of the two columns is
+// actually relevant to the jobs on the board.
 export const ALL_COLUMNS = [
-  { id: 'pending',          title: 'Pending',          color: 'bg-[#EBE6E0]/50',   border: 'border-[#D1C7BD]' },
-  { id: 'design',           title: 'Design',           color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
-  { id: 'pattern_making',   title: 'Pattern Making',   color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
-  { id: 'cutting',          title: 'Cutting',          color: 'bg-amber-50/50',     border: 'border-amber-200/50' },
-  { id: 'sewing',           title: 'Sewing',           color: 'bg-orange-50/50',    border: 'border-orange-200/50' },
-  { id: 'fitting',          title: 'Fitting',          color: 'bg-violet-50/50',    border: 'border-violet-200/50' },
-  { id: 'finishing',        title: 'Finishing',        color: 'bg-fuchsia-50/50',   border: 'border-fuchsia-200/50' },
-  { id: 'ready_for_pickup', title: 'Ready for Pickup', color: 'bg-emerald-50/50',   border: 'border-emerald-200/50' },
-  { id: 'packed',           title: 'Packed',           color: 'bg-indigo-50/50',    border: 'border-indigo-200/50' },
-  { id: 'handed_to_courier',title: 'Handed Over',      color: 'bg-cyan-50/50',      border: 'border-cyan-200/50' },
-  { id: 'completed',        title: 'Completed',        color: 'bg-[#9A8073]/10',    border: 'border-[#9A8073]/30' },
+  { id: 'pending',                title: 'Pending',                color: 'bg-[#EBE6E0]/50',   border: 'border-[#D1C7BD]' },
+  { id: 'design',                 title: 'Design',                 color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
+  { id: 'pattern_making',         title: 'Pattern Making',         color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
+  { id: 'mass_cutting_printing',  title: 'Mass Cutting & Printing', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
+  { id: 'cutting',                title: 'Cutting',                color: 'bg-amber-50/50',     border: 'border-amber-200/50' },
+  { id: 'sewing',                 title: 'Sewing / Assembly',      color: 'bg-orange-50/50',    border: 'border-orange-200/50' },
+  { id: 'ready_for_fitting',      title: 'Ready for Fitting',      color: 'bg-violet-50/50',    border: 'border-violet-200/50' },
+  { id: 'final_adjustments',      title: 'Final Adjustments',      color: 'bg-rose-50/50',      border: 'border-rose-200/50' },
+  { id: 'qc_ironing',             title: 'QC & Ironing',           color: 'bg-fuchsia-50/50',   border: 'border-fuchsia-200/50' },
+  { id: 'ready_for_pickup',       title: 'Ready for Pickup',       color: 'bg-emerald-50/50',   border: 'border-emerald-200/50' },
+  { id: 'completed',              title: 'Completed',              color: 'bg-[#9A8073]/10',    border: 'border-[#9A8073]/30' },
 ];
 
 /**
- * Kanban stage columns for a set of jobs, driven by their FULFILLMENT type
- * (pickup -> ready_for_pickup; shipping/delivery -> packed/handed_to_courier),
- * so a job's status column is never missing regardless of intake_channel.
+ * "No DP, No Layout, No Cut": a job cannot enter any of these production
+ * stages until a 50% downpayment has been logged — mirrors
+ * JobOrder::STAGES_REQUIRING_DOWNPAYMENT on the backend exactly so the
+ * Kanban board's drag-and-drop guard never drifts out of sync with what the
+ * API actually enforces.
  */
-export function columnsForJobs(jobs: readonly Job[]) {
-  const hasPickup = jobs.some(j => j.fulfillment_type === 'pickup');
-  const hasCourier = jobs.some(j => j.fulfillment_type === 'shipping' || j.fulfillment_type === 'delivery');
-  // Empty/unknown board: show every stage so nothing can hide.
-  const showPickup = hasPickup || (!hasPickup && !hasCourier);
-  const showCourier = hasCourier || (!hasPickup && !hasCourier);
-  return ALL_COLUMNS.filter(col => {
-    if (col.id === 'ready_for_pickup') return showPickup;
-    if (col.id === 'packed' || col.id === 'handed_to_courier') return showCourier;
+export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
+  'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
+  'ready_for_fitting', 'final_adjustments', 'qc_ironing',
+]);
+
+/**
+ * Assignable Multi-Stage Staff Assignment stages — mirrors
+ * JobOrder::STAFF_STAGES on the backend. Deliberately excludes 'fitting'
+ * (happens front-of-house with the master cutter/owner, not a backroom
+ * stage) and 'mass_cutting_printing'/other non-staffed statuses.
+ */
+export const STAFF_STAGES = ['design', 'pattern_making', 'cutting', 'sewing', 'qc_ironing'] as const;
+export type StaffStage = typeof STAFF_STAGES[number];
+
+export const STAFF_STAGE_LABELS: Record<StaffStage, string> = {
+  design: 'Design',
+  pattern_making: 'Pattern Making',
+  cutting: 'Cutting',
+  sewing: 'Sewing',
+  qc_ironing: 'Finishing / QC',
+};
+
+// Mirrors JobOrder::isBulkOrder() on the backend exactly: a Team Roster /
+// Size Sheet was submitted, OR the linked service is itself typed as bulk
+// sublimation (a job can be bulk by service type alone, with no roster yet).
+function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
+  const roster = (job.custom_order_data as { team_roster?: unknown[] } | null | undefined)?.team_roster;
+  if (Array.isArray(roster) && roster.length > 0) return true;
+  return job.service?.service_type === 'bulk_sublimation';
+}
+
+/**
+ * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting &
+ * Printing isn't relevant to the jobs actually on the board, instead of
+ * always showing both (most shops only ever use one of the two paths).
+ */
+export function columnsForJobs(jobs: Job[] = []) {
+  const hasBulkOrders = jobs.some(isBulkOrder);
+  const hasStandardOrders = jobs.some(j => !isBulkOrder(j));
+
+  return ALL_COLUMNS.filter(c => {
+    if (c.id === 'mass_cutting_printing') return hasBulkOrders;
+    if (c.id === 'pattern_making') return hasStandardOrders || !hasBulkOrders;
     return true;
   });
 }
@@ -51,10 +93,11 @@ export interface Job {
   downpayment?: number | string;
   total_amount?: number | string;
   customer?: { name: string; suki_tag?: string | null } | null;
-  service?: { name: string } | null;
+  service?: { name: string; service_type?: string | null } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;
+  custom_order_data?: Record<string, unknown> | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';
@@ -98,67 +141,10 @@ export function TypeBadge({ type }: { readonly type: string }) {
   );
 }
 
-export function FulfillmentBadge({ type }: { readonly type: string }) {
-  if (type === 'shipping' || type === 'delivery') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded">
-        <Truck size={9} /> Shipping
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded">
-      <Store size={9} /> Pickup
-    </span>
-  );
-}
-
-export function CourierTag({ job }: { readonly job: Job }) {
-  if (job.fulfillment_type === 'pickup') return null;
-  
-  const { type, name } = parseCourierName(job.courier_name);
-  const displayLabel = formatFulfillmentLabel(type, name);
-
-  let Icon = Truck;
-  if (type === 'delivery') Icon = Navigation;
-  if (type === 'pickup') Icon = Store;
-
-  const isLink = job.courier_tracking_number?.startsWith('http://') || job.courier_tracking_number?.startsWith('https://');
-
-  return (
-    <div className="flex items-center gap-1 text-[10px] text-[#827A73] mt-1 flex-wrap">
-      <Icon size={10} className="shrink-0" />
-      <span className="font-medium">{displayLabel}</span>
-      {job.courier_tracking_number && (
-        <>
-          <span className="text-[#A8A19A]">•</span>
-          {isLink ? (
-            <a
-              href={job.courier_tracking_number}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline font-semibold flex items-center gap-0.5"
-              onClick={e => e.stopPropagation()}
-            >
-              Track ↗
-            </a>
-          ) : (
-            <span className="text-[#BCA89F] font-mono">#{job.courier_tracking_number}</span>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
 export function ColumnIcon({ id }: { readonly id: string }) {
   switch (id) {
     case 'ready_for_pickup':
       return <Store size={14} className="text-emerald-600" />;
-    case 'packed':
-      return <ShoppingBag size={14} className="text-indigo-600" />;
-    case 'handed_to_courier':
-      return <Truck size={14} className="text-cyan-600" />;
     case 'completed':
       return <Scissors size={14} className="text-[#9A8073]" />;
     default:

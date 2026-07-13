@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Job, Payment } from './jobTypes';
-import { CreditCard, Banknote, Smartphone, ChevronDown, ChevronUp, Pencil, X, Check, Printer } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, ChevronDown, ChevronUp, Pencil, X, Check, Printer, Tag } from 'lucide-react';
 
 interface JobFinancialsCardProps {
   readonly job: Job;
   readonly saving: boolean;
   readonly onCharge: (amount: number, method: string, notes: string, reference?: string) => Promise<void>;
+  readonly onApplyDiscount: (amount: number, reason: string) => Promise<void>;
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;
 }
 
@@ -26,18 +27,41 @@ export default function JobFinancialsCard({
   job,
   saving,
   onCharge,
+  onApplyDiscount,
   onUpdatePayment,
 }: JobFinancialsCardProps) {
   const totalAmount       = Number.parseFloat(String(job.total_amount));
   const remainingBalance  = Number.parseFloat(String(job.balance));
   const amountPaid        = totalAmount - remainingBalance;
+  const discountApplied   = Number.parseFloat(String(job.discount_amount ?? 0)) || 0;
   const jobIsCompleted    = job.status === 'completed';
+  const jobIsCancelled    = job.status === 'cancelled';
   const [method, setMethod] = useState('cash');
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
   const [notes, setNotes]   = useState('');
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [charging, setCharging] = useState(false);
+  const [showDiscountForm, setShowDiscountForm] = useState(false);
+  const [discountInput, setDiscountInput] = useState('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+
+  const handleApplyDiscountSubmit = async () => {
+    const amt = Number.parseFloat(discountInput);
+    if (!amt || amt <= 0) return;
+    setApplyingDiscount(true);
+    try {
+      await onApplyDiscount(amt, discountReason);
+      setShowDiscountForm(false);
+      setDiscountInput('');
+      setDiscountReason('');
+    } catch {
+      // handled by parent
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
 
   const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [editMethod, setEditMethod] = useState('cash');
@@ -113,6 +137,12 @@ export default function JobFinancialsCard({
           <span className="text-[#7A8B76]">Deposit Paid</span>
           <span className="font-semibold text-[#7A8B76]">−₱{amountPaid.toFixed(2)}</span>
         </div>
+        {discountApplied > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-rose-600">Discount Applied</span>
+            <span className="font-semibold text-rose-600">−₱{discountApplied.toFixed(2)}</span>
+          </div>
+        )}
         <div className="border-t border-[#EBE6E0] pt-2 flex justify-between">
           <span className="text-sm font-medium text-[#524A44]">Balance Due</span>
           <span className={`text-lg font-bold ${remainingBalance > 0 ? 'text-[#B26959]' : 'text-[#7A8B76]'}`}>
@@ -120,6 +150,70 @@ export default function JobFinancialsCard({
           </span>
         </div>
       </div>
+
+      {/* Apply Discount — a one-time, in-the-moment decision (e.g. a repeat
+          customer), not a standing coupon/promo code. */}
+      {!jobIsCompleted && !jobIsCancelled && remainingBalance > 0 && (
+        <div className="mb-4">
+          {showDiscountForm ? (
+            <div className="bg-rose-50/60 border border-rose-200 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-rose-700 uppercase tracking-wider">Apply Discount</p>
+                {typeof job.customer_job_count === 'number' && (
+                  <span className="text-[10px] font-semibold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full">
+                    {job.customer_job_count === 1 ? 'First order' : `${job.customer_job_count} orders with this customer`}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] font-medium text-sm">₱</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={remainingBalance}
+                  value={discountInput}
+                  onChange={e => setDiscountInput(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full pl-7 pr-3 py-2 bg-white border border-rose-200 rounded-lg text-[#2D2A26] focus:outline-none focus:border-rose-400 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+              <input
+                type="text"
+                value={discountReason}
+                onChange={e => setDiscountReason(e.target.value)}
+                placeholder="Reason (optional) — e.g. repeat customer"
+                className="w-full px-3 py-2 bg-white border border-rose-200 rounded-lg text-xs text-[#2D2A26] focus:outline-none focus:border-rose-400"
+              />
+              <div className="flex justify-end gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => { setShowDiscountForm(false); setDiscountInput(''); setDiscountReason(''); }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#827A73] hover:text-[#2D2A26]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={applyingDiscount || !discountInput || Number.parseFloat(discountInput) <= 0}
+                  onClick={handleApplyDiscountSubmit}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50"
+                >
+                  {applyingDiscount ? 'Applying…' : 'Apply Discount'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDiscountForm(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 border border-rose-200 text-rose-700 text-xs font-semibold rounded-lg hover:bg-rose-50 transition-colors"
+            >
+              <Tag size={13} /> Apply Discount
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Log Payment Form */}
       {remainingBalance > 0 ? (

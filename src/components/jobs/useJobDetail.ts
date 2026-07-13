@@ -3,8 +3,12 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { parseCourierName, serializeCourierName } from '@/lib/fulfillment';
 import { Job, Staff } from './jobTypes';
+import { STAFF_STAGES } from './jobHelpers';
+
+function emptyStageMap<T>(value: T): Record<string, T> {
+  return Object.fromEntries(STAFF_STAGES.map(stage => [stage, value]));
+}
 
 export function useJobDetail(jobId: string) {
   const { shop } = useAuthStore();
@@ -23,36 +27,17 @@ export function useJobDetail(jobId: string) {
   const [paymentStatus, setPaymentStatus] = useState('');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
-  const [courierTracking, setCourierTracking] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
   const [completionPhotoUrl, setCompletionPhotoUrl] = useState('');
-  
+
   // Outsourcing
   const [isOutsourced, setIsOutsourced] = useState(false);
   const [partnerShopName, setPartnerShopName] = useState('');
   const [outsourcingCost, setOutsourcingCost] = useState('');
 
-  // Fulfillment states
-  const [fulfillmentType, setFulfillmentType] = useState<'shipping' | 'delivery' | 'pickup'>('shipping');
-  const [fulfillmentProvider, setFulfillmentProvider] = useState('');
-  const [supportedCouriers, setSupportedCouriers] = useState<string[]>([]);
-
   // Staff Assignment
   const [allStaff, setAllStaff] = useState<Staff[]>([]);
-  const [staffAssignments, setStaffAssignments] = useState<Record<string, string>>({
-    design: '',
-    pattern_making: '',
-    cutting: '',
-    sewing: '',
-    finishing: ''
-  });
-  const [staffCompletions, setStaffCompletions] = useState<Record<string, string | null>>({
-    design: null,
-    pattern_making: null,
-    cutting: null,
-    sewing: null,
-    finishing: null
-  });
+  const [staffAssignments, setStaffAssignments] = useState<Record<string, string>>(emptyStageMap(''));
+  const [staffCompletions, setStaffCompletions] = useState<Record<string, string | null>>(emptyStageMap(null));
   const [savingStaff, setSavingStaff] = useState(false);
 
   useEffect(() => {
@@ -68,20 +53,14 @@ export function useJobDetail(jobId: string) {
           setPaymentStatus(data.payment_status);
           setBalance(data.balance);
           setNotes(data.notes || '');
-          setCourierTracking(data.courier_tracking_number || '');
-          setShippingAddress(data.shipping_address || '');
           setCompletionPhotoUrl(data.completion_photo_url || '');
           setIsOutsourced(data.is_outsourced || false);
           setPartnerShopName(data.partner_shop_name || '');
           setOutsourcingCost(data.outsourcing_cost != null ? String(data.outsourcing_cost) : '');
-          
-          const parsed = parseCourierName(data.courier_name);
-          setFulfillmentType(parsed.type);
-          setFulfillmentProvider(parsed.name);
-          
+
           // Populate existing staff stages
-          const assignments: Record<string, string> = { design: '', pattern_making: '', cutting: '', sewing: '', fitting: '', finishing: '' };
-          const completions: Record<string, string | null> = { design: null, pattern_making: null, cutting: null, sewing: null, fitting: null, finishing: null };
+          const assignments: Record<string, string> = emptyStageMap('');
+          const completions: Record<string, string | null> = emptyStageMap(null);
           if (data.staff_stages) {
              data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
                 assignments[staff.pivot.stage] = staff.id.toString();
@@ -104,14 +83,6 @@ export function useJobDetail(jobId: string) {
           setAllStaff(res.data.data);
         })
         .catch(console.error);
-
-      // Fetch shop details for supported couriers
-      api.get(`/shops/${shop.id}`)
-        .then(res => {
-          const s = res.data.data;
-          setSupportedCouriers(Array.isArray(s.supported_couriers) ? s.supported_couriers : []);
-        })
-        .catch(console.error);
     } else {
       timer = setTimeout(() => setLoading(false), 0);
     }
@@ -124,9 +95,6 @@ export function useJobDetail(jobId: string) {
   const handleUpdate = async () => {
     if (!shop) return;
     setSaving(true);
-    
-    const isPickup = fulfillmentType === 'pickup';
-    const courierNameVal = serializeCourierName(fulfillmentType, fulfillmentProvider || 'Other');
 
     try {
       await api.put(`/shops/${shop.id}/jobs/${jobId}`, {
@@ -134,15 +102,6 @@ export function useJobDetail(jobId: string) {
         payment_status: paymentStatus,
         balance: Number.parseFloat(balance),
         notes,
-        // The fulfillment type is also encoded as a prefix inside
-        // courier_name (for this form's own round-trip), but other
-        // components (Production Timeline, the header badge) read the raw
-        // fulfillment_type column directly — it has to be sent here too or
-        // those go stale after switching e.g. Shipping to Store Pickup.
-        fulfillment_type: fulfillmentType,
-        courier_name: courierNameVal,
-        courier_tracking_number: isPickup ? null : (courierTracking || null),
-        shipping_address: isPickup ? 'Store Pickup' : (shippingAddress || null),
         is_outsourced: isOutsourced,
         partner_shop_name: isOutsourced ? partnerShopName : null,
         outsourcing_cost: isOutsourced && outsourcingCost ? Number.parseFloat(outsourcingCost) : null,
@@ -154,13 +113,7 @@ export function useJobDetail(jobId: string) {
       setJob(data);
       setStatus(data.status);
       setPaymentStatus(data.payment_status);
-      setCourierTracking(data.courier_tracking_number || '');
-      setShippingAddress(data.shipping_address || '');
       setCompletionPhotoUrl(data.completion_photo_url || '');
-
-      const parsed = parseCourierName(data.courier_name);
-      setFulfillmentType(parsed.type);
-      setFulfillmentProvider(parsed.name);
       toast.success('Job details updated successfully.');
     } catch (err: unknown) {
       console.error('Failed to update', err);
@@ -196,7 +149,7 @@ export function useJobDetail(jobId: string) {
       const data = res.data.data;
       setJob(data);
       
-      const completions: Record<string, string | null> = { design: null, pattern_making: null, cutting: null, sewing: null, fitting: null, finishing: null };
+      const completions: Record<string, string | null> = emptyStageMap(null);
       if (data.staff_stages) {
          data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
             completions[staff.pivot.stage] = staff.pivot.completed_at || null;
@@ -244,6 +197,31 @@ export function useJobDetail(jobId: string) {
     } catch(err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Payment failed');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // One-time, in-the-moment discount (e.g. a repeat customer) — reduces the
+  // remaining balance directly and is logged to the audit trail server-side.
+  const handleApplyDiscount = async (amount: number, reason: string) => {
+    if (!shop || !job) return;
+    setSaving(true);
+    try {
+      await api.post(`/shops/${shop.id}/jobs/${job.id}/discount`, {
+        amount,
+        reason: reason || undefined,
+      });
+      const res = await api.get(`/shops/${shop.id}/jobs/${job.id}`);
+      const updatedJob = res.data.data;
+      setJob(updatedJob);
+      setBalance(updatedJob.balance);
+      setPaymentStatus(updatedJob.payment_status);
+      toast.success(`₱${amount.toFixed(2)} discount applied successfully.`);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to apply discount.');
       throw err;
     } finally {
       setSaving(false);
@@ -305,10 +283,6 @@ export function useJobDetail(jobId: string) {
     setBalance,
     notes,
     setNotes,
-    courierTracking,
-    setCourierTracking,
-    shippingAddress,
-    setShippingAddress,
     completionPhotoUrl,
     setCompletionPhotoUrl,
     isOutsourced,
@@ -317,11 +291,6 @@ export function useJobDetail(jobId: string) {
     setPartnerShopName,
     outsourcingCost,
     setOutsourcingCost,
-    fulfillmentType,
-    setFulfillmentType,
-    fulfillmentProvider,
-    setFulfillmentProvider,
-    supportedCouriers,
     allStaff,
     staffAssignments,
     setStaffAssignments,
@@ -330,6 +299,7 @@ export function useJobDetail(jobId: string) {
     handleUpdate,
     handleUpdateStaff,
     handleChargePayment,
+    handleApplyDiscount,
     handleUpdatePayment,
     handleDelete,
   };

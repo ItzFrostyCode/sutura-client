@@ -18,7 +18,6 @@ import Link from 'next/link';
 import {
   CatalogItem,
   formatCatalogPrice,
-  getListingTypeLabel,
   parseFeatures,
   parseCareInstructions
 } from './catalogHelpers';
@@ -65,7 +64,7 @@ export default function CatalogPreviewModal({ isOpen, onClose, item }: CatalogPr
         <div className="px-8 py-5 border-b border-[#EBE6E0] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-bold text-taupe bg-[#9A8073]/15 px-2.5 py-1 rounded-full uppercase tracking-wider">
-              {getListingTypeLabel(item.listing_type)}
+              Made to Order
             </span>
             <span className="text-[10px] font-bold text-[#B26959] bg-[#B26959]/10 px-2.5 py-1 rounded-full uppercase tracking-wider">
               {item.garment_type || 'Custom Garment'}
@@ -175,7 +174,7 @@ export default function CatalogPreviewModal({ isOpen, onClose, item }: CatalogPr
             <div>
               <h2 className="text-2xl font-bold text-[#2D2A26] tracking-tight">{item.name}</h2>
               <div className="mt-2 text-lg font-bold text-taupe">
-                {formatCatalogPrice(item.price, item.listing_type)}
+                {formatCatalogPrice(item.price)}
               </div>
             </div>
 
@@ -195,6 +194,12 @@ export default function CatalogPreviewModal({ isOpen, onClose, item }: CatalogPr
               <div>
                 <span className="text-[10px] font-bold text-[#A8A19A] uppercase tracking-wider">Garment Category</span>
                 <p className="text-sm font-medium text-[#2D2A26] mt-0.5 capitalize">{item.garment_type || 'Custom Design'}</p>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-[#A8A19A] uppercase tracking-wider">Estimated Completion</span>
+                <p className="text-sm font-medium text-[#2D2A26] mt-0.5">
+                  {item.estimated_days ?? 7} day{(item.estimated_days ?? 7) === 1 ? '' : 's'}
+                </p>
               </div>
             </div>
 

@@ -25,7 +25,7 @@ export interface JobOrder {
   id: number;
   order_number: string;
   intake_channel: 'walk_in' | 'online';
-  fulfillment_type: 'pickup' | 'shipping';
+  fulfillment_type: 'pickup';
   status: string;
   payment_status: string;
   total_amount: string | number;

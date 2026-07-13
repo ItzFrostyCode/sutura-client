@@ -6,12 +6,11 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Plus, Image as ImageIcon, Megaphone, Search } from 'lucide-react';
 import Link from 'next/link';
 
-import { CatalogItem, getListingTypeLabel } from '@/components/catalog/catalogHelpers';
+import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CatalogItemCard from '@/components/catalog/CatalogItemCard';
 import CatalogRatingModal from '@/components/catalog/CatalogRatingModal';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
 import CatalogPreviewModal from '@/components/catalog/CatalogPreviewModal';
-import CatalogSaleModal from '@/components/catalog/CatalogSaleModal';
 import CatalogModuleTabs from '@/components/catalog/CatalogModuleTabs';
 import PromoPostModal from '@/components/promotions/PromoPostModal';
 import { useToast } from '@/context/ToastContext';
@@ -33,14 +32,9 @@ export default function CatalogPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
-  const [saleItem, setSaleItem] = useState<CatalogItem | null>(null);
-  const [saleSubmitting, setSaleSubmitting] = useState(false);
-  const [saleError, setSaleError] = useState('');
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterListing, setFilterListing] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterColor, setFilterColor] = useState('');
   const [filterSize, setFilterSize] = useState('');
@@ -129,48 +123,22 @@ export default function CatalogPage() {
     setIsDeleteModalOpen(true);
   };
 
-  const openSale = (item: CatalogItem) => {
-    setSaleItem(item);
-    setSaleError('');
-    setIsSaleModalOpen(true);
-  };
-
-  const submitSale = async (payload: Record<string, unknown>) => {
-    if (!shop || !saleItem) return;
-    setSaleSubmitting(true);
-    setSaleError('');
-    try {
-      const res = await api.put(`/shops/${shop.id}/catalog/${saleItem.id}`, payload);
-      setItems(prev => prev.map(i => i.id === saleItem.id ? res.data.data : i));
-      toast.success(payload.sale_price ? 'Sale price updated.' : 'Sale removed.');
-      setIsSaleModalOpen(false);
-      setSaleItem(null);
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setSaleError(error.response?.data?.message || 'Failed to update sale price.');
-    } finally {
-      setSaleSubmitting(false);
-    }
-  };
-
   if (loading) {
     return <div className="text-[#A8A19A] py-12 text-center animate-pulse">Loading catalog...</div>;
   }
 
   const uniq = (arr: (string | undefined | null)[]) =>
     Array.from(new Set(arr.filter((v): v is string => !!v && v.trim() !== ''))).sort((a, b) => a.localeCompare(b));
-  const listingOptions = uniq(items.map(i => i.listing_type));
   const categoryOptions = uniq(items.map(i => i.garment_type));
   const colorOptions = uniq(items.map(i => i.color));
   const sizeOptions = uniq(items.flatMap(i => (Array.isArray(i.sizes) ? i.sizes : [])));
   const filteredItems = items.filter(i =>
     (!searchQuery || i.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) &&
-    (!filterListing || i.listing_type === filterListing) &&
     (!filterCategory || i.garment_type === filterCategory) &&
     (!filterColor || i.color === filterColor) &&
     (!filterSize || (Array.isArray(i.sizes) && i.sizes.includes(filterSize)))
   );
-  const hasActiveFilter = !!(searchQuery || filterListing || filterCategory || filterColor || filterSize);
+  const hasActiveFilter = !!(searchQuery || filterCategory || filterColor || filterSize);
   const filterSelectClass = 'px-3 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe';
 
   return (
@@ -229,10 +197,6 @@ export default function CatalogPage() {
               />
             </div>
             <span className="text-xs font-semibold text-[#827A73] uppercase tracking-wider">Filter</span>
-            <select value={filterListing} onChange={e => setFilterListing(e.target.value)} className={filterSelectClass}>
-              <option value="">All Types</option>
-              {listingOptions.map(o => <option key={o} value={o}>{getListingTypeLabel(o)}</option>)}
-            </select>
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className={filterSelectClass}>
               <option value="">All Categories</option>
               {categoryOptions.map(o => <option key={o} value={o}>{o}</option>)}
@@ -247,7 +211,7 @@ export default function CatalogPage() {
             </select>
             {hasActiveFilter && (
               <button
-                onClick={() => { setSearchQuery(''); setFilterListing(''); setFilterCategory(''); setFilterColor(''); setFilterSize(''); }}
+                onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterColor(''); setFilterSize(''); }}
                 className="text-xs font-semibold text-[#B26959] hover:underline"
               >
                 Clear filters
@@ -270,7 +234,6 @@ export default function CatalogPage() {
                   onView={handleView}
                   onOpenRating={openRating}
                   onOpenDelete={openDelete}
-                  onOpenSale={openSale}
                 />
               ))}
             </div>
@@ -307,18 +270,6 @@ export default function CatalogPage() {
           setPreviewItem(null);
         }}
         item={previewItem}
-      />
-
-      <CatalogSaleModal
-        isOpen={isSaleModalOpen}
-        onClose={() => {
-          setIsSaleModalOpen(false);
-          setSaleItem(null);
-        }}
-        item={saleItem}
-        onSubmit={submitSale}
-        isSubmitting={saleSubmitting}
-        error={saleError}
       />
 
       <PromoPostModal

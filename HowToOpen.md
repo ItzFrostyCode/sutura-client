@@ -1,64 +1,92 @@
 # How to Run SUTURA (Shop Owner System)
 
-SUTURA is two separate projects that run **at the same time**, each in its own terminal window:
+Two projects, two terminals, running **at the same time**:
 
-- **`sutura-server`** — the Laravel backend/API (runs on `http://127.0.0.1:8000`)
-- **`sutura-client`** — the Next.js frontend/dashboard, the actual app you see in the browser (runs on `http://localhost:3000`)
+- `sutura-server` — Laravel API → `http://127.0.0.1:8000`
+- `sutura-client` — Next.js dashboard → `http://localhost:3000`
 
-If the backend (Terminal 1) isn't running, the dashboard (Terminal 2) will look stuck loading or broken. **Always start the backend first, then the frontend.**
+**Start the backend first, then the frontend.**
 
-## 0) Clone both repos
+---
 
-Open a terminal and run:
+# 🪟 WINDOWS
 
-```bash
+### Requirements
+- PHP 8.3+, Composer, Node.js 20+
+- **XAMPP** (for MySQL) — download from [apachefriends.org](https://www.apachefriends.org) if you don't have it
+
+### 1. Clone
+```
 git clone https://github.com/ItzFrostyCode/sutura-server.git
 git clone https://github.com/ItzFrostyCode/sutura-client.git
 ```
 
-This creates two folders, `sutura-server/` and `sutura-client/`, side by side wherever you ran the commands (e.g. your Desktop, or a "Projects" folder). **Remember this location** — you'll need to `cd` into it in the next steps.
+### 2. Create the database
+Open **XAMPP Control Panel** → Start **MySQL** → click **Admin** (opens phpMyAdmin) → **SQL** tab → paste and run:
+```sql
+CREATE DATABASE sutura CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'sutura'@'localhost' IDENTIFIED BY 'sutura_local_dev';
+GRANT ALL PRIVILEGES ON sutura.* TO 'sutura'@'localhost';
+FLUSH PRIVILEGES;
+```
 
-## Requirements
+### 3. Backend setup (Terminal 1)
+`cd` into `sutura-server` using its full path, e.g.:
+```
+cd "C:\Users\yourname\Desktop\sutura-server"
+```
+Then:
+```
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan storage:link
+```
+`storage:link` needs **Developer Mode ON** (Settings → For Developers) or run the terminal **as Administrator** — otherwise it fails.
 
-Install these first if you don't have them:
+### 4. Start backend
+```
+php artisan serve
+```
+Leave this running.
 
-- **PHP 8.3+** (`php -v` to check)
-- **Composer** (`composer -V` to check)
-- **Node.js 20+** and **npm** (`node -v` to check)
-- **MySQL 8.4+** — matches the thesis's documented tech stack (production runs on
-  PlanetScale, a hosted MySQL). Install it locally with Homebrew:
-  ```bash
-  brew install mysql@8.4
-  brew services start mysql@8.4
-  ```
+### 5. Frontend (Terminal 2 — new window)
+`cd` into `sutura-client` using its full path, then:
+```
+npm install
+npm run dev
+```
+Leave this running. Open **http://localhost:3000**
+
+### If it won't start (stuck port)
+```
+netstat -ano | findstr :8000
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+```
+Then repeat steps 4–5.
 
 ---
 
-## TERMINAL 1 — Backend (`sutura-server`)
+# 🍎 macOS
 
-Open a terminal and **go to the exact folder** where you cloned `sutura-server`. Plain `cd sutura-server` only works if your terminal happens to already be sitting in the parent folder — if you get "No such file or directory," you're in the wrong place. Use the **full path** instead:
-
-```bash
-cd /full/path/to/sutura-server
+### Requirements
+- PHP 8.3+, Composer, Node.js 20+
+- **MySQL 8.4** via Homebrew:
+```
+brew install mysql@8.4
+brew services start mysql@8.4
 ```
 
-Replace `/full/path/to/sutura-server` with wherever you actually cloned it. For example, if you cloned it on your Desktop on a Mac, the real command looks like:
-
-```bash
-cd /Users/yourname/Desktop/sutura-server
+### 1. Clone
+```
+git clone https://github.com/ItzFrostyCode/sutura-server.git
+git clone https://github.com/ItzFrostyCode/sutura-client.git
 ```
 
-**Not sure of the exact path?** Open the `sutura-server` folder in Finder (Mac) or File Explorer (Windows), then:
-- **Mac**: right-click the folder → "Get Info" and copy the path shown, or drag the folder icon straight into the terminal window after typing `cd ` (a space after `cd`) — the terminal will auto-fill the full path for you.
-- **Windows**: click the address bar in File Explorer, copy the path, and use `cd` with that path in quotes.
-
-Once you're in the right folder, confirm it worked — run `ls` (Mac) and you should see files like `composer.json` and `artisan` listed. If you see those, you're in the right place.
-
-### One-time setup (only needed the first time)
-
-Create the local database:
-
-```bash
+### 2. Create the database
+```
 /opt/homebrew/opt/mysql@8.4/bin/mysql -u root -e "
 CREATE DATABASE sutura CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'sutura'@'localhost' IDENTIFIED BY 'sutura_local_dev';
@@ -67,55 +95,45 @@ FLUSH PRIVILEGES;
 "
 ```
 
-Then set up the app:
-
-```bash
+### 3. Backend setup (Terminal 1)
+`cd` into `sutura-server` using its full path, e.g.:
+```
+cd /Users/yourname/Desktop/sutura-server
+```
+Then:
+```
 composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
+php artisan storage:link
 ```
 
-`.env.example` already points at `DB_DATABASE=sutura`, `DB_USERNAME=sutura`, `DB_PASSWORD=sutura_local_dev` — matching the database you just created, so this should work without editing `.env` at all. If you later get a paid PlanetScale plan, just swap `DB_HOST`/`DB_USERNAME`/`DB_PASSWORD`/`DB_DATABASE` in `.env` for PlanetScale's connection string — nothing else about the app needs to change.
-
-`--seed` loads demo data: roles, a subscription plan, and a full sample shop (services, staff, jobs, appointments, catalog items, etc.). This is what makes sure **you and your groupmates see the same demo data**, as long as everyone runs this same command on a fresh database. It's also safe to re-run (`php artisan db:seed`) on top of existing data — it won't create duplicates.
-
-### Start the backend
-
-```bash
+### 4. Start backend
+```
 php artisan serve
 ```
+Leave this running.
 
-**Leave this terminal running** — do not close it or press Ctrl+C. It serves the API at `http://127.0.0.1:8000`. You should see a message like "Server running on [http://127.0.0.1:8000]".
-
----
-
-## TERMINAL 2 — Frontend (`sutura-client`)
-
-Open a **second, brand-new terminal window** (don't reuse Terminal 1 — it needs to keep running `php artisan serve`). Same as before, go to the exact folder where you cloned `sutura-client` using its full path:
-
-```bash
-cd /full/path/to/sutura-client
+### 5. Frontend (Terminal 2 — new window)
+`cd` into `sutura-client` using its full path, then:
 ```
-
-Confirm you're in the right place — `ls` should show `package.json` and a `src` folder.
-
-Then run:
-
-```bash
 npm install
 npm run dev
 ```
+Leave this running. Open **http://localhost:3000**
 
-**Leave this running too.** No `.env` file is needed here — it already points to `http://127.0.0.1:8000/api/v1` by default.
-
-Open **http://localhost:3000** in your browser — that's the actual app.
+### If it won't start (stuck port)
+```
+lsof -i :8000
+lsof -i :3000
+kill -9 <PID>
+```
+Then repeat steps 4–5.
 
 ---
 
-## Log in as the Shop Owner
-
-Go to `http://localhost:3000/login` and use:
+# Login
 
 | Role | Email | Password |
 |---|---|---|
@@ -123,77 +141,17 @@ Go to `http://localhost:3000/login` and use:
 | Staff | `staff@sutura.com` | `password` |
 | Admin | `admin@sutura.com` | `password` |
 
-For this thesis's scope, you only need the **Shop Owner** account — that's the dashboard we've been building (Jobs, Appointments, Catalog, Payments, Staff, Reports, etc.).
-
-## Everyday use after the first setup
-
-You don't need to repeat the one-time setup steps again — `brew services start mysql@8.4` keeps MySQL running permanently in the background, even after a restart. Each time you want to use the app, just open two terminals:
-
-```bash
-# Terminal 1 — full path to sutura-server
-cd /full/path/to/sutura-server && php artisan serve
-
-# Terminal 2 — full path to sutura-client
-cd /full/path/to/sutura-client && npm run dev
-```
+Use **Shop Owner** — that's the dashboard being built (Jobs, Appointments, Catalog, Payments, Staff, Reports).
 
 ---
 
-## Reset everything (stuck ports / "won't start" / weird errors)
+# Common Errors
 
-If `php artisan serve` or `npm run dev` refuses to start, or the browser shows a red error/blank page, the most common cause is a leftover server from a previous session still holding onto port `8000` (backend) or `3000` (frontend). Here's how to fully reset back to normal:
-
-**1. Find what's using the ports:**
-
-```bash
-lsof -i :8000
-lsof -i :3000
-```
-
-Each command prints a table if something is running on that port. Look at the `PID` column (a number, e.g. `41234`).
-
-**2. Kill it:**
-
-```bash
-kill -9 <PID>
-```
-
-Replace `<PID>` with the actual number you saw (e.g. `kill -9 41234`). Run this for every PID you found on both ports.
-
-**3. Confirm the ports are free:**
-
-```bash
-lsof -i :8000
-lsof -i :3000
-```
-
-Both commands should now print nothing.
-
-**4. Start fresh, in order:**
-
-```bash
-# Terminal 1
-cd /full/path/to/sutura-server && php artisan serve
-
-# Terminal 2 (after Terminal 1 says it's running)
-cd /full/path/to/sutura-client && npm run dev
-```
-
-If you still get a database error after this, also run `php artisan migrate:fresh --seed` in Terminal 1 (before `php artisan serve`) to reset the database to a clean state.
-
-## Why `QUEUE_CONNECTION=sync` in `.env.example`?
-
-Notifications (job status updates, new appointment/order alerts, etc.) are built as **queued** jobs in Laravel — normally that means they get written to a `jobs` table and only actually sent once a separate background process (`php artisan queue:work`) picks them up and runs them.
-
-If you set it to `QUEUE_CONNECTION=database` and never run that separate queue worker, notifications will just silently never fire — nothing crashes, they just quietly sit there forever, which looks like a bug ("bakit walang notification?") but isn't.
-
-`QUEUE_CONNECTION=sync` makes those jobs run **immediately**, in the same request, with no worker process needed. One less terminal to remember to keep open, and one less way for the demo to look broken when it isn't. For a class demo this is the simpler, safer default — `database` only matters if you actually need things to happen in the background without blocking the request (not something this project needs).
-
-## Troubleshooting
-
-- **Dashboard stuck loading / network errors**: make sure `php artisan serve` is still running in its terminal.
-- **"SQLSTATE[HY000] [2002] Connection refused" or similar on `migrate`**: MySQL isn't running. Run `brew services start mysql@8.4`.
-- **"SQLSTATE[HY000] [1045] Access denied for user 'sutura'@'localhost' (using password: NO)" on `migrate`**: your `.env`'s `DB_PASSWORD` is blank or wrong. It should be `sutura_local_dev` (matching the `CREATE USER` command from the one-time setup above).
-- **Login fails with "unauthorized" or accounts don't exist**: re-run `php artisan migrate --seed` (add `:fresh` — i.e. `php artisan migrate:fresh --seed` — if the database already has partial/broken data and you want a clean slate).
-- **Port already in use, or anything acting stuck/broken**: see "Reset everything" above.
-- **"npm run dev" errors about Node version**: update Node to 20 or newer.
+| Error | Fix |
+|---|---|
+| "Connection refused" on `migrate` | MySQL isn't running — start it (XAMPP Control Panel / `brew services start mysql@8.4`) |
+| "Access denied for user 'sutura'" | `.env`'s `DB_PASSWORD` must be `sutura_local_dev` |
+| Login fails / no accounts | Run `php artisan migrate:fresh --seed` |
+| Uploaded images show broken | Run `php artisan storage:link` |
+| "php"/"composer" not recognized (Windows) | Add PHP folder (e.g. `C:\xampp\php`) to your system PATH, reopen terminal |
+| Port already in use | See "If it won't start" above |

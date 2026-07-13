@@ -93,15 +93,13 @@ export default function CatalogForm({
   const [formData, setFormData] = useState<CatalogFormData>({
     name: '',
     price: '',
+    estimated_days: '',
     material: '',
     color: '',
     fabric_image_url: '',
     description: '',
     care_instructions: '',
     garment_type: '',
-    listing_type: 'made_to_order',
-    rental_price: '',
-    rental_deposit: '',
     sizes: [],
     external_gallery_url: '',
     is_active: true,
@@ -204,9 +202,11 @@ export default function CatalogForm({
     }
   };
 
-  const isRentable = formData.listing_type === 'for_rent' || formData.listing_type === 'rent_or_sale';
-  const isSaleOnly = formData.listing_type !== 'for_rent';
-  const saveDisabled = submitting || !formData.name || (!isSaleOnly ? false : !formData.price) || images.every(i => !i.url);
+  // Blocks Save while any image slot is still mid-upload — otherwise
+  // buildSavePayload's url.trim() !== '' filter silently drops that slot
+  // entirely (its url is still '' until the upload resolves), losing the
+  // image with no warning.
+  const saveDisabled = submitting || !formData.name || !formData.price || images.every(i => !i.url) || images.some(i => i.uploading);
 
   return (
     <form onSubmit={handleFormSubmit} className="bg-[#FAF6F3] min-h-screen text-[#2D2A26] pb-16 font-sans selection:bg-[#EBE6E0]">
@@ -267,23 +267,21 @@ export default function CatalogForm({
                   />
                 </div>
 
-                {/* Sale Price — hidden when listing type is 'For Rent Only' */}
-                {formData.listing_type !== 'for_rent' && (
-                  <div>
-                    <label htmlFor="catalog-price" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
-                      Sale Price (PHP) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      id="catalog-price"
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      placeholder="e.g. 24999"
-                      className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                    />
-                  </div>
-                )}
+                <div>
+                  <label htmlFor="catalog-price" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
+                    Price (PHP) <span className="text-rose-500">*</span>
+                    <span className="text-[#A8A19A] normal-case font-normal"> — base/single-piece price; bulk pricing is arranged per job order</span>
+                  </label>
+                  <input
+                    id="catalog-price"
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    placeholder="e.g. 24999"
+                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -298,7 +296,9 @@ export default function CatalogForm({
                     placeholder="e.g. Cocoon Silk, Piña"
                     className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
-                  {/* Fabric Texture Image Upload */}
+                  {/* Fabric Texture Image Upload — a real button, styled distinctly
+                      from the main Images panel on the right, so it isn't mistaken
+                      for that gallery's own upload slots. */}
                   <div className="mt-2">
                     {formData.fabric_image_url ? (
                       <div className="relative inline-flex items-center gap-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-xs">
@@ -314,7 +314,12 @@ export default function CatalogForm({
                         </button>
                       </div>
                     ) : (
-                      <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-[#827A73] hover:text-taupe transition-colors">
+                      <button
+                        type="button"
+                        disabled={fabricImageUploading}
+                        onClick={() => fabricImageInputRef.current?.click()}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#D5CEC8] bg-[#FAF6F3] text-xs font-semibold text-[#524A44] hover:bg-[#F0EAE3] hover:border-taupe transition-colors disabled:opacity-50 cursor-pointer"
+                      >
                         {fabricImageUploading ? (
                           <Loader2 size={14} className="animate-spin text-taupe" />
                         ) : (
@@ -329,7 +334,7 @@ export default function CatalogForm({
                           disabled={fabricImageUploading}
                           onChange={e => handleFabricImageUpload(e.target.files?.[0])}
                         />
-                      </label>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -361,24 +366,21 @@ export default function CatalogForm({
                 </div>
               </div>
 
-              {/* Listing Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="catalog-listing" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">Listing Type</label>
-                  <select
-                    id="catalog-listing"
-                    name="listing_type"
-                    value={formData.listing_type}
-                    onChange={e => setFormData({ ...formData, listing_type: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] focus:outline-none focus:border-taupe text-sm"
-                  >
-                    <option value="made_to_order">Made To Order (Custom Sizing)</option>
-                    <option value="ready_to_wear">Ready-To-Wear (In-Stock Retail)</option>
-                    <option value="for_rent">For Rent Only</option>
-                    <option value="for_sale">For Sale Only</option>
-                    <option value="rent_or_sale">For Rent and Sale</option>
-                    <option value="used_liquidated">Used / Liquidated (Pre-loved)</option>
-                  </select>
+                  <label htmlFor="catalog-estimated-days" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
+                    Estimated Days to Complete
+                  </label>
+                  <input
+                    id="catalog-estimated-days"
+                    type="number"
+                    min="1"
+                    name="estimated_days"
+                    value={formData.estimated_days}
+                    onChange={handleChange}
+                    placeholder="e.g. 7"
+                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                  />
                 </div>
 
                 <div>
@@ -422,48 +424,14 @@ export default function CatalogForm({
                   <span className={`w-5 h-5 rounded-full border border-[#EBE6E0] bg-[#FAF6F3] flex items-center justify-center transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>
                     <ChevronDown size={12} />
                   </span>
-                  {showMoreDetails ? 'Hide optional details' : 'Add rental pricing, sizes & availability →'}
+                  {showMoreDetails ? 'Hide optional details' : 'Add available sizes →'}
                 </button>
 
                 {showMoreDetails && (
-                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="mt-5 grid grid-cols-1 gap-5">
                     <div>
-                      <label htmlFor="catalog-rental-price" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
-                        Rental Price (PHP){isRentable ? <span className="text-rose-500"> *</span> : <span className="text-[#A8A19A] normal-case"> — for rentals</span>}
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] text-sm font-medium">₱</span>
-                        <input
-                          id="catalog-rental-price"
-                          type="number"
-                          name="rental_price"
-                          value={formData.rental_price}
-                          onChange={handleChange}
-                          placeholder="e.g. 1500"
-                          className="w-full pl-7 pr-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="catalog-rental-deposit" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">Rental Deposit (PHP)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] text-sm font-medium">₱</span>
-                        <input
-                          id="catalog-rental-deposit"
-                          type="number"
-                          name="rental_deposit"
-                          value={formData.rental_deposit}
-                          onChange={handleChange}
-                          placeholder="e.g. 3000"
-                          className="w-full pl-7 pr-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2">
                       <label htmlFor="catalog-sizes" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
-                        Available Sizes <span className="text-[#A8A19A] normal-case">— customers pick one of these when booking; leave blank for made-to-order</span>
+                        Available Sizes <span className="text-[#A8A19A] normal-case">— reference range for this design; leave blank if fully custom-measured</span>
                       </label>
                       {formData.sizes.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-2">
@@ -669,15 +637,13 @@ export default function CatalogForm({
                     </button>
 
                     {img.url ? (
-                      <div className="relative aspect-square sm:aspect-video bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg overflow-hidden group/img">
+                      <div className="relative aspect-3/4 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg overflow-hidden group/img">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt="Uploaded" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => {
-                            const newI = [...images];
-                            newI[idx].url = '';
-                            setImages(newI);
+                            setImages(prev => prev.map(im => (im.id === img.id ? { ...im, url: '' } : im)));
                           }}
                           className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-white text-sm font-medium gap-2"
                         >
@@ -685,7 +651,7 @@ export default function CatalogForm({
                         </button>
                       </div>
                     ) : (
-                      <label className="relative flex flex-col items-center justify-center aspect-square sm:aspect-video border-2 border-dashed border-[#D5CEC8] rounded-lg bg-[#FAF6F3] hover:bg-[#F0EAE3] hover:border-[#9A8073] transition-colors cursor-pointer group/upload">
+                      <label className="relative flex flex-col items-center justify-center aspect-3/4 border-2 border-dashed border-[#D5CEC8] rounded-lg bg-[#FAF6F3] hover:bg-[#F0EAE3] hover:border-[#9A8073] transition-colors cursor-pointer group/upload">
                         {img.uploading ? (
                           <div className="flex flex-col items-center gap-2 text-[#9A8073]">
                             <Loader2 className="w-6 h-6 animate-spin" />
@@ -711,8 +677,7 @@ export default function CatalogForm({
                               uploadCatalogImage({
                                 file,
                                 shopId: shop.id,
-                                index: idx,
-                                images,
+                                imageId: img.id,
                                 setImages,
                               });
                             }
@@ -721,28 +686,30 @@ export default function CatalogForm({
                       </label>
                     )}
 
-                    <div className="flex items-center gap-3 mt-3">
+                    <div className="flex items-end gap-3 mt-3">
                       <div className="flex-1">
+                        <label htmlFor={`img-angle-${img.id}`} className="block text-[11px] font-semibold text-[#827A73] uppercase tracking-wider mb-1">
+                          Photo Label <span className="text-[#A8A19A] normal-case font-normal">— shown as a caption on this photo (e.g. Front, Back, Detail)</span>
+                        </label>
                         <input
+                          id={`img-angle-${img.id}`}
                           type="text"
                           value={img.angle}
                           onChange={e => {
-                            const newI = [...images];
-                            newI[idx].angle = e.target.value;
-                            setImages(newI);
+                            const newAngle = e.target.value;
+                            setImages(prev => prev.map(im => (im.id === img.id ? { ...im, angle: newAngle } : im)));
                           }}
-                          placeholder="Variation (e.g. Front, Detail)"
+                          placeholder="e.g. Front, Back, Detail"
                           className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-md text-[#2D2A26] text-sm focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073] transition-shadow"
                         />
                       </div>
-                      <label className={`flex items-center gap-2 text-sm px-3 py-2 rounded-md border cursor-pointer transition-colors ${img.is_primary ? 'bg-[#9A8073]/10 border-[#9A8073] text-[#9A8073] font-medium' : 'bg-white border-[#EBE6E0] text-[#827A73] hover:bg-[#FAF6F3]'}`}>
+                      <label className={`flex items-center gap-2 text-sm px-3 py-2 rounded-md border cursor-pointer transition-colors shrink-0 ${img.is_primary ? 'bg-[#9A8073]/10 border-[#9A8073] text-[#9A8073] font-medium' : 'bg-white border-[#EBE6E0] text-[#827A73] hover:bg-[#FAF6F3]'}`}>
                         <input
                           type="radio"
                           name="is_primary"
                           checked={img.is_primary}
                           onChange={() => {
-                            const newI = images.map((im, i) => ({ ...im, is_primary: i === idx }));
-                            setImages(newI);
+                            setImages(prev => prev.map(im => ({ ...im, is_primary: im.id === img.id })));
                           }}
                           className="accent-[#9A8073] w-4 h-4"
                         />

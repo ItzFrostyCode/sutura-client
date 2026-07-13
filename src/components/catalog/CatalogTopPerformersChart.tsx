@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Trophy } from 'lucide-react';
-import { CatalogItem, getListingTypeLabel } from './catalogHelpers';
+import { CatalogItem } from './catalogHelpers';
 
 interface CatalogTopPerformersChartProps {
   readonly items: CatalogItem[];
@@ -117,7 +117,7 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
             <thead className="bg-[#FAF6F3] text-xs uppercase text-[#A8A19A] border-y border-[#EBE6E0] sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Item</th>
-                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Type</th>
+                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Est. Days</th>
                 <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Views</th>
                 <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Orders</th>
                 <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Revenue</th>
@@ -127,7 +127,7 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
               {allRankedItems.map(item => (
                 <tr key={item.id} className="hover:bg-[#F0EAE3]/20 transition-colors">
                   <td className="px-6 py-3 font-medium text-[#2D2A26] max-w-[220px] truncate">{item.name}</td>
-                  <td className="px-6 py-3 text-[#827A73]">{getListingTypeLabel(item.listing_type)}</td>
+                  <td className="px-6 py-3 text-[#827A73]">{item.estimated_days ?? 7}</td>
                   <td className="px-6 py-3">{item.views_count}</td>
                   <td className="px-6 py-3">{item.order_count || 0}</td>
                   <td className="px-6 py-3">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>

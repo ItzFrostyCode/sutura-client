@@ -28,6 +28,16 @@ export const emptyForm = () => ({
   notes: '',
 });
 
+// Custom fields are stored verbatim (e.g. "Sleeve to Wrist"), but legacy
+// profiles still use short-code keys (e.g. "sleeve_length") from before
+// fields were freely nameable — look those up for a nicer label, otherwise
+// just title-case whatever key is actually there.
+export function humanizeMetricKey(key: string): string {
+  const known = METRIC_FIELDS.find(f => f.key === key);
+  if (known) return known.label;
+  return key.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export function MetricPill({ label, value }: { readonly label: string; readonly value?: string }) {
   if (!value) return null;
   return (

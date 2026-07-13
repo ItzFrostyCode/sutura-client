@@ -11,8 +11,8 @@ const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
 /**
- * Printable receipt for a Ready-to-Wear sale or a rental transaction.
- * Only #receipt-print-area is sent to the printer (see globals.css @media print).
+ * Printable receipt for a walk-in Design Catalog sale. Only #receipt-print-area
+ * is sent to the printer (see globals.css @media print).
  */
 export default function OrderReceiptModal({
   order,
@@ -22,9 +22,7 @@ export default function OrderReceiptModal({
   readonly onClose: () => void;
 }) {
   const { shop } = useAuthStore();
-  const isRental = !!order.rental_start_date || order.catalog_item?.listing_type === 'for_rent';
   const total = Number(order.total_amount ?? 0);
-  const deposit = Number(order.security_deposit_amount ?? 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -37,16 +35,13 @@ export default function OrderReceiptModal({
                 {shop.address}{shop.city ? `, ${shop.city}` : ''}
               </p>
             )}
-            <p className="mt-2 text-sm font-semibold uppercase tracking-widest">
-              {isRental ? 'Rental Receipt' : 'Official Receipt'}
-            </p>
+            <p className="mt-2 text-sm font-semibold uppercase tracking-widest">Official Receipt</p>
           </div>
 
           <div className="text-sm space-y-1.5">
             <div className="flex justify-between"><span className="text-[#827A73]">Receipt No.</span><span className="font-semibold">RCPT-{String(order.id).padStart(5, '0')}</span></div>
             <div className="flex justify-between"><span className="text-[#827A73]">Date</span><span>{fmtDate(order.created_at)}</span></div>
             <div className="flex justify-between"><span className="text-[#827A73]">Customer</span><span className="font-medium">{order.customer?.name ?? 'Walk-in Guest'}</span></div>
-            <div className="flex justify-between"><span className="text-[#827A73]">Transaction</span><span className="uppercase font-semibold">{isRental ? 'Rent' : 'Sale'}</span></div>
           </div>
 
           <div className="border-t border-dashed border-[#D1C7BD] my-4" />
@@ -56,10 +51,8 @@ export default function OrderReceiptModal({
               <span>{order.catalog_item?.name ?? 'Item'}</span>
               <span>{peso(total)}</span>
             </div>
-            {isRental && order.rental_start_date && (
-              <p className="text-xs text-[#827A73] mt-1">
-                Rental period: {fmtDate(order.rental_start_date)} &rarr; {fmtDate(order.rental_end_date)}
-              </p>
+            {order.discount_amount && Number(order.discount_amount) > 0 && (
+              <p className="text-xs text-rose-600 mt-1">Discount applied: −{peso(order.discount_amount)}</p>
             )}
           </div>
 
@@ -67,18 +60,12 @@ export default function OrderReceiptModal({
 
           <div className="text-sm space-y-1.5">
             <div className="flex justify-between"><span className="text-[#827A73]">Total</span><span className="font-bold">{peso(total)}</span></div>
-            {isRental && deposit > 0 && (
-              <div className="flex justify-between"><span className="text-[#827A73]">Refundable Deposit</span><span>{peso(deposit)}</span></div>
-            )}
             <div className="flex justify-between"><span className="text-[#827A73]">Payment Status</span><span className="capitalize font-medium">{order.payment_status}</span></div>
-            <div className="flex justify-between"><span className="text-[#827A73]">Fulfillment</span><span className="capitalize">{order.fulfillment_type || 'pickup'}</span></div>
-            {order.delivery_address && (
-              <div className="flex justify-between gap-4"><span className="text-[#827A73]">Deliver To</span><span className="text-right">{order.delivery_address}</span></div>
-            )}
+            <div className="flex justify-between"><span className="text-[#827A73]">Fulfillment</span><span>Store Pickup</span></div>
           </div>
 
           <p className="text-center text-xs text-[#827A73] mt-6 border-t border-dashed border-[#D1C7BD] pt-4">
-            Thank you for your purchase!{isRental ? ' Please return the item on time to reclaim your deposit.' : ''}
+            Thank you for your purchase!
           </p>
         </div>
 

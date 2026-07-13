@@ -32,7 +32,7 @@ export interface Job {
   courier_tracking_number?: string;
   shipping_address?: string;
   customer?: { name: string; id: number; suki_tag?: string | null };
-  service?: { name: string; id: number };
+  service?: { name: string; id: number; service_type?: string | null };
   assigned_staff?: { name: string; id: number };
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
   custom_order_data?: Record<string, unknown> | null;
@@ -47,6 +47,8 @@ export interface Job {
   reference_link?: string | null;
   material_source?: 'shop_supplied' | 'customer_supplied' | null;
   rejection_reason?: string | null;
+  discount_amount?: number | string | null;
+  customer_job_count?: number;
 }
 
 export interface Staff {

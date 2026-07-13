@@ -5,22 +5,21 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { Search, ShoppingBag, Truck, Package, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Search, ShoppingBag, Package, CheckCircle2, Clock, XCircle, Plus } from 'lucide-react';
 
 import { CatalogOrder } from '@/components/orders/orderHelpers';
 import OrderListItem from '@/components/orders/OrderListItem';
+import NewWalkInOrderModal from '@/components/orders/NewWalkInOrderModal';
 import CatalogModuleTabs from '@/components/catalog/CatalogModuleTabs';
 
-type TypeFilter = 'walkin' | 'online';
-type StatusFilter = 'all' | 'pending' | 'out_for_delivery' | 'ready' | 'completed' | 'cancelled';
+type StatusFilter = 'all' | 'pending' | 'ready' | 'completed' | 'cancelled';
 
 const STATUS_TABS: { id: StatusFilter; label: string; icon: React.ReactNode }[] = [
-  { id: 'all',             label: 'All',         icon: <ShoppingBag size={14} /> },
-  { id: 'pending',         label: 'Pending',     icon: <Clock size={14} /> },
-  { id: 'out_for_delivery',label: 'Out for Delivery', icon: <Truck size={14} /> },
-  { id: 'ready',           label: 'Ready',       icon: <Package size={14} /> },
-  { id: 'completed',       label: 'Completed',   icon: <CheckCircle2 size={14} /> },
-  { id: 'cancelled',       label: 'Cancelled',   icon: <XCircle size={14} /> },
+  { id: 'all',       label: 'All',       icon: <ShoppingBag size={14} /> },
+  { id: 'pending',   label: 'Pending',   icon: <Clock size={14} /> },
+  { id: 'ready',     label: 'Ready',     icon: <Package size={14} /> },
+  { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={14} /> },
+  { id: 'cancelled', label: 'Cancelled', icon: <XCircle size={14} /> },
 ];
 
 function OrdersPageContent() {
@@ -30,11 +29,11 @@ function OrdersPageContent() {
   const highlightId = searchParams.get('order');
   const [orders, setOrders] = useState<CatalogOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeTab, setTypeTab] = useState<TypeFilter>('online');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [updating, setUpdating] = useState<number | null>(null);
   const [jumpedToHighlight, setJumpedToHighlight] = useState(false);
+  const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
 
   const fetchOrders = useCallback(() => {
     if (!shop) return;
@@ -61,13 +60,12 @@ function OrdersPageContent() {
   }, [shop, user, fetchOrders]);
 
   // Deep-link support: ?order=<id> from Collect Payments' Catalog Orders tab
-  // jumps straight to that order — switching to its type tab, clearing any
-  // filter that would hide it, then scrolling it into view.
+  // jumps straight to that order — clearing any filter that would hide it,
+  // then scrolling it into view.
   useEffect(() => {
     if (jumpedToHighlight || loading || !highlightId || orders.length === 0) return;
     const target = orders.find(o => String(o.id) === highlightId);
     if (!target) return;
-    setTypeTab(target.type === 'walkin' ? 'walkin' : 'online');
     setStatusFilter('all');
     setSearch('');
     setJumpedToHighlight(true);
@@ -76,11 +74,11 @@ function OrdersPageContent() {
     }, 150);
   }, [jumpedToHighlight, loading, highlightId, orders]);
 
-  const updateStatus = async (orderId: number, newStatus: string, extra: Record<string, string | number | boolean> = {}) => {
+  const updateStatus = async (orderId: number, newStatus: string) => {
     if (!shop) return;
     setUpdating(orderId);
     try {
-      await api.put(`/shops/${shop.id}/catalog-orders/${orderId}`, { status: newStatus, ...extra });
+      await api.put(`/shops/${shop.id}/catalog-orders/${orderId}`, { status: newStatus });
       toast.success(`Order status updated to "${newStatus.replaceAll('_', ' ')}"`);
       fetchOrders();
     } catch (err: unknown) {
@@ -91,9 +89,20 @@ function OrdersPageContent() {
     }
   };
 
+  const applyDiscount = async (orderId: number, amount: number, reason: string) => {
+    if (!shop) return;
+    try {
+      await api.post(`/shops/${shop.id}/catalog-orders/${orderId}/discount`, { amount, reason: reason || null });
+      toast.success('Discount applied successfully.');
+      fetchOrders();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to apply discount.');
+    }
+  };
+
   // Filter logic
-  const byType   = orders.filter(o => o.type === typeTab);
-  const byStatus = statusFilter === 'all' ? byType : byType.filter(o => o.status === statusFilter);
+  const byStatus = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
   const filtered = search
     ? byStatus.filter(o =>
         (o.catalog_item?.name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -103,15 +112,14 @@ function OrdersPageContent() {
 
   // Status counts for badges
   const countFor = (s: StatusFilter) =>
-    s === 'all' ? byType.length : byType.filter(o => o.status === s).length;
+    s === 'all' ? orders.length : orders.filter(o => o.status === s).length;
 
   let noOrdersMessage = '';
   if (search) {
     noOrdersMessage = `No results for "${search}"`;
   } else {
-    const orderTypeLabel = typeTab === 'online' ? 'delivery' : 'walk-in';
     const statusLabel = statusFilter === 'all' ? '' : `with status "${statusFilter}" `;
-    noOrdersMessage = `No ${orderTypeLabel} orders ${statusLabel}yet.`;
+    noOrdersMessage = `No walk-in orders ${statusLabel}yet.`;
   }
 
   if (loading) {
@@ -128,52 +136,30 @@ function OrdersPageContent() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Ready-to-Wear Orders</h1>
+          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Walk-in Orders</h1>
           <p className="text-sm text-[#827A73] mt-1">
-            Manage ready-made catalog purchases — online deliveries and walk-in pickups.
+            Quick in-store sales off the Design Catalog — store pickup only.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[#A8A19A]">
-          <ShoppingBag size={16} />
-          <span>{orders.length} total orders</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-[#A8A19A]">
+            <ShoppingBag size={16} />
+            <span>{orders.length} total orders</span>
+          </div>
+          <button
+            onClick={() => setIsNewOrderModalOpen(true)}
+            className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+          >
+            <Plus size={16} /> New Walk-in Order
+          </button>
         </div>
       </div>
 
       {/* Main card */}
       <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-        {/* Type tabs (online / walk-in) */}
-        <div className="flex items-center border-b border-[#EBE6E0] bg-[#FAF6F3]">
-          <button
-            onClick={() => { setTypeTab('online'); setStatusFilter('all'); }}
-            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              typeTab === 'online'
-                ? 'border-taupe text-taupe bg-white'
-                : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
-            }`}
-          >
-            <Truck size={15} />
-            Online Deliveries
-            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-blue-50 text-blue-600">
-              {orders.filter(o => o.type === 'online').length}
-            </span>
-          </button>
-          <button
-            onClick={() => { setTypeTab('walkin'); setStatusFilter('all'); }}
-            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              typeTab === 'walkin'
-                ? 'border-taupe text-taupe bg-white'
-                : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
-            }`}
-          >
-            <ShoppingBag size={15} />
-            Walk-in Pickups
-            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-[#F0EAE3] text-[#827A73]">
-              {orders.filter(o => o.type === 'walkin').length}
-            </span>
-          </button>
-
+        <div className="flex items-center border-b border-[#EBE6E0] bg-[#FAF6F3] px-5 py-3">
           {/* Search */}
-          <div className="ml-auto pr-4">
+          <div className="ml-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={15} />
               <input
@@ -229,9 +215,9 @@ function OrdersPageContent() {
                 <OrderListItem
                   key={order.id}
                   order={order}
-                  activeTab={typeTab}
                   updating={updating}
                   onUpdateStatus={updateStatus}
+                  onApplyDiscount={applyDiscount}
                   highlighted={highlightId === String(order.id)}
                 />
               ))}
@@ -239,6 +225,12 @@ function OrdersPageContent() {
           )}
         </div>
       </div>
+
+      <NewWalkInOrderModal
+        isOpen={isNewOrderModalOpen}
+        onClose={() => setIsNewOrderModalOpen(false)}
+        onCreated={fetchOrders}
+      />
     </div>
   );
 }

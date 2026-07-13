@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import {
-  Appointment, ServiceData, CustomerData, BranchData, StaffData, JobOrderData,
+  Appointment, ServiceData, CustomerData, BranchData, StaffData,
   AppointmentStatus, AppointmentType, getErrorMessage
 } from './appointmentHelpers';
 
@@ -52,7 +52,6 @@ export function useAppointments() {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [branches,  setBranches]  = useState<BranchData[]>([]);
   const [staff,     setStaff]     = useState<StaffData[]>([]);
-  const [jobOrders, setJobOrders] = useState<JobOrderData[]>([]);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -86,7 +85,6 @@ export function useAppointments() {
       api.get(`/shops/${shop.id}/customers`).then(r => setCustomers(r.data.data)).catch(() => {});
       api.get(`/shops/${shop.id}/branches`).then(r => setBranches(r.data.data)).catch(() => {});
       api.get(`/shops/${shop.id}/staff`).then(r => setStaff(r.data.data)).catch(() => {});
-      api.get(`/shops/${shop.id}/jobs`).then(r => setJobOrders(r.data.data.data || r.data.data)).catch(() => {});
     } else if (user?.id && !shop?.id) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
@@ -145,6 +143,17 @@ export function useAppointments() {
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  // Quick "Add New Customer" from inside the Schedule Appointment modal —
+  // keeps the owner from having to abandon the appointment they're mid-way
+  // through creating just to go register a first-time walk-in customer.
+  const handleCreateCustomer = async (payload: Record<string, string | null>): Promise<CustomerData> => {
+    if (!shop) throw new Error('No shop selected.');
+    const res = await api.post(`/shops/${shop.id}/customers`, payload);
+    const newCustomer = res.data.data as CustomerData;
+    setCustomers(prev => [...prev, newCustomer]);
+    return newCustomer;
   };
 
   // Submit appointment creation or edit
@@ -310,12 +319,12 @@ export function useAppointments() {
     customers,
     branches,
     staff,
-    jobOrders,
     todayStr,
     minTimeFor,
     isOwnerOrManager,
     handleConfirmReview,
     handleRejectReview,
+    handleCreateCustomer,
     updateStatus,
     handleCreateSubmit,
     handleRescheduleSubmit,

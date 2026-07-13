@@ -38,8 +38,6 @@ export const STATUS_COLORS: Record<string, string> = {
   sewing:            '#7A8B76',
   fitting:           '#D4B896',
   ready_for_pickup:  '#4A7C59',
-  packed:            '#6B7CA6',
-  handed_to_courier: '#5B9AA6',
   completed:         '#2D6A4F',
   cancelled:         '#B26959',
 };
@@ -50,8 +48,6 @@ export const STATUS_LABELS: Record<string, string> = {
   sewing:            'Sewing',
   fitting:           'Fitting',
   ready_for_pickup:  'Ready',
-  packed:            'Packed',
-  handed_to_courier: 'Handed Over',
   completed:         'Completed',
   cancelled:         'Cancelled',
 };

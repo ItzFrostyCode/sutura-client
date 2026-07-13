@@ -3,9 +3,9 @@
 import { useEffect, useState, FormEvent, Suspense, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
-import { ArrowLeft, ArrowRight, CheckCircle2, Calendar as CalendarIcon, Clock, MessageSquare, Ruler, Shirt, Scissors, Package, AlertCircle, MapPin, Users, Upload, X, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, MessageSquare, Ruler, Shirt, Scissors, Package, AlertCircle, MapPin, Upload, X, Link as LinkIcon } from 'lucide-react';
 import Image from 'next/image';
-import InteractiveCalendar from './InteractiveCalendar';
+import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
 
 interface Branch {
   id: number;
@@ -41,19 +41,6 @@ interface ShopSettings {
   }[];
 }
 
-interface CatalogItemImage {
-  id: number;
-  image_url: string;
-}
-
-interface CatalogItem {
-  id: number;
-  name: string;
-  price: string | number;
-  listing_type: string;
-  images: CatalogItemImage[];
-}
-
 interface PackageInfo {
   id: number;
   name: string;
@@ -61,36 +48,15 @@ interface PackageInfo {
   services: { id: number; name: string; base_price: string | null }[];
 }
 
-// Mirrors the catalog item page's own getButtonText() mapping — a ready-to-wear
-// or bulk item never actually needs a tailoring "fitting," so the label shown
-// here (and the note logged for the shop) should match what got the customer here.
-const INTENT_LABELS: Record<string, string> = {
-  for_rent: 'Rental Inquiry',
-  for_sale: 'Purchase Inquiry',
-  used_liquidated: 'Purchase Inquiry',
-  rent_or_sale: 'Rental/Purchase Inquiry',
-  ready_to_wear: 'Reservation Inquiry',
-  bulk_order: 'Bulk Order Inquiry',
-  made_to_order: 'Fitting Request',
-};
-
-const INTENT_TYPE_LABELS: Record<string, string> = {
-  for_rent: 'Rent',
-  for_sale: 'Purchase',
-  used_liquidated: 'Purchase',
-  rent_or_sale: 'Rent/Purchase',
-  ready_to_wear: 'Reservation',
-  bulk_order: 'Bulk Order',
-  made_to_order: 'Fitting',
-};
-
 function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
   const { shop_id: shopId } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const itemId = searchParams.get('item_id');
-  const intent = searchParams.get('intent');
-  const selectedSize = searchParams.get('selected_size');
+  // Design Reference — a catalog item the customer is inquiring about, passed
+  // through as plain inspiration context (name/size), not something ordered
+  // directly. The shop owner creates the actual Job Order after consultation.
+  const refName = searchParams.get('ref');
+  const refSize = searchParams.get('ref_size');
   const branchIdParam = searchParams.get('branch_id');
   const serviceIdParam = searchParams.get('service_id');
   const packageIdParam = searchParams.get('package_id');
@@ -98,7 +64,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
-  const [catalogItem, setCatalogItem] = useState<CatalogItem | null>(null);
   const [packageInfo, setPackageInfo] = useState<PackageInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -120,43 +85,27 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
-  // New Catalog Order States
-  const [fulfillmentType, setFulfillmentType] = useState<'pickup' | 'shipping' | 'delivery'>('pickup');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [rentalEndDate, setRentalEndDate] = useState('');
-
   // Bulk/Custom Order — reference photos + an optional link (Drive/YouTube)
   // instead of native video upload, which would be far costlier to host.
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [referenceLink, setReferenceLink] = useState('');
   const [uploadingReference, setUploadingReference] = useState(false);
 
-  // Coupon — only meaningful for a catalog item purchase/rental, since that's
-  // the only booking type with a real, immediate amount to discount.
-  const [couponCode, setCouponCode] = useState('');
-  const [couponResult, setCouponResult] = useState<{ code: string; discount_amount: number; new_total: number } | null>(null);
-  const [couponError, setCouponError] = useState('');
-  const [couponValidating, setCouponValidating] = useState(false);
+  // Anonymized existing appointment slots, for the availability calendar —
+  // fetched here (not inside InteractiveCalendar) since that's now a shared
+  // UI widget reused by the owner's dashboard too, which fetches its own
+  // (non-anonymized) appointment list instead.
+  const [calendarAppointments, setCalendarAppointments] = useState<{ scheduled_at: string; duration_minutes: number; shop_branch_id: number | null }[]>([]);
+  const [loadingAppts, setLoadingAppts] = useState(false);
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim() || !catalogItem) return;
-    setCouponValidating(true);
-    setCouponError('');
-    setCouponResult(null);
-    try {
-      const res = await api.post(`/catalog/${shopId}/coupons/validate`, {
-        code: couponCode.trim(),
-        context: 'catalog',
-        amount: Number(catalogItem.price),
-      });
-      setCouponResult(res.data.data);
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setCouponError(error.response?.data?.message || 'Invalid coupon code.');
-    } finally {
-      setCouponValidating(false);
-    }
-  };
+  useEffect(() => {
+    if (!shopId) return;
+    setLoadingAppts(true);
+    api.get(`/catalog/${shopId}/appointments`)
+      .then(res => setCalendarAppointments(res.data.data || []))
+      .catch(err => console.error('Failed to fetch appointments:', err))
+      .finally(() => setLoadingAppts(false));
+  }, [shopId]);
 
   const getSpecialHoursForDate = (dateStr: string) => {
     if (!shopSettings?.special_hours) return null;
@@ -181,6 +130,10 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     } catch (err) {
       console.error('Failed to upload receipt image:', err);
       alert('Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).');
+      // Reset so the input doesn't look "filled" from a failed upload —
+      // otherwise the browser still shows a selected filename even though
+      // paymentReceiptUrl was never actually set.
+      e.target.value = '';
     } finally {
       setUploadingReceipt(false);
     }
@@ -226,7 +179,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     { value: 'fitting',     label: 'Fitting',       icon: <Shirt size={18} />,         hint: 'Try on your garment for fitting' },
     { value: 'alteration',  label: 'Alteration',    icon: <Scissors size={18} />,      hint: 'Adjust an existing garment' },
     { value: 'pickup',      label: 'Pickup',         icon: <Package size={18} />,       hint: 'Collect your finished order at the shop' },
-    { value: 'bulk_custom', label: 'Bulk/Custom Order', icon: <Users size={18} />,      hint: 'Team jerseys, uniforms, org orders — attach a design reference' },
   ];
 
   useEffect(() => {
@@ -256,17 +208,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         setLoading(false);
       });
 
-    // Fetch catalog item details if provided in query params
-    if (itemId) {
-      api.get(`/catalog/${shopId}/${itemId}`)
-        .then(res => {
-          setCatalogItem(res.data.data);
-        })
-        .catch(err => {
-          console.error('Failed to fetch catalog item details:', err);
-        });
-    }
-
     // Fetch package details if provided in query params — packages aren't a
     // single-service booking, so this just shows a summary card and tags the
     // inquiry notes rather than trying to select a service_id from it.
@@ -280,21 +221,18 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
           console.error('Failed to fetch package details:', err);
         });
     }
-  }, [shopId, itemId, branchIdParam, serviceIdParam, packageIdParam]);
+  }, [shopId, branchIdParam, serviceIdParam, packageIdParam]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
-    
-    // Combine date and time — rentals are a pickup-date reservation, not a
-    // timed appointment slot, so the time picker is hidden and never set for them.
+
     const scheduled_at = `${date}T${time || '12:00'}:00`;
 
-    // Compile remarks and catalog item / package context
+    // Compile remarks and catalog reference / package context
     let notesPayload = '';
-    if (catalogItem) {
-      const typeLabel = (intent && INTENT_TYPE_LABELS[intent]) || 'Fitting';
-      notesPayload += `[${typeLabel} Inquiry: ${catalogItem.name} (ID: ${catalogItem.id})]\n`;
+    if (refName) {
+      notesPayload += `[Design Reference: ${refName}${refSize ? ` — Size ${refSize}` : ''}]\n`;
     }
     if (packageInfo) {
       notesPayload += `[Package Inquiry: ${packageInfo.name} — includes ${packageInfo.services.map(s => s.name).join(', ')}]\n`;
@@ -311,8 +249,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         appointment_type: appointmentType,
         scheduled_at,
         notes: notesPayload || null,
-        reference_images: appointmentType === 'bulk_custom' && referenceImages.length ? referenceImages : null,
-        reference_link: appointmentType === 'bulk_custom' && referenceLink.trim() ? referenceLink.trim() : null,
+        reference_images: appointmentType === 'consultation' && referenceImages.length ? referenceImages : null,
+        reference_link: appointmentType === 'consultation' && referenceLink.trim() ? referenceLink.trim() : null,
         answers,
         shop_branch_id: selectedBranchId ? Number(selectedBranchId) : null,
         service_id: selectedServiceId ? Number(selectedServiceId) : null,
@@ -320,13 +258,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         payment_method: paymentMethod,
         payment_reference: paymentMethod !== 'cash' ? paymentReference : null,
         payment_receipt_path: paymentMethod !== 'cash' ? paymentReceiptUrl : null,
-        catalog_item_id: catalogItem ? catalogItem.id : null,
-        selected_size: catalogItem && selectedSize ? selectedSize : null,
-        coupon_code: catalogItem && couponResult ? couponResult.code : null,
-        fulfillment_type: catalogItem ? fulfillmentType : 'pickup',
-        delivery_address: catalogItem && fulfillmentType !== 'pickup' ? deliveryAddress : null,
-        rental_start_date: catalogItem && catalogItem.listing_type === 'for_rent' ? date : null,
-        rental_end_date: catalogItem && catalogItem.listing_type === 'for_rent' ? rentalEndDate : null,
       });
       setSuccess(true);
     } catch (err) {
@@ -381,30 +312,14 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
           <p className="text-[#827A73]">{shopSettings?.name}</p>
         </div>
 
-        {/* Selected Garment Summary */}
-        {catalogItem && (
-          <div className="mb-6 bg-white border border-[#EBE6E0] rounded-2xl p-4 flex gap-4 items-center shadow-xs">
-            {catalogItem.images?.[0]?.image_url && (
-              <div className="w-16 h-20 relative rounded-lg overflow-hidden bg-zinc-100 shrink-0">
-                <Image 
-                  src={catalogItem.images[0].image_url} 
-                  alt={catalogItem.name} 
-                  fill 
-                  className="object-cover object-top"
-                  unoptimized
-                />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <span className="text-[10px] font-bold text-[#9A8073] uppercase tracking-wider">
-                {(intent && INTENT_LABELS[intent]) || 'Fitting Request'}
-              </span>
-              <h3 className="font-semibold text-sm text-[#2D2A26] truncate">{catalogItem.name}</h3>
-              <p className="text-xs text-[#827A73]">
-                ₱{Number(catalogItem.price).toLocaleString()}
-                {selectedSize && <span className="font-semibold text-[#2D2A26]"> · Size {selectedSize}</span>}
-              </p>
-            </div>
+        {/* Design Catalog Reference — the item is inspiration for the fitting,
+            not something being ordered/purchased directly. */}
+        {refName && (
+          <div className="mb-6 bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-xs">
+            <span className="text-[10px] font-bold text-[#9A8073] uppercase tracking-wider">Design Reference</span>
+            <h3 className="font-semibold text-sm text-[#2D2A26]">
+              {refName}{refSize && <span className="font-normal text-[#827A73]"> · Size {refSize}</span>}
+            </h3>
           </div>
         )}
 
@@ -454,13 +369,10 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
           {/* STEP 2: DATE & TIME */}
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-medium border-b border-[#EBE6E0] pb-4">
-                {catalogItem ? 'Select Schedule & Fulfillment' : 'Appointment Type & Schedule'}
-              </h2>
+              <h2 className="text-xl font-medium border-b border-[#EBE6E0] pb-4">Appointment Type & Schedule</h2>
 
               {/* Appointment Type Selector */}
-              {!catalogItem && (
-                <div className="space-y-2">
+              <div className="space-y-2">
                   <label className="text-sm font-medium text-[#524A44] block">What are you coming in for? <span className="text-[#B26959]">*</span></label>
                   <div className="grid grid-cols-1 gap-2">
                     {BOOKING_TYPES.map(t => (
@@ -493,105 +405,25 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                       <AlertCircle size={12} /> Please select a service below — required for {appointmentType} appointments.
                     </p>
                   )}
-                </div>
-              )}
-              
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Fulfillment for ready-to-wear / for_sale purchases */}
-                {catalogItem && (catalogItem.listing_type === 'ready_to_wear' || catalogItem.listing_type === 'for_sale') && (
-                  <div className="space-y-2 col-span-1 md:col-span-2 border-b border-[#EBE6E0] pb-4">
-                    <label className="text-sm font-medium text-[#524A44] block">Fulfillment Method <span className="text-[#B26959]">*</span></label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFulfillmentType('pickup');
-                          setDeliveryAddress('');
-                        }}
-                        className={`px-4 py-3 rounded-xl border text-left transition-all ${
-                          fulfillmentType === 'pickup'
-                            ? 'border-[#9A8073] bg-[#9A8073]/5 ring-2 ring-[#9A8073]/20 font-semibold'
-                            : 'border-[#EBE6E0] bg-white hover:border-[#9A8073]/40'
-                        }`}
-                      >
-                        🏪 Pickup at Shop (Reserve & Collect)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFulfillmentType('shipping')}
-                        className={`px-4 py-3 rounded-xl border text-left transition-all ${
-                          fulfillmentType === 'shipping' || fulfillmentType === 'delivery'
-                            ? 'border-[#9A8073] bg-[#9A8073]/5 ring-2 ring-[#9A8073]/20 font-semibold'
-                            : 'border-[#EBE6E0] bg-white hover:border-[#9A8073]/40'
-                        }`}
-                      >
-                        🚚 Request Delivery / Shipping
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {catalogItem && fulfillmentType !== 'pickup' && (
-                  <div className="space-y-2 col-span-1 md:col-span-2 bg-[#FAF6F3]/50 p-4 border border-[#EBE6E0] rounded-xl animate-in slide-in-from-top-2">
-                    <label htmlFor="shipping-address" className="text-sm font-medium text-[#524A44] block">Shipping Address <span className="text-[#B26959]">*</span></label>
-                    <textarea
-                      id="shipping-address"
-                      required
-                      rows={3}
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="Enter your complete delivery address (Street, Barangay, City, Province, Zip Code)..."
-                      className="w-full bg-white border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] text-sm resize-none"
-                    />
-                    <p className="text-[11px] text-[#827A73]">Note: The shop owner will calculate the shipping fee manually and contact you to coordinate delivery.</p>
-                  </div>
-                )}
-
                 <div className="col-span-1 md:col-span-2">
-                  <InteractiveCalendar 
-                    shopId={shopId}
+                  <InteractiveCalendar
                     selectedBranchId={selectedBranchId ? String(selectedBranchId) : null}
                     durationMinutes={appointmentType === 'consultation' ? 30 : appointmentType === 'pickup' ? 15 : 60}
                     operatingHours={shopSettings?.operating_hours as any}
                     specialHours={shopSettings?.special_hours as any}
                     maxAppointmentsPerDay={shopSettings?.max_appointments_per_day ?? null}
+                    appointments={calendarAppointments}
+                    loadingAppts={loadingAppts}
                     selectedDate={date}
                     selectedTime={time}
                     onDateChange={setDate}
                     onTimeChange={setTime}
-                    isRental={catalogItem?.listing_type === 'for_rent'}
                   />
                 </div>
-
-                {/* Return Date for rentals */}
-                {catalogItem && catalogItem.listing_type === 'for_rent' && (
-                  <div className="space-y-2 col-span-1 md:col-span-2 mt-4">
-                    <label htmlFor="booking-return-date" className="text-sm font-medium text-[#524A44] flex items-center gap-2">
-                      <CalendarIcon size={16} /> Return Date <span className="text-[#B26959]">*</span>
-                    </label>
-                    <input 
-                      id="booking-return-date"
-                      type="date" 
-                      required
-                      min={date || new Date().toISOString().split('T')[0]}
-                      value={rentalEndDate}
-                      onChange={(e) => setRentalEndDate(e.target.value)}
-                      className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                    />
-                  </div>
-                )}
               </div>
-
-              {/* Deposit Warning for rentals */}
-              {catalogItem && catalogItem.listing_type === 'for_rent' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-2.5 text-xs text-[#826A50] animate-in slide-in-from-top-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-                  <div>
-                    <p className="font-bold">Refundable Security Deposit Required</p>
-                    <p className="mt-0.5">A refundable security deposit and a valid government ID are required physically upon collection/pickup at the shop.</p>
-                  </div>
-                </div>
-              )}
 
               {(() => {
                 if (!date) return null;
@@ -720,8 +552,10 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                 </div>
               )}
 
-              {/* Bulk/Custom Order — reference images + optional link */}
-              {appointmentType === 'bulk_custom' && (
+              {/* Consultation — reference images + optional link. Was previously
+                  tied to the now-removed 'bulk_custom' type; Consultation is
+                  the natural moment for a customer to attach a design idea. */}
+              {appointmentType === 'consultation' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#524A44] block">
@@ -834,10 +668,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                   onClick={() => setStep(3)}
                   disabled={
                     !date ||
-                    (catalogItem?.listing_type !== 'for_rent' && !time) ||
+                    !time ||
                     !!getSpecialHoursForDate(date)?.is_closed ||
-                    (catalogItem?.listing_type === 'for_rent' && !rentalEndDate) ||
-                    (catalogItem && (fulfillmentType === 'shipping' || fulfillmentType === 'delivery') && !deliveryAddress.trim()) ||
                     (!!shopSettings?.branches && shopSettings.branches.length > 1 && !selectedBranchId)
                   }
                   className="w-full bg-[#9A8073] hover:bg-[#91756A] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
@@ -891,42 +723,10 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                   rows={4}
                   value={remarks} 
                   onChange={(e) => setRemarks(e.target.value)}
-                  placeholder={intent === 'for_rent' ? "Specify requested sizes, rental period dates, or customization instructions..." : "Specify sizing, alterations, shipping notes, or other details..."}
+                  placeholder="Specify sizing, alterations, or other details..."
                   className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2.5 text-[#2D2A26] text-sm focus:outline-none focus:border-[#9A8073]"
                 />
               </div>
-
-              {/* Coupon Code — only applicable to a catalog item purchase/rental */}
-              {catalogItem && (
-                <div className="pt-4 border-t border-[#EBE6E0] space-y-2">
-                  <label htmlFor="coupon-code" className="text-sm font-medium text-[#524A44] mb-1 block">Have a coupon code?</label>
-                  <div className="flex gap-2">
-                    <input
-                      id="coupon-code"
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null); setCouponError(''); }}
-                      placeholder="e.g. SAVE20"
-                      className="flex-1 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] font-mono text-sm focus:outline-none focus:border-[#9A8073]"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleApplyCoupon}
-                      disabled={couponValidating || !couponCode.trim()}
-                      className="shrink-0 bg-[#2D2A26] hover:bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-                    >
-                      {couponValidating ? 'Checking...' : 'Apply'}
-                    </button>
-                  </div>
-                  {couponError && <p className="text-xs text-[#B26959]">{couponError}</p>}
-                  {couponResult && (
-                    <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-center justify-between text-sm">
-                      <span className="text-rose-700 font-medium">&quot;{couponResult.code}&quot; applied — −₱{couponResult.discount_amount.toLocaleString()}</span>
-                      <span className="font-bold text-rose-700">New Total: ₱{couponResult.new_total.toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {shopSettings?.booking_questions && shopSettings.booking_questions.length > 0 && (
                 <div className="pt-4 space-y-4 border-t border-[#EBE6E0]">
@@ -1017,12 +817,12 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
               </div>
 
               <div className="pt-6">
-                <button 
+                <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingReceipt}
                   className="w-full bg-[#9A8073] hover:bg-[#91756A] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  {submitting ? 'Processing...' : 'Confirm Booking'}
+                  {submitting ? 'Processing...' : uploadingReceipt ? 'Uploading receipt...' : 'Confirm Booking'}
                 </button>
               </div>
             </form>

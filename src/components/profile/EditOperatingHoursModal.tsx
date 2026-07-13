@@ -52,7 +52,7 @@ export default function EditOperatingHoursModal({ isOpen, onClose, initialHours,
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-6 border-b border-[#EBE6E0]">
           <h2 className="text-xl font-extrabold text-[#2D2A26]">Edit Standard Hours</h2>

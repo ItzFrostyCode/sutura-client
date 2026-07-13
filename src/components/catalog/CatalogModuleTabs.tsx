@@ -6,14 +6,14 @@ import { ShoppingBag, Package, BarChart3 } from 'lucide-react';
 
 const TABS = [
   { label: 'Design Catalog', href: '/dashboard/catalog', icon: ShoppingBag },
-  { label: 'Ready-to-Wear Orders', href: '/dashboard/orders', icon: Package },
+  { label: 'Walk-in Orders', href: '/dashboard/orders', icon: Package },
   { label: 'Analytics', href: '/dashboard/catalog/analytics', icon: BarChart3 },
 ];
 
 /**
- * Module-level tabs that unite the Design Catalog (product listings), the
- * Ready-to-Wear Orders (sales fulfillment), and Analytics under one module,
- * so RTW is no longer a separate sidebar item.
+ * Module-level tabs that unite the Design Catalog (made-to-order reference
+ * listings), Walk-in Orders (quick in-store sales off the catalog), and
+ * Analytics under one module, so this isn't a separate sidebar item.
  */
 export default function CatalogModuleTabs() {
   const pathname = usePathname();

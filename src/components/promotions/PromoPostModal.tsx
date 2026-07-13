@@ -5,7 +5,6 @@ import Modal from '@/components/Modal';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Copy, Check, Loader2, Image as ImageIcon, Download } from 'lucide-react';
-import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import { Service } from '@/components/services/serviceHelpers';
 import { getActiveSale } from '@/lib/salePricing';
 
@@ -31,7 +30,6 @@ const DEFAULT_VALUE_PROPS = [
 export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps) {
   const { shop } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<SelectableImage[]>([]);
@@ -43,43 +41,29 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     if (!isOpen || !shop?.id) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    Promise.all([
-      api.get(`/shops/${shop.id}/catalog`),
-      api.get(`/shops/${shop.id}/services`),
-    ]).then(([catalogRes, servicesRes]) => {
-      const catItems: CatalogItem[] = catalogRes.data.data || [];
+    api.get(`/shops/${shop.id}/services`).then((servicesRes) => {
       const svcItems: Service[] = servicesRes.data.data || [];
-      setCatalogItems(catItems.filter(i => getActiveSale(i)));
       setServices(svcItems.filter(s => getActiveSale({ price: s.base_price ?? 0, sale_price: s.sale_price, sale_starts_at: s.sale_starts_at, sale_ends_at: s.sale_ends_at })));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [isOpen, shop]);
 
-  // Default all active-sale items checked, and default-select each catalog
-  // item's primary photo, whenever the fetched set changes.
+  // Default all active-sale items checked, and default-select each service's
+  // photo, whenever the fetched set changes.
   useEffect(() => {
     if (loading) return;
-    const keys = [
-      ...catalogItems.map(i => `catalog-${i.id}`),
-      ...services.map(s => `service-${s.id}`),
-    ];
+    const keys = services.map(s => `service-${s.id}`);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCheckedItems(new Set(keys));
 
     const imgs: SelectableImage[] = [];
-    catalogItems.forEach(item => {
-      const primary = item.images?.find(im => im.is_primary) || item.images?.[0];
-      item.images?.forEach(im => {
-        imgs.push({ key: `img-${im.id}`, url: im.image_url, label: item.name, checked: im === primary });
-      });
-    });
     services.forEach(svc => {
       if (svc.image_url) {
         imgs.push({ key: `svc-img-${svc.id}`, url: svc.image_url, label: svc.name, checked: true });
       }
     });
     setImages(imgs);
-  }, [loading, catalogItems, services]);
+  }, [loading, services]);
 
   const toggleItem = (key: string) => {
     setCheckedItems(prev => {
@@ -98,16 +82,6 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     const lines: string[] = ['🔥 PROMO!🔥', '💥 Limited Time Offer — Grab Yours Now! 💥', ''];
 
     let earliestEnd: number | null = null;
-
-    catalogItems.filter(i => checkedItems.has(`catalog-${i.id}`)).forEach(item => {
-      const sale = getActiveSale(item);
-      if (!sale) return;
-      lines.push(`👕 ${item.name} — ₱${sale.sale.toLocaleString()} (from ₱${sale.original.toLocaleString()})`);
-      if (item.sale_ends_at) {
-        const t = new Date(item.sale_ends_at).getTime();
-        if (earliestEnd === null || t < earliestEnd) earliestEnd = t;
-      }
-    });
 
     services.filter(s => checkedItems.has(`service-${s.id}`)).forEach(svc => {
       const sale = getActiveSale({ price: svc.base_price ?? 0, sale_price: svc.sale_price, sale_starts_at: svc.sale_starts_at, sale_ends_at: svc.sale_ends_at });
@@ -137,7 +111,7 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     }
 
     return lines.join('\n');
-  }, [catalogItems, services, checkedItems, valueProps, ctaLine]);
+  }, [services, checkedItems, valueProps, ctaLine]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(caption);
@@ -145,7 +119,7 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const hasAnySale = catalogItems.length > 0 || services.length > 0;
+  const hasAnySale = services.length > 0;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Generate Promo Post" maxWidth="max-w-2xl">
@@ -155,30 +129,13 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
         </div>
       ) : !hasAnySale ? (
         <div className="text-center py-12 text-sm text-[#827A73]">
-          No items or services are currently on sale. Set a Sale Price on something in Catalog or Services first.
+          No services are currently on sale. Set a Sale Price on a Service first.
         </div>
       ) : (
         <div className="space-y-5">
           <div>
             <span className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">Include in Post</span>
             <div className="space-y-1.5 max-h-40 overflow-y-auto border border-[#EBE6E0] rounded-lg p-2">
-              {catalogItems.map(item => {
-                const sale = getActiveSale(item);
-                if (!sale) return null;
-                return (
-                  <label key={`catalog-${item.id}`} className="flex items-center gap-2 text-sm px-1.5 py-1 rounded hover:bg-[#FAF6F3] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checkedItems.has(`catalog-${item.id}`)}
-                      onChange={() => toggleItem(`catalog-${item.id}`)}
-                      className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
-                    />
-                    <span className="flex-1 truncate">{item.name}</span>
-                    <span className="text-[#A8A19A] line-through text-xs">₱{sale.original.toLocaleString()}</span>
-                    <span className="text-rose-600 font-semibold text-xs">₱{sale.sale.toLocaleString()}</span>
-                  </label>
-                );
-              })}
               {services.map(svc => {
                 const sale = getActiveSale({ price: svc.base_price ?? 0, sale_price: svc.sale_price, sale_starts_at: svc.sale_starts_at, sale_ends_at: svc.sale_ends_at });
                 if (!sale) return null;

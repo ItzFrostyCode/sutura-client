@@ -2,9 +2,7 @@ export interface CatalogItemResponse {
   id: number;
   name: string;
   price: number;
-  sale_price?: number | null;
-  rental_price?: number | null;
-  rental_deposit?: number | null;
+  estimated_days?: number | null;
   material?: string;
   color?: string;
   fabric_image_url?: string;
@@ -16,7 +14,6 @@ export interface CatalogItemResponse {
   size_chart_rows?: { size: string; values: string[] }[] | null;
   care_instructions?: string;
   garment_type?: string;
-  listing_type?: string;
   images: { id: number; image_url: string; angle?: string; is_primary: number }[];
   external_gallery_url?: string;
   is_active?: boolean;
@@ -38,15 +35,13 @@ export interface ImageItem {
 export interface CatalogFormData {
   name: string;
   price: string;
+  estimated_days: string;
   material: string;
   color: string;
   fabric_image_url: string;
   description: string;
   care_instructions: string;
   garment_type: string;
-  listing_type: string;
-  rental_price: string;
-  rental_deposit: string;
   sizes: string[];
   external_gallery_url: string;
   is_active: boolean;

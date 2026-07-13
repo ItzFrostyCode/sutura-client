@@ -4,38 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { ArrowLeft, Loader2, Store, ShoppingBag, Truck, Navigation, User, Users, FileText, Receipt, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Store, ShoppingBag, User, Users, FileText, Receipt, Trash2, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
-import { serializeCourierName } from '@/lib/fulfillment';
 import { SERVICE_TYPE_META, SERVICE_TYPES } from '@/components/services/serviceHelpers';
 import { roleLabel } from '@/components/staff/staffHelpers';
-
-const COURIER_OPTIONS = [
-  // Same-Day / Local Delivery
-  { id: 'lalamove', label: 'Lalamove', type: 'delivery' },
-  { id: 'grab', label: 'Grab Express', type: 'delivery' },
-  { id: 'transportify', label: 'Transportify', type: 'delivery' },
-  { id: 'toktok', label: 'Toktok', type: 'delivery' },
-  { id: 'borzo', label: 'Borzo (Mr. Speedy)', type: 'delivery' },
-  { id: 'joyride', label: 'JoyRide Delivery', type: 'delivery' },
-  { id: 'angkas', label: 'Angkas Express', type: 'delivery' },
-  { id: 'moveit', label: 'Move It Delivery', type: 'delivery' },
-  { id: 'dingdong', label: 'Dingdong Delivery', type: 'delivery' },
-
-  // Standard Shipping / Nationwide Express
-  { id: 'jnt', label: 'J&T Express', type: 'shipping' },
-  { id: 'lbc', label: 'LBC Express', type: 'shipping' },
-  { id: 'flash', label: 'Flash Express', type: 'shipping' },
-  { id: 'ninjavan', label: 'Ninja Van', type: 'shipping' },
-  { id: 'jrs', label: 'JRS Express', type: 'shipping' },
-  { id: '2go', label: '2GO Express', type: 'shipping' },
-  { id: 'abest', label: 'Abest Express', type: 'shipping' },
-  { id: 'entrego', label: 'Entrego', type: 'shipping' },
-  { id: 'apcargo', label: 'AP Cargo', type: 'shipping' },
-  { id: 'airspeed', label: 'Airspeed', type: 'shipping' },
-  { id: 'xde', label: 'XDE Logistics', type: 'shipping' },
-  { id: 'spx', label: 'SPX Express (Shopee)', type: 'shipping' },
-];
+import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
+import { STAFF_STAGES, STAFF_STAGE_LABELS } from '@/components/jobs/jobHelpers';
 
 interface CustomerData {
   id: number;
@@ -77,6 +51,8 @@ interface CustomerMeasurement {
   id: number;
   profile_name: string;
   updated_at: string;
+  metrics?: Record<string, string | undefined>;
+  notes?: string | null;
 }
 
 function sanitizeServiceCustomFields(servicesRaw: unknown[]): ServiceData[] {
@@ -119,13 +95,14 @@ export default function JobCreateForm() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [staff, setStaff] = useState<StaffData[]>([]);
 
-  // Fulfillment states for online orders
-  const [fulfillmentType, setFulfillmentType] = useState<'shipping' | 'delivery' | 'pickup'>('shipping');
-  const [fulfillmentProvider, setFulfillmentProvider] = useState('');
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const [supportedCouriers, setSupportedCouriers] = useState<string[]>([]);
   const [customerMeasurements, setCustomerMeasurements] = useState<CustomerMeasurement[]>([]);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  // The intake channel is auto-tagged, not a manual toggle — 'online' only
+  // when this job is linked to an appointment that was itself booked online;
+  // otherwise it's a walk-in created directly at the shop counter. Mirrors
+  // JobOrderController@store's own server-authoritative computation exactly.
+  const [linkedAppointmentChannel, setLinkedAppointmentChannel] = useState<'walk_in' | 'online' | null>(null);
+  const effectiveIntakeChannel: 'walk_in' | 'online' = appointmentId ? (linkedAppointmentChannel ?? 'walk_in') : 'walk_in';
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [referenceLink, setReferenceLink] = useState('');
   const [uploadingReference, setUploadingReference] = useState(false);
@@ -134,44 +111,6 @@ export default function JobCreateForm() {
   // show who it is. Manual "New Job" creation (no pre-fill) keeps the dropdown.
   const [customerLocked, setCustomerLocked] = useState(false);
   const [isTotalAmountCustom, setIsTotalAmountCustom] = useState(false);
-
-  // Coupon — applied directly to total_amount so the downpayment/balance math
-  // below (computed fresh from total_amount at submit time) stays consistent.
-  const [couponCodeInput, setCouponCodeInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_amount: number } | null>(null);
-  const [couponError, setCouponError] = useState('');
-  const [couponValidating, setCouponValidating] = useState(false);
-
-  const handleApplyCoupon = async () => {
-    if (!shop || !couponCodeInput.trim()) return;
-    const currentTotal = Number.parseFloat(formData.total_amount) || 0;
-    setCouponValidating(true);
-    setCouponError('');
-    try {
-      const res = await api.post(`/shops/${shop.id}/coupons/validate`, {
-        code: couponCodeInput.trim(),
-        context: 'services',
-        amount: currentTotal,
-      });
-      const { code, discount_amount, new_total } = res.data.data;
-      setAppliedCoupon({ code, discount_amount });
-      setIsTotalAmountCustom(true);
-      setFormData((prev) => ({ ...prev, total_amount: new_total.toFixed(2) }));
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setCouponError(error.response?.data?.message || 'Invalid coupon code.');
-    } finally {
-      setCouponValidating(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    if (!appliedCoupon) return;
-    const currentTotal = Number.parseFloat(formData.total_amount) || 0;
-    setFormData((prev) => ({ ...prev, total_amount: (currentTotal + appliedCoupon.discount_amount).toFixed(2) }));
-    setAppliedCoupon(null);
-    setCouponCodeInput('');
-  };
 
   // Bulk Team Roster State
   const [isBulkOrder, setIsBulkOrder] = useState(false);
@@ -185,7 +124,6 @@ export default function JobCreateForm() {
   const [preExistingDamageNotes, setPreExistingDamageNotes] = useState('');
 
   const [formData, setFormData] = useState({
-    intake_channel: 'walk_in',
     customer_id: '',
     service_id: '',
     measurement_id: '',
@@ -194,7 +132,6 @@ export default function JobCreateForm() {
     due_date: '',
     notes: '',
     po_number: '',
-    shipping_address: '',
     is_outsourced: false,
     partner_shop_name: '',
     outsourcing_cost: '',
@@ -206,7 +143,7 @@ export default function JobCreateForm() {
   // — replaces the old single "Assigned Staff" field so Create and View show
   // the same staffing concept instead of two disconnected ones.
   const [staffStageAssignments, setStaffStageAssignments] = useState<Record<string, string>>({
-    design: '', pattern_making: '', cutting: '', sewing: '', fitting: '', finishing: '',
+    design: '', pattern_making: '', cutting: '', sewing: '', qc_ironing: '',
   });
   const [showOutsourcingHelp, setShowOutsourcingHelp] = useState(false);
 
@@ -286,6 +223,48 @@ export default function JobCreateForm() {
         {formData.measurement_id && formData.measurement_id === mostRecentId && (
           <p className="text-[11px] text-[#7A8B76] font-medium">
             ✓ Retrieved this customer&apos;s last saved measurements — no need to re-measure a returning client.
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Read-only preview of the selected measurement profile — so the owner
+  // doesn't have to leave this form to see the customer's saved fit while
+  // creating the job.
+  const renderMeasurementSummary = () => {
+    if (isBulkOrder || !formData.measurement_id) return null;
+    const selected = customerMeasurements.find((m) => m.id.toString() === formData.measurement_id);
+    if (!selected) return null;
+
+    const filledMetrics = Object.entries(selected.metrics || {}).filter(([, v]) => v);
+
+    return (
+      <div className="bg-[#FAF6F3]/60 border border-[#EBE6E0]/60 rounded-xl p-3.5 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-[#827A73] uppercase tracking-wider">
+            {selected.profile_name} — Saved Measurements
+          </span>
+          <Link
+            href={`/dashboard/measurements?customer_id=${formData.customer_id}`}
+            className="text-[11px] font-semibold text-taupe hover:underline shrink-0"
+          >
+            View / Edit
+          </Link>
+        </div>
+        {filledMetrics.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {filledMetrics.map(([key, value]) => (
+              <MetricPill key={key} label={humanizeMetricKey(key)} value={value} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-[#A8A19A] italic">No measurement fields recorded yet.</p>
+        )}
+        {selected.notes && (
+          <p className="text-xs text-[#524A44] border-t border-[#EBE6E0]/60 pt-2 mt-1">
+            <span className="font-semibold text-[#827A73]">Notes: </span>
+            {selected.notes}
           </p>
         )}
       </div>
@@ -497,21 +476,13 @@ export default function JobCreateForm() {
         api.get(`/shops/${shop.id}/customers`),
         api.get(`/shops/${shop.id}/services`),
         api.get(`/shops/${shop.id}/staff`),
-        api.get(`/shops/${shop.id}`), // Fetch full shop details to get supported couriers
       ])
-        .then(([resCustomers, resServices, resStaff, resShop]) => {
+        .then(([resCustomers, resServices, resStaff]) => {
           const custs = resCustomers.data.data || [];
           const servs = sanitizeServiceCustomFields(resServices.data.data || []);
           setCustomers(custs);
           setServices(servs);
           setStaff(resStaff.data.data || []);
-
-          const shopDetails = resShop.data.data || {};
-          setSupportedCouriers(
-            Array.isArray(shopDetails.supported_couriers)
-              ? shopDetails.supported_couriers
-              : []
-          );
 
           // Prefill from query params
           const qCust = searchParams.get('customer_id') || '';
@@ -533,6 +504,7 @@ export default function JobCreateForm() {
                 const apt = (res.data.data || []).find((a: { id: number }) => a.id === Number(qAptId));
                 if (apt?.reference_images?.length) setReferenceImages(apt.reference_images);
                 if (apt?.reference_link) setReferenceLink(apt.reference_link);
+                setLinkedAppointmentChannel(apt?.intake_channel === 'online' ? 'online' : 'walk_in');
               })
               .catch(() => { /* non-critical — job can still be created without the preview */ });
           }
@@ -620,13 +592,6 @@ export default function JobCreateForm() {
     }
   }, [formData.service_id, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
 
-  const getFulfillmentValues = () => {
-    const addressVal = fulfillmentType === 'pickup' ? 'Store Pickup' : (formData.shipping_address || null);
-    const courierNameVal = serializeCourierName(fulfillmentType, fulfillmentProvider || 'Other');
-    const courierTrackingVal = fulfillmentType === 'pickup' ? null : (trackingNumber || null);
-    return { addressVal, courierNameVal, courierTrackingVal };
-  };
-
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!shop) return;
@@ -663,12 +628,13 @@ export default function JobCreateForm() {
     }
 
     const balance = totalAmt - appliedDownPay;
-    const { addressVal, courierNameVal, courierTrackingVal } = getFulfillmentValues();
 
     try {
       await api.post(`/shops/${shop.id}/jobs`, {
-        intake_channel: formData.intake_channel,
-        fulfillment_type: fulfillmentType,
+        // Server-authoritative anyway (see JobOrderController@store) — sent
+        // here only as a best-effort hint, never trusted as-is.
+        intake_channel: effectiveIntakeChannel,
+        fulfillment_type: 'pickup',
         customer_id: formData.customer_id,
         service_id: formData.service_id,
         staff_stages: Object.entries(staffStageAssignments)
@@ -679,13 +645,8 @@ export default function JobCreateForm() {
           : null,
         total_amount: formData.total_amount,
         balance: balance,
-        coupon_code: appliedCoupon?.code ?? null,
-        discount_amount: appliedCoupon?.discount_amount ?? null,
         due_date: formData.due_date || null,
         notes: formData.notes,
-        shipping_address: addressVal,
-        courier_name: courierNameVal,
-        courier_tracking_number: courierTrackingVal,
         custom_order_data: {
           ...customFieldValues,
           po_number: formData.po_number || null,
@@ -713,13 +674,6 @@ export default function JobCreateForm() {
       setError(errorResponse.response?.data?.message || 'Failed to create job order.');
       setSubmitting(false);
     }
-  };
-
-  const getFilteredCouriers = () => {
-    const options = COURIER_OPTIONS.filter((c) => c.type === fulfillmentType);
-    if (supportedCouriers.length === 0) return options;
-    const filtered = options.filter((c) => supportedCouriers.includes(c.id));
-    return filtered.length > 0 ? filtered : options;
   };
 
   if (loading) {
@@ -827,12 +781,12 @@ export default function JobCreateForm() {
 
         <div className="mb-6 space-y-1.5">
           <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
-            Design Reference <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+            Design Reference / Notes Photo <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
           </span>
           <p className="text-[11px] text-[#A8A19A]">
             {appointmentId
               ? 'Photos/link the customer attached when booking — carries over automatically to this job.'
-              : 'A photo the customer showed you, or a link to what they want made (e.g. a jersey design or gown reference).'}
+              : 'A photo the customer showed you, a link to what they want made (e.g. a jersey design or gown reference) — or if you jotted the specs on paper, just snap a photo of that note here so it stays attached to the job.'}
           </p>
           {referenceImages.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-1">
@@ -898,55 +852,30 @@ export default function JobCreateForm() {
               <h3 className="text-sm font-bold text-[#524A44]">Customer & Service Details</h3>
             </div>
 
-            {/* Order Type Toggle */}
+            {/* Order source — auto-detected, not a manual toggle. 'Online'
+                only when this job is linked to an appointment that was
+                itself booked online; otherwise it's tagged Walk-in. */}
             <div>
               <span className="block text-xs font-semibold text-[#827A73] mb-2 uppercase tracking-wider">
-                How did they order? <span className="text-[#B26959]">*</span>
+                Order Source <span className="text-[10px] font-normal normal-case text-[#A8A19A]">(auto-detected)</span>
               </span>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({ ...formData, intake_channel: 'walk_in' })
-                  }
-                  className={`flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${
-                    formData.intake_channel === 'walk_in'
-                      ? 'border-taupe bg-[#FAF6F3] text-[#2D2A26]'
-                      : 'border-[#EBE6E0] text-[#A8A19A] hover:border-[#D1C7BD]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Store size={18} />
-                    <span>Walk-in</span>
-                  </div>
-                  <span className="text-[10px] font-normal opacity-70">
-                    Customer visits shop physically
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({ ...formData, intake_channel: 'online' })
-                  }
-                  className={`flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${
-                    formData.intake_channel === 'online'
-                      ? 'border-taupe bg-[#FAF6F3] text-[#2D2A26]'
-                      : 'border-[#EBE6E0] text-[#A8A19A] hover:border-[#D1C7BD]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag size={18} />
-                    <span>Online</span>
-                  </div>
-                  <span className="text-[10px] font-normal opacity-70">
-                    Web booking or messaging inquiry
-                  </span>
-                </button>
+              <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-medium text-sm ${
+                effectiveIntakeChannel === 'online'
+                  ? 'border-blue-200 bg-blue-50 text-blue-800'
+                  : 'border-taupe bg-[#FAF6F3] text-[#2D2A26]'
+              }`}>
+                {effectiveIntakeChannel === 'online' ? <ShoppingBag size={18} /> : <Store size={18} />}
+                <span>{effectiveIntakeChannel === 'online' ? 'Online' : 'Walk-in'}</span>
+                <span className="text-[10px] font-normal opacity-70 ml-1">
+                  {appointmentId
+                    ? `From linked Appointment #${appointmentId}`
+                    : 'Created directly at the shop counter'}
+                </span>
               </div>
             </div>
 
             {/* PO Number — shown only for Online/Corporate orders */}
-            {formData.intake_channel === 'online' && (
+            {effectiveIntakeChannel === 'online' && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
                 <div className="flex-1">
                   <label
@@ -1036,6 +965,8 @@ export default function JobCreateForm() {
                 {renderMeasurementSelector()}
               </div>
             </div>
+
+            {renderMeasurementSummary()}
 
             <div>
               <label
@@ -1372,15 +1303,20 @@ export default function JobCreateForm() {
           <div className="space-y-4 border-t border-[#EBE6E0] pt-6">
             <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 border border-blue-200">
-                <Truck size={16} className="text-blue-700" />
+                <Store size={16} className="text-blue-700" />
               </div>
               <h3 className="text-sm font-bold text-[#524A44]">Production & Fulfillment</h3>
             </div>
 
             {/* Outsourcing Details — same design as the Job Detail page's
                 Outsourcing card, so this doesn't feel like a different
-                feature depending on whether you're creating or viewing. */}
-            <div>
+                feature depending on whether you're creating or viewing.
+                Owner/Manager Only: this is a backend production/sourcing
+                decision, not something Front-Desk intake needs to set. */}
+            <div className="border border-amber-200 bg-amber-50/40 rounded-xl p-4">
+              <span className="inline-block mb-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                Owner/Manager Only
+              </span>
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1473,162 +1409,44 @@ export default function JobCreateForm() {
               )}
             </div>
 
-            {/* Shipping / Delivery / Pickup Selector */}
-            <div className="bg-[#FAF6F3]/50 border border-[#EBE6E0]/60 rounded-xl p-4 space-y-4 mt-4">
-                <div>
-                  <span className="block text-xs font-semibold text-[#827A73] mb-2 uppercase tracking-wider">
-                    Fulfillment Method
-                  </span>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      {
-                        id: 'shipping',
-                        label: 'Shipping',
-                        desc: 'Standard courier',
-                        icon: Truck,
-                      },
-                      {
-                        id: 'delivery',
-                        label: 'Local Delivery',
-                        desc: 'Same-day rider',
-                        icon: Navigation,
-                      },
-                      {
-                        id: 'pickup',
-                        label: 'Store Pickup',
-                        desc: 'In-store collection',
-                        icon: Store,
-                      },
-                    ].map((method) => {
-                      const Icon = method.icon;
-                      const isSelected = fulfillmentType === method.id;
-                      return (
-                        <button
-                          key={method.id}
-                          type="button"
-                          onClick={() => {
-                            setFulfillmentType(
-                              method.id as 'shipping' | 'delivery' | 'pickup'
-                            );
-                            setFulfillmentProvider('');
-                          }}
-                          className={`flex flex-col items-center justify-center p-3 rounded-lg border text-center transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-taupe bg-[#FAF6F3] text-taupe font-semibold shadow-sm'
-                              : 'border-[#EBE6E0] bg-white text-[#524A44] hover:border-taupe/30'
-                          }`}
-                        >
-                          <Icon size={16} className="mb-1" />
-                          <span className="text-xs">{method.label}</span>
-                          <span className="text-[9px] opacity-70 font-normal mt-0.5">
-                            {method.desc}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {fulfillmentType !== 'pickup' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="fulfillment_provider"
-                        className="block text-xs font-semibold text-[#827A73] mb-1"
-                      >
-                        Service Provider / Courier
-                      </label>
-                      <select
-                        id="fulfillment_provider"
-                        value={fulfillmentProvider}
-                        onChange={(e) => setFulfillmentProvider(e.target.value)}
-                        className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
-                      >
-                        <option value="">— Select provider —</option>
-                        {getFilteredCouriers().map((c) => (
-                          <option key={c.id} value={c.label}>
-                            {c.label}
-                          </option>
-                        ))}
-                        <option value="Other">Other / Self-Managed</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="tracking_number"
-                        className="block text-xs font-semibold text-[#827A73] mb-1"
-                      >
-                        {fulfillmentType === 'shipping'
-                          ? 'Tracking Number'
-                          : 'Booking Link / Rider Contact'}
-                      </label>
-                      <input
-                        id="tracking_number"
-                        type="text"
-                        value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder={
-                          fulfillmentType === 'shipping'
-                            ? 'e.g. JT-123456'
-                            : 'e.g. Grab link or phone'
-                        }
-                        className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {fulfillmentType === 'pickup' ? (
-                  <div className="bg-[#FAF6F3]/60 border border-[#EBE6E0]/60 rounded-lg p-3 text-xs text-[#827A73] flex items-center gap-2">
-                    <Store size={16} className="shrink-0" />
-                    <span>
-                      Customer will pick up the garments in-store. (Shop address will be used)
-                    </span>
-                  </div>
-                ) : (
-                  <div>
-                    <label
-                      htmlFor="shipping_address"
-                      className="block text-xs font-semibold text-[#827A73] mb-1"
-                    >
-                      {fulfillmentType === 'shipping'
-                        ? 'Shipping Address'
-                        : 'Delivery Address'}
-                    </label>
-                    <input
-                      id="shipping_address"
-                      type="text"
-                      value={formData.shipping_address}
-                      onChange={(e) =>
-                        setFormData({ ...formData, shipping_address: e.target.value })
-                      }
-                      placeholder="Enter complete delivery details..."
-                      className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-                    />
-                  </div>
-                )}
+            {/* Fulfillment — store pickup only. The approved thesis excludes
+                logistics/courier/delivery management from the system's scope. */}
+            <div className="bg-[#FAF6F3]/50 border border-[#EBE6E0]/60 rounded-xl p-4 mt-4">
+              <span className="block text-xs font-semibold text-[#827A73] mb-2 uppercase tracking-wider">
+                Fulfillment Method
+              </span>
+              <div className="bg-[#FAF6F3]/60 border border-[#EBE6E0]/60 rounded-lg p-3 text-xs text-[#827A73] flex items-center gap-2">
+                <Store size={16} className="shrink-0" />
+                <span>
+                  Customer will pick up the garments in-store. (Shop address will be used)
+                </span>
               </div>
+            </div>
           </div>
 
           {/* Section: Multi-Stage Staff Assignment — same model as the Job
               Detail page's card, settable at creation time too instead of
-              only via a single generic "Assigned Staff" field afterward. */}
+              only via a single generic "Assigned Staff" field afterward.
+              Owner/Manager Only: backroom production staffing is a Shop
+              Owner decision, not part of Front-Desk intake. */}
           <div className="space-y-4 border-t border-[#EBE6E0] pt-6">
             <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#9A8073]/10 border border-[#9A8073]/20">
                 <Users size={16} className="text-[#9A8073]" />
               </div>
               <h3 className="text-sm font-bold text-[#524A44]">Multi-Stage Staff Assignment <span className="font-normal text-[#A8A19A]">(Optional)</span></h3>
+              <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                Owner/Manager Only
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {['design', 'pattern_making', 'cutting', 'sewing', 'fitting', 'finishing'].map((stage) => (
+              {STAFF_STAGES.map((stage) => (
                 <div key={stage}>
                   <label
                     htmlFor={`stage_${stage}`}
-                    className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider capitalize"
+                    className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
                   >
-                    {stage.replace('_', ' ')} Staff
+                    {STAFF_STAGE_LABELS[stage]} Staff
                   </label>
                   <select
                     id={`stage_${stage}`}
@@ -1684,7 +1502,7 @@ export default function JobCreateForm() {
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
-                  <label className="flex items-center gap-2 cursor-pointer select-none shrink-0 sm:h-[38px] sm:mt-0 mt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none shrink-0 sm:h-[38px] sm:mt-0 mt-1" title="Owner/Manager Only — Priority is set during Job Order approval, not Front-Desk intake">
                     <input
                       type="checkbox"
                       checked={formData.is_rush}
@@ -1696,11 +1514,16 @@ export default function JobCreateForm() {
                     <span className="text-sm font-semibold text-[#524A44]">
                       Mark as Rush Order
                     </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                      Owner Only
+                    </span>
                   </label>
                 </div>
               </div>
 
-              {/* Rush Order Details */}
+              {/* Rush Order Details — Owner/Manager Only: Priority/Rush is
+                  set by the Shop Owner during Job Order approval, not
+                  captured as part of Front-Desk intake. */}
               <div>
                 {formData.is_rush && (
                   <div>
@@ -1834,49 +1657,6 @@ export default function JobCreateForm() {
                     {renderBalanceBadge()}
                   </div>
                 </div>
-              </div>
-
-              {/* Coupon Code */}
-              <div className="pt-2">
-                {appliedCoupon ? (
-                  <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-center justify-between text-sm">
-                    <span className="text-rose-700 font-medium">
-                      &quot;{appliedCoupon.code}&quot; applied — −₱{appliedCoupon.discount_amount.toLocaleString()}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveCoupon}
-                      className="text-xs font-semibold text-rose-600 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <label htmlFor="job-coupon-code" className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-1">
-                      Coupon Code (Optional)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        id="job-coupon-code"
-                        type="text"
-                        value={couponCodeInput}
-                        onChange={(e) => { setCouponCodeInput(e.target.value.toUpperCase()); setCouponError(''); }}
-                        placeholder="e.g. SAVE20"
-                        className="flex-1 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyCoupon}
-                        disabled={couponValidating || !couponCodeInput.trim()}
-                        className="shrink-0 bg-[#2D2A26] hover:bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
-                      >
-                        {couponValidating ? 'Checking...' : 'Apply'}
-                      </button>
-                    </div>
-                    {couponError && <p className="text-[10px] text-[#B26959] mt-1 font-semibold">{couponError}</p>}
-                  </div>
-                )}
               </div>
             </div>
           </div>

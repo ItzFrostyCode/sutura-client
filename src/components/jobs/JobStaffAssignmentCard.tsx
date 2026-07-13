@@ -1,6 +1,7 @@
 import React from 'react';
 import { Save, Loader2 } from 'lucide-react';
 import { Staff } from './jobTypes';
+import { STAFF_STAGES, STAFF_STAGE_LABELS } from './jobHelpers';
 import { roleLabel } from '@/components/staff/staffHelpers';
 
 interface JobStaffAssignmentCardProps {
@@ -22,13 +23,18 @@ export default function JobStaffAssignmentCard({
 }: JobStaffAssignmentCardProps) {
   return (
     <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-      <h2 className="text-lg font-medium text-[#2D2A26] mb-4">Multi-Stage Staff Assignment</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-[#2D2A26]">Multi-Stage Staff Assignment</h2>
+        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+          Owner/Manager Only
+        </span>
+      </div>
       <div className="space-y-4">
-        {['design', 'pattern_making', 'cutting', 'sewing', 'fitting', 'finishing'].map(stage => (
+        {STAFF_STAGES.map(stage => (
           <div key={stage} className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-[#524A44] capitalize">
-                {stage.replace('_', ' ')} Staff
+              <label className="text-sm font-medium text-[#524A44]">
+                {STAFF_STAGE_LABELS[stage]} Staff
               </label>
               {staffAssignments[stage] && (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${

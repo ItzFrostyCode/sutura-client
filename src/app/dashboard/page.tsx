@@ -134,7 +134,10 @@ export default function DashboardPage() {
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
-  const activeStatuses = new Set(['cutting', 'sewing', 'fitting', 'pending', 'confirmed']);
+  const activeStatuses = new Set([
+    'pending', 'confirmed', 'design', 'pattern_making', 'mass_cutting_printing',
+    'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing',
+  ]);
 
   const dueToday = allJobs.filter(j => {
     if (!j.due_date || !activeStatuses.has(j.status)) return false;
@@ -153,7 +156,7 @@ export default function DashboardPage() {
 
   // Active jobs with no downpayment collected.
   // The server tracks this via payment_status='unpaid' (balance === total_amount, nothing paid).
-  const activeStatuses2 = new Set(['pending', 'confirmed', 'cutting', 'sewing', 'fitting']);
+  const activeStatuses2 = activeStatuses;
   const pendingDpJobs = allJobs.filter(j =>
     activeStatuses2.has(j.status) &&
     j.payment_status === 'unpaid' &&

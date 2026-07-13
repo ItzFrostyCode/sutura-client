@@ -55,11 +55,10 @@ export default function AppointmentsPage() {
     actionLoadingId,
     error,
     setError,
-    services,
     customers,
+    handleCreateCustomer,
     branches,
     staff,
-    jobOrders,
     appointments,
     todayStr,
     minTimeFor,
@@ -242,12 +241,10 @@ export default function AppointmentsPage() {
         onClose={() => { setShowCreateModal(false); setEditingApt(null); setError(''); }}
         editingApt={editingApt}
         customers={customers}
-        services={services}
+        onCreateCustomer={handleCreateCustomer}
         branches={branches}
         staff={staff}
-        jobOrders={jobOrders}
-        todayStr={todayStr}
-        minTimeFor={minTimeFor}
+        appointments={appointments}
         onSubmit={handleCreateSubmit}
         isSubmitting={isSubmitting}
         error={error}
@@ -274,7 +271,6 @@ export default function AppointmentsPage() {
         setShowViewModal={setShowViewModal}
         viewApt={viewApt}
         setViewApt={setViewApt}
-        jobOrders={jobOrders}
         todayStr={todayStr}
         minTimeFor={minTimeFor}
         isSubmitting={isSubmitting}

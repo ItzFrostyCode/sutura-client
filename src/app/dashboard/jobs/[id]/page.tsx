@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, Truck, CreditCard, AlertTriangle, Scissors, X, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle } from 'lucide-react';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
 import JobProductionTimeline from '@/components/jobs/JobProductionTimeline';
@@ -29,10 +29,6 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     setStatus,
     notes,
     setNotes,
-    courierTracking,
-    setCourierTracking,
-    shippingAddress,
-    setShippingAddress,
     completionPhotoUrl,
     setCompletionPhotoUrl,
     isOutsourced,
@@ -41,11 +37,6 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     setPartnerShopName,
     outsourcingCost,
     setOutsourcingCost,
-    fulfillmentType,
-    setFulfillmentType,
-    fulfillmentProvider,
-    setFulfillmentProvider,
-    supportedCouriers,
     allStaff,
     staffAssignments,
     setStaffAssignments,
@@ -54,6 +45,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     handleUpdate,
     handleUpdateStaff,
     handleChargePayment,
+    handleApplyDiscount,
     handleUpdatePayment,
     handleDelete,
   } = useJobDetail(id);
@@ -106,15 +98,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                     <Store size={11} /> Walk-in
                   </span>
                 )}
-                {job.fulfillment_type === 'shipping' ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
-                    <Truck size={11} /> Shipping
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
-                    <Store size={11} /> Pickup
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <Store size={11} /> Pickup
+                </span>
                 {job.is_rush && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full animate-pulse border border-amber-200">
                     ⚡ Rush Order
@@ -414,23 +400,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               setStatus={setStatus}
               notes={notes}
               setNotes={setNotes}
-              fulfillmentType={fulfillmentType}
               completionPhotoUrl={completionPhotoUrl}
               setCompletionPhotoUrl={setCompletionPhotoUrl}
             />
 
             {/* Fulfillment Details Card */}
-            <JobFulfillmentCard
-              fulfillmentType={fulfillmentType}
-              setFulfillmentType={setFulfillmentType}
-              fulfillmentProvider={fulfillmentProvider}
-              setFulfillmentProvider={setFulfillmentProvider}
-              courierTracking={courierTracking}
-              setCourierTracking={setCourierTracking}
-              shippingAddress={shippingAddress}
-              setShippingAddress={setShippingAddress}
-              supportedCouriers={supportedCouriers}
-            />
+            <JobFulfillmentCard />
 
             {/* Multi-Stage Staff Assignment Card */}
             <JobStaffAssignmentCard
@@ -450,6 +425,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                 job={job}
                 saving={saving}
                 onCharge={handleChargePayment}
+                onApplyDiscount={handleApplyDiscount}
                 onUpdatePayment={handleUpdatePayment}
               />
             </div>
@@ -501,15 +477,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           <div className="space-y-2">
             <h2 className="font-bold uppercase tracking-widest text-xs border-b border-black pb-1 mb-3">Customer Information</h2>
             <p className="text-base"><strong>Name:</strong> {job.customer?.name || 'Unspecified'}</p>
-            {job.fulfillment_type === 'shipping' && job.shipping_address && (
-              <p><strong>Address:</strong> {job.shipping_address}</p>
-            )}
           </div>
           <div className="space-y-2">
             <h2 className="font-bold uppercase tracking-widest text-xs border-b border-black pb-1 mb-3">Job Details</h2>
             <p className="text-base"><strong>Service:</strong> {job.service?.name}</p>
             <p className="text-base"><strong>Intake Channel:</strong> {job.intake_channel.replace('_', ' ').toUpperCase()}</p>
-            <p className="text-base"><strong>Fulfillment Type:</strong> {job.fulfillment_type.toUpperCase()}</p>
+            <p className="text-base"><strong>Fulfillment:</strong> Store Pickup</p>
             <p className="text-base"><strong>Status:</strong> {job.status.replaceAll('_', ' ').toUpperCase()}</p>
             {job.due_date && <p className="text-base"><strong>Due Date:</strong> {new Date(job.due_date).toLocaleDateString()}</p>}
           </div>

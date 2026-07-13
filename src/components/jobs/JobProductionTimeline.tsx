@@ -10,7 +10,6 @@ interface JobProductionTimelineProps {
   readonly setStatus: (status: string) => void;
   readonly notes: string;
   readonly setNotes: (notes: string) => void;
-  readonly fulfillmentType: 'shipping' | 'delivery' | 'pickup';
   readonly completionPhotoUrl: string;
   readonly setCompletionPhotoUrl: (url: string) => void;
 }
@@ -21,7 +20,6 @@ export default function JobProductionTimeline({
   setStatus,
   notes,
   setNotes,
-  fulfillmentType,
   completionPhotoUrl,
   setCompletionPhotoUrl,
 }: JobProductionTimelineProps) {
@@ -44,43 +42,28 @@ export default function JobProductionTimeline({
       setUploadingPhoto(false);
     }
   };
-  let STAGES: Array<{ key: string; label: string; emoji: string }> = [];
-  
-  if (job.fulfillment_type === 'shipping' || job.fulfillment_type === 'delivery') {
-    let dispatchedLabel = 'Shipped';
-    let dispatchedEmoji = '🚚';
-    if (fulfillmentType === 'pickup') {
-      dispatchedLabel = 'Ready/Handed Over';
-      dispatchedEmoji = '🛍️';
-    } else if (fulfillmentType === 'delivery') {
-      dispatchedLabel = 'Dispatched';
-      dispatchedEmoji = '🛵';
-    }
-    STAGES = [
-      { key: 'pending',          label: 'Pending',        emoji: '🕐' },
-      { key: 'design',           label: 'Design',         emoji: '🎨' },
-      { key: 'pattern_making',   label: 'Pattern Making',  emoji: '📏' },
-      { key: 'cutting',          label: 'Cutting',        emoji: '✂️' },
-      { key: 'sewing',           label: 'Sewing',         emoji: '🧵' },
-      { key: 'fitting',          label: 'Fitting',        emoji: '📐' },
-      { key: 'finishing',        label: 'Finishing',      emoji: '✨' },
-      { key: 'packed',           label: 'Packed',         emoji: '📦' },
-      { key: 'handed_to_courier',label: dispatchedLabel,  emoji: dispatchedEmoji },
-      { key: 'completed',        label: 'Completed',      emoji: '🏁' },
-    ];
-  } else {
-    STAGES = [
-      { key: 'pending',          label: 'Pending',        emoji: '🕐' },
-      { key: 'design',           label: 'Design',         emoji: '🎨' },
-      { key: 'pattern_making',   label: 'Pattern Making',  emoji: '📏' },
-      { key: 'cutting',          label: 'Cutting',        emoji: '✂️' },
-      { key: 'sewing',           label: 'Sewing',         emoji: '🧵' },
-      { key: 'fitting',          label: 'Fitting',        emoji: '📐' },
-      { key: 'finishing',        label: 'Finishing',      emoji: '✨' },
-      { key: 'ready_for_pickup', label: 'Ready',          emoji: '📦' },
-      { key: 'completed',        label: 'Completed',      emoji: '🏁' },
-    ];
-  }
+  // Store pickup only — the approved thesis excludes logistics/courier/
+  // delivery management from the system's scope. Bulk Order Override: a job
+  // with a Team Roster / Size Sheet — or whose service is itself typed as
+  // bulk sublimation — skips Pattern Making and goes straight to Mass
+  // Cutting & Printing instead. Mirrors JobOrder::isBulkOrder() backend-side.
+  const roster = (job.custom_order_data as { team_roster?: unknown[] } | null | undefined)?.team_roster;
+  const isBulkOrder = (Array.isArray(roster) && roster.length > 0) || job.service?.service_type === 'bulk_sublimation';
+
+  const STAGES: Array<{ key: string; label: string; emoji: string }> = [
+    { key: 'pending',              label: 'Pending',               emoji: '🕐' },
+    { key: 'design',               label: 'Design',                emoji: '🎨' },
+    isBulkOrder
+      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', emoji: '🖨️' }
+      : { key: 'pattern_making',        label: 'Pattern Making',          emoji: '📏' },
+    { key: 'cutting',              label: 'Cutting',               emoji: '✂️' },
+    { key: 'sewing',               label: 'Sewing / Assembly',     emoji: '🧵' },
+    { key: 'ready_for_fitting',    label: 'Ready for Fitting',     emoji: '📐' },
+    { key: 'final_adjustments',    label: 'Final Adjustments',     emoji: '🛠️' },
+    { key: 'qc_ironing',           label: 'QC & Ironing',          emoji: '✨' },
+    { key: 'ready_for_pickup',     label: 'Ready',                 emoji: '📦' },
+    { key: 'completed',            label: 'Completed',             emoji: '🏁' },
+  ];
 
   const cancelled = status === 'cancelled';
   const currentIdx = STAGES.findIndex(s => s.key === status);
@@ -163,27 +146,17 @@ export default function JobProductionTimeline({
           >
             <option value="pending">Pending</option>
             <option value="design">Design</option>
-            <option value="pattern_making">Pattern Making</option>
+            {isBulkOrder ? (
+              <option value="mass_cutting_printing">Mass Cutting & Printing</option>
+            ) : (
+              <option value="pattern_making">Pattern Making</option>
+            )}
             <option value="cutting">Cutting</option>
-            <option value="sewing">Sewing</option>
-            <option value="fitting">Fitting</option>
-            <option value="finishing">Finishing</option>
-            {job.fulfillment_type === 'pickup' && (
-              <option value="ready_for_pickup">Ready for Pickup</option>
-            )}
-            {(job.fulfillment_type === 'shipping' || job.fulfillment_type === 'delivery') && (
-              <>
-                <option value="packed">Packed</option>
-                <option value="handed_to_courier">
-                  {(() => {
-                    let courierLabel = 'Shipped / Handed to Courier';
-                    if (fulfillmentType === 'delivery') courierLabel = 'Dispatched / Handed to Rider';
-                    else if (fulfillmentType === 'pickup') courierLabel = 'Ready for Pickup / Handed Over';
-                    return courierLabel;
-                  })()}
-                </option>
-              </>
-            )}
+            <option value="sewing">Sewing / Assembly</option>
+            <option value="ready_for_fitting">Ready for Fitting</option>
+            <option value="final_adjustments">Final Adjustments</option>
+            <option value="qc_ironing">QC & Ironing</option>
+            <option value="ready_for_pickup">Ready for Pickup</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { LayoutDashboard, Scissors, UserCog, Package, Settings, Users, Building2, Calendar, ShoppingBag, Grip, ChevronDown, LifeBuoy, Home, CreditCard, MapPin, Sparkles, Tag } from 'lucide-react';
+import { LayoutDashboard, Scissors, UserCog, Package, Settings, Users, Building2, Calendar, ShoppingBag, Grip, ChevronDown, LifeBuoy, Home, CreditCard, MapPin, Sparkles } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
 import BrandLogo from '@/components/BrandLogo';
@@ -106,14 +106,13 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       // Ready-to-Wear is folded into Design Catalog as a tab (see the catalog page).
       // "Our Expertise" was merged into Services — a service's category/type IS
       // the shop's declared expertise, so it no longer needs a separate tab.
-      // Design Catalog, Services, and Coupons are all shop_owner-only on the
-      // backend (not even branch_manager) — hidden here to match, otherwise
+      // Design Catalog and Services are both shop_owner-only on the backend
+      // (not even branch_manager) — hidden here to match, otherwise
       // staff/branch managers see a link that 403s the moment they click it.
       title: 'Showroom',
       items: [
         ...(isShopOwner ? [{ name: 'Design Catalog', path: '/dashboard/catalog', icon: ShoppingBag }] : []),
         ...(isShopOwner ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
-        ...(isShopOwner ? [{ name: 'Coupons', path: '/dashboard/coupons', icon: Tag }] : []),
       ]
     },
     {

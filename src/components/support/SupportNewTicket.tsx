@@ -7,7 +7,7 @@ import { UploadItem } from './supportHelpers';
 // subject from scratch every time.
 const SUBJECT_OPTIONS = [
   'Home', 'Appointments', 'Collect Payments', 'Custom Jobs', 'Customers',
-  'Design Catalog', 'Services', 'Coupons', 'Staff', 'Reports & Insights',
+  'Design Catalog', 'Services', 'Staff', 'Reports & Insights',
   'Branches', 'My Storefront', 'Billing & Plans', 'Account Settings',
   'Log Out', 'Notifications',
 ];

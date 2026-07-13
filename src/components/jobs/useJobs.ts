@@ -74,18 +74,22 @@ export function useJobs() {
     if (!shop) return;
     setActionLoadingId(jobId);
     const old = [...jobs];
-    setJobs(jobs.map(j => j.id === jobId ? { ...j, status: 'cutting' } : j));
+    // Moves a pending job into 'design' — the first stage of the 3-Phase
+    // Tailoring Tracker pipeline, exempt from the DP gate (no fabric/material
+    // is committed yet). Approving no longer jumps straight to 'cutting',
+    // which used to skip Design/Pattern Making (or Mass Cutting & Printing
+    // for bulk orders) entirely.
+    setJobs(jobs.map(j => j.id === jobId ? { ...j, status: 'design' } : j));
     try {
       const job = jobs.find(j => j.id === jobId);
       if (!job) return;
-      await api.put(`/shops/${shop.id}/jobs/${jobId}`, { status: 'cutting', payment_status: job.payment_status, balance: job.balance });
+      await api.put(`/shops/${shop.id}/jobs/${jobId}`, { status: 'design', payment_status: job.payment_status, balance: job.balance });
       toast.success('Job order approved into production.');
     } catch (err: unknown) {
       setJobs(old);
-      // Approving moves the job straight to "cutting", which the backend
-      // rejects if the 50% downpayment gate isn't met yet — that's the most
-      // common case for a freshly-reviewed job, so a generic failure message
-      // here would hide the one thing the owner actually needs to do next.
+      // Surface the backend's actual message (e.g. a validation error) rather
+      // than a generic failure — 'design' itself is DP-gate-exempt, but the
+      // request can still fail for other reasons (branch access, etc.).
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to approve order.');
     } finally {
@@ -132,10 +136,9 @@ export function useJobs() {
     return matchType && matchSearch;
   });
 
-  // Stage columns depend on the FULFILLMENT type of the visible jobs (pickup ->
-  // ready_for_pickup; shipping/delivery -> packed/handed_to_courier), not on how
-  // the order came in. Prevents a walk-in Shipping order (or online Pickup order)
-  // from vanishing because its status had no column.
+  // Only shows whichever of Pattern Making / Mass Cutting & Printing is
+  // actually relevant to the jobs currently on the board (bulk vs. standard
+  // orders), instead of always showing both columns.
   const activeColumns = columnsForJobs(filteredJobs);
 
   // Sorted by most-recently-updated first within each column, so a job that

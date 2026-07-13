@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Megaphone, Calendar, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, type LucideIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, type LucideIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
@@ -16,6 +16,7 @@ import { Service } from '@/components/services/serviceHelpers';
 import ServiceFormModal from '@/components/services/ServiceFormModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import EditOperatingHoursModal from '@/components/profile/EditOperatingHoursModal';
+import SpecialHoursAnnouncementCard from '@/components/profile/SpecialHoursAnnouncementCard';
 import ProfileAboutTab from '@/components/profile/ProfileAboutTab';
 import PostImageLightbox from '@/components/profile/PostImageLightbox';
 import BrandLogo from '@/components/BrandLogo';
@@ -86,9 +87,7 @@ interface CatalogListItem {
   id: number;
   name: string;
   price: string;
-  sale_price?: string | number | null;
-  sale_starts_at?: string | null;
-  sale_ends_at?: string | null;
+  estimated_days?: number | null;
   material: string;
   garment_type?: string | null;
   images: CatalogItemImage[];
@@ -146,6 +145,7 @@ interface ShopProfile {
     special_open_time: string | null;
     special_close_time: string | null;
     announcement_message: string | null;
+    announcement_image_url: string | null;
   } | null;
   operating_hours?: Record<string, { is_open: boolean; open: string; close: string }>;
   special_hours?: Array<{
@@ -157,6 +157,7 @@ interface ShopProfile {
     special_open_time: string | null;
     special_close_time: string | null;
     announcement_message: string | null;
+    announcement_image_url: string | null;
   }>;
 }
 
@@ -669,10 +670,19 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         </div>
       </nav>
 
-      {shop.active_special_hours?.announcement_message && (
+      {(shop.active_special_hours?.announcement_message || shop.active_special_hours?.announcement_image_url) && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3.5 px-6 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="max-w-5xl mx-auto flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            {shop.active_special_hours.announcement_image_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={shop.active_special_hours.announcement_image_url}
+                alt=""
+                className="w-10 h-10 rounded-lg object-cover border border-amber-200 shrink-0"
+              />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            )}
             <div className="text-sm font-medium">
               <span className="font-bold mr-1">{shop.active_special_hours.title}:</span>
               {shop.active_special_hours.announcement_message}
@@ -727,16 +737,46 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                 </div>
 
                 <div className="flex gap-2 mb-2 md:mb-3 shrink-0">
-                  {isOwnerViewingOwnShop ? (
+                  {isOwnerViewingOwnShop && (
                     <button
                       type="button"
                       onClick={() => setActiveTab('about')}
                       title="Edit Profile"
                       className="flex items-center gap-1.5 px-4 py-2 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors text-sm font-medium"
                     >
-                      <Pencil size={15} /> Edit Profile
+                      <Pencil size={15} /> Edit
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('catalog')}
+                    title="Catalog"
+                    className="p-2.5 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors"
+                  >
+                    <Package size={17} />
+                  </button>
+
+                  {shop.active_special_hours?.is_closed ? (
+                    <button
+                      type="button"
+                      disabled
+                      title="Online booking is temporarily disabled"
+                      className="p-2.5 bg-[#B26959]/10 text-[#B26959]/50 rounded-lg cursor-not-allowed"
+                    >
+                      <Calendar size={17} />
                     </button>
                   ) : (
+                    <Link
+                      href={`/shop/${shopId}/book`}
+                      title="Book Appointment"
+                      className="p-2.5 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors"
+                    >
+                      <Calendar size={17} />
+                    </Link>
+                  )}
+
+                  {!isOwnerViewingOwnShop && (
                     <>
                       <button
                         onClick={() => setIsRatingModalOpen(true)}
@@ -889,23 +929,9 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button type="button" onClick={() => setActiveTab('catalog')} className="group p-6 border border-zinc-200 rounded-2xl hover:border-zinc-900 hover:shadow-lg transition-all bg-white text-left">
-                    <h3 className="font-semibold text-lg text-zinc-900 mb-2 group-hover:text-[#886E62] transition-colors">Catalog Showcase &rarr;</h3>
-                    <p className="text-sm text-[#A8A19A]">Explore our expertly curated collection of premium garments.</p>
-                  </button>
-                  {shop.active_special_hours?.is_closed ? (
-                    <div className="p-6 bg-[#B26959]/5 border border-[#B26959]/20 rounded-2xl cursor-not-allowed">
-                      <h3 className="font-semibold text-lg mb-2 text-[#B26959]">Temporarily Closed</h3>
-                      <p className="text-sm text-[#B26959]/80">Online booking is temporarily disabled. Check announcement banner for details.</p>
-                    </div>
-                  ) : (
-                    <Link href={`/shop/${shopId}/book`} className="group p-6 bg-white shadow-sm text-[#2D2A26] rounded-2xl hover:bg-[#F0EAE3] hover:shadow-lg transition-all border border-[#EBE6E0]">
-                      <h3 className="font-semibold text-lg mb-2 text-zinc-900 group-hover:text-[#886E62] transition-colors">Book Appointment &rarr;</h3>
-                      <p className="text-sm text-[#827A73]">Schedule a bespoke fitting or consultation session.</p>
-                    </Link>
-                  )}
-                </div>
+                {isOwnerViewingOwnShop && authShop && (
+                  <SpecialHoursAnnouncementCard shopId={authShop.id} onSaved={fetchShop} />
+                )}
               </div>
             </div>
           )}
@@ -1192,7 +1218,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10">
                         {filteredCatalogItems.map(item => {
                           const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
-                          const activeSale = getActiveSale(item);
                           return (
                             <Link href={`/shop/${shopId}/catalog/${item.id}`} key={item.id} className="group block">
                               <div className="aspect-3/4 bg-[#F0EAE3] overflow-hidden relative rounded-xl">
@@ -1207,11 +1232,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-[#A8A19A] text-sm">No Image</div>
                                 )}
-                                {activeSale && (
-                                  <div className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full z-10">
-                                    {activeSale.percentOff}% Off
-                                  </div>
-                                )}
 
                                 {/* Hover Overlay for Material */}
                                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
@@ -1222,14 +1242,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               </div>
                               <div className="mt-3 text-center">
                                 <h3 className="text-sm font-semibold text-zinc-900 group-hover:text-[#886E62] transition-colors">{item.name}</h3>
-                                {activeSale ? (
-                                  <p className="text-xs mt-1">
-                                    <span className="line-through text-[#A8A19A] mr-1.5">₱{activeSale.original.toLocaleString()}</span>
-                                    <span className="font-semibold text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-[#A8A19A] mt-1">₱{Number(item.price).toLocaleString()}</p>
-                                )}
+                                <p className="text-xs text-[#A8A19A] mt-1">Starting at ₱{Number(item.price).toLocaleString()}</p>
                               </div>
                             </Link>
                           );
@@ -1242,53 +1255,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
             </div>
           )}
 
-          {/* TAB: HOURS */}
+          {/* TAB: HOURS — announcements show in the global top banner across
+              every tab (see the banner right after the nav above), so this
+              tab is just the standard operating hours. */}
           {activeTab === 'hours' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Col: Announcements */}
-              <div>
-                <h3 className="text-xl font-bold text-[#2D2A26] mb-6 flex items-center gap-2">
-                  <Megaphone size={20} className="text-[#9A8073]" />
-                  Announcements
-                </h3>
-                
-                {shop.special_hours && shop.special_hours.length > 0 ? (
-                  <div className="space-y-4">
-                    {shop.special_hours.map(s => (
-                      <div key={s.id} className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                          <h5 className="text-sm font-bold text-[#2D2A26]">{s.title}</h5>
-                          {s.is_closed ? (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-red-50 text-red-700 rounded-md border border-red-100">
-                              Closed
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100">
-                              Special Hours
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[#827A73] mb-3 font-medium flex items-center">
-                          <Calendar size={12} className="mr-1.5 text-[#9A8073]" />
-                          {new Date(s.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                        {s.announcement_message && (
-                          <div className="text-sm bg-amber-50/50 border border-amber-100 text-amber-900 px-4 py-3 rounded-xl flex items-start gap-2">
-                            <AlertCircle size={16} className="shrink-0 mt-0.5 text-amber-600" />
-                            <span className="leading-relaxed">{s.announcement_message}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-2xl p-6 border border-[#EBE6E0] text-center">
-                    <p className="text-[#827A73] text-sm">No active announcements at this time.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Col: Operating Hours */}
+            <div className="max-w-md mx-auto">
               <div>
                 <h3 className="text-xl font-bold text-[#2D2A26] mb-6 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
