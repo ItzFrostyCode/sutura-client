@@ -42,3 +42,6 @@ next-env.d.ts
 
 # build artifacts (keep out of the repo)
 /lint_output.txt
+
+# git worktrees for isolated feature branches
+/.worktrees
