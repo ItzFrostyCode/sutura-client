@@ -112,6 +112,8 @@ export default function JobFinancialsCard({
     setEditMethod(payment.payment_method);
     setEditReference(payment.reference || '');
     setEditNotes(payment.notes || '');
+    setRejectingPaymentId(null);
+    setRejectReason('');
   };
 
   const handleSaveEdit = async (paymentId: number) => {
@@ -383,7 +385,7 @@ export default function JobFinancialsCard({
                               )}
                               <button
                                 type="button"
-                                onClick={() => { setRejectingPaymentId(payment.id); setMenuOpenPaymentId(null); }}
+                                onClick={() => { setEditingPaymentId(null); setRejectingPaymentId(payment.id); setMenuOpenPaymentId(null); }}
                                 className="w-full text-left px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 flex items-center gap-1.5"
                               >
                                 <Flag size={12} /> Reject payment…
