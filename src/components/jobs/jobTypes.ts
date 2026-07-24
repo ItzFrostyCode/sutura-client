@@ -14,6 +14,9 @@ export interface Payment {
   created_at: string;
   notes?: string;
   recorded_by?: { name: string; id: number };
+  rejected_at?: string | null;
+  rejected_reason?: string | null;
+  rejected_by?: { name: string; id: number } | null;
 }
 
 export interface Job {
@@ -47,6 +50,7 @@ export interface Job {
   reference_link?: string | null;
   material_source?: 'shop_supplied' | 'customer_supplied' | null;
   rejection_reason?: string | null;
+  cancellation_reason?: string | null;
   discount_amount?: number | string | null;
   customer_job_count?: number;
 }
