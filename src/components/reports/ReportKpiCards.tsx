@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   TrendingUp, Wallet, PackageCheck, Calendar as CalendarIcon,
-  Users, Target, DollarSign, AlertTriangle, BarChart2,
+  Users, Target, DollarSign, AlertTriangle, BarChart2, Flag, PackageX,
 } from 'lucide-react';
 import { AnalyticsData } from './reportHelpers';
 
@@ -59,6 +59,20 @@ export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsP
       sub: `${backendRate}% completion rate`,
       icon: <PackageCheck className="text-taupe" size={20} />,
       color: 'text-[#9A8073] bg-[#9A8073]/10 border-[#9A8073]/20',
+    },
+    {
+      label: 'Rejected Payments',
+      value: `₱${Number(data?.rejected_payments_amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+      sub: 'Flagged as fake, balance reversed',
+      icon: <Flag className="text-[#B26959]" size={20} />,
+      color: 'text-[#B26959] bg-[#B26959]/10 border-[#B26959]/20',
+    },
+    {
+      label: 'Forfeited Deposits',
+      value: `₱${Number(data?.forfeited_deposit_amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+      sub: 'Kept from abandoned orders',
+      icon: <PackageX className="text-[#B26959]" size={20} />,
+      color: 'text-[#B26959] bg-[#B26959]/10 border-[#B26959]/20',
     },
     {
       label: 'Overdue Orders',

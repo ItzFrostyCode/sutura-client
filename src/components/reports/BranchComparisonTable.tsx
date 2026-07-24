@@ -19,6 +19,8 @@ export interface BranchPerformance {
   completion_rate: number;
   total_revenue: number;
   total_outstanding_balance: number;
+  rejected_payments_amount: number;
+  forfeited_deposit_amount: number;
   total_appointments: number;
   total_staff: number;
 }
@@ -118,6 +120,8 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
               <th className="px-6 py-3 font-medium">Branch</th>
               <th className="px-6 py-3 font-medium">Revenue</th>
               <th className="px-6 py-3 font-medium">Outstanding</th>
+              <th className="px-6 py-3 font-medium text-[#B26959]">Rejected</th>
+              <th className="px-6 py-3 font-medium text-[#B26959]">Forfeited</th>
               <th className="px-6 py-3 font-medium">Jobs</th>
               <th className="px-6 py-3 font-medium">Completion</th>
               <th className="px-6 py-3 font-medium">Appointments</th>
@@ -142,6 +146,24 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
                   {row.total_outstanding_balance > 0 ? (
                     <span className="text-amber-600 font-medium">
                       ₱{row.total_outstanding_balance.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    </span>
+                  ) : (
+                    <span className="text-[#A8A19A]">₱0.00</span>
+                  )}
+                </td>
+                <td className="px-6 py-3">
+                  {row.rejected_payments_amount > 0 ? (
+                    <span className="text-[#B26959] font-semibold">
+                      ₱{row.rejected_payments_amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    </span>
+                  ) : (
+                    <span className="text-[#A8A19A]">₱0.00</span>
+                  )}
+                </td>
+                <td className="px-6 py-3">
+                  {row.forfeited_deposit_amount > 0 ? (
+                    <span className="text-[#B26959] font-semibold">
+                      ₱{row.forfeited_deposit_amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </span>
                   ) : (
                     <span className="text-[#A8A19A]">₱0.00</span>

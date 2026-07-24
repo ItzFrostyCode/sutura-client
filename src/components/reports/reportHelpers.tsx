@@ -16,6 +16,8 @@ export interface AnalyticsData {
   today_revenue?: number;
   overdue_jobs?: number;
   avg_order_value?: number;
+  rejected_payments_amount?: number;
+  forfeited_deposit_amount?: number;
   completion_rate?: number;
   revenue_data?: { month: string; revenue: number }[];
   jobs_by_status?: { status: string; count: number }[];
