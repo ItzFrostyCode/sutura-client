@@ -24,6 +24,7 @@ export function useJobDetail(jobId: string) {
   
   // Editable fields
   const [status, setStatus] = useState('');
+  const [cancellationReason, setCancellationReason] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
@@ -106,6 +107,7 @@ export function useJobDetail(jobId: string) {
         partner_shop_name: isOutsourced ? partnerShopName : null,
         outsourcing_cost: isOutsourced && outsourcingCost ? Number.parseFloat(outsourcingCost) : null,
         completion_photo_url: completionPhotoUrl || null,
+        cancellation_reason: status === 'cancelled' ? cancellationReason : undefined,
       });
       // Refresh
       const res = await api.get(`/shops/${shop.id}/jobs/${jobId}`);
@@ -252,6 +254,31 @@ export function useJobDetail(jobId: string) {
     }
   };
 
+  // Marks a specific payment as fake/bad, discovered after the fact —
+  // reverses balance/payment_status server-side even if the job is already
+  // completed. See JobOrderController::rejectPayment.
+  const handleRejectPayment = async (paymentId: number, reason: string) => {
+    if (!shop || !job) return;
+    setSaving(true);
+    try {
+      await api.post(`/shops/${shop.id}/jobs/${job.id}/payments/${paymentId}/reject`, {
+        reason,
+      });
+      const res = await api.get(`/shops/${shop.id}/jobs/${job.id}`);
+      const updatedJob = res.data.data;
+      setJob(updatedJob);
+      setBalance(updatedJob.balance);
+      setPaymentStatus(updatedJob.payment_status);
+      toast.success('Payment rejected — balance updated.');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to reject payment.');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!shop || !job) return;
     setIsDeleting(true);
@@ -301,6 +328,9 @@ export function useJobDetail(jobId: string) {
     handleChargePayment,
     handleApplyDiscount,
     handleUpdatePayment,
+    handleRejectPayment,
+    cancellationReason,
+    setCancellationReason,
     handleDelete,
   };
 }
