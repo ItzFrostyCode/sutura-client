@@ -47,6 +47,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     handleChargePayment,
     handleApplyDiscount,
     handleUpdatePayment,
+    handleRejectPayment,
     handleDelete,
   } = useJobDetail(id);
 
@@ -427,6 +428,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                 onCharge={handleChargePayment}
                 onApplyDiscount={handleApplyDiscount}
                 onUpdatePayment={handleUpdatePayment}
+                onRejectPayment={handleRejectPayment}
               />
             </div>
           </div>

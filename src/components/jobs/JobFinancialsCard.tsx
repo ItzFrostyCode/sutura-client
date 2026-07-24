@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Job, Payment } from './jobTypes';
-import { CreditCard, Banknote, Smartphone, ChevronDown, ChevronUp, Pencil, X, Check, Printer, Tag } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, ChevronDown, ChevronUp, Pencil, X, Check, Printer, Tag, MoreVertical, Flag } from 'lucide-react';
 
 interface JobFinancialsCardProps {
   readonly job: Job;
@@ -9,6 +9,7 @@ interface JobFinancialsCardProps {
   readonly onCharge: (amount: number, method: string, notes: string, reference?: string) => Promise<void>;
   readonly onApplyDiscount: (amount: number, reason: string) => Promise<void>;
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;
+  readonly onRejectPayment: (paymentId: number, reason: string) => Promise<void>;
 }
 
 const METHOD_ICONS: Record<string, React.ReactNode> = {
@@ -29,6 +30,7 @@ export default function JobFinancialsCard({
   onCharge,
   onApplyDiscount,
   onUpdatePayment,
+  onRejectPayment,
 }: JobFinancialsCardProps) {
   const totalAmount       = Number.parseFloat(String(job.total_amount));
   const remainingBalance  = Number.parseFloat(String(job.balance));
@@ -68,6 +70,25 @@ export default function JobFinancialsCard({
   const [editReference, setEditReference] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  const [menuOpenPaymentId, setMenuOpenPaymentId] = useState<number | null>(null);
+  const [rejectingPaymentId, setRejectingPaymentId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [submittingReject, setSubmittingReject] = useState(false);
+
+  const handleSubmitReject = async (paymentId: number) => {
+    if (!rejectReason.trim()) return;
+    setSubmittingReject(true);
+    try {
+      await onRejectPayment(paymentId, rejectReason.trim());
+      setRejectingPaymentId(null);
+      setRejectReason('');
+    } catch {
+      // handled by parent
+    } finally {
+      setSubmittingReject(false);
+    }
+  };
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -318,12 +339,17 @@ export default function JobFinancialsCard({
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       {METHOD_ICONS[payment.payment_method] ?? <CreditCard size={13} className="text-[#827A73]" />}
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#827A73]">
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${payment.rejected_at ? 'line-through text-[#A8A19A]' : 'text-[#827A73]'}`}>
                         {METHOD_LABELS[payment.payment_method] ?? payment.payment_method}
                       </span>
+                      {payment.rejected_at && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-rose-100 text-rose-600 border border-rose-200 px-1.5 py-0.5 rounded-full">
+                          Rejected
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-[#2D2A26]">
+                      <span className={`text-sm font-bold ${payment.rejected_at ? 'line-through text-[#A8A19A]' : 'text-[#2D2A26]'}`}>
                         ₱{Number.parseFloat(String(payment.amount)).toFixed(2)}
                       </span>
                       <Link
@@ -334,15 +360,37 @@ export default function JobFinancialsCard({
                       >
                         <Printer size={12} />
                       </Link>
-                      {editingPaymentId !== payment.id && !jobIsCompleted && (
-                        <button
-                          type="button"
-                          onClick={() => startEditingPayment(payment)}
-                          title="Edit method/reference/notes (amount is locked)"
-                          className="text-[#A8A19A] hover:text-[#9A8073] transition-colors"
-                        >
-                          <Pencil size={12} />
-                        </button>
+                      {!payment.rejected_at && (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setMenuOpenPaymentId(p => (p === payment.id ? null : payment.id))}
+                            title="More actions"
+                            className="text-[#A8A19A] hover:text-[#9A8073] transition-colors"
+                          >
+                            <MoreVertical size={13} />
+                          </button>
+                          {menuOpenPaymentId === payment.id && (
+                            <div className="absolute right-0 top-5 bg-white border border-[#EBE6E0] rounded-lg shadow-lg min-w-[160px] z-10 overflow-hidden">
+                              {!jobIsCompleted && (
+                                <button
+                                  type="button"
+                                  onClick={() => { startEditingPayment(payment); setMenuOpenPaymentId(null); }}
+                                  className="w-full text-left px-3 py-2 text-xs text-[#524A44] hover:bg-[#FAF6F3] flex items-center gap-1.5"
+                                >
+                                  <Pencil size={12} /> Edit details
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => { setRejectingPaymentId(payment.id); setMenuOpenPaymentId(null); }}
+                                className="w-full text-left px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 flex items-center gap-1.5"
+                              >
+                                <Flag size={12} /> Reject payment…
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -398,6 +446,45 @@ export default function JobFinancialsCard({
                       {payment.recorded_by && <p>By: {payment.recorded_by.name}</p>}
                       {payment.reference && <p>Ref: {payment.reference}</p>}
                       {payment.notes && <p className="text-[#827A73] italic">{payment.notes}</p>}
+                    </div>
+                  )}
+
+                  {rejectingPaymentId === payment.id && (
+                    <div className="space-y-1.5 mt-2 pt-2 border-t border-rose-200">
+                      <input
+                        type="text"
+                        value={rejectReason}
+                        onChange={e => setRejectReason(e.target.value)}
+                        placeholder="Reason — e.g. GCash reference doesn't match our records"
+                        className="w-full px-2 py-1.5 bg-white border border-rose-200 rounded-lg text-xs text-[#2D2A26] focus:outline-none focus:border-rose-400"
+                      />
+                      <div className="flex justify-end gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => { setRejectingPaymentId(null); setRejectReason(''); }}
+                          className="px-2 py-1 rounded-lg text-[10px] font-medium text-[#827A73] hover:text-[#2D2A26]"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={submittingReject || !rejectReason.trim()}
+                          onClick={() => handleSubmitReject(payment.id)}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50"
+                        >
+                          {submittingReject ? 'Rejecting…' : 'Confirm Reject'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {payment.rejected_at && (
+                    <div className="mt-2 pt-2 border-t border-rose-200 text-[10px] text-rose-600 space-y-0.5">
+                      <p className="font-semibold">
+                        Rejected {new Date(payment.rejected_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {payment.rejected_by && ` by ${payment.rejected_by.name}`}
+                      </p>
+                      {payment.rejected_reason && <p className="italic">{payment.rejected_reason}</p>}
                     </div>
                   )}
                 </div>
