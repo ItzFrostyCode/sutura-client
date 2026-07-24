@@ -3,6 +3,7 @@ import { Camera, Loader2, X } from 'lucide-react';
 import { Job } from './jobTypes';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
+import CancellationReasonModal from './CancellationReasonModal';
 
 interface JobProductionTimelineProps {
   readonly job: Job;
@@ -12,6 +13,8 @@ interface JobProductionTimelineProps {
   readonly setNotes: (notes: string) => void;
   readonly completionPhotoUrl: string;
   readonly setCompletionPhotoUrl: (url: string) => void;
+  readonly setCancellationReason: (reason: string) => void;
+  readonly collectedAmount: number;
 }
 
 export default function JobProductionTimeline({
@@ -22,9 +25,12 @@ export default function JobProductionTimeline({
   setNotes,
   completionPhotoUrl,
   setCompletionPhotoUrl,
+  setCancellationReason,
+  collectedAmount,
 }: JobProductionTimelineProps) {
   const { shop } = useAuthStore();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handlePhotoUpload = async (file: File | undefined) => {
     if (!file || !shop) return;
@@ -141,7 +147,13 @@ export default function JobProductionTimeline({
           <select
             id="update-production-phase"
             value={status}
-            onChange={e => setStatus(e.target.value)}
+            onChange={e => {
+              if (e.target.value === 'cancelled') {
+                setShowCancelModal(true);
+              } else {
+                setStatus(e.target.value);
+              }
+            }}
             className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
           >
             <option value="pending">Pending</option>
@@ -262,6 +274,17 @@ export default function JobProductionTimeline({
           </div>
         )}
       </div>
+
+      <CancellationReasonModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        collectedAmount={collectedAmount}
+        onConfirm={(reason) => {
+          setCancellationReason(reason);
+          setStatus('cancelled');
+          setShowCancelModal(false);
+        }}
+      />
     </div>
   );
 }

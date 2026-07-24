@@ -31,6 +31,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     setNotes,
     completionPhotoUrl,
     setCompletionPhotoUrl,
+    setCancellationReason,
     isOutsourced,
     setIsOutsourced,
     partnerShopName,
@@ -403,6 +404,8 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               setNotes={setNotes}
               completionPhotoUrl={completionPhotoUrl}
               setCompletionPhotoUrl={setCompletionPhotoUrl}
+              setCancellationReason={setCancellationReason}
+              collectedAmount={Number.parseFloat(String(job.total_amount)) - Number.parseFloat(String(job.balance))}
             />
 
             {/* Fulfillment Details Card */}
