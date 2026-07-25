@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, ShoppingBag, Scissors } from 'lucide-react';
+import { Store, ShoppingBag, Scissors, Pause } from 'lucide-react';
 
 // Unified with the Multi-Stage Staff Assignment stages (design/pattern_making/
 // cutting/sewing/qc_ironing) so the customer-facing timeline and the internal
@@ -25,6 +25,18 @@ export const ALL_COLUMNS = [
   { id: 'ready_for_pickup',       title: 'Ready for Pickup',       color: 'bg-emerald-50/50',   border: 'border-emerald-200/50' },
   { id: 'completed',              title: 'Completed',              color: 'bg-[#9A8073]/10',    border: 'border-[#9A8073]/30' },
 ];
+
+/**
+ * Deliberately NOT part of ALL_COLUMNS/columnsForJobs — those two drive the
+ * "Online/Walk-in production flow: A → B → C" banner on the jobs page, and
+ * on_hold is an orthogonal pause state reachable from any stage, not a step
+ * in that sequence. Rendered as a separate, conditionally-shown column
+ * instead so a held job doesn't just disappear off the board (previously
+ * this behaved like 'cancelled'/'rejected' — no column, no board visibility
+ * at all — which is fine for a terminal state but not for a paused one the
+ * owner still needs to remember to resume).
+ */
+export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-amber-50/60', border: 'border-amber-300/60' };
 
 /**
  * "No DP, No Layout, No Cut": a job cannot enter any of these production
@@ -98,6 +110,7 @@ export interface Job {
   due_date?: string | null;
   updated_at?: string;
   custom_order_data?: Record<string, unknown> | null;
+  hold_reason?: string | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';
@@ -111,7 +124,7 @@ export const CANCELLATION_REASON_LABELS: Record<string, string> = {
 
 export const getDueStatus = (dueDateStr: string | null | undefined, status: string) => {
   if (!dueDateStr) return null;
-  if (['completed', 'cancelled'].includes(status)) return null;
+  if (['completed', 'cancelled', 'on_hold'].includes(status)) return null;
 
   const dueDate = new Date(dueDateStr);
   const today = new Date();
@@ -154,6 +167,8 @@ export function ColumnIcon({ id }: { readonly id: string }) {
       return <Store size={14} className="text-emerald-600" />;
     case 'completed':
       return <Scissors size={14} className="text-[#9A8073]" />;
+    case 'on_hold':
+      return <Pause size={14} className="text-amber-600" />;
     default:
       return null;
   }

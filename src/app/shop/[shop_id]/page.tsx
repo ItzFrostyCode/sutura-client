@@ -224,7 +224,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [activeTab, setActiveTab] = useState<'home' | 'about' | 'services' | 'catalog' | 'hours' | 'locations' | 'work' | 'reviews'>(
     selectedBranchId
       ? 'locations'
-      : (initialTabParam === 'catalog' || initialTabParam === 'reviews' ? initialTabParam : 'home')
+      : (initialTabParam === 'catalog' || initialTabParam === 'reviews' || initialTabParam === 'about' ? initialTabParam : 'home')
   );
 
   // Catalog tab state — same data source and behavior as the old standalone

@@ -28,6 +28,7 @@ export default function JobOrdersPage() {
     handleConfirmReject,
     activeColumns,
     groupedJobs,
+    onHoldJobs,
     walkInCount,
     onlineCount,
     pendingReviewCount,
@@ -159,6 +160,7 @@ export default function JobOrdersPage() {
         <JobKanbanBoard
           groupedJobs={groupedJobs}
           activeColumns={activeColumns}
+          onHoldJobs={onHoldJobs}
           actionLoadingId={actionLoadingId}
           onUpdateStatus={updateJobStatus}
           onApprove={handleApproveJob}

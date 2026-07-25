@@ -11,6 +11,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { ToastProvider } from '@/context/ToastContext';
 import { BranchProvider, useBranch } from '@/context/BranchContext';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
+import WhatsNewTour, { hasSeenLatestWhatsNew } from '@/components/WhatsNewTour';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
   const { user, isAuthenticated, logout, setAuth, token, shop } = useAuthStore();
@@ -72,6 +73,18 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }, []);
 
   const roleName = user?.roles?.[0]?.name;
+
+  // Owner-only for now — these features (customer notes, shop settings) are
+  // mostly owner-facing edits, matching the rest of this dashboard's
+  // owner-first scope. Derived directly during render (not via an effect +
+  // setState, which would trigger a needless cascading render) — dismissing
+  // the tour writes to localStorage, so this naturally re-evaluates to false
+  // on the next render without any extra state to track it. The header
+  // sparkle button lets it be replayed any time after that via manualShowTour.
+  const [manualShowTour, setManualShowTour] = useState(false);
+  const autoShowTour = mounted && isAuthenticated && roleName === 'shop_owner' && !hasSeenLatestWhatsNew();
+  const showTour = manualShowTour || autoShowTour;
+
   if (!mounted || !isAuthenticated) return null;
 
   // Staff and branch managers share this same dashboard — there's no separate
@@ -247,6 +260,17 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             <Grip size={20} fill="currentColor" />
           </button>
 
+          {isShopOwner && (
+            <button
+              type="button"
+              onClick={() => setManualShowTour(true)}
+              title="What's New"
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-full text-[#9A8073] hover:bg-[#FAF6F3] transition-colors cursor-pointer"
+            >
+              <Sparkles size={17} />
+            </button>
+          )}
+
           <AccountHeaderMenu />
         </div>
       </header>
@@ -301,6 +325,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           </div>
         </main>
       </div>
+
+      {showTour && <WhatsNewTour onClose={() => setManualShowTour(false)} />}
     </div>
   );
 }

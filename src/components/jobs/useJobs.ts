@@ -153,6 +153,13 @@ export function useJobs() {
     return acc;
   }, {} as Record<string, Job[]>);
 
+  // Kept separate from groupedJobs/activeColumns — on_hold is deliberately
+  // excluded from those (see ON_HOLD_COLUMN in jobHelpers.tsx) so it doesn't
+  // corrupt the sequential "A → B → C" production-flow banner text.
+  const onHoldJobs = filteredJobs
+    .filter(j => j.status === 'on_hold')
+    .sort((a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime());
+
   const walkInCount = jobs.filter(j => j.intake_channel === 'walk_in').length;
   const onlineCount = jobs.filter(j => j.intake_channel === 'online').length;
   const pendingReviewCount = jobs.filter(j => j.status === 'pending').length;
@@ -176,6 +183,7 @@ export function useJobs() {
     activeColumns,
     filteredJobs,
     groupedJobs,
+    onHoldJobs,
     walkInCount,
     onlineCount,
     pendingReviewCount,

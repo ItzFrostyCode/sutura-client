@@ -138,6 +138,7 @@ export default function JobCreateForm() {
     is_rush: false,
     rush_fee: '',
     material_source: 'shop_supplied' as 'shop_supplied' | 'customer_supplied',
+    garment_category: '' as '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform',
   });
   // Same stage model as the Job Detail page's Multi-Stage Staff Assignment
   // — replaces the old single "Assigned Staff" field so Create and View show
@@ -665,6 +666,7 @@ export default function JobCreateForm() {
         reference_images: referenceImages.length > 0 ? referenceImages : null,
         reference_link: referenceLink.trim() || null,
         material_source: formData.material_source,
+        garment_category: formData.garment_category || null,
         is_rush: formData.is_rush,
         rush_fee: formData.is_rush ? Number(formData.rush_fee) : 0,
       });
@@ -742,6 +744,28 @@ export default function JobCreateForm() {
             </button>
           </div>
         )}
+
+        <div className="mb-6 space-y-1.5">
+          <label htmlFor="garment_category" className="text-sm font-medium text-[#524A44]">
+            Garment Category <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+          </label>
+          <p className="text-[11px] text-[#A8A19A]">
+            Matches this job to your shop&apos;s garment specializations — helps customers find you for the right kind of work.
+          </p>
+          <select
+            id="garment_category"
+            value={formData.garment_category}
+            onChange={(e) => setFormData(prev => ({ ...prev, garment_category: e.target.value as typeof prev.garment_category }))}
+            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+          >
+            <option value="">Not specified</option>
+            <option value="barong">Barong Tagalog</option>
+            <option value="gown">Gown</option>
+            <option value="suit">Suit</option>
+            <option value="filipiniana">Filipiniana</option>
+            <option value="uniform">School / Corporate Uniform</option>
+          </select>
+        </div>
 
         <div className="mb-6 space-y-1.5">
           <span className="text-sm font-medium text-[#524A44]">Fabric / Material Source</span>

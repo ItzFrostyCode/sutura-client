@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock } from 'lucide-react';
-import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT } from './jobHelpers';
+import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause } from 'lucide-react';
+import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
 
 interface JobKanbanBoardProps {
   readonly groupedJobs: Record<string, JobItem[]>;
   readonly activeColumns: ReturnType<typeof columnsForJobs>;
+  readonly onHoldJobs: JobItem[];
   readonly actionLoadingId: number | null;
   readonly onUpdateStatus: (id: number, status: string) => void;
   readonly onApprove: (id: number) => void;
@@ -28,6 +29,7 @@ const COMPLETED_COLLAPSE_AT = 5;
 export default function JobKanbanBoard({
   groupedJobs,
   activeColumns,
+  onHoldJobs,
   actionLoadingId,
   onUpdateStatus,
   onApprove,
@@ -71,10 +73,15 @@ export default function JobKanbanBoard({
   const handleApprove = (job: JobItem) => {
     onApprove(job.id);
   };
+  // Shown first, ahead of the sequential production stages, so a held job
+  // isn't buried — kept out of `activeColumns` itself (see ON_HOLD_COLUMN)
+  // so the "A → B → C" flow banner elsewhere on the page stays accurate.
+  const boardColumns = onHoldJobs.length > 0 ? [ON_HOLD_COLUMN, ...activeColumns] : activeColumns;
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 items-start" style={{ minHeight: 'calc(100vh - 340px)' }}>
-      {activeColumns.map(col => {
-        const colJobs = groupedJobs[col.id] ?? [];
+      {boardColumns.map(col => {
+        const colJobs = col.id === 'on_hold' ? onHoldJobs : (groupedJobs[col.id] ?? []);
         const isCollapsible = col.id === 'completed' && colJobs.length > COMPLETED_COLLAPSE_AT;
         const isExpanded = expandedColumns[col.id] ?? false;
         const visibleJobs = isCollapsible && !isExpanded ? colJobs.slice(0, COMPLETED_COLLAPSE_AT) : colJobs;
@@ -100,7 +107,9 @@ export default function JobKanbanBoard({
             {visibleJobs.map(job => (
               <div key={job.id}>
                 <div className={`bg-white border p-3.5 rounded-xl hover:shadow-sm transition-all group relative ${
-                  job.status === 'pending' ? 'border-amber-200 hover:border-amber-300' : 'border-[#D1C7BD] hover:border-[#9A8073]/50'
+                  job.status === 'pending' ? 'border-amber-200 hover:border-amber-300'
+                    : job.status === 'on_hold' ? 'border-amber-300 hover:border-amber-400'
+                    : 'border-[#D1C7BD] hover:border-[#9A8073]/50'
                 }`}>
                   <div className="flex justify-between items-start mb-2">
                     <Link href={`/dashboard/jobs/${job.id}`} className="block">
@@ -117,9 +126,17 @@ export default function JobKanbanBoard({
                       {columnsForJobs([job]).map(c => (
                         <option key={c.id} value={c.id}>{c.title}</option>
                       ))}
+                      <option value="on_hold">On Hold</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </div>
+
+                  {job.status === 'on_hold' && job.hold_reason && (
+                    <div className="mb-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                      <Pause size={11} className="text-amber-600 mt-0.5 shrink-0" />
+                      <p className="text-[10px] text-amber-700 leading-snug">{job.hold_reason}</p>
+                    </div>
+                  )}
 
                   <Link href={`/dashboard/jobs/${job.id}`} className="block space-y-1.5">
                     <div className="flex items-center justify-between gap-2 mb-0.5">

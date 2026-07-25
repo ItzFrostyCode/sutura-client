@@ -38,6 +38,7 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -58,6 +59,7 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         setEditName(found.name || '');
         setEditEmail(isWalkInEmail(found.email) ? '' : (found.email || ''));
         setEditPhone(found.phone || '');
+        setEditNotes(found.shop_notes || '');
       } else {
         setCustomer({
           id: Number.parseInt(id, 10),
@@ -104,10 +106,13 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
       const res = await api.put(`/shops/${shop.id}/customers/${customer.id}`, {
         name: editName,
         email: editEmail.trim() || null,
-        phone: editPhone.trim() || null
+        phone: editPhone.trim() || null,
+        notes: editNotes.trim() || null
       });
       const updatedCust = res.data.data;
-      setCustomer(prev => prev ? { ...prev, ...updatedCust } : null);
+      // The update endpoint doesn't echo shop_notes back (it lives on the
+      // shop_customers pivot, not the User row it returns) — merge locally.
+      setCustomer(prev => prev ? { ...prev, ...updatedCust, shop_notes: editNotes.trim() || null } : null);
       setEditName(updatedCust.name || '');
       setEditEmail(isWalkInEmail(updatedCust.email) ? '' : (updatedCust.email || ''));
       setEditPhone(updatedCust.phone || '');
@@ -252,7 +257,21 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
                   value={editPhone}
                   onChange={e => setEditPhone(e.target.value)}
                   placeholder="e.g. +639..."
-                  className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe" 
+                  className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                />
+              </div>
+              <div>
+                <label htmlFor="customer-edit-notes" className="block text-xs font-semibold text-[#524A44] mb-1">
+                  Shop Notes <span className="text-[10px] text-[#827A73] font-normal">(Private — visible to shop staff only)</span>
+                </label>
+                <textarea
+                  id="customer-edit-notes"
+                  rows={3}
+                  value={editNotes}
+                  onChange={e => setEditNotes(e.target.value)}
+                  maxLength={2000}
+                  placeholder="e.g. Prefers loose-fit sleeves, always pays in cash..."
+                  className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe resize-none"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-3 border-t border-[#EBE6E0]">

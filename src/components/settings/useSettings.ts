@@ -83,6 +83,8 @@ export function useSettings() {
     change_reserved_hours: 24,
     change_reserved_fee_percent: 0,
     supported_couriers: [] as string[],
+    specializations: [] as string[],
+    is_featured: false,
   });
 
   const setFormDataWithDirty = (valueOrUpdater: ShopSettingsData | ((prev: ShopSettingsData) => ShopSettingsData)) => {
@@ -135,6 +137,8 @@ export function useSettings() {
             change_reserved_hours: s.change_reserved_hours ?? 24,
             change_reserved_fee_percent: s.change_reserved_fee_percent ?? 0,
             supported_couriers: Array.isArray(s.supported_couriers) ? s.supported_couriers : [],
+            specializations: Array.isArray(s.specializations) ? s.specializations : [],
+            is_featured: !!s.is_featured,
           };
           setFormData(loaded);
           savedDataRef.current = loaded;

@@ -4,6 +4,7 @@ import { Job } from './jobTypes';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import CancellationReasonModal from './CancellationReasonModal';
+import HoldReasonModal from './HoldReasonModal';
 
 interface JobProductionTimelineProps {
   readonly job: Job;
@@ -14,7 +15,9 @@ interface JobProductionTimelineProps {
   readonly completionPhotoUrl: string;
   readonly setCompletionPhotoUrl: (url: string) => void;
   readonly setCancellationReason: (reason: string) => void;
+  readonly setHoldReason: (reason: string) => void;
   readonly collectedAmount: number;
+  readonly onProgressPhotoAdded: () => void;
 }
 
 export default function JobProductionTimeline({
@@ -26,11 +29,15 @@ export default function JobProductionTimeline({
   completionPhotoUrl,
   setCompletionPhotoUrl,
   setCancellationReason,
+  setHoldReason,
   collectedAmount,
+  onProgressPhotoAdded,
 }: JobProductionTimelineProps) {
   const { shop } = useAuthStore();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showHoldModal, setShowHoldModal] = useState(false);
 
   const handlePhotoUpload = async (file: File | undefined) => {
     if (!file || !shop) return;
@@ -46,6 +53,26 @@ export default function JobProductionTimeline({
       alert('Failed to upload completion photo.');
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleProgressPhotoUpload = async (file: File | undefined) => {
+    if (!file || !shop) return;
+    setUploadingProgressPhoto(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const uploadRes = await api.post(`/shops/${shop.id}/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = uploadRes.data?.data?.url || uploadRes.data?.url;
+      if (!url) throw new Error('No URL returned from upload');
+      await api.post(`/shops/${shop.id}/jobs/${job.id}/progress-photos`, { url });
+      onProgressPhotoAdded();
+    } catch {
+      alert('Failed to upload progress photo.');
+    } finally {
+      setUploadingProgressPhoto(false);
     }
   };
   // Store pickup only — the approved thesis excludes logistics/courier/
@@ -72,6 +99,7 @@ export default function JobProductionTimeline({
   ];
 
   const cancelled = status === 'cancelled';
+  const onHold = status === 'on_hold';
   const currentIdx = STAGES.findIndex(s => s.key === status);
   const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : null;
 
@@ -84,6 +112,16 @@ export default function JobProductionTimeline({
           <div className="flex items-center justify-center gap-3 py-4 bg-red-50 border border-red-200 rounded-xl">
             <span className="text-xl">🚫</span>
             <span className="text-sm font-semibold text-red-600">Order Cancelled</span>
+          </div>
+        ) : onHold ? (
+          <div className="py-4 px-5 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">⏸</span>
+              <span className="text-sm font-semibold text-amber-700">Production On Hold</span>
+            </div>
+            {job.hold_reason && (
+              <p className="text-xs text-amber-700/80 mt-1.5 ml-8">{job.hold_reason}</p>
+            )}
           </div>
         ) : (
           <div className="flex items-center">
@@ -131,7 +169,7 @@ export default function JobProductionTimeline({
             })}
           </div>
         )}
-        {!cancelled && (
+        {!cancelled && !onHold && (
           <div className="mt-4 px-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl flex items-center justify-between">
             <span className="text-xs text-[#A8A19A]">Current stage</span>
             <span className="text-sm font-semibold text-[#9A8073]">
@@ -150,6 +188,8 @@ export default function JobProductionTimeline({
             onChange={e => {
               if (e.target.value === 'cancelled') {
                 setShowCancelModal(true);
+              } else if (e.target.value === 'on_hold') {
+                setShowHoldModal(true);
               } else {
                 setStatus(e.target.value);
               }
@@ -170,6 +210,7 @@ export default function JobProductionTimeline({
             <option value="qc_ironing">QC & Ironing</option>
             <option value="ready_for_pickup">Ready for Pickup</option>
             <option value="completed">Completed</option>
+            <option value="on_hold">On Hold</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -224,6 +265,41 @@ export default function JobProductionTimeline({
             )}
           </div>
         )}
+
+        <div className="space-y-1.5 border-t border-[#EBE6E0] pt-4">
+          <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
+            <Camera size={15} className="text-[#7A8B76]" />
+            Progress Photos <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+          </span>
+          <p className="text-[11px] text-[#A8A19A]">
+            Proof of real progress at whatever stage the job is currently in — builds customer trust and doubles as a
+            production log. Each upload is tagged with the current stage automatically.
+          </p>
+          {job.progress_photos && job.progress_photos.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {job.progress_photos.map((photo) => (
+                <a key={photo.url + photo.uploaded_at} href={photo.url} target="_blank" rel="noopener noreferrer" className="relative group/photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.url} alt={`Progress at ${photo.stage}`} className="h-20 w-20 object-cover rounded-lg border border-[#EBE6E0] hover:opacity-80 transition-opacity" />
+                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-semibold text-center py-0.5 rounded-b-lg capitalize">
+                    {STAGES.find(s => s.key === photo.stage)?.label ?? photo.stage.replace(/_/g, ' ')}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+          <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-[#827A73] hover:text-[#7A8B76] transition-colors mt-1">
+            {uploadingProgressPhoto ? <Loader2 size={14} className="animate-spin text-[#7A8B76]" /> : <Camera size={14} />}
+            <span>{uploadingProgressPhoto ? 'Uploading...' : 'Add a progress photo'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploadingProgressPhoto}
+              onChange={e => handleProgressPhotoUpload(e.target.files?.[0])}
+            />
+          </label>
+        </div>
 
         <div className="space-y-1">
           <label htmlFor="notes-remarks" className="text-sm font-medium text-[#524A44]">Notes / Remarks</label>
@@ -283,6 +359,16 @@ export default function JobProductionTimeline({
           setCancellationReason(reason);
           setStatus('cancelled');
           setShowCancelModal(false);
+        }}
+      />
+
+      <HoldReasonModal
+        isOpen={showHoldModal}
+        onClose={() => setShowHoldModal(false)}
+        onConfirm={(reason) => {
+          setHoldReason(reason);
+          setStatus('on_hold');
+          setShowHoldModal(false);
         }}
       />
     </div>

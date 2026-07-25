@@ -71,6 +71,10 @@ export default function ProfileAboutTab() {
                   <SettingsBusinessType
                     businessType={formData.business_type}
                     onChange={handleBusinessTypeChange}
+                    specializations={formData.specializations}
+                    onSpecializationsChange={(specializations) => setFormDataWithDirty(prev => ({ ...prev, specializations }))}
+                    isFeatured={formData.is_featured}
+                    onFeaturedChange={(is_featured) => setFormDataWithDirty(prev => ({ ...prev, is_featured }))}
                   />
                 )}
 

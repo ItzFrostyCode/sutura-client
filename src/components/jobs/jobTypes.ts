@@ -51,8 +51,11 @@ export interface Job {
   material_source?: 'shop_supplied' | 'customer_supplied' | null;
   rejection_reason?: string | null;
   cancellation_reason?: string | null;
+  hold_reason?: string | null;
   discount_amount?: number | string | null;
   customer_job_count?: number;
+  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | null;
+  progress_photos?: { url: string; stage: string; uploaded_at: string }[] | null;
 }
 
 export interface Staff {

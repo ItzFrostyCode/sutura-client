@@ -27,6 +27,8 @@ export interface ShopSettingsData {
   change_reserved_hours: number;
   change_reserved_fee_percent: number;
   supported_couriers: string[];
+  specializations: string[];
+  is_featured: boolean;
 }
 
 interface SettingsRentalPoliciesProps {

@@ -25,6 +25,7 @@ export function useJobDetail(jobId: string) {
   // Editable fields
   const [status, setStatus] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
+  const [holdReason, setHoldReason] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [balance, setBalance] = useState('');
   const [notes, setNotes] = useState('');
@@ -93,6 +94,20 @@ export function useJobDetail(jobId: string) {
     };
   }, [shop, jobId]);
 
+  // Re-fetches the job and swaps in the fresh copy — used after a side
+  // action that mutates the job server-side outside handleUpdate's own PUT
+  // (e.g. appending a progress photo), so the page reflects it without a
+  // full reload.
+  const refreshJob = async () => {
+    if (!shop) return;
+    try {
+      const res = await api.get(`/shops/${shop.id}/jobs/${jobId}`);
+      setJob(res.data.data);
+    } catch (err) {
+      console.error('Failed to refresh job', err);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!shop) return;
     setSaving(true);
@@ -108,6 +123,7 @@ export function useJobDetail(jobId: string) {
         outsourcing_cost: isOutsourced && outsourcingCost ? Number.parseFloat(outsourcingCost) : null,
         completion_photo_url: completionPhotoUrl || null,
         cancellation_reason: status === 'cancelled' ? cancellationReason : undefined,
+        hold_reason: status === 'on_hold' ? holdReason : undefined,
       });
       // Refresh
       const res = await api.get(`/shops/${shop.id}/jobs/${jobId}`);
@@ -354,6 +370,9 @@ export function useJobDetail(jobId: string) {
     handleRejectOrder,
     cancellationReason,
     setCancellationReason,
+    holdReason,
+    setHoldReason,
+    refreshJob,
     handleDelete,
   };
 }

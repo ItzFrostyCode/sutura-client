@@ -5,6 +5,7 @@ export interface CustomerData {
   phone: string;
   profile_picture?: string;
   suki_tag?: string | null;
+  shop_notes?: string | null;
   total_spend?: number;
   active_jobs?: number;
   completed_jobs?: number;
