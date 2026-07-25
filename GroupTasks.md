@@ -48,6 +48,7 @@ The **System Admin dashboard has zero frontend pages** — none at all — even 
 
 So Bongo's real task is building the **admin-side UI** that consumes these already-working endpoints — shop approval queue, subscription plan editor, and a ticket inbox. This is the part that's "connected to Billing & Plans" — the admin is who actually configures what the plans are and approves who gets to have a shop at all.
 
+BILLING UI UX AND TICKET FOR SHOP OWNER, STAFF, CUSTOMER
 ---
 
 ## Why this split makes sense together
