@@ -7,7 +7,7 @@ import { refreshSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import api from '@/lib/axios';
 import {
   CreditCard, CheckCircle, Zap, ShieldCheck, Loader2,
-  Check, Crown, Rocket, Sparkles,
+  Check, Crown, Rocket, Sparkles, AlertTriangle,
 } from 'lucide-react';
 
 interface Plan {
@@ -170,6 +170,14 @@ export default function BillingPage() {
 
   const { bgClass: iconBgClass, Icon: PlanIcon } = getPlanIconData();
 
+  // Proactive renewal prompt — the plan card above already shows the raw
+  // date passively, but nothing calls out urgency as expiry approaches.
+  const daysUntilExpiry = currentSubscription?.ends_at
+    ? Math.ceil((new Date(currentSubscription.ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isExpired = currentSubscription?.status === 'expired' || (daysUntilExpiry !== null && daysUntilExpiry < 0);
+  const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 7 && currentSubscription?.status !== 'cancelled';
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Page header */}
@@ -177,6 +185,17 @@ export default function BillingPage() {
         <h1 className="text-3xl font-bold tracking-tight text-[#2D2A26] mb-1">Billing &amp; Plans</h1>
         <p className="text-[#827A73]">Manage your subscription, unlock features, and scale your shop.</p>
       </div>
+
+      {(isExpired || isExpiringSoon) && (
+        <div className={`flex items-center gap-3 p-4 rounded-2xl border ${isExpired ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+          <AlertTriangle size={18} className={isExpired ? 'text-red-600 shrink-0' : 'text-amber-600 shrink-0'} />
+          <p className={`text-sm font-medium ${isExpired ? 'text-red-700' : 'text-amber-700'}`}>
+            {isExpired
+              ? 'Your subscription has expired. Renew now to restore your shop\'s full visibility and features.'
+              : `Your plan renews in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} — pick a plan below to renew and avoid losing access.`}
+          </p>
+        </div>
+      )}
 
       {/* Current plan card */}
       <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm">

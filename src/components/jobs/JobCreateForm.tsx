@@ -138,7 +138,7 @@ export default function JobCreateForm() {
     is_rush: false,
     rush_fee: '',
     material_source: 'shop_supplied' as 'shop_supplied' | 'customer_supplied',
-    garment_category: '' as '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform',
+    garment_category: '' as '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear',
   });
   // Same stage model as the Job Detail page's Multi-Stage Staff Assignment
   // — replaces the old single "Assigned Staff" field so Create and View show
@@ -763,7 +763,10 @@ export default function JobCreateForm() {
             <option value="gown">Gown</option>
             <option value="suit">Suit</option>
             <option value="filipiniana">Filipiniana</option>
-            <option value="uniform">School / Corporate Uniform</option>
+            <option value="uniform">School Uniform</option>
+            <option value="lab_gown">Lab Gown</option>
+            <option value="scrub_suit">Scrub Suit</option>
+            <option value="corporate_wear">Corporate Wear</option>
           </select>
         </div>
 

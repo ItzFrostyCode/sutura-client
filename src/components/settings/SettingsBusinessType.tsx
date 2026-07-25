@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, Zap } from 'lucide-react';
+import { Lock, Zap, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 
@@ -10,6 +10,8 @@ interface SettingsBusinessTypeProps {
   readonly onSpecializationsChange: (specializations: string[]) => void;
   readonly isFeatured: boolean;
   readonly onFeaturedChange: (value: boolean) => void;
+  readonly isHidden: boolean;
+  readonly onHiddenChange: (value: boolean) => void;
 }
 
 const SPECIALIZATIONS: { id: string; label: string; emoji: string }[] = [
@@ -18,6 +20,9 @@ const SPECIALIZATIONS: { id: string; label: string; emoji: string }[] = [
   { id: 'suit', label: 'Suits', emoji: '🤵' },
   { id: 'filipiniana', label: 'Filipiniana', emoji: '💃' },
   { id: 'uniform', label: 'School / Corporate Uniforms', emoji: '🎽' },
+  { id: 'lab_gown', label: 'Lab Gowns', emoji: '🥼' },
+  { id: 'scrub_suit', label: 'Scrub Suits', emoji: '🩺' },
+  { id: 'corporate_wear', label: 'Corporate Wear', emoji: '💼' },
 ];
 
 export default function SettingsBusinessType({
@@ -27,6 +32,8 @@ export default function SettingsBusinessType({
   onSpecializationsChange,
   isFeatured,
   onFeaturedChange,
+  isHidden,
+  onHiddenChange,
 }: SettingsBusinessTypeProps) {
   const { isGated } = useSubscriptionTier();
   const featuredGated = isGated('featured_visibility');
@@ -121,6 +128,37 @@ export default function SettingsBusinessType({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-medium text-[#2D2A26] mb-1 flex items-center gap-2">
+              Shop Visibility
+              {isHidden && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#F0EAE3] text-[#827A73] border border-[#EBE6E0]">
+                  <EyeOff size={10} /> Hidden
+                </span>
+              )}
+            </h2>
+            <p className="text-sm text-[#827A73] max-w-md">
+              {isHidden
+                ? "Your shop is hidden — customers can't find or view it right now. You can still edit everything here while hidden."
+                : 'Your shop is visible to customers. Turn this off to temporarily take your storefront down without deleting anything.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onHiddenChange(!isHidden)}
+            className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${!isHidden ? 'bg-[#9A8073]' : 'bg-[#EBE6E0]'}`}
+            aria-pressed={!isHidden}
+            aria-label="Toggle shop visibility"
+          >
+            <span
+              className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${!isHidden ? 'translate-x-5' : ''}`}
+            />
+          </button>
         </div>
       </div>
 

@@ -86,10 +86,13 @@ export default function DashboardPage() {
         // setLoading(true) scheduled above, instead of being clobbered by it.
         setTimeout(() => setLoading(false), 0);
       }
-      // Shop visibility toggle is owner-only (matches PUT /shops/{shop})
+      // Shop visibility toggle is owner-only (matches PUT /shops/{shop}).
+      // Reads/writes `is_hidden` (inverted) — the field this dashboard used
+      // to call `is_visible` was never actually wired up on the backend, so
+      // this toggle silently did nothing; consolidated onto the real field.
       if (isShopOwner) {
         api.get(`/shops/${shop.id}`)
-          .then(res => setShopVisible(res.data.data?.is_visible ?? true))
+          .then(res => setShopVisible(!res.data.data?.is_hidden))
           .catch(() => {});
       }
       api.get(`/shops/${shop.id}/jobs`, { params: { per_page: 200, ...params } })
@@ -124,7 +127,7 @@ export default function DashboardPage() {
     const next = !shopVisible;
     setShopVisible(next);
     try {
-      await api.put(`/shops/${shop.id}`, { is_visible: next });
+      await api.put(`/shops/${shop.id}`, { is_hidden: !next });
     } catch {
       setShopVisible(!next);
     } finally {

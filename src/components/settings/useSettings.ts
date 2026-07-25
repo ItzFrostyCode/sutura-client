@@ -59,6 +59,8 @@ export function useSettings() {
   const [formData, setFormData] = useState<ShopSettingsData>({
     name: '',
     description: '',
+    logo_path: '',
+    banner_path: '',
     address: '',
     landmark: '',
     city: '',
@@ -85,6 +87,7 @@ export function useSettings() {
     supported_couriers: [] as string[],
     specializations: [] as string[],
     is_featured: false,
+    is_hidden: false,
   });
 
   const setFormDataWithDirty = (valueOrUpdater: ShopSettingsData | ((prev: ShopSettingsData) => ShopSettingsData)) => {
@@ -109,6 +112,8 @@ export function useSettings() {
           const loaded: ShopSettingsData = {
             name: s.name || '',
             description: s.description || '',
+            logo_path: s.logo_path || '',
+            banner_path: s.banner_path || '',
             address: s.address || '',
             landmark: s.landmark || '',
             city: s.city || '',
@@ -139,6 +144,7 @@ export function useSettings() {
             supported_couriers: Array.isArray(s.supported_couriers) ? s.supported_couriers : [],
             specializations: Array.isArray(s.specializations) ? s.specializations : [],
             is_featured: !!s.is_featured,
+            is_hidden: !!s.is_hidden,
           };
           setFormData(loaded);
           savedDataRef.current = loaded;
@@ -175,6 +181,44 @@ export function useSettings() {
         [day]: { ...prev.operating_hours[day], [field]: value },
       },
     }));
+  };
+
+  // Single-image uploads (replace, not append — unlike gallery_images).
+  // Genuinely new: there was previously no owner-facing way to set either
+  // of these at all, `logo_path` wasn't even in UpdateShopRequest's
+  // validation rules, so any attempt would have silently no-op'd.
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && shop) {
+      const file = e.target.files[0];
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setFormDataWithDirty(prev => ({ ...prev, logo_path: res.data.data.url }));
+        toast.success('Logo uploaded — click Save Changes to apply.');
+      } catch {
+        toast.error('Failed to upload logo. Please try again.');
+      }
+    }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && shop) {
+      const file = e.target.files[0];
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setFormDataWithDirty(prev => ({ ...prev, banner_path: res.data.data.url }));
+        toast.success('Banner uploaded — click Save Changes to apply.');
+      } catch {
+        toast.error('Failed to upload banner. Please try again.');
+      }
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,6 +287,8 @@ export function useSettings() {
     handleSocialChange,
     handleHoursChange,
     handleImageUpload,
+    handleLogoUpload,
+    handleBannerUpload,
     handleRemoveImage,
     handleSave,
     handleDiscard,

@@ -122,6 +122,7 @@ interface ShopProfile {
   phone: string;
   email: string;
   logo_path: string;
+  banner_path?: string | null;
   // The About tab's Social Media Links editor (SettingsBasicInfo/useSettings)
   // stores this as a free-form array of { label, url } — NOT a fixed
   // { facebook, instagram, tiktok } object. getSocialUrl() below bridges
@@ -698,7 +699,12 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         <div className="max-w-5xl mx-auto px-6 space-y-8">
 
           <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-            <div className="h-32 md:h-48 bg-gradient-to-br from-[#F0EAE3] to-[#EBE6E0] w-full" />
+            {shop.banner_path ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={shop.banner_path} alt="" className="h-32 md:h-48 w-full object-cover" />
+            ) : (
+              <div className="h-32 md:h-48 bg-gradient-to-br from-[#F0EAE3] to-[#EBE6E0] w-full" />
+            )}
 
             <div className="px-5 md:px-8 relative">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-12 md:-mt-10">

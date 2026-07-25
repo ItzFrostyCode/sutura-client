@@ -3,6 +3,8 @@ import React from 'react';
 export interface ShopSettingsData {
   name: string;
   description: string;
+  logo_path: string;
+  banner_path: string;
   address: string;
   landmark?: string;
   city: string;
@@ -29,6 +31,7 @@ export interface ShopSettingsData {
   supported_couriers: string[];
   specializations: string[];
   is_featured: boolean;
+  is_hidden: boolean;
 }
 
 interface SettingsRentalPoliciesProps {

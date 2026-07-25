@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Upload, Loader2 } from 'lucide-react';
 import { ShopSettingsData } from './SettingsRentalPolicies';
 
 interface SettingsBasicInfoProps {
@@ -9,9 +9,13 @@ interface SettingsBasicInfoProps {
   readonly handleSocialChange: (newLinks: { label: string; url: string }[]) => void;
   readonly setFormData: React.Dispatch<React.SetStateAction<ShopSettingsData>>;
   readonly activeTab: 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates' | 'business_type';
+  readonly onLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  readonly onBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export default function SettingsBasicInfo({ formData, onChange, handleSocialChange, setFormData, activeTab }: SettingsBasicInfoProps) {
+export default function SettingsBasicInfo({ formData, onChange, handleSocialChange, setFormData, activeTab, onLogoUpload, onBannerUpload }: SettingsBasicInfoProps) {
+  const [uploadingLogo, setUploadingLogo] = React.useState(false);
+  const [uploadingBanner, setUploadingBanner] = React.useState(false);
   const handleAddQuestion = () => {
     setFormData(prev => ({
       ...prev,
@@ -35,6 +39,77 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
   };
   return (
     <div className="space-y-6">
+      {/* Shop Branding — logo and banner */}
+      {activeTab === 'basic_info' && (
+      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-[#2D2A26] mb-1">Shop Branding</h2>
+        <p className="text-sm text-[#827A73] mb-6">
+          Your logo and banner are the first thing customers see on your storefront and in search results.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <span className="text-sm font-medium text-[#524A44]">Logo</span>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-full border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+                {formData.logo_path ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={formData.logo_path} alt="Shop logo" className="w-full h-full object-cover" />
+                ) : (
+                  <Upload size={18} className="text-[#C5BDBA]" />
+                )}
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+                {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                <span>{uploadingLogo ? 'Uploading...' : 'Upload Logo'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingLogo}
+                  onChange={async e => {
+                    setUploadingLogo(true);
+                    await onLogoUpload(e);
+                    setUploadingLogo(false);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-sm font-medium text-[#524A44]">Banner</span>
+            <div className="flex items-center gap-4">
+              <div className="w-32 h-20 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+                {formData.banner_path ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={formData.banner_path} alt="Shop banner" className="w-full h-full object-cover" />
+                ) : (
+                  <Upload size={18} className="text-[#C5BDBA]" />
+                )}
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+                {uploadingBanner ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                <span>{uploadingBanner ? 'Uploading...' : 'Upload Banner'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingBanner}
+                  onChange={async e => {
+                    setUploadingBanner(true);
+                    await onBannerUpload(e);
+                    setUploadingBanner(false);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      )}
+
       {/* Basic Info & Contact */}
       {activeTab === 'basic_info' && (
       <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">

@@ -24,6 +24,8 @@ export default function ProfileAboutTab() {
     handleChange,
     handleBusinessTypeChange,
     handleSocialChange,
+    handleLogoUpload,
+    handleBannerUpload,
     handleSave,
     handleDiscard,
   } = useSettings();
@@ -75,6 +77,8 @@ export default function ProfileAboutTab() {
                     onSpecializationsChange={(specializations) => setFormDataWithDirty(prev => ({ ...prev, specializations }))}
                     isFeatured={formData.is_featured}
                     onFeaturedChange={(is_featured) => setFormDataWithDirty(prev => ({ ...prev, is_featured }))}
+                    isHidden={formData.is_hidden}
+                    onHiddenChange={(is_hidden) => setFormDataWithDirty(prev => ({ ...prev, is_hidden }))}
                   />
                 )}
 
@@ -85,6 +89,8 @@ export default function ProfileAboutTab() {
                     handleSocialChange={handleSocialChange}
                     setFormData={setFormDataWithDirty}
                     activeTab={activeTab as 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates'}
+                    onLogoUpload={handleLogoUpload}
+                    onBannerUpload={handleBannerUpload}
                   />
                 )}
               </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, Lock } from 'lucide-react';
+import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
 
@@ -53,9 +54,21 @@ export default function BranchFormModal({
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Branch' : 'Add New Branch'}>
       <form onSubmit={onSubmit} className="space-y-4">
         {errorMsg && (
-          <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg border border-red-200">
-            {errorMsg}
-          </div>
+          errorMsg.toLowerCase().includes('upgrade') ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-amber-700">{errorMsg}</p>
+              <Link
+                href="/dashboard/billing"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors"
+              >
+                <Lock size={12} /> Upgrade
+              </Link>
+            </div>
+          ) : (
+            <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg border border-red-200">
+              {errorMsg}
+            </div>
+          )
         )}
 
         {/* Branch Name */}
