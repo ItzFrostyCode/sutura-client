@@ -102,6 +102,13 @@ export interface Job {
 
 export type Tab = 'all' | 'walk_in' | 'online';
 
+export const CANCELLATION_REASON_LABELS: Record<string, string> = {
+  customer_request: 'Customer requested cancellation',
+  shop_unable_to_fulfill: 'Shop unable to fulfill',
+  forfeited_deposit_abandoned: 'Forfeited deposit — customer went uncontactable',
+  other: 'Other',
+};
+
 export const getDueStatus = (dueDateStr: string | null | undefined, status: string) => {
   if (!dueDateStr) return null;
   if (['completed', 'cancelled'].includes(status)) return null;

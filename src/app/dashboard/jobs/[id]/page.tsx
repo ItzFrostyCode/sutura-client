@@ -10,6 +10,7 @@ import JobStaffAssignmentCard from '@/components/jobs/JobStaffAssignmentCard';
 import JobFinancialsCard from '@/components/jobs/JobFinancialsCard';
 import { useJobDetail } from '@/components/jobs/useJobDetail';
 import { RosterItem } from '@/components/jobs/jobTypes';
+import { CANCELLATION_REASON_LABELS } from '@/components/jobs/jobHelpers';
 
 export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const unwrappedParams = React.use(params);
@@ -177,11 +178,24 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
         )}
 
         {/* Cancellation Reason */}
-        {job.status === 'cancelled' && job.rejection_reason && (
+        {job.status === 'cancelled' && job.cancellation_reason && (
           <div className="bg-[#B26959]/10 border border-[#B26959]/25 rounded-2xl px-5 py-3 flex items-start gap-3">
             <X size={15} className="text-[#B26959] shrink-0 mt-0.5" />
             <div>
               <p className="text-[#9A5C4F] text-sm font-semibold">This order was cancelled</p>
+              <p className="text-[#9A5C4F]/80 text-xs mt-0.5">
+                Reason: {CANCELLATION_REASON_LABELS[job.cancellation_reason] ?? job.cancellation_reason}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Rejection Reason */}
+        {job.status === 'rejected' && job.rejection_reason && (
+          <div className="bg-[#B26959]/10 border border-[#B26959]/25 rounded-2xl px-5 py-3 flex items-start gap-3">
+            <X size={15} className="text-[#B26959] shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[#9A5C4F] text-sm font-semibold">This order was rejected</p>
               <p className="text-[#9A5C4F]/80 text-xs mt-0.5">Reason: {job.rejection_reason}</p>
             </div>
           </div>
