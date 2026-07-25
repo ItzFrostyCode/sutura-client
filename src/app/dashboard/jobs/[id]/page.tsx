@@ -16,6 +16,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   const unwrappedParams = React.use(params);
   const id = unwrappedParams.id;
   const [showOutsourcingHelp, setShowOutsourcingHelp] = useState(false);
+  const [showRejectOrderForm, setShowRejectOrderForm] = useState(false);
+  const [rejectOrderReason, setRejectOrderReason] = useState('');
+  const [rejectingOrder, setRejectingOrder] = useState(false);
 
   const {
     shop,
@@ -50,6 +53,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     handleApplyDiscount,
     handleUpdatePayment,
     handleRejectPayment,
+    handleRejectOrder,
     handleDelete,
   } = useJobDetail(id);
 
@@ -198,6 +202,61 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               <p className="text-[#9A5C4F] text-sm font-semibold">This order was rejected</p>
               <p className="text-[#9A5C4F]/80 text-xs mt-0.5">Reason: {job.rejection_reason}</p>
             </div>
+          </div>
+        )}
+
+        {/* Decline Order — only valid while the order is still pending;
+            backend restricts this to shop_owner/branch_manager server-side. */}
+        {job.status === 'pending' && (
+          <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-5">
+            {showRejectOrderForm ? (
+              <div className="space-y-2.5">
+                <p className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Decline this order</p>
+                <input
+                  type="text"
+                  value={rejectOrderReason}
+                  onChange={e => setRejectOrderReason(e.target.value)}
+                  placeholder="Why are you declining this order?"
+                  className="w-full px-3 py-2 bg-white border border-rose-200 rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-rose-400"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowRejectOrderForm(false); setRejectOrderReason(''); }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#827A73] hover:text-[#2D2A26]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={rejectingOrder || !rejectOrderReason.trim()}
+                    onClick={async () => {
+                      setRejectingOrder(true);
+                      try {
+                        await handleRejectOrder(rejectOrderReason.trim());
+                        setShowRejectOrderForm(false);
+                        setRejectOrderReason('');
+                      } catch {
+                        // handled by parent
+                      } finally {
+                        setRejectingOrder(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50"
+                  >
+                    {rejectingOrder ? 'Declining…' : 'Confirm Decline'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowRejectOrderForm(true)}
+                className="w-full py-2 border border-rose-200 text-rose-700 text-xs font-semibold rounded-lg hover:bg-rose-50 transition-colors"
+              >
+                Decline Order
+              </button>
+            )}
           </div>
         )}
 

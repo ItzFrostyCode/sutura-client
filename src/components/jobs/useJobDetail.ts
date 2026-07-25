@@ -279,6 +279,28 @@ export function useJobDetail(jobId: string) {
     }
   };
 
+  // Declines a job order before production starts — a business decision
+  // (feasibility/capacity/fabric availability), gated shop_owner/branch_manager
+  // server-side, only valid while status is still 'pending'.
+  const handleRejectOrder = async (reason: string) => {
+    if (!shop || !job) return;
+    setSaving(true);
+    try {
+      await api.post(`/shops/${shop.id}/jobs/${job.id}/reject`, { reason });
+      const res = await api.get(`/shops/${shop.id}/jobs/${job.id}`);
+      const updatedJob = res.data.data;
+      setJob(updatedJob);
+      setStatus(updatedJob.status);
+      toast.success('Job order rejected.');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to reject job order.');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!shop || !job) return;
     setIsDeleting(true);
@@ -329,6 +351,7 @@ export function useJobDetail(jobId: string) {
     handleApplyDiscount,
     handleUpdatePayment,
     handleRejectPayment,
+    handleRejectOrder,
     cancellationReason,
     setCancellationReason,
     handleDelete,
