@@ -184,7 +184,7 @@ export function useJobDetail(jobId: string) {
     }
   };
 
-  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string) => {
+  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string) => {
     if (!shop || !job) return;
     setSaving(true);
     try {
@@ -192,7 +192,8 @@ export function useJobDetail(jobId: string) {
         amount,
         payment_method: method,
         reference: reference || undefined,
-        notes: notesVal || undefined
+        notes: notesVal || undefined,
+        receipt_path: receiptPath || undefined,
       });
       const res = await api.get(`/shops/${shop.id}/jobs/${job.id}`);
       const updatedJob = res.data.data;

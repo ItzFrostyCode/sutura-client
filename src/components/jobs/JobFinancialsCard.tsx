@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Job, Payment } from './jobTypes';
-import { CreditCard, Banknote, Smartphone, ChevronDown, ChevronUp, Pencil, X, Check, Printer, Tag, MoreVertical, Flag } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
+import api from '@/lib/axios';
+import { CreditCard, Banknote, Smartphone, ChevronDown, ChevronUp, Pencil, X, Check, Printer, Tag, MoreVertical, Flag, Upload, Loader2, Receipt } from 'lucide-react';
 
 interface JobFinancialsCardProps {
   readonly job: Job;
   readonly saving: boolean;
-  readonly onCharge: (amount: number, method: string, notes: string, reference?: string) => Promise<void>;
+  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string) => Promise<void>;
   readonly onApplyDiscount: (amount: number, reason: string) => Promise<void>;
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;
   readonly onRejectPayment: (paymentId: number, reason: string) => Promise<void>;
@@ -38,10 +40,30 @@ export default function JobFinancialsCard({
   const discountApplied   = Number.parseFloat(String(job.discount_amount ?? 0)) || 0;
   const jobIsCompleted    = job.status === 'completed';
   const jobIsCancelled    = job.status === 'cancelled';
+  const { shop } = useAuthStore();
   const [method, setMethod] = useState('cash');
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
   const [notes, setNotes]   = useState('');
+  const [receiptUrl, setReceiptUrl] = useState('');
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
+  const uploadReceipt = async (file: File | undefined, onDone: (url: string) => void, setUploading: (v: boolean) => void) => {
+    if (!file || !shop) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      onDone(res.data?.data?.url || res.data?.url || '');
+    } catch {
+      alert('Failed to upload receipt image.');
+    } finally {
+      setUploading(false);
+    }
+  };
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [charging, setCharging] = useState(false);
   const [showDiscountForm, setShowDiscountForm] = useState(false);
@@ -69,6 +91,8 @@ export default function JobFinancialsCard({
   const [editMethod, setEditMethod] = useState('cash');
   const [editReference, setEditReference] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [editReceiptUrl, setEditReceiptUrl] = useState('');
+  const [uploadingEditReceipt, setUploadingEditReceipt] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
   const [menuOpenPaymentId, setMenuOpenPaymentId] = useState<number | null>(null);
@@ -96,10 +120,11 @@ export default function JobFinancialsCard({
     if (!amt || amt <= 0) return;
     setCharging(true);
     try {
-      await onCharge(amt, method, notes, reference || undefined);
+      await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined);
       setAmount('');
       setReference('');
       setNotes('');
+      setReceiptUrl('');
     } catch {
       // handled by parent
     } finally {
@@ -112,6 +137,7 @@ export default function JobFinancialsCard({
     setEditMethod(payment.payment_method);
     setEditReference(payment.reference || '');
     setEditNotes(payment.notes || '');
+    setEditReceiptUrl(payment.receipt_path || '');
     setRejectingPaymentId(null);
     setRejectReason('');
   };
@@ -123,6 +149,7 @@ export default function JobFinancialsCard({
         payment_method: editMethod,
         reference: editReference || undefined,
         notes: editNotes || undefined,
+        receipt_path: editReceiptUrl || undefined,
       });
       setEditingPaymentId(null);
     } catch {
@@ -269,15 +296,44 @@ export default function JobFinancialsCard({
             <option value="bank_transfer">Bank Transfer</option>
           </select>
 
-          {/* GCash/Bank reference number (shown only for digital methods) */}
+          {/* GCash/Bank reference number + receipt screenshot (digital methods only —
+              cash never needs a screenshot; this is exactly what payment rejection
+              reviews against when a receipt turns out to be fake). */}
           {(method === 'gcash' || method === 'bank_transfer') && (
-            <input
-              type="text"
-              value={reference}
-              onChange={e => setReference(e.target.value)}
-              placeholder={method === 'gcash' ? 'GCash Reference # (e.g. 9876543210)' : 'Bank Transfer Reference #'}
-              className="w-full px-3 py-2 bg-white border border-[#D1C7BD] rounded-lg text-xs text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-            />
+            <>
+              <input
+                type="text"
+                value={reference}
+                onChange={e => setReference(e.target.value)}
+                placeholder={method === 'gcash' ? 'GCash Reference # (e.g. 9876543210)' : 'Bank Transfer Reference #'}
+                className="w-full px-3 py-2 bg-white border border-[#D1C7BD] rounded-lg text-xs text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+              />
+              {receiptUrl ? (
+                <div className="relative inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={receiptUrl} alt="Receipt screenshot" className="h-16 w-16 object-cover rounded-lg border border-[#D1C7BD]" />
+                  <button
+                    type="button"
+                    onClick={() => setReceiptUrl('')}
+                    className="absolute -top-2 -right-2 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-[#B26959] rounded-full p-1 shadow-sm"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ) : (
+                <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs text-[#827A73] hover:text-[#9A8073] transition-colors">
+                  {uploadingReceipt ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  <span>{uploadingReceipt ? 'Uploading...' : 'Attach receipt screenshot'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingReceipt}
+                    onChange={e => uploadReceipt(e.target.files?.[0], setReceiptUrl, setUploadingReceipt)}
+                  />
+                </label>
+              )}
+            </>
           )}
 
           {/* Optional notes */}
@@ -409,13 +465,40 @@ export default function JobFinancialsCard({
                         <option value="bank_transfer">Bank Transfer</option>
                       </select>
                       {(editMethod === 'gcash' || editMethod === 'bank_transfer') && (
-                        <input
-                          type="text"
-                          value={editReference}
-                          onChange={e => setEditReference(e.target.value)}
-                          placeholder="Reference #"
-                          className="w-full px-2 py-1.5 bg-white border border-[#D1C7BD] rounded-lg text-xs text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={editReference}
+                            onChange={e => setEditReference(e.target.value)}
+                            placeholder="Reference #"
+                            className="w-full px-2 py-1.5 bg-white border border-[#D1C7BD] rounded-lg text-xs text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                          />
+                          {editReceiptUrl ? (
+                            <div className="relative inline-block">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={editReceiptUrl} alt="Receipt screenshot" className="h-14 w-14 object-cover rounded-lg border border-[#D1C7BD]" />
+                              <button
+                                type="button"
+                                onClick={() => setEditReceiptUrl('')}
+                                className="absolute -top-1.5 -right-1.5 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-[#B26959] rounded-full p-0.5 shadow-sm"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="inline-flex items-center gap-1 cursor-pointer text-[10px] text-[#827A73] hover:text-[#9A8073] transition-colors">
+                              {uploadingEditReceipt ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
+                              <span>{uploadingEditReceipt ? 'Uploading...' : 'Attach receipt screenshot'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingEditReceipt}
+                                onChange={e => uploadReceipt(e.target.files?.[0], setEditReceiptUrl, setUploadingEditReceipt)}
+                              />
+                            </label>
+                          )}
+                        </>
                       )}
                       <input
                         type="text"
@@ -448,6 +531,16 @@ export default function JobFinancialsCard({
                       {payment.recorded_by && <p>By: {payment.recorded_by.name}</p>}
                       {payment.reference && <p>Ref: {payment.reference}</p>}
                       {payment.notes && <p className="text-[#827A73] italic">{payment.notes}</p>}
+                      {payment.receipt_path && (
+                        <a
+                          href={payment.receipt_path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 mt-1 text-[#9A8073] hover:underline"
+                        >
+                          <Receipt size={10} /> View receipt screenshot
+                        </a>
+                      )}
                     </div>
                   )}
 
