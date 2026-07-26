@@ -321,7 +321,7 @@ export default function JobFinancialsCard({
                   </button>
                 </div>
               ) : (
-                <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs text-[#827A73] hover:text-[#9A8073] transition-colors">
+                <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3 py-1.5 rounded-lg transition-colors">
                   {uploadingReceipt ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                   <span>{uploadingReceipt ? 'Uploading...' : 'Attach receipt screenshot'}</span>
                   <input
@@ -486,7 +486,7 @@ export default function JobFinancialsCard({
                               </button>
                             </div>
                           ) : (
-                            <label className="inline-flex items-center gap-1 cursor-pointer text-[10px] text-[#827A73] hover:text-[#9A8073] transition-colors">
+                            <label className="inline-flex items-center gap-1 cursor-pointer select-none text-[10px] font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-2 py-1 rounded-lg transition-colors">
                               {uploadingEditReceipt ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
                               <span>{uploadingEditReceipt ? 'Uploading...' : 'Attach receipt screenshot'}</span>
                               <input
