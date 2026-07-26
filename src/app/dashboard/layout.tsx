@@ -76,14 +76,25 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
 
   // Owner-only for now — these features (customer notes, shop settings) are
   // mostly owner-facing edits, matching the rest of this dashboard's
-  // owner-first scope. Derived directly during render (not via an effect +
-  // setState, which would trigger a needless cascading render) — dismissing
-  // the tour writes to localStorage, so this naturally re-evaluates to false
-  // on the next render without any extra state to track it. The header
-  // sparkle button lets it be replayed any time after that via manualShowTour.
+  // owner-first scope. autoShowTour is derived directly during render (not
+  // via an effect + setState) since localStorage is the real source of
+  // truth for "has this been dismissed" across sessions — but a derived
+  // value only gets RE-evaluated when something actually triggers a
+  // re-render. Closing an auto-shown tour previously only touched
+  // manualShowTour, which was already false, so setManualShowTour(false)
+  // was a no-op React bails out on — no re-render, so autoShowTour never
+  // re-checked localStorage and the modal stayed visually open despite the
+  // dismissal having actually persisted. dismissedThisSession exists purely
+  // to force that one real state transition on first close, regardless of
+  // which path opened the tour.
   const [manualShowTour, setManualShowTour] = useState(false);
-  const autoShowTour = mounted && isAuthenticated && roleName === 'shop_owner' && !hasSeenLatestWhatsNew();
+  const [dismissedThisSession, setDismissedThisSession] = useState(false);
+  const autoShowTour = !dismissedThisSession && mounted && isAuthenticated && roleName === 'shop_owner' && !hasSeenLatestWhatsNew();
   const showTour = manualShowTour || autoShowTour;
+  const closeTour = () => {
+    setDismissedThisSession(true);
+    setManualShowTour(false);
+  };
 
   if (!mounted || !isAuthenticated) return null;
 
@@ -326,7 +337,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         </main>
       </div>
 
-      {showTour && <WhatsNewTour onClose={() => setManualShowTour(false)} />}
+      {showTour && <WhatsNewTour onClose={closeTour} />}
     </div>
   );
 }
