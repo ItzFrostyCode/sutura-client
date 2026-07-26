@@ -28,6 +28,7 @@ interface NotifData {
 interface AppNotification {
   id: string;
   created_at: string;
+  read_at: string | null;
   data: NotifData;
 }
 
@@ -137,12 +138,15 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
 
-  // ── Dismiss one ─────────────────────────────────────────────────────────
+  // ── Mark one read ────────────────────────────────────────────────────────
+  // Stays in the list (just visually muted, see the read_at check in the
+  // row render below) instead of disappearing — clicking to view/navigate
+  // shouldn't make a notification look deleted.
   const markAsRead = async (id: string) => {
     setDismissing(id);
     try {
       await api.post(`/notifications/${id}/read`);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n));
     } catch {
       /* ignore */
     } finally {
@@ -150,11 +154,11 @@ export default function NotificationBell() {
     }
   };
 
-  // ── Dismiss all ──────────────────────────────────────────────────────────
+  // ── Mark all read ────────────────────────────────────────────────────────
   const markAllAsRead = async () => {
     try {
       await api.post('/notifications/read-all');
-      setNotifications([]);
+      setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
     } catch {
       /* ignore */
     }
@@ -168,7 +172,7 @@ export default function NotificationBell() {
     setOpen(false);
   };
 
-  const count = notifications.length;
+  const count = notifications.filter(n => !n.read_at).length;
   const bellLabel = count > 0 ? `${count} unread notifications` : 'Notifications';
 
   return (
@@ -237,7 +241,7 @@ export default function NotificationBell() {
 
           {/* List */}
           <div className="max-h-[380px] overflow-y-auto overscroll-contain">
-            {count === 0 ? (
+            {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                 <div className="w-12 h-12 rounded-full bg-[#F0EAE3] flex items-center justify-center mb-3">
                   <Bell size={20} className="text-[#C4B8AE]" />
@@ -251,10 +255,11 @@ export default function NotificationBell() {
                   const cfg = getTypeConfig(notif.data?.type);
                   const Icon = cfg.icon;
                   const isDismissing = dismissing === notif.id;
+                  const isRead = !!notif.read_at;
                   return (
                     <div
                       key={notif.id}
-                      className={`w-full group flex items-start gap-3 px-4 py-3.5 hover:bg-[#FAF6F3] transition-colors ${isDismissing ? 'opacity-40' : ''}`}
+                      className={`w-full group flex items-start gap-3 px-4 py-3.5 hover:bg-[#FAF6F3] transition-colors ${isDismissing ? 'opacity-40' : ''} ${isRead ? 'opacity-60' : ''}`}
                     >
                       {/* Main Clickable Area */}
                       <button
@@ -264,13 +269,16 @@ export default function NotificationBell() {
                         aria-label={notif.data?.title ?? 'Notification'}
                       >
                         {/* Icon bubble */}
-                        <div className={`w-9 h-9 shrink-0 rounded-full ${cfg.bg} ${cfg.color} flex items-center justify-center mt-0.5`}>
+                        <div className={`relative w-9 h-9 shrink-0 rounded-full ${cfg.bg} ${cfg.color} flex items-center justify-center mt-0.5`}>
                           <Icon size={16} />
+                          {!isRead && (
+                            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#E41E3F] rounded-full border-2 border-white" aria-hidden="true" />
+                          )}
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold text-[#2D2A26] truncate">
+                          <p className={`text-[13px] truncate ${isRead ? 'font-medium text-[#827A73]' : 'font-semibold text-[#2D2A26]'}`}>
                             {notif.data?.title ?? cfg.label}
                           </p>
                           <p className="text-[12px] text-[#827A73] leading-snug mt-0.5 line-clamp-2">
@@ -282,16 +290,18 @@ export default function NotificationBell() {
                         </div>
                       </button>
 
-                      {/* Dismiss (Mark read) button */}
-                      <button
-                        type="button"
-                        onClick={() => void markAsRead(notif.id)}
-                        className="shrink-0 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[#EBE6E0] text-[#A8A19A] hover:text-[#524A44] transition-all mt-0.5 focus:outline-none"
-                        title="Dismiss"
-                        aria-label="Dismiss notification"
-                      >
-                        <Check size={13} />
-                      </button>
+                      {/* Mark read button — hidden once already read */}
+                      {!isRead && (
+                        <button
+                          type="button"
+                          onClick={() => void markAsRead(notif.id)}
+                          className="shrink-0 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[#EBE6E0] text-[#A8A19A] hover:text-[#524A44] transition-all mt-0.5 focus:outline-none"
+                          title="Mark as read"
+                          aria-label="Mark notification as read"
+                        >
+                          <Check size={13} />
+                        </button>
+                      )}
                     </div>
                   );
                 })}
