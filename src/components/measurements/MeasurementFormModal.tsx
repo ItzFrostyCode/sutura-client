@@ -60,9 +60,12 @@ export default function MeasurementFormModal({
   // (possibly different) record — not on every keystroke, since sizeChart
   // itself is the working copy while editing.
   useEffect(() => {
-    if (!isOpen) return;
-    setSizeChart(metricsToSizeChart(form.metrics));
-    setView('edit');
+    const syncFromForm = () => {
+      if (!isOpen) return;
+      setSizeChart(metricsToSizeChart(form.metrics));
+      setView('edit');
+    };
+    syncFromForm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, editingId]);
 

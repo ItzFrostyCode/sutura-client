@@ -32,26 +32,36 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
   useEffect(() => {
     if (!shop || !isOpen) return;
-    setLoading(true);
-    Promise.all([
-      api.get(`/shops/${shop.id}/customers`),
-      api.get(`/shops/${shop.id}/catalog`),
-    ]).then(([rc, ri]) => {
-      setCustomers(rc.data.data || []);
-      setItems((ri.data.data || []).filter((i: { is_active?: boolean }) => i.is_active !== false));
-    }).finally(() => setLoading(false));
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [rc, ri] = await Promise.all([
+          api.get(`/shops/${shop.id}/customers`),
+          api.get(`/shops/${shop.id}/catalog`),
+        ]);
+        setCustomers(rc.data.data || []);
+        setItems((ri.data.data || []).filter((i: { is_active?: boolean }) => i.is_active !== false));
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
   }, [shop, isOpen]);
 
   useEffect(() => {
-    const item = items.find(i => i.id.toString() === catalogItemId);
-    setTotalAmount(item ? String(Number(item.price)) : '');
-    setSelectedSize('');
+    const applyItemPrice = () => {
+      const item = items.find(i => i.id.toString() === catalogItemId);
+      setTotalAmount(item ? String(Number(item.price)) : '');
+      setSelectedSize('');
+    };
+    applyItemPrice();
   }, [catalogItemId, items]);
 
   useEffect(() => {
-    if (!isOpen) {
+    const resetForm = () => {
       setCustomerId(''); setCatalogItemId(''); setSelectedSize(''); setTotalAmount(''); setPaymentStatus('pending');
-    }
+    };
+    if (!isOpen) resetForm();
   }, [isOpen]);
 
   const selectedItem = items.find(i => i.id.toString() === catalogItemId);

@@ -63,15 +63,18 @@ function OrdersPageContent() {
   // jumps straight to that order — clearing any filter that would hide it,
   // then scrolling it into view.
   useEffect(() => {
-    if (jumpedToHighlight || loading || !highlightId || orders.length === 0) return;
-    const target = orders.find(o => String(o.id) === highlightId);
-    if (!target) return;
-    setStatusFilter('all');
-    setSearch('');
-    setJumpedToHighlight(true);
-    setTimeout(() => {
-      document.getElementById(`order-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 150);
+    const jumpToHighlighted = () => {
+      if (jumpedToHighlight || loading || !highlightId || orders.length === 0) return;
+      const target = orders.find(o => String(o.id) === highlightId);
+      if (!target) return;
+      setStatusFilter('all');
+      setSearch('');
+      setJumpedToHighlight(true);
+      setTimeout(() => {
+        document.getElementById(`order-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    };
+    jumpToHighlighted();
   }, [jumpedToHighlight, loading, highlightId, orders]);
 
   const updateStatus = async (orderId: number, newStatus: string) => {

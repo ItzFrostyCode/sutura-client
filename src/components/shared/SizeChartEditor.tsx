@@ -57,10 +57,12 @@ export default function SizeChartEditor({
   // open once data appears — never force it closed, so a user's manual
   // "Hide" click is still respected afterward.
   useEffect(() => {
-    if (imageUrl || columns.length > 0) {
-      setShowBuilder(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const openIfPopulated = () => {
+      if (imageUrl || columns.length > 0) {
+        setShowBuilder(true);
+      }
+    };
+    openIfPopulated();
   }, [imageUrl, columns.length]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

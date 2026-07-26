@@ -52,7 +52,8 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved }: Specia
   };
 
   useEffect(() => {
-    fetchItems();
+    const load = () => fetchItems();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId]);
 

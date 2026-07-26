@@ -22,13 +22,18 @@ export default function RecentReviews() {
   const isShopOwner = user?.roles?.[0]?.name === 'shop_owner';
 
   useEffect(() => {
-    if (!shop || !isShopOwner) { setLoading(false); return; }
-    api.get(`/shops/${shop.id}/reviews?per_page=3`)
-      .then(res => {
+    const load = async () => {
+      if (!shop || !isShopOwner) { setLoading(false); return; }
+      try {
+        const res = await api.get(`/shops/${shop.id}/reviews?per_page=3`);
         setReviews(res.data.data.data);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
   }, [shop, isShopOwner]);
 
   if (loading) {

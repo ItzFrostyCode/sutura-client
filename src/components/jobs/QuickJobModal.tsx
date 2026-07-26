@@ -40,25 +40,35 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
 
   useEffect(() => {
     if (!shop || !isOpen) return;
-    setLoading(true);
-    Promise.all([
-      api.get(`/shops/${shop.id}/customers`),
-      api.get(`/shops/${shop.id}/services`),
-    ]).then(([rc, rs]) => {
-      setCustomers(rc.data.data || []);
-      setServices(rs.data.data  || []);
-    }).finally(() => setLoading(false));
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [rc, rs] = await Promise.all([
+          api.get(`/shops/${shop.id}/customers`),
+          api.get(`/shops/${shop.id}/services`),
+        ]);
+        setCustomers(rc.data.data || []);
+        setServices(rs.data.data  || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
   }, [shop, isOpen]);
 
   useEffect(() => {
-    const svc = services.find(s => s.id.toString() === serviceId);
-    if (svc) setTotal(Number(svc.base_price) > 0 ? String(Number(svc.base_price)) : '');
+    const applyServicePrice = () => {
+      const svc = services.find(s => s.id.toString() === serviceId);
+      if (svc) setTotal(Number(svc.base_price) > 0 ? String(Number(svc.base_price)) : '');
+    };
+    applyServicePrice();
   }, [serviceId, services]);
 
   useEffect(() => {
-    if (!isOpen) {
+    const resetForm = () => {
       setCustomerId(''); setServiceId(''); setTotal(''); setDp(''); setDueDate('');
-    }
+    };
+    if (!isOpen) resetForm();
   }, [isOpen]);
 
   const totalNum = parseFloat(total)  || 0;

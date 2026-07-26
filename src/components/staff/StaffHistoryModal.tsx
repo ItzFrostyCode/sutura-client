@@ -39,15 +39,20 @@ export default function StaffHistoryModal({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && shop?.id && staffId) {
+    const load = async () => {
+      if (!(isOpen && shop?.id && staffId)) return;
       setLoading(true);
       setData(null);
-      api
-        .get(`/shops/${shop.id}/staff/${staffId}`)
-        .then(res => setData(res.data.data))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+      try {
+        const res = await api.get(`/shops/${shop.id}/staff/${staffId}`);
+        setData(res.data.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
   }, [isOpen, shop?.id, staffId]);
 
   return (

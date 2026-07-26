@@ -100,11 +100,18 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
 
   useEffect(() => {
     if (!shopId) return;
-    setLoadingAppts(true);
-    api.get(`/catalog/${shopId}/appointments`)
-      .then(res => setCalendarAppointments(res.data.data || []))
-      .catch(err => console.error('Failed to fetch appointments:', err))
-      .finally(() => setLoadingAppts(false));
+    const load = async () => {
+      setLoadingAppts(true);
+      try {
+        const res = await api.get(`/catalog/${shopId}/appointments`);
+        setCalendarAppointments(res.data.data || []);
+      } catch (err) {
+        console.error('Failed to fetch appointments:', err);
+      } finally {
+        setLoadingAppts(false);
+      }
+    };
+    void load();
   }, [shopId]);
 
   const getSpecialHoursForDate = (dateStr: string) => {

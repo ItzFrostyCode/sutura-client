@@ -102,17 +102,24 @@ export default function AppointmentActionModals({
   // Fetch this specific customer's job orders when the Complete modal opens
   // for a Fitting or Pickup appointment — see completionJobOrders comment above.
   useEffect(() => {
-    const customerId = completeApt?.customer?.id;
-    const needsJobOrder = completeApt?.appointment_type === 'fitting' || completeApt?.appointment_type === 'pickup';
-    if (!shop || !customerId || !needsJobOrder) {
-      setCompletionJobOrders([]);
-      return;
-    }
-    setLoadingCompletionJobs(true);
-    api.get(`/shops/${shop.id}/jobs`, { params: { customer_id: customerId, per_page: 100 } })
-      .then(res => setCompletionJobOrders(res.data?.data?.data || res.data?.data || []))
-      .catch(() => setCompletionJobOrders([]))
-      .finally(() => setLoadingCompletionJobs(false));
+    const load = async () => {
+      const customerId = completeApt?.customer?.id;
+      const needsJobOrder = completeApt?.appointment_type === 'fitting' || completeApt?.appointment_type === 'pickup';
+      if (!shop || !customerId || !needsJobOrder) {
+        setCompletionJobOrders([]);
+        return;
+      }
+      setLoadingCompletionJobs(true);
+      try {
+        const res = await api.get(`/shops/${shop.id}/jobs`, { params: { customer_id: customerId, per_page: 100 } });
+        setCompletionJobOrders(res.data?.data?.data || res.data?.data || []);
+      } catch {
+        setCompletionJobOrders([]);
+      } finally {
+        setLoadingCompletionJobs(false);
+      }
+    };
+    void load();
   }, [completeApt, shop]);
 
   const handleReschedule = (e: React.SyntheticEvent) => {

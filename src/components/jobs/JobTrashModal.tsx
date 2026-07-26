@@ -38,7 +38,10 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
   }, [shopId]);
 
   useEffect(() => {
-    if (isOpen) loadTrashed();
+    const maybeLoad = () => {
+      if (isOpen) loadTrashed();
+    };
+    maybeLoad();
   }, [isOpen, loadTrashed]);
 
   const handleRestore = async (job: TrashedJob) => {
