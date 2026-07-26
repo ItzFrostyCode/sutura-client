@@ -12,6 +12,8 @@ import {
   Package,
   Info,
   X,
+  MoreVertical,
+  Trash2,
 } from 'lucide-react';
 import api from '@/lib/axios';
 
@@ -99,7 +101,9 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [dismissing, setDismissing] = useState<string | null>(null);
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // ── Fetch ────────────────────────────────────────────────────────────────
   // Defined inside the effect so setState is called inside an async callback,
@@ -138,6 +142,17 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
 
+  // ── Click-outside close for the per-row "⋯" menu ─────────────────────────
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpenFor(null);
+      }
+    }
+    if (menuOpenFor) document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [menuOpenFor]);
+
   // ── Mark one read ────────────────────────────────────────────────────────
   // Stays in the list (just visually muted, see the read_at check in the
   // row render below) instead of disappearing — clicking to view/navigate
@@ -159,6 +174,29 @@ export default function NotificationBell() {
     try {
       await api.post('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // ── Mark one unread — counterpart to markAsRead, for the "⋯" row menu ────
+  const markAsUnread = async (id: string) => {
+    setMenuOpenFor(null);
+    try {
+      await api.post(`/notifications/${id}/unread`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: null } : n));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // ── Remove one — the explicit "I don't need to see this again" action,
+  // distinct from markAsRead which keeps it visible just muted.
+  const removeNotification = async (id: string) => {
+    setMenuOpenFor(null);
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications(prev => prev.filter(n => n.id !== id));
     } catch {
       /* ignore */
     }
@@ -256,10 +294,11 @@ export default function NotificationBell() {
                   const Icon = cfg.icon;
                   const isDismissing = dismissing === notif.id;
                   const isRead = !!notif.read_at;
+                  const menuOpen = menuOpenFor === notif.id;
                   return (
                     <div
                       key={notif.id}
-                      className={`w-full group flex items-start gap-3 px-4 py-3.5 hover:bg-[#FAF6F3] transition-colors ${isDismissing ? 'opacity-40' : ''} ${isRead ? 'opacity-60' : ''}`}
+                      className={`relative w-full group flex items-start gap-3 px-4 py-3.5 hover:bg-[#FAF6F3] transition-colors ${isDismissing ? 'opacity-40' : ''}`}
                     >
                       {/* Main Clickable Area */}
                       <button
@@ -278,7 +317,7 @@ export default function NotificationBell() {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p className={`text-[13px] truncate ${isRead ? 'font-medium text-[#827A73]' : 'font-semibold text-[#2D2A26]'}`}>
+                          <p className={`text-[13px] truncate ${isRead ? 'font-medium text-[#524A44]' : 'font-semibold text-[#2D2A26]'}`}>
                             {notif.data?.title ?? cfg.label}
                           </p>
                           <p className="text-[12px] text-[#827A73] leading-snug mt-0.5 line-clamp-2">
@@ -290,17 +329,39 @@ export default function NotificationBell() {
                         </div>
                       </button>
 
-                      {/* Mark read button — hidden once already read */}
-                      {!isRead && (
-                        <button
-                          type="button"
-                          onClick={() => void markAsRead(notif.id)}
-                          className="shrink-0 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[#EBE6E0] text-[#A8A19A] hover:text-[#524A44] transition-all mt-0.5 focus:outline-none"
-                          title="Mark as read"
-                          aria-label="Mark notification as read"
+                      {/* "⋯" row menu — Mark as read/unread, Remove */}
+                      <button
+                        type="button"
+                        onClick={() => setMenuOpenFor(prev => prev === notif.id ? null : notif.id)}
+                        className={`shrink-0 p-1.5 rounded-lg hover:bg-[#EBE6E0] text-[#A8A19A] hover:text-[#524A44] transition-all mt-0.5 focus:outline-none ${menuOpen ? 'opacity-100 bg-[#EBE6E0]' : 'opacity-0 group-hover:opacity-100'}`}
+                        title="More actions"
+                        aria-label="More actions"
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+
+                      {menuOpen && (
+                        <div
+                          ref={menuRef}
+                          className="absolute right-4 top-11 z-10 w-44 bg-white border border-[#EBE6E0] rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.18)] overflow-hidden py-1"
                         >
-                          <Check size={13} />
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => void (isRead ? markAsUnread(notif.id) : markAsRead(notif.id))}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#524A44] hover:bg-[#FAF6F3] transition-colors"
+                          >
+                            <Check size={13} />
+                            {isRead ? 'Mark as unread' : 'Mark as read'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeNotification(notif.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-[#B26959] hover:bg-[#B26959]/5 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                            Remove
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
