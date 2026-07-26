@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { ArrowLeft, Loader2, Store, ShoppingBag, User, Users, FileText, Receipt, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Store, ShoppingBag, User, Users, FileText, Receipt, Trash2, HelpCircle, Shirt } from 'lucide-react';
 import Link from 'next/link';
 import { SERVICE_TYPE_META, SERVICE_TYPES } from '@/components/services/serviceHelpers';
 import { roleLabel } from '@/components/staff/staffHelpers';
 import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
 import { STAFF_STAGES, STAFF_STAGE_LABELS } from '@/components/jobs/jobHelpers';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
+import CollapsibleSection from '@/components/jobs/CollapsibleSection';
 
 interface CustomerData {
   id: number;
@@ -755,6 +756,12 @@ export default function JobCreateForm() {
           </div>
         )}
 
+        <CollapsibleSection
+          icon={<Shirt size={16} className="text-taupe" />}
+          title="Garment Type & Design"
+          description="Category, material source, catalog link, and reference photos — optional, fill in what's relevant."
+          defaultOpen={false}
+        >
         <div className="mb-6 space-y-1.5">
           <label htmlFor="garment_category" className="text-sm font-medium text-[#524A44]">
             Garment Category <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
@@ -909,17 +916,14 @@ export default function JobCreateForm() {
             className="w-full mt-1.5 px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
           />
         </div>
+        </CollapsibleSection>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Section 1: Customer & Service Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-taupe/10 border border-taupe/20">
-                <User size={16} className="text-taupe" />
-              </div>
-              <h3 className="text-sm font-bold text-[#524A44]">Customer & Service Details</h3>
-            </div>
-
+          <CollapsibleSection
+            icon={<User size={16} className="text-taupe" />}
+            title="Customer & Service Details"
+            defaultOpen
+          >
             {/* Order source — auto-detected, not a manual toggle. 'Online'
                 only when this job is linked to an appointment that was
                 itself booked online; otherwise it's tagged Walk-in. */}
@@ -1092,23 +1096,18 @@ export default function JobCreateForm() {
                 })}
               </select>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Section 2: Custom Specifications & Notes */}
-          <div className="space-y-4 border-t border-[#EBE6E0] pt-6">
-            <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${sectionTwoMeta.bg} border ${sectionTwoMeta.border}`}>
-                <SectionTwoIcon size={16} className={sectionTwoMeta.text} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#524A44]">Custom Specifications & Notes</h3>
-                {selectedService?.service_type && (
-                  <p className={`text-[11px] font-medium ${sectionTwoMeta.text}`}>
-                    Fields adapted for {SERVICE_TYPES.find(t => t.value === selectedService.service_type)?.label}
-                  </p>
-                )}
-              </div>
-            </div>
+          <CollapsibleSection
+            icon={<SectionTwoIcon size={16} className={sectionTwoMeta.text} />}
+            iconBoxClassName={`${sectionTwoMeta.bg} border ${sectionTwoMeta.border}`}
+            title="Custom Specifications & Notes"
+            description={selectedService?.service_type
+              ? `Fields adapted for ${SERVICE_TYPES.find(t => t.value === selectedService.service_type)?.label}`
+              : undefined}
+            defaultOpen={false}
+            forceOpenWhen={isBulkOrder || selectedService?.service_type === 'alteration_repair'}
+          >
 
             {selectedService?.service_type === 'fashion_bridal' && (
               <div className={`flex items-start gap-2 text-xs ${sectionTwoMeta.text} ${sectionTwoMeta.bg} border ${sectionTwoMeta.border} rounded-xl p-3`}>
@@ -1365,16 +1364,14 @@ export default function JobCreateForm() {
                 </div>
               )}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Section 3: Production & Fulfillment */}
-          <div className="space-y-4 border-t border-[#EBE6E0] pt-6">
-            <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 border border-blue-200">
-                <Store size={16} className="text-blue-700" />
-              </div>
-              <h3 className="text-sm font-bold text-[#524A44]">Production & Fulfillment</h3>
-            </div>
+          <CollapsibleSection
+            icon={<Store size={16} className="text-blue-700" />}
+            iconBoxClassName="bg-blue-50 border border-blue-200"
+            title="Production & Fulfillment"
+            defaultOpen={false}
+          >
 
             {/* Outsourcing Details — same design as the Job Detail page's
                 Outsourcing card, so this doesn't feel like a different
@@ -1490,23 +1487,26 @@ export default function JobCreateForm() {
                 </span>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Section: Multi-Stage Staff Assignment — same model as the Job
-              Detail page's card, settable at creation time too instead of
-              only via a single generic "Assigned Staff" field afterward.
-              Owner/Manager Only: backroom production staffing is a Shop
-              Owner decision, not part of Front-Desk intake. */}
-          <div className="space-y-4 border-t border-[#EBE6E0] pt-6">
-            <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#9A8073]/10 border border-[#9A8073]/20">
-                <Users size={16} className="text-[#9A8073]" />
-              </div>
-              <h3 className="text-sm font-bold text-[#524A44]">Multi-Stage Staff Assignment <span className="font-normal text-[#A8A19A]">(Optional)</span></h3>
-              <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                Owner/Manager Only
+          {/* Multi-Stage Staff Assignment — same model as the Job Detail
+              page's card, settable at creation time too instead of only via
+              a single generic "Assigned Staff" field afterward. Owner/Manager
+              Only: backroom production staffing is a Shop Owner decision,
+              not part of Front-Desk intake. */}
+          <CollapsibleSection
+            icon={<Users size={16} className="text-[#9A8073]" />}
+            iconBoxClassName="bg-[#9A8073]/10 border border-[#9A8073]/20"
+            title={
+              <span className="flex items-center gap-2 flex-wrap">
+                Multi-Stage Staff Assignment <span className="font-normal text-[#A8A19A] text-xs">(Optional)</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                  Owner/Manager Only
+                </span>
               </span>
-            </div>
+            }
+            defaultOpen={false}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {STAFF_STAGES.map((stage) => (
                 <div key={stage}>
@@ -1537,16 +1537,14 @@ export default function JobCreateForm() {
                 </div>
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Section 4: Timeline & Financial Summary */}
-          <div className="space-y-4 border-t border-[#EBE6E0] pt-6">
-            <div className="flex items-center gap-3 border-b border-[#EBE6E0] pb-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#7A8B76]/10 border border-[#7A8B76]/20">
-                <Receipt size={16} className="text-[#7A8B76]" />
-              </div>
-              <h3 className="text-sm font-bold text-[#524A44]">Timeline & Invoice Summary</h3>
-            </div>
+          <CollapsibleSection
+            icon={<Receipt size={16} className="text-[#7A8B76]" />}
+            iconBoxClassName="bg-[#7A8B76]/10 border border-[#7A8B76]/20"
+            title="Timeline & Invoice Summary"
+            defaultOpen
+          >
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1727,7 +1725,7 @@ export default function JobCreateForm() {
                 </div>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
           <div className="pt-6 border-t border-[#EBE6E0] flex justify-end gap-4">
             <Link

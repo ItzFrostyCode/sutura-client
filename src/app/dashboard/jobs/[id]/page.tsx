@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle, LayoutGrid, Users } from 'lucide-react';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
 import JobProductionTimeline from '@/components/jobs/JobProductionTimeline';
@@ -19,6 +19,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   const [showRejectOrderForm, setShowRejectOrderForm] = useState(false);
   const [rejectOrderReason, setRejectOrderReason] = useState('');
   const [rejectingOrder, setRejectingOrder] = useState(false);
+  // In-page tabs — the page used to stack every card top-to-bottom (~10
+  // cards), which made it hard to focus on one concern at a time. Local
+  // state, not route-based: everything here shares state from useJobDetail
+  // (job, saving, notes, status, etc.) and one "Save Changes" button at the
+  // top must keep working no matter which tab is active.
+  const [activeTab, setActiveTab] = useState<'overview' | 'production' | 'staff' | 'fulfillment' | 'financials'>('overview');
 
   const {
     shop,
@@ -166,12 +172,13 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                   : `Per shop policy: a 50% downpayment (₱${requiredDownpayment.toFixed(2)}) is required before cutting/production begins. Log the payment below.`}
               </p>
             </div>
-            <a
-              href="#financials"
+            <button
+              type="button"
+              onClick={() => setActiveTab('financials')}
               className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors"
             >
               Log DP →
-            </a>
+            </button>
           </div>
         )}
 
@@ -262,8 +269,36 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 space-y-6">
+        <div className="flex items-center gap-1 border-b border-[#EBE6E0]">
+          {([
+            { key: 'overview', label: 'Overview', icon: LayoutGrid },
+            { key: 'production', label: 'Production', icon: Scissors },
+            { key: 'staff', label: 'Staff', icon: Users },
+            { key: 'fulfillment', label: 'Fulfillment', icon: Store },
+            { key: 'financials', label: 'Financials', icon: CreditCard },
+          ] as const).map(tab => {
+            const TabIcon = tab.icon;
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                  active
+                    ? 'border-[#9A8073] text-[#2D2A26]'
+                    : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
+                }`}
+              >
+                <TabIcon size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
             <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
               <h2 className="text-lg font-medium text-[#2D2A26] mb-4">Job Details</h2>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -447,7 +482,11 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                 </div>
               );
             })()}
+          </div>
+        )}
 
+        {activeTab === 'production' && (
+          <div className="space-y-6">
             {/* Outsourcing Toggle */}
             <div className={`shadow-sm border rounded-2xl p-6 transition-colors ${isOutsourced ? 'bg-[#9A8073]/5 border-[#9A8073]/30' : 'bg-white border-[#EBE6E0]'}`}>
               <div className="flex items-center justify-between">
@@ -549,11 +588,11 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               collectedAmount={Number.parseFloat(String(job.total_amount)) - Number.parseFloat(String(job.balance))}
               onProgressPhotoAdded={refreshJob}
             />
+          </div>
+        )}
 
-            {/* Fulfillment Details Card */}
-            <JobFulfillmentCard />
-
-            {/* Multi-Stage Staff Assignment Card */}
+        {activeTab === 'staff' && (
+          <div className="space-y-6">
             <JobStaffAssignmentCard
               allStaff={allStaff}
               staffAssignments={staffAssignments}
@@ -563,21 +602,26 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               savingStaff={savingStaff}
             />
           </div>
+        )}
 
+        {activeTab === 'fulfillment' && (
           <div className="space-y-6">
-            {/* Financials / POS Card */}
-            <div id="financials">
-              <JobFinancialsCard
-                job={job}
-                saving={saving}
-                onCharge={handleChargePayment}
-                onApplyDiscount={handleApplyDiscount}
-                onUpdatePayment={handleUpdatePayment}
-                onRejectPayment={handleRejectPayment}
-              />
-            </div>
+            <JobFulfillmentCard />
           </div>
-        </div>
+        )}
+
+        {activeTab === 'financials' && (
+          <div className="space-y-6" id="financials">
+            <JobFinancialsCard
+              job={job}
+              saving={saving}
+              onCharge={handleChargePayment}
+              onApplyDiscount={handleApplyDiscount}
+              onUpdatePayment={handleUpdatePayment}
+              onRejectPayment={handleRejectPayment}
+            />
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Deletion">
