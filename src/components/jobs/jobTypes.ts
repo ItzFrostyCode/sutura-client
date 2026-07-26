@@ -62,7 +62,12 @@ export interface Job {
     metrics: Record<string, number | string>;
     notes?: string | null;
   } | null;
-  catalog_item?: { id: number; name: string; fabric_image_url?: string | null } | null;
+  catalog_item?: {
+    id: number;
+    name: string;
+    fabric_image_url?: string | null;
+    images?: { id: number; image_url: string; is_primary: boolean }[];
+  } | null;
 }
 
 export interface Staff {

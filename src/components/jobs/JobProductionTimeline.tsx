@@ -288,7 +288,7 @@ export default function JobProductionTimeline({
               ))}
             </div>
           )}
-          <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-[#827A73] hover:text-[#7A8B76] transition-colors mt-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-[#7A8B76] hover:text-[#6B7C67] bg-[#7A8B76]/5 hover:bg-[#7A8B76]/10 border border-[#7A8B76]/20 px-3 py-1.5 rounded-lg transition-colors mt-1">
             {uploadingProgressPhoto ? <Loader2 size={14} className="animate-spin text-[#7A8B76]" /> : <Camera size={14} />}
             <span>{uploadingProgressPhoto ? 'Uploading...' : 'Add a progress photo'}</span>
             <input

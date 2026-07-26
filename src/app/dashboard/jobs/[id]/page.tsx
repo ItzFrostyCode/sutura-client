@@ -383,43 +383,86 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                   <p className="text-xs text-[#A8A19A] mt-0.5">Cut sheet for the manggagawa — fabric panels, stitch type, linings, embellishments</p>
                 </div>
               </div>
-              {(job.catalog_item || (job.reference_images && job.reference_images.length > 0) || job.reference_link) && (
-                <div className="mb-4 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#A8A19A] mb-2">Design Reference</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {job.catalog_item && (
-                      <div className="flex items-center gap-2 bg-white border border-[#EBE6E0] rounded-lg pl-1 pr-2.5 py-1">
-                        {job.catalog_item.fabric_image_url && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={job.catalog_item.fabric_image_url} alt={job.catalog_item.name} className="h-9 w-9 object-cover rounded-md" />
-                        )}
-                        <span className="text-xs font-medium text-[#524A44]">📖 {job.catalog_item.name}</span>
-                      </div>
-                    )}
-                    {job.reference_images?.map((url) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={url} src={url} alt="Design reference" className="h-14 w-14 object-cover rounded-lg border border-[#EBE6E0]" />
-                    ))}
-                    {job.reference_link && (
+              {(() => {
+                const catalogImageUrl = job.catalog_item?.images?.find(i => i.is_primary)?.image_url
+                  ?? job.catalog_item?.images?.[0]?.image_url
+                  ?? job.catalog_item?.fabric_image_url
+                  ?? null;
+                const heroImages = [catalogImageUrl, ...(job.reference_images ?? [])].filter((u): u is string => !!u);
+                const mainImage = heroImages[0];
+                const extraImages = heroImages.slice(1);
+
+                if (!mainImage) {
+                  return (
+                    <>
+                      {job.reference_link && (
+                        <a
+                          href={job.reference_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-taupe hover:underline font-medium mb-3 inline-block"
+                        >
+                          🔗 Reference link
+                        </a>
+                      )}
+                      <textarea
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        rows={5}
+                        placeholder="e.g. Use cocoon silk panel A for the back. French seam on collar. Add 1cm allowance all sides. Embroidery on left chest pocket only..."
+                        className="w-full bg-[#FFFDF7] border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-[#2D2A26] placeholder-[#C5BDBA] focus:outline-none resize-y min-h-[100px] leading-relaxed"
+                      />
+                    </>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+                    {/* Reference image — sized to match Design Catalog card images */}
+                    <div className="space-y-2">
                       <a
-                        href={job.reference_link}
+                        href={mainImage}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-taupe hover:underline font-medium"
+                        className="block aspect-3/4 bg-[#F0EAE3] rounded-xl overflow-hidden border border-[#EBE6E0]"
                       >
-                        🔗 Reference link
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={mainImage} alt={job.catalog_item?.name ?? 'Design reference'} className="w-full h-full object-cover" />
                       </a>
-                    )}
+                      {job.catalog_item && (
+                        <p className="text-xs font-medium text-[#524A44]">📖 {job.catalog_item.name}</p>
+                      )}
+                      {extraImages.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {extraImages.map(url => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img key={url} src={url} alt="Additional reference" className="h-12 w-12 object-cover rounded-lg border border-[#EBE6E0]" />
+                          ))}
+                        </div>
+                      )}
+                      {job.reference_link && (
+                        <a
+                          href={job.reference_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-taupe hover:underline font-medium block"
+                        >
+                          🔗 Reference link
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Notes — matches the image column's height, scrolls internally
+                        instead of growing the card taller. */}
+                    <textarea
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      placeholder="e.g. Use cocoon silk panel A for the back. French seam on collar. Add 1cm allowance all sides. Embroidery on left chest pocket only..."
+                      className="w-full min-h-[280px] bg-[#FFFDF7] border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-[#2D2A26] placeholder-[#C5BDBA] focus:outline-none resize-none overflow-y-auto leading-relaxed"
+                    />
                   </div>
-                </div>
-              )}
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={5}
-                placeholder="e.g. Use cocoon silk panel A for the back. French seam on collar. Add 1cm allowance all sides. Embroidery on left chest pocket only..."
-                className="w-full bg-[#FFFDF7] border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-[#2D2A26] placeholder-[#C5BDBA] focus:outline-none resize-y min-h-[100px] leading-relaxed"
-              />
+                );
+              })()}
               <p className="text-[10px] text-[#A8A19A] mt-2 flex items-center gap-1.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 shrink-0" />
                 These notes will print on the Work Ticket for the production team.
