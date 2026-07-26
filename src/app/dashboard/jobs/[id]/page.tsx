@@ -348,6 +348,36 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                   <p className="text-xs text-[#A8A19A] mt-0.5">Cut sheet for the manggagawa — fabric panels, stitch type, linings, embellishments</p>
                 </div>
               </div>
+              {(job.catalog_item || (job.reference_images && job.reference_images.length > 0) || job.reference_link) && (
+                <div className="mb-4 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#A8A19A] mb-2">Design Reference</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {job.catalog_item && (
+                      <div className="flex items-center gap-2 bg-white border border-[#EBE6E0] rounded-lg pl-1 pr-2.5 py-1">
+                        {job.catalog_item.fabric_image_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={job.catalog_item.fabric_image_url} alt={job.catalog_item.name} className="h-9 w-9 object-cover rounded-md" />
+                        )}
+                        <span className="text-xs font-medium text-[#524A44]">📖 {job.catalog_item.name}</span>
+                      </div>
+                    )}
+                    {job.reference_images?.map((url) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={url} src={url} alt="Design reference" className="h-14 w-14 object-cover rounded-lg border border-[#EBE6E0]" />
+                    ))}
+                    {job.reference_link && (
+                      <a
+                        href={job.reference_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-taupe hover:underline font-medium"
+                      >
+                        🔗 Reference link
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}

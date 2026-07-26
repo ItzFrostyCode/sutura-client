@@ -10,6 +10,7 @@ import { SERVICE_TYPE_META, SERVICE_TYPES } from '@/components/services/serviceH
 import { roleLabel } from '@/components/staff/staffHelpers';
 import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
 import { STAFF_STAGES, STAFF_STAGE_LABELS } from '@/components/jobs/jobHelpers';
+import { CatalogItem } from '@/components/catalog/catalogHelpers';
 
 interface CustomerData {
   id: number;
@@ -94,6 +95,12 @@ export default function JobCreateForm() {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [services, setServices] = useState<ServiceData[]>([]);
   const [staff, setStaff] = useState<StaffData[]>([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  // Optional — most jobs are fully custom and have no linked catalog design.
+  // When set, the backend auto-carries the item's photo into reference_images
+  // (see JobOrderController@store) so tailoring staff see what was picked
+  // right alongside the Production Instructions cut sheet.
+  const [catalogItemId, setCatalogItemId] = useState('');
 
   const [customerMeasurements, setCustomerMeasurements] = useState<CustomerMeasurement[]>([]);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
@@ -477,13 +484,15 @@ export default function JobCreateForm() {
         api.get(`/shops/${shop.id}/customers`),
         api.get(`/shops/${shop.id}/services`),
         api.get(`/shops/${shop.id}/staff`),
+        api.get(`/shops/${shop.id}/catalog`),
       ])
-        .then(([resCustomers, resServices, resStaff]) => {
+        .then(([resCustomers, resServices, resStaff, resCatalog]) => {
           const custs = resCustomers.data.data || [];
           const servs = sanitizeServiceCustomFields(resServices.data.data || []);
           setCustomers(custs);
           setServices(servs);
           setStaff(resStaff.data.data || []);
+          setCatalogItems(resCatalog.data.data || []);
 
           // Prefill from query params
           const qCust = searchParams.get('customer_id') || '';
@@ -663,6 +672,7 @@ export default function JobCreateForm() {
         partner_shop_name: formData.is_outsourced ? formData.partner_shop_name : null,
         outsourcing_cost: formData.is_outsourced && formData.outsourcing_cost ? Number.parseFloat(formData.outsourcing_cost) : null,
         appointment_id: appointmentId ? Number(appointmentId) : null,
+        catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
         reference_images: referenceImages.length > 0 ? referenceImages : null,
         reference_link: referenceLink.trim() || null,
         material_source: formData.material_source,
@@ -801,10 +811,41 @@ export default function JobCreateForm() {
           </div>
           {formData.material_source === 'customer_supplied' && (
             <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1.5">
-              ⚠ Add a photo below of the fabric/garment they brought — it'll print on the Work Ticket so whoever cuts/sews this doesn't reach for shop stock instead.
+              ⚠ Add a photo below of the fabric/garment they brought — it&apos;ll print on the Work Ticket so whoever cuts/sews this doesn&apos;t reach for shop stock instead.
             </p>
           )}
         </div>
+
+        {catalogItems.length > 0 && (
+          <div className="mb-6 space-y-1.5">
+            <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
+              Link to Design Catalog Item <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+            </span>
+            <p className="text-[11px] text-[#A8A19A]">
+              If the customer picked one of your showcased designs, link it here — its photo carries over automatically as a reference for whoever works the job.
+            </p>
+            <select
+              value={catalogItemId}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setCatalogItemId(newId);
+                const picked = catalogItems.find((c) => c.id.toString() === newId);
+                const pickedImage = picked?.images?.find((img) => img.is_primary)?.image_url
+                  || picked?.images?.[0]?.image_url
+                  || picked?.fabric_image_url;
+                if (pickedImage && referenceImages.length === 0) {
+                  setReferenceImages([pickedImage]);
+                }
+              }}
+              className="w-full px-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+            >
+              <option value="">Not from the catalog / custom design</option>
+              {catalogItems.map((item) => (
+                <option key={item.id} value={item.id.toString()}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="mb-6 space-y-1.5">
           <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
@@ -832,7 +873,7 @@ export default function JobCreateForm() {
               ))}
             </div>
           )}
-          <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-[#827A73] hover:text-[#9A8073] transition-colors mt-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3 py-1.5 rounded-lg transition-colors mt-1">
             {uploadingReference ? <Loader2 size={14} className="animate-spin text-taupe" /> : null}
             <span>{uploadingReference ? 'Uploading...' : '+ Add reference photo'}</span>
             <input
