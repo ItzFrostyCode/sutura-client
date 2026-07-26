@@ -56,6 +56,12 @@ export interface Job {
   customer_job_count?: number;
   garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | null;
   progress_photos?: { url: string; stage: string; uploaded_at: string }[] | null;
+  measurement?: {
+    id: number;
+    profile_name: string;
+    metrics: Record<string, number | string>;
+    notes?: string | null;
+  } | null;
 }
 
 export interface Staff {

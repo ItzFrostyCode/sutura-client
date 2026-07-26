@@ -302,6 +302,41 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               </div>
             </div>
 
+            {/* ── Linked Measurement Profile ───────────────────────────── */}
+            {job.measurement && (
+              <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-[#2D2A26]">📏 {job.measurement.profile_name}</h2>
+                  {job.customer && (
+                    <Link
+                      href={`/dashboard/customers/${job.customer.id}?tab=measurements`}
+                      className="text-xs font-semibold text-[#9A8073] hover:underline"
+                    >
+                      View / Edit →
+                    </Link>
+                  )}
+                </div>
+                {Object.keys(job.measurement.metrics || {}).length > 0 ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {Object.entries(job.measurement.metrics).map(([k, v]) => (
+                      <div key={k} className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-2.5 py-2 text-center">
+                        <p className="text-[9px] text-[#A8A19A] font-bold uppercase">{k.replace(/_/g, ' ')}</p>
+                        <p className="text-sm font-bold text-[#2D2A26] mt-0.5">{String(v)}<span className="text-[9px] font-normal text-[#A8A19A] ml-0.5">″</span></p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#A8A19A] italic">No measurement fields recorded on this profile.</p>
+                )}
+                {job.measurement.notes && (
+                  <p className="text-xs text-[#524A44] border-t border-[#EBE6E0] pt-3 mt-3">
+                    <span className="font-semibold text-[#827A73]">Notes: </span>
+                    {job.measurement.notes}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* ── Production Cut Sheet ─────────────────────────────────── */}
             <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
               <div className="flex items-start gap-3 mb-4">
@@ -569,6 +604,27 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             {job.due_date && <p className="text-base"><strong>Due Date:</strong> {new Date(job.due_date).toLocaleDateString()}</p>}
           </div>
         </div>
+
+        {job.measurement && (
+          <div className="mb-8">
+            <h2 className="font-bold uppercase tracking-widest text-xs border-b border-black pb-1 mb-3">
+              Measurements — {job.measurement.profile_name}
+            </h2>
+            {Object.keys(job.measurement.metrics || {}).length > 0 ? (
+              <div className="grid grid-cols-4 gap-x-8 gap-y-3">
+                {Object.entries(job.measurement.metrics).map(([k, v]) => (
+                  <div key={k} className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-semibold">{k.replace(/_/g, ' ')}</span>
+                    <span className="font-medium text-base border-b border-dashed border-gray-300 pb-1">{String(v)}″</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 italic">No measurement fields recorded.</p>
+            )}
+            {job.measurement.notes && <p className="text-sm mt-2"><strong>Notes:</strong> {job.measurement.notes}</p>}
+          </div>
+        )}
 
         {job.custom_order_data && Object.keys(job.custom_order_data).length > 0 && (
           <div className="mb-8">
