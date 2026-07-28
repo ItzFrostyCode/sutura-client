@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { ArrowLeft, Loader2, Store, ShoppingBag, User, Users, FileText, Receipt, Trash2, HelpCircle, Shirt } from 'lucide-react';
+import { ArrowLeft, Loader2, Store, ShoppingBag, User, Users, FileText, Receipt, Trash2, HelpCircle, Shirt, AlertTriangle, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { SERVICE_TYPE_META, SERVICE_TYPES } from '@/components/services/serviceHelpers';
 import { roleLabel } from '@/components/staff/staffHelpers';
@@ -817,8 +817,11 @@ export default function JobCreateForm() {
             </button>
           </div>
           {formData.material_source === 'customer_supplied' && (
-            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1.5">
-              ⚠ Add a photo below of the fabric/garment they brought — it&apos;ll print on the Work Ticket so whoever cuts/sews this doesn&apos;t reach for shop stock instead.
+            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1.5 flex items-start gap-2">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+              <span>
+                Add a photo below of the fabric/garment they brought — it&apos;ll print on the Work Ticket so whoever cuts/sews this doesn&apos;t reach for shop stock instead.
+              </span>
             </p>
           )}
         </div>
@@ -1226,8 +1229,11 @@ export default function JobCreateForm() {
                   )}
 
                   {roster.length >= 10 && (
-                    <p className="text-xs font-semibold px-3 py-2 rounded-lg border bg-amber-50 border-amber-200 text-amber-700">
-                      🎁 Freebies unlocked: {roster.length >= 20 ? 'Free Layout + Free Banner + Free Coach Shirt' : roster.length >= 15 ? 'Free Layout + Free Banner' : 'Free Layout Design'} (remember to apply manually to pricing)
+                    <p className="text-xs font-semibold px-3 py-2 rounded-lg border bg-amber-50 border-amber-200 text-amber-700 flex items-start gap-2">
+                      <Gift size={14} className="mt-0.5 shrink-0" />
+                      <span>
+                        Freebies unlocked: {roster.length >= 20 ? 'Free Layout + Free Banner + Free Coach Shirt' : roster.length >= 15 ? 'Free Layout + Free Banner' : 'Free Layout Design'} (remember to apply manually to pricing)
+                      </span>
                     </p>
                   )}
 

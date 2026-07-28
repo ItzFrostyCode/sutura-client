@@ -54,7 +54,7 @@ export default function JobOrdersPage() {
           >
             <Trash2 size={16} />
           </button>
-          {/* ⚡ Quick Entry — walk-in shortcut */}
+          {/* Quick Entry — walk-in shortcut */}
           <button
             type="button"
             onClick={() => setQuickModalOpen(true)}

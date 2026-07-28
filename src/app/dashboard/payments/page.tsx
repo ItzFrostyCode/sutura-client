@@ -188,8 +188,14 @@ export default function PaymentQueuePage() {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-sm text-[#A8A19A] h-full flex items-center justify-center">
-              Select a receipt to view details
+            <div className="p-8 text-center h-full flex flex-col items-center justify-center bg-zinc-50/50">
+              <div className="w-16 h-16 bg-white border border-[#EBE6E0] rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                <Receipt className="text-[#C5BDBA]" size={28} strokeWidth={1.5} />
+              </div>
+              <p className="font-semibold text-[#2D2A26]">No Receipt Selected</p>
+              <p className="text-sm text-[#827A73] mt-1 max-w-[220px]">
+                Choose a payment from the queue to review the proof and approve it.
+              </p>
             </div>
           )}
         </div>

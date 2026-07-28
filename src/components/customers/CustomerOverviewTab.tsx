@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Ruler, Star, Store, User, type LucideIcon } from 'lucide-react';
 import { CustomerData, JobOrder, MeasurementProfile } from './customerTypes';
 import { isWalkInEmail } from './customerHelpers';
 
@@ -49,13 +49,19 @@ export default function CustomerOverviewTab({
             <div>
               <span className="text-[#A8A19A] block mb-0.5 text-xs font-semibold">Client Type (Suki Tag)</span>
               {customer?.suki_tag ? (() => {
-                const tagMap: Record<string, { label: string; cls: string }> = {
-                  b2b_suki: { label: '⭐ B2B Suki (Bulk / Corporate)', cls: 'text-amber-700' },
-                  reseller: { label: '🏪 Reseller (Palengke / Wholesale)', cls: 'text-purple-700' },
-                  walk_in_retail: { label: '🚶 Walk-in Retail', cls: 'text-[#827A73]' },
+                const tagMap: Record<string, { label: string; cls: string; Icon: LucideIcon }> = {
+                  b2b_suki: { label: 'B2B Suki (Bulk / Corporate)', cls: 'text-amber-700', Icon: Star },
+                  reseller: { label: 'Reseller (Palengke / Wholesale)', cls: 'text-purple-700', Icon: Store },
+                  walk_in_retail: { label: 'Walk-in Retail', cls: 'text-[#827A73]', Icon: User },
                 };
-                const tag = tagMap[customer.suki_tag] ?? { label: customer.suki_tag, cls: 'text-[#2D2A26]' };
-                return <span className={`font-medium text-sm ${tag.cls}`}>{tag.label}</span>;
+                const tag = tagMap[customer.suki_tag] ?? { label: customer.suki_tag, cls: 'text-[#2D2A26]', Icon: User };
+                const TagIcon = tag.Icon;
+                return (
+                  <span className={`inline-flex items-center gap-1.5 font-medium text-sm ${tag.cls}`}>
+                    <TagIcon size={14} />
+                    {tag.label}
+                  </span>
+                );
               })() : (
                 <span className="text-[#A8A19A] text-sm italic">Not classified</span>
               )}
@@ -131,9 +137,9 @@ export default function CustomerOverviewTab({
               <p className="text-xs text-[#A8A19A] mb-3">No measurements recorded yet.</p>
               <button
                 onClick={() => setActiveTab('measurements')}
-                className="text-xs font-bold bg-taupe text-white px-4 py-2 rounded-lg hover:bg-taupe/90 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold bg-taupe text-white px-4 py-2 rounded-lg hover:bg-taupe/90 transition-colors cursor-pointer"
               >
-                📏 Record Measurements
+                <Ruler size={13} /> Record Measurements
               </button>
             </div>
           ) : (

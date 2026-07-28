@@ -1,4 +1,5 @@
 import React from 'react';
+import { Shirt } from 'lucide-react';
 
 export interface ShopSettingsData {
   name: string;
@@ -92,7 +93,7 @@ export default function SettingsRentalPolicies({
     <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6 transition-all duration-300">
       <div className="mb-6">
         <h2 className="text-lg font-medium text-[#2D2A26] flex items-center gap-2">
-          <span className="text-xl">👗</span>{' '}
+          <Shirt size={20} className="text-[#9A8073]" />
           Rental &amp; Store Policies
         </h2>
         <p className="text-sm text-[#827A73] mt-1">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Modal from '@/components/Modal';
-import { Loader2, X, Search } from 'lucide-react';
+import { AlertTriangle, Loader2, X, Search } from 'lucide-react';
 import { Service, ServicePackage } from './serviceHelpers';
 
 interface ServicePackageFormModalProps {
@@ -165,8 +165,11 @@ export default function ServicePackageFormModal({
             )}
           </label>
           {noPriceServices.length > 0 && (
-            <p className="text-xs text-[#B26959] mb-1.5">
-              ⚠ {noPriceServices.map(s => s.name).join(', ')} {noPriceServices.length === 1 ? 'has' : 'have'} no fixed price (Custom Quote) — not included in the sum above. Set the Bundle Price manually to account for it.
+            <p className="text-xs text-[#B26959] mb-1.5 flex items-start gap-1.5">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+              <span>
+                {noPriceServices.map(s => s.name).join(', ')} {noPriceServices.length === 1 ? 'has' : 'have'} no fixed price (Custom Quote) — not included in the sum above. Set the Bundle Price manually to account for it.
+              </span>
             </p>
           )}
           <input

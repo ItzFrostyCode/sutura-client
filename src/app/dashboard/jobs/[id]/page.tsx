@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle, LayoutGrid, Users } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle, LayoutGrid, Users, Zap, Ruler, Link as LinkIcon, BookOpen, ListChecks, Shirt } from 'lucide-react';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
 import JobProductionTimeline from '@/components/jobs/JobProductionTimeline';
@@ -118,7 +118,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                 </span>
                 {job.is_rush && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full animate-pulse border border-amber-200">
-                    ⚡ Rush Order
+                    <Zap size={11} /> Rush Order
                   </span>
                 )}
               </h1>
@@ -186,7 +186,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
         {job.is_rush && (
           <div className="bg-orange-50 border border-orange-200 rounded-2xl px-5 py-3 flex items-center gap-3">
             <AlertTriangle size={15} className="text-orange-500 shrink-0" />
-            <p className="text-orange-700 text-sm font-semibold">⚡ Rush Order — This job is on an expedited production schedule.</p>
+            <p className="text-orange-700 text-sm font-semibold">Rush Order - This job is on an expedited production schedule.</p>
           </div>
         )}
 
@@ -330,7 +330,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                 </div>
                 {job.is_rush && (
                   <div>
-                    <span className="text-[#A8A19A] block mb-1">⚡ Rush Fee</span>
+                    <span className="text-[#A8A19A] mb-1 flex items-center gap-1.5">
+                      <Zap size={13} /> Rush Fee
+                    </span>
                     <span className="text-[#B26959] font-semibold">₱{Number.parseFloat(String(job.rush_fee || '0')).toFixed(2)}</span>
                   </div>
                 )}
@@ -341,7 +343,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             {job.measurement && (
               <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-medium text-[#2D2A26]">📏 {job.measurement.profile_name}</h2>
+                  <h2 className="text-lg font-medium text-[#2D2A26] flex items-center gap-2">
+                    <Ruler size={18} className="text-[#9A8073]" /> {job.measurement.profile_name}
+                  </h2>
                   {job.customer && (
                     <Link
                       href={`/dashboard/customers/${job.customer.id}?tab=measurements`}
@@ -400,9 +404,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                           href={job.reference_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-taupe hover:underline font-medium mb-3 inline-block"
+                          className="text-xs text-taupe hover:underline font-medium mb-3 inline-flex items-center gap-1.5"
                         >
-                          🔗 Reference link
+                          <LinkIcon size={12} /> Reference link
                         </a>
                       )}
                       <textarea
@@ -430,7 +434,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                         <img src={mainImage} alt={job.catalog_item?.name ?? 'Design reference'} className="w-full h-full object-cover" />
                       </a>
                       {job.catalog_item && (
-                        <p className="text-xs font-medium text-[#524A44]">📖 {job.catalog_item.name}</p>
+                        <p className="text-xs font-medium text-[#524A44] flex items-center gap-1.5">
+                          <BookOpen size={12} className="text-[#9A8073]" /> {job.catalog_item.name}
+                        </p>
                       )}
                       {extraImages.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
@@ -445,9 +451,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                           href={job.reference_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-taupe hover:underline font-medium block"
+                          className="text-xs text-taupe hover:underline font-medium inline-flex items-center gap-1.5"
                         >
-                          🔗 Reference link
+                          <LinkIcon size={12} /> Reference link
                         </a>
                       )}
                     </div>
@@ -472,7 +478,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             {/* Custom Specifications Card */}
             {job.custom_order_data && Object.keys(job.custom_order_data).some(k => k !== 'roster' && k !== 'team_roster') ? (
               <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-                <h2 className="text-lg font-medium text-[#2D2A26] mb-4">📋 Custom Specifications</h2>
+                <h2 className="text-lg font-medium text-[#2D2A26] mb-4 flex items-center gap-2">
+                  <ListChecks size={18} className="text-[#9A8073]" /> Custom Specifications
+                </h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   {Object.entries(job.custom_order_data)
                     .filter(([label]) => label !== 'roster' && label !== 'team_roster')
@@ -492,7 +500,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               if (!teamRoster || teamRoster.length === 0) return null;
               return (
                 <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-                  <h2 className="text-lg font-medium text-[#2D2A26] mb-4">👕 Team Roster & Size Sheet</h2>
+                  <h2 className="text-lg font-medium text-[#2D2A26] mb-4 flex items-center gap-2">
+                    <Shirt size={18} className="text-[#9A8073]" /> Team Roster & Size Sheet
+                  </h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs divide-y divide-zinc-200">
                       <thead>

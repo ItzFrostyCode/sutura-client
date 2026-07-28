@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AlertTriangle, Ban } from 'lucide-react';
 import Modal from '@/components/Modal';
 
 interface CancellationReasonModalProps {
@@ -43,12 +44,23 @@ export default function CancellationReasonModal({ isOpen, onClose, onConfirm, co
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="🚫 Cancel Job Order">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={(
+        <span className="inline-flex items-center gap-2">
+          <Ban size={18} className="text-red-600" /> Cancel Job Order
+        </span>
+      )}
+    >
       <div className="space-y-3">
         {collectedAmount > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
-            ⚠️ This job has ₱{collectedAmount.toFixed(2)} already collected. Choosing a reason below does not
-            refund or reverse this automatically — pick the one that matches what actually happened.
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 flex items-start gap-2">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+            <p>
+              This job has ₱{collectedAmount.toFixed(2)} already collected. Choosing a reason below does not
+              refund or reverse this automatically — pick the one that matches what actually happened.
+            </p>
           </div>
         )}
 

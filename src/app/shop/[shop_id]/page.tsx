@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, type LucideIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, type LucideIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
@@ -796,7 +796,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 px-4 py-2 bg-[#2D2A26] hover:bg-[#9A8073] text-white rounded-lg transition-colors text-sm font-medium"
                       >
-                        💬 Chat
+                        <MessageCircle size={15} /> Chat
                       </a>
                     </>
                   )}
@@ -1090,9 +1090,9 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="block w-full text-center bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                              className="flex w-full items-center justify-center gap-1.5 bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
                             >
-                              💬 Inquire on Facebook
+                              <MessageCircle size={13} /> Inquire on Facebook
                             </a>
                           )}
                         </div>
@@ -1146,9 +1146,9 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="block w-full text-center bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                                className="flex w-full items-center justify-center gap-1.5 bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
                               >
-                                💬 Inquire on Facebook
+                                <MessageCircle size={13} /> Inquire on Facebook
                               </a>
                             )}
                           </div>
@@ -1495,7 +1495,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                     rows={2}
                     value={postCaption}
                     onChange={e => setPostCaption(e.target.value)}
-                    placeholder="e.g. Thank you to the Barangay Ballers team for trusting us with your jerseys! 🏀"
+                    placeholder="e.g. Thank you to the Barangay Ballers team for trusting us with your jerseys!"
                     className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] resize-none focus:outline-none focus:border-taupe"
                   />
 
@@ -1581,16 +1581,16 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block w-full text-center bg-[#2D2A26] hover:bg-[#9A8073] text-white py-2 rounded-xl text-xs font-semibold transition-colors"
+                            className="flex w-full items-center justify-center gap-1.5 bg-[#2D2A26] hover:bg-[#9A8073] text-white py-2 rounded-xl text-xs font-semibold transition-colors"
                           >
-                            💬 Inquire About This
+                            <MessageCircle size={13} /> Inquire About This
                           </a>
                           {post.service && (
                             <Link
                               href={`/shop/${shopId}/book?service_id=${post.service.id}`}
-                              className="block w-full text-center bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors"
+                              className="flex w-full items-center justify-center gap-1.5 bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors"
                             >
-                              📅 Book &quot;{post.service.name}&quot;
+                              <Calendar size={13} /> Book &quot;{post.service.name}&quot;
                             </Link>
                           )}
                         </div>

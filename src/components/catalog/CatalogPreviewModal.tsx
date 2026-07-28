@@ -12,7 +12,9 @@ import {
   Shirt, 
   Sparkles, 
   Check, 
-  Pencil
+  Pencil,
+  ShoppingBag,
+  Wallet
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -151,14 +153,14 @@ export default function CatalogPreviewModal({ isOpen, onClose, item }: CatalogPr
               <div className="grid grid-cols-2 gap-2 text-center pt-1">
                 <div className="bg-[#FAF6F3] p-2.5 rounded-xl border border-[#EBE6E0]/60">
                   <span className="flex items-center justify-center text-[#827A73] gap-1 mb-1">
-                    <span className="text-xs">🛍️</span>
+                    <ShoppingBag size={12} />
                     <span className="text-[10px] font-medium">Total Orders</span>
                   </span>
                   <p className="text-sm font-bold text-[#2D2A26]">{item.order_count || 0}</p>
                 </div>
                 <div className="bg-[#FAF6F3] p-2.5 rounded-xl border border-[#EBE6E0]/60">
                   <span className="flex items-center justify-center text-[#827A73] gap-1 mb-1">
-                    <span className="text-xs">💰</span>
+                    <Wallet size={12} />
                     <span className="text-[10px] font-medium">Total Revenue</span>
                   </span>
                   <p className="text-sm font-bold text-taupe">

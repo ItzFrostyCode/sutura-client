@@ -134,7 +134,53 @@ export default function BranchesPage() {
   };
 
   if (loading) {
-    return <div className="text-[#A8A19A] py-12 text-center animate-pulse">Loading branches...</div>;
+    return (
+      <div className="space-y-6 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 bg-[#EBE6E0] rounded w-48 mb-2"></div>
+            <div className="h-4 bg-[#EBE6E0] rounded w-96"></div>
+          </div>
+          <div className="flex gap-2">
+            <div className="h-9 bg-[#EBE6E0] rounded w-32"></div>
+            <div className="h-9 bg-[#EBE6E0] rounded w-32"></div>
+          </div>
+        </div>
+        
+        {/* Summary Bar Skeleton */}
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <div key={`summary-skel-${i}`} className="bg-white border border-[#EBE6E0] rounded-xl p-4 flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#F0EAE3] rounded-lg"></div>
+              <div className="space-y-1">
+                <div className="h-5 bg-[#EBE6E0] rounded w-8"></div>
+                <div className="h-3 bg-[#EBE6E0] rounded w-20"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {[1, 2, 3].map(i => (
+            <div key={`card-skel-${i}`} className="h-48 bg-white border border-[#EBE6E0] rounded-2xl p-5">
+              <div className="flex justify-between items-start mb-4">
+                <div className="space-y-2">
+                  <div className="h-5 bg-[#EBE6E0] rounded w-32"></div>
+                  <div className="h-4 bg-[#EBE6E0] rounded w-48"></div>
+                </div>
+                <div className="w-8 h-8 bg-[#F0EAE3] rounded-full"></div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 bg-[#EBE6E0] rounded w-full"></div>
+                <div className="h-4 bg-[#EBE6E0] rounded w-2/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

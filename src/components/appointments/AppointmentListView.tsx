@@ -32,19 +32,53 @@ export default function AppointmentListView({
   const renderTableBody = () => {
     if (loading) {
       return (
-        <tr>
-          <td colSpan={6} className="px-6 py-10 text-center text-[#A8A19A]">
-            Loading appointments...
-          </td>
-        </tr>
+        <>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <tr key={`apt-skel-${i}`} className="animate-pulse border-b border-[#EBE6E0]">
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#F0EAE3]"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-[#EBE6E0] rounded w-32"></div>
+                    <div className="h-3 bg-[#EBE6E0] rounded w-24"></div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="space-y-2">
+                  <div className="h-4 bg-[#EBE6E0] rounded w-24"></div>
+                  <div className="h-3 bg-[#EBE6E0] rounded w-32"></div>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="h-5 bg-[#EBE6E0] rounded-full w-20"></div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="h-4 bg-[#EBE6E0] rounded w-28"></div>
+              </td>
+              <td className="px-6 py-4">
+                <div className="h-4 bg-[#EBE6E0] rounded w-16"></div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <div className="h-8 bg-[#EBE6E0] rounded-lg w-20 ml-auto"></div>
+              </td>
+            </tr>
+          ))}
+        </>
       );
     }
 
     if (filtered.length === 0) {
       return (
         <tr>
-          <td colSpan={6} className="px-6 py-10 text-center text-[#A8A19A]">
-            No appointments found.
+          <td colSpan={6} className="px-6 py-16 text-center">
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="w-12 h-12 bg-[#F0EAE3] rounded-full flex items-center justify-center">
+                <CalendarIcon className="w-6 h-6 text-[#A8A19A]" />
+              </div>
+              <p className="font-medium text-[#524A44]">No appointments found</p>
+              <p className="text-sm text-[#827A73]">There are no appointments matching your current filters.</p>
+            </div>
           </td>
         </tr>
       );

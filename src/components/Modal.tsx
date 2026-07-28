@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 interface ModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
-  readonly title: string;
+  readonly title: React.ReactNode;
   readonly children: React.ReactNode;
   readonly maxWidth?: string;
 }

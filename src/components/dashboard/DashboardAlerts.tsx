@@ -166,7 +166,7 @@ export default function DashboardAlerts({
             </div>
             <div className="space-y-2">
               {dueToday.length === 0
-                ? <p className="text-xs text-[#A8A19A] italic">Nothing due today 🎉</p>
+                ? <p className="text-xs text-[#A8A19A] italic">Nothing due today.</p>
                 : dueToday.map(j => (
                   <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-[#EBE6E0] last:border-0 hover:text-[#9A8073] transition-colors">
                     <p className="text-sm font-medium text-[#2D2A26] truncate">{j.customer?.name || 'Walk-in'}</p>

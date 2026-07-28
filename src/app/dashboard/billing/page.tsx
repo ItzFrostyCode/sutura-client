@@ -131,8 +131,33 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-[#A8A19A]">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="space-y-6">
+        <div>
+          <div className="h-7 w-48 bg-[#EBE6E0] rounded-md animate-pulse"></div>
+          <div className="h-4 w-96 bg-[#EBE6E0] rounded-md animate-pulse mt-2"></div>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-3xl p-8 border border-[#EBE6E0] shadow-sm flex flex-col h-full space-y-6 animate-pulse">
+              <div className="space-y-4">
+                <div className="h-10 w-10 bg-[#FAF6F3] rounded-xl"></div>
+                <div className="h-6 w-32 bg-[#EBE6E0] rounded-md"></div>
+                <div className="h-4 w-full bg-[#FAF6F3] rounded-md"></div>
+                <div className="h-4 w-5/6 bg-[#FAF6F3] rounded-md"></div>
+              </div>
+              <div className="h-10 w-32 bg-[#EBE6E0] rounded-md mt-4"></div>
+              <div className="flex-1 space-y-3 mt-6">
+                {[1, 2, 3, 4, 5].map((j) => (
+                  <div key={j} className="flex items-center gap-3">
+                    <div className="w-4 h-4 bg-[#FAF6F3] rounded flex-shrink-0"></div>
+                    <div className="h-3 w-full bg-[#FAF6F3] rounded"></div>
+                  </div>
+                ))}
+              </div>
+              <div className="h-12 w-full bg-[#FAF6F3] rounded-xl mt-6"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

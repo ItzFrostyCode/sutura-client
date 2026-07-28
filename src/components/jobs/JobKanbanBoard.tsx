@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause } from 'lucide-react';
+import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, type LucideIcon } from 'lucide-react';
 import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
 
 interface JobKanbanBoardProps {
@@ -13,10 +13,10 @@ interface JobKanbanBoardProps {
   readonly onReject: (id: number) => void;
 }
 
-const SUKI_TAG_CONFIG: Record<string, { label: string; cls: string }> = {
-  b2b_suki:       { label: '⭐ B2B',     cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  reseller:       { label: '🏪 Reseller', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
-  walk_in_retail: { label: '🚶 Walk-in',  cls: 'bg-[#F0EAE3] text-[#827A73] border-[#EBE6E0]' },
+const SUKI_TAG_CONFIG: Record<string, { label: string; cls: string; Icon: LucideIcon }> = {
+  b2b_suki:       { label: 'B2B',      cls: 'bg-amber-50 text-amber-700 border-amber-200', Icon: Star },
+  reseller:       { label: 'Reseller', cls: 'bg-purple-50 text-purple-700 border-purple-200', Icon: Store },
+  walk_in_retail: { label: 'Walk-in',  cls: 'bg-[#F0EAE3] text-[#827A73] border-[#EBE6E0]', Icon: User },
 };
 
 // Completed piles up forever (unlike in-progress stages, which naturally
@@ -143,7 +143,11 @@ export default function JobKanbanBoard({
                       <div className="min-w-0">
                         <h4 className="font-semibold text-[#2D2A26] text-sm truncate">{job.customer?.name || 'Walk-in'}</h4>
                         {job.customer?.suki_tag && SUKI_TAG_CONFIG[job.customer.suki_tag] && (
-                          <span className={`inline-block text-[8px] font-bold px-1.5 py-0.5 rounded border mt-0.5 ${SUKI_TAG_CONFIG[job.customer.suki_tag].cls}`}>
+                          <span className={`inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded border mt-0.5 ${SUKI_TAG_CONFIG[job.customer.suki_tag].cls}`}>
+                            {(() => {
+                              const TagIcon = SUKI_TAG_CONFIG[job.customer.suki_tag].Icon;
+                              return <TagIcon size={8} />;
+                            })()}
                             {SUKI_TAG_CONFIG[job.customer.suki_tag].label}
                           </span>
                         )}
@@ -202,7 +206,7 @@ export default function JobKanbanBoard({
                       <div className="flex items-start gap-2 bg-red-50 border border-red-300 rounded-lg px-3 py-2">
                         <Lock size={12} className="text-red-600 mt-0.5 shrink-0" />
                         <div>
-                          <p className="text-[10px] font-bold text-red-700 uppercase tracking-wide">🔒 No DP — Move Blocked!</p>
+                          <p className="text-[10px] font-bold text-red-700 uppercase tracking-wide">No DP - Move Blocked!</p>
                           <p className="text-[10px] text-red-600 mt-0.5">50% downpayment must be collected before production starts. Log DP first.</p>
                         </div>
                       </div>
@@ -215,7 +219,7 @@ export default function JobKanbanBoard({
                       <div className="flex items-start gap-2 bg-red-50 border border-red-300 rounded-lg px-3 py-2">
                         <Lock size={12} className="text-red-600 mt-0.5 shrink-0" />
                         <div>
-                          <p className="text-[10px] font-bold text-red-700 uppercase tracking-wide">🔒 Balance Unpaid — Move Blocked!</p>
+                          <p className="text-[10px] font-bold text-red-700 uppercase tracking-wide">Balance Unpaid - Move Blocked!</p>
                           <p className="text-[10px] text-red-600 mt-0.5">Full balance must be settled before marking as Completed/Claimed. Log payment first.</p>
                         </div>
                       </div>

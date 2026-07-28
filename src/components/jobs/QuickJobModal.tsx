@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Zap, Loader2, User, Scissors, CalendarDays, CreditCard, Check } from 'lucide-react';
+import { X, Zap, Loader2, User, Scissors, CalendarDays, CreditCard, Check, AlertTriangle } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
@@ -250,7 +250,9 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
                     {meetsDP ? (
                       <span className="flex items-center gap-1"><Check size={12} /> DP Requirement Met</span>
                     ) : (
-                      `⚠️ 50% DP = ₱${(totalNum * 0.5).toFixed(2)} required`
+                      <span className="flex items-center gap-1">
+                        <AlertTriangle size={12} /> 50% DP = ₱{(totalNum * 0.5).toFixed(2)} required
+                      </span>
                     )}
                   </p>
                   <p className={`text-xs mt-0.5 ${meetsDP ? 'text-emerald-600' : 'text-amber-600'}`}>

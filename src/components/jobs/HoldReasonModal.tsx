@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Pause } from 'lucide-react';
 import Modal from '@/components/Modal';
 
 interface HoldReasonModalProps {
@@ -16,7 +17,15 @@ export default function HoldReasonModal({ isOpen, onClose, onConfirm }: HoldReas
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="⏸ Put Job Order On Hold">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={(
+        <span className="inline-flex items-center gap-2">
+          <Pause size={18} className="text-amber-600" /> Put Job Order On Hold
+        </span>
+      )}
+    >
       <div className="space-y-3">
         <p className="text-xs text-[#827A73]">
           e.g. waiting on customer to confirm a design change, fabric delivery delayed, awaiting a fitting reschedule.

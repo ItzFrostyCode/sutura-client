@@ -105,10 +105,10 @@ export default function SupportNewTicket({
               onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
               className="w-full border border-[#EBE6E0] rounded-lg px-3 py-2.5 text-sm text-[#2D2A26] bg-white focus:outline-none focus:ring-2 focus:ring-[#9A8073]/40"
             >
-              <option value="problem">🔴 Problem / Bug</option>
-              <option value="update_request">🔵 Update Request</option>
-              <option value="general">⚪ General Inquiry</option>
-              <option value="billing">🟣 Billing Issue</option>
+              <option value="problem">Problem / Bug</option>
+              <option value="update_request">Update Request</option>
+              <option value="general">General Inquiry</option>
+              <option value="billing">Billing Issue</option>
             </select>
           </div>
           <div>
@@ -122,7 +122,7 @@ export default function SupportNewTicket({
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
-              <option value="urgent">🚨 Urgent</option>
+              <option value="urgent">Urgent</option>
             </select>
           </div>
         </div>

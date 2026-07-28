@@ -6,11 +6,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ShopBranch } from './branchHelpers';
 
-// A pure-CSS/emoji pin avoids Leaflet's classic broken default-marker-image
-// problem under bundlers (no external icon asset needed).
+// Inline SVG avoids Leaflet's classic broken default-marker-image problem
+// under bundlers without adding an external icon asset.
 const pinIcon = L.divIcon({
   className: '',
-  html: '<div style="font-size:24px;line-height:24px">📍</div>',
+  html: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="#9A8073" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -22],

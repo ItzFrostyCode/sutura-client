@@ -34,7 +34,7 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<SelectableImage[]>([]);
   const [valueProps, setValueProps] = useState(DEFAULT_VALUE_PROPS.join('\n'));
-  const [ctaLine, setCtaLine] = useState('📩 Message us now to order!');
+  const [ctaLine, setCtaLine] = useState('Message us now to order!');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -79,14 +79,14 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
   };
 
   const caption = useMemo(() => {
-    const lines: string[] = ['🔥 PROMO!🔥', '💥 Limited Time Offer — Grab Yours Now! 💥', ''];
+    const lines: string[] = ['PROMO!', 'Limited Time Offer - Grab Yours Now!', ''];
 
     let earliestEnd: number | null = null;
 
     services.filter(s => checkedItems.has(`service-${s.id}`)).forEach(svc => {
       const sale = getActiveSale({ price: svc.base_price ?? 0, sale_price: svc.sale_price, sale_starts_at: svc.sale_starts_at, sale_ends_at: svc.sale_ends_at });
       if (!sale) return;
-      lines.push(`✂️ ${svc.name} — ₱${sale.sale.toLocaleString()} (from ₱${sale.original.toLocaleString()})`);
+      lines.push(`${svc.name} - ₱${sale.sale.toLocaleString()} (from ₱${sale.original.toLocaleString()})`);
       if (svc.sale_ends_at) {
         const t = new Date(svc.sale_ends_at).getTime();
         if (earliestEnd === null || t < earliestEnd) earliestEnd = t;
@@ -96,13 +96,13 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     if (earliestEnd !== null) {
       lines.push('');
       const d = new Date(earliestEnd);
-      lines.push(`📌 Promo Until: ${d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}`);
+      lines.push(`Promo Until: ${d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}`);
     }
 
     const props = valueProps.split('\n').map(p => p.trim()).filter(Boolean);
     if (props.length > 0) {
       lines.push('');
-      props.forEach(p => lines.push(`✅ ${p}`));
+      props.forEach(p => lines.push(`- ${p}`));
     }
 
     if (ctaLine.trim()) {

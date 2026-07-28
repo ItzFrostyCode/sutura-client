@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, X, Lock } from 'lucide-react';
+import { Info, Loader2, X, Lock } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
@@ -183,8 +183,9 @@ export default function BranchFormModal({
               className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] text-sm focus:outline-none focus:border-taupe"
             />
           </div>
-          <p className="text-xs text-[#A8A19A] mt-1.5">
-            💡 Tip: Open Google Maps, right-click your shop location, and copy the coordinates.
+          <p className="text-xs text-[#A8A19A] mt-1.5 flex items-start gap-1.5">
+            <Info size={13} className="mt-0.5 shrink-0" />
+            <span>Tip: Open Google Maps, right-click your shop location, and copy the coordinates.</span>
           </p>
         </div>
 

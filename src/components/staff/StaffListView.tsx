@@ -232,11 +232,51 @@ export default function StaffListView({
           </thead>
           <tbody className="divide-y divide-zinc-800/50">
             {loading && (
-              <tr key="loading-row">
-                <td colSpan={10} className="px-6 py-8 text-center text-[#A8A19A]">
-                  Loading staff...
-                </td>
-              </tr>
+              <>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`skeleton-${i}`} className="animate-pulse border-b border-[#EBE6E0]">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#EBE6E0]"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-[#EBE6E0] rounded w-24"></div>
+                          <div className="h-3 bg-[#EBE6E0] rounded w-32"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-5 bg-[#EBE6E0] rounded-full w-20"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-[#EBE6E0] rounded w-20"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-5 bg-[#EBE6E0] rounded w-24"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="w-36 space-y-2">
+                        <div className="h-3 bg-[#EBE6E0] rounded w-full"></div>
+                        <div className="h-1.5 bg-[#EBE6E0] rounded-full w-full"></div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-[#EBE6E0] rounded w-16"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-5 bg-[#EBE6E0] rounded-full w-16"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-[#EBE6E0] rounded w-16"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-[#EBE6E0] rounded w-20"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-6 bg-[#EBE6E0] rounded w-20 ml-auto"></div>
+                    </td>
+                  </tr>
+                ))}
+              </>
             )}
             {!loading && filteredStaff.length === 0 && (
               <tr>

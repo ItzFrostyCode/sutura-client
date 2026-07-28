@@ -1,5 +1,18 @@
 import React from 'react';
-import { Lock, Zap, EyeOff } from 'lucide-react';
+import {
+  Briefcase,
+  Building2,
+  Cross,
+  EyeOff,
+  Lock,
+  Scissors,
+  Shirt,
+  Sparkles,
+  Stethoscope,
+  Users,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 
@@ -14,15 +27,15 @@ interface SettingsBusinessTypeProps {
   readonly onHiddenChange: (value: boolean) => void;
 }
 
-const SPECIALIZATIONS: { id: string; label: string; emoji: string }[] = [
-  { id: 'barong', label: 'Barong Tagalog', emoji: '👔' },
-  { id: 'gown', label: 'Gowns', emoji: '👗' },
-  { id: 'suit', label: 'Suits', emoji: '🤵' },
-  { id: 'filipiniana', label: 'Filipiniana', emoji: '💃' },
-  { id: 'uniform', label: 'School / Corporate Uniforms', emoji: '🎽' },
-  { id: 'lab_gown', label: 'Lab Gowns', emoji: '🥼' },
-  { id: 'scrub_suit', label: 'Scrub Suits', emoji: '🩺' },
-  { id: 'corporate_wear', label: 'Corporate Wear', emoji: '💼' },
+const SPECIALIZATIONS: { id: string; label: string; Icon: LucideIcon }[] = [
+  { id: 'barong', label: 'Barong Tagalog', Icon: Shirt },
+  { id: 'gown', label: 'Gowns', Icon: Sparkles },
+  { id: 'suit', label: 'Suits', Icon: Briefcase },
+  { id: 'filipiniana', label: 'Filipiniana', Icon: Sparkles },
+  { id: 'uniform', label: 'School / Corporate Uniforms', Icon: Users },
+  { id: 'lab_gown', label: 'Lab Gowns', Icon: Cross },
+  { id: 'scrub_suit', label: 'Scrub Suits', Icon: Stethoscope },
+  { id: 'corporate_wear', label: 'Corporate Wear', Icon: Briefcase },
 ];
 
 export default function SettingsBusinessType({
@@ -51,19 +64,19 @@ export default function SettingsBusinessType({
       value: 'tailoring_shop',
       label: 'Tailoring Shop',
       desc: 'Custom measurements, job orders & production tracking',
-      emoji: '🧵',
+      Icon: Scissors,
     },
     {
       value: 'fashion_designer',
       label: 'Fashion Designer',
       desc: 'Portfolio showcase, catalog of original designs & commissions',
-      emoji: '👗',
+      Icon: Sparkles,
     },
     {
       value: 'hybrid',
       label: 'Hybrid',
       desc: 'Both tailoring services and original fashion designs',
-      emoji: '✨',
+      Icon: Building2,
     },
   ];
 
@@ -76,7 +89,9 @@ export default function SettingsBusinessType({
           public profile.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {options.map(opt => (
+          {options.map(opt => {
+            const OptionIcon = opt.Icon;
+            return (
             <button
               key={opt.value}
               type="button"
@@ -84,15 +99,18 @@ export default function SettingsBusinessType({
               className={`text-left p-4 rounded-xl border-2 transition-all ${
                 businessType === opt.value
                   ? 'border-[#9A8073] bg-[#FAF6F3] shadow-sm'
-                  : 'border-[#EBE6E0] hover:border-[#D1C7BD] bg-white'
+                : 'border-[#EBE6E0] hover:border-[#D1C7BD] bg-white'
               }`}
             >
-              <div className="text-2xl mb-2">{opt.emoji}</div>
+              <div className="w-9 h-9 rounded-lg bg-[#FAF6F3] border border-[#EBE6E0] flex items-center justify-center mb-2 text-[#9A8073]">
+                <OptionIcon size={18} />
+              </div>
               <div className="font-semibold text-[#2D2A26] text-sm mb-1">{opt.label}</div>
               <div className="text-xs text-[#A8A19A] leading-snug">{opt.desc}</div>
               {businessType === opt.value && <div className="mt-2 text-xs font-medium text-[#9A8073]">✓ Selected</div>}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -105,6 +123,7 @@ export default function SettingsBusinessType({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {SPECIALIZATIONS.map(spec => {
             const isChecked = specializations.includes(spec.id);
+            const SpecIcon = spec.Icon;
             return (
               <button
                 key={spec.id}
@@ -114,9 +133,9 @@ export default function SettingsBusinessType({
                   isChecked
                     ? 'border-[#9A8073] bg-[#FAF6F3] text-[#2D2A26]'
                     : 'border-[#EBE6E0] bg-white text-[#524A44] hover:bg-[#FAF6F3]'
-                }`}
+                  }`}
               >
-                <span className="text-lg shrink-0">{spec.emoji}</span>
+                <SpecIcon size={16} className="shrink-0 text-current" />
                 <span className="flex-1">{spec.label}</span>
                 <span
                   className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${

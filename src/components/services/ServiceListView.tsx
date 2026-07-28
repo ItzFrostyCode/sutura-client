@@ -127,15 +127,15 @@ export default function ServiceListView({
 
         {/* Category chips */}
         {allCategories.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-0.5">
+          <div className="flex gap-2 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {allCategories.map(cat => (
               <button
                 key={cat}
                 onClick={() => onCategoryFilterChange(cat)}
                 className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
                   categoryFilter === cat
-                    ? 'bg-[#9A8073] text-white'
-                    : 'bg-[#F0EAE3] text-[#827A73] hover:bg-[#EBE6E0]'
+                    ? 'bg-[#2D2A26] text-white shadow-sm'
+                    : 'bg-[#FAF6F3] text-[#827A73] border border-[#EBE6E0] hover:border-[#9A8073] hover:text-[#9A8073]'
                 }`}
               >
                 {cat}

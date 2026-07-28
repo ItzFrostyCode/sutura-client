@@ -1,5 +1,25 @@
 import React, { useState } from 'react';
-import { Camera, Loader2, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  Ban,
+  Camera,
+  Check,
+  Clock,
+  Flag,
+  Loader2,
+  Package,
+  Palette,
+  Pause,
+  Printer,
+  RotateCcw,
+  Ruler,
+  Scissors,
+  Shirt,
+  Sparkles,
+  Wrench,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { Job } from './jobTypes';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
@@ -83,19 +103,19 @@ export default function JobProductionTimeline({
   const roster = (job.custom_order_data as { team_roster?: unknown[] } | null | undefined)?.team_roster;
   const isBulkOrder = (Array.isArray(roster) && roster.length > 0) || job.service?.service_type === 'bulk_sublimation';
 
-  const STAGES: Array<{ key: string; label: string; emoji: string }> = [
-    { key: 'pending',              label: 'Pending',               emoji: '🕐' },
-    { key: 'design',               label: 'Design',                emoji: '🎨' },
+  const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = [
+    { key: 'pending',              label: 'Pending',               Icon: Clock },
+    { key: 'design',               label: 'Design',                Icon: Palette },
     isBulkOrder
-      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', emoji: '🖨️' }
-      : { key: 'pattern_making',        label: 'Pattern Making',          emoji: '📏' },
-    { key: 'cutting',              label: 'Cutting',               emoji: '✂️' },
-    { key: 'sewing',               label: 'Sewing / Assembly',     emoji: '🧵' },
-    { key: 'ready_for_fitting',    label: 'Ready for Fitting',     emoji: '📐' },
-    { key: 'final_adjustments',    label: 'Final Adjustments',     emoji: '🛠️' },
-    { key: 'qc_ironing',           label: 'QC & Ironing',          emoji: '✨' },
-    { key: 'ready_for_pickup',     label: 'Ready',                 emoji: '📦' },
-    { key: 'completed',            label: 'Completed',             emoji: '🏁' },
+      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
+      : { key: 'pattern_making',        label: 'Pattern Making',          Icon: Ruler },
+    { key: 'cutting',              label: 'Cutting',               Icon: Scissors },
+    { key: 'sewing',               label: 'Sewing / Assembly',     Icon: Shirt },
+    { key: 'ready_for_fitting',    label: 'Ready for Fitting',     Icon: Ruler },
+    { key: 'final_adjustments',    label: 'Final Adjustments',     Icon: Wrench },
+    { key: 'qc_ironing',           label: 'QC & Ironing',          Icon: Sparkles },
+    { key: 'ready_for_pickup',     label: 'Ready',                 Icon: Package },
+    { key: 'completed',            label: 'Completed',             Icon: Flag },
   ];
 
   const cancelled = status === 'cancelled';
@@ -110,13 +130,13 @@ export default function JobProductionTimeline({
       <div className="mb-6">
         {cancelled ? (
           <div className="flex items-center justify-center gap-3 py-4 bg-red-50 border border-red-200 rounded-xl">
-            <span className="text-xl">🚫</span>
+            <Ban size={20} className="text-red-600" />
             <span className="text-sm font-semibold text-red-600">Order Cancelled</span>
           </div>
         ) : onHold ? (
           <div className="py-4 px-5 bg-amber-50 border border-amber-200 rounded-xl">
             <div className="flex items-center gap-3">
-              <span className="text-xl">⏸</span>
+              <Pause size={20} className="text-amber-700" />
               <span className="text-sm font-semibold text-amber-700">Production On Hold</span>
             </div>
             {job.hold_reason && (
@@ -148,6 +168,9 @@ export default function JobProductionTimeline({
 
               return (
                 <div key={stage.key} className="flex items-center flex-1 min-w-0">
+                  {(() => {
+                    const StageIcon = isDone ? Check : stage.Icon;
+                    return (
                   <button
                     onClick={() => setStatus(stage.key)}
                     className="flex flex-col items-center gap-1.5 flex-1 min-w-0 group"
@@ -155,12 +178,14 @@ export default function JobProductionTimeline({
                     type="button"
                   >
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base transition-all border-2 ${iconClass}`}>
-                      {isDone ? '✓' : stage.emoji}
+                      <StageIcon size={16} strokeWidth={2.4} />
                     </div>
                     <span className={`text-[10px] font-medium text-center leading-tight px-0.5 ${labelColor}`}>
                       {stage.label}
                     </span>
                   </button>
+                    );
+                  })()}
                   {idx < STAGES.length - 1 && (
                     <div className={`h-0.5 shrink-0 w-3 ${idx < currentIdx ? 'bg-[#7A8B76]' : 'bg-[#EBE6E0]'}`} />
                   )}
@@ -221,13 +246,13 @@ export default function JobProductionTimeline({
             onClick={() => setStatus(prevStage.key)}
             className="w-full px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
           >
-            ↩ Revert to Previous Stage ({prevStage.label})
+            <RotateCcw size={13} /> Revert to Previous Stage ({prevStage.label})
           </button>
         )}
 
         {job.material_source === 'customer_supplied' && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3 flex items-center gap-2">
-            <span className="text-lg">⚠</span>
+            <AlertTriangle size={18} className="text-red-700 shrink-0" />
             <p className="text-xs font-bold text-red-700 uppercase tracking-wide">
               Customer-supplied fabric/garment — do not cut from shop stock
             </p>
