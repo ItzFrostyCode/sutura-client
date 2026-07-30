@@ -1,6 +1,7 @@
 'use client';
 
-import { Loader2, Save, Lock, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, Save, Lock, Eye, EyeOff, Bell, MessageSquare, Mail, BarChart2 } from 'lucide-react';
 import { useAccountSettings } from '@/components/account-settings/useAccountSettings';
 
 const getPasswordStrengthColor = (password: string, level: number): string => {
@@ -275,13 +276,126 @@ function SecurityTab({
   );
 }
 
+// ── Notification Preferences ─────────────────────────────────────────────────
+
+const NOTIF_STORAGE_KEY = 'sutura_notif_prefs';
+
+interface NotifPrefs {
+  new_order: boolean;
+  sms: boolean;
+  email: boolean;
+  weekly_summary: boolean;
+}
+
+const DEFAULT_PREFS: NotifPrefs = {
+  new_order: true,
+  sms: false,
+  email: true,
+  weekly_summary: false,
+};
+
+function Toggle({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id: string }) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+        checked ? 'bg-[#9A8073]' : 'bg-[#EBE6E0]'
+      }`}
+    >
+      <span
+        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ${
+          checked ? 'translate-x-5' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+}
+
+function NotificationsTab() {
+  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
+      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
+    } catch { /* ignore */ }
+  }, []);
+
+  const update = (key: keyof NotifPrefs) => (val: boolean) => {
+    setPrefs(prev => ({ ...prev, [key]: val }));
+    setSaved(false);
+  };
+
+  const handleSave = () => {
+    try { localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(prefs)); } catch { /* ignore */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const rows: { key: keyof NotifPrefs; label: string; desc: string; icon: React.ElementType }[] = [
+    { key: 'new_order',      label: 'New Order Notifications',  desc: 'Get notified whenever a new order is placed in your shop.',                   icon: Bell },
+    { key: 'sms',           label: 'SMS Notifications',        desc: 'Receive order updates and reminders via SMS to your registered phone number.', icon: MessageSquare },
+    { key: 'email',         label: 'Email Notifications',      desc: 'Receive order confirmations, status updates, and alerts via email.',          icon: Mail },
+    { key: 'weekly_summary',label: 'Weekly Sales Summary',     desc: 'Get a weekly digest of your shop\'s sales performance every Monday morning.', icon: BarChart2 },
+  ];
+
+  return (
+    <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6 animate-in fade-in duration-200">
+      <div className="mb-6">
+        <h2 className="text-base font-semibold text-[#2D2A26]">Notification Preferences</h2>
+        <p className="text-xs text-[#A8A19A] mt-0.5">
+          Choose which alerts and summaries you want to receive.
+        </p>
+      </div>
+
+      <div className="space-y-5">
+        {rows.map(({ key, label, desc, icon: Icon }) => (
+          <div key={key} className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#FAF6F3] flex items-center justify-center shrink-0 mt-0.5">
+                <Icon size={15} className="text-[#9A8073]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#2D2A26]">{label}</p>
+                <p className="text-xs text-[#A8A19A] mt-0.5">{desc}</p>
+              </div>
+            </div>
+            <Toggle id={`notif-${key}`} checked={prefs[key]} onChange={update(key)} />
+          </div>
+        ))}
+      </div>
+
+      <div className="pt-5 border-t border-[#EBE6E0] flex items-center justify-between mt-6">
+        {saved ? (
+          <span className="text-xs text-emerald-600 font-medium">Preferences saved.</span>
+        ) : (
+          <span />
+        )}
+        <button
+          type="button"
+          onClick={handleSave}
+          className="bg-[#9A8073] hover:bg-[#8a7065] text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm"
+        >
+          <Save size={15} />
+          Save Preferences
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AccountSettingsPage() {
   const {
     user,
     roleName,
     activeTab,
     setActiveTab,
-    tabs,
+    tabs: baseTabs,
     personalForm,
     setPersonalForm,
     personalErrors,
@@ -301,6 +415,9 @@ export default function AccountSettingsPage() {
     handlePersonalSubmit,
     handlePasswordSubmit,
   } = useAccountSettings();
+
+  // Extend tabs with Notifications (owner-only concern, shown to all for simplicity)
+  const tabs = [...baseTabs, { id: 'notifications' as const, label: 'Notifications', icon: Bell }];
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
@@ -349,7 +466,7 @@ export default function AccountSettingsPage() {
       </div>
 
       {/* Tab: Personal Info */}
-      {activeTab === 'personal' && (
+      {(activeTab as string) === 'personal' && (
         <PersonalTab
           personalForm={personalForm}
           setPersonalForm={setPersonalForm}
@@ -362,7 +479,7 @@ export default function AccountSettingsPage() {
       )}
 
       {/* Tab: Security */}
-      {activeTab === 'security' && (
+      {(activeTab as string) === 'security' && (
         <SecurityTab
           passwordForm={passwordForm}
           setPasswordForm={setPasswordForm}
@@ -378,6 +495,8 @@ export default function AccountSettingsPage() {
           setShowConfirm={setShowConfirm}
         />
       )}
+      {/* Tab: Notifications */}
+      {(activeTab as string) === 'notifications' && <NotificationsTab />}
 
     </div>
   );

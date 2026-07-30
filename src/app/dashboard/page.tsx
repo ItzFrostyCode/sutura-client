@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const canViewAnalytics = isShopOwner || roleName === 'branch_manager';
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [chartPeriod, setChartPeriod] = useState('this_month');
   const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'news' | 'welcome'>('dashboard');
 
@@ -120,6 +121,16 @@ export default function DashboardPage() {
     const interval = setInterval(fetchOnlineStaff, 30_000);
     return () => clearInterval(interval);
   }, [shop?.id, fetchOnlineStaff]);
+
+  const handleChartPeriod = (period: string) => {
+    setChartPeriod(period);
+    if (!shop?.id || !canViewAnalytics) return;
+    const params: Record<string, string | number> = { period };
+    if (selectedBranchId !== null) params.branch_id = selectedBranchId;
+    api.get(`/shops/${shop.id}/analytics`, { params })
+      .then(res => setData(res.data.data))
+      .catch(() => {});
+  };
 
   const toggleVisibility = async () => {
     if (!shop) return;
@@ -493,9 +504,11 @@ export default function DashboardPage() {
             View Full Reports →
           </Link>
         </div>
-        <div className="p-6">
-          <DashboardCharts data={data} />
-        </div>
+          <DashboardCharts
+            data={data}
+            activePeriod={chartPeriod}
+            onPeriodChange={handleChartPeriod}
+          />
       </div>
       </>
       )}

@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { User, ShieldCheck, Building2 } from 'lucide-react';
 
-export type Tab = 'personal' | 'security';
+export type Tab = 'personal' | 'security' | 'notifications';
 
 export function useAccountSettings() {
   const { user, token, setAuth, shop, staffProfile } = useAuthStore();

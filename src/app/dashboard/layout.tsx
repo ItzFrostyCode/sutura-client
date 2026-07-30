@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { LayoutDashboard, Scissors, UserCog, Package, Settings, Users, Building2, Calendar, ShoppingBag, Grip, ChevronDown, LifeBuoy, Home, CreditCard, MapPin, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Scissors, UserCog, Package, Settings, Users, Building2, Calendar, ShoppingBag, Grip, ChevronDown, LifeBuoy, Home, CreditCard, MapPin, Sparkles, Layers } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
 import BrandLogo from '@/components/BrandLogo';
@@ -137,6 +137,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       items: [
         ...(isShopOwner ? [{ name: 'Design Catalog', path: '/dashboard/catalog', icon: ShoppingBag }] : []),
         ...(isShopOwner ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
+        ...(isShopOwner ? [{ name: 'Packages', path: '/dashboard/service-packages', icon: Layers }] : []),
       ]
     },
     {
