@@ -18,9 +18,22 @@ export function getActiveSale(item: SaleAwareItem): { original: number; sale: nu
   const original = Number(item.price);
   if (Number.isNaN(original) || salePrice >= original) return null;
 
+  // sale_starts_at/sale_ends_at only ever carry a bare date (e.g.
+  // "2026-08-10") from the date-picker forms. Parsed plain, JS treats that
+  // as UTC midnight — for a Philippines shop (UTC+8) that makes a sale
+  // advertised as "through Aug 10" actually expire at 8am Manila time that
+  // same day, and a sale "starting Aug 5" not kick in until 8am Manila time
+  // instead of the start of that day. Anchor explicitly to Manila's day
+  // boundaries (UTC+8) instead of letting the bare date default to UTC.
   const now = Date.now();
-  if (item.sale_starts_at && now < new Date(item.sale_starts_at).getTime()) return null;
-  if (item.sale_ends_at && now > new Date(item.sale_ends_at).getTime()) return null;
+  if (item.sale_starts_at) {
+    const datePart = item.sale_starts_at.slice(0, 10);
+    if (now < new Date(`${datePart}T00:00:00+08:00`).getTime()) return null;
+  }
+  if (item.sale_ends_at) {
+    const datePart = item.sale_ends_at.slice(0, 10);
+    if (now > new Date(`${datePart}T23:59:59+08:00`).getTime()) return null;
+  }
 
   const percentOff = Math.round(((original - salePrice) / original) * 100);
   return { original, sale: salePrice, percentOff };

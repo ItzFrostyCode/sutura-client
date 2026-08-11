@@ -3,16 +3,17 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Plus, Image as ImageIcon, Megaphone, Search } from 'lucide-react';
+import { Plus, Image as ImageIcon, Megaphone } from 'lucide-react';
+import SearchInput from '@/components/shared/SearchInput';
 import Link from 'next/link';
 
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CatalogItemCard from '@/components/catalog/CatalogItemCard';
-import CatalogRatingModal from '@/components/catalog/CatalogRatingModal';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
 import CatalogPreviewModal from '@/components/catalog/CatalogPreviewModal';
 import CatalogModuleTabs from '@/components/catalog/CatalogModuleTabs';
 import PromoPostModal from '@/components/promotions/PromoPostModal';
+import ShopWideNote from '@/components/shared/ShopWideNote';
 import { useToast } from '@/context/ToastContext';
 
 export default function CatalogPage() {
@@ -24,9 +25,6 @@ export default function CatalogPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState<CatalogItem | null>(null);
 
-  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [ratingValue, setRatingValue] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -70,33 +68,6 @@ export default function CatalogPage() {
     }
   };
 
-  const handleSave = async (id: number) => {
-    if (!shop) return;
-    try {
-      await api.post(`/shops/${shop.id}/catalog/${id}/save`);
-      fetchItems(); // Refresh counts
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const submitRating = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!shop || !selectedItemId) return;
-    setIsSubmitting(true);
-    try {
-      await api.post(`/shops/${shop.id}/catalog/${selectedItemId}/reviews`, {
-        rating: ratingValue
-      });
-      setIsRatingModalOpen(false);
-      fetchItems(); // Refresh counts
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const confirmDelete = async () => {
     if (!shop || !deletingId) return;
     setIsSubmitting(true);
@@ -110,12 +81,6 @@ export default function CatalogPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const openRating = (id: number) => {
-    setSelectedItemId(id);
-    setRatingValue(5);
-    setIsRatingModalOpen(true);
   };
 
   const openDelete = (id: number) => {
@@ -144,12 +109,13 @@ export default function CatalogPage() {
   return (
     <div className="space-y-6 pb-12 text-[#2D2A26]">
       <CatalogModuleTabs />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Catalog Showcase</h1>
           <p className="text-[#827A73] text-sm mt-1">Manage the premium garments showcased to your customers.</p>
+          <ShopWideNote />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => setIsPromoModalOpen(true)}
             title="Generate Promo Post"
@@ -186,16 +152,7 @@ export default function CatalogPage() {
       ) : (
         <>
           <div className="flex flex-wrap gap-3 items-center">
-            <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search by item name..."
-                className="pl-9 pr-3 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe w-56"
-              />
-            </div>
+            <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search by item name..." className="w-56" />
             <span className="text-xs font-semibold text-[#827A73] uppercase tracking-wider">Filter</span>
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className={filterSelectClass}>
               <option value="">All Categories</option>
@@ -225,14 +182,12 @@ export default function CatalogPage() {
               No items match the selected filters.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {filteredItems.map(item => (
                 <CatalogItemCard
                   key={item.id}
                   item={item}
-                  onSave={handleSave}
                   onView={handleView}
-                  onOpenRating={openRating}
                   onOpenDelete={openDelete}
                 />
               ))}
@@ -240,18 +195,6 @@ export default function CatalogPage() {
           )}
         </>
       )}
-
-      <CatalogRatingModal
-        isOpen={isRatingModalOpen}
-        onClose={() => {
-          setIsRatingModalOpen(false);
-          setSelectedItemId(null);
-        }}
-        onSubmit={submitRating}
-        ratingValue={ratingValue}
-        setRatingValue={setRatingValue}
-        isSubmitting={isSubmitting}
-      />
 
       <CatalogDeleteModal
         isOpen={isDeleteModalOpen}
@@ -275,6 +218,7 @@ export default function CatalogPage() {
       <PromoPostModal
         isOpen={isPromoModalOpen}
         onClose={() => setIsPromoModalOpen(false)}
+        mode="catalog"
       />
     </div>
   );

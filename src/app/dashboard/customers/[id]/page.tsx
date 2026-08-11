@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { 
+import {
   ArrowLeft, Loader2, Edit2, X, Mail, Phone, Clock,
-  DollarSign, Scissors, Package, Calendar
+  DollarSign, Scissors, Package, Calendar, UserX
 } from 'lucide-react';
 import { CustomerData, MeasurementProfile, JobOrder, Appointment } from '@/components/customers/customerTypes';
 import { isWalkInEmail } from '@/components/customers/customerHelpers';
@@ -137,6 +137,14 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
     return jobs.filter(j => j.status === 'completed').length;
   };
 
+  // No-show history was tracked per-appointment (Appointment::STATUSES
+  // includes 'no_show') but never surfaced anywhere as a customer-level
+  // signal — an owner deciding whether to hold a slot for a booking request
+  // had no way to see "this customer has skipped 3 fittings already."
+  const getNoShowCount = () => {
+    return appointments.filter(a => a.status === 'no_show').length;
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-[#A8A19A]">
@@ -188,12 +196,13 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
       </div>
 
       {/* Stats Summary Widgets */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label: 'Total Value', value: `₱${calculateTotalSpend().toLocaleString(undefined, { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
           { label: 'Active Projects', value: getActiveJobsCount(), icon: Scissors, color: 'bg-blue-50 text-blue-700 border-blue-100' },
           { label: 'Completed Orders', value: getCompletedJobsCount(), icon: Package, color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
           { label: 'Appointments', value: appointments.length, icon: Calendar, color: 'bg-amber-50 text-amber-700 border-amber-100' },
+          { label: 'No-Shows', value: getNoShowCount(), icon: UserX, color: getNoShowCount() > 0 ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-50 text-[#A8A19A] border-gray-100' },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -297,7 +306,7 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
       )}
 
       {/* Tabs Layout */}
-      <div className="flex border-b border-[#EBE6E0] gap-4">
+      <div className="flex flex-wrap border-b border-[#EBE6E0] gap-x-4 gap-y-1">
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'measurements', label: 'Measurements & Specs' },

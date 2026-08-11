@@ -112,7 +112,22 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
         <p className="px-6 pt-4 pb-2 text-xs font-semibold text-[#A8A19A] uppercase tracking-wider">
           All {allRankedItems.length} Item{allRankedItems.length === 1 ? '' : 's'}
         </p>
-        <div className="overflow-x-auto overflow-y-auto max-h-[420px]">
+        {/* Mobile cards — no sideways scroll needed for a 5-column table */}
+        <div className="md:hidden overflow-y-auto max-h-[420px] divide-y divide-[#F0EAE3]">
+          {allRankedItems.map(item => (
+            <div key={item.id} className="px-6 py-3 hover:bg-[#F0EAE3]/20 transition-colors">
+              <p className="font-medium text-[#2D2A26] truncate">{item.name}</p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-[#827A73]">
+                <span>Est. {item.estimated_days ?? 7}d</span>
+                <span>{item.views_count} views</span>
+                <span>{item.order_count || 0} orders</span>
+                <span className="font-semibold text-[#2D2A26]">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[420px]">
           <table className="w-full text-left text-sm text-[#524A44] min-w-[560px]">
             <thead className="bg-[#FAF6F3] text-xs uppercase text-[#A8A19A] border-y border-[#EBE6E0] sticky top-0 z-10">
               <tr>

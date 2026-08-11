@@ -7,7 +7,7 @@ import { ToastProvider } from '@/context/ToastContext';
 export default function PublicShopLayout({ children }: { readonly children: React.ReactNode }) {
   return (
     <ToastProvider>
-      <div className="min-h-screen flex flex-col bg-white text-zinc-900 font-sans selection:bg-zinc-200">
+      <div className="min-h-dvh flex flex-col bg-white text-zinc-900 font-sans selection:bg-zinc-200">
         <main className="flex-1 flex flex-col">
           {children}
         </main>

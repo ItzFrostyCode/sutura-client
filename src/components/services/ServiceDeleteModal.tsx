@@ -8,6 +8,9 @@ interface ServiceDeleteModalProps {
   readonly onConfirm: () => Promise<void>;
   readonly isSubmitting: boolean;
   readonly label?: string;
+  // Bulk-delete count — when set, overrides `label` with a pluralized
+  // "these N services" phrasing instead of "this service".
+  readonly count?: number;
 }
 
 export default function ServiceDeleteModal({
@@ -16,12 +19,18 @@ export default function ServiceDeleteModal({
   onConfirm,
   isSubmitting,
   label = 'service',
+  count,
 }: ServiceDeleteModalProps) {
+  const subject = count ? `these ${count} services` : `this ${label}`;
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Confirm Deletion">
       <div className="space-y-4">
         <p className="text-[#524A44] text-sm">
-          Are you sure you want to delete this {label}? This action cannot be undone.
+          Are you sure you want to delete {subject}? {/* Accurate, not scarier than it needs to be — this is a soft
+          delete (see ServiceController::destroy/restore), it stays
+          recoverable from Trash, it just won't show up on the shop's
+          storefront or in job/order forms until restored. */}
+          It will be hidden from your storefront and won&apos;t be selectable for new orders, but you can restore {count ? 'them' : 'it'} later from Trash.
         </p>
         <div className="pt-4 flex justify-end gap-3">
           <button 

@@ -14,7 +14,7 @@ export interface CatalogItemResponse {
   size_chart_rows?: { size: string; values: string[] }[] | null;
   care_instructions?: string;
   garment_type?: string;
-  images: { id: number; image_url: string; angle?: string; is_primary: number }[];
+  images: { id: number; image_url: string; view_angle?: string; is_primary: number }[];
   external_gallery_url?: string;
   is_active?: boolean;
 }

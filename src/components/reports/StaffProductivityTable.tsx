@@ -18,6 +18,7 @@ export interface StaffPerformance {
   completed_jobs: number;
   completion_rate: number;
   total_revenue: number;
+  avg_adjustments?: number;
 }
 
 interface StaffProductivityTableProps {
@@ -107,7 +108,28 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
         </ResponsiveContainer>
       </div>
 
-      <div className="overflow-x-auto -mx-6 -mb-6">
+      {/* Mobile cards — no sideways scroll needed */}
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-[#EBE6E0]">
+        {data.map(row => (
+          <div key={row.staff_id} className="px-6 py-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-[#2D2A26]">{row.name || 'Unnamed Staff'}</p>
+                <p className="text-xs text-[#827A73]">{roleLabel(row.role)}</p>
+              </div>
+              <p className="font-semibold text-[#2D2A26]">₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+            </div>
+            <p className="text-xs text-[#827A73] mt-1.5">
+              {row.completed_jobs} / {row.total_jobs} jobs · {row.completion_rate}% completion
+              {!!row.avg_adjustments && row.avg_adjustments > 0 && (
+                <span className={row.avg_adjustments > 1 ? 'text-[#B26959] font-medium' : ''}> · {row.avg_adjustments} avg. adjustment rounds</span>
+              )}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block overflow-x-auto -mx-6 -mb-6">
         <table className="w-full text-left text-sm text-[#524A44] min-w-[640px]">
           <thead className="bg-[#FAF6F3]/50 text-xs uppercase text-[#A8A19A] border-y border-[#EBE6E0]">
             <tr>
@@ -116,6 +138,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
               <th className="px-6 py-3 font-medium">Revenue</th>
               <th className="px-6 py-3 font-medium">Jobs</th>
               <th className="px-6 py-3 font-medium">Completion</th>
+              <th className="px-6 py-3 font-medium">Avg. Adjustments</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0EAE3]">
@@ -128,6 +151,9 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
                 </td>
                 <td className="px-6 py-3">{row.completed_jobs} / {row.total_jobs}</td>
                 <td className="px-6 py-3">{row.completion_rate}%</td>
+                <td className={`px-6 py-3 ${row.avg_adjustments && row.avg_adjustments > 1 ? 'text-[#B26959] font-semibold' : ''}`}>
+                  {row.avg_adjustments ?? 0}
+                </td>
               </tr>
             ))}
           </tbody>

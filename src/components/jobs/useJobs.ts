@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
-import { Job, Tab, columnsForJobs } from './jobHelpers';
+import { Job, Tab, columnsForJobs, getDueStatus } from './jobHelpers';
 
 export function useJobs() {
   const { shop, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const toast = useToast();
+  const searchParams = useSearchParams();
+  // Deep-link from the Overdue Orders KPI card / the daily overdue-jobs
+  // notification (see OverdueJobsNotification's action_url) — takes the
+  // owner straight to the actual list instead of just a static count they'd
+  // then have to go hunt for on the board themselves.
+  const overdueOnly = searchParams.get('overdue') === 'true';
+  // Same idea, from the Reports "Orders by Garment Category" chart — click a
+  // bar (e.g. "Barong Tagalog: 3") to see exactly those 3 jobs, not just the count.
+  const garmentCategoryFilter = searchParams.get('garment_category');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -50,7 +60,7 @@ export function useJobs() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop, user, selectedBranchId]);
 
-  const updateJobStatus = async (jobId: number, newStatus: string) => {
+  const updateJobStatus = async (jobId: number, newStatus: string, reason?: string) => {
     if (!shop) return;
     const oldJobs = [...jobs];
     setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
@@ -61,6 +71,20 @@ export function useJobs() {
         status: newStatus,
         payment_status: jobToUpdate.payment_status,
         balance: jobToUpdate.balance,
+        // Backend requires cancellation_reason (an enum) whenever
+        // status:'cancelled' — same class of bug as Reject: the Kanban
+        // dropdown listed "Cancelled" as a plain option and sent nothing
+        // else, so every attempt 422'd. Confirmed live before wiring in
+        // CancellationReasonModal at the call site (JobKanbanBoard) — that
+        // modal already existed and was wired into the Job Detail page's
+        // own dropdown, just never into this one.
+        ...(newStatus === 'cancelled' ? { cancellation_reason: reason || 'other' } : {}),
+        // hold_reason is optional server-side (won't 422 without it), but
+        // leaving it blank meant a held job showed no explanation anywhere
+        // on the board even though the card display and staff view both
+        // expect one — HoldReasonModal already existed for this too, same
+        // gap as cancellation.
+        ...(newStatus === 'on_hold' && reason ? { hold_reason: reason } : {}),
       });
       toast.success('Job status updated successfully.');
     } catch (err) {
@@ -106,15 +130,19 @@ export function useJobs() {
     if (!shop || !rejectingJobId) return;
     setActionLoadingId(rejectingJobId);
     const old = [...jobs];
-    setJobs(jobs.map(j => j.id === rejectingJobId ? { ...j, status: 'cancelled' } : j));
+    setJobs(jobs.map(j => j.id === rejectingJobId ? { ...j, status: 'rejected' } : j));
     try {
-      const job = jobs.find(j => j.id === rejectingJobId);
-      if (!job) return;
-      await api.put(`/shops/${shop.id}/jobs/${rejectingJobId}`, { 
-        status: 'cancelled', 
-        payment_status: job.payment_status, 
-        balance: job.balance,
-        rejection_reason: reason || null 
+      // Was calling the generic PUT /jobs/{id} with status:'cancelled' and a
+      // 'rejection_reason' field — the backend's own update() deliberately
+      // 422s any attempt to set status:'rejected' through it (a dedicated
+      // reject endpoint exists precisely to keep pending-only + reason
+      // required enforced in one place), and even the 'cancelled' path needs
+      // 'cancellation_reason' (an enum) rather than the free-text
+      // 'rejection_reason' this was sending. Confirmed live: every click
+      // 422'd, so Reject never actually worked. POST .../reject is the real
+      // endpoint — pending-only, free-text reason, sets status:'rejected'.
+      await api.post(`/shops/${shop.id}/jobs/${rejectingJobId}/reject`, {
+        reason: reason || 'No reason provided.',
       });
       setRejectModalOpen(false);
       setRejectingJobId(null);
@@ -133,7 +161,9 @@ export function useJobs() {
     const matchSearch = !search
       || j.order_number?.toLowerCase().includes(search.toLowerCase())
       || j.customer?.name?.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
+    const matchOverdue = !overdueOnly || getDueStatus(j.due_date, j.status)?.label === 'Overdue';
+    const matchGarment = !garmentCategoryFilter || j.garment_category === garmentCategoryFilter;
+    return matchType && matchSearch && matchOverdue && matchGarment;
   });
 
   // Only shows whichever of Pattern Making / Mass Cutting & Printing is
@@ -188,5 +218,7 @@ export function useJobs() {
     onlineCount,
     pendingReviewCount,
     fetchJobs,
+    overdueOnly,
+    garmentCategoryFilter,
   };
 }

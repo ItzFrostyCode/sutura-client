@@ -26,6 +26,34 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Chrome/Safari fill saved logins/addresses with their own tint that ignores
+   the input's actual background class. Most inputs across the app share the
+   same #FAF6F3 cream, so matching that here (instead of per-field) covers
+   the vast majority correctly; the long transition-delay is the standard
+   trick to stop the browser's own autofill background from ever painting. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #FAF6F3 inset;
+  -webkit-text-fill-color: #2D2A26;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Used on swipeable tab/chip strips that scroll horizontally on narrow
+   screens — a visible scrollbar there reads as a stray UI element rather
+   than the swipe affordance it's meant to be. Referenced in several
+   components already; was never actually defined until now. */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Elegant Soft UI Classes */
 .glass-panel {
   background: var(--card-bg);

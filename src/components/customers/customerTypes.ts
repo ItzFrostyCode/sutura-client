@@ -32,6 +32,7 @@ export interface JobOrder {
   total_amount: string | number;
   balance: string | number;
   due_date: string | null;
+  shop_branch_id?: number | null;
   service?: { name: string };
   customer?: { id: number; name: string };
   created_at?: string;
@@ -43,6 +44,7 @@ export interface Appointment {
   status: string;
   scheduled_at: string;
   notes?: string;
+  shop_branch_id?: number | null;
   service?: { name: string };
   customer?: { id: number; name: string };
   created_at?: string;

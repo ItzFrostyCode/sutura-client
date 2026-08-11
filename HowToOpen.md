@@ -39,7 +39,7 @@ Install these first if you don't have them:
 Open a terminal and **go to the exact folder** where you cloned `sutura-server`. Plain `cd sutura-server` only works if your terminal happens to already be sitting in the parent folder — if you get "No such file or directory," you're in the wrong place. Use the **full path** instead:
 
 ```bash
- v/full/path/to/sutura-server
+cd /full/path/to/sutura-server
 ```
 
 Replace `/full/path/to/sutura-server` with wherever you actually cloned it. For example, if you cloned it on your Desktop on a Mac, the real command looks like:

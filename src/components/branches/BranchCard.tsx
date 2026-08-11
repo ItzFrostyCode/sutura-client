@@ -23,7 +23,7 @@ interface BranchCardProps {
 
 export default function BranchCard({ branch, onEdit, onDelete }: Readonly<BranchCardProps>) {
   const { shop } = useAuthStore();
-  const publicProfileUrl = shop?.slug ? `/shop/${shop.slug}?branch_id=${branch.id}` : '#';
+  const publicProfileUrl = shop?.slug && branch.slug ? `/shop/${shop.slug}?branch=${branch.slug}` : '#';
 
   return (
     <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden hover:border-[#D1C7BD] hover:shadow-md transition-all duration-200 flex flex-col">

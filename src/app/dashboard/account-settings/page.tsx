@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Lock, Eye, EyeOff, Bell, MessageSquare, Mail, BarChart2 } from 'lucide-react';
+import { Loader2, Save, Lock, Eye, EyeOff, Bell, MessageSquare, Mail, BarChart2, Camera } from 'lucide-react';
 import { useAccountSettings } from '@/components/account-settings/useAccountSettings';
 
 const getPasswordStrengthColor = (password: string, level: number): string => {
@@ -412,8 +412,14 @@ export default function AccountSettingsPage() {
     setShowConfirm,
     loadingPersonal,
     loadingPassword,
+    uploadingAvatar,
+    togglingAvailability,
+    isStaffOnly,
+    staffProfile,
     handlePersonalSubmit,
     handlePasswordSubmit,
+    handleAvatarUpload,
+    handleToggleAvailability,
   } = useAccountSettings();
 
   // Extend tabs with Notifications (owner-only concern, shown to all for simplicity)
@@ -431,8 +437,33 @@ export default function AccountSettingsPage() {
 
       {/* Avatar + Identity Card */}
       <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm flex items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-linear-to-br from-[#9A8073] to-[#B26959] flex items-center justify-center text-white text-2xl font-bold shrink-0 select-none">
-          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+        <div className="relative shrink-0">
+          <div className="w-16 h-16 rounded-full bg-linear-to-br from-[#9A8073] to-[#B26959] flex items-center justify-center text-white text-2xl font-bold select-none overflow-hidden">
+            {user?.profile_picture ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.profile_picture} alt={user.name} className="w-full h-full object-cover" />
+            ) : (
+              user?.name?.charAt(0)?.toUpperCase() || 'U'
+            )}
+          </div>
+          <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white border border-[#EBE6E0] flex items-center justify-center cursor-pointer hover:bg-[#F0EAE3] transition-colors shadow-sm">
+            {uploadingAvatar ? (
+              <Loader2 size={12} className="animate-spin text-[#827A73]" />
+            ) : (
+              <Camera size={12} className="text-[#827A73]" />
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploadingAvatar}
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) void handleAvatarUpload(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
         </div>
         <div className="min-w-0">
           <p className="text-lg font-semibold text-[#2D2A26] truncate">{user?.name}</p>
@@ -443,8 +474,39 @@ export default function AccountSettingsPage() {
         </div>
       </div>
 
+      {/* Availability toggle — staff-only (matches ProfileController::
+          toggleAvailability's own role gate), distinct from is_active
+          (still employed): this is "on leave / out today" for the
+          owner's own Staff Management view to see. */}
+      {isStaffOnly && (
+        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-[#2D2A26]">Available for New Assignments</p>
+            <p className="text-xs text-[#827A73] mt-0.5">
+              Turn off if you&apos;re on leave or out today — the shop owner sees this on the Staff page, it won&apos;t remove you from jobs already assigned to you.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={staffProfile?.is_available !== false}
+            disabled={togglingAvailability}
+            onClick={() => handleToggleAvailability(!(staffProfile?.is_available !== false))}
+            className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+              staffProfile?.is_available !== false ? 'bg-taupe' : 'bg-[#EBE6E0]'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                staffProfile?.is_available !== false ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      )}
+
       {/* Tab Navigation */}
-      <div className="flex gap-1 bg-[#F0EAE3] p-1 rounded-xl w-fit">
+      <div className="flex flex-wrap gap-1 bg-[#F0EAE3] p-1 rounded-xl w-fit max-w-full">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

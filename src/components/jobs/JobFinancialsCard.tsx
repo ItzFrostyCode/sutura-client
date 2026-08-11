@@ -36,8 +36,15 @@ export default function JobFinancialsCard({
 }: JobFinancialsCardProps) {
   const totalAmount       = Number.parseFloat(String(job.total_amount));
   const remainingBalance  = Number.parseFloat(String(job.balance));
-  const amountPaid        = totalAmount - remainingBalance;
   const discountApplied   = Number.parseFloat(String(job.discount_amount ?? 0)) || 0;
+  // applyDiscount reduces `balance` directly, not `total_amount` — so
+  // totalAmount - remainingBalance is (real payments + discount) combined,
+  // not payments alone. Previously "Deposit Paid" silently included the
+  // discount amount too, so Total − Deposit Paid − Discount Applied (shown
+  // as its own line right below) didn't add up to the Balance Due shown
+  // right under both of them — a visible ₱-for-₱ discrepancy on the main
+  // financial view of a job order.
+  const amountPaid        = totalAmount - remainingBalance - discountApplied;
   const jobIsCompleted    = job.status === 'completed';
   const jobIsCancelled    = job.status === 'cancelled';
   const { shop } = useAuthStore();

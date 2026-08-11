@@ -3,6 +3,7 @@ import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 export interface ShopBranch {
   id: number;
+  slug?: string;
   name: string;
   address: string;
   landmark?: string | null;

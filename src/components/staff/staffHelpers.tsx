@@ -1,11 +1,13 @@
 export interface Staff {
   id: number;
-  user: { name: string; email: string; phone?: string; last_seen_at?: string | null };
+  user: { name: string; email: string; phone?: string; last_seen_at?: string | null; profile_picture?: string | null };
   role: string;
   additional_roles?: string[] | null;
   is_active: boolean;
+  is_available?: boolean;
   hired_at: string;
   specialization?: string | string[];
+  bio?: string | null;
   active_jobs?: number;
   completed_jobs?: number;
   shop_branch_id?: number | null;

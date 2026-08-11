@@ -198,7 +198,7 @@ function MeasurementsContent() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight flex items-center gap-2">
             <Ruler size={22} className="text-[#9A8073]" />

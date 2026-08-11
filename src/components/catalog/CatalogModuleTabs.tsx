@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Package, BarChart3 } from 'lucide-react';
+import { ShoppingBag, Package, BarChart3, Star } from 'lucide-react';
 
 const TABS = [
   { label: 'Design Catalog', href: '/dashboard/catalog', icon: ShoppingBag },
   { label: 'Walk-in Orders', href: '/dashboard/orders', icon: Package },
   { label: 'Analytics', href: '/dashboard/catalog/analytics', icon: BarChart3 },
+  { label: 'Reviews', href: '/dashboard/catalog/reviews', icon: Star },
 ];
 
 /**
@@ -27,7 +28,7 @@ export default function CatalogModuleTabs() {
     .sort((a, b) => b.length - a.length)[0];
 
   return (
-    <div className="flex items-center gap-1 border-b border-[#EBE6E0]">
+    <div className="flex flex-wrap items-center gap-1 border-b border-[#EBE6E0]">
       {TABS.map(tab => {
         const active = tab.href === activeHref;
         const Icon = tab.icon;

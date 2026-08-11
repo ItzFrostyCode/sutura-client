@@ -61,9 +61,25 @@ export default function JobStaffAssignmentCard({
                   specArray = [staff.specialization];
                 }
                 const specLabel = specArray.length > 0 ? ` - ${specArray.join(', ')}` : '';
+                // Staff pinned to a branch can only be assigned to that
+                // branch's jobs (server-side rejects a mismatch) — showing
+                // the branch here lets the owner pick correctly the first
+                // time instead of hitting a confusing rejection after saving.
+                const branchLabel = staff.branch ? ` (${staff.branch.name})` : '';
+                // Same ≥5 "overloaded" threshold as the Staff dashboard page —
+                // lets the owner see who's already stretched thin right where
+                // they're picking, instead of only finding out after the fact.
+                const workloadLabel = staff.active_jobs
+                  ? ` — ${staff.active_jobs} active${staff.active_jobs >= 5 ? ' ⚠' : ''}`
+                  : '';
+                // Surfaced, not enforced — same "warn don't block" pattern
+                // as the workload flag above. A staff member on leave can
+                // still be picked (e.g. a short absence, or the owner knows
+                // better), but the owner should see it before choosing.
+                const availabilityLabel = staff.is_active && staff.is_available === false ? ' (On Leave)' : '';
                 return (
                   <option key={staff.id} value={staff.user.id}>
-                    [{roleLabels}] {staff.user.name}{specLabel}
+                    [{roleLabels}] {staff.user.name}{specLabel}{branchLabel}{workloadLabel}{availabilityLabel}
                   </option>
                 );
               })}

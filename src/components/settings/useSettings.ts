@@ -2,7 +2,49 @@ import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { ShopSettingsData } from '@/components/settings/SettingsRentalPolicies';
+
+export interface ShopSettingsData {
+  name: string;
+  description: string;
+  logo_path: string;
+  banner_path: string;
+  address: string;
+  landmark?: string;
+  city: string;
+  province: string;
+  phone: string;
+  email: string;
+  booking_policy: string;
+  booking_questions: string[];
+  max_appointments_per_day: number | null;
+  latitude: string;
+  longitude: string;
+  social_links: { label: string; url: string }[];
+  gallery_images: string[];
+  business_type: string;
+  operating_hours: Record<string, { is_open: boolean; open: string; close: string }>;
+  // Fitting session policy — how many fitting appointments a job order gets
+  // before an extra fitting fee kicks in (see JobOrderController's fitting
+  // count check). NOT a rental concept — deliberately kept apart from the
+  // rental fields that used to live alongside these (security_deposit,
+  // rental_duration_days, courier selection, etc.), which were removed:
+  // rental lifecycle management and courier/logistics are both explicitly
+  // out of the approved thesis scope, and none of those fields were ever
+  // read by any business logic.
+  fitting_fee: number;
+  fitting_limit: number;
+  specializations: string[];
+  is_featured: boolean;
+  is_hidden: boolean;
+  // Where customers should send a GCash/bank payment — informational only,
+  // published on printed receipts/invoices. The system still never moves
+  // money itself, this just answers "saan ko ipapadala ang bayad?"
+  gcash_number: string;
+  gcash_account_name: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
+}
 
 const DEFAULT_HOURS = {
   monday: { is_open: true, open: '09:00', close: '18:00' },
@@ -76,18 +118,16 @@ export function useSettings() {
     gallery_images: [] as string[],
     business_type: 'tailoring_shop',
     operating_hours: DEFAULT_HOURS as Record<string, { is_open: boolean; open: string; close: string }>,
-    security_deposit: 0,
-    rental_duration_days: 3,
-    overdue_penalty_per_day: 0,
     fitting_fee: 0,
     fitting_limit: 3,
-    reschedule_fee_percent: 0,
-    change_reserved_hours: 24,
-    change_reserved_fee_percent: 0,
-    supported_couriers: [] as string[],
     specializations: [] as string[],
     is_featured: false,
     is_hidden: false,
+    gcash_number: '',
+    gcash_account_name: '',
+    bank_name: '',
+    bank_account_number: '',
+    bank_account_name: '',
   });
 
   const setFormDataWithDirty = (valueOrUpdater: ShopSettingsData | ((prev: ShopSettingsData) => ShopSettingsData)) => {
@@ -133,18 +173,16 @@ export function useSettings() {
             gallery_images: Array.isArray(s.gallery_images) ? s.gallery_images : [],
             business_type: s.business_type || 'tailoring_shop',
             operating_hours: s.operating_hours || DEFAULT_HOURS,
-            security_deposit: s.security_deposit ?? 0,
-            rental_duration_days: s.rental_duration_days ?? 3,
-            overdue_penalty_per_day: s.overdue_penalty_per_day ?? 0,
             fitting_fee: s.fitting_fee ?? 0,
             fitting_limit: s.fitting_limit ?? 3,
-            reschedule_fee_percent: s.reschedule_fee_percent ?? 0,
-            change_reserved_hours: s.change_reserved_hours ?? 24,
-            change_reserved_fee_percent: s.change_reserved_fee_percent ?? 0,
-            supported_couriers: Array.isArray(s.supported_couriers) ? s.supported_couriers : [],
             specializations: Array.isArray(s.specializations) ? s.specializations : [],
             is_featured: !!s.is_featured,
             is_hidden: !!s.is_hidden,
+            gcash_number: s.gcash_number || '',
+            gcash_account_name: s.gcash_account_name || '',
+            bank_name: s.bank_name || '',
+            bank_account_number: s.bank_account_number || '',
+            bank_account_name: s.bank_account_name || '',
           };
           setFormData(loaded);
           savedDataRef.current = loaded;

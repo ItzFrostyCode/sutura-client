@@ -8,15 +8,15 @@ Concrete timeline based on that date:
 
 | When | What |
 |---|---|
-| **Now → end of August 2026** | Keep building features on XAMPP/MySQL as normal. No deployment work needed. |
-| **Anytime in that window (optional, low priority)** | Register free Supabase/Railway/Cloudflare accounts; do one test migration dry-run against a free Supabase project, just to catch any MySQL→Postgres surprises early while there's no pressure. |
+| **Now → end of August 2026** | Keep building features on local MySQL as normal. No deployment work needed. |
+| **Anytime in that window (optional, low priority)** | Register free Supabase/Railway/Cloudflare accounts; do one test migration dry-run against a free Supabase project, just to catch any MySQL→Postgres surprises early while there's no pressure. **Already done once, 2026-07-23** — see "Dry run already completed" below. |
 | **~September 15, 2026** | Start the real switch: set up Railway + Supabase + Cloudflare R2 for real, apply the code changes below, test thoroughly. |
 | **Late September 2026** | Final testing + rehearse the demo on the actual deployed version, not localhost. |
 | **First week of October 2026** | Defense / deadline. |
 
 ## Current Status
 
-**Local development stays exactly as-is.** Keep using XAMPP + MySQL for day-to-day feature work. No code changes are needed right now — this document just records the plan so the whole team (not just whoever read the chat) knows what's decided and what's still pending.
+**Local development stays exactly as-is.** Keep using local MySQL for day-to-day feature work — note this is now a **real local MySQL 8.4 install (Homebrew), not XAMPP** (switched since this doc was first written, matches the thesis paper's own "MySQL" tech stack line more literally). No code changes are needed right now — this document just records the plan so the whole team (not just whoever read the chat) knows what's decided and what's still pending.
 
 **Tech stack locked in for the real deployment** (when the time comes):
 
@@ -51,12 +51,16 @@ Do **not** switch earlier than necessary — every day spent on MySQL/XAMPP is a
 
 ## What the switch actually involves (already scoped — ask for a redo of this if it's stale)
 
-- `.env`: `DB_CONNECTION=mysql` → `pgsql`, point to Supabase host/credentials.
-- **Test search/filter features after switching** — MySQL and Postgres handle case-sensitivity in `LIKE` queries slightly differently; customer/job/appointment search needs a re-check.
-- Install `league/flysystem-aws-s3-v3` (not installed yet) and switch the 4 upload endpoints in `FileUploadController.php` from the local `'public'` disk to the already-configured `'s3'` disk, pointed at Cloudflare R2 credentials.
-- Fix a latent bug found during review: `FileUploadController::store()` builds the returned URL as `config('app.url') . Storage::url($path)` — this only works for the local disk. Once on S3/R2, `Storage::url()` already returns a full absolute URL, so this needs to become just `Storage::url($path)` or it'll double-prefix and break image links.
-- Create `config/cors.php` — doesn't exist yet. Not needed today since frontend and backend are on the same machine, but required the moment they're on separate domains (Vercel + Railway).
+**Dry run already completed (2026-07-23)** against a disposable Supabase + R2 project — most of this list is done already, not just scoped:
+
+- `.env`: `DB_CONNECTION=mysql` → `pgsql`, point to Supabase host/credentials. **Not yet applied to the real dev config** — the dry run used a throwaway test project, deliberately deferred to the real September switch.
+- **Search/filter case-sensitivity — already found and fixed, not just a risk to test for.** `CatalogController::index()`'s search used to silently return zero results on Postgres for any non-exact-case term (verified: `"gown"` found 0 of 10 real matches on MySQL vs Postgres). Fixed with `whereRaw('LOWER(name) LIKE ?', ...)`. Same pattern now used for any new user-typed search field.
+- `league/flysystem-aws-s3-v3` — **installed**, not pending.
+- The `FileUploadController::store()` double-prefixed-URL bug — **already fixed**, and generalized: both `FileUploadController` and `ProfileController` now use a single `private const UPLOAD_DISK = 'public'` constant referenced by both the `store()` and `Storage::disk(...)->url()` calls, instead of a bare `Storage::url($path)` call that silently resolves against the wrong disk. **Don't reintroduce a bare `Storage::url()` call or hardcode `'public'`/`'s3'` in a second place** — this exact bug shipped twice (once in each controller) from that drift.
+- A related bug also found and fixed: `varchar(255)` columns storing image/file URLs are too narrow for real cloud storage URLs (domain + bucket + encoded filename routinely exceeds 255 chars) — Postgres rejects the write outright. Widened all of them (`shops.logo_path`, `catalog_images.image_url`, several others) to `TEXT`. **Any new URL/path column should be `TEXT` from the start.**
+- Create `config/cors.php` — still doesn't exist. Not needed today since frontend and backend are on the same machine, but required the moment they're on separate domains (Vercel + Railway). Still the one real item on this list not yet done.
 - **Nothing to change**: Auth (already Sanctum Bearer tokens, not cookie/session — cross-domain-friendly by default), Queue (`QUEUE_CONNECTION=sync`, no worker needed), Session (`SESSION_DRIVER=database`, survives container restarts).
+- The actual disk switch (`UPLOAD_DISK` constant from `'public'` to `'s3'`, and pointing `.env`'s `DB_*` at the real production Supabase project) is still deliberately deferred to the real September migration — everything above was verified against disposable test infrastructure, not wired into the app's actual default config yet.
 
 ## Costs (checked live, July 2026 — re-verify before committing money)
 

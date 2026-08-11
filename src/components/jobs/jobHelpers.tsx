@@ -43,11 +43,14 @@ export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-ambe
  * stages until a 50% downpayment has been logged — mirrors
  * JobOrder::STAGES_REQUIRING_DOWNPAYMENT on the backend exactly so the
  * Kanban board's drag-and-drop guard never drifts out of sync with what the
- * API actually enforces.
+ * API actually enforces. Includes 'ready_for_pickup' because the status
+ * dropdown allows jumping straight there from 'pending'/'design', not just
+ * a step-by-step advance — without it, an unpaid job could skip the entire
+ * gated middle of the pipeline in one selection.
  */
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
   'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
-  'ready_for_fitting', 'final_adjustments', 'qc_ironing',
+  'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup',
 ]);
 
 /**
@@ -97,13 +100,12 @@ export interface Job {
   order_number?: string;
   intake_channel: 'walk_in' | 'online';
   fulfillment_type: 'pickup' | 'shipping' | 'delivery';
-  courier_name?: string | null;
-  courier_tracking_number?: string | null;
   status: string;
   payment_status: string;
   balance: number | string;
   downpayment?: number | string;
   total_amount?: number | string;
+  discount_amount?: number | string | null;
   customer?: { name: string; suki_tag?: string | null } | null;
   service?: { name: string; service_type?: string | null } | null;
   assigned_staff?: { name: string } | null;
@@ -111,6 +113,7 @@ export interface Job {
   updated_at?: string;
   custom_order_data?: Record<string, unknown> | null;
   hold_reason?: string | null;
+  garment_category?: string | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';
@@ -122,9 +125,24 @@ export const CANCELLATION_REASON_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+export const GARMENT_CATEGORY_LABELS: Record<string, string> = {
+  barong: 'Barong Tagalog',
+  gown: 'Gown',
+  suit: 'Suit',
+  filipiniana: 'Filipiniana',
+  uniform: 'School Uniform',
+  lab_gown: 'Lab Gown',
+  scrub_suit: 'Scrub Suit',
+  corporate_wear: 'Corporate Wear',
+  alteration_repair: 'Alterations & Repair',
+};
+
 export const getDueStatus = (dueDateStr: string | null | undefined, status: string) => {
   if (!dueDateStr) return null;
-  if (['completed', 'cancelled', 'on_hold'].includes(status)) return null;
+  // Mirrors NotifyOverdueJobs/AnalyticsController's exact "overdue" definition
+  // server-side — 'rejected' was missing here, so a declined job could still
+  // show an "Overdue" badge even though it was never going into production.
+  if (['completed', 'cancelled', 'on_hold', 'rejected'].includes(status)) return null;
 
   const dueDate = new Date(dueDateStr);
   const today = new Date();

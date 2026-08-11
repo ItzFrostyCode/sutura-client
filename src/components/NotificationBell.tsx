@@ -14,6 +14,11 @@ import {
   X,
   MoreVertical,
   Trash2,
+  UserCog,
+  XCircle,
+  AlertTriangle,
+  PackageOpen,
+  PauseCircle,
 } from 'lucide-react';
 import api from '@/lib/axios';
 
@@ -82,6 +87,42 @@ const TYPE_CONFIG: Record<
     color: 'text-violet-600',
     label: 'New Order',
   },
+  staff_assigned: {
+    icon: UserCog,
+    bg: 'bg-[#F0EAE3]',
+    color: 'text-[#9A8073]',
+    label: 'Staff Assigned',
+  },
+  payment_rejected: {
+    icon: XCircle,
+    bg: 'bg-red-50',
+    color: 'text-red-600',
+    label: 'Payment Rejected',
+  },
+  overdue_jobs_digest: {
+    icon: AlertTriangle,
+    bg: 'bg-amber-50',
+    color: 'text-amber-600',
+    label: 'Overdue Jobs',
+  },
+  unclaimed_pickups_digest: {
+    icon: PackageOpen,
+    bg: 'bg-orange-50',
+    color: 'text-orange-600',
+    label: 'Unclaimed Pickups',
+  },
+  jobs_on_hold_digest: {
+    icon: PauseCircle,
+    bg: 'bg-amber-50',
+    color: 'text-amber-600',
+    label: 'Jobs On Hold',
+  },
+  subscription_expired: {
+    icon: CreditCard,
+    bg: 'bg-red-50',
+    color: 'text-red-600',
+    label: 'Subscription',
+  },
   default: {
     icon: Info,
     bg: 'bg-[#F0EAE3]',
@@ -90,8 +131,17 @@ const TYPE_CONFIG: Record<
   },
 };
 
+// job_* (every production-stage transition, e.g. job_cutting, job_completed)
+// and appointment_* (every status change, e.g. appointment_confirmed,
+// appointment_cancelled) are generated dynamically from the underlying
+// status/stage string — enumerating every possible value here would drift
+// out of sync with JobOrder::STATUSES/Appointment::STATUSES the moment a
+// new one is added, so they're matched by prefix instead of by exact key.
 function getTypeConfig(type?: string) {
-  return TYPE_CONFIG[type ?? ''] ?? TYPE_CONFIG.default;
+  if (type && TYPE_CONFIG[type]) return TYPE_CONFIG[type];
+  if (type?.startsWith('job_')) return TYPE_CONFIG.new_job_order;
+  if (type?.startsWith('appointment_')) return TYPE_CONFIG.appointment_booked;
+  return TYPE_CONFIG.default;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────

@@ -292,7 +292,7 @@ export default function ServiceDetailModal({
                           onChange={e => handleInputChange(field.name, e.target.value)}
                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                           required={field.required}
-                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
+                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-base sm:text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
                         />
                       )}
 
@@ -305,7 +305,7 @@ export default function ServiceDetailModal({
                           onChange={e => handleInputChange(field.name, e.target.value)}
                           placeholder="0"
                           required={field.required}
-                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
+                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-base sm:text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
                         />
                       )}
 

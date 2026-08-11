@@ -7,11 +7,12 @@ import { useToast } from '@/context/ToastContext';
 interface EditOperatingHoursModalProps {
   isOpen: boolean;
   onClose: () => void;
+  shopId: number;
   initialHours: Record<string, { is_open: boolean; open: string; close: string }>;
   onSaved: (hours: Record<string, { is_open: boolean; open: string; close: string }>) => void;
 }
 
-export default function EditOperatingHoursModal({ isOpen, onClose, initialHours, onSaved }: EditOperatingHoursModalProps) {
+export default function EditOperatingHoursModal({ isOpen, onClose, shopId, initialHours, onSaved }: EditOperatingHoursModalProps) {
   const [hours, setHours] = useState(initialHours || {});
   const [saving, setSaving] = useState(false);
   const toast = useToast();
@@ -40,7 +41,7 @@ export default function EditOperatingHoursModal({ isOpen, onClose, initialHours,
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put('/shop/settings', { operating_hours: hours });
+      await api.put(`/shops/${shopId}`, { operating_hours: hours });
       toast.success('Operating hours updated successfully.');
       onSaved(hours);
       onClose();

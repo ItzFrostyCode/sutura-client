@@ -74,12 +74,18 @@ export interface Shop {
     tiktok?: string;
     website?: string;
   };
+  gcash_number?: string | null;
+  gcash_account_name?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
 }
 
 export interface StaffProfile {
   id: number;
   role: string;
   shop?: Shop;
+  is_available?: boolean;
 }
 
 interface AuthState {

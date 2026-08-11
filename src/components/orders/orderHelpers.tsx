@@ -19,6 +19,8 @@ export interface CatalogOrder {
   customer: {
     name: string;
   } | null;
+  shop_branch_id?: number | null;
+  branch?: { id: number; name: string } | null;
 }
 
 export function StatusBadge({ status }: { readonly status: string }) {

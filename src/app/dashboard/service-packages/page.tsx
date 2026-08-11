@@ -206,7 +206,7 @@ export default function ServicePackagesPage() {
   return (
     <div className="space-y-6 text-[#2D2A26]">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/services"

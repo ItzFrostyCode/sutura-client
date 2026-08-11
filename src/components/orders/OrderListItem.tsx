@@ -71,6 +71,12 @@ export default function OrderListItem({
           <span className="text-[#9A8073]">Payment: </span>
           <span className="font-medium text-[#2D2A26] capitalize">{order.payment_status}</span>
         </p>
+        {order.branch && (
+          <p className="text-sm">
+            <span className="text-[#9A8073]">Branch: </span>
+            <span className="font-medium text-[#2D2A26]">{order.branch.name}</span>
+          </p>
+        )}
       </div>
 
       {/* Actions */}
@@ -154,10 +160,10 @@ export default function OrderListItem({
           </button>
         )}
 
-        {order.status === 'pending' && (
+        {(order.status === 'pending' || order.status === 'ready') && (
           <button
             onClick={() => {
-              if (window.confirm('Cancel this order? This voids a mistaken or duplicate entry — use it only before any prep has started.')) {
+              if (window.confirm('Cancel this order? This voids a mistaken or duplicate entry — use it only before the customer has actually picked the item up.')) {
                 onUpdateStatus(order.id, 'cancelled');
               }
             }}

@@ -53,7 +53,25 @@ export default function SettingsOperatingHours({
                 <input
                   type="checkbox"
                   checked={operatingHours[day]?.is_open || false}
-                  onChange={e => onHoursChange(day, 'is_open', e.target.checked)}
+                  onChange={e => {
+                    onHoursChange(day, 'is_open', e.target.checked);
+                    // The time inputs below fall back to '09:00'/'18:00' only
+                    // for DISPLAY when a day has no open/close yet — that
+                    // fallback never gets written into real state on its own.
+                    // Enabling a fresh day showed "09:00 to 18:00" looking
+                    // fully set, but saving it kept 'open' (and sometimes
+                    // 'close') entirely missing from the payload unless the
+                    // owner happened to actually retype a value. Confirmed
+                    // live: enabled Saturday, left the pre-filled times
+                    // alone, saved, and it persisted with no 'open' key at
+                    // all. Writing real defaults the moment a day is turned
+                    // on keeps what's displayed and what's saved the same
+                    // thing, always.
+                    if (e.target.checked && !operatingHours[day]?.open) {
+                      onHoursChange(day, 'open', operatingHours[day]?.open || '09:00');
+                      onHoursChange(day, 'close', operatingHours[day]?.close || '18:00');
+                    }
+                  }}
                   className="w-4 h-4 text-[#9A8073] border-[#EBE6E0] rounded focus:ring-[#9A8073]"
                 />
                 <span className="text-sm font-medium text-[#2D2A26] capitalize">{day}</span>

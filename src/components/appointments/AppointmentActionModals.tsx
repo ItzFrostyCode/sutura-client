@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler } from 'lucide-react';
@@ -45,7 +46,7 @@ interface AppointmentActionModalsProps {
   readonly onConfirmReview: (aptId: number) => Promise<boolean>;
   readonly onRejectReview: (aptId: number) => Promise<boolean>;
   readonly onRescheduleSubmit: (aptId: number, date: string, time: string, notes: string) => Promise<void>;
-  readonly onCompleteSubmit: (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string) => Promise<void>;
+  readonly onCompleteSubmit: (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => Promise<void>;
   readonly onCancelConfirm: (aptId: number) => Promise<void>;
   readonly onCreateJob: (apt: Appointment) => void;
 }
@@ -65,8 +66,8 @@ export default function AppointmentActionModals({
 
   // Local Form States
   const [rescheduleForm, setRescheduleForm] = useState({ scheduled_date: '', scheduled_time: '', notes: '' });
-  const [completeForm, setCompleteForm] = useState<{ notes: string; job_order_id: string; measurement_action: 'none' | 'record'; outcome: string }>({
-    notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed'
+  const [completeForm, setCompleteForm] = useState<{ notes: string; job_order_id: string; measurement_action: 'none' | 'record'; outcome: string; fitting_notes: string }>({
+    notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed', fitting_notes: ''
   });
 
   // Fitting/Pickup completion needs to link a job order, but the `jobOrders`
@@ -95,7 +96,7 @@ export default function AppointmentActionModals({
   useEffect(() => {
     if (completeApt) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCompleteForm({ notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed' });
+      setCompleteForm({ notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed', fitting_notes: '' });
     }
   }, [completeApt]);
 
@@ -141,7 +142,8 @@ export default function AppointmentActionModals({
       completeForm.notes,
       completeForm.job_order_id,
       completeForm.measurement_action,
-      completeForm.outcome
+      completeForm.outcome,
+      completeApt.appointment_type === 'fitting' ? completeForm.fitting_notes : undefined
     );
   };
 
@@ -324,7 +326,7 @@ export default function AppointmentActionModals({
                     <button type="button" key={opt}
                       onClick={() => setCompleteForm(f => ({ ...f, measurement_action: opt }))}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${completeForm.measurement_action === opt ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}>
-                      {opt === 'record' ? '衡量 Record Measurements' : 'Skip for Now'}
+                      {opt === 'record' ? 'Record Measurements' : 'Skip for Now'}
                     </button>
                   ))}
                 </div>
@@ -332,17 +334,27 @@ export default function AppointmentActionModals({
             )}
 
             {completeApt.appointment_type === 'fitting' && (
-              <div>
-                <label htmlFor="complete_job_order_id" className="block text-sm font-medium text-[#524A44] mb-1">Link to Job Order <span className="text-rose-500">*</span></label>
-                <p className="text-xs text-[#827A73] mb-2">Fitting sessions must be linked to an existing job order.</p>
-                <select id="complete_job_order_id" required disabled={loadingCompletionJobs} value={completeForm.job_order_id}
-                  onChange={e => setCompleteForm(f => ({ ...f, job_order_id: e.target.value }))}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] disabled:opacity-60">
-                  <option value="" disabled>{loadingCompletionJobs ? 'Loading job orders...' : 'Select job order...'}</option>
-                  {completionJobOrders
-                    .filter(j => !['completed', 'cancelled'].includes(j.status || ''))
-                    .map(j => <option key={j.id} value={j.id}>#{j.id} — {j.title || j.status}</option>)}
-                </select>
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="complete_job_order_id" className="block text-sm font-medium text-[#524A44] mb-1">Link to Job Order <span className="text-rose-500">*</span></label>
+                  <p className="text-xs text-[#827A73] mb-2">Fitting sessions must be linked to an existing job order.</p>
+                  <select id="complete_job_order_id" required disabled={loadingCompletionJobs} value={completeForm.job_order_id}
+                    onChange={e => setCompleteForm(f => ({ ...f, job_order_id: e.target.value }))}
+                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] disabled:opacity-60">
+                    <option value="" disabled>{loadingCompletionJobs ? 'Loading job orders...' : 'Select job order...'}</option>
+                    {completionJobOrders
+                      .filter(j => !['completed', 'cancelled'].includes(j.status || ''))
+                      .map(j => <option key={j.id} value={j.id}>#{j.id} — {j.title || j.status}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="complete_fitting_notes" className="block text-sm font-medium text-[#524A44] mb-1">Fitting Outcome / Adjustments Needed</label>
+                  <p className="text-xs text-[#827A73] mb-2">Gets attached directly to the job order so whoever does Final Adjustments knows exactly what to change.</p>
+                  <textarea id="complete_fitting_notes" rows={3} value={completeForm.fitting_notes}
+                    onChange={e => setCompleteForm(f => ({ ...f, fitting_notes: e.target.value }))}
+                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] resize-none"
+                    placeholder="e.g. Take in the waist by 1 inch, shorten sleeves by half inch..." />
+                </div>
               </div>
             )}
 

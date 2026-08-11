@@ -201,14 +201,15 @@ export function useAppointments() {
     }
   };
 
-  const handleCompleteSubmit = async (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string) => {
+  const handleCompleteSubmit = async (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => {
     if (!shop) return;
     setIsSubmitting(true);
     try {
       await api.post(`/shops/${shop.id}/appointments/${aptId}/complete`, {
-        notes:        notes || undefined,
-        job_order_id: jobOrderId || undefined,
-        outcome:      outcome,
+        notes:          notes || undefined,
+        job_order_id:   jobOrderId || undefined,
+        outcome:        outcome,
+        fitting_notes:  fittingNotes || undefined,
       });
       setAppointments(prev =>
         prev.map(a => a.id === aptId ? { ...a, status: 'completed', outcome: outcome as any } : a)

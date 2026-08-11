@@ -10,7 +10,6 @@ import { Staff } from '@/components/staff/staffHelpers';
 import StaffFormModal from '@/components/staff/StaffFormModal';
 import StaffDeleteModal from '@/components/staff/StaffDeleteModal';
 import StaffListView from '@/components/staff/StaffListView';
-import StaffHistoryModal from '@/components/staff/StaffHistoryModal';
 
 export default function StaffPage() {
   const { shop, user } = useAuthStore();
@@ -24,7 +23,6 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const [historyStaff, setHistoryStaff] = useState<Staff | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -37,6 +35,8 @@ export default function StaffPage() {
     is_active: true,
     shop_branch_id: '',
     is_branch_manager: false,
+    bio: '',
+    is_available: true,
   });
 
   const fetchStaff = useCallback(() => {
@@ -79,8 +79,10 @@ export default function StaffPage() {
         hired_at: string;
         password?: string;
         is_active?: boolean;
+        is_available?: boolean;
         shop_branch_id: number | null;
         is_branch_manager: boolean;
+        bio: string;
       } = {
         name: formData.name,
         email: formData.email,
@@ -96,11 +98,13 @@ export default function StaffPage() {
         hired_at: formData.hired_at,
         shop_branch_id: formData.shop_branch_id ? Number.parseInt(formData.shop_branch_id, 10) : null,
         is_branch_manager: formData.is_branch_manager,
+        bio: formData.bio,
       };
 
-      // Only send is_active on edit (new staff are always active)
+      // Only send is_active/is_available on edit (new staff are always active + available)
       if (editingId) {
         payload.is_active = formData.is_active;
+        payload.is_available = formData.is_available;
       }
 
       if (formData.password) {
@@ -127,6 +131,8 @@ export default function StaffPage() {
         is_active: true,
         shop_branch_id: '',
         is_branch_manager: false,
+        bio: '',
+        is_available: true,
       });
       fetchStaff();
     } catch (err) {
@@ -153,6 +159,8 @@ export default function StaffPage() {
       is_active: member.is_active,
       shop_branch_id: member.shop_branch_id ? String(member.shop_branch_id) : '',
       is_branch_manager: member.is_branch_manager || false,
+      bio: member.bio || '',
+      is_available: member.is_available !== false,
     });
     setShowModal(true);
   };
@@ -178,14 +186,21 @@ export default function StaffPage() {
     }
   };
 
-  const activeStaff = staff.filter(s => s.is_active);
-  const totalActiveJobs = staff.reduce((sum, s) => sum + (s.active_jobs || 0), 0);
+  // Previously scoped by the dashboard header's global branch selector —
+  // removed per user request in favor of StaffListView's own explicit
+  // Branch filter (see its filter bar), so there's exactly one place on
+  // this page that filters by branch instead of two. The header selector
+  // itself is now hidden on /dashboard/staff routes (see dashboard/layout.tsx).
+  const visibleStaff = staff;
+
+  const activeStaff = visibleStaff.filter(s => s.is_active);
+  const totalActiveJobs = visibleStaff.reduce((sum, s) => sum + (s.active_jobs || 0), 0);
   const avgJobs = activeStaff.length > 0 ? (totalActiveJobs / activeStaff.length).toFixed(1) : '0';
-  const overloadedStaffCount = staff.filter(s => (s.active_jobs || 0) >= 5).length;
+  const overloadedStaffCount = visibleStaff.filter(s => (s.active_jobs || 0) >= 5).length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Staff Management</h1>
           <p className="text-[#827A73] text-sm mt-1">Manage your tailors, cutters, and front desk team.</p>
@@ -205,6 +220,8 @@ export default function StaffPage() {
               is_active: true,
               shop_branch_id: '',
               is_branch_manager: false,
+              bio: '',
+              is_available: true,
             });
             setShowModal(true);
           }}
@@ -224,7 +241,7 @@ export default function StaffPage() {
             </p>
             <p className="text-2xl font-bold text-[#2D2A26]">
               {activeStaff.length}{' '}
-              <span className="text-xs font-normal text-[#A8A19A]">/ {staff.length} total</span>
+              <span className="text-xs font-normal text-[#A8A19A]">/ {visibleStaff.length} total</span>
             </p>
           </div>
           <div className="p-5 rounded-2xl bg-white shadow-xs border border-[#EBE6E0]">
@@ -249,18 +266,10 @@ export default function StaffPage() {
         </div>
 
         <StaffListView
-          staff={staff}
+          staff={visibleStaff}
           loading={loading}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
-          onViewHistory={(member) => setHistoryStaff(member)}
-        />
-
-        <StaffHistoryModal
-          staffId={historyStaff?.id ?? null}
-          staffName={historyStaff?.user?.name ?? ''}
-          isOpen={historyStaff !== null}
-          onClose={() => setHistoryStaff(null)}
         />
 
         {/* Add Staff Modal */}

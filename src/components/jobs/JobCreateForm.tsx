@@ -37,6 +37,7 @@ interface ServiceData {
   min_order_qty?: number;
   custom_fields?: ServiceField[] | null;
   tags?: string[];
+  estimated_days?: number | null;
 }
 
 interface StaffData {
@@ -55,6 +56,8 @@ interface CustomerMeasurement {
   updated_at: string;
   metrics?: Record<string, string | undefined>;
   notes?: string | null;
+  superseded_at?: string | null;
+  version?: number;
 }
 
 function sanitizeServiceCustomFields(servicesRaw: unknown[]): ServiceData[] {
@@ -119,6 +122,7 @@ export default function JobCreateForm() {
   // show who it is. Manual "New Job" creation (no pre-fill) keeps the dropdown.
   const [customerLocked, setCustomerLocked] = useState(false);
   const [isTotalAmountCustom, setIsTotalAmountCustom] = useState(false);
+  const [isDueDateCustom, setIsDueDateCustom] = useState(false);
 
   // Bulk Team Roster State
   const [isBulkOrder, setIsBulkOrder] = useState(false);
@@ -146,7 +150,7 @@ export default function JobCreateForm() {
     is_rush: false,
     rush_fee: '',
     material_source: 'shop_supplied' as 'shop_supplied' | 'customer_supplied',
-    garment_category: '' as '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear',
+    garment_category: '' as '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair',
   });
   // Same stage model as the Job Detail page's Multi-Stage Staff Assignment
   // — replaces the old single "Assigned Staff" field so Create and View show
@@ -189,22 +193,11 @@ export default function JobCreateForm() {
       );
     }
 
-    // Sort oldest first to assign sequential version numbers (v1, v2, v3...)
-    const chronological = [...customerMeasurements].sort(
-      (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
-    );
-
-    // Map them to include their version number
-    const measurementsWithVersion = customerMeasurements.map((m) => {
-      const versionIndex = chronological.findIndex((c) => c.id === m.id);
-      return {
-        ...m,
-        version: versionIndex === -1 ? 1 : versionIndex + 1,
-      };
-    });
-
-    // Sort latest first for display in the dropdown
-    const displayMeasurements = [...measurementsWithVersion].sort(
+    // customerMeasurements is already filtered to one row per profile (the
+    // current, non-superseded version — see the fetch above), so this is
+    // one option per distinct profile, using the real backend version
+    // number rather than re-deriving one from array position.
+    const displayMeasurements = [...customerMeasurements].sort(
       (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
 
@@ -516,6 +509,17 @@ export default function JobCreateForm() {
                 if (apt?.reference_images?.length) setReferenceImages(apt.reference_images);
                 if (apt?.reference_link) setReferenceLink(apt.reference_link);
                 setLinkedAppointmentChannel(apt?.intake_channel === 'online' ? 'online' : 'walk_in');
+                // The backend already inherits garment_category from the
+                // appointment on submit if this field is left blank (see
+                // JobOrderController@store) — but leaving the dropdown blank
+                // here is misleading (it visually says "not specified" when
+                // it's actually about to save as e.g. "Alterations & Repair"),
+                // and for alteration/repair specifically, this value is also
+                // what triggers the required damage-notes field below, so a
+                // service lookup mismatch could otherwise silently skip it.
+                if (apt?.garment_category) {
+                  setFormData(prev => ({ ...prev, garment_category: apt.garment_category }));
+                }
               })
               .catch(() => { /* non-critical — job can still be created without the preview */ });
           }
@@ -557,7 +561,16 @@ export default function JobCreateForm() {
       api
         .get(`/shops/${shop.id}/measurements?customer_id=${formData.customer_id}`)
         .then((res) => {
-          const measurements = res.data.data || [];
+          // MeasurementController@index returns every version of every
+          // profile (the Measurements page needs the full history for its
+          // version selector) — but a job order should only ever offer the
+          // CURRENT version of each profile. Nothing about creating a new
+          // job legitimately calls for deliberately using a customer's old,
+          // already-corrected measurements; a superseded version showing up
+          // here as a selectable option is just a trap for a mis-click.
+          const measurements = (res.data.data || []).filter(
+            (m: CustomerMeasurement) => !m.superseded_at
+          );
           setCustomerMeasurements(measurements);
 
           // Suki retrieval: a returning customer's most recently saved
@@ -603,6 +616,26 @@ export default function JobCreateForm() {
     }
   }, [formData.service_id, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
 
+  // Auto-suggest a due date from the service's own documented turnaround
+  // (Service.estimated_days, already shown as "Xd turnaround" on the
+  // Services list) — the due date picker previously had zero connection to
+  // it, so nothing stopped staff from promising a 15-day bespoke suit
+  // "tomorrow." Rush jobs are expected to beat the normal estimate, so this
+  // intentionally doesn't touch the date once is_rush is on.
+  useEffect(() => {
+    if (!isDueDateCustom && !formData.is_rush && formData.service_id) {
+      const selected = services.find((s) => s.id.toString() === formData.service_id);
+      if (selected?.estimated_days) {
+        const suggested = new Date();
+        suggested.setDate(suggested.getDate() + selected.estimated_days);
+        setFormData((prev) => ({
+          ...prev,
+          due_date: suggested.toISOString().split('T')[0],
+        }));
+      }
+    }
+  }, [formData.service_id, formData.is_rush, services, isDueDateCustom]);
+
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!shop) return;
@@ -632,7 +665,13 @@ export default function JobCreateForm() {
       return;
     }
 
-    if (selectedForSubmit?.service_type === 'alteration_repair' && !preExistingDamageNotes.trim()) {
+    // Checks garment_category too, not just the selected service's type — a
+    // job created from an alteration appointment (see the appointment-fetch
+    // prefill above) is just as much an alteration job even if, for
+    // whatever reason, the service lookup doesn't resolve to one tagged
+    // 'alteration_repair'.
+    const isAlterationJob = selectedForSubmit?.service_type === 'alteration_repair' || formData.garment_category === 'alteration_repair';
+    if (isAlterationJob && !preExistingDamageNotes.trim()) {
       setError('Please log the garment\'s pre-existing condition before creating an alteration/repair job.');
       setSubmitting(false);
       return;
@@ -665,7 +704,7 @@ export default function JobCreateForm() {
           team_roster: isBulkOrder
             ? roster.map(({ name, print_name, number, size }) => ({ name, print_name, number, size }))
             : null,
-          pre_existing_damage_notes: selectedForSubmit?.service_type === 'alteration_repair'
+          pre_existing_damage_notes: isAlterationJob
             ? preExistingDamageNotes.trim()
             : null,
         },
@@ -702,11 +741,15 @@ export default function JobCreateForm() {
     (s) => s.id.toString() === formData.service_id
   );
 
+  // Same reasoning as the submit-time check above: garment_category is the
+  // more reliable signal when a job is being created from an alteration
+  // appointment (see the appointment-fetch prefill), since it doesn't
+  // depend on the service lookup resolving correctly.
+  const isSelectedAlterationRepair = selectedService?.service_type === 'alteration_repair' || formData.garment_category === 'alteration_repair';
+
   // Alteration/repair jobs are typically same-day or short-turnaround work on an
   // existing garment, so a due date isn't mandatory the way it is for a fresh build.
-  const isCustomTailoring = selectedService
-    ? selectedService.service_type !== 'alteration_repair'
-    : true;
+  const isCustomTailoring = !isSelectedAlterationRepair;
 
   // Ties the "Custom Specifications" section's icon/color to whichever service_type is
   // selected, so the form visibly reacts to the choice instead of staying visually static.
@@ -756,6 +799,7 @@ export default function JobCreateForm() {
           </div>
         )}
 
+        <form onSubmit={handleSubmit} className="space-y-6">
         <CollapsibleSection
           icon={<Shirt size={16} className="text-taupe" />}
           title="Garment Type & Design"
@@ -784,6 +828,7 @@ export default function JobCreateForm() {
             <option value="lab_gown">Lab Gown</option>
             <option value="scrub_suit">Scrub Suit</option>
             <option value="corporate_wear">Corporate Wear</option>
+            <option value="alteration_repair">Alterations & Repair</option>
           </select>
         </div>
 
@@ -820,7 +865,7 @@ export default function JobCreateForm() {
             <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1.5 flex items-start gap-2">
               <AlertTriangle size={13} className="mt-0.5 shrink-0" />
               <span>
-                Add a photo below of the fabric/garment they brought — it&apos;ll print on the Work Ticket so whoever cuts/sews this doesn&apos;t reach for shop stock instead.
+                Add a photo of the fabric/garment they brought in the <strong>Design Reference / Notes Photo</strong> section further below — it&apos;ll print on the Work Ticket so whoever cuts/sews this doesn&apos;t reach for shop stock instead.
               </span>
             </p>
           )}
@@ -859,12 +904,18 @@ export default function JobCreateForm() {
 
         <div className="mb-6 space-y-1.5">
           <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
-            Design Reference / Notes Photo <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+            {isSelectedAlterationRepair ? 'Damage / Condition Photo' : 'Design Reference / Notes Photo'} <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
           </span>
           <p className="text-[11px] text-[#A8A19A]">
-            {appointmentId
-              ? 'Photos/link the customer attached when booking — carries over automatically to this job.'
-              : 'A photo the customer showed you, a link to what they want made (e.g. a jersey design or gown reference) — or if you jotted the specs on paper, just snap a photo of that note here so it stays attached to the job.'}
+            {(() => {
+              if (isSelectedAlterationRepair) {
+                return 'A photo of the garment as received — pairs with the Pre-Existing Damage notes below as evidence if the customer later disputes when a stain/tear happened.';
+              }
+              if (appointmentId) {
+                return 'Photos/link the customer attached when booking — carries over automatically to this job.';
+              }
+              return 'A photo the customer showed you, a link to what they want made (e.g. a jersey design or gown reference) — or if you jotted the specs on paper, just snap a photo of that note here so it stays attached to the job.';
+            })()}
           </p>
           {referenceImages.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-1">
@@ -921,7 +972,6 @@ export default function JobCreateForm() {
         </div>
         </CollapsibleSection>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
           <CollapsibleSection
             icon={<User size={16} className="text-taupe" />}
             title="Customer & Service Details"
@@ -1023,7 +1073,7 @@ export default function JobCreateForm() {
                     </option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name}
+                        {c.name}{c.phone ? ` — ${c.phone}` : ''}
                       </option>
                     ))}
                   </select>
@@ -1057,6 +1107,7 @@ export default function JobCreateForm() {
                 onChange={(e) => {
                   const val = e.target.value;
                   setIsTotalAmountCustom(false); // Reset custom price flag on service change
+                  setIsDueDateCustom(false); // Reset custom due-date flag on service change
                   setFormData({ ...formData, service_id: val });
                   const selected = services.find(
                     (s) => s.id.toString() === val
@@ -1109,7 +1160,7 @@ export default function JobCreateForm() {
               ? `Fields adapted for ${SERVICE_TYPES.find(t => t.value === selectedService.service_type)?.label}`
               : undefined}
             defaultOpen={false}
-            forceOpenWhen={isBulkOrder || selectedService?.service_type === 'alteration_repair'}
+            forceOpenWhen={isBulkOrder || isSelectedAlterationRepair}
           >
 
             {selectedService?.service_type === 'fashion_bridal' && (
@@ -1119,14 +1170,14 @@ export default function JobCreateForm() {
               </div>
             )}
 
-            {selectedService?.service_type === 'alteration_repair' && (
+            {isSelectedAlterationRepair && (
               <div className={`space-y-1 border ${sectionTwoMeta.border} ${sectionTwoMeta.bg} rounded-xl p-4`}>
                 <label htmlFor="pre_existing_damage_notes" className={`flex items-center gap-1.5 text-xs font-bold ${sectionTwoMeta.text} uppercase tracking-wider`}>
                   <SectionTwoIcon size={12} />
                   Pre-Existing Damage / Condition Notes <span className="text-[#B26959]">*</span>
                 </label>
                 <p className="text-[11px] text-amber-700 mb-1">
-                  Log any existing stains, tears, or missing parts before starting work — protects the shop from false damage claims later.
+                  Log any existing stains, tears, or missing parts before starting work — protects the shop from false damage claims later. Consider also attaching a photo in the Damage / Condition Photo section above.
                 </p>
                 <textarea
                   id="pre_existing_damage_notes"
@@ -1567,12 +1618,25 @@ export default function JobCreateForm() {
                       type="date"
                       required={isCustomTailoring}
                       value={formData.due_date}
-                      onChange={(e) =>
-                        setFormData({ ...formData, due_date: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setIsDueDateCustom(true);
+                        setFormData({ ...formData, due_date: e.target.value });
+                      }}
                       className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                       min={new Date().toISOString().split('T')[0]}
                     />
+                    {(() => {
+                      if (formData.is_rush || !selectedService?.estimated_days || !formData.due_date) return null;
+                      const minDueDate = new Date();
+                      minDueDate.setDate(minDueDate.getDate() + selectedService.estimated_days);
+                      const picked = new Date(formData.due_date + 'T00:00:00');
+                      if (picked >= minDueDate) return null;
+                      return (
+                        <p className="text-[11px] text-amber-700 mt-1">
+                          {selectedService.name} usually takes {selectedService.estimated_days} days — this date is sooner than that. If it genuinely needs to be faster, check &quot;Rush Order&quot; below so staff know it&apos;s a priority.
+                        </p>
+                      );
+                    })()}
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer select-none shrink-0 sm:h-[38px] sm:mt-0 mt-1" title="Owner/Manager Only — Priority is set during Job Order approval, not Front-Desk intake">
                     <input
@@ -1587,7 +1651,7 @@ export default function JobCreateForm() {
                       Mark as Rush Order
                     </span>
                     <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                      Owner Only
+                      Owner/Manager Only
                     </span>
                   </label>
                 </div>

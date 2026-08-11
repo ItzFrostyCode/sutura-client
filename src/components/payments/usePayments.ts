@@ -27,6 +27,7 @@ export interface JobBalanceItem {
   customer: { id: number; name: string } | null;
   total_amount: number;
   balance: number;
+  discount_amount: number;
   payment_status: string;
   status: string;
 }
@@ -74,6 +75,7 @@ interface RawJobData {
   customer: { id: number; name: string } | null;
   total_amount: string | number;
   balance: string | number;
+  discount_amount?: string | number | null;
   payment_status: string;
   status: string;
 }
@@ -186,6 +188,7 @@ export function usePayments() {
           customer: j.customer || null,
           total_amount: Number.parseFloat(String(j.total_amount)),
           balance: Number.parseFloat(String(j.balance)),
+          discount_amount: Number.parseFloat(String(j.discount_amount || 0)),
           payment_status: j.payment_status,
           status: j.status,
         }));

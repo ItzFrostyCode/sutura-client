@@ -29,39 +29,35 @@ export default function DashboardAlerts({
   const [dpExpanded, setDpExpanded] = useState(false);
   return (
     <div className="space-y-6 text-[#2D2A26]">
-      {/* Shop Visibility Toggle */}
+      {/* Shop Visibility Toggle — a compact pill, not a full-width banner.
+          Kept on the dashboard rather than tucked into Settings-only since
+          it's a time-sensitive control an owner may need to flip quickly
+          (e.g. hiding the shop during a break), but sized like the toggle
+          it is instead of stretching the full row width. */}
       {shopVisible !== null && (
-        <div className="flex items-center justify-between bg-white border border-[#EBE6E0] rounded-2xl px-5 py-3.5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-              shopVisible ? 'bg-[#7A8B76]/10 border border-[#7A8B76]/20' : 'bg-[#A8A19A]/10 border border-[#A8A19A]/20'
-            }`}>
-              {shopVisible
-                ? <Eye size={16} className="text-[#7A8B76]" />
-                : <EyeOff size={16} className="text-[#A8A19A]" />
-              }
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-[#2D2A26]">
-                Shop is <span className={shopVisible ? 'text-[#7A8B76]' : 'text-[#A8A19A]'}>{shopVisible ? 'Public' : 'Hidden'}</span>
-              </p>
-              <p className="text-xs text-[#A8A19A]">
-                {shopVisible ? 'Customers can find and book your shop.' : 'Your shop is hidden from the public catalog.'}
-              </p>
-            </div>
-          </div>
+        <div
+          title={shopVisible ? 'Customers can find and book your shop.' : 'Your shop is hidden from the public catalog.'}
+          className="inline-flex items-center gap-2.5 bg-white border border-[#EBE6E0] rounded-full pl-3 pr-1.5 py-1.5 shadow-sm w-fit"
+        >
+          {shopVisible
+            ? <Eye size={14} className="text-[#7A8B76] shrink-0" />
+            : <EyeOff size={14} className="text-[#A8A19A] shrink-0" />
+          }
+          <span className="text-xs font-semibold text-[#2D2A26] whitespace-nowrap">
+            <span className={shopVisible ? 'text-[#7A8B76]' : 'text-[#A8A19A]'}>{shopVisible ? 'Public' : 'Hidden'}</span>
+          </span>
           <button
             onClick={toggleVisibility}
             disabled={visibilityLoading}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none shrink-0 ${
               shopVisible ? 'bg-[#7A8B76]' : 'bg-[#D1C7BD]'
             } disabled:opacity-60 cursor-pointer`}
             aria-label="Toggle shop visibility"
           >
             {visibilityLoading
-              ? <Loader2 size={10} className="absolute left-1 animate-spin text-white" />
-              : <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                  shopVisible ? 'translate-x-6' : 'translate-x-1'
+              ? <Loader2 size={9} className="absolute left-1 animate-spin text-white" />
+              : <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                  shopVisible ? 'translate-x-[18px]' : 'translate-x-1'
                 }`} />
             }
           </button>

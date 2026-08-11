@@ -35,9 +35,10 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       <div className={`relative bg-white border border-[#EBE6E0] rounded-2xl shadow-2xl w-full ${maxWidth} overflow-hidden flex flex-col max-h-[90vh]`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#EBE6E0]">
           <h2 className="text-lg font-semibold text-[#2D2A26]">{title}</h2>
-          <button 
+          <button
             onClick={onClose}
-            className="text-[#827A73] hover:text-[#2D2A26] transition-colors p-1 hover:bg-[#F0EAE3] rounded-md"
+            aria-label="Close"
+            className="text-[#827A73] hover:text-[#2D2A26] transition-colors p-2.5 -m-1.5 hover:bg-[#F0EAE3] rounded-md"
           >
             <X size={20} />
           </button>

@@ -36,6 +36,7 @@ const SPECIALIZATIONS: { id: string; label: string; Icon: LucideIcon }[] = [
   { id: 'lab_gown', label: 'Lab Gowns', Icon: Cross },
   { id: 'scrub_suit', label: 'Scrub Suits', Icon: Stethoscope },
   { id: 'corporate_wear', label: 'Corporate Wear', Icon: Briefcase },
+  { id: 'alteration_repair', label: 'Alterations & Repair', Icon: Scissors },
 ];
 
 export default function SettingsBusinessType({

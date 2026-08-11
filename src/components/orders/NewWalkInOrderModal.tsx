@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ShoppingBag, Loader2, User, CreditCard } from 'lucide-react';
+import { X, ShoppingBag, Loader2, User, CreditCard, MapPin, Upload } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
@@ -14,6 +14,7 @@ interface NewWalkInOrderModalProps {
 
 interface CustomerOption { id: number; name: string; }
 interface CatalogItemOption { id: number; name: string; price: string | number; sizes?: string[] | null; }
+interface BranchOption { id: number; name: string; }
 
 export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewWalkInOrderModalProps) {
   const { shop } = useAuthStore();
@@ -21,6 +22,7 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [items, setItems] = useState<CatalogItemOption[]>([]);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -29,18 +31,25 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
   const [selectedSize, setSelectedSize] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid'>('pending');
+  const [branchId, setBranchId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash' | 'bank_transfer'>('cash');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [receiptUrl, setReceiptUrl] = useState('');
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   useEffect(() => {
     if (!shop || !isOpen) return;
     const load = async () => {
       setLoading(true);
       try {
-        const [rc, ri] = await Promise.all([
+        const [rc, ri, rb] = await Promise.all([
           api.get(`/shops/${shop.id}/customers`),
           api.get(`/shops/${shop.id}/catalog`),
+          api.get(`/shops/${shop.id}/branches`),
         ]);
         setCustomers(rc.data.data || []);
         setItems((ri.data.data || []).filter((i: { is_active?: boolean }) => i.is_active !== false));
+        setBranches(rb.data.data || []);
       } finally {
         setLoading(false);
       }
@@ -59,26 +68,53 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
   useEffect(() => {
     const resetForm = () => {
-      setCustomerId(''); setCatalogItemId(''); setSelectedSize(''); setTotalAmount(''); setPaymentStatus('pending');
+      setCustomerId(''); setCatalogItemId(''); setSelectedSize(''); setTotalAmount(''); setPaymentStatus('pending'); setBranchId('');
+      setPaymentMethod('cash'); setPaymentReference(''); setReceiptUrl('');
     };
     if (!isOpen) resetForm();
   }, [isOpen]);
 
   const selectedItem = items.find(i => i.id.toString() === catalogItemId);
 
+  const handleReceiptUpload = async (file: File | undefined) => {
+    if (!file || !shop) return;
+    setUploadingReceipt(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setReceiptUrl(res.data?.data?.url || res.data?.url || '');
+    } catch {
+      toast.error('Failed to upload receipt screenshot.');
+    } finally {
+      setUploadingReceipt(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shop || !catalogItemId || !totalAmount) return;
     setSaving(true);
     try {
-      await api.post(`/shops/${shop.id}/catalog-orders`, {
+      const res = await api.post(`/shops/${shop.id}/catalog-orders`, {
         catalog_item_id: Number(catalogItemId),
+        shop_branch_id: branchId || null,
         customer_id: customerId || null,
         selected_size: selectedSize || null,
         total_amount: Number.parseFloat(totalAmount),
         payment_status: paymentStatus,
+        payment_method: paymentMethod,
+        payment_reference: paymentMethod === 'cash' ? null : (paymentReference.trim() || null),
+        payment_receipt_path: paymentMethod === 'cash' ? null : (receiptUrl || null),
       });
       toast.success('Walk-in order created.');
+      // Same reused-screenshot flag as the Job Order payment form — doesn't
+      // block creation, just prompts a second look.
+      if (res.data?.warning) {
+        toast.info(res.data.warning);
+      }
       onCreated();
       onClose();
     } catch (err: unknown) {
@@ -158,6 +194,24 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
               </div>
             )}
 
+            {branches.length > 1 && (
+              <div>
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
+                  <MapPin size={11} /> Branch <span className="font-normal normal-case text-[#A8A19A]">(optional)</span>
+                </label>
+                <select
+                  value={branchId}
+                  onChange={e => setBranchId(e.target.value)}
+                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                >
+                  <option value="">Not specified</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
                 <User size={11} /> Customer <span className="font-normal normal-case text-[#A8A19A]">(optional)</span>
@@ -206,6 +260,62 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
                 </select>
               </div>
             </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
+                <CreditCard size={11} /> Payment Method
+              </label>
+              <select
+                value={paymentMethod}
+                onChange={e => setPaymentMethod(e.target.value as 'cash' | 'gcash' | 'bank_transfer')}
+                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+              >
+                <option value="cash">Cash</option>
+                <option value="gcash">GCash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+
+            {/* GCash/Bank reference + receipt screenshot — this is exactly
+                what the Payments page's "Receipts to Verify" queue expects
+                (usePayments.ts checks payment_method !== 'cash') to surface
+                this order for verification at all. */}
+            {paymentMethod !== 'cash' && (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={paymentReference}
+                  onChange={e => setPaymentReference(e.target.value)}
+                  placeholder={paymentMethod === 'gcash' ? 'GCash Reference # (e.g. 9876543210)' : 'Bank Transfer Reference #'}
+                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-xs text-[#2D2A26] focus:outline-none focus:border-taupe"
+                />
+                {receiptUrl ? (
+                  <div className="relative inline-block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={receiptUrl} alt="Receipt screenshot" className="h-16 w-16 object-cover rounded-lg border border-[#EBE6E0]" />
+                    <button
+                      type="button"
+                      onClick={() => setReceiptUrl('')}
+                      className="absolute -top-2 -right-2 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-[#B26959] rounded-full p-1 shadow-sm"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3 py-1.5 rounded-lg transition-colors">
+                    {uploadingReceipt ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                    <span>{uploadingReceipt ? 'Uploading...' : 'Attach receipt screenshot'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingReceipt}
+                      onChange={e => handleReceiptUpload(e.target.files?.[0])}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
 
             <button
               type="submit"

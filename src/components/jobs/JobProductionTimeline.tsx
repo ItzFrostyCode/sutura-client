@@ -122,6 +122,15 @@ export default function JobProductionTimeline({
   const onHold = status === 'on_hold';
   const currentIdx = STAGES.findIndex(s => s.key === status);
   const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : null;
+  // Mirrors the backend's "No QC Photo, No Ready for Pickup" gate
+  // (JobOrderController@update) — surfaced here so the owner sees the
+  // requirement while picking the phase, not just as a save-time error.
+  const qcIdx = STAGES.findIndex(s => s.key === 'qc_ironing');
+  const atOrPastQC = currentIdx >= qcIdx;
+  // Was previously required before reaching Ready for Pickup (backend
+  // returned a 422); per explicit owner request it's optional now, not
+  // required — kept as an upload option (proof-of-delivery/QC/portfolio),
+  // just no longer blocking or shown as a warning.
 
   return (
     <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
@@ -338,14 +347,15 @@ export default function JobProductionTimeline({
           />
         </div>
 
-        {(status === 'completed' || completionPhotoUrl) && (
-          <div className="space-y-1.5 border-t border-[#EBE6E0] pt-4">
+        {(atOrPastQC || completionPhotoUrl) && (
+          <div className="space-y-1.5 border-t pt-4 border-[#EBE6E0]">
             <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
               <Camera size={15} className="text-[#7A8B76]" />
-              Completion Photo <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+              Completion Photo{' '}
+              <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
             </span>
             <p className="text-[11px] text-[#A8A19A]">
-              A quick photo of the finished garment — doubles as proof-of-delivery and builds your portfolio.
+              A quick photo of the finished garment — doubles as proof-of-delivery, QC evidence, and builds your portfolio.
             </p>
             {completionPhotoUrl ? (
               <div className="relative inline-block mt-1">

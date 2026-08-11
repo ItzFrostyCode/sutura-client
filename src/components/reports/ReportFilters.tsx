@@ -15,12 +15,12 @@ export default function ReportFilters({
   onPrint,
 }: ReportFiltersProps) {
   return (
-    <div className="flex items-center justify-between no-print">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
       <div>
         <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Reports & Insights</h1>
         <p className="text-[#827A73] text-sm mt-1">Revenue, production trends, and business performance at a glance.</p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 bg-white shadow-sm border border-[#EBE6E0] rounded-lg px-3 py-1.5 filter-bar">
           <Filter size={16} className="text-[#A8A19A]" />
           <select

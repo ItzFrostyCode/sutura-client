@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, type LucideIcon } from 'lucide-react';
 import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
+import CancellationReasonModal from './CancellationReasonModal';
+import HoldReasonModal from './HoldReasonModal';
 
 interface JobKanbanBoardProps {
   readonly groupedJobs: Record<string, JobItem[]>;
   readonly activeColumns: ReturnType<typeof columnsForJobs>;
   readonly onHoldJobs: JobItem[];
   readonly actionLoadingId: number | null;
-  readonly onUpdateStatus: (id: number, status: string) => void;
+  readonly onUpdateStatus: (id: number, status: string, cancellationReason?: string) => void;
   readonly onApprove: (id: number) => void;
   readonly onReject: (id: number) => void;
 }
@@ -41,6 +43,13 @@ export default function JobKanbanBoard({
   // while money is still owed, so revenue can't quietly slip through the cracks.
   const [balanceGateJobId, setBalanceGateJobId] = useState<number | null>(null);
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({});
+  // The backend requires a cancellation_reason (enum) whenever status is set
+  // to 'cancelled' — the dropdown below has no field for that, so selecting
+  // "Cancelled" needs to open the same reason modal the Job Detail page's
+  // own status dropdown already uses, instead of firing the update directly
+  // like every other option does.
+  const [cancelTargetJob, setCancelTargetJob] = useState<JobItem | null>(null);
+  const [holdTargetJob, setHoldTargetJob] = useState<JobItem | null>(null);
 
   const handleStatusChange = (job: JobItem, newStatus: string) => {
     // Derived downpayment = total_amount minus current balance.
@@ -63,6 +72,16 @@ export default function JobKanbanBoard({
       setTimeout(() => setBalanceGateJobId(null), 3500);
       return;
     }
+
+    if (newStatus === 'cancelled') {
+      setCancelTargetJob(job);
+      return;
+    }
+
+    if (newStatus === 'on_hold') {
+      setHoldTargetJob(job);
+      return;
+    }
     onUpdateStatus(job.id, newStatus);
   };
 
@@ -79,6 +98,7 @@ export default function JobKanbanBoard({
   const boardColumns = onHoldJobs.length > 0 ? [ON_HOLD_COLUMN, ...activeColumns] : activeColumns;
 
   return (
+    <>
     <div className="flex gap-4 overflow-x-auto pb-4 items-start" style={{ minHeight: 'calc(100vh - 340px)' }}>
       {boardColumns.map(col => {
         const colJobs = col.id === 'on_hold' ? onHoldJobs : (groupedJobs[col.id] ?? []);
@@ -121,7 +141,13 @@ export default function JobKanbanBoard({
                     <select
                       value={job.status}
                       onChange={(e) => handleStatusChange(job, e.target.value)}
-                      className="text-[10px] bg-[#F0EAE3] text-[#524A44] border border-[#D1C7BD] rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none cursor-pointer"
+                      title="Change status"
+                      // Always visible now, not hover-only — a control with zero
+                      // resting-state affordance meant it was only ever discovered
+                      // by accident (and never on a touch screen at all, where
+                      // hover doesn't fire). Quiet by default, a bit more present
+                      // on hover/focus so it doesn't just blend into the card.
+                      className="text-[10px] bg-[#F0EAE3] text-[#827A73] border border-[#D1C7BD]/70 rounded p-1 opacity-70 hover:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus:ring-1 focus:ring-taupe cursor-pointer"
                     >
                       {columnsForJobs([job]).map(c => (
                         <option key={c.id} value={c.id}>{c.title}</option>
@@ -287,5 +313,34 @@ export default function JobKanbanBoard({
         );
       })}
     </div>
+
+    <CancellationReasonModal
+      isOpen={cancelTargetJob !== null}
+      onClose={() => setCancelTargetJob(null)}
+      onConfirm={(reason) => {
+        if (cancelTargetJob) {
+          onUpdateStatus(cancelTargetJob.id, 'cancelled', reason);
+        }
+        setCancelTargetJob(null);
+      }}
+      // Same discount-vs-real-payment fix as the job detail page's own
+      // cancellation flow — applyDiscount reduces balance directly, so
+      // total_amount - balance alone overstates cash actually received.
+      collectedAmount={cancelTargetJob
+        ? Number.parseFloat(String(cancelTargetJob.total_amount ?? '0')) - Number.parseFloat(String(cancelTargetJob.balance ?? '0')) - Number.parseFloat(String(cancelTargetJob.discount_amount ?? '0'))
+        : 0}
+    />
+
+    <HoldReasonModal
+      isOpen={holdTargetJob !== null}
+      onClose={() => setHoldTargetJob(null)}
+      onConfirm={(reason) => {
+        if (holdTargetJob) {
+          onUpdateStatus(holdTargetJob.id, 'on_hold', reason);
+        }
+        setHoldTargetJob(null);
+      }}
+    />
+    </>
   );
 }

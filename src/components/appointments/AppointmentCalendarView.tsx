@@ -156,6 +156,45 @@ export default function AppointmentCalendarView({
     .filter(a => a.scheduled_at.startsWith(dayStr))
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
 
+  // Two appointments booked at the same (or overlapping) time used to both
+  // render as full-width absolute-positioned boxes at the same vertical
+  // offset — their text just mashed together on top of each other. This
+  // packs overlapping appointments into side-by-side columns instead, the
+  // same way Google/Outlook calendars handle a double-booking.
+  const layoutedDayEvents = (() => {
+    const withTimes = dayEvents.map(event => {
+      const start = new Date(event.scheduled_at);
+      const startMins = start.getHours() * 60 + start.getMinutes();
+      const endMins = startMins + (event.duration_minutes || 60);
+      return { event, startMins, endMins };
+    });
+
+    const results: { event: Appointment; startMins: number; col: number; totalCols: number }[] = [];
+    let cluster: { event: Appointment; startMins: number; endMins: number; col: number }[] = [];
+    let clusterEnd = -Infinity;
+
+    const flush = () => {
+      if (cluster.length === 0) return;
+      const totalCols = Math.max(...cluster.map(c => c.col)) + 1;
+      cluster.forEach(c => results.push({ event: c.event, startMins: c.startMins, col: c.col, totalCols }));
+      cluster = [];
+    };
+
+    for (const item of withTimes) {
+      if (item.startMins >= clusterEnd) {
+        flush();
+        clusterEnd = -Infinity;
+      }
+      let col = 0;
+      while (cluster.some(c => c.col === col && c.endMins > item.startMins)) col++;
+      cluster.push({ ...item, col });
+      clusterEnd = Math.max(clusterEnd, item.endMins);
+    }
+    flush();
+
+    return results;
+  })();
+
   const HOUR_START = 7;
   const HOUR_END = 20;
   const PX_PER_MIN = 1.5;
@@ -268,7 +307,7 @@ export default function AppointmentCalendarView({
           )}
 
           {/* Appointment blocks */}
-          {dayEvents.map(event => {
+          {layoutedDayEvents.map(({ event, col, totalCols }) => {
             const startDate = new Date(event.scheduled_at);
             const startMins = startDate.getHours() * 60 + startDate.getMinutes();
             const offsetMins = startMins - HOUR_START * 60;
@@ -287,8 +326,13 @@ export default function AppointmentCalendarView({
             return (
               <article
                 key={event.id}
-                className={`absolute left-2 right-2 rounded-lg border overflow-hidden transition-all duration-150 ${tc.bg} ${tc.border} ${sc.opacity} ${isPending ? 'border-dashed' : sc.borderStyle} ${isHovered && !isClosed ? 'shadow-lg z-10 ring-2 ring-[#9A8073]/30' : 'z-1'}`}
-                style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+                className={`absolute rounded-lg border overflow-hidden transition-all duration-150 ${tc.bg} ${tc.border} ${sc.opacity} ${isPending ? 'border-dashed' : sc.borderStyle} ${isHovered && !isClosed ? 'shadow-lg z-10 ring-2 ring-[#9A8073]/30' : 'z-1'}`}
+                style={{
+                  top: `${topPx}px`,
+                  height: `${heightPx}px`,
+                  left: `calc(8px + (100% - 16px) * ${col} / ${totalCols})`,
+                  width: `calc((100% - 16px) / ${totalCols}${totalCols > 1 ? ' - 4px' : ''})`,
+                }}
                 onMouseEnter={() => setHoveredAptId(event.id)}
                 onMouseLeave={() => setHoveredAptId(null)}
               >
@@ -351,7 +395,11 @@ export default function AppointmentCalendarView({
                             <CheckSquare size={10} /> Complete
                           </button>
                         )}
-                        {isConfirmed && isOwnerOrManager && (
+                        {/* Same guard as AppointmentListView — job creation
+                            doesn't change an already-'confirmed' appointment's
+                            status, so without checking job_order_id this
+                            button stayed live after a job already existed. */}
+                        {isConfirmed && isOwnerOrManager && !event.job_order_id && (
                           <button type="button" onClick={e => { e.stopPropagation(); onCreateJobClick(event); }}
                             className="flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-[#9A8073]/10 text-[#9A8073] hover:bg-[#FAF6F3] border border-[#9A8073]/20 transition-colors">
                             <Scissors size={10} /> Create Job

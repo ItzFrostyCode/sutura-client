@@ -45,6 +45,7 @@ export default function PostImageLightbox({ images, initialIndex, isOpen, onClos
   return (
     <div
       className="fixed inset-0 z-100 bg-black/90 flex items-center justify-center"
+      style={{ overscrollBehaviorX: 'contain', touchAction: 'pan-y' }}
       onClick={onClose}
       onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
       onTouchEnd={(e) => {

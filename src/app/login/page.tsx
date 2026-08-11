@@ -120,12 +120,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <label htmlFor="remember-me" className="flex items-center gap-2 text-[15px] text-[#827A73] cursor-pointer select-none">
-              <input id="remember-me" type="checkbox" className="w-4 h-4 rounded border-[#EBE6E0] text-[#9A8073] focus:ring-[#9A8073]" />
-              <span>Remember me</span>
-            </label>
-            <a href="#forgot-password" className="text-[15px] text-[#827A73] hover:text-[#9A8073] transition-colors">
+          <div className="flex items-center justify-end pt-1">
+            <a href="/forgot-password" className="text-[15px] text-[#827A73] hover:text-[#9A8073] transition-colors">
               Forgot password?
             </a>
           </div>
@@ -146,12 +142,7 @@ export default function LoginPage() {
           </a>
         </div>
         
-        <div className="mt-12 pt-8 text-center flex flex-col gap-4 text-sm text-[#A8A19A]">
-          <div className="flex justify-center gap-6">
-            <a href="#privacy" className="hover:text-[#827A73] transition-colors">Privacy Policy</a>
-            <span>•</span>
-            <a href="#terms" className="hover:text-[#827A73] transition-colors">Terms of Service</a>
-          </div>
+        <div className="mt-12 pt-8 text-center text-sm text-[#A8A19A]">
           <p>© 2026 Sutura. All rights reserved.</p>
         </div>
       </div>

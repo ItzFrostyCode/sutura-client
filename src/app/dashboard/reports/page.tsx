@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import SubscriptionGate from '@/components/SubscriptionGate';
-import { AnalyticsData, STATUS_LABELS } from '@/components/reports/reportHelpers';
+import { AnalyticsData, STATUS_LABELS, GARMENT_CATEGORY_LABELS } from '@/components/reports/reportHelpers';
 import ReportKpiCards from '@/components/reports/ReportKpiCards';
 import ReportCharts from '@/components/reports/ReportCharts';
 import ReportFilters from '@/components/reports/ReportFilters';
 import BranchComparisonTable, { BranchPerformance } from '@/components/reports/BranchComparisonTable';
 import StaffProductivityTable, { StaffPerformance } from '@/components/reports/StaffProductivityTable';
 import OutstandingBalancesList from '@/components/reports/OutstandingBalancesList';
+import UnclaimedPickupsList from '@/components/reports/UnclaimedPickupsList';
+import JobsOnHoldList from '@/components/reports/JobsOnHoldList';
 import { useBranch } from '@/context/BranchContext';
 
 export default function ReportsPage() {
@@ -34,10 +36,19 @@ export default function ReportsPage() {
       [],
       ['Metric', 'Value'],
       ['Total Revenue', data.total_revenue],
+      ["Today's Revenue", data.today_revenue ?? 0],
       ['Outstanding Balance', data.total_outstanding_balance],
       ['Completed Jobs', data.completed_jobs],
       ['Total Jobs', data.total_jobs],
+      ['Completion Rate (%)', data.completion_rate ?? 0],
+      ['Avg. Order Value', data.avg_order_value ?? 0],
+      ['Avg. Turnaround Time (days)', data.avg_turnaround_days ?? '—'],
+      ['Overdue Orders', data.overdue_jobs ?? 0],
+      ['Rejected Payments', data.rejected_payments_amount ?? 0],
+      ['Forfeited Deposits', data.forfeited_deposit_amount ?? 0],
       ['Upcoming Appointments', data.upcoming_appointments],
+      ['Booking Conversion Rate (%)', data.booking_conversion_rate ?? 0],
+      ['Customer Rating (All-Time)', data.avg_rating != null ? `${data.avg_rating} (${data.total_reviews ?? 0} reviews)` : 'No reviews yet'],
       ['Total Staff', data.total_staff],
       [],
       ['Monthly Revenue Breakdown'],
@@ -54,6 +65,13 @@ export default function ReportsPage() {
       rows.push([], ['Jobs by Status Breakdown'], ['Status', 'Count']);
       data.jobs_by_status.forEach(row => {
         rows.push([STATUS_LABELS[row.status] || row.status, row.count]);
+      });
+    }
+
+    if (data.garment_breakdown) {
+      rows.push([], ['Orders by Garment Category'], ['Garment Category', 'Count', 'Revenue (PHP)']);
+      data.garment_breakdown.forEach(row => {
+        rows.push([GARMENT_CATEGORY_LABELS[row.garment_category] || row.garment_category, row.count, row.revenue]);
       });
     }
 
@@ -317,7 +335,7 @@ export default function ReportsPage() {
 
       <SubscriptionGate feature="reports">
         <div className="space-y-6">
-          <ReportKpiCards data={data} completionRate={completionRate} />
+          <ReportKpiCards data={data} completionRate={completionRate} period={period} />
 
           <ReportCharts
             data={data}
@@ -339,6 +357,14 @@ export default function ReportsPage() {
 
           {data?.outstanding_balances && (
             <OutstandingBalancesList rows={data.outstanding_balances} />
+          )}
+
+          {data?.unclaimed_pickups && (
+            <UnclaimedPickupsList rows={data.unclaimed_pickups} />
+          )}
+
+          {data?.jobs_on_hold && (
+            <JobsOnHoldList rows={data.jobs_on_hold} />
           )}
         </div>
       </SubscriptionGate>

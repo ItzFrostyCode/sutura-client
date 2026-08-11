@@ -8,6 +8,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePayments, Tab } from '@/components/payments/usePayments';
+import SearchInput from '@/components/shared/SearchInput';
 
 const METHOD_ICON: Record<string, React.ReactNode> = {
   cash:          <Banknote size={14} className="text-emerald-600" />,
@@ -225,8 +226,8 @@ export default function PaymentQueuePage() {
 
     return (
       <div className="divide-y divide-[#EBE6E0]">
-        {/* Header row */}
-        <div className="grid grid-cols-12 px-5 py-2.5 text-[10px] font-semibold text-[#A8A19A] uppercase tracking-wider bg-[#FAF6F3]">
+        {/* Header row — desktop/tablet only, the grid columns below only make sense at that width */}
+        <div className="hidden md:grid grid-cols-12 px-5 py-2.5 text-[10px] font-semibold text-[#A8A19A] uppercase tracking-wider bg-[#FAF6F3]">
           <div className="col-span-3">Order</div>
           <div className="col-span-3">Customer</div>
           <div className="col-span-2 text-right">Total</div>
@@ -234,40 +235,73 @@ export default function PaymentQueuePage() {
           <div className="col-span-2 text-right">Action</div>
         </div>
         {filteredBalances.map(job => {
-          const amountPaid = job.total_amount - job.balance;
+          // applyDiscount reduces balance directly, not total_amount — without
+          // subtracting it here too, a discounted job's "Paid" figure would
+          // silently include the discount as if it were cash received.
+          const amountPaid = job.total_amount - job.balance - (job.discount_amount || 0);
           const psConfig = {
             unpaid:  { label: 'Unpaid',   cls: 'bg-red-50 text-red-600 border-red-200' },
             partial: { label: 'Partial',  cls: 'bg-amber-50 text-amber-700 border-amber-200' },
           }[job.payment_status as 'unpaid' | 'partial'] ?? { label: job.payment_status, cls: 'bg-gray-100 text-gray-600 border-gray-200' };
 
           return (
-            <div key={job.id} className="grid grid-cols-12 px-5 py-3.5 items-center hover:bg-[#FAF6F3] transition-colors">
-              <div className="col-span-3">
-                <Link href={`/dashboard/jobs/${job.id}`} className="font-mono text-sm font-semibold text-[#9A8073] hover:underline">
-                  {job.order_number}
-                </Link>
-                <p className="text-[10px] text-[#A8A19A] mt-0.5 capitalize">{job.status.replaceAll('_', ' ')}</p>
-              </div>
-              <div className="col-span-3">
+            <React.Fragment key={job.id}>
+              {/* Mobile card */}
+              <div className="md:hidden px-5 py-4 space-y-2.5 hover:bg-[#FAF6F3] transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <Link href={`/dashboard/jobs/${job.id}`} className="font-mono text-sm font-semibold text-[#9A8073] hover:underline">
+                      {job.order_number}
+                    </Link>
+                    <p className="text-[10px] text-[#A8A19A] mt-0.5 capitalize">{job.status.replaceAll('_', ' ')}</p>
+                  </div>
+                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border uppercase shrink-0 ${psConfig.cls}`}>{psConfig.label}</span>
+                </div>
                 <p className="text-sm text-[#2D2A26]">{job.customer?.name || <span className="text-[#A8A19A] italic">Walk-in</span>}</p>
-              </div>
-              <div className="col-span-2 text-right">
-                <p className="text-sm font-medium text-[#2D2A26]">₱{job.total_amount.toFixed(2)}</p>
-                <p className="text-[10px] text-[#7A8B76]">Paid: ₱{amountPaid.toFixed(2)}</p>
-              </div>
-              <div className="col-span-2 text-right">
-                <p className="text-base font-bold text-[#B26959]">₱{job.balance.toFixed(2)}</p>
-                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border uppercase ${psConfig.cls}`}>{psConfig.label}</span>
-              </div>
-              <div className="col-span-2 flex justify-end">
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <p className="text-[#524A44]">Total: <span className="font-medium text-[#2D2A26]">₱{job.total_amount.toFixed(2)}</span></p>
+                    <p className="text-[10px] text-[#7A8B76]">Paid: ₱{amountPaid.toFixed(2)}</p>
+                  </div>
+                  <p className="text-base font-bold text-[#B26959]">₱{job.balance.toFixed(2)}</p>
+                </div>
                 <button
                   onClick={() => { setLogPaymentJob(job); setPayAmount(String(job.balance)); }}
-                  className="text-xs font-semibold px-3 py-1.5 bg-taupe hover:bg-taupe/90 text-white rounded-lg transition-colors"
+                  className="w-full text-xs font-semibold px-3 py-2 bg-taupe hover:bg-taupe/90 text-white rounded-lg transition-colors"
                 >
                   Log Payment
                 </button>
               </div>
-            </div>
+
+              {/* Desktop/tablet row */}
+              <div className="hidden md:grid grid-cols-12 px-5 py-3.5 items-center hover:bg-[#FAF6F3] transition-colors">
+                <div className="col-span-3">
+                  <Link href={`/dashboard/jobs/${job.id}`} className="font-mono text-sm font-semibold text-[#9A8073] hover:underline">
+                    {job.order_number}
+                  </Link>
+                  <p className="text-[10px] text-[#A8A19A] mt-0.5 capitalize">{job.status.replaceAll('_', ' ')}</p>
+                </div>
+                <div className="col-span-3">
+                  <p className="text-sm text-[#2D2A26]">{job.customer?.name || <span className="text-[#A8A19A] italic">Walk-in</span>}</p>
+                </div>
+                <div className="col-span-2 text-right">
+                  <p className="text-sm font-medium text-[#2D2A26]">₱{job.total_amount.toFixed(2)}</p>
+                  <p className="text-[10px] text-[#7A8B76]">Paid: ₱{amountPaid.toFixed(2)}</p>
+                </div>
+                <div className="col-span-2 text-right">
+                  <p className="text-base font-bold text-[#B26959]">₱{job.balance.toFixed(2)}</p>
+                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border uppercase ${psConfig.cls}`}>{psConfig.label}</span>
+                </div>
+                <div className="col-span-2 flex justify-end">
+                  <button
+                    onClick={() => { setLogPaymentJob(job); setPayAmount(String(job.balance)); }}
+                    className="text-xs font-semibold px-3 py-1.5 bg-taupe hover:bg-taupe/90 text-white rounded-lg transition-colors"
+                  >
+                    Log Payment
+                  </button>
+                </div>
+              </div>
+            </React.Fragment>
           );
         })}
       </div>
@@ -296,7 +330,7 @@ export default function PaymentQueuePage() {
 
     return (
       <div className="divide-y divide-[#EBE6E0]">
-        <div className="grid grid-cols-12 gap-x-3 px-5 py-2.5 text-[10px] font-semibold text-[#A8A19A] uppercase tracking-wider bg-[#FAF6F3]">
+        <div className="hidden md:grid grid-cols-12 gap-x-3 px-5 py-2.5 text-[10px] font-semibold text-[#A8A19A] uppercase tracking-wider bg-[#FAF6F3]">
           <div className="col-span-3">Item</div>
           <div className="col-span-2">Customer</div>
           <div className="col-span-2 text-right">Amount</div>
@@ -308,7 +342,34 @@ export default function PaymentQueuePage() {
           <Link
             key={ord.id}
             href={`/dashboard/orders?order=${ord.id}`}
-            className="grid grid-cols-12 gap-x-3 px-5 py-3.5 items-center hover:bg-[#FAF6F3] transition-colors group"
+            className="block md:hidden px-5 py-4 space-y-2 hover:bg-[#FAF6F3] transition-colors"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#2D2A26] truncate">{ord.catalog_item?.name || 'Catalog Item'}</p>
+                <p className="text-[10px] text-[#A8A19A]">{new Date(ord.created_at).toLocaleDateString('en-PH')}</p>
+              </div>
+              <p className="text-sm font-bold text-[#2D2A26] shrink-0">₱{Number(ord.total_amount).toFixed(2)}</p>
+            </div>
+            <p className="text-sm text-[#2D2A26]">{ord.customer?.name || <span className="italic text-[#A8A19A]">Guest</span>}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                {METHOD_ICON[ord.payment_method] ?? <CreditCard size={13} />}
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap ${getPaymentStatusBadgeClass(ord.payment_status)}`}>
+                  {humanizeStatus(ord.payment_status)}
+                </span>
+              </span>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap ${getOrderStatusBadgeClass(ord.status)}`}>
+                {humanizeStatus(ord.status)}
+              </span>
+            </div>
+          </Link>
+        ))}
+        {catalogOrders.map(ord => (
+          <Link
+            key={`desktop-${ord.id}`}
+            href={`/dashboard/orders?order=${ord.id}`}
+            className="hidden md:grid grid-cols-12 gap-x-3 px-5 py-3.5 items-center hover:bg-[#FAF6F3] transition-colors group"
           >
             <div className="col-span-3">
               <p className="text-sm font-semibold text-[#2D2A26] truncate">{ord.catalog_item?.name || 'Catalog Item'}</p>
@@ -349,9 +410,10 @@ export default function PaymentQueuePage() {
         <p className="text-sm text-[#827A73] mt-1">Verify GCash &amp; bank receipts, collect job balances, and manage catalog order payments.</p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — wraps to a second line on narrow screens instead of
+          scrolling sideways; only 3 tabs, so wrapping never looks cramped. */}
       <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-        <div className="flex border-b border-[#EBE6E0]">
+        <div className="flex flex-wrap border-b border-[#EBE6E0]">
           {TAB_DEFS.map(t => (
             <button
               key={t.id}
@@ -378,13 +440,7 @@ export default function PaymentQueuePage() {
         {activeTab === 'job_balances' && (
           <div>
             <div className="p-4 border-b border-[#EBE6E0] flex items-center gap-3">
-              <input
-                type="text"
-                placeholder="Search order # or customer..."
-                value={balanceSearch}
-                onChange={e => setBalanceSearch(e.target.value)}
-                className="flex-1 max-w-xs px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm focus:outline-none focus:border-taupe"
-              />
+              <SearchInput value={balanceSearch} onChange={setBalanceSearch} placeholder="Search order # or customer..." className="flex-1 max-w-xs" />
               <span className="text-xs text-[#A8A19A]">{filteredBalances.length} orders with balance</span>
             </div>
             {renderJobBalancesTab()}

@@ -188,7 +188,7 @@ export function useJobDetail(jobId: string) {
     if (!shop || !job) return;
     setSaving(true);
     try {
-      await api.post(`/shops/${shop.id}/jobs/${job.id}/pay`, {
+      const payRes = await api.post(`/shops/${shop.id}/jobs/${job.id}/pay`, {
         amount,
         payment_method: method,
         reference: reference || undefined,
@@ -212,6 +212,12 @@ export function useJobDetail(jobId: string) {
         toast.success(`₱${amount.toFixed(2)} payment logged. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
       } else {
         toast.success(`₱${amount.toFixed(2)} payment logged successfully!`);
+      }
+      // Same reference number already used on another order — a possible
+      // reused-screenshot scam. Doesn't block the payment (legitimate
+      // reference collisions do happen), just flags it for a second look.
+      if (payRes.data?.warning) {
+        toast.info(payRes.data.warning);
       }
     } catch(err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -318,6 +324,39 @@ export function useJobDetail(jobId: string) {
     }
   };
 
+  // Re-points the job to the current (corrected) measurement version — see
+  // JobOrderController@show, which flags job.measurement.is_stale when the
+  // linked version has since been superseded by an edit. Without this, a
+  // measurement correction made after the job started never reaches it.
+  const handleUseCurrentMeasurement = async (currentVersionId: number) => {
+    if (!shop || !job) return;
+    setSaving(true);
+    try {
+      await api.put(`/shops/${shop.id}/jobs/${job.id}`, { measurement_id: currentVersionId });
+      const res = await api.get(`/shops/${shop.id}/jobs/${job.id}`);
+      setJob(res.data.data);
+      toast.success('Job now uses the current measurement version.');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to switch measurement version.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Per-piece completion on a bulk/team order's roster — a 10-jersey job
+  // otherwise has one status for the whole batch. See JobOrderController@toggleRosterItem.
+  const handleToggleRosterItem = async (index: number) => {
+    if (!shop || !job) return;
+    try {
+      const res = await api.post(`/shops/${shop.id}/jobs/${job.id}/roster/${index}/toggle`);
+      setJob(res.data.data);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to update roster item.');
+    }
+  };
+
   const handleDelete = async () => {
     if (!shop || !job) return;
     setIsDeleting(true);
@@ -369,6 +408,8 @@ export function useJobDetail(jobId: string) {
     handleUpdatePayment,
     handleRejectPayment,
     handleRejectOrder,
+    handleUseCurrentMeasurement,
+    handleToggleRosterItem,
     cancellationReason,
     setCancellationReason,
     holdReason,

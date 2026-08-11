@@ -217,18 +217,6 @@ export default function ServicesPage() {
     }
   };
 
-  const handleBulkDelete = async (ids: number[]) => {
-    if (!shop) return;
-    try {
-      await Promise.all(ids.map(id => api.delete(`/shops/${shop.id}/services/${id}`)));
-      setServices(prev => prev.filter(s => !ids.includes(s.id)));
-      toast.success(`${ids.length} service${ids.length > 1 ? 's' : ''} deleted.`);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete some services. Please try again.');
-    }
-  };
-
   const handleEditClick = (service: Service) => {
     setEditingId(service.id);
     setIsModalOpen(true);
@@ -278,12 +266,12 @@ export default function ServicesPage() {
 
   return (
     <div className="space-y-6 text-[#2D2A26]">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Services Catalog</h1>
           <p className="text-[#827A73] text-sm mt-1">Manage your tailoring offerings, combo packages, and turnaround times.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => setIsPromoModalOpen(true)}
             title="Generate Promo Post"
@@ -372,7 +360,6 @@ export default function ServicesPage() {
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
             onOpenSale={openSale}
-            onBulkDelete={handleBulkDelete}
           />
         </>
       ) : (
@@ -409,6 +396,7 @@ export default function ServicesPage() {
         onConfirm={confirmDelete}
         isSubmitting={isSubmitting}
       />
+
 
       {shop && (
         <ServiceTrashModal

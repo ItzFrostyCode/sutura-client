@@ -1,22 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle, LayoutGrid, Users, Zap, Ruler, Link as LinkIcon, BookOpen, ListChecks, Shirt } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, CreditCard, AlertTriangle, Scissors, X, HelpCircle, LayoutGrid, Users, Zap, Ruler, Link as LinkIcon, BookOpen, ListChecks, Shirt, Mail, CheckCircle2, Circle, RotateCcw } from 'lucide-react';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
 import JobProductionTimeline from '@/components/jobs/JobProductionTimeline';
 import JobFulfillmentCard from '@/components/jobs/JobFulfillmentCard';
 import JobStaffAssignmentCard from '@/components/jobs/JobStaffAssignmentCard';
 import JobFinancialsCard from '@/components/jobs/JobFinancialsCard';
+import SendCustomerMessageModal from '@/components/jobs/SendCustomerMessageModal';
 import { useJobDetail } from '@/components/jobs/useJobDetail';
 import { RosterItem } from '@/components/jobs/jobTypes';
-import { CANCELLATION_REASON_LABELS } from '@/components/jobs/jobHelpers';
+import { CANCELLATION_REASON_LABELS, GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
 
 export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const unwrappedParams = React.use(params);
   const id = unwrappedParams.id;
   const [showOutsourcingHelp, setShowOutsourcingHelp] = useState(false);
   const [showRejectOrderForm, setShowRejectOrderForm] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const [rejectOrderReason, setRejectOrderReason] = useState('');
   const [rejectingOrder, setRejectingOrder] = useState(false);
   // In-page tabs — the page used to stack every card top-to-bottom (~10
@@ -25,6 +27,17 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   // (job, saving, notes, status, etc.) and one "Save Changes" button at the
   // top must keep working no matter which tab is active.
   const [activeTab, setActiveTab] = useState<'overview' | 'production' | 'staff' | 'fulfillment' | 'financials'>('overview');
+
+  // Deep links like /dashboard/jobs/{id}#financials (used by the Home
+  // dashboard's "Log DP" shortcut) land on this tab-based page — the hash
+  // never selects a tab on its own since tabs are local state, not routes.
+  useEffect(() => {
+    const validTabs = ['overview', 'production', 'staff', 'fulfillment', 'financials'] as const;
+    const hash = window.location.hash.replace('#', '');
+    if ((validTabs as readonly string[]).includes(hash)) {
+      setActiveTab(hash as typeof activeTab);
+    }
+  }, []);
 
   const {
     shop,
@@ -62,6 +75,8 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     handleUpdatePayment,
     handleRejectPayment,
     handleRejectOrder,
+    handleUseCurrentMeasurement,
+    handleToggleRosterItem,
     handleDelete,
   } = useJobDetail(id);
 
@@ -92,9 +107,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   return (
     <>
       <div className="print:hidden max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 rounded-lg bg-white shadow-sm border border-[#EBE6E0] text-[#827A73] hover:text-[#2D2A26] transition-colors"
               type="button"
@@ -102,7 +117,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight flex items-center flex-wrap gap-2">
                 {job.order_number}
                 {job.intake_channel === 'online' ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
@@ -123,9 +138,23 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                 )}
               </h1>
               <p className="text-[#827A73] text-sm mt-1">Manage lifecycle and financials</p>
+              {job.tracking_code && (
+                <p className="text-xs text-[#A8A19A] mt-1">
+                  Tracking code: <span className="font-mono font-semibold text-[#524A44] select-all">{job.tracking_code}</span>
+                  <span className="ml-1">— give this to the customer so they can check status without logging in</span>
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowMessageModal(true)}
+              className="p-2 rounded-lg bg-white shadow-sm border border-[#EBE6E0] text-[#A8A19A] hover:text-[#524A44] transition-colors flex items-center gap-2"
+              title="Send Update to Customer"
+              type="button"
+            >
+              <Mail size={18} />
+            </button>
             <Link
               href={`/print/jobs/${job.id}/ticket`}
               target="_blank"
@@ -269,7 +298,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           </div>
         )}
 
-        <div className="flex items-center gap-1 border-b border-[#EBE6E0]">
+        <div className="flex flex-wrap items-center gap-1 border-b border-[#EBE6E0]">
           {([
             { key: 'overview', label: 'Overview', icon: LayoutGrid },
             { key: 'production', label: 'Production', icon: Scissors },
@@ -320,6 +349,22 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                   <span className="text-[#A8A19A] block mb-1">Service</span>
                   <span className="text-[#524A44] font-medium">{job.service?.name}</span>
                 </div>
+                {job.garment_category && (
+                  <div>
+                    <span className="text-[#A8A19A] mb-1 flex items-center gap-1.5">
+                      <Shirt size={13} /> Garment Category
+                    </span>
+                    <span className="text-[#524A44] font-medium">{GARMENT_CATEGORY_LABELS[job.garment_category] ?? job.garment_category}</span>
+                  </div>
+                )}
+                {job.material_source && (
+                  <div>
+                    <span className="text-[#A8A19A] block mb-1">Fabric / Material Source</span>
+                    <span className="text-[#524A44] font-medium">
+                      {job.material_source === 'customer_supplied' ? "Customer's Own" : 'Shop Supplied'}
+                    </span>
+                  </div>
+                )}
                 <div>
                   <span className="text-[#A8A19A] block mb-1">Assigned Staff</span>
                   <span className="text-[#524A44] font-medium">{job.assigned_staff?.name || 'Unassigned'}</span>
@@ -334,6 +379,21 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                       <Zap size={13} /> Rush Fee
                     </span>
                     <span className="text-[#B26959] font-semibold">₱{Number.parseFloat(String(job.rush_fee || '0')).toFixed(2)}</span>
+                  </div>
+                )}
+                {!!job.adjustment_count && job.adjustment_count > 0 && (
+                  <div>
+                    <span className="text-[#A8A19A] mb-1 flex items-center gap-1.5">
+                      <RotateCcw size={13} /> Adjustment Rounds
+                    </span>
+                    <span className={`font-semibold ${job.adjustment_count > 1 ? 'text-[#B26959]' : 'text-[#524A44]'}`}>
+                      {job.adjustment_count}
+                      {job.first_adjustment_at && (
+                        <span className="text-[#A8A19A] font-normal text-xs ml-1.5">
+                          (first on {new Date(job.first_adjustment_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })})
+                        </span>
+                      )}
+                    </span>
                   </div>
                 )}
               </div>
@@ -355,6 +415,24 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                     </Link>
                   )}
                 </div>
+                {job.measurement.is_stale && (
+                  <div className="mb-4 flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg p-3">
+                    <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold">This measurement has been corrected since this job was created.</p>
+                      <p className="mt-0.5">The numbers below are outdated — a newer version of this profile exists.</p>
+                      {job.measurement.current_version_id && (
+                        <button
+                          type="button"
+                          onClick={() => handleUseCurrentMeasurement(job.measurement!.current_version_id!)}
+                          className="mt-2 text-xs font-semibold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors"
+                        >
+                          Use Current Version
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {Object.keys(job.measurement.metrics || {}).length > 0 ? (
                   <div className="grid grid-cols-4 gap-2">
                     {Object.entries(job.measurement.metrics).map(([k, v]) => (
@@ -498,15 +576,45 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             {(() => {
               const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
               if (!teamRoster || teamRoster.length === 0) return null;
+              const doneCount = teamRoster.filter(r => r.completed).length;
               return (
                 <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-                  <h2 className="text-lg font-medium text-[#2D2A26] mb-4 flex items-center gap-2">
-                    <Shirt size={18} className="text-[#9A8073]" /> Team Roster & Size Sheet
-                  </h2>
-                  <div className="overflow-x-auto">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-medium text-[#2D2A26] flex items-center gap-2">
+                      <Shirt size={18} className="text-[#9A8073]" /> Team Roster & Size Sheet
+                    </h2>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${doneCount === teamRoster.length ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#F0EAE3] text-[#827A73]'}`}>
+                      {doneCount}/{teamRoster.length} done
+                    </span>
+                  </div>
+                  {/* Mobile cards — no sideways scroll needed for a 5-column table */}
+                  <div className="md:hidden divide-y divide-zinc-150">
+                    {teamRoster.map((row, idx: number) => (
+                      <div key={`${row.name}-${row.number}-${idx}`} className="py-2.5 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRosterItem(idx)}
+                          className="shrink-0"
+                          title={row.completed ? 'Mark as not done' : 'Mark as done'}
+                        >
+                          {row.completed ? <CheckCircle2 size={18} className="text-emerald-600" /> : <Circle size={18} className="text-zinc-300" />}
+                        </button>
+                        <span className="text-zinc-400 font-mono text-xs w-5 shrink-0">{idx + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-medium text-sm truncate ${row.completed ? 'text-zinc-400 line-through' : 'text-zinc-800'}`}>{row.name || '—'}</p>
+                          {row.print_name && <p className="text-zinc-500 text-xs truncate">{row.print_name}</p>}
+                        </div>
+                        {row.number && <span className="font-mono text-zinc-600 font-bold text-sm shrink-0">#{row.number}</span>}
+                        <span className="px-2 py-0.5 bg-zinc-100 rounded text-[10px] font-bold shrink-0">{row.size}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left text-xs divide-y divide-zinc-200">
                       <thead>
                         <tr>
+                          <th className="pb-2 font-semibold text-zinc-600 w-10">Done</th>
                           <th className="pb-2 font-semibold text-zinc-600 w-12">#</th>
                           <th className="pb-2 font-semibold text-zinc-600">Player/Employee Name</th>
                           <th className="pb-2 font-semibold text-zinc-600">Print Name / Nickname</th>
@@ -516,9 +624,18 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                       </thead>
                       <tbody className="divide-y divide-zinc-150">
                         {teamRoster.map((row, idx: number) => (
-                          <tr key={`${row.name}-${row.number}-${idx}`}>
+                          <tr key={`${row.name}-${row.number}-${idx}`} className={row.completed ? 'bg-emerald-50/40' : undefined}>
+                            <td className="py-2.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleRosterItem(idx)}
+                                title={row.completed ? 'Mark as not done' : 'Mark as done'}
+                              >
+                                {row.completed ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Circle size={16} className="text-zinc-300" />}
+                              </button>
+                            </td>
                             <td className="py-2.5 text-zinc-500 font-mono">{idx + 1}</td>
-                            <td className="py-2.5 font-medium text-zinc-800">{row.name || '—'}</td>
+                            <td className={`py-2.5 font-medium ${row.completed ? 'text-zinc-400 line-through' : 'text-zinc-800'}`}>{row.name || '—'}</td>
                             <td className="py-2.5 text-zinc-700">{row.print_name || '—'}</td>
                             <td className="py-2.5 font-mono text-zinc-600 font-bold">{row.number || '—'}</td>
                             <td className="py-2.5 text-zinc-700">
@@ -638,7 +755,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               setCompletionPhotoUrl={setCompletionPhotoUrl}
               setCancellationReason={setCancellationReason}
               setHoldReason={setHoldReason}
-              collectedAmount={Number.parseFloat(String(job.total_amount)) - Number.parseFloat(String(job.balance))}
+              // applyDiscount reduces balance directly, not total_amount — this
+              // feeds the cancellation modal's "₱X already collected" figure,
+              // which directly informs the forfeited-deposit decision, so it
+              // must reflect real cash received, not cash plus a discount
+              // that was never actually paid.
+              collectedAmount={Number.parseFloat(String(job.total_amount)) - Number.parseFloat(String(job.balance)) - Number.parseFloat(String(job.discount_amount ?? 0))}
               onProgressPhotoAdded={refreshJob}
             />
           </div>
@@ -659,7 +781,11 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
 
         {activeTab === 'fulfillment' && (
           <div className="space-y-6">
-            <JobFulfillmentCard />
+            <JobFulfillmentCard
+              isOutsourced={job.is_outsourced}
+              partnerShopName={job.partner_shop_name}
+              outsourcingCost={job.outsourcing_cost}
+            />
           </div>
         )}
 
@@ -702,6 +828,19 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             </div>
           </div>
         </Modal>
+
+        {shop && (
+          <SendCustomerMessageModal
+            isOpen={showMessageModal}
+            onClose={() => setShowMessageModal(false)}
+            shopId={shop.id}
+            jobId={job.id}
+            orderNumber={job.order_number}
+            shopName={shop.name || 'SUTURA'}
+            customerName={job.customer?.name || 'Customer'}
+            customerEmail={job.customer?.email}
+          />
+        )}
       </div>
 
       {/* Print View */}
@@ -725,12 +864,26 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           <div className="space-y-2">
             <h2 className="font-bold uppercase tracking-widest text-xs border-b border-black pb-1 mb-3">Job Details</h2>
             <p className="text-base"><strong>Service:</strong> {job.service?.name}</p>
+            {job.garment_category && (
+              <p className="text-base"><strong>Garment:</strong> {GARMENT_CATEGORY_LABELS[job.garment_category] ?? job.garment_category}</p>
+            )}
+            {job.material_source && (
+              <p className="text-base"><strong>Material:</strong> {job.material_source === 'customer_supplied' ? "Customer's Own" : 'Shop Supplied'}</p>
+            )}
             <p className="text-base"><strong>Intake Channel:</strong> {job.intake_channel.replace('_', ' ').toUpperCase()}</p>
             <p className="text-base"><strong>Fulfillment:</strong> Store Pickup</p>
             <p className="text-base"><strong>Status:</strong> {job.status.replaceAll('_', ' ').toUpperCase()}</p>
             {job.due_date && <p className="text-base"><strong>Due Date:</strong> {new Date(job.due_date).toLocaleDateString()}</p>}
           </div>
         </div>
+
+        {job.is_outsourced && (
+          <div className="border-2 border-black rounded-lg p-3 mb-6">
+            <p className="text-sm font-black uppercase tracking-wide">
+              ⚠ Outsourced to Partner Shop{job.partner_shop_name ? `: ${job.partner_shop_name}` : ''}
+            </p>
+          </div>
+        )}
 
         {job.measurement && (
           <div className="mb-8">

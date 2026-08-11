@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useBranch } from '@/context/BranchContext';
 import Link from 'next/link';
 
 import QuickJobModal from '@/components/jobs/QuickJobModal';
@@ -20,8 +21,6 @@ import {
   Calendar, Scissors, Users, AlertTriangle, CreditCard,
   PackageCheck, Zap, Clock, CheckCircle2, TrendingUp,
 } from 'lucide-react';
-import { useBranch } from '@/context/BranchContext';
-
 export default function DashboardPage() {
   const { shop, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
@@ -73,6 +72,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (shop?.id) {
       setTimeout(() => setLoading(true), 0);
+      // Home now respects the header's branch selector too (user request) —
+      // matches AnalyticsController::index/JobOrderController::index's
+      // existing branch_id support, the same param Jobs/Appointments/
+      // Reports already send. Omitted entirely (not sent as null/empty)
+      // when "All Branches" is selected, since the backend's own
+      // $request->filled('branch_id') check treats an empty value the same
+      // as not sending it at all — this is just being explicit about it.
       const params: Record<string, string | number> = {};
       if (selectedBranchId !== null) {
         params.branch_id = selectedBranchId;
@@ -114,7 +120,7 @@ export default function DashboardPage() {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
     }
-  }, [shop?.id, user?.id, selectedBranchId, fetchOnlineStaff, canViewAnalytics, isShopOwner]);
+  }, [shop?.id, user?.id, fetchOnlineStaff, canViewAnalytics, isShopOwner, selectedBranchId]);
 
   useEffect(() => {
     if (!shop?.id) return;
@@ -122,11 +128,48 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [shop?.id, fetchOnlineStaff]);
 
+  // The backend has no concept of a 'period' string at all — it only reads
+  // start_date/end_date (see AnalyticsController::index) — so sending
+  // period=this_year etc. directly used to be silently ignored: every
+  // period button re-fetched the exact same "current month" data. Convert
+  // to real dates client-side instead, matching the pattern already used by
+  // the Reports page's own getDateRangeForPeriod().
+  const getDateRangeForChartPeriod = (period: string): { start_date?: string; end_date?: string } => {
+    const now = new Date();
+    if (period === 'this_month') {
+      return {
+        start_date: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
+        end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+      };
+    }
+    if (period === 'last_3_months') {
+      return {
+        start_date: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0],
+        end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+      };
+    }
+    if (period === 'this_year') {
+      return {
+        start_date: new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0],
+        end_date: new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0],
+      };
+    }
+    // 'all_time' — omit date params entirely so the query is unbounded.
+    return {};
+  };
+
   const handleChartPeriod = (period: string) => {
     setChartPeriod(period);
     if (!shop?.id || !canViewAnalytics) return;
-    const params: Record<string, string | number> = { period };
-    if (selectedBranchId !== null) params.branch_id = selectedBranchId;
+    const { start_date, end_date } = getDateRangeForChartPeriod(period);
+    const params: Record<string, string | number> = {};
+    if (start_date && end_date) {
+      params.start_date = start_date;
+      params.end_date = end_date;
+    }
+    if (selectedBranchId !== null) {
+      params.branch_id = selectedBranchId;
+    }
     api.get(`/shops/${shop.id}/analytics`, { params })
       .then(res => setData(res.data.data))
       .catch(() => {});
@@ -148,9 +191,12 @@ export default function DashboardPage() {
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+  // Matches JobOrder::STATUSES minus the terminal ones (completed, cancelled,
+  // rejected) and 'on_hold' — a paused job shouldn't surface as due/pending.
   const activeStatuses = new Set([
-    'pending', 'confirmed', 'design', 'pattern_making', 'mass_cutting_printing',
+    'pending', 'design', 'pattern_making', 'mass_cutting_printing',
     'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing',
+    'ready_for_pickup',
   ]);
 
   const dueToday = allJobs.filter(j => {
@@ -242,12 +288,12 @@ export default function DashboardPage() {
             <AlertTriangle size={12} />
             Needs Attention
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex flex-wrap gap-3">
             {needsAttentionCards.map(card => (
               <Link
                 key={card.id}
                 href={card.href}
-                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm ${card.color}`}
+                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm flex-1 min-w-[160px] ${card.color}`}
               >
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.iconColor}`}>
                   <card.icon size={16} />

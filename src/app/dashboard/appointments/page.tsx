@@ -1,6 +1,7 @@
 'use client';
 
-import { List, LayoutGrid, AlertCircle, Plus, Search } from 'lucide-react';
+import { List, LayoutGrid, AlertCircle, Plus } from 'lucide-react';
+import SearchInput from '@/components/shared/SearchInput';
 import { useAppointments } from '@/components/appointments/useAppointments';
 import AppointmentCreateModal from '@/components/appointments/AppointmentCreateModal';
 import AppointmentActionModals from '@/components/appointments/AppointmentActionModals';
@@ -78,7 +79,7 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Schedule & Appointments</h1>
           <p className="text-[#827A73] text-sm mt-1">Book and manage client fittings, measurement sessions, and garment consultations.</p>
@@ -136,16 +137,7 @@ export default function AppointmentsPage() {
           <>
             {/* Filters */}
             <div className="p-4 border-b border-[#EBE6E0] flex flex-wrap items-center gap-3 bg-[#FAF6F3]/30">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search customer or service..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-9 pr-4 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] w-56"
-                />
-              </div>
+              <SearchInput value={search} onChange={setSearch} placeholder="Search customer or service..." className="w-56" />
 
               {/* Type filter */}
               <select
@@ -160,7 +152,7 @@ export default function AppointmentsPage() {
               </select>
 
               {/* Status tabs */}
-              <div className="flex items-center gap-1 border border-[#EBE6E0] rounded-lg bg-white p-1 ml-auto">
+              <div className="flex flex-wrap items-center gap-1 border border-[#EBE6E0] rounded-lg bg-white p-1 w-full sm:w-auto sm:ml-auto">
                 {(['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const).map(s => {
                   let tabLabel = '';
                   if (s === 'all') {

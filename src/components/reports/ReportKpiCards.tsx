@@ -1,17 +1,31 @@
 import React from 'react';
+import Link from 'next/link';
 import {
   TrendingUp, Wallet, PackageCheck, Calendar as CalendarIcon,
-  Users, Target, DollarSign, AlertTriangle, BarChart2, Flag, PackageX,
+  Users, Target, DollarSign, AlertTriangle, BarChart2, Flag, PackageX, Timer, Star, CalendarCheck,
 } from 'lucide-react';
 import { AnalyticsData } from './reportHelpers';
 
 interface ReportKpiCardsProps {
   readonly data: AnalyticsData | null;
   readonly completionRate: number;
+  readonly period?: string;
 }
 
-export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsProps) {
+const REVENUE_PERIOD_LABELS: Record<string, string> = {
+  all_time: 'Lifetime collected',
+  this_month: "This month's collections",
+  last_month: "Last month's collections",
+  ytd: "This year's collections",
+};
+
+export default function ReportKpiCards({ data, completionRate, period = 'all_time' }: ReportKpiCardsProps) {
   const backendRate = data?.completion_rate ?? completionRate;
+  // Total Revenue is computed off the same date-filtered query as every
+  // other period-scoped KPI on this page — "Lifetime collected" was
+  // accurate only for the all_time default and silently wrong the moment
+  // an owner picked "This Month"/"Last Month"/"Year to Date".
+  const revenueSub = REVENUE_PERIOD_LABELS[period] ?? REVENUE_PERIOD_LABELS.all_time;
 
   const overdueColor = data?.overdue_jobs
     ? 'text-red-500 bg-red-50 border-red-200'
@@ -35,7 +49,7 @@ export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsP
     {
       label: 'Total Revenue',
       value: `₱${Number(data?.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-      sub: 'Lifetime collected',
+      sub: revenueSub,
       icon: <TrendingUp className="text-[#7A8B76]" size={20} />,
       color: 'text-[#7A8B76] bg-[#7A8B76]/10 border-[#7A8B76]/20',
     },
@@ -61,6 +75,17 @@ export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsP
       color: 'text-[#9A8073] bg-[#9A8073]/10 border-[#9A8073]/20',
     },
     {
+      // How long a job actually takes from creation to completion — real
+      // operational signal ("are we hitting our own turnaround promises")
+      // nothing on Reports tracked before this. Approximated from
+      // updated_at since job_orders has no dedicated completed_at column.
+      label: 'Avg. Turnaround Time',
+      value: data?.avg_turnaround_days != null ? `${data.avg_turnaround_days}d` : '—',
+      sub: 'Days from order to completion',
+      icon: <Timer className="text-violet-500" size={20} />,
+      color: 'text-violet-500 bg-violet-50 border-violet-200',
+    },
+    {
       label: 'Rejected Payments',
       value: `₱${Number(data?.rejected_payments_amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
       sub: 'Flagged as fake, balance reversed',
@@ -77,9 +102,10 @@ export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsP
     {
       label: 'Overdue Orders',
       value: data?.overdue_jobs ?? 0,
-      sub: 'Past due, not completed',
+      sub: 'Past due, not completed — click to view',
       icon: <AlertTriangle className="text-red-500" size={20} />,
       color: overdueColor,
+      href: '/dashboard/jobs?overdue=true',
     },
     {
       label: 'Upcoming Appointments',
@@ -87,6 +113,17 @@ export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsP
       sub: 'Confirmed & scheduled',
       icon: <CalendarIcon className="text-violet-500" size={20} />,
       color: 'text-violet-500 bg-violet-50 border-violet-200',
+    },
+    {
+      // How many bookings actually turn into paying work — the core
+      // "discover a shop, book, order" funnel this thesis is built around,
+      // and previously had zero visibility (outcome only got set through a
+      // separate manual modal nobody consistently used).
+      label: 'Booking Conversion',
+      value: `${data?.booking_conversion_rate ?? 0}%`,
+      sub: 'Appointments that became a job order',
+      icon: <CalendarCheck className="text-teal-600" size={20} />,
+      color: 'text-teal-600 bg-teal-50 border-teal-200',
     },
     {
       label: 'Active Staff',
@@ -102,23 +139,47 @@ export default function ReportKpiCards({ data, completionRate }: ReportKpiCardsP
       icon: <Target className="text-[#4A7C59]" size={20} />,
       color: completionColor,
     },
+    {
+      // Reports previously had zero visibility into ratings at all — an
+      // owner had to go count reviews manually on the Reviews page.
+      label: 'Customer Rating',
+      value: data?.avg_rating != null ? `${data.avg_rating} ★` : '—',
+      // All-time on purpose (a standing reputation figure, not a per-period
+      // one — see AnalyticsController's own reasoning) — unlike every other
+      // card here, this one doesn't move when the period filter above
+      // changes, so it says so explicitly instead of silently reading like
+      // it's scoped to "This Week"/"This Month" the way the rest are.
+      sub: data?.total_reviews ? `All-time, from ${data.total_reviews} review${data.total_reviews === 1 ? '' : 's'} — click to view` : 'No reviews yet',
+      icon: <Star className="text-amber-500" size={20} />,
+      color: 'text-amber-500 bg-amber-50 border-amber-200',
+      href: '/dashboard/reviews',
+    },
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {kpis.map((kpi) => (
-        <div
-          key={kpi.label}
-          className="bg-white border border-[#EBE6E0] rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div>
-            <p className="text-sm font-medium text-[#827A73] mb-1">{kpi.label}</p>
-            <h3 className="text-2xl font-bold text-[#2D2A26] tracking-tight mb-1">{kpi.value}</h3>
-            <p className="text-xs text-[#A8A19A]">{kpi.sub}</p>
+      {kpis.map((kpi) => {
+        const cardClass = 'bg-white border border-[#EBE6E0] rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow';
+        const content = (
+          <>
+            <div>
+              <p className="text-sm font-medium text-[#827A73] mb-1">{kpi.label}</p>
+              <h3 className="text-2xl font-bold text-[#2D2A26] tracking-tight mb-1">{kpi.value}</h3>
+              <p className="text-xs text-[#A8A19A]">{kpi.sub}</p>
+            </div>
+            <div className={`p-2.5 rounded-xl border ${kpi.color}`}>{kpi.icon}</div>
+          </>
+        );
+        return kpi.href ? (
+          <Link key={kpi.label} href={kpi.href} className={cardClass}>
+            {content}
+          </Link>
+        ) : (
+          <div key={kpi.label} className={cardClass}>
+            {content}
           </div>
-          <div className={`p-2.5 rounded-xl border ${kpi.color}`}>{kpi.icon}</div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

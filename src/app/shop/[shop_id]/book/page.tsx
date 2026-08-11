@@ -9,6 +9,7 @@ import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
 
 interface Branch {
   id: number;
+  slug?: string;
   name: string;
   address?: string | null;
   city?: string | null;
@@ -57,7 +58,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   // directly. The shop owner creates the actual Job Order after consultation.
   const refName = searchParams.get('ref');
   const refSize = searchParams.get('ref_size');
-  const branchIdParam = searchParams.get('branch_id');
+  const branchSlugParam = searchParams.get('branch');
   const serviceIdParam = searchParams.get('service_id');
   const packageIdParam = searchParams.get('package_id');
 
@@ -195,11 +196,12 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         const settings = res.data.data;
         setShopSettings(settings);
 
-        // Prefer an explicit branch_id/service_id from the URL (arrived via a
-        // branch's "Book Here" link or a service/package's "Book Appointment"
+        // Prefer an explicit branch (slug)/service_id from the URL (arrived via
+        // a branch's "Book Here" link or a service/package's "Book Appointment"
         // link) — only fall back to auto-selecting the sole branch otherwise.
-        if (branchIdParam && settings?.branches?.some((b: Branch) => b.id.toString() === branchIdParam)) {
-          setSelectedBranchId(branchIdParam);
+        const branchFromSlug = branchSlugParam && settings?.branches?.find((b: Branch) => b.slug === branchSlugParam);
+        if (branchFromSlug) {
+          setSelectedBranchId(branchFromSlug.id.toString());
         } else if (settings?.branches && settings.branches.length === 1) {
           setSelectedBranchId(settings.branches[0].id.toString());
         }
@@ -228,7 +230,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
           console.error('Failed to fetch package details:', err);
         });
     }
-  }, [shopId, branchIdParam, serviceIdParam, packageIdParam]);
+  }, [shopId, branchSlugParam, serviceIdParam, packageIdParam]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -275,11 +277,11 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26]">Loading booking system...</div>;
+  if (loading) return <div className="min-h-dvh flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26]">Loading booking system...</div>;
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#FAF6F3] text-[#2D2A26] flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-[#FAF6F3] text-[#2D2A26] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white shadow-sm p-8 rounded-2xl text-center border border-[#EBE6E0]">
           <div className="w-16 h-16 bg-[#7A8B76]/20 text-[#7A8B76] rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={32} />
@@ -300,7 +302,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6F3] text-[#2D2A26] py-12 px-4">
+    <div className="min-h-dvh bg-[#FAF6F3] text-[#2D2A26] py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <button 
@@ -576,7 +578,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                             <button
                               type="button"
                               onClick={() => removeReferenceImage(url)}
-                              className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1"
+                              aria-label="Remove image"
+                              className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-black/80 text-white rounded-full p-2"
                             >
                               <X size={12} />
                             </button>
@@ -731,7 +734,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                   value={remarks} 
                   onChange={(e) => setRemarks(e.target.value)}
                   placeholder="Specify sizing, alterations, or other details..."
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2.5 text-[#2D2A26] text-sm focus:outline-none focus:border-[#9A8073]"
+                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2.5 text-[#2D2A26] text-base sm:text-sm focus:outline-none focus:border-[#9A8073]"
                 />
               </div>
 
@@ -803,7 +806,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                             ? 'Enter the 13-digit GCash reference number, if you have it'
                             : 'Enter your bank’s transaction/confirmation number, if you have it'
                         }
-                        className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-[#2D2A26] text-xs focus:outline-none focus:border-[#9A8073]"
+                        className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-[#2D2A26] text-base sm:text-xs focus:outline-none focus:border-[#9A8073]"
                       />
                     </div>
 
@@ -843,7 +846,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
 
 export default function BookingWizard({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26] animate-pulse">Loading booking system...</div>}>
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26] animate-pulse">Loading booking system...</div>}>
       <BookingWizardContent params={params} />
     </Suspense>
   );

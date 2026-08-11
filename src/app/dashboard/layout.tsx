@@ -4,13 +4,12 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { LayoutDashboard, Scissors, UserCog, Package, Settings, Users, Building2, Calendar, ShoppingBag, Grip, ChevronDown, LifeBuoy, Home, CreditCard, MapPin, Sparkles, Layers } from 'lucide-react';
+import { LayoutDashboard, Scissors, UserCog, Package, Settings, Users, Building2, Calendar, ShoppingBag, Grip, ChevronDown, LifeBuoy, Home, CreditCard, MapPin, Sparkles, ScrollText } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
 import BrandLogo from '@/components/BrandLogo';
 import { ToastProvider } from '@/context/ToastContext';
 import { BranchProvider, useBranch } from '@/context/BranchContext';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import WhatsNewTour, { hasSeenLatestWhatsNew } from '@/components/WhatsNewTour';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
@@ -27,7 +26,6 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
   const [isBranchOpen, setIsBranchOpen] = useState(false);
   const branchRef = useRef<HTMLDivElement>(null);
-  const { tier: subscriptionTier } = useSubscriptionTier();
 
   if (pathname !== prevPathname) {
     setIsSidebarOpen(false);
@@ -133,11 +131,15 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       // Design Catalog and Services are both shop_owner-only on the backend
       // (not even branch_manager) — hidden here to match, otherwise
       // staff/branch managers see a link that 403s the moment they click it.
+      // "Packages" removed as its own nav entry (user request) — the
+      // Services page already has a full Packages tab, so the standalone
+      // /dashboard/service-packages link was a second, redundant entry
+      // point to the exact same feature. The route itself still exists,
+      // just unlinked from nav.
       title: 'Showroom',
       items: [
         ...(isShopOwner ? [{ name: 'Design Catalog', path: '/dashboard/catalog', icon: ShoppingBag }] : []),
         ...(isShopOwner ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
-        ...(isShopOwner ? [{ name: 'Packages', path: '/dashboard/service-packages', icon: Layers }] : []),
       ]
     },
     {
@@ -154,6 +156,11 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         ...(isShopOwner ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
         ...(canViewAnalytics ? [{ name: 'Reports & Insights', path: '/dashboard/reports', icon: LayoutDashboard }] : []),
         ...(isShopOwner ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
+        // Discounts, payment rejections, reschedules — accountability-sensitive
+        // actions with a "who/why" that AuditLogController already tracks
+        // server-side; this was the only consumer missing. Owner-only, matches
+        // the backend route's role:shop_owner gate.
+        ...(isShopOwner ? [{ name: 'Audit Log', path: '/dashboard/audit-log', icon: ScrollText }] : []),
       ]
     },
     // Billing & Plans and Account Settings live in the profile dropdown (top-right
@@ -177,14 +184,21 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           <Link href="/dashboard" className="flex items-center">
             <BrandLogo />
           </Link>
-          <Link
-            href="/dashboard/billing"
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-linear-to-r from-[#9A8073] to-[#8A7063] text-white rounded-full text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity shadow-sm"
-          >
-            <Sparkles size={10} />
-            {subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)} Plan Activated
-          </Link>
-          {shop?.id && branches.length > 0 && (
+          {/* Home used to deliberately ignore this selector (showing it
+              without effect read as confusing) — per user request it's now
+              shown there too, AND dashboard/page.tsx actually reads
+              selectedBranchId and passes branch_id to its analytics/jobs
+              calls, so it's a real filter here, not just a visible-but-dead
+              control. Every other page that respects it (Jobs, Appointments,
+              Reports, Branches) still shows it normally.
+              Staff Management is the one exception (separate user request):
+              it now has its own explicit Branch filter inside
+              StaffListView's filter bar, so this global header selector
+              silently affecting the same list too was a second, less
+              obvious way to filter by branch on the same page — removed
+              there, and the Staff page no longer reads selectedBranchId at
+              all (see dashboard/staff/page.tsx). */}
+          {shop?.id && branches.length > 0 && !pathname.startsWith('/dashboard/staff') && (
             <div className="relative hidden md:block animate-fade-in" ref={branchRef}>
               <button 
                 onClick={() => setIsBranchOpen(!isBranchOpen)}

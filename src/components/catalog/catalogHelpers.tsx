@@ -124,7 +124,7 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
   const imgs = (item.images || []).map((img, i) => ({
     id: `img-${i}`,
     url: img.image_url,
-    angle: img.angle ?? 'Default',
+    angle: img.view_angle ?? 'Default',
     is_primary: img.is_primary === 1,
   }));
 

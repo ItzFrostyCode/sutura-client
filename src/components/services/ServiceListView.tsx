@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Search, Loader2, Copy, DollarSign, Pencil, Trash2,
-  Image as ImageIcon, CheckSquare, Square, Check, Clock, Tag, Layers,
+  Loader2, Copy, DollarSign, Pencil, Trash2,
+  Image as ImageIcon, Clock, Tag, Layers,
 } from 'lucide-react';
 import { Service, SERVICE_TYPES, SERVICE_TYPE_META } from './serviceHelpers';
 import { getActiveSale } from '@/lib/salePricing';
+import SearchInput from '@/components/shared/SearchInput';
 
 interface ServiceListViewProps {
   readonly filteredServices: Service[];
@@ -21,7 +22,6 @@ interface ServiceListViewProps {
   readonly onEdit: (service: Service) => void;
   readonly onDelete: (id: number) => void;
   readonly onOpenSale: (service: Service) => void;
-  readonly onBulkDelete?: (ids: number[]) => void;
 }
 
 export default function ServiceListView({
@@ -37,117 +37,42 @@ export default function ServiceListView({
   onEdit,
   onDelete,
   onOpenSale,
-  onBulkDelete,
 }: ServiceListViewProps) {
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-
-  const toggleSelect = (id: number) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selected.size === filteredServices.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filteredServices.map(s => s.id)));
-    }
-  };
-
-  const clearSelection = () => setSelected(new Set());
-
-  const handleBulkDelete = () => {
-    if (onBulkDelete && selected.size > 0) {
-      onBulkDelete(Array.from(selected));
-      setSelected(new Set());
-    }
-  };
-
-  const allSelected = filteredServices.length > 0 && selected.size === filteredServices.length;
-  const someSelected = selected.size > 0;
-
   return (
     <div className="space-y-4 text-[#2D2A26]">
-      {/* Search + Filter Bar */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={16} />
-            <input
-              type="text"
-              placeholder="Search services..."
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] transition-colors"
-            />
-          </div>
+      {/* Search + Filter Bar — bulk select/delete removed (it deleted 9 real
+          services with zero confirmation in a real incident); each service
+          is deleted individually via its own card, which already confirms
+          first. Stacks to a column on mobile instead of squeezing a search
+          box + dropdown into one row. */}
+      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <SearchInput value={search} onChange={onSearchChange} placeholder="Search services..." className="flex-1 min-w-0" />
 
-          {/* Select All toggle */}
-          <button
-            onClick={toggleSelectAll}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-              someSelected
-                ? 'bg-[#9A8073] text-white border-[#9A8073]'
-                : 'bg-[#FAF6F3] text-[#827A73] border-[#EBE6E0] hover:border-[#9A8073] hover:text-[#9A8073]'
-            }`}
-          >
-            {allSelected
-              ? <CheckSquare size={15} />
-              : <Square size={15} />
-            }
-            {someSelected ? `${selected.size} selected` : 'Select'}
-          </button>
-
-          {/* Bulk delete */}
-          {someSelected && onBulkDelete && (
-            <button
-              onClick={handleBulkDelete}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[#B26959]/10 text-[#B26959] border border-[#B26959]/20 hover:bg-[#B26959]/20 transition-colors"
+          {/* Category filter — a dropdown, not a chip wall. Real shops
+              routinely have a distinct category string per service (13
+              categories across 9 services isn't unusual), and rendering
+              that as pill buttons wrapped across multiple rows read as
+              visual clutter, not a useful filter. Same dropdown pattern as
+              the Staff List's Role/Status/Workload/Branch filters. */}
+          {allCategories.length > 1 && (
+            <select
+              value={categoryFilter}
+              onChange={(e) => onCategoryFilterChange(e.target.value)}
+              className="w-full sm:w-auto px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] transition-colors"
+              aria-label="Filter by category"
             >
-              <Trash2 size={15} />
-              Delete {selected.size}
-            </button>
+              {allCategories.map(cat => (
+                <option key={cat} value={cat}>{cat === 'All' ? 'All Categories' : cat}</option>
+              ))}
+            </select>
           )}
-
-          {someSelected && (
-            <button onClick={clearSelection} className="text-xs text-[#A8A19A] hover:text-[#524A44] transition-colors">
-              Clear
-            </button>
-          )}
-
-          <span className="text-xs text-[#A8A19A] ml-auto font-medium">
-            {filteredServices.length} service{filteredServices.length === 1 ? '' : 's'}
-          </span>
         </div>
-
-        {/* Category chips */}
-        {allCategories.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {allCategories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => onCategoryFilterChange(cat)}
-                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
-                  categoryFilter === cat
-                    ? 'bg-[#2D2A26] text-white shadow-sm'
-                    : 'bg-[#FAF6F3] text-[#827A73] border border-[#EBE6E0] hover:border-[#9A8073] hover:text-[#9A8073]'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Loading State */}
       {loading && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={`skeleton-${i}`} className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden animate-pulse">
               <div className="h-40 bg-[#EBE6E0]" />
@@ -178,32 +103,15 @@ export default function ServiceListView({
 
       {/* Card Grid */}
       {!loading && filteredServices.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredServices.map((service) => {
-            const isSelected = selected.has(service.id);
             const isLoading = actionLoadingId === service.id;
 
             return (
               <div
                 key={service.id}
-                className={`relative bg-white border rounded-2xl overflow-hidden shadow-sm transition-all duration-200 group ${
-                  isSelected
-                    ? 'border-[#9A8073] ring-2 ring-[#9A8073]/20'
-                    : 'border-[#EBE6E0] hover:border-[#9A8073]/40 hover:shadow-md'
-                }`}
+                className="relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm transition-all duration-200 group hover:border-[#9A8073]/40 hover:shadow-md"
               >
-                {/* Selection checkbox */}
-                <button
-                  onClick={() => toggleSelect(service.id)}
-                  className={`absolute top-3 left-3 z-10 w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
-                    isSelected
-                      ? 'bg-[#9A8073] text-white shadow-sm'
-                      : 'bg-white/80 text-[#A8A19A] border border-[#EBE6E0] opacity-0 group-hover:opacity-100'
-                  }`}
-                >
-                  {isSelected ? <Check size={13} strokeWidth={3} /> : <Square size={13} />}
-                </button>
-
                 {/* Status badge */}
                 <div className="absolute top-3 right-3 z-10">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${

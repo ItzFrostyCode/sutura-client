@@ -27,7 +27,7 @@ There is **no separate Staff Portal** to build. Staff already log into the exact
 
 ### Already done (don't rebuild)
 - Staff already see the same Jobs/Appointments/Catalog views as the owner, just role-gated (branch-restricted for staff/branch managers; Owner-only sections like Multi-Stage Staff Assignment, Outsourcing, Rush, and Total Amount adjustments are visually marked "Owner/Manager Only").
-- Staff now get an **in-app notification** the moment they're assigned to a production stage (Design/Pattern Making/Cutting/Sewing/QC & Ironing) — built and tested this week. Same notification bell everyone already uses.
+- Staff now get an **in-app notification** the moment they're assigned to a production stage (Design/Pattern Making/Cutting/Sewing/QC & Ironing) — built and tested. Same notification bell everyone already uses.
 
 ### Genuinely missing — this is the real task
 1. **"My Assigned Jobs" view**: right now a staff member sees the *whole* job list (filtered to their branch only) — there's no one-click way to filter down to "just the jobs assigned to me." The backend already supports this (`?assigned_staff_id=X` query param on the jobs endpoint) — the missing piece is just a frontend toggle/tab for it.

@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, type LucideIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, type LucideIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
@@ -35,6 +35,7 @@ const SingleBranchMap = dynamic(() => import('@/components/profile/SingleBranchM
 
 interface ShopBranch {
   id: number;
+  slug?: string;
   name: string;
   address: string;
   city: string;
@@ -91,6 +92,11 @@ interface CatalogListItem {
   material: string;
   garment_type?: string | null;
   images: CatalogItemImage[];
+  // Already returned by the API (CatalogController::index does withAvg/withCount
+  // for these, same as the owner dashboard's card) — just never declared or
+  // rendered here on the public-facing card.
+  reviews_avg_rating?: number | null;
+  reviews_count?: number;
 }
 
 interface PublicShopPost {
@@ -208,7 +214,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const searchParams = useSearchParams();
-  const selectedBranchId = searchParams.get('branch_id');
+  const selectedBranchSlug = searchParams.get('branch');
   const initialTabParam = searchParams.get('tab');
 
   // Review State
@@ -218,14 +224,16 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedService, setSelectedService] = useState<PublicService | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<PublicServicePackage | null>(null);
-  // A branch_id in the URL means we arrived here from the owner's "Preview Customer
-  // View" link for a specific branch — land straight on Locations with it highlighted.
+  // A ?branch= slug in the URL means we arrived here from the owner's "Preview
+  // Customer View" link for a specific branch — land straight on Locations
+  // with it highlighted.
   // A ?tab= param covers old bookmarks/links to the standalone /catalog page, which
   // now redirects here instead of being its own route.
+  const validTabParams = ['home', 'about', 'services', 'catalog', 'hours', 'locations', 'work', 'reviews'] as const;
   const [activeTab, setActiveTab] = useState<'home' | 'about' | 'services' | 'catalog' | 'hours' | 'locations' | 'work' | 'reviews'>(
-    selectedBranchId
+    selectedBranchSlug
       ? 'locations'
-      : (initialTabParam === 'catalog' || initialTabParam === 'reviews' || initialTabParam === 'about' ? initialTabParam : 'home')
+      : ((validTabParams as readonly string[]).includes(initialTabParam ?? '') ? (initialTabParam as typeof validTabParams[number]) : 'home')
   );
 
   // Catalog tab state — same data source and behavior as the old standalone
@@ -233,7 +241,8 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [catalogItems, setCatalogItems] = useState<CatalogListItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogSearch, setCatalogSearch] = useState('');
-  const [catalogGarmentTypeFilter, setCatalogGarmentTypeFilter] = useState('');
+  const [catalogGarmentTypeFilters, setCatalogGarmentTypeFilters] = useState<Set<string>>(new Set());
+  const [catalogPriceFilters, setCatalogPriceFilters] = useState<Set<string>>(new Set());
 
   // Reviews tab state — everyone sees the same list; reply/feature/delete
   // actions are owner-only, same management the dashboard's Reviews page had.
@@ -265,7 +274,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     return 'https://m.me/suturatailoring';
   };
 
-  const activeBranch = shop?.branches?.find(b => b.id.toString() === selectedBranchId);
+  const activeBranch = shop?.branches?.find(b => b.slug === selectedBranchSlug);
 
   const fetchShop = useCallback(() => {
     api.get(`/public/shops/${shopId}`)
@@ -584,7 +593,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 animate-spin text-zinc-900" /></div>;
+    return <div className="min-h-dvh flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 animate-spin text-zinc-900" /></div>;
   }
 
   if (!shop) {
@@ -659,11 +668,14 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           profile dropdown) as the dashboard header — same component, not a
           second build of it — minus the Premium Plan badge and branch
           switcher, which are dashboard-data-scoping concepts with no meaning
-          on a public page. The logo click already goes to /dashboard, same as
-          clicking the dashboard's own logo does. */}
+          on a public page. The logo click stays on the storefront (its own
+          home tab) for everyone, owner included — "My Management" in the
+          account menu is the one dedicated way back to the dashboard, so the
+          logo isn't a second, redundant shortcut out of the page you're
+          previewing. */}
       <nav className="border-b border-zinc-200 bg-white sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href={isOwnerViewingOwnShop ? '/dashboard' : '/'} className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href={`/shop/${shopId}`} className="flex items-center gap-2">
             <BrandLogo iconOnly className="w-8 h-8" />
             <span className="font-serif font-bold text-lg tracking-tight text-zinc-900">SUTURA</span>
           </Link>
@@ -673,7 +685,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
       {(shop.active_special_hours?.announcement_message || shop.active_special_hours?.announcement_image_url) && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3.5 px-6 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="max-w-5xl mx-auto flex items-center gap-3">
+          <div className="max-w-7xl mx-auto flex items-center gap-3">
             {shop.active_special_hours.announcement_image_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
@@ -696,7 +708,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           storefront widget, so the public page and the dashboard preview feel
           like one design instead of two different UIs bolted together. */}
       <div className="flex-1 bg-[#FAF6F3] py-8">
-        <div className="max-w-5xl mx-auto px-6 space-y-8">
+        <div className="max-w-7xl mx-auto px-6 space-y-8">
 
           <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
             {shop.banner_path ? (
@@ -805,7 +817,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
               <hr className="mt-5 mb-0 border-[#EBE6E0]" />
 
-              <div className="flex gap-1 overflow-x-auto hide-scrollbar">
+              {/* Wraps to multiple lines on narrow/tablet widths instead of
+                  scrolling sideways — up to 8 tabs, so it can take 2-3 lines
+                  on a phone, but every tab stays reachable with a tap
+                  instead of needing a swipe to discover it exists. */}
+              <div className="flex flex-wrap gap-1">
                 {tabList.map(tab => {
                   const isActive = activeTab === tab.id;
                   const TabIcon = tab.icon;
@@ -936,7 +952,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                 </div>
 
                 {isOwnerViewingOwnShop && authShop && (
-                  <SpecialHoursAnnouncementCard shopId={authShop.id} onSaved={fetchShop} />
+                  <SpecialHoursAnnouncementCard shopId={authShop.id} onSaved={fetchShop} branches={shop.branches} />
                 )}
               </div>
             </div>
@@ -1171,93 +1187,203 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
               {catalogLoading ? (
                 <div className="text-center py-16 text-[#A8A19A] animate-pulse">Curating showcase...</div>
-              ) : (
-                <>
-                  {catalogItems.length > 0 && (
-                    <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                      <div className="relative flex-1">
+              ) : catalogItems.length === 0 ? (
+                <div className="text-center py-16 bg-white border border-zinc-200 text-[#827A73]">
+                  This shop hasn&apos;t published any showcase items yet.
+                </div>
+              ) : (() => {
+                // Named *Tally, not *Map — `Map` here would shadow the
+                // lucide-react `Map` icon component imported above, not the
+                // global Map constructor.
+                //
+                // Color and Size were dropped as filters — every item here is
+                // made-to-order, so neither is a fixed attribute of the
+                // listing the way it would be for off-the-shelf inventory:
+                // the customer picks their own fabric/color and gets measured
+                // for their own size, the shop just sews to the referenced
+                // design/class shown in the photo. Garment Type (the actual
+                // "class") and Price are the facets that mean something here.
+                const garmentTypeTally: Record<string, number> = {};
+                catalogItems.forEach(i => {
+                  const g = i.garment_type?.trim();
+                  if (g) garmentTypeTally[g] = (garmentTypeTally[g] || 0) + 1;
+                });
+                const PRICE_BUCKETS = [
+                  { id: 'under1000', label: 'Under ₱1,000', min: 0, max: 1000 },
+                  { id: '1000to3000', label: '₱1,000 – ₱2,999', min: 1000, max: 3000 },
+                  { id: '3000to5000', label: '₱3,000 – ₱4,999', min: 3000, max: 5000 },
+                  { id: '5000to10000', label: '₱5,000 – ₱9,999', min: 5000, max: 10000 },
+                  { id: '10000plus', label: '₱10,000+', min: 10000, max: Infinity },
+                ];
+                const priceTally: Record<string, number> = {};
+                catalogItems.forEach(i => {
+                  const p = Number(i.price);
+                  const bucket = PRICE_BUCKETS.find(b => p >= b.min && p < b.max);
+                  if (bucket) priceTally[bucket.id] = (priceTally[bucket.id] || 0) + 1;
+                });
+
+                const garmentTypeOptions = Object.keys(garmentTypeTally).sort((a, b) => a.localeCompare(b)).map(v => ({ id: v, label: v }));
+                const priceOptions = PRICE_BUCKETS.filter(b => priceTally[b.id] > 0).map(b => ({ id: b.id, label: b.label }));
+                const hasFacets = garmentTypeOptions.length > 1 || priceOptions.length > 1;
+
+                const makeToggle = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (v: string) => {
+                  setter(prev => {
+                    const next = new Set(prev);
+                    if (next.has(v)) next.delete(v); else next.add(v);
+                    return next;
+                  });
+                };
+                const toggleGarmentType = makeToggle(setCatalogGarmentTypeFilters);
+                const togglePrice = makeToggle(setCatalogPriceFilters);
+
+                const filteredCatalogItems = catalogItems.filter(item => {
+                  const p = Number(item.price);
+                  return (!catalogSearch || item.name.toLowerCase().includes(catalogSearch.toLowerCase())) &&
+                    (catalogGarmentTypeFilters.size === 0 || (!!item.garment_type && catalogGarmentTypeFilters.has(item.garment_type))) &&
+                    (catalogPriceFilters.size === 0 || PRICE_BUCKETS.some(b => catalogPriceFilters.has(b.id) && p >= b.min && p < b.max));
+                });
+
+                const priceLabel = (id: string) => PRICE_BUCKETS.find(b => b.id === id)?.label || id;
+                const activeFilterChips = [
+                  ...Array.from(catalogGarmentTypeFilters).map(v => ({ kind: 'garment' as const, value: v, label: v })),
+                  ...Array.from(catalogPriceFilters).map(v => ({ kind: 'price' as const, value: v, label: priceLabel(v) })),
+                ];
+
+                const FacetGroup = ({ title, options, counts, selected, onToggle }: {
+                  title: string; options: { id: string; label: string }[]; counts: Record<string, number>; selected: Set<string>; onToggle: (v: string) => void;
+                }) => (
+                  <div className="border border-[#EBE6E0] bg-white p-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 mb-3">{title}</h3>
+                    <div className="space-y-2">
+                      {options.map(opt => (
+                        <label key={opt.id} className="flex items-center gap-2 text-sm text-[#524A44] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(opt.id)}
+                            onChange={() => onToggle(opt.id)}
+                            className="accent-taupe"
+                          />
+                          <span className="flex-1">{opt.label}</span>
+                          <span className="text-xs text-[#A8A19A]">{counts[opt.id]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div className={hasFacets ? 'grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6' : ''}>
+                    {hasFacets && (
+                      <aside className="space-y-4">
+                        {garmentTypeOptions.length > 1 && (
+                          <FacetGroup title="Garment Type" options={garmentTypeOptions} counts={garmentTypeTally} selected={catalogGarmentTypeFilters} onToggle={toggleGarmentType} />
+                        )}
+                        {priceOptions.length > 1 && (
+                          <FacetGroup title="Price" options={priceOptions} counts={priceTally} selected={catalogPriceFilters} onToggle={togglePrice} />
+                        )}
+                      </aside>
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="relative mb-4">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={16} />
                         <input
                           type="text"
                           placeholder="Search this collection... e.g. team jersey, barong, gown"
                           value={catalogSearch}
                           onChange={e => setCatalogSearch(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 bg-white border border-[#EBE6E0] rounded-full text-sm text-zinc-900 placeholder-[#A8A19A] focus:outline-none focus:border-taupe transition-colors"
+                          className="w-full pl-11 pr-4 py-3 bg-white border border-[#EBE6E0] text-base sm:text-sm text-zinc-900 placeholder-[#A8A19A] focus:outline-none focus:border-taupe transition-colors"
                         />
                       </div>
-                      {Array.from(new Set(catalogItems.map(i => i.garment_type).filter((v): v is string => !!v && v.trim() !== ''))).length > 1 && (
-                        <select
-                          value={catalogGarmentTypeFilter}
-                          onChange={e => setCatalogGarmentTypeFilter(e.target.value)}
-                          className="px-4 py-3 bg-white border border-[#EBE6E0] rounded-full text-sm text-zinc-900 focus:outline-none focus:border-taupe transition-colors"
-                        >
-                          <option value="">All Garment Types</option>
-                          {Array.from(new Set(catalogItems.map(i => i.garment_type).filter((v): v is string => !!v && v.trim() !== ''))).sort((a, b) => a.localeCompare(b)).map(g => (
-                            <option key={g} value={g}>{g}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  )}
 
-                  {(() => {
-                    const filteredCatalogItems = catalogItems.filter(item =>
-                      (!catalogSearch || item.name.toLowerCase().includes(catalogSearch.toLowerCase())) &&
-                      (!catalogGarmentTypeFilter || item.garment_type === catalogGarmentTypeFilter)
-                    );
-
-                    if (catalogItems.length === 0) {
-                      return (
-                        <div className="text-center py-16 bg-white rounded-2xl border border-zinc-200 text-[#827A73]">
-                          This shop hasn&apos;t published any showcase items yet.
-                        </div>
-                      );
-                    }
-                    if (filteredCatalogItems.length === 0) {
-                      return (
-                        <div className="text-center py-16 bg-white rounded-2xl border border-zinc-200 text-[#827A73]">
-                          No items match your search. Try a different keyword or garment type.
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10">
-                        {filteredCatalogItems.map(item => {
-                          const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        <span className="text-sm text-[#827A73]">
+                          Showing {filteredCatalogItems.length} of {catalogItems.length} item{catalogItems.length === 1 ? '' : 's'}
+                        </span>
+                        {activeFilterChips.map(chip => {
+                          const toggleByKind = { garment: toggleGarmentType, price: togglePrice }[chip.kind];
                           return (
-                            <Link href={`/shop/${shopId}/catalog/${item.id}`} key={item.id} className="group block">
-                              <div className="aspect-3/4 bg-[#F0EAE3] overflow-hidden relative rounded-xl">
-                                {primaryImage ? (
-                                  <Image
-                                    src={primaryImage}
-                                    alt={item.name}
-                                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                                    fill
-                                    unoptimized
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[#A8A19A] text-sm">No Image</div>
-                                )}
-
-                                {/* Hover Overlay for Material */}
-                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-                                  <span className="text-xs font-medium tracking-widest uppercase text-zinc-900 border border-zinc-900 px-4 py-2">
-                                    {item.material || 'View Details'}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="mt-3 text-center">
-                                <h3 className="text-sm font-semibold text-zinc-900 group-hover:text-[#886E62] transition-colors">{item.name}</h3>
-                                <p className="text-xs text-[#A8A19A] mt-1">Starting at ₱{Number(item.price).toLocaleString()}</p>
-                              </div>
-                            </Link>
+                            <button
+                              key={`${chip.kind}-${chip.value}`}
+                              onClick={() => toggleByKind(chip.value)}
+                              className="flex items-center gap-1.5 border border-[#EBE6E0] bg-[#FAF6F3] px-3 py-1 text-xs font-medium text-[#524A44] hover:border-taupe hover:text-taupe transition-colors"
+                            >
+                              {chip.label} <X size={12} />
+                            </button>
                           );
                         })}
+                        {activeFilterChips.length > 0 && (
+                          <button
+                            onClick={() => {
+                              setCatalogGarmentTypeFilters(new Set());
+                              setCatalogPriceFilters(new Set());
+                            }}
+                            className="text-xs font-semibold text-[#886E62] hover:underline"
+                          >
+                            Clear All
+                          </button>
+                        )}
                       </div>
-                    );
-                  })()}
-                </>
-              )}
+
+                      {filteredCatalogItems.length === 0 ? (
+                        <div className="text-center py-16 bg-white border border-zinc-200 text-[#827A73]">
+                          No items match your search or filters. Try a different keyword or clear a filter.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                          {filteredCatalogItems.map(item => {
+                            const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
+                            return (
+                              <Link
+                                href={`/shop/${shopId}/catalog/${item.id}`}
+                                key={item.id}
+                                className="group block bg-white border border-[#EBE6E0] overflow-hidden hover:shadow-md hover:border-[#D1C7BD] transition-all"
+                              >
+                                <div className="aspect-3/4 bg-[#F0EAE3] overflow-hidden relative">
+                                  {primaryImage ? (
+                                    <Image
+                                      src={primaryImage}
+                                      alt={item.name}
+                                      className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                                      fill
+                                      unoptimized
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[#A8A19A] text-sm">No Image</div>
+                                  )}
+
+                                  {/* Hover Overlay for Material */}
+                                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                                    <span className="text-xs font-medium tracking-widest uppercase text-zinc-900 border border-zinc-900 px-4 py-2">
+                                      {item.material || 'View Details'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="p-2.5 sm:p-3 text-left">
+                                  {item.reviews_count ? (
+                                    <div className="flex items-center gap-1 mb-1">
+                                      <Star size={11} className="fill-current text-[#BCA89F]" />
+                                      <span className="text-[11px] font-semibold text-zinc-700">{Number(item.reviews_avg_rating).toFixed(1)}</span>
+                                      <span className="text-[11px] text-[#A8A19A]">({item.reviews_count})</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1 mb-1 text-[#A8A19A]">
+                                      <Clock size={11} />
+                                      <span className="text-[11px]">Est. {item.estimated_days ?? 7}d</span>
+                                    </div>
+                                  )}
+                                  <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 group-hover:text-[#886E62] transition-colors line-clamp-2 leading-snug">{item.name}</h3>
+                                  <p className="text-xs sm:text-sm font-bold text-[#886E62] mt-1">₱{Number(item.price).toLocaleString()}</p>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1326,7 +1452,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {shop.branches.map((branch) => {
-                  const isSelected = selectedBranchId === branch.id.toString();
+                  const isSelected = !!branch.slug && selectedBranchSlug === branch.slug;
                   return (
                     <div 
                       key={branch.id} 
@@ -1377,7 +1503,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                       
                       <div className="flex gap-3 mt-auto">
                         <Link 
-                          href={`/shop/${shopId}/book?branch_id=${branch.id}`}
+                          href={branch.slug ? `/shop/${shopId}/book?branch=${branch.slug}` : `/shop/${shopId}/book`}
                           className={`flex-1 text-center py-2.5 rounded-xl font-semibold text-sm transition-colors ${
                             isSelected 
                               ? 'bg-[#2D2A26] text-white hover:bg-black' 
@@ -1882,6 +2008,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           <EditOperatingHoursModal
             isOpen={isHoursModalOpen}
             onClose={() => setIsHoursModalOpen(false)}
+            shopId={authShop!.id}
             initialHours={shop.operating_hours || {}}
             onSaved={handleHoursSaved}
           />
@@ -1893,7 +2020,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
 export default function PublicShopProfilePage(props: Readonly<PublicShopProfilePageProps>) {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 animate-spin text-zinc-900" /></div>}>
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 animate-spin text-zinc-900" /></div>}>
       <PublicShopProfileContent {...props} />
     </Suspense>
   );

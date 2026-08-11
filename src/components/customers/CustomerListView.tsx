@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Search, Mail, Phone, Package, Eye, Pencil, Trash2, Star, Store, User, type LucideIcon } from 'lucide-react';
 import { isWalkInEmail } from './customerHelpers';
 import { CustomerData } from './customerTypes';
+import SearchInput from '@/components/shared/SearchInput';
 
 type FilterType = 'all' | 'online' | 'walkin' | 'b2b_suki' | 'reseller' | 'walk_in_retail';
 
@@ -264,17 +265,7 @@ export default function CustomerListView({
 
       <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-[#EBE6E0] flex items-center justify-between bg-white">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search clients by name or email..." 
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-              disabled={loading}
-            />
-          </div>
+          <SearchInput value={search} onChange={onSearchChange} placeholder="Search clients by name or email..." disabled={loading} className="w-80" />
           <div className="text-sm text-[#827A73] font-medium">
             Total Clients: {customers.length}
           </div>

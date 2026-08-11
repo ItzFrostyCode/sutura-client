@@ -332,8 +332,17 @@ export default function ServiceFormModal({
                   <Plus size={16} />
                 </button>
               </div>
-              <p className="text-xs text-[#A8A19A] mt-1">
-                Add each specific service under this group, with its own price — e.g. &quot;Hem Pants — ₱300&quot;. Price is optional; add it later if it varies.
+              <p className={`text-xs mt-1 ${tiers.length === 0 ? 'text-[#B26959] font-medium' : 'text-[#A8A19A]'}`}>
+                {tiers.length === 0
+                  // Save stays disabled with tiers.length === 0 but nothing
+                  // ever explained that — typing a name into the field above
+                  // without clicking the + button left the form silently
+                  // stuck with no visible reason why. Confirmed by getting
+                  // stuck on it directly: filled every other field, selected
+                  // a service type, and still couldn't tell why Save wouldn't
+                  // enable until reading the component's own disabled logic.
+                  ? 'Click + to add at least one item below — a group needs at least one, even if you only ever charge one price.'
+                  : 'Add each specific service under this group, with its own price — e.g. "Hem Pants — ₱300". Price is optional; add it later if it varies.'}
               </p>
             </div>
           </div>

@@ -6,7 +6,7 @@ Here are the default accounts available for testing (password is `password` for 
 
 - **Admin**: `admin@sutura.com`
 - **Shop Owner**: owner@sutura.com
-- **whaStaff**: `staff@sutura.com`
+- **Staff**: `staff@sutura.com`
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 

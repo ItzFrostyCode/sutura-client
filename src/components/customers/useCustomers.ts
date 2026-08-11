@@ -83,11 +83,20 @@ export function useCustomers() {
         toast.success('Customer updated successfully.');
       } else {
         const res = await api.post(`/shops/${shop.id}/customers`, payload);
-        setCustomers(prev => [
-          { ...res.data.data, active_jobs: 0, completed_jobs: 0, total_spend: 0 }, 
-          ...prev
-        ]);
-        toast.success('Customer added successfully.');
+        // A phone match against an existing walk-in (no email on file)
+        // reuses that customer's real id server-side instead of minting a
+        // duplicate — blindly prepending here would then show the same
+        // person twice in the list even though the backend didn't actually
+        // create anything new. Update the existing row in place instead.
+        const returnedId = res.data.data.id;
+        const alreadyListed = customers.some(c => c.id === returnedId);
+        setCustomers(prev => {
+          if (alreadyListed) {
+            return prev.map(c => c.id === returnedId ? { ...c, ...res.data.data } : c);
+          }
+          return [{ ...res.data.data, active_jobs: 0, completed_jobs: 0, total_spend: 0 }, ...prev];
+        });
+        toast.success(alreadyListed ? 'Matched an existing customer with that phone number.' : 'Customer added successfully.');
       }
       setIsModalOpen(false);
       setEditingId(null);
@@ -142,9 +151,14 @@ export function useCustomers() {
   };
 
   const filtered = customers.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
-      (c.email && !isWalkInEmail(c.email) && c.email.toLowerCase().includes(search.toLowerCase()));
-      
+    // Phone was never searchable — a real gap for walk-in customers, who
+    // often only have a placeholder "walkin_" email (excluded above) and
+    // whose phone number is the identifier the owner actually remembers or
+    // gets told at the counter.
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
+      (c.email && !isWalkInEmail(c.email) && c.email.toLowerCase().includes(search.toLowerCase())) ||
+      (c.phone && c.phone.replace(/\s+/g, '').includes(search.replace(/\s+/g, '')));
+
     if (!matchesSearch) return false;
     
     const isWalkIn = isWalkInEmail(c.email);

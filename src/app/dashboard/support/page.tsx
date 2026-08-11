@@ -179,11 +179,12 @@ export default function SupportPage() {
         message: replyText,
         attachments: attachmentUrls
       });
-      setSelected(prev => prev ? { ...prev, replies: [...prev.replies, res.data.data], status: prev.status === 'resolved' || prev.status === 'closed' ? 'open' : prev.status } : prev);
+      const newStatus = selected.status === 'resolved' || selected.status === 'closed' ? 'open' : selected.status;
+      setSelected(prev => prev ? { ...prev, replies: [...prev.replies, res.data.data], status: newStatus } : prev);
       setReplyText('');
       setReplyUploads([]);
       // update list too
-      setTickets(prev => prev.map(t => t.id === selected.id ? { ...t, status: selected.status } : t));
+      setTickets(prev => prev.map(t => t.id === selected.id ? { ...t, status: newStatus } : t));
     } catch (e) {
       console.error(e);
     } finally {

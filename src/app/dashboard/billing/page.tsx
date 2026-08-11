@@ -19,6 +19,7 @@ interface Plan {
   price_monthly: number;
   description: string;
   features: string;
+  max_staff: number;
 }
 
 interface Subscription {
@@ -69,24 +70,69 @@ function getPlanMeta(slug: string) {
   return PLAN_META[slug] ?? PLAN_META.basic;
 }
 
-// ── Feature limits per plan ───────────────────────────────────────────────────
-const PLAN_LIMITS: Record<string, { branches: number | null; staff: number | null; gallery: number | null }> = {
-  basic:   { branches: 1,    staff: 3,    gallery: 5 },
-  pro:     { branches: 3,    staff: 10,   gallery: 20 },
-  premium: { branches: null, staff: null, gallery: null },
+// ── Branch limits per plan ──────────────────────────────────────────────────
+// Not a per-plan numeric column on the backend — ShopBranchController::store()
+// enforces a flat "only Premium unlocks a 2nd+ branch" rule, so Basic and Pro
+// are both capped at 1. Staff limits, unlike this, ARE per-plan numeric data
+// (SubscriptionPlan.max_staff) and are read from the fetched `plans` array
+// below instead of being duplicated here — a hardcoded copy is exactly how
+// this page drifted out of sync with the real enforced limits before.
+const BRANCH_LIMITS: Record<string, number | null> = {
+  basic: 1,
+  pro: 1,
+  premium: null,
 };
 
 // ── Plan comparison table rows ────────────────────────────────────────────────
+// Gallery Photos has no enforced cap anywhere in the backend — every plan is
+// effectively unlimited, so it's listed as such rather than inventing a
+// differentiator that was never actually built.
 const COMPARE_ROWS = [
-  { label: 'Branches',              basic: '1',          pro: 'Up to 3',     premium: 'Unlimited' },
-  { label: 'Staff Accounts',        basic: 'Up to 3',    pro: 'Up to 10',    premium: 'Unlimited' },
-  { label: 'Gallery Photos',        basic: 'Up to 5',    pro: 'Up to 20',    premium: 'Unlimited' },
+  { label: 'Branches',              basic: '1',          pro: '1',           premium: 'Unlimited' },
+  { label: 'Gallery Photos',        basic: 'Unlimited',  pro: 'Unlimited',   premium: 'Unlimited' },
   { label: 'Service Packages',      basic: 'Up to 3',    pro: 'Unlimited',   premium: 'Unlimited' },
   { label: 'Analytics & Reports',   basic: 'Basic',      pro: 'Advanced',    premium: 'Full Suite' },
   { label: 'SMS Notifications',     basic: '—',          pro: 'Included',    premium: 'Included' },
   { label: 'Featured Visibility',   basic: '—',          pro: '—',           premium: 'Included' },
   { label: 'Priority Support',      basic: '—',          pro: '—',           premium: 'Included' },
 ];
+
+// ── Usage bar helper ─────────────────────────────────────────────────────────
+function UsageBar({ label, used, max, icon: Icon }: {
+  label: string; used: number; max: number | null; icon: React.ElementType;
+}) {
+  const pct = max === null ? 0 : Math.min((used / max) * 100, 100);
+  const isAtLimit = max !== null && used >= max;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-[#524A44]">
+          <Icon size={14} className="text-[#9A8073]" />
+          <span className="font-medium">{label}</span>
+        </div>
+        <span className={`text-xs font-semibold ${isAtLimit ? 'text-[#B26959]' : 'text-[#827A73]'}`}>
+          {used} / {max === null ? '∞' : max}
+        </span>
+      </div>
+      <div className="h-2 bg-[#F0EAE3] rounded-full overflow-hidden">
+        {max !== null && (
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              isAtLimit ? 'bg-[#B26959]' : pct > 75 ? 'bg-amber-400' : 'bg-[#9A8073]'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
+        )}
+        {max === null && (
+          <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 w-full opacity-40" />
+        )}
+      </div>
+      {isAtLimit && max !== null && (
+        <p className="text-[11px] text-[#B26959]">Limit reached — upgrade to add more.</p>
+      )}
+    </div>
+  );
+}
 
 // ── Mock billing history (replace with real API when available) ───────────────
 const MOCK_HISTORY = [
@@ -102,6 +148,10 @@ export default function BillingPage() {
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradingTo, setUpgradingTo] = useState<number | null>(null);
+  // Captured once at mount rather than called inline during render (below,
+  // for daysUntilExpiry) — a raw Date.now() read during render is flagged as
+  // an impure/non-idempotent render by the React Compiler lint rule.
+  const [now] = useState(() => Date.now());
 
   // Feature usage counts (from API where available, else mock)
   const [usageCounts, setUsageCounts] = useState({ branches: 0, staff: 0, gallery: 0 });
@@ -193,7 +243,22 @@ export default function BillingPage() {
 
   const activePlanId = currentSubscription?.plan_id;
   const activePlanSlug = currentSubscription?.plan?.slug ?? '';
-  const limits = PLAN_LIMITS[activePlanSlug] ?? PLAN_LIMITS.basic;
+  const activePlanMaxStaff = currentSubscription?.plan?.max_staff;
+  const limits = {
+    // `?? BRANCH_LIMITS.basic` looks like a safe "plan not found" fallback,
+    // but BRANCH_LIMITS.premium is *itself* `null` (the documented
+    // "unlimited" sentinel) — `??` treats that null exactly like a missing
+    // key, so a real Premium shop silently fell back to Basic's cap of 1.
+    // Confirmed live: Premium plan, 3 real branches, page showed "3/1 —
+    // Limit reached, upgrade to add more" while the same page's own
+    // comparison table said Premium = Unlimited branches. `in` distinguishes
+    // "key genuinely absent" from "key present with value null".
+    branches: activePlanSlug in BRANCH_LIMITS ? BRANCH_LIMITS[activePlanSlug] : BRANCH_LIMITS.basic,
+    // -1 is this table's documented "unlimited" sentinel (see
+    // SubscriptionPlanSeeder) — not a real cap to render as a number.
+    staff: activePlanMaxStaff === -1 ? null : activePlanMaxStaff ?? null,
+    gallery: null,
+  };
 
   const getButtonContent = (plan: Plan) => {
     if (upgradingTo === plan.id) return <Loader2 className="w-5 h-5 animate-spin" />;
@@ -220,47 +285,10 @@ export default function BillingPage() {
   const { bgClass: iconBgClass, Icon: PlanIcon } = getPlanIconData();
 
   const daysUntilExpiry = currentSubscription?.ends_at
-    ? Math.ceil((new Date(currentSubscription.ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(currentSubscription.ends_at).getTime() - now) / (1000 * 60 * 60 * 24))
     : null;
   const isExpired     = currentSubscription?.status === 'expired' || (daysUntilExpiry !== null && daysUntilExpiry < 0);
   const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 7 && currentSubscription?.status !== 'cancelled';
-
-  // ── Usage bar helper ─────────────────────────────────────────────────────────
-  const UsageBar = ({ label, used, max, icon: Icon }: {
-    label: string; used: number; max: number | null; icon: React.ElementType;
-  }) => {
-    const pct = max === null ? 0 : Math.min((used / max) * 100, 100);
-    const isAtLimit = max !== null && used >= max;
-    return (
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-[#524A44]">
-            <Icon size={14} className="text-[#9A8073]" />
-            <span className="font-medium">{label}</span>
-          </div>
-          <span className={`text-xs font-semibold ${isAtLimit ? 'text-[#B26959]' : 'text-[#827A73]'}`}>
-            {used} / {max === null ? '∞' : max}
-          </span>
-        </div>
-        <div className="h-2 bg-[#F0EAE3] rounded-full overflow-hidden">
-          {max !== null && (
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                isAtLimit ? 'bg-[#B26959]' : pct > 75 ? 'bg-amber-400' : 'bg-[#9A8073]'
-              }`}
-              style={{ width: `${pct}%` }}
-            />
-          )}
-          {max === null && (
-            <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 w-full opacity-40" />
-          )}
-        </div>
-        {isAtLimit && max !== null && (
-          <p className="text-[11px] text-[#B26959]">Limit reached — upgrade to add more.</p>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-10">
@@ -487,6 +515,24 @@ export default function BillingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EBE6E0]">
+              {/* Sourced live from each plan's real max_staff instead of a
+                  hardcoded row — this is exactly the number the backend
+                  actually enforces when adding staff, so it can't drift out
+                  of sync with what StaffController::store() allows. */}
+              <tr className="hover:bg-[#FAF6F3]/50 transition-colors">
+                <td className="px-5 py-3.5 text-[#524A44] font-medium">Staff Accounts</td>
+                {(['basic', 'pro', 'premium'] as const).map(slug => {
+                  const planMaxStaff = plans.find(p => p.slug === slug)?.max_staff;
+                  const label = planMaxStaff === -1 || planMaxStaff == null ? 'Unlimited' : `Up to ${planMaxStaff}`;
+                  return (
+                    <td key={slug} className={`px-5 py-3.5 text-center ${
+                      activePlanSlug === slug ? 'text-[#2D2A26] font-semibold' : 'text-[#827A73]'
+                    }`}>
+                      {label}
+                    </td>
+                  );
+                })}
+              </tr>
               {COMPARE_ROWS.map((row, i) => (
                 <tr key={i} className="hover:bg-[#FAF6F3]/50 transition-colors">
                   <td className="px-5 py-3.5 text-[#524A44] font-medium">{row.label}</td>

@@ -7,10 +7,19 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Copy, Check, Loader2, Image as ImageIcon, Download } from 'lucide-react';
 import { Service } from '@/components/services/serviceHelpers';
 import { getActiveSale } from '@/lib/salePricing';
+import { CatalogItem } from '@/components/catalog/catalogHelpers';
 
 interface PromoPostModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
+  // Services have a sale-price mechanism this modal was originally built
+  // around ("PROMO! Limited Time Offer"). Catalog items dropped sale/rental
+  // fields entirely when the catalog became made-to-order-only, so opening
+  // this same modal from the Catalog page against the services endpoint
+  // always came up empty — there was nothing to ever be "on sale". 'catalog'
+  // mode fetches catalog items instead and builds a showcase-style caption
+  // (no discount framing) around whichever items the owner picks.
+  readonly mode?: 'services' | 'catalog';
 }
 
 interface SelectableImage {
@@ -27,10 +36,11 @@ const DEFAULT_VALUE_PROPS = [
   'Cash on Delivery Available',
 ];
 
-export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps) {
+export default function PromoPostModal({ isOpen, onClose, mode = 'services' }: PromoPostModalProps) {
   const { shop } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<SelectableImage[]>([]);
   const [valueProps, setValueProps] = useState(DEFAULT_VALUE_PROPS.join('\n'));
@@ -41,17 +51,41 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     if (!isOpen || !shop?.id) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    if (mode === 'catalog') {
+      api.get(`/shops/${shop.id}/catalog`).then((res) => {
+        const items: CatalogItem[] = res.data.data || [];
+        setCatalogItems(items.filter(i => i.is_active !== false));
+        setLoading(false);
+      }).catch(() => setLoading(false));
+      return;
+    }
     api.get(`/shops/${shop.id}/services`).then((servicesRes) => {
       const svcItems: Service[] = servicesRes.data.data || [];
       setServices(svcItems.filter(s => getActiveSale({ price: s.base_price ?? 0, sale_price: s.sale_price, sale_starts_at: s.sale_starts_at, sale_ends_at: s.sale_ends_at })));
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [isOpen, shop]);
+  }, [isOpen, shop, mode]);
 
-  // Default all active-sale items checked, and default-select each service's
-  // photo, whenever the fetched set changes.
+  // Default all active-sale items (or, in catalog mode, all active catalog
+  // items) checked, and default-select each item's photo, whenever the
+  // fetched set changes.
   useEffect(() => {
     if (loading) return;
+
+    if (mode === 'catalog') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCheckedItems(new Set(catalogItems.map(i => `catalog-${i.id}`)));
+      const imgs: SelectableImage[] = [];
+      catalogItems.forEach(item => {
+        const primary = item.images.find(im => im.is_primary) || item.images[0];
+        if (primary) {
+          imgs.push({ key: `catalog-img-${item.id}`, url: primary.image_url, label: item.name, checked: true });
+        }
+      });
+      setImages(imgs);
+      return;
+    }
+
     const keys = services.map(s => `service-${s.id}`);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCheckedItems(new Set(keys));
@@ -63,7 +97,7 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
       }
     });
     setImages(imgs);
-  }, [loading, services]);
+  }, [loading, services, catalogItems, mode]);
 
   const toggleItem = (key: string) => {
     setCheckedItems(prev => {
@@ -79,6 +113,27 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
   };
 
   const caption = useMemo(() => {
+    if (mode === 'catalog') {
+      const lines: string[] = ['NEW DESIGN DROP!', 'Now available at our Design Catalog:', ''];
+
+      catalogItems.filter(i => checkedItems.has(`catalog-${i.id}`)).forEach(item => {
+        lines.push(`${item.name} - ₱${Number(item.price).toLocaleString()}`);
+      });
+
+      const props = valueProps.split('\n').map(p => p.trim()).filter(Boolean);
+      if (props.length > 0) {
+        lines.push('');
+        props.forEach(p => lines.push(`- ${p}`));
+      }
+
+      if (ctaLine.trim()) {
+        lines.push('');
+        lines.push(ctaLine.trim());
+      }
+
+      return lines.join('\n');
+    }
+
     const lines: string[] = ['PROMO!', 'Limited Time Offer - Grab Yours Now!', ''];
 
     let earliestEnd: number | null = null;
@@ -111,7 +166,7 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     }
 
     return lines.join('\n');
-  }, [services, checkedItems, valueProps, ctaLine]);
+  }, [mode, services, catalogItems, checkedItems, valueProps, ctaLine]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(caption);
@@ -119,7 +174,7 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const hasAnySale = services.length > 0;
+  const hasAnySale = mode === 'catalog' ? catalogItems.length > 0 : services.length > 0;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Generate Promo Post" maxWidth="max-w-2xl">
@@ -129,14 +184,27 @@ export default function PromoPostModal({ isOpen, onClose }: PromoPostModalProps)
         </div>
       ) : !hasAnySale ? (
         <div className="text-center py-12 text-sm text-[#827A73]">
-          No services are currently on sale. Set a Sale Price on a Service first.
+          {mode === 'catalog'
+            ? 'No active catalog items to promote yet. Add one to your Design Catalog first.'
+            : 'No services are currently on sale. Set a Sale Price on a Service first.'}
         </div>
       ) : (
         <div className="space-y-5">
           <div>
             <span className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">Include in Post</span>
             <div className="space-y-1.5 max-h-40 overflow-y-auto border border-[#EBE6E0] rounded-lg p-2">
-              {services.map(svc => {
+              {mode === 'catalog' ? catalogItems.map(item => (
+                <label key={`catalog-${item.id}`} className="flex items-center gap-2 text-sm px-1.5 py-1 rounded hover:bg-[#FAF6F3] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkedItems.has(`catalog-${item.id}`)}
+                    onChange={() => toggleItem(`catalog-${item.id}`)}
+                    className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                  />
+                  <span className="flex-1 truncate">{item.name}</span>
+                  <span className="text-[#2D2A26] font-semibold text-xs">₱{Number(item.price).toLocaleString()}</span>
+                </label>
+              )) : services.map(svc => {
                 const sale = getActiveSale({ price: svc.base_price ?? 0, sale_price: svc.sale_price, sale_starts_at: svc.sale_starts_at, sale_ends_at: svc.sale_ends_at });
                 if (!sale) return null;
                 return (

@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { Search, ShoppingBag, Package, CheckCircle2, Clock, XCircle, Plus } from 'lucide-react';
+import { ShoppingBag, Package, CheckCircle2, Clock, XCircle, Plus } from 'lucide-react';
+import SearchInput from '@/components/shared/SearchInput';
 
 import { CatalogOrder } from '@/components/orders/orderHelpers';
 import OrderListItem from '@/components/orders/OrderListItem';
@@ -137,14 +138,14 @@ function OrdersPageContent() {
     <div className="space-y-6 text-[#2D2A26]">
       <CatalogModuleTabs />
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Walk-in Orders</h1>
           <p className="text-sm text-[#827A73] mt-1">
             Quick in-store sales off the Design Catalog — store pickup only.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-sm text-[#A8A19A]">
             <ShoppingBag size={16} />
             <span>{orders.length} total orders</span>
@@ -160,24 +161,13 @@ function OrdersPageContent() {
 
       {/* Main card */}
       <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-        <div className="flex items-center border-b border-[#EBE6E0] bg-[#FAF6F3] px-5 py-3">
-          {/* Search */}
-          <div className="ml-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={15} />
-              <input
-                type="text"
-                placeholder="Search product or customer..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-1.5 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe w-52"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Status filter pills */}
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-[#EBE6E0] overflow-x-auto">
+        {/* Status filter pills + search — used to be two separate rows, the
+            first with nothing in it but the search box pushed to the far
+            right (ml-auto with an empty left side), which just read as a
+            wide strip of dead space above the real content. One row now,
+            filters on the left and search on the right, same as every other
+            list page in the app (Customers, Jobs, Staff). */}
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-[#EBE6E0]">
           {STATUS_TABS.map(t => {
             const count = countFor(t.id);
             return (
@@ -200,6 +190,9 @@ function OrdersPageContent() {
               </button>
             );
           })}
+          <div className="w-full sm:w-auto sm:ml-auto shrink-0">
+            <SearchInput value={search} onChange={setSearch} placeholder="Search product or customer..." className="w-full sm:w-52" />
+          </div>
         </div>
 
         {/* Orders list */}

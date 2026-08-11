@@ -106,6 +106,16 @@ export default function DashboardCharts({
         { month: 'Week 4', revenue: 0 },
       ];
 
+  // The chart line itself had the same problem as the trend badge — it
+  // plotted future, not-yet-started buckets (e.g. Aug 16/24 when today is
+  // Aug 8) as a flat ₱0, which drew as the business collapsing to zero and
+  // staying there for the rest of the visible range, instead of just "that
+  // week hasn't happened yet." Unlike the trend calculation, the chart
+  // should still show today's own in-progress bucket (a real, if partial,
+  // data point) — only buckets that haven't started at all get dropped.
+  const today0 = new Date().toISOString().slice(0, 10);
+  const visibleChartData = chartData.filter(d => !('date' in d) || !d.date || d.date <= today0);
+
   // Jobs-by-status donut data (exclude zero-count statuses)
   const pieData = (data?.jobs_by_status ?? [])
     .filter(s => s.count > 0)
@@ -119,16 +129,42 @@ export default function DashboardCharts({
 
   const recentJobs = data?.recent_jobs || [];
 
-  // Revenue trend: compare first half vs second half of data
-  const midpoint = Math.floor(chartData.length / 2);
-  const firstHalf = chartData.slice(0, midpoint).reduce((s, d) => s + (d.revenue || 0), 0);
-  const secondHalf = chartData.slice(midpoint).reduce((s, d) => s + (d.revenue || 0), 0);
-  const trend = firstHalf === 0 ? null : ((secondHalf - firstHalf) / firstHalf) * 100;
+  // Revenue trend: compare first half vs second half of data.
+  // Only over buckets that have *fully* completed — viewing "This Month"
+  // partway through, the later buckets (e.g. Aug 16/24 when today is Aug 8)
+  // haven't happened yet, and the bucket containing today itself is still
+  // mid-accumulation (Aug 8's own week isn't over). Either kind read as a
+  // "-100% drop" against a real, completed earlier bucket, which is just
+  // time not having passed yet, not a real decline. A bucket only counts as
+  // complete once the *next* bucket has started — the last bucket in the
+  // list never does until the period itself ends. Buckets with no 'date'
+  // (older cached responses) are treated as complete, matching old behavior.
+  const today = new Date().toISOString().slice(0, 10);
+  const elapsedChartData = chartData.filter((d, i) => {
+    const next = chartData[i + 1];
+    return !('date' in d) || !d.date || (next?.date != null && next.date <= today);
+  });
+  const midpoint = Math.floor(elapsedChartData.length / 2);
+  const firstHalf = elapsedChartData.slice(0, midpoint).reduce((s, d) => s + (d.revenue || 0), 0);
+  const secondHalf = elapsedChartData.slice(midpoint).reduce((s, d) => s + (d.revenue || 0), 0);
+  // Need at least one elapsed bucket on each side of the split for the
+  // comparison to mean anything.
+  const trend = midpoint === 0 || firstHalf === 0 ? null : ((secondHalf - firstHalf) / firstHalf) * 100;
 
+  // This whole component renders inside a single white card the parent page
+  // already draws (bg-white, border, shadow, rounded corners — see
+  // dashboard/page.tsx's "Business Performance" wrapper). Each section below
+  // used to ALSO be its own bg-white/border/shadow card, nested one level
+  // deeper — a card inside a card, three times over, each with its own
+  // duplicate border and shadow stacking on top of the outer one. That's
+  // what read as "may background," cluttered, and inconsistent with every
+  // other dashboard card, which is a single flat surface. Sections are now
+  // divided with plain border lines instead, the same way the header above
+  // is already separated from this content.
   return (
-    <div className="space-y-6 text-[#2D2A26]">
+    <div className="text-[#2D2A26]">
       {/* ── Revenue chart ──────────────────────────────────────────── */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+      <div className="px-6 pt-6 pb-6 border-b border-[#EBE6E0]">
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <div>
@@ -170,7 +206,7 @@ export default function DashboardCharts({
         {/* Chart */}
         <div className="h-52 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+            <AreaChart data={visibleChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#9A8073" stopOpacity={0.18} />
@@ -209,15 +245,20 @@ export default function DashboardCharts({
       </div>
 
       {/* ── Bottom row: Donut + Recent Orders ──────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2">
         {/* Jobs by status donut */}
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+        <div className="p-6 border-b lg:border-b-0 lg:border-r border-[#EBE6E0]">
           <p className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider mb-4">
             Jobs by Status
           </p>
           {pieData.length > 0 ? (
             <div className="flex flex-col items-center">
-              <div className="relative h-44 w-full">
+              {/* The % labels sit outerRadius+18px from center (see PieLabel)
+                  — 76+18=94px in every direction, needing a 188px-tall box at
+                  minimum. This was h-44 (176px), 12px too short, so the
+                  topmost slice's label rendered outside the container and
+                  got clipped by the SVG boundary right under the card title. */}
+              <div className="relative h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -278,7 +319,7 @@ export default function DashboardCharts({
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm flex flex-col">
+        <div className="p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider">
               Recent Orders

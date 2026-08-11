@@ -161,7 +161,7 @@ export default function AppointmentCreateModal({
           <select id="customer_id" required value={formData.customer_id} onChange={e => setFormData({ ...formData, customer_id: e.target.value })}
             className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
             <option value="" disabled>Select a customer</option>
-            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ''}</option>)}
           </select>
         </div>
 
@@ -171,7 +171,7 @@ export default function AppointmentCreateModal({
             (or, for Fitting, auto-linked by the system) — not captured here. */}
         <div>
           <span className="block text-sm font-medium text-[#524A44] mb-1">Appointment Type <span className="text-rose-500">*</span></span>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {APPOINTMENT_TYPES.map(t => {
               const tc = TYPE_CONFIG[t];
               return (
@@ -258,9 +258,14 @@ export default function AppointmentCreateModal({
               {staff.map(s => {
                 const roles = [s.role, ...(s.additional_roles || [])].filter((r): r is string => Boolean(r)).map(roleLabel).join(', ');
                 const name = s.user?.name || `Staff #${s.user_id}`;
+                // Same reasoning as the Job Order staff dropdown — staff
+                // pinned to a branch can only be assigned to that branch's
+                // appointments, so surface it here instead of a rejection
+                // after the fact.
+                const branchLabel = s.branch ? ` (${s.branch.name})` : '';
                 return (
                   <option key={s.user_id} value={s.user_id}>
-                    {roles ? `[${roles}] ${name}` : name}
+                    {roles ? `[${roles}] ${name}` : name}{branchLabel}
                   </option>
                 );
               })}

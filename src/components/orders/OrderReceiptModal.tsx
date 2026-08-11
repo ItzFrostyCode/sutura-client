@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Printer } from 'lucide-react';
+import { X } from 'lucide-react';
 import { CatalogOrder } from './orderHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -27,11 +27,11 @@ export default function OrderReceiptModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div id="receipt-print-area" className="p-6 text-[#2D2A26]">
-          <div className="text-center border-b border-dashed border-[#D1C7BD] pb-4 mb-4">
+        <div id="receipt-print-area" className="p-6 text-black">
+          <div className="text-center border-b border-dashed border-gray-400 pb-4 mb-4">
             <h2 className="text-xl font-bold tracking-tight">{shop?.name ?? 'Sutura Shop'}</h2>
             {shop?.address && (
-              <p className="text-xs text-[#827A73] mt-0.5">
+              <p className="text-xs text-gray-600 mt-0.5">
                 {shop.address}{shop.city ? `, ${shop.city}` : ''}
               </p>
             )}
@@ -39,12 +39,12 @@ export default function OrderReceiptModal({
           </div>
 
           <div className="text-sm space-y-1.5">
-            <div className="flex justify-between"><span className="text-[#827A73]">Receipt No.</span><span className="font-semibold">RCPT-{String(order.id).padStart(5, '0')}</span></div>
-            <div className="flex justify-between"><span className="text-[#827A73]">Date</span><span>{fmtDate(order.created_at)}</span></div>
-            <div className="flex justify-between"><span className="text-[#827A73]">Customer</span><span className="font-medium">{order.customer?.name ?? 'Walk-in Guest'}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Receipt No.</span><span className="font-semibold">RCPT-{String(order.id).padStart(5, '0')}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Date</span><span>{fmtDate(order.created_at)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Customer</span><span className="font-medium">{order.customer?.name ?? 'Walk-in Guest'}</span></div>
           </div>
 
-          <div className="border-t border-dashed border-[#D1C7BD] my-4" />
+          <div className="border-t border-dashed border-gray-400 my-4" />
 
           <div className="text-sm">
             <div className="flex justify-between font-medium">
@@ -52,19 +52,19 @@ export default function OrderReceiptModal({
               <span>{peso(total)}</span>
             </div>
             {order.discount_amount && Number(order.discount_amount) > 0 && (
-              <p className="text-xs text-rose-600 mt-1">Discount applied: −{peso(order.discount_amount)}</p>
+              <p className="text-xs font-bold mt-1">Discount applied: −{peso(order.discount_amount)}</p>
             )}
           </div>
 
-          <div className="border-t border-dashed border-[#D1C7BD] my-4" />
+          <div className="border-t border-dashed border-gray-400 my-4" />
 
           <div className="text-sm space-y-1.5">
-            <div className="flex justify-between"><span className="text-[#827A73]">Total</span><span className="font-bold">{peso(total)}</span></div>
-            <div className="flex justify-between"><span className="text-[#827A73]">Payment Status</span><span className="capitalize font-medium">{order.payment_status}</span></div>
-            <div className="flex justify-between"><span className="text-[#827A73]">Fulfillment</span><span>Store Pickup</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Total</span><span className="font-bold">{peso(total)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Payment Status</span><span className="capitalize font-medium">{order.payment_status}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Fulfillment</span><span>Store Pickup</span></div>
           </div>
 
-          <p className="text-center text-xs text-[#827A73] mt-6 border-t border-dashed border-[#D1C7BD] pt-4">
+          <p className="text-center text-xs text-gray-600 mt-6 border-t border-dashed border-gray-400 pt-4">
             Thank you for your purchase!
           </p>
         </div>
@@ -80,7 +80,7 @@ export default function OrderReceiptModal({
             onClick={() => globalThis.print()}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-taupe hover:bg-taupe/90 text-white text-sm font-semibold transition-colors"
           >
-            <Printer size={16} /> Print
+            Print
           </button>
         </div>
       </div>

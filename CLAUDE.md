@@ -33,11 +33,12 @@ Don't add these even if a groupmate, an interview doc, or a "wouldn't it be cool
 
 ## Order/production tracking — what's REAL vs what's in the research docs
 
-The approved thesis paper and the interview docs describe idealized 13–19-stage customer-facing trackers per business type (tailoring/sublimation/fashion). **The actually implemented tracking is simpler.** From `sutura-server/app/Models/JobOrder.php`:
+The approved thesis paper and the interview docs describe idealized 13–19-stage customer-facing trackers per business type (tailoring/sublimation/fashion). **The actually implemented tracking is a real, multi-stage pipeline of its own — the "3-Phase Tailoring Tracker" — not the simple 5-stage version older docs may still describe.** From `sutura-server/app/Models/JobOrder.php` (`JobOrder::STATUSES`):
 
-- `status` enum: `pending → cutting → sewing → fitting → ready_for_pickup → (packed → handed_to_courier, only if outsourced) → completed`, with `cancelled` reachable from most points.
+- `status` enum: `pending → design → pattern_making (or mass_cutting_printing) → cutting → sewing → ready_for_fitting → final_adjustments → qc_ironing → ready_for_pickup → completed`, with `cancelled`, `rejected`, and `on_hold` reachable from most points. `mass_cutting_printing` is the Bulk Order Override for jobs with a Team Roster/Size Sheet — see `jobHelpers.tsx`'s `columnsForJobs()`, which only shows whichever of the two is relevant. The Kanban board (`JobKanbanBoard.tsx`) renders all of these as columns.
 - `payment_status` enum: `unpaid → partial → paid`.
-- Staff-facing production stages (`JobOrder::STAFF_STAGES`): `design, pattern_making, cutting, sewing, qc_ironing`.
+- Staff-facing production stages (`JobOrder::STAFF_STAGES`): `design, pattern_making, cutting, sewing, qc_ironing` — assigned per-stage via a pivot table, so a staff member can have multiple open rows on the *same* job order. Any "how many active jobs" count must dedupe by job order id, not count pivot rows — this exact bug shipped (Staff List showed inflated counts) and is now fixed in the backend's `StaffController`.
+- `tracking_code` — a public, no-login order-status lookup by code (backend/DB only, no frontend page built yet, matches how a courier tracking number works). Don't build a page for it unless explicitly asked.
 
 When asked to add/change tracking stages, check the model/migration in `sutura-server` first — don't copy a stage table straight out of the research docs without reconciling it against the real enum.
 
@@ -45,7 +46,12 @@ When asked to add/change tracking stages, check the model/migration in `sutura-s
 
 Check `GroupTasks.md` directly before trusting this — it goes stale fast, but as of the last sync:
 
-The Shop Owner dashboard (`/dashboard`) is **fully built**: Jobs, Appointments, Catalog, Payments, Staff, Reports, Branches, Billing. Don't rebuild this area.
+The Shop Owner dashboard (`/dashboard`) is **fully built and heavily polished**: Jobs, Appointments, Catalog, Services (Packages is a tab inside Services now, not its own nav item), Payments, Staff, Reports, Branches, Billing. Don't rebuild this area — check the systems below before assuming something's missing rather than just not yet found.
+
+- **Staff Profile page** (`dashboard/staff/[id]`) — mirrors the Customer profile page's shape (header card + stat cards + content, no tab-heavy history log). The Staff List table itself is deliberately lean (4 columns: Staff/Workload/Status/Actions) with Role/Status/Workload/Branch filter dropdowns — everything else lives on the profile page. Staff have a `bio` and `profile_picture` now (set via Account Settings' avatar upload, owner-only visible, never shown to customers).
+- **`SearchInput`** (`components/shared/SearchInput.tsx`) — the one search-box style every list toolbar should use (bg-[#FAF6F3] + border, no nested box-in-a-box). Already applied to all 8 list toolbars (Appointments, Payments, Jobs, Orders, Customers, Catalog, Packages, Staff, Services). Use it for any new list page instead of hand-rolling another search input.
+- **Home (`/dashboard`) respects the branch selector** — it used to deliberately ignore it (showing branch data on the shop's whole-business overview page read as confusing); now the header selector shows there too and `dashboard/page.tsx` actually passes `branch_id` to its `/analytics` and `/jobs` calls.
+- **Print pages** (`app/print/jobs/[id]/{ticket,receipt}`) — established house style: black/white only, zero boxed sections (hairline divider rules only), sharp corners, no icons/emoji. Follow this for any future print work in this project.
 
 Three genuinely open tasks:
 1. **Renalyn** — customer-facing "My Orders" tracker page (backend already supports filtering by `customer_id` via `JobOrderController::index`) + cross-shop search/discovery by garment specialization (the thesis's own core discovery feature — no page exists for this yet at all).
@@ -68,7 +74,7 @@ Grounded in real shop-owner/customer interviews (`Tailorshop,Sublimationshop,Fas
 |---|---|---|
 | Frontend | Next.js, React, TypeScript, Tailwind CSS, Zustand | Same — matches |
 | Backend | Laravel (PHP), RESTful API | Same — matches |
-| Database | MySQL hosted on **PlanetScale** | **MySQL via XAMPP locally right now**; migrating to **Supabase (Postgres)** around mid-September 2026 — see `DEADLINE.md`. PlanetScale was the original paper's plan and was superseded. |
+| Database | MySQL hosted on **PlanetScale** | **Real local MySQL 8.4 (Homebrew, not XAMPP)** right now; migrating to **Supabase (Postgres)** around mid-September 2026 — see `DEADLINE.md`. PlanetScale was the original paper's plan and was superseded. |
 | File storage | not specified in the paper | **Cloudflare R2** (planned at migration time) |
 | Deploy | Vercel (frontend) + Railway or Render (backend) | Vercel (frontend) + **Railway** (backend) — Render was dropped |
 
@@ -80,6 +86,8 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 
 ## Reference docs in this repo
 
+- **`TASK_DIVISION.md` and `REQUIREMENTS.md`** — team module ownership and the fuller functional spec. **Module 3, "Shop Owner Module," owned by Joshua Wayman A. Arabejo**, is the one that governs work in this repo's `/dashboard/*` (owner-facing) area — check it before assuming something belongs to (or is missing from) this scope rather than Customer (Renalyn)/Staff (Masudog)/Admin (Bongo) module work. Goes stale relative to shipped code fast — trust the actual routes/pages over it when they conflict, but check it first for *whose* scope something is.
+- `BUILD_RULES.md` — an earlier, never-actually-adopted multi-agent build methodology (orchestrator/frontend-dev/backend-dev/qa/adversary roles, `DEFECTS.md`/`ADVERSARIAL_REVIEW.md` ledgers). No such role split or ledger has ever been used in this project's real history — treat as an unused planning artifact, not a live process to follow. Kept for provenance since it's paired with (and references) `REQUIREMENTS.md`.
 - `Title&Objectives.md`, `suturathesisapproved.txt` — the full approved capstone proposal: objectives, scope & limitations, RRL/RRS, methodology, use-case/BPMN/ERD narrative descriptions, and per-dashboard UI design intent (Admin, Shop Owner, Staff, Customer).
 - `Tailorshop,Sublimationshop,FashionShop.txt` — the polished, synthesized interview-derived business analysis (workflows, pain points, proposed tracking stages, ASCII dashboard mockups) covering 3 business types. Tailoring-shop findings are directly in scope; sublimation/fashion findings (incl. rental) are market-research context only, not adopted scope. `docs/research/Complete Business Tailor Shops.txt` is the earlier raw-data-extraction draft this was synthesized from — archived there, kept for provenance, not meant to be read as authoritative (it predates and is superseded by the file above).
 - `GroupTasks.md` — current task ownership, checked against real code, not assumptions.

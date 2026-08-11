@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -37,12 +37,36 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [loadingBranches, setLoadingBranches] = useState(false);
+  // Guards the localStorage-write effect below. Without it, that effect fires
+  // on the very first render (shopId truthy, selectedBranchId still its
+  // initial `null`) and writes 'all' to localStorage *before* refreshBranches
+  // has resolved the real default — which then reads that just-written 'all'
+  // back as if it were a genuine saved preference and short-circuits its own
+  // "fall back to main branch" logic. Net effect: every first-ever visit
+  // (fresh browser/cleared storage) permanently landed on "All Branches"
+  // instead of the intended main-branch default. Confirmed live via an
+  // actual browser session, not just API calls — this loop never shows up
+  // in a request/response test since it's purely a client-side render-order
+  // race with localStorage.
+  const hasResolvedInitialRef = useRef(false);
 
   const refreshBranches = useCallback(async () => {
     await Promise.resolve();
-    if (!shopId || !isShopOwner) {
+    // !shopId is not a real resolution — on a hard reload, auth/shop takes a
+    // beat to rehydrate, so shopId is transiently falsy before it's actually
+    // known. Marking hasResolvedInitialRef true here (as an earlier version
+    // of this fix did) let the persist-effect write 'all' during that
+    // transient flash, permanently clobbering a real cached selection before
+    // the real fetch below ever got to read it. Bail out inert instead —
+    // this effect re-fires on its own once shopId arrives, since
+    // refreshBranches itself changes identity when shopId changes.
+    if (!shopId) {
+      return;
+    }
+    if (!isShopOwner) {
       setBranches([]);
       setSelectedBranchId(null);
+      hasResolvedInitialRef.current = true;
       return;
     }
     setLoadingBranches(true);
@@ -51,7 +75,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       if (res.data.success) {
         const list: Branch[] = res.data.data || [];
         setBranches(list);
-        
+
         // Restore from localStorage or default to main branch
         const cached = localStorage.getItem(`sutura_branch_${shopId}`);
         if (cached) {
@@ -59,10 +83,11 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
           if (parsed === null || list.some(b => b.id === parsed)) {
             setSelectedBranchId(parsed);
             setLoadingBranches(false);
+            hasResolvedInitialRef.current = true;
             return;
           }
         }
-        
+
         // Fallback: main branch
         const main = list.find(b => b.is_main);
         if (main) {
@@ -77,6 +102,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       console.error('Failed to load branches:', err);
     } finally {
       setLoadingBranches(false);
+      hasResolvedInitialRef.current = true;
     }
   }, [shopId, isShopOwner]);
 
@@ -87,7 +113,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
   }, [refreshBranches]);
 
   useEffect(() => {
-    if (shopId) {
+    if (shopId && hasResolvedInitialRef.current) {
       localStorage.setItem(`sutura_branch_${shopId}`, selectedBranchId === null ? 'all' : selectedBranchId.toString());
     }
   }, [shopId, selectedBranchId]);

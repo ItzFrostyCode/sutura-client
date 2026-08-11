@@ -8,6 +8,8 @@ import { useToast } from '@/context/ToastContext';
 interface SpecialHour {
   id: number;
   title: string;
+  shop_branch_id: number | null;
+  branch: { id: number; name: string } | null;
   start_date: string;
   end_date: string;
   is_closed: boolean;
@@ -20,10 +22,12 @@ interface SpecialHour {
 interface SpecialHoursAnnouncementCardProps {
   readonly shopId: number;
   readonly onSaved: () => void;
+  readonly branches?: { id: number; name: string }[];
 }
 
 const emptyForm = {
   title: '',
+  shop_branch_id: '' as number | '',
   start_date: '',
   end_date: '',
   is_closed: false,
@@ -33,7 +37,7 @@ const emptyForm = {
   announcement_image_url: '',
 };
 
-export default function SpecialHoursAnnouncementCard({ shopId, onSaved }: SpecialHoursAnnouncementCardProps) {
+export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches = [] }: SpecialHoursAnnouncementCardProps) {
   const toast = useToast();
   const [items, setItems] = useState<SpecialHour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +70,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved }: Specia
   const startEdit = (item: SpecialHour) => {
     setForm({
       title: item.title,
+      shop_branch_id: item.shop_branch_id ?? '',
       start_date: item.start_date,
       end_date: item.end_date,
       is_closed: item.is_closed,
@@ -103,6 +108,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved }: Specia
     setSaving(true);
     const payload = {
       title: form.title.trim(),
+      shop_branch_id: form.shop_branch_id === '' ? null : form.shop_branch_id,
       start_date: form.start_date,
       end_date: form.end_date,
       is_closed: form.is_closed,
@@ -179,6 +185,23 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved }: Specia
                 className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
               />
             </div>
+
+            {branches.length > 1 && (
+              <div>
+                <label htmlFor="sh_branch" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Applies To</label>
+                <select
+                  id="sh_branch"
+                  value={form.shop_branch_id}
+                  onChange={e => setForm(prev => ({ ...prev, shop_branch_id: e.target.value === '' ? '' : Number(e.target.value) }))}
+                  className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name} only</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -306,6 +329,15 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved }: Specia
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-[#2D2A26]">{item.title}</p>
+                    {item.branch ? (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#F0EAE3] text-[#9A8073] border border-[#EBE6E0]">
+                        {item.branch.name}
+                      </span>
+                    ) : branches.length > 1 && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#F0EAE3] text-[#9A8073] border border-[#EBE6E0]">
+                        All Branches
+                      </span>
+                    )}
                     {isExpired && (
                       <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white text-[#827A73] border border-[#EBE6E0]">
                         Expired

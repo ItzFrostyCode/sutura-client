@@ -137,10 +137,10 @@ export default function BranchesPage() {
     return (
       <div className="space-y-6 animate-pulse">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="h-8 bg-[#EBE6E0] rounded w-48 mb-2"></div>
-            <div className="h-4 bg-[#EBE6E0] rounded w-96"></div>
+            <div className="h-4 bg-[#EBE6E0] rounded w-96 max-w-full"></div>
           </div>
           <div className="flex gap-2">
             <div className="h-9 bg-[#EBE6E0] rounded w-32"></div>
@@ -186,7 +186,7 @@ export default function BranchesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Shop Branches</h1>
           <p className="text-[#827A73] text-sm mt-1">
@@ -194,7 +194,7 @@ export default function BranchesPage() {
             map.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center bg-[#F0EAE3] rounded-lg p-0.5">
             <button
               onClick={() => setViewMode('cards')}

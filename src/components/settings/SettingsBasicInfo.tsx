@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Trash2, Plus, Upload, Loader2 } from 'lucide-react';
-import { ShopSettingsData } from './SettingsRentalPolicies';
+import { ShopSettingsData } from './useSettings';
 
 interface SettingsBasicInfoProps {
   readonly formData: ShopSettingsData;
@@ -209,6 +209,77 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                 className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* Payment Collection Details */}
+      {activeTab === 'basic_info' && (
+      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-[#2D2A26] mb-1">Payment Details</h2>
+        <p className="text-sm text-[#827A73] mb-6">
+          Where customers should send GCash or bank transfer payments. Printed on receipts so there&apos;s no confusion over where the money went — the system still only tracks payment status, it never moves money itself.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <label htmlFor="shop-gcash-number" className="text-sm font-medium text-[#524A44]">GCash Number</label>
+            <input
+              id="shop-gcash-number"
+              type="text"
+              name="gcash_number"
+              value={formData.gcash_number}
+              onChange={onChange}
+              placeholder="09XX XXX XXXX"
+              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="shop-gcash-name" className="text-sm font-medium text-[#524A44]">GCash Account Name</label>
+            <input
+              id="shop-gcash-name"
+              type="text"
+              name="gcash_account_name"
+              value={formData.gcash_account_name}
+              onChange={onChange}
+              placeholder="Name on the GCash account"
+              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="shop-bank-name" className="text-sm font-medium text-[#524A44]">Bank Name</label>
+            <input
+              id="shop-bank-name"
+              type="text"
+              name="bank_name"
+              value={formData.bank_name}
+              onChange={onChange}
+              placeholder="e.g. BDO, BPI, Metrobank"
+              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="shop-bank-account-number" className="text-sm font-medium text-[#524A44]">Bank Account Number</label>
+            <input
+              id="shop-bank-account-number"
+              type="text"
+              name="bank_account_number"
+              value={formData.bank_account_number}
+              onChange={onChange}
+              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="shop-bank-account-name" className="text-sm font-medium text-[#524A44]">Bank Account Name</label>
+            <input
+              id="shop-bank-account-name"
+              type="text"
+              name="bank_account_name"
+              value={formData.bank_account_name}
+              onChange={onChange}
+              placeholder="Name on the bank account"
+              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+            />
           </div>
         </div>
       </div>

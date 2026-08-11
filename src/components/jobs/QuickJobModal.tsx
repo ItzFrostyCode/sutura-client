@@ -13,7 +13,7 @@ interface QuickJobModalProps {
   readonly onCreated: () => void;
 }
 
-interface CustomerOption { id: number; name: string; }
+interface CustomerOption { id: number; name: string; phone?: string | null; }
 interface ServiceOption  { id: number; name: string; base_price: string | number; }
 
 const DP_PRESETS = [
@@ -128,8 +128,8 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
               <Zap size={16} className="text-white" />
             </div>
             <div>
-              <h2 className="text-white font-bold text-sm">Quick Job Entry</h2>
-              <p className="text-white/70 text-[10px]">Log a walk-in job in seconds</p>
+              <h2 className="text-white font-bold text-sm">Quick Walk-in Entry</h2>
+              <p className="text-white/70 text-[10px]">Essentials only — add measurements, staff & the rest later from the job's page</p>
             </div>
           </div>
           <button
@@ -162,7 +162,7 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
               >
                 <option value="">Select customer...</option>
                 {customers.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ''}</option>
                 ))}
               </select>
             </div>

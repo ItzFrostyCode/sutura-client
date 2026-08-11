@@ -34,7 +34,7 @@ export interface AnalyticsData {
     total_amount: number | string;
     customer?: { name: string };
   }[];
-  revenue_data?: { month: string; revenue: number }[];
+  revenue_data?: { month: string; date?: string; revenue: number }[];
   jobs_by_status?: { status: string; count: number }[];
 }
 
@@ -46,6 +46,7 @@ export interface JobItem {
   payment_status: string;
   balance?: string | number;
   total_amount?: string | number;
+  discount_amount?: string | number | null;
   due_date?: string;
   customer?: { name: string };
 }

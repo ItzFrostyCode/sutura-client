@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Search, Loader2, Pencil, Trash2, Package as PackageIcon, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Loader2, Pencil, Trash2, Package as PackageIcon, ToggleLeft, ToggleRight } from 'lucide-react';
 import { ServicePackage } from './serviceHelpers';
+import SearchInput from '@/components/shared/SearchInput';
 
 interface ServicePackageListViewProps {
   readonly filteredPackages: ServicePackage[];
@@ -26,18 +27,7 @@ export default function ServicePackageListView({
 }: ServicePackageListViewProps) {
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={16} />
-        <input
-          id="package-search"
-          type="text"
-          placeholder="Search packages..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
-        />
-      </div>
+      <SearchInput id="package-search" value={search} onChange={onSearchChange} placeholder="Search packages..." className="max-w-sm" />
 
       {/* Loading state */}
       {loading ? (

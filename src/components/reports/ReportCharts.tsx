@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BarChart,
   Bar,
@@ -16,6 +17,7 @@ import {
   AnalyticsData,
   STATUS_COLORS,
   STATUS_LABELS,
+  GARMENT_CATEGORY_LABELS,
   CustomTooltip,
 } from './reportHelpers';
 
@@ -55,6 +57,35 @@ const StatusTooltip = ({ active, payload }: StatusTooltipProps) => {
   return null;
 };
 
+interface GarmentTooltipPayload {
+  readonly value: number;
+  readonly payload: {
+    readonly garment_category: string;
+    readonly revenue: number;
+  };
+}
+
+interface GarmentTooltipProps {
+  readonly active?: boolean;
+  readonly payload?: readonly GarmentTooltipPayload[];
+}
+
+const GarmentTooltip = ({ active, payload }: GarmentTooltipProps) => {
+  if (active && payload?.length) {
+    const p = payload[0]?.payload;
+    return (
+      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-3 py-2">
+        <p className="text-xs font-medium text-[#2D2A26]">
+          {GARMENT_CATEGORY_LABELS[p?.garment_category] ?? p?.garment_category}
+        </p>
+        <p className="text-sm font-bold text-taupe">{payload[0]?.value} orders</p>
+        <p className="text-xs text-[#827A73]">₱{Number(p?.revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 interface CustomBarShapeProps {
   readonly x?: number;
   readonly y?: number;
@@ -81,6 +112,7 @@ export default function ReportCharts({
   outstandingRate,
   balancePieData,
 }: ReportChartsProps) {
+  const router = useRouter();
   return (
     <div className="space-y-6">
       {/* Revenue Bar Chart */}
@@ -279,6 +311,55 @@ export default function ReportCharts({
           </div>
         </div>
       </div>
+
+      {/* Orders by Garment Category — what the shop is actually being asked
+          to make; previously the only breakdowns here were revenue/status/
+          branch/staff, nothing tied to the garment itself. Bars are
+          clickable — same deep-link pattern as the Overdue Orders KPI card,
+          straight to the filtered Jobs board instead of leaving the owner
+          with just a count they'd have to go hunt down themselves. */}
+      {!!data?.garment_breakdown?.length && (
+        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-[#2D2A26] mb-1">Orders by Garment Category</h2>
+          <p className="text-sm text-[#A8A19A] mb-6">What kinds of garments customers are actually ordering — click a bar to see those jobs</p>
+          <div className="h-52 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.garment_breakdown}
+                layout="vertical"
+                margin={{ top: 0, right: 10, left: 40, bottom: 0 }}
+                barSize={16}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#EBE6E0" horizontal={false} />
+                <XAxis type="number" stroke="#A8A19A" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="garment_category"
+                  stroke="#A8A19A"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={v => GARMENT_CATEGORY_LABELS[v] ?? v}
+                  width={110}
+                />
+                <Tooltip content={<GarmentTooltip />} />
+                <Bar
+                  dataKey="count"
+                  fill="#9A8073"
+                  radius={[0, 6, 6, 0]}
+                  cursor="pointer"
+                  onClick={(entry: { payload?: { garment_category?: string } }) => {
+                    const category = entry?.payload?.garment_category;
+                    if (category) {
+                      router.push(`/dashboard/jobs?garment_category=${category}`);
+                    }
+                  }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

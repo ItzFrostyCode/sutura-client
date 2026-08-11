@@ -42,13 +42,13 @@ export interface Appointment {
   answers?: Record<string, string | number | boolean> | null;
   outcome?: 'completed' | 'rescheduled' | 'no_show' | 'converted_to_job' | 'cancelled' | null;
   priority?: 'normal' | 'urgent' | 'rush';
-  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | null;
+  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
 }
 
 export interface ServiceData  { id: number; name: string }
-export interface CustomerData { id: number; name: string }
+export interface CustomerData { id: number; name: string; phone?: string | null }
 export interface BranchData   { id: number; name: string }
-export interface StaffData    { id: number; user_id: number; role?: string; additional_roles?: string[] | null; user?: { id: number; name: string } }
+export interface StaffData    { id: number; user_id: number; role?: string; additional_roles?: string[] | null; branch?: { id: number; name: string } | null; user?: { id: number; name: string } }
 export interface JobOrderData { id: number; customer_id?: number; title?: string; order_number?: string; status?: string; customer?: { name: string } }
 
 export const TYPE_CONFIG: Record<AppointmentType, {

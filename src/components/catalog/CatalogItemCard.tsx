@@ -5,17 +5,13 @@ import { CatalogItem, formatCatalogPrice } from './catalogHelpers';
 
 interface CatalogItemCardProps {
   readonly item: CatalogItem;
-  readonly onSave: (id: number) => Promise<void>;
   readonly onView: (id: number) => void;
-  readonly onOpenRating: (id: number) => void;
   readonly onOpenDelete: (id: number) => void;
 }
 
 export default function CatalogItemCard({
   item,
-  onSave,
   onView,
-  onOpenRating,
   onOpenDelete,
 }: CatalogItemCardProps) {
   const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
@@ -89,7 +85,7 @@ export default function CatalogItemCard({
       </div>
 
       {/* Details Section */}
-      <div className="p-4 flex flex-col flex-1 bg-white border-t border-[#EBE6E0]/60">
+      <div className="p-2.5 sm:p-4 flex flex-col flex-1 bg-white border-t border-[#EBE6E0]/60">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[10px] font-bold text-[#9A8073] bg-[#9A8073]/10 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
             <Clock size={10} /> Est. {item.estimated_days ?? 7} day{(item.estimated_days ?? 7) === 1 ? '' : 's'}

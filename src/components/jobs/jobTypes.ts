@@ -3,6 +3,7 @@ export interface RosterItem {
   print_name?: string;
   number?: string | number;
   size: string;
+  completed?: boolean;
 }
 
 export interface Payment {
@@ -22,6 +23,7 @@ export interface Payment {
 export interface Job {
   id: number;
   order_number: string;
+  tracking_code?: string | null;
   intake_channel: string;
   fulfillment_type: string;
   status: string;
@@ -31,10 +33,7 @@ export interface Job {
   notes?: string;
   deadline?: string;
   due_date?: string;
-  courier_name?: string;
-  courier_tracking_number?: string;
-  shipping_address?: string;
-  customer?: { name: string; id: number; suki_tag?: string | null };
+  customer?: { name: string; id: number; email?: string | null; suki_tag?: string | null };
   service?: { name: string; id: number; service_type?: string | null };
   assigned_staff?: { name: string; id: number };
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
@@ -54,13 +53,17 @@ export interface Job {
   hold_reason?: string | null;
   discount_amount?: number | string | null;
   customer_job_count?: number;
-  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | null;
+  adjustment_count?: number;
+  first_adjustment_at?: string | null;
+  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
   progress_photos?: { url: string; stage: string; uploaded_at: string }[] | null;
   measurement?: {
     id: number;
     profile_name: string;
     metrics: Record<string, number | string>;
     notes?: string | null;
+    is_stale?: boolean;
+    current_version_id?: number | null;
   } | null;
   catalog_item?: {
     id: number;
@@ -75,6 +78,15 @@ export interface Staff {
   role: string;
   additional_roles?: string[] | null;
   specialization?: string | string[];
+  shop_branch_id?: number | null;
+  branch?: { id: number; name: string } | null;
+  // Already computed by StaffController@index (same "≥5 = overloaded"
+  // threshold as the Staff dashboard page) but never surfaced at the one
+  // place an owner actually picks who to assign — real-time workload
+  // visibility at assignment time, not just after the fact on a separate page.
+  active_jobs?: number;
+  is_active?: boolean;
+  is_available?: boolean;
   user: {
     id: number;
     name: string;

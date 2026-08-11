@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Loader2, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { useBranch } from '@/context/BranchContext';
 
@@ -20,6 +20,8 @@ interface StaffFormModalProps {
     is_active: boolean;
     shop_branch_id: string;
     is_branch_manager: boolean;
+    bio: string;
+    is_available: boolean;
   };
   readonly setFormData: React.Dispatch<React.SetStateAction<{
     name: string;
@@ -33,6 +35,8 @@ interface StaffFormModalProps {
     is_active: boolean;
     shop_branch_id: string;
     is_branch_manager: boolean;
+    bio: string;
+    is_available: boolean;
   }>>;
 }
 
@@ -63,6 +67,7 @@ export default function StaffFormModal({
 }: StaffFormModalProps) {
   const { branches } = useBranch();
   const [showPortalSection, setShowPortalSection] = useState(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   if (!isOpen) return null;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -72,11 +77,20 @@ export default function StaffFormModal({
   // Email + password are collapsed by default so the form reads as a roster
   // entry, not an account signup. They're still required server-side to
   // create a StaffProfile (no login = no record), so a first submit while
-  // collapsed just reveals the section instead of failing silently.
+  // collapsed reveals the section — but a silent expand with no scroll or
+  // focus reads as "nothing happened" to whoever clicked Submit, especially
+  // if they'd already scrolled past it filling in Role/Hire Date below.
+  // Scrolling the newly-revealed field into view and focusing it removes
+  // that "did my click even register?" moment for exactly the kind of user
+  // this form was already simplified for.
   const handleFormSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     if (!editingId && !showPortalSection) {
       e.preventDefault();
       setShowPortalSection(true);
+      requestAnimationFrame(() => {
+        emailInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        emailInputRef.current?.focus();
+      });
       return;
     }
     onSubmit(e);
@@ -150,6 +164,7 @@ export default function StaffFormModal({
                   </label>
                   <input
                     id="staff_email"
+                    ref={emailInputRef}
                     required
                     type="email"
                     name="email"
@@ -278,6 +293,23 @@ export default function StaffFormModal({
             />
           </div>
 
+          <div>
+            <label htmlFor="staff_bio" className="block text-sm font-medium text-[#524A44] mb-1">
+              Bio (Optional)
+            </label>
+            <textarea
+              id="staff_bio"
+              name="bio"
+              value={formData.bio}
+              onChange={e => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+              rows={3}
+              placeholder="e.g. 15 years in bespoke suits, specializes in barong and formal wear"
+              maxLength={1000}
+              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:border-taupe text-sm resize-none"
+            />
+            <p className="text-xs text-[#A8A19A] mt-1">Only visible to you on this staff member&apos;s profile — never shown to customers.</p>
+          </div>
+
           {branches.length > 0 && (
             <div>
               <label htmlFor="staff_branch" className="block text-sm font-medium text-[#524A44] mb-1">
@@ -328,6 +360,28 @@ export default function StaffFormModal({
                 Active Staff Member{' '}
                 <span className="block text-xs font-normal text-[#A8A19A]">
                   Uncheck to mark as inactive (they won&apos;t appear in job assignment lists)
+                </span>
+              </label>
+            </div>
+          )}
+
+          {/* Available toggle — separate from Active: this is a temporary
+              "on leave / out today" flag, not an offboarding one. Staff can
+              also toggle their own via Account Settings; this lets the owner
+              set it on their behalf too (e.g. logging a sick day for them). */}
+          {editingId && (
+            <div className="flex items-center gap-3 pt-1">
+              <input
+                id="staff_is_available"
+                type="checkbox"
+                checked={formData.is_available}
+                onChange={e => setFormData(prev => ({ ...prev, is_available: e.target.checked }))}
+                className="w-4 h-4 rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+              />
+              <label htmlFor="staff_is_available" className="text-sm font-medium text-[#524A44]">
+                Available for New Assignments{' '}
+                <span className="block text-xs font-normal text-[#A8A19A]">
+                  Uncheck if they&apos;re currently on leave or out — shows as &quot;On Leave&quot; on the staff list, doesn&apos;t block existing job assignments.
                 </span>
               </label>
             </div>

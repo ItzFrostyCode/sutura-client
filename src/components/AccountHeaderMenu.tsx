@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
-import { ChevronDown, Eye, Receipt, UserCog, LogOut } from 'lucide-react';
+import { ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 // The account-menu cluster (bell + profile dropdown) from the dashboard
@@ -16,6 +16,13 @@ import NotificationBell from './NotificationBell';
 export default function AccountHeaderMenu() {
   const { user, shop, logout } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
+  // This menu renders both in the dashboard header and (reused, per the
+  // comment above) on the owner's own public storefront page. "My
+  // Storefront" linking to the storefront is pointless when you're already
+  // standing on it — flip it to "My Management" pointing back at the
+  // dashboard instead, whenever we're currently on a /shop/ route.
+  const isOnStorefront = pathname?.startsWith('/shop/') ?? false;
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -64,9 +71,15 @@ export default function AccountHeaderMenu() {
               <p className="text-xs text-[#827A73] truncate">{user?.roles?.[0]?.name?.replace('_', ' ') || 'Shop Owner'}</p>
             </div>
 
-            <Link href={shop?.slug ? `/shop/${shop.slug}` : '/dashboard/profile'} className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors" onClick={() => setIsProfileOpen(false)}>
-              <Eye size={16} /> My Storefront
-            </Link>
+            {isOnStorefront ? (
+              <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors" onClick={() => setIsProfileOpen(false)}>
+                <LayoutDashboard size={16} /> My Management
+              </Link>
+            ) : (
+              <Link href={shop?.slug ? `/shop/${shop.slug}` : '/dashboard/profile'} className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors" onClick={() => setIsProfileOpen(false)}>
+                <Eye size={16} /> My Storefront
+              </Link>
+            )}
 
             <Link href="/dashboard/billing" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors" onClick={() => setIsProfileOpen(false)}>
               <Receipt size={16} /> Billing & Plans
