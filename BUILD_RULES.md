@@ -21,6 +21,22 @@ doubt, REQUIREMENTS.md wins.
 Role boundaries are enforced by permissions and are absolute. Do not work around them with shell
 commands: if the edit tool would deny a file, do not modify that file any other way.
 
+## Git Workflow (added 2026-08-12 — supersedes any earlier "commit to main" habit)
+
+Nobody commits or pushes directly to `main` anymore. Each team member works on their own module
+branch, in both `sutura-client` and `sutura-server`:
+
+| Branch | Module | Owner |
+|---|---|---|
+| `feature/customer-module` | Customer Module | Bulotano, Renalyn C. |
+| `feature/admin-module` | Administrative System Module | Bongo, Jossua A. |
+| `feature/shop-owner-module` | Shop Owner Module | Arabejo, Joshua Wayman A. |
+| `feature/staff-module` | Tailoring Staff Module | Masudog, Clareynz June A. |
+
+Check out your branch, commit and push there, merge to `main` via a Pull Request once your
+module's work is ready — don't push straight to `main`. Pull `main` into your branch periodically
+so you're not merging a stale diff at the end.
+
 ## Repository Conventions
 
 - End-to-end tests, and their configuration, live under `e2e/`. Only qa writes there.

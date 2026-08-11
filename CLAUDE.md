@@ -6,6 +6,26 @@ Capstone project, BSIT, STI College Davao. Team: Joshua Wayman A. Arabejo, Jossu
 
 This is the Next.js frontend. The backend lives in the sibling `sutura-server` repo (Laravel) — same thesis, separate git history.
 
+## Git workflow — branch per module, not direct commits to `main` (as of 2026-08-12)
+
+**Do not commit or push directly to `main` anymore.** Up through 2026-08-12 all of Joshua's Shop Owner Module work landed straight on `main` (that history stays as-is — don't rewrite it) — the team has since switched to a branch-per-module workflow so `main` stays stable while all four people work in this same repo concurrently. If you're an AI agent picking up work here, check which branch you're on (`git branch --show-current`) before committing:
+
+| Branch | Module | Owner |
+|---|---|---|
+| `feature/customer-module` | Customer Module | Bulotano, Renalyn C. |
+| `feature/admin-module` | Administrative System Module | Bongo, Jossua A. |
+| `feature/shop-owner-module` | Shop Owner Module | Arabejo, Joshua Wayman A. |
+| `feature/staff-module` | Tailoring Staff Module | Masudog, Clareynz June A. |
+
+All four already exist on `origin` (both this repo and `sutura-server`), branched from `main` as of 2026-08-12. Workflow:
+1. `git checkout <your feature branch>` — never work directly on `main`.
+2. Commit normally as work progresses.
+3. `git push origin <your feature branch>` — never `git push origin main` directly.
+4. Merge into `main` via a Pull Request on GitHub once a module's work is ready for review, not by pushing straight to `main`.
+5. Periodically merge `main` into your branch (`git merge main`) to pick up other members' merged work and avoid a large stale diff later.
+
+If a task doesn't obviously belong to one of the four modules above, ask the user which branch to use rather than guessing or defaulting to `main`.
+
 ## What SUTURA actually is
 
 A subscription-tiered (Basic/Pro/Premium), multi-branch platform connecting Davao City tailoring shops with customers. It solves two problems at once: customers can't find a shop that does their specific garment (Barong Tagalog, Filipiniana, school uniforms, etc.), and shop owners currently track orders manually — a physical job ticket pinned to a fabric bundle, vague "on going pa po" replies to "sa na po ba?" messages, no real visibility until pickup day.
