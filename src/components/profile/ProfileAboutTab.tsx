@@ -26,6 +26,8 @@ export default function ProfileAboutTab() {
     handleSocialChange,
     handleLogoUpload,
     handleBannerUpload,
+    handleGcashQrUpload,
+    handleBankQrUpload,
     handleSave,
     handleDiscard,
   } = useSettings();
@@ -91,6 +93,8 @@ export default function ProfileAboutTab() {
                     activeTab={activeTab as 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates'}
                     onLogoUpload={handleLogoUpload}
                     onBannerUpload={handleBannerUpload}
+                    onGcashQrUpload={handleGcashQrUpload}
+                    onBankQrUpload={handleBankQrUpload}
                   />
                 )}
               </div>

@@ -44,6 +44,8 @@ export interface ShopSettingsData {
   bank_name: string;
   bank_account_number: string;
   bank_account_name: string;
+  gcash_qr_path: string;
+  bank_qr_path: string;
 }
 
 const DEFAULT_HOURS = {
@@ -128,6 +130,8 @@ export function useSettings() {
     bank_name: '',
     bank_account_number: '',
     bank_account_name: '',
+    gcash_qr_path: '',
+    bank_qr_path: '',
   });
 
   const setFormDataWithDirty = (valueOrUpdater: ShopSettingsData | ((prev: ShopSettingsData) => ShopSettingsData)) => {
@@ -183,6 +187,8 @@ export function useSettings() {
             bank_name: s.bank_name || '',
             bank_account_number: s.bank_account_number || '',
             bank_account_name: s.bank_account_name || '',
+            gcash_qr_path: s.gcash_qr_path || '',
+            bank_qr_path: s.bank_qr_path || '',
           };
           setFormData(loaded);
           savedDataRef.current = loaded;
@@ -259,6 +265,40 @@ export function useSettings() {
     }
   };
 
+  const handleGcashQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && shop) {
+      const file = e.target.files[0];
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setFormDataWithDirty(prev => ({ ...prev, gcash_qr_path: res.data.data.url }));
+        toast.success('GCash QR uploaded — click Save Changes to apply.');
+      } catch {
+        toast.error('Failed to upload GCash QR. Please try again.');
+      }
+    }
+  };
+
+  const handleBankQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && shop) {
+      const file = e.target.files[0];
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setFormDataWithDirty(prev => ({ ...prev, bank_qr_path: res.data.data.url }));
+        toast.success('Bank QR uploaded — click Save Changes to apply.');
+      } catch {
+        toast.error('Failed to upload bank QR. Please try again.');
+      }
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0] && shop) {
       const file = e.target.files[0];
@@ -327,6 +367,8 @@ export function useSettings() {
     handleImageUpload,
     handleLogoUpload,
     handleBannerUpload,
+    handleGcashQrUpload,
+    handleBankQrUpload,
     handleRemoveImage,
     handleSave,
     handleDiscard,
