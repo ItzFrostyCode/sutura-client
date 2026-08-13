@@ -149,7 +149,7 @@ export default function BranchesPage() {
         </div>
         
         {/* Summary Bar Skeleton */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
             <div key={`summary-skel-${i}`} className="bg-white border border-[#EBE6E0] rounded-xl p-4 flex items-center gap-3">
               <div className="w-9 h-9 bg-[#F0EAE3] rounded-lg"></div>

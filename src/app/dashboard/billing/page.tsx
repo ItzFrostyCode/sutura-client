@@ -8,7 +8,7 @@ import api from '@/lib/axios';
 import {
   CreditCard, CheckCircle, Zap, ShieldCheck, Loader2,
   Check, Crown, Rocket, Sparkles, AlertTriangle,
-  Building2, Users, Image, Calendar, Clock, History,
+  Building2, Users, Scissors, Calendar, Clock, History,
   ChevronRight, TrendingUp,
 } from 'lucide-react';
 
@@ -20,6 +20,7 @@ interface Plan {
   description: string;
   features: string;
   max_staff: number;
+  max_services: number;
 }
 
 interface Subscription {
@@ -153,8 +154,12 @@ export default function BillingPage() {
   // an impure/non-idempotent render by the React Compiler lint rule.
   const [now] = useState(() => Date.now());
 
-  // Feature usage counts (from API where available, else mock)
-  const [usageCounts, setUsageCounts] = useState({ branches: 0, staff: 0, gallery: 0 });
+  // Feature usage counts — all three are real, live counts from their own
+  // endpoints. "Gallery Photos" used to sit here as a permanently-hardcoded
+  // 0 with no backing plan limit at all (SubscriptionPlan has no
+  // max_gallery column, never did) — swapped for Services, which has a
+  // real max_services limit that wasn't surfaced anywhere on this page.
+  const [usageCounts, setUsageCounts] = useState({ branches: 0, staff: 0, services: 0 });
 
   const fetchBillingData = useCallback(async () => {
     if (!shop) {
@@ -188,11 +193,12 @@ export default function BillingPage() {
     Promise.allSettled([
       api.get(`/shops/${shop.id}/branches`),
       api.get(`/shops/${shop.id}/staff`),
-    ]).then(([branchRes, staffRes]) => {
+      api.get(`/shops/${shop.id}/services`),
+    ]).then(([branchRes, staffRes, servicesRes]) => {
       setUsageCounts({
-        branches: branchRes.status === 'fulfilled' ? (branchRes.value.data.data?.length ?? 0) : 0,
-        staff:    staffRes.status === 'fulfilled'  ? (staffRes.value.data.data?.length  ?? 0) : 0,
-        gallery: 0,
+        branches: branchRes.status === 'fulfilled'   ? (branchRes.value.data.data?.length   ?? 0) : 0,
+        staff:    staffRes.status === 'fulfilled'    ? (staffRes.value.data.data?.length    ?? 0) : 0,
+        services: servicesRes.status === 'fulfilled' ? (servicesRes.value.data.data?.length ?? 0) : 0,
       });
     });
   }, [shop?.id]);
@@ -244,6 +250,7 @@ export default function BillingPage() {
   const activePlanId = currentSubscription?.plan_id;
   const activePlanSlug = currentSubscription?.plan?.slug ?? '';
   const activePlanMaxStaff = currentSubscription?.plan?.max_staff;
+  const activePlanMaxServices = currentSubscription?.plan?.max_services;
   const limits = {
     // `?? BRANCH_LIMITS.basic` looks like a safe "plan not found" fallback,
     // but BRANCH_LIMITS.premium is *itself* `null` (the documented
@@ -257,7 +264,7 @@ export default function BillingPage() {
     // -1 is this table's documented "unlimited" sentinel (see
     // SubscriptionPlanSeeder) — not a real cap to render as a number.
     staff: activePlanMaxStaff === -1 ? null : activePlanMaxStaff ?? null,
-    gallery: null,
+    services: activePlanMaxServices === -1 ? null : activePlanMaxServices ?? null,
   };
 
   const getButtonContent = (plan: Plan) => {
@@ -393,7 +400,7 @@ export default function BillingPage() {
         <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm space-y-5">
           <UsageBar label="Branches"       used={usageCounts.branches} max={limits.branches} icon={Building2} />
           <UsageBar label="Staff Accounts" used={usageCounts.staff}    max={limits.staff}    icon={Users} />
-          <UsageBar label="Gallery Photos" used={usageCounts.gallery}  max={limits.gallery}  icon={Image} />
+          <UsageBar label="Services"       used={usageCounts.services} max={limits.services} icon={Scissors} />
           {activePlanSlug !== 'premium' && (
             <div className="pt-2 border-t border-[#EBE6E0] flex items-center justify-between">
               <p className="text-xs text-[#827A73]">Need more? Upgrade your plan to unlock higher limits.</p>

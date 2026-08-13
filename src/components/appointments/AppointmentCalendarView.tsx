@@ -50,27 +50,29 @@ export default function AppointmentCalendarView({
 
   if (calSubMode === 'month') {
     return (
-      <div className="p-6">
-        {/* Nav */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-[#2D2A26]">
+      <div className="p-3 sm:p-6">
+        {/* Nav — used to be one fixed-gap row that squeezed and overflowed
+            on narrow screens (mismatched left/right margins); wraps onto
+            its own line on mobile instead, with tighter spacing. */}
+        <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h2 className="text-base sm:text-xl font-bold text-[#2D2A26]">
               {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </h2>
-            <button onClick={() => setCurrentDate(new Date())} className="text-xs font-semibold px-3 py-1 rounded-lg border border-[#EBE6E0] bg-[#FAF6F3] text-[#9A8073] hover:bg-[#F0EAE3] transition-colors">Today</button>
+            <button onClick={() => setCurrentDate(new Date())} className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-lg border border-[#EBE6E0] bg-[#FAF6F3] text-[#9A8073] hover:bg-[#F0EAE3] transition-colors">Today</button>
           </div>
           <div className="flex gap-2">
-            <button onClick={prevMonth} className="p-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronLeft size={18} /></button>
-            <button onClick={nextMonth} className="p-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronRight size={18} /></button>
+            <button onClick={prevMonth} className="p-1.5 sm:p-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronLeft size={16} /></button>
+            <button onClick={nextMonth} className="p-1.5 sm:p-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronRight size={16} /></button>
           </div>
         </div>
 
         {/* Type legend */}
-        <div className="flex items-center gap-4 mb-4 flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 flex-wrap">
           {(Object.keys(TYPE_CONFIG) as AppointmentType[]).map(t => (
             <div key={t} className="flex items-center gap-1.5">
               <span className={`w-2.5 h-2.5 rounded-full ${TYPE_CONFIG[t].dot}`} />
-              <span className="text-xs text-[#827A73]">{TYPE_CONFIG[t].label}</span>
+              <span className="text-[11px] sm:text-xs text-[#827A73]">{TYPE_CONFIG[t].label}</span>
             </div>
           ))}
         </div>
@@ -78,13 +80,13 @@ export default function AppointmentCalendarView({
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-px mb-px">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-            <div key={d} className="text-center text-[11px] font-semibold text-[#A8A19A] uppercase tracking-wider py-2 bg-[#FAF6F3]/50">{d}</div>
+            <div key={d} className="text-center text-[9px] sm:text-[11px] font-semibold text-[#A8A19A] uppercase tracking-wider py-1.5 sm:py-2 bg-[#FAF6F3]/50">{d}</div>
           ))}
         </div>
 
         {/* Day cells */}
         <div className="grid grid-cols-7 gap-px bg-[#EBE6E0]">
-          {paddingDays.map(i => <div key={`e-${i}`} className="min-h-28 bg-white/40 p-1.5" />)}
+          {paddingDays.map(i => <div key={`e-${i}`} className="min-h-16 sm:min-h-28 bg-white/40 p-1 sm:p-1.5" />)}
           {daysArray.map(day => {
             const y = year, m = String(month + 1).padStart(2, '0'), d = String(day).padStart(2, '0');
             const dateStr = `${y}-${m}-${d}`;
@@ -108,10 +110,10 @@ export default function AppointmentCalendarView({
                     setCalSubMode('day');
                   }
                 }}
-                className={`min-h-28 p-1.5 group transition-colors text-left w-full ${isPast ? 'bg-[#FAF6F3]/40 cursor-default' : 'bg-white cursor-pointer hover:bg-[#FAF6F3]'} ${!isPast && hasPending ? 'ring-inset ring-1 ring-amber-300' : ''}`}
+                className={`min-h-16 sm:min-h-28 p-1 sm:p-1.5 group transition-colors text-left w-full ${isPast ? 'bg-[#FAF6F3]/40 cursor-default' : 'bg-white cursor-pointer hover:bg-[#FAF6F3]'} ${!isPast && hasPending ? 'ring-inset ring-1 ring-amber-300' : ''}`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${dayTextClass}`}>
+                  <span className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-[11px] sm:text-xs font-semibold ${dayTextClass}`}>
                     {day}
                   </span>
                   {dayEvents.length > 0 && (
@@ -128,9 +130,14 @@ export default function AppointmentCalendarView({
                       : `${tc.bg} ${tc.border} ${tc.text} ${sc.opacity}`;
                     const borderDashedClass = !isPast && event.status === 'pending' ? 'border-dashed' : '';
                     return (
-                      <div key={event.id} className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border truncate ${eventColorClass} ${borderDashedClass}`}>
+                      // time is shrink-0/nowrap so it never truncates — only
+                      // the customer name gives way on a narrow mobile cell.
+                      // It used to share one `truncate` span with the name,
+                      // which could clip the minutes off the time itself.
+                      <div key={event.id} className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded flex items-center gap-1 border overflow-hidden ${eventColorClass} ${borderDashedClass}`}>
                         <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${isPast ? 'bg-gray-300' : tc.dot}`} />
-                        <span className="truncate">{time} {event.customer?.name}</span>
+                        <span className="shrink-0 whitespace-nowrap font-medium">{time}</span>
+                        <span className="truncate hidden sm:inline">{event.customer?.name}</span>
                       </div>
                     );
                   })}
@@ -242,46 +249,58 @@ export default function AppointmentCalendarView({
 
   return (
     <div className="flex flex-col">
-      {/* Day nav */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#EBE6E0] bg-[#FAF6F3]/40">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setCalSubMode('month')} className="flex items-center gap-1.5 text-sm font-medium text-[#9A8073] hover:text-[#2D2A26] transition-colors">
-            <ArrowLeft size={16} />
-            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+      {/* Day nav — used to be one row cramming a "‹ Month" button, a full
+          "Weekday, Month Day" title, and an appointment-count badge into a
+          fixed px-6 header, which overflowed/wrapped unevenly on mobile.
+          Stacks into two rows below the sm breakpoint instead, with tighter
+          padding and an abbreviated date format so it actually fits. */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-6 py-3 sm:py-4 border-b border-[#EBE6E0] bg-[#FAF6F3]/40">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <button onClick={() => setCalSubMode('month')} className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#9A8073] hover:text-[#2D2A26] transition-colors shrink-0">
+            <ArrowLeft size={14} />
+            <span className="hidden sm:inline">{currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+            <span className="sm:hidden">{currentDate.toLocaleDateString('en-US', { month: 'short' })}</span>
           </button>
-          <span className="text-[#EBE6E0]">›</span>
-          <h2 className="text-lg font-bold text-[#2D2A26]">
-            {dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          <span className="text-[#EBE6E0] hidden sm:inline">›</span>
+          <h2 className="text-sm sm:text-lg font-bold text-[#2D2A26]">
+            <span className="hidden sm:inline">{dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+            <span className="sm:hidden">{dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
           </h2>
           {dayEvents.length > 0 && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#9A8073]/10 text-[#9A8073]">
+            <span className="text-[11px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-[#9A8073]/10 text-[#9A8073]">
               {dayEvents.length} appointment{dayEvents.length === 1 ? '' : 's'}
             </span>
           )}
         </div>
-        <div className="flex gap-2">
-          <button onClick={prevDay} className="p-2 bg-white border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronLeft size={16} /></button>
-          <button onClick={() => setSelectedDay(new Date())} className="text-xs font-semibold px-3 py-1 rounded-lg border border-[#EBE6E0] bg-white text-[#9A8073] hover:bg-[#F0EAE3] transition-colors">Today</button>
-          <button onClick={nextDay} className="p-2 bg-white border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronRight size={16} /></button>
+        <div className="flex gap-2 self-end sm:self-auto">
+          <button onClick={prevDay} className="p-1.5 sm:p-2 bg-white border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronLeft size={16} /></button>
+          <button onClick={() => setSelectedDay(new Date())} className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-lg border border-[#EBE6E0] bg-white text-[#9A8073] hover:bg-[#F0EAE3] transition-colors">Today</button>
+          <button onClick={nextDay} className="p-1.5 sm:p-2 bg-white border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#2D2A26] transition-colors"><ChevronRight size={16} /></button>
         </div>
       </div>
 
       <div className="flex overflow-hidden">
-        {/* Time labels */}
-        <div className="w-16 shrink-0 border-r border-[#EBE6E0] bg-[#FAF6F3]/30">
-          {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => {
-            const h = HOUR_START + i;
-            let lbl = '';
-            if (h < 12) {
-              lbl = `${h} AM`;
-            } else if (h === 12) {
-              lbl = '12 PM';
-            } else {
-              lbl = `${h - 12} PM`;
-            }
+        {/* Time labels — quarter-hour ticks (:00/:15/:30/:45), not just the
+            bare hour, so an appointment's actual minute can be read straight
+            off the axis instead of only off the appointment card. Narrower
+            on mobile so more width goes to the actual appointment blocks. */}
+        <div className="w-11 sm:w-16 shrink-0 border-r border-[#EBE6E0] bg-[#FAF6F3]/30">
+          {Array.from({ length: (HOUR_END - HOUR_START) * 4 }, (_, i) => {
+            const h = HOUR_START + Math.floor(i / 4);
+            const quarter = i % 4;
+            const isHourMark = quarter === 0;
+            let hourLbl = '';
+            if (h < 12) hourLbl = `${h} AM`;
+            else if (h === 12) hourLbl = '12 PM';
+            else hourLbl = `${h - 12} PM`;
             return (
-              <div key={h} style={{ height: `${60 * PX_PER_MIN}px` }} className="flex items-start justify-end pr-3 pt-1">
-                <span className="text-[10px] text-[#A8A19A] font-medium">{lbl}</span>
+              <div key={i} style={{ height: `${15 * PX_PER_MIN}px` }} className="flex items-start justify-end pr-1.5 sm:pr-3 pt-0.5">
+                <span className={isHourMark
+                  ? 'text-[9px] sm:text-[10px] text-[#A8A19A] font-medium'
+                  : 'text-[8px] sm:text-[9px] text-[#C4BDB6]'
+                }>
+                  {isHourMark ? hourLbl : `:${quarter * 15}`}
+                </span>
               </div>
             );
           })}
@@ -293,9 +312,15 @@ export default function AppointmentCalendarView({
           {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
             <div key={i} className="absolute left-0 right-0 border-t border-[#EBE6E0]/70" style={{ top: `${i * 60 * PX_PER_MIN}px` }} />
           ))}
-          {/* Half-hour dashes */}
-          {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
-            <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-[#EBE6E0]/30 border-dashed" style={{ top: `${(i * 60 + 30) * PX_PER_MIN}px` }} />
+          {/* Quarter-hour dashes — matches the axis's new :15/:30/:45 ticks */}
+          {Array.from({ length: (HOUR_END - HOUR_START) * 4 }, (_, i) => (
+            i % 4 !== 0 && (
+              <div
+                key={`q-${i}`}
+                className={`absolute left-0 right-0 border-t border-dashed ${i % 4 === 2 ? 'border-[#EBE6E0]/40' : 'border-[#EBE6E0]/20'}`}
+                style={{ top: `${i * 15 * PX_PER_MIN}px` }}
+              />
+            )
           ))}
 
           {/* Current time indicator */}
@@ -323,18 +348,28 @@ export default function AppointmentCalendarView({
             const isInProg = event.status === 'in_progress';
             const isClosed = ['cancelled', 'no_show'].includes(event.status);
 
+            // Action buttons show once expanded (hover, or tap on touch —
+            // onMouseEnter never reliably fires on a touchscreen, so tapping
+            // toggles the same isHovered state instead). That expanded state
+            // used to render past the block's fixed height with
+            // overflow-hidden still on, clipping the buttons to an
+            // unclickable sliver for any appointment under ~60min; switches
+            // to overflow-visible + min-height once expanded so the block
+            // actually grows to fit them instead of clipping.
+            const isExpanded = (isHovered || heightPx >= 90) && !isClosed;
             return (
               <article
                 key={event.id}
-                className={`absolute rounded-lg border overflow-hidden transition-all duration-150 ${tc.bg} ${tc.border} ${sc.opacity} ${isPending ? 'border-dashed' : sc.borderStyle} ${isHovered && !isClosed ? 'shadow-lg z-10 ring-2 ring-[#9A8073]/30' : 'z-1'}`}
+                className={`absolute rounded-lg border transition-all duration-150 ${isExpanded ? 'overflow-visible' : 'overflow-hidden'} ${tc.bg} ${tc.border} ${sc.opacity} ${isPending ? 'border-dashed' : sc.borderStyle} ${isHovered && !isClosed ? 'shadow-lg z-10 ring-2 ring-[#9A8073]/30' : 'z-1'}`}
                 style={{
                   top: `${topPx}px`,
-                  height: `${heightPx}px`,
+                  [isExpanded ? 'minHeight' : 'height']: `${heightPx}px`,
                   left: `calc(8px + (100% - 16px) * ${col} / ${totalCols})`,
                   width: `calc((100% - 16px) / ${totalCols}${totalCols > 1 ? ' - 4px' : ''})`,
                 }}
                 onMouseEnter={() => setHoveredAptId(event.id)}
                 onMouseLeave={() => setHoveredAptId(null)}
+                onClick={() => setHoveredAptId(isHovered ? null : event.id)}
               >
                 <div className="flex h-full">
                   {/* Type color bar */}
@@ -364,8 +399,8 @@ export default function AppointmentCalendarView({
                         <StatusBadge status={event.status} />
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <Clock size={9} className="text-[#A8A19A]" />
-                        <span className="text-[10px] text-[#A8A19A]">
+                        <Clock size={9} className="text-[#A8A19A] shrink-0" />
+                        <span className="text-[9px] sm:text-[10px] text-[#A8A19A] whitespace-nowrap overflow-hidden text-ellipsis">
                           {new Date(event.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                           {' – '}
                           {new Date(new Date(event.scheduled_at).getTime() + durMins * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}

@@ -185,7 +185,10 @@ export default function ReportsPage() {
       const { startDate, endDate } = getDateRangeForPeriod(period);
 
       let url = `/shops/${shop?.id}/analytics/staff`;
-      if (startDate && endDate) url += `?start_date=${startDate}&end_date=${endDate}`;
+      const queryParams: string[] = [];
+      if (startDate && endDate) queryParams.push(`start_date=${startDate}`, `end_date=${endDate}`);
+      if (selectedBranchId !== null) queryParams.push(`branch_id=${selectedBranchId}`);
+      if (queryParams.length > 0) url += `?${queryParams.join('&')}`;
 
       try {
         const res = await api.get(url);
@@ -198,8 +201,7 @@ export default function ReportsPage() {
     }
 
     fetchStaffProductivity();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shop?.id, period, isShopOwner]);
+  }, [shop?.id, period, isShopOwner, selectedBranchId]);
 
   // ─── Derived chart data ──────────────────────────────────────────────────
 
