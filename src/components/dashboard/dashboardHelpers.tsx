@@ -33,9 +33,22 @@ export interface AnalyticsData {
     order_number?: string;
     total_amount: number | string;
     customer?: { name: string };
+    created_at?: string;
   }[];
   revenue_data?: { month: string; date?: string; revenue: number }[];
   jobs_by_status?: { status: string; count: number }[];
+  // Same aging-alert data Reports' own tables list in full — Home's Needs
+  // Attention section only needs the count to flag that they exist at all.
+  unclaimed_pickups?: unknown[];
+  jobs_on_hold?: unknown[];
+  completed_unpaid_jobs?: JobItem[];
+  completed_unpaid_jobs_count?: number;
+  pending_dp_jobs_list?: JobItem[];
+  pending_dp_jobs_list_count?: number;
+  due_today_jobs?: JobItem[];
+  due_today_jobs_count?: number;
+  due_this_week_jobs?: JobItem[];
+  due_this_week_jobs_count?: number;
 }
 
 export interface JobItem {
@@ -54,6 +67,7 @@ export interface JobItem {
 export interface StaffPresence {
   id: number;
   role: string;
+  shop_branch_id?: number | null;
   user: { name: string; last_seen_at?: string | null };
   _onlineSince: number; // epoch ms when last_seen_at was first within 5 min
 }

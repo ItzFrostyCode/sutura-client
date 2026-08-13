@@ -95,7 +95,7 @@ export default function PaymentQueuePage() {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3">
         {/* List */}
-        <div className="lg:col-span-2 divide-y divide-[#EBE6E0]">
+        <div className="order-2 lg:order-none lg:col-span-2 divide-y divide-[#EBE6E0]">
           {receipts.map(item => (
             <button
               key={`${item.type}-${item.id}`}
@@ -125,7 +125,13 @@ export default function PaymentQueuePage() {
           ))}
         </div>
         {/* Detail panel */}
-        <div className="lg:col-span-1 border-l border-[#EBE6E0]">
+        {/* Was stacked below the whole receipts list on mobile (no lg: split
+            there, just grid-cols-1 in DOM order) — after tapping a receipt
+            to review it, the Approve/Reject buttons here were off-screen
+            below however many items were in the queue. order-1 puts this
+            panel first on mobile only; desktop keeps its normal left/right
+            split via lg:order-none. */}
+        <div className="order-1 lg:order-none lg:col-span-1 border-l border-[#EBE6E0]">
           {selectedReceipt ? (
             <div className="p-5 space-y-5">
               <div>

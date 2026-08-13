@@ -340,7 +340,12 @@ export default function DashboardCharts({
                     <p className="text-sm font-medium text-[#2D2A26] truncate">
                       {order.customer?.name || 'Walk-in Customer'}
                     </p>
-                    <p className="text-xs text-[#A8A19A]">{order.order_number || `#${order.id}`}</p>
+                    <p className="text-xs text-[#A8A19A]">
+                      {order.order_number || `#${order.id}`}
+                      {order.created_at && (
+                        <> · {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
+                      )}
+                    </p>
                   </div>
                   <span className="text-sm font-bold text-[#2D2A26] shrink-0 ml-3">
                     ₱{(Number(order.total_amount) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}

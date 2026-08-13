@@ -11,6 +11,7 @@ import { AnalyticsData, JobItem, StaffPresence } from '@/components/dashboard/da
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardAlerts from '@/components/dashboard/DashboardAlerts';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
+import ShopVisibilityPill from '@/components/dashboard/ShopVisibilityPill';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import StaffOnline from '@/components/dashboard/StaffOnline';
 import RecentReviews from '@/components/dashboard/RecentReviews';
@@ -19,7 +20,7 @@ import WelcomeView from '@/components/dashboard/WelcomeView';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
   Calendar, Scissors, Users, AlertTriangle, CreditCard,
-  PackageCheck, Zap, Clock, CheckCircle2, TrendingUp,
+  PackageCheck, Zap, Clock, CheckCircle2, TrendingUp, PauseCircle,
 } from 'lucide-react';
 export default function DashboardPage() {
   const { shop, user } = useAuthStore();
@@ -42,9 +43,6 @@ export default function DashboardPage() {
   const [unpaidJobs, setUnpaidJobs] = useState<JobItem[]>([]);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
 
-  // Daily/Weekly jobs
-  const [allJobs, setAllJobs] = useState<JobItem[]>([]);
-
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
 
@@ -58,6 +56,12 @@ export default function DashboardPage() {
         const FIVE_MIN = 5 * 60 * 1000;
         const now = Date.now();
         const online = raw
+          // StaffController::index has no server-side branch_id filter (unlike
+          // jobs/appointments/analytics), so this widget filters client-side —
+          // otherwise selecting a branch left "Online Staff" silently still
+          // showing every branch's staff, the same gap already fixed for
+          // Reports/Payments/Orders.
+          .filter(s => selectedBranchId === null || s.shop_branch_id === selectedBranchId)
           .filter(s => {
             if (!s.user?.last_seen_at) return false;
             return now - new Date(s.user.last_seen_at).getTime() < FIVE_MIN;
@@ -67,7 +71,7 @@ export default function DashboardPage() {
         setOnlineStaff(online);
       })
       .catch(() => {});
-  }, [shop, isShopOwner]);
+  }, [shop, isShopOwner, selectedBranchId]);
 
   useEffect(() => {
     if (shop?.id) {
@@ -86,7 +90,17 @@ export default function DashboardPage() {
 
       if (canViewAnalytics) {
         api.get(`/shops/${shop.id}/analytics`, { params })
-          .then(res => { setData(res.data.data); setLoading(false); })
+          .then(res => {
+            setData(res.data.data);
+            // Was re-derived client-side from the jobs fetch below, which is
+            // capped at per_page=200 — a shop with more historical job orders
+            // than that could have an older completed-unpaid job silently
+            // drop out of the count, same undercounting shape as the
+            // notification badge bug. completed_unpaid_jobs comes from a
+            // dedicated, uncapped backend query instead.
+            setUnpaidJobs(res.data.data?.completed_unpaid_jobs || []);
+            setLoading(false);
+          })
           .catch(() => setLoading(false));
       } else {
         // Deferred (not called synchronously) so it resolves after the
@@ -102,17 +116,6 @@ export default function DashboardPage() {
           .then(res => setShopVisible(!res.data.data?.is_hidden))
           .catch(() => {});
       }
-      api.get(`/shops/${shop.id}/jobs`, { params: { per_page: 200, ...params } })
-        .then(res => {
-          const rawData = res.data.data;
-          const jobs: JobItem[] = Array.isArray(rawData) ? rawData : (rawData?.data || []);
-          setAllJobs(jobs);
-          const unpaid = jobs.filter(
-            j => j.status === 'completed' && j.payment_status !== 'paid' && Number.parseFloat(String(j.balance || '0')) > 0
-          );
-          setUnpaidJobs(unpaid);
-        })
-        .catch(() => {});
       fetchOnlineStaff();
     } else if (user?.id) {
       setTimeout(() => setLoading(false), 0);
@@ -189,39 +192,27 @@ export default function DashboardPage() {
     }
   };
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
-  // Matches JobOrder::STATUSES minus the terminal ones (completed, cancelled,
-  // rejected) and 'on_hold' — a paused job shouldn't surface as due/pending.
-  const activeStatuses = new Set([
-    'pending', 'design', 'pattern_making', 'mass_cutting_printing',
-    'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing',
-    'ready_for_pickup',
-  ]);
-
-  const dueToday = allJobs.filter(j => {
-    if (!j.due_date || !activeStatuses.has(j.status)) return false;
-    const d = new Date(j.due_date); d.setHours(0, 0, 0, 0);
-    return d.getTime() === today.getTime();
-  });
-
-  const dueThisWeek = allJobs.filter(j => {
-    if (!j.due_date || !activeStatuses.has(j.status)) return false;
-    const d = new Date(j.due_date); d.setHours(0, 0, 0, 0);
-    return d > today && d <= weekEnd;
-  });
+  // Due Today / Due This Week — from dedicated, unbounded backend queries,
+  // not re-derived from the capped (per_page=200) allJobs fetch. A
+  // long-lead-time order (a bridal gown booked months ahead, say) can have
+  // been *created* well outside that fetch's recency window while still
+  // being due today — confirmed live: a job backdated 6 months with today's
+  // due_date was invisible to the old client-side filter, found correctly
+  // by this one. Same undercounting shape as the notification badge,
+  // Balance Collection, and downpayment alerts already fixed.
+  const dueToday = data?.due_today_jobs ?? [];
+  const dueThisWeek = data?.due_this_week_jobs ?? [];
 
   // Today's appointments now come from analytics data
   const todayAppointments = data?.today_appointments ?? [];
 
-  // Active jobs with no downpayment collected.
-  // The server tracks this via payment_status='unpaid' (balance === total_amount, nothing paid).
-  const activeStatuses2 = activeStatuses;
-  const pendingDpJobs = allJobs.filter(j =>
-    activeStatuses2.has(j.status) &&
-    j.payment_status === 'unpaid' &&
-    Number.parseFloat(String(j.total_amount ?? '0')) > 0
-  );
+  // Active jobs with no downpayment collected — from a dedicated, unbounded
+  // backend query (pending_dp_jobs_list), not re-derived from the capped
+  // (per_page=200) allJobs fetch. Same undercounting risk as the
+  // notification badge and Balance Collection alert bugs already fixed:
+  // a shop with more than 200 historical job orders could have an older
+  // still-active unpaid job silently drop out of a client-side filter.
+  const pendingDpJobs = data?.pending_dp_jobs_list ?? [];
 
   // Needs Attention cards
   const needsAttentionCards = [
@@ -264,6 +255,30 @@ export default function DashboardPage() {
       href: '/dashboard/jobs',
       color: 'bg-violet-50 border-violet-200 text-violet-800',
       iconColor: 'bg-violet-100 text-violet-600',
+    },
+    // Both of these already exist as full aging-alert lists on Reports (with
+    // their own daily digest notifications) — Needs Attention only showed 4
+    // of the 6 real categories the system tracks, which read as incomplete
+    // next to Reports' own "Unclaimed Pickups"/"Jobs On Hold" tables.
+    {
+      id: 'unclaimed',
+      count: data?.unclaimed_pickups?.length ?? 0,
+      label: 'Unclaimed Pickups',
+      sub: 'Ready 14+ days, not yet collected',
+      icon: Clock,
+      href: '/dashboard/reports',
+      color: 'bg-orange-50 border-orange-200 text-orange-800',
+      iconColor: 'bg-orange-100 text-orange-600',
+    },
+    {
+      id: 'on_hold',
+      count: data?.jobs_on_hold?.length ?? 0,
+      label: 'Jobs On Hold',
+      sub: 'Paused 7+ days',
+      icon: PauseCircle,
+      href: '/dashboard/reports',
+      color: 'bg-slate-50 border-slate-200 text-slate-700',
+      iconColor: 'bg-slate-100 text-slate-600',
     },
   ].filter(c => c.count > 0);
 
@@ -310,7 +325,14 @@ export default function DashboardPage() {
       )}
 
       {/* ── Financial Snapshot Row ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#827A73]">Financial Snapshot</p>
+        <ShopVisibilityPill shopVisible={shopVisible} toggleVisibility={toggleVisibility} visibilityLoading={visibilityLoading} />
+      </div>
+      {/* Sharp corners, flush tiles sharing hairline dividers instead of
+          gapped rounded cards — matches the ink-economy house style
+          established on the print pages (no boxed-in-a-box sections). */}
+      <div className="grid grid-cols-2 md:grid-cols-4 bg-white shadow-sm border border-[#EBE6E0] divide-x divide-y md:divide-y-0 divide-[#EBE6E0]">
         {[
           {
             label: 'Today\'s Revenue',
@@ -341,10 +363,10 @@ export default function DashboardPage() {
             bg: 'bg-violet-50',
           },
         ].map((m) => (
-          <div key={m.label} className="p-5 rounded-2xl bg-white shadow-sm border border-[#EBE6E0] flex flex-col gap-3">
+          <div key={m.label} className="p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-[#827A73] uppercase tracking-wider">{m.label}</p>
-              <div className={`w-8 h-8 rounded-xl ${m.bg} flex items-center justify-center`}>
+              <div className={`w-8 h-8 ${m.bg} flex items-center justify-center`}>
                 <m.icon size={16} className={m.color} />
               </div>
             </div>
@@ -353,11 +375,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Alerts (Shop Visibility + Balance Collection + Due Today/Week) */}
+      {/* Alerts (Balance Collection + Due Today/Week) */}
       <DashboardAlerts
-        shopVisible={shopVisible}
-        toggleVisibility={toggleVisibility}
-        visibilityLoading={visibilityLoading}
         unpaidJobs={unpaidJobs}
         pendingDpJobs={pendingDpJobs}
         balanceExpanded={balanceExpanded}

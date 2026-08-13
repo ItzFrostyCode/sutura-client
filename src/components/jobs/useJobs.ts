@@ -20,6 +20,14 @@ export function useJobs() {
   // bar (e.g. "Barong Tagalog: 3") to see exactly those 3 jobs, not just the count.
   const garmentCategoryFilter = searchParams.get('garment_category');
   const [jobs, setJobs] = useState<Job[]>([]);
+  // From the backend's dedicated, unbounded counts — used to be re-derived
+  // by filtering the (per_page=200-capped) `jobs` array itself, which would
+  // silently undercount on any shop with more than 200 total historical
+  // job orders (old completed/cancelled ones included, nothing prunes
+  // them). Same undercounting shape already fixed on the Home dashboard.
+  const [walkInCount, setWalkInCount] = useState(0);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
@@ -36,9 +44,21 @@ export function useJobs() {
       if (selectedBranchId !== null) {
         params.branch_id = selectedBranchId;
       }
+      // Backend-side now too (JobOrderController::index's own `search`
+      // param) — the search box used to only ever filter the already-fetched
+      // (per_page=200-capped) `jobs` array below, so a real order beyond
+      // that window was simply invisible to search. Kept both: this fetch
+      // guarantees nothing is missed, the client-side filter below still
+      // gives instant feedback on each keystroke without waiting on it.
+      if (search.trim()) {
+        params.search = search.trim();
+      }
       api.get(`/shops/${shop.id}/jobs`, { params })
         .then(res => {
           setJobs(res.data.data.data || res.data.data);
+          setWalkInCount(res.data.walk_in_count ?? 0);
+          setOnlineCount(res.data.online_count ?? 0);
+          setPendingReviewCount(res.data.pending_count ?? 0);
           setLoading(false);
         })
         .catch(err => {
@@ -59,6 +79,16 @@ export function useJobs() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop, user, selectedBranchId]);
+
+  // Debounced re-fetch when the search term changes, so typing doesn't fire
+  // a request per keystroke — the branch/shop effect above still runs
+  // immediately since those change far less often (a dropdown pick, not
+  // continuous typing).
+  useEffect(() => {
+    const timer = setTimeout(() => { fetchJobs(); }, 300);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const updateJobStatus = async (jobId: number, newStatus: string, reason?: string) => {
     if (!shop) return;
@@ -189,10 +219,6 @@ export function useJobs() {
   const onHoldJobs = filteredJobs
     .filter(j => j.status === 'on_hold')
     .sort((a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime());
-
-  const walkInCount = jobs.filter(j => j.intake_channel === 'walk_in').length;
-  const onlineCount = jobs.filter(j => j.intake_channel === 'online').length;
-  const pendingReviewCount = jobs.filter(j => j.status === 'pending').length;
 
   return {
     jobs,
