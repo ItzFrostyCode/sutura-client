@@ -5,6 +5,7 @@ import { X, Zap, Loader2, User, Scissors, CalendarDays, CreditCard, Check, Alert
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import { useRouter } from 'next/navigation';
 
 interface QuickJobModalProps {
@@ -24,6 +25,7 @@ const DP_PRESETS = [
 
 export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobModalProps) {
   const { shop } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const toast = useToast();
   const router = useRouter();
 
@@ -91,6 +93,12 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
         fulfillment_type: 'pickup',
         customer_id: customerId,
         service_id:  serviceId,
+        // Quick Job never assigns staff at creation, so JobOrderController@store's
+        // own branch-fallback chain (assigned staff → creator's own branch →
+        // shop's main branch) has nothing to derive from and always lands on the
+        // main branch — silently dropping the job out of whichever non-main
+        // branch the owner had selected in the header when they created it.
+        shop_branch_id: selectedBranchId ?? undefined,
         total_amount: totalNum,
         downpayment:  dpNum,
         balance:      balance,

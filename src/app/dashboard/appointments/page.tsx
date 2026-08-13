@@ -151,8 +151,12 @@ export default function AppointmentsPage() {
                 ))}
               </select>
 
-              {/* Status tabs */}
-              <div className="flex flex-wrap items-center gap-1 border border-[#EBE6E0] rounded-lg bg-white p-1 w-full sm:w-auto sm:ml-auto">
+              {/* Status tabs — used to flex-wrap, which pushed "Cancelled"
+                  onto its own line inside the bordered pill on a narrow
+                  screen, looking broken rather than intentional. Scrolls
+                  horizontally instead (the standard pattern for an
+                  overflowing tab bar on mobile), staying one clean row. */}
+              <div className="flex items-center gap-1 border border-[#EBE6E0] rounded-lg bg-white p-1 w-full sm:w-auto sm:ml-auto overflow-x-auto">
                 {(['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const).map(s => {
                   let tabLabel = '';
                   if (s === 'all') {
@@ -166,7 +170,7 @@ export default function AppointmentsPage() {
                     <button
                       key={s}
                       onClick={() => setStatusFilter(s)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors relative ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors relative shrink-0 whitespace-nowrap ${
                         statusFilter === s ? 'bg-[#F0EAE3] text-[#2D2A26]' : 'text-[#827A73] hover:text-[#2D2A26]'
                       }`}
                     >

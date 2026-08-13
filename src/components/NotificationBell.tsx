@@ -149,6 +149,11 @@ function getTypeConfig(type?: string) {
 export default function NotificationBell() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  // Backend-computed, unlimited-scope count — the list itself is capped to
+  // the 30 most recent notifications, so deriving "unread" by filtering
+  // that same capped array would silently undercount any owner sitting on
+  // more than 30 unread notifications at once.
+  const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [dismissing, setDismissing] = useState<string | null>(null);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
@@ -166,7 +171,10 @@ export default function NotificationBell() {
         const res = await api.get('/notifications');
         const raw = res.data.data;
         const list: AppNotification[] = Array.isArray(raw) ? raw : raw?.data ?? [];
-        if (!cancelled) setNotifications(list);
+        if (!cancelled) {
+          setNotifications(list);
+          setUnreadCount(typeof res.data.unread_count === 'number' ? res.data.unread_count : list.filter(n => !n.read_at).length);
+        }
       } catch {
         // Silently fail — bell shows 0 unread
       }
@@ -211,7 +219,11 @@ export default function NotificationBell() {
     setDismissing(id);
     try {
       await api.post(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n));
+      setNotifications(prev => {
+        const wasUnread = prev.some(n => n.id === id && !n.read_at);
+        if (wasUnread) setUnreadCount(c => Math.max(0, c - 1));
+        return prev.map(n => n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n);
+      });
     } catch {
       /* ignore */
     } finally {
@@ -224,6 +236,10 @@ export default function NotificationBell() {
     try {
       await api.post('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
+      // Safe to zero out directly — this endpoint marks every notification
+      // read, not just the 30 in the local list, so it can't leave any
+      // unread ones uncounted the way a per-item update could.
+      setUnreadCount(0);
     } catch {
       /* ignore */
     }
@@ -234,7 +250,11 @@ export default function NotificationBell() {
     setMenuOpenFor(null);
     try {
       await api.post(`/notifications/${id}/unread`);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: null } : n));
+      setNotifications(prev => {
+        const wasRead = prev.some(n => n.id === id && n.read_at);
+        if (wasRead) setUnreadCount(c => c + 1);
+        return prev.map(n => n.id === id ? { ...n, read_at: null } : n);
+      });
     } catch {
       /* ignore */
     }
@@ -246,7 +266,11 @@ export default function NotificationBell() {
     setMenuOpenFor(null);
     try {
       await api.delete(`/notifications/${id}`);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      setNotifications(prev => {
+        const wasUnread = prev.some(n => n.id === id && !n.read_at);
+        if (wasUnread) setUnreadCount(c => Math.max(0, c - 1));
+        return prev.filter(n => n.id !== id);
+      });
     } catch {
       /* ignore */
     }
@@ -260,7 +284,7 @@ export default function NotificationBell() {
     setOpen(false);
   };
 
-  const count = notifications.filter(n => !n.read_at).length;
+  const count = unreadCount;
   const bellLabel = count > 0 ? `${count} unread notifications` : 'Notifications';
 
   return (

@@ -79,6 +79,8 @@ export interface Shop {
   bank_name?: string | null;
   bank_account_number?: string | null;
   bank_account_name?: string | null;
+  gcash_qr_path?: string | null;
+  bank_qr_path?: string | null;
 }
 
 export interface StaffProfile {

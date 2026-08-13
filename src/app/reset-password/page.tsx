@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, SubmitEvent } from 'react';
+import { Suspense, useState, SubmitEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import BrandLogo from '@/components/BrandLogo';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FAF6F3] text-[#A8A19A]">Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [showPassword, setShowPassword] = useState(false);

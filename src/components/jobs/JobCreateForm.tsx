@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useBranch } from '@/context/BranchContext';
 import { ArrowLeft, Loader2, Store, ShoppingBag, User, Users, FileText, Receipt, Trash2, HelpCircle, Shirt, AlertTriangle, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { SERVICE_TYPE_META, SERVICE_TYPES } from '@/components/services/serviceHelpers';
@@ -92,6 +93,7 @@ export default function JobCreateForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { shop, user } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -680,6 +682,7 @@ export default function JobCreateForm() {
     const balance = totalAmt - appliedDownPay;
 
     try {
+      const assignedStages = Object.entries(staffStageAssignments).filter(([, userId]) => userId);
       await api.post(`/shops/${shop.id}/jobs`, {
         // Server-authoritative anyway (see JobOrderController@store) — sent
         // here only as a best-effort hint, never trusted as-is.
@@ -687,8 +690,16 @@ export default function JobCreateForm() {
         fulfillment_type: 'pickup',
         customer_id: formData.customer_id,
         service_id: formData.service_id,
-        staff_stages: Object.entries(staffStageAssignments)
-          .filter(([, userId]) => userId)
+        // Only send an explicit branch when no staff is being assigned yet —
+        // JobOrderController@store's fallback chain already derives the
+        // correct branch from the assigned staff's own branch when one IS
+        // picked (needed so assigning a different branch's staff, e.g.
+        // "borrowing a tailor," isn't blocked by this). With no staff
+        // assigned, that chain has nothing to derive from and always lands
+        // on the shop's main branch — silently dropping the job out of
+        // whichever non-main branch the owner had selected in the header.
+        shop_branch_id: assignedStages.length === 0 ? (selectedBranchId ?? undefined) : undefined,
+        staff_stages: assignedStages
           .map(([stage, userId]) => ({ stage, user_id: Number(userId) })),
         measurement_id: formData.measurement_id
           ? Number(formData.measurement_id)

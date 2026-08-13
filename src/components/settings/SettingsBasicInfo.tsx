@@ -11,11 +11,15 @@ interface SettingsBasicInfoProps {
   readonly activeTab: 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates' | 'business_type';
   readonly onLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   readonly onBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  readonly onGcashQrUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  readonly onBankQrUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export default function SettingsBasicInfo({ formData, onChange, handleSocialChange, setFormData, activeTab, onLogoUpload, onBannerUpload }: SettingsBasicInfoProps) {
+export default function SettingsBasicInfo({ formData, onChange, handleSocialChange, setFormData, activeTab, onLogoUpload, onBannerUpload, onGcashQrUpload, onBankQrUpload }: SettingsBasicInfoProps) {
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
   const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  const [uploadingGcashQr, setUploadingGcashQr] = React.useState(false);
+  const [uploadingBankQr, setUploadingBankQr] = React.useState(false);
   const handleAddQuestion = () => {
     setFormData(prev => ({
       ...prev,
@@ -246,6 +250,36 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-[#524A44]">GCash QR Code</span>
+            <p className="text-xs text-[#A8A19A]">Customers can scan this to pay instead of typing the number in.</p>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+                {formData.gcash_qr_path ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={formData.gcash_qr_path} alt="GCash QR code" className="w-full h-full object-contain" />
+                ) : (
+                  <Upload size={18} className="text-[#C5BDBA]" />
+                )}
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+                {uploadingGcashQr ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                <span>{uploadingGcashQr ? 'Uploading...' : 'Upload QR Code'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingGcashQr}
+                  onChange={async e => {
+                    setUploadingGcashQr(true);
+                    await onGcashQrUpload(e);
+                    setUploadingGcashQr(false);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
           <div className="space-y-1">
             <label htmlFor="shop-bank-name" className="text-sm font-medium text-[#524A44]">Bank Name</label>
             <input
@@ -280,6 +314,36 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               placeholder="Name on the bank account"
               className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-[#524A44]">Bank / InstaPay QR Code</span>
+            <p className="text-xs text-[#A8A19A]">Optional — a scannable QR (InstaPay QR Ph, etc.) or a photo of the account details.</p>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+                {formData.bank_qr_path ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={formData.bank_qr_path} alt="Bank QR code" className="w-full h-full object-contain" />
+                ) : (
+                  <Upload size={18} className="text-[#C5BDBA]" />
+                )}
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+                {uploadingBankQr ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                <span>{uploadingBankQr ? 'Uploading...' : 'Upload QR Code'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingBankQr}
+                  onChange={async e => {
+                    setUploadingBankQr(true);
+                    await onBankQrUpload(e);
+                    setUploadingBankQr(false);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
           </div>
         </div>
       </div>

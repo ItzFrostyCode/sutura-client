@@ -5,6 +5,7 @@ import { X, ShoppingBag, Loader2, User, CreditCard, MapPin, Upload } from 'lucid
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 
 interface NewWalkInOrderModalProps {
   readonly isOpen: boolean;
@@ -18,6 +19,7 @@ interface BranchOption { id: number; name: string; }
 
 export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewWalkInOrderModalProps) {
   const { shop } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const toast = useToast();
 
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
@@ -55,7 +57,12 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
       }
     };
     void load();
-  }, [shop, isOpen]);
+    // Default to whichever branch is selected in the header — same pattern
+    // as AppointmentCreateModal — so the owner doesn't have to re-pick a
+    // branch they'd already chosen just to open this modal.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBranchId(selectedBranchId !== null ? String(selectedBranchId) : '');
+  }, [shop, isOpen, selectedBranchId]);
 
   useEffect(() => {
     const applyItemPrice = () => {

@@ -36,6 +36,7 @@ export default function CatalogPage() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterColor, setFilterColor] = useState('');
   const [filterSize, setFilterSize] = useState('');
+  const [sortOrder, setSortOrder] = useState<'' | 'price_desc' | 'price_asc'>('');
 
   const fetchItems = useCallback(() => {
     if (shop?.id) {
@@ -97,12 +98,18 @@ export default function CatalogPage() {
   const categoryOptions = uniq(items.map(i => i.garment_type));
   const colorOptions = uniq(items.map(i => i.color));
   const sizeOptions = uniq(items.flatMap(i => (Array.isArray(i.sizes) ? i.sizes : [])));
-  const filteredItems = items.filter(i =>
-    (!searchQuery || i.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) &&
-    (!filterCategory || i.garment_type === filterCategory) &&
-    (!filterColor || i.color === filterColor) &&
-    (!filterSize || (Array.isArray(i.sizes) && i.sizes.includes(filterSize)))
-  );
+  const filteredItems = items
+    .filter(i =>
+      (!searchQuery || i.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) &&
+      (!filterCategory || i.garment_type === filterCategory) &&
+      (!filterColor || i.color === filterColor) &&
+      (!filterSize || (Array.isArray(i.sizes) && i.sizes.includes(filterSize)))
+    )
+    .sort((a, b) => {
+      if (sortOrder === 'price_desc') return Number(b.price) - Number(a.price);
+      if (sortOrder === 'price_asc') return Number(a.price) - Number(b.price);
+      return 0;
+    });
   const hasActiveFilter = !!(searchQuery || filterCategory || filterColor || filterSize);
   const filterSelectClass = 'px-3 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe';
 
@@ -166,9 +173,19 @@ export default function CatalogPage() {
               <option value="">All Sizes</option>
               {sizeOptions.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
-            {hasActiveFilter && (
+            <select
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+              className={filterSelectClass}
+              aria-label="Sort by price"
+            >
+              <option value="">Sort: Default</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="price_asc">Price: Low to High</option>
+            </select>
+            {(hasActiveFilter || sortOrder) && (
               <button
-                onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterColor(''); setFilterSize(''); }}
+                onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterColor(''); setFilterSize(''); setSortOrder(''); }}
                 className="text-xs font-semibold text-[#B26959] hover:underline"
               >
                 Clear filters

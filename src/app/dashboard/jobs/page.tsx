@@ -130,10 +130,15 @@ function JobOrdersPageContent() {
       )}
 
       <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl overflow-hidden">
-        <div className="flex items-center border-b border-[#EBE6E0] flex-wrap sm:flex-nowrap">
+        {/* Used to be one flex-wrap row — the 3 tabs (with count badges)
+            and the search box competed for space and wrapped unevenly on
+            tablet/mobile widths. Tabs now scroll horizontally as their own
+            row instead of wrapping; search gets its own full-width row
+            below on mobile. */}
+        <div className="flex items-center border-b border-[#EBE6E0] overflow-x-auto">
           <button
             onClick={() => setTab('all')}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap ${
               tab === 'all'
                 ? 'border-taupe text-taupe'
                 : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
@@ -144,7 +149,7 @@ function JobOrdersPageContent() {
           </button>
           <button
             onClick={() => setTab('walk_in')}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap ${
               tab === 'walk_in'
                 ? 'border-taupe text-taupe'
                 : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
@@ -156,7 +161,7 @@ function JobOrdersPageContent() {
           </button>
           <button
             onClick={() => setTab('online')}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px shrink-0 whitespace-nowrap ${
               tab === 'online'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
@@ -167,9 +172,12 @@ function JobOrdersPageContent() {
             <span className="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-full font-semibold">{onlineCount}</span>
           </button>
 
-          <div className="ml-auto pr-4 py-2 w-full sm:w-auto">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-full sm:w-64" />
+          <div className="hidden sm:block ml-auto pr-4 py-2 shrink-0">
+            <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-64" />
           </div>
+        </div>
+        <div className="sm:hidden p-3 border-b border-[#EBE6E0]">
+          <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-full" />
         </div>
 
         {tab === 'online' && (

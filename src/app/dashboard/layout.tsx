@@ -199,18 +199,24 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
               there, and the Staff page no longer reads selectedBranchId at
               all (see dashboard/staff/page.tsx). */}
           {shop?.id && branches.length > 0 && !pathname.startsWith('/dashboard/staff') && (
-            <div className="relative hidden md:block animate-fade-in" ref={branchRef}>
-              <button 
+            <div className="relative animate-fade-in" ref={branchRef}>
+              <button
                 onClick={() => setIsBranchOpen(!isBranchOpen)}
-                className="flex items-center gap-2 bg-[#FAF6F3] border border-[#EBE6E0] px-3.5 py-1.5 rounded-xl hover:bg-[#F0EAE3] transition-colors cursor-pointer text-[13px] font-medium text-[#2D2A26] focus:outline-none"
+                // Used to be hidden below the md breakpoint entirely — the
+                // owner had no way to switch branches at all on a phone, or
+                // on many real tablets in portrait (plenty sit under 768px).
+                // Now always visible; just tightens up on the smallest
+                // screens (icon + truncated name, no wasted padding) instead
+                // of disappearing.
+                className="flex items-center gap-1.5 sm:gap-2 bg-[#FAF6F3] border border-[#EBE6E0] px-2.5 sm:px-3.5 py-1.5 rounded-xl hover:bg-[#F0EAE3] transition-colors cursor-pointer text-[13px] font-medium text-[#2D2A26] focus:outline-none max-w-[120px] sm:max-w-none"
               >
-                <Building2 size={14} className="text-[#827A73]" />
-                <span>
-                  {selectedBranchId === null 
-                    ? 'All Branches' 
+                <Building2 size={14} className="text-[#827A73] shrink-0" />
+                <span className="truncate">
+                  {selectedBranchId === null
+                    ? 'All Branches'
                     : (branches.find(b => b.id === selectedBranchId)?.name || 'All Branches')}
                 </span>
-                <ChevronDown size={12} className={`text-[#827A73] transition-transform duration-200 ${isBranchOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`text-[#827A73] transition-transform duration-200 shrink-0 ${isBranchOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isBranchOpen && (

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import { ShoppingBag, Package, CheckCircle2, Clock, XCircle, Plus } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 
@@ -25,6 +26,7 @@ const STATUS_TABS: { id: StatusFilter; label: string; icon: React.ReactNode }[] 
 
 function OrdersPageContent() {
   const { shop, user } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const toast = useToast();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('order');
@@ -39,14 +41,15 @@ function OrdersPageContent() {
   const fetchOrders = useCallback(() => {
     if (!shop) return;
     const timer = setTimeout(() => setLoading(true), 0);
-    api.get(`/shops/${shop.id}/catalog-orders`)
+    const params = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
+    api.get(`/shops/${shop.id}/catalog-orders`, { params })
       .then(res => {
         setOrders(res.data.data || []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
     return () => clearTimeout(timer);
-  }, [shop]);
+  }, [shop, selectedBranchId]);
 
   useEffect(() => {
     if (shop) {

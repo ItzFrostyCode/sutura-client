@@ -3,6 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 
 export type Tab = 'receipts' | 'job_balances' | 'catalog_orders';
 
@@ -84,6 +85,7 @@ const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders'];
 
 export function usePayments() {
   const { shop } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const toast = useToast();
   const searchParams = useSearchParams();
   // Lets the Home dashboard's "Pending Deposits"/etc. cards deep-link
@@ -121,9 +123,10 @@ export function usePayments() {
     if (!shop) return;
     setReceiptsLoading(true);
     try {
+      const branchParams = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
       const [aptRes, ordRes] = await Promise.all([
-        api.get(`/shops/${shop.id}/appointments`),
-        api.get(`/shops/${shop.id}/catalog-orders`),
+        api.get(`/shops/${shop.id}/appointments`, { params: branchParams }),
+        api.get(`/shops/${shop.id}/catalog-orders`, { params: branchParams }),
       ]);
       const items: ReceiptItem[] = [];
       if (aptRes.data.success) {
@@ -170,18 +173,25 @@ export function usePayments() {
     } finally {
       setReceiptsLoading(false);
     }
-  }, [shop]);
+  }, [shop, selectedBranchId]);
 
-  // Fetch job balances
+  // Fetch job balances — filtered server-side (unpaid_only) rather than
+  // fetching the shop's entire job history and filtering client-side. The
+  // old approach was capped at per_page=500 including every already-paid
+  // job, so a shop with more than 500 total historical jobs could have an
+  // older still-unpaid one silently drop out — same undercounting shape as
+  // the other capped-array bugs fixed this session. Filtering server-side
+  // also means the response only ever contains genuinely-relevant rows.
   const fetchJobBalances = useCallback(async () => {
     if (!shop) return;
     setBalancesLoading(true);
     try {
-      const res = await api.get(`/shops/${shop.id}/jobs`, { params: { per_page: 500 } });
+      const params: Record<string, number> = { per_page: 500, unpaid_only: 1 };
+      if (selectedBranchId !== null) params.branch_id = selectedBranchId;
+      const res = await api.get(`/shops/${shop.id}/jobs`, { params });
       const raw = res.data.data;
       const jobs: RawJobData[] = Array.isArray(raw) ? raw : (raw?.data || []);
       const withBalance = jobs
-        .filter(j => j.payment_status !== 'paid' && j.status !== 'cancelled')
         .map(j => ({
           id: j.id,
           order_number: j.order_number || `#${j.id}`,
@@ -198,21 +208,22 @@ export function usePayments() {
     } finally {
       setBalancesLoading(false);
     }
-  }, [shop]);
+  }, [shop, selectedBranchId]);
 
   // Fetch catalog orders
   const fetchCatalogOrders = useCallback(async () => {
     if (!shop) return;
     setCatalogLoading(true);
     try {
-      const res = await api.get(`/shops/${shop.id}/catalog-orders`);
+      const params = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
+      const res = await api.get(`/shops/${shop.id}/catalog-orders`, { params });
       setCatalogOrders(res.data.data || []);
     } catch (err) {
       console.error(err);
     } finally {
       setCatalogLoading(false);
     }
-  }, [shop]);
+  }, [shop, selectedBranchId]);
 
   // All three fetch on mount regardless of which tab is active — the tab
   // pills show live counts (e.g. "Outstanding Balances 2"), so the counts
