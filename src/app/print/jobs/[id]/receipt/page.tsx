@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -36,6 +36,14 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default function PaymentReceiptPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><p className="text-gray-500 text-sm animate-pulse">Preparing receipt...</p></div>}>
+      <PaymentReceiptContent />
+    </Suspense>
+  );
+}
+
+function PaymentReceiptContent() {
   usePrintAuthGuard();
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -114,7 +122,7 @@ export default function PaymentReceiptPage() {
   // an empty "Send Payment To" box would just be confusing on a fully-paid
   // receipt or a shop that hasn't configured this yet.
   const remainingAfterThis = singlePayment ? Math.max(0, total - discount - runningPaidAtSingle) : currentBalance;
-  const hasPaymentDetails = !!(shop?.gcash_number || shop?.bank_account_number);
+  const hasPaymentDetails = !!(shop?.gcash_number || shop?.bank_account_number || shop?.gcash_qr_path || shop?.bank_qr_path);
   const showPaymentDetails = hasPaymentDetails && remainingAfterThis > 0;
 
   return (
@@ -301,26 +309,47 @@ export default function PaymentReceiptPage() {
         {showPaymentDetails && (
           <div className="border-t-2 border-black pt-4 mt-6">
             <p className="text-[10px] font-bold uppercase tracking-widest mb-3">Send Payment To</p>
-            <table className="w-full text-sm">
-              <tbody>
-                {shop?.gcash_number && (
-                  <tr>
-                    <td className="text-gray-600 pr-3 pb-1 font-medium w-32">GCash</td>
-                    <td className="pb-1 font-bold">
-                      {shop.gcash_number}{shop.gcash_account_name ? ` — ${shop.gcash_account_name}` : ''}
-                    </td>
-                  </tr>
+            <div className="flex justify-between items-start gap-6">
+              <table className="w-full text-sm">
+                <tbody>
+                  {shop?.gcash_number && (
+                    <tr>
+                      <td className="text-gray-600 pr-3 pb-1 font-medium w-32">GCash</td>
+                      <td className="pb-1 font-bold">
+                        {shop.gcash_number}{shop.gcash_account_name ? ` — ${shop.gcash_account_name}` : ''}
+                      </td>
+                    </tr>
+                  )}
+                  {shop?.bank_account_number && (
+                    <tr>
+                      <td className="text-gray-600 pr-3 pb-1 font-medium">Bank Transfer</td>
+                      <td className="pb-1 font-bold">
+                        {shop.bank_name ? `${shop.bank_name} — ` : ''}{shop.bank_account_number}{shop.bank_account_name ? ` — ${shop.bank_account_name}` : ''}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {/* QR codes print as-is — inherently black/white functional
+                  graphics, not a color-fill violation of this page's
+                  ink-economy house style. */}
+              <div className="flex gap-3 shrink-0">
+                {shop?.gcash_qr_path && (
+                  <div className="text-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={shop.gcash_qr_path} alt="GCash QR code" className="w-20 h-20 object-contain border border-black" />
+                    <p className="text-[8px] text-gray-600 mt-1">Scan to pay (GCash)</p>
+                  </div>
                 )}
-                {shop?.bank_account_number && (
-                  <tr>
-                    <td className="text-gray-600 pr-3 pb-1 font-medium">Bank Transfer</td>
-                    <td className="pb-1 font-bold">
-                      {shop.bank_name ? `${shop.bank_name} — ` : ''}{shop.bank_account_number}{shop.bank_account_name ? ` — ${shop.bank_account_name}` : ''}
-                    </td>
-                  </tr>
+                {shop?.bank_qr_path && (
+                  <div className="text-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={shop.bank_qr_path} alt="Bank QR code" className="w-20 h-20 object-contain border border-black" />
+                    <p className="text-[8px] text-gray-600 mt-1">Scan to pay (Bank)</p>
+                  </div>
                 )}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         )}
 
