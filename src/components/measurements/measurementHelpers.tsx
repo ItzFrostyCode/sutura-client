@@ -41,16 +41,16 @@ export function humanizeMetricKey(key: string): string {
 export function MetricPill({ label, value }: { readonly label: string; readonly value?: string }) {
   if (!value) return null;
   return (
-    <span className="inline-flex items-center gap-1 bg-[#F0EAE3] text-[#524A44] text-xs px-2.5 py-1 rounded-full font-medium border border-[#EBE6E0]">
-      <span className="text-[#A8A19A]">{label}</span>
-      <span className="font-semibold text-[#2D2A26]">{value}&Prime;</span>
+    <span className="inline-flex items-center gap-1 bg-sunken text-ink-body text-xs px-2.5 py-1 rounded-full font-medium border border-line">
+      <span className="text-ink-faint">{label}</span>
+      <span className="font-semibold text-ink">{value}&Prime;</span>
     </span>
   );
 }
 
 export function CustomerInitial({ name }: { readonly name: string }) {
   const colors = [
-    'bg-[#9A8073] text-white', 'bg-[#7A8B76] text-white',
+    'bg-taupe text-white', 'bg-sage text-white',
     'bg-[#6B7FA8] text-white', 'bg-[#A88B6B] text-white',
   ];
   const idx = (name.codePointAt(0) || 0) % colors.length;

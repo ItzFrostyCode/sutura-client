@@ -27,7 +27,7 @@ export function useJobDetail(jobId: string) {
   const [cancellationReason, setCancellationReason] = useState('');
   const [holdReason, setHoldReason] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
-  const [balance, setBalance] = useState('');
+  const [balance, setBalance] = useState<string | number>('');
   const [notes, setNotes] = useState('');
   const [completionPhotoUrl, setCompletionPhotoUrl] = useState('');
 
@@ -108,15 +108,68 @@ export function useJobDetail(jobId: string) {
     }
   };
 
+  // Practical Dirty Checking: track exactly which tab and fields have unsaved modifications
+  const dirtyTabs = {
+    overview: Boolean(job && notes !== (job.notes || '')),
+    production: Boolean(
+      job && (
+        status !== job.status ||
+        notes !== (job.notes || '') ||
+        isOutsourced !== Boolean(job.is_outsourced) ||
+        partnerShopName !== (job.partner_shop_name || '') ||
+        outsourcingCost !== (job.outsourcing_cost != null ? String(job.outsourcing_cost) : '') ||
+        completionPhotoUrl !== (job.completion_photo_url || '')
+      )
+    ),
+    staff: Boolean(
+      job &&
+      STAFF_STAGES.some(stage => {
+        const currentAssigned = staffAssignments[stage] || '';
+        const originalStaff = job.staff_stages?.find(s => s.pivot.stage === stage);
+        const originalAssigned = originalStaff ? String(originalStaff.id) : '';
+        return currentAssigned !== originalAssigned;
+      })
+    ),
+  };
+
+  const hasUnsavedChanges = Boolean(
+    dirtyTabs.overview || dirtyTabs.production || dirtyTabs.staff
+  );
+
+  const handleResetChanges = () => {
+    if (!job) return;
+    setStatus(job.status);
+    setPaymentStatus(job.payment_status);
+    setBalance(job.balance);
+    setNotes(job.notes || '');
+    setCompletionPhotoUrl(job.completion_photo_url || '');
+    setIsOutsourced(job.is_outsourced || false);
+    setPartnerShopName(job.partner_shop_name || '');
+    setOutsourcingCost(job.outsourcing_cost != null ? String(job.outsourcing_cost) : '');
+
+    const assignments: Record<string, string> = emptyStageMap('');
+    const completions: Record<string, string | null> = emptyStageMap(null);
+    if (job.staff_stages) {
+      job.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
+        assignments[staff.pivot.stage] = staff.id.toString();
+        completions[staff.pivot.stage] = staff.pivot.completed_at || null;
+      });
+    }
+    setStaffAssignments(assignments);
+    setStaffCompletions(completions);
+    toast.info('Draft changes discarded.');
+  };
+
   const handleUpdate = async () => {
-    if (!shop) return;
+    if (!shop || !job) return;
     setSaving(true);
 
     try {
+      // 1. Persist core job updates (Production, Notes, Outsourcing, QC, Status)
       await api.put(`/shops/${shop.id}/jobs/${jobId}`, {
         status,
         payment_status: paymentStatus,
-        balance: Number.parseFloat(balance),
+        balance: Number.parseFloat(String(balance || 0)),
         notes,
         is_outsourced: isOutsourced,
         partner_shop_name: isOutsourced ? partnerShopName : null,
@@ -125,23 +178,46 @@ export function useJobDetail(jobId: string) {
         cancellation_reason: status === 'cancelled' ? cancellationReason : undefined,
         hold_reason: status === 'on_hold' ? holdReason : undefined,
       });
-      // Refresh
+
+      // 2. Persist staff assignments if modified
+      if (dirtyTabs.staff) {
+        const assignments = Object.entries(staffAssignments)
+          .filter(([, userId]) => userId)
+          .map(([stage, userId]) => ({ stage, user_id: userId }));
+
+        await api.post(`/shops/${shop.id}/jobs/${jobId}/staff`, {
+          assignments,
+        });
+      }
+
+      // 3. Fetch latest confirmed server copy
       const res = await api.get(`/shops/${shop.id}/jobs/${jobId}`);
       const data = res.data.data;
       setJob(data);
       setStatus(data.status);
       setPaymentStatus(data.payment_status);
+      setNotes(data.notes || '');
+      setIsOutsourced(data.is_outsourced || false);
+      setPartnerShopName(data.partner_shop_name || '');
+      setOutsourcingCost(data.outsourcing_cost != null ? String(data.outsourcing_cost) : '');
       setCompletionPhotoUrl(data.completion_photo_url || '');
-      toast.success('Job details updated successfully.');
+
+      const newAssignments: Record<string, string> = emptyStageMap('');
+      const newCompletions: Record<string, string | null> = emptyStageMap(null);
+      if (data.staff_stages) {
+        data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
+          newAssignments[staff.pivot.stage] = staff.id.toString();
+          newCompletions[staff.pivot.stage] = staff.pivot.completed_at || null;
+        });
+      }
+      setStaffAssignments(newAssignments);
+      setStaffCompletions(newCompletions);
+
+      toast.success('All changes saved successfully.');
     } catch (err: unknown) {
       console.error('Failed to update', err);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to update details.');
-      // The Production Timeline renders off this local `status` state
-      // optimistically as soon as the owner picks a new phase — if the save
-      // was rejected (e.g. balance not paid), it has to snap back to the
-      // last confirmed server value instead of showing a phase that never
-      // actually took effect until the next reload.
       if (job) {
         setStatus(job.status);
         setPaymentStatus(job.payment_status);
@@ -156,22 +232,22 @@ export function useJobDetail(jobId: string) {
     setSavingStaff(true);
     try {
       const assignments = Object.entries(staffAssignments)
-        .filter(([, userId]) => userId) // only non-empty
+        .filter(([, userId]) => userId)
         .map(([stage, userId]) => ({ stage, user_id: userId }));
 
       await api.post(`/shops/${shop.id}/jobs/${jobId}/staff`, {
-        assignments
+        assignments,
       });
-      
+
       const res = await api.get(`/shops/${shop.id}/jobs/${jobId}`);
       const data = res.data.data;
       setJob(data);
-      
+
       const completions: Record<string, string | null> = emptyStageMap(null);
       if (data.staff_stages) {
-         data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
-            completions[staff.pivot.stage] = staff.pivot.completed_at || null;
-         });
+        data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
+          completions[staff.pivot.stage] = staff.pivot.completed_at || null;
+        });
       }
       setStaffCompletions(completions);
       toast.success('Staff assigned successfully!');
@@ -416,5 +492,8 @@ export function useJobDetail(jobId: string) {
     setHoldReason,
     refreshJob,
     handleDelete,
+    hasUnsavedChanges,
+    dirtyTabs,
+    handleResetChanges,
   };
 }

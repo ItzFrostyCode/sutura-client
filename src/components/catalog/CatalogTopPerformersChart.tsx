@@ -26,12 +26,12 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
   if (active && payload?.length) {
     const item = payload[0].payload;
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-4 py-3 max-w-[220px]">
-        <p className="text-xs font-medium text-[#2D2A26] mb-1 leading-snug">{item.name}</p>
+      <div className="bg-surface border border-line rounded-xl px-4 py-3 max-w-[220px]">
+        <p className="text-xs font-medium text-ink mb-1 leading-snug">{item.name}</p>
         <p className="text-base font-bold text-taupe">
           ₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
         </p>
-        <p className="text-xs text-[#A8A19A] mt-1">
+        <p className="text-xs text-ink-faint mt-1">
           {item.order_count || 0} order{item.order_count === 1 ? '' : 's'} • {item.views_count} views
         </p>
       </div>
@@ -43,7 +43,7 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
 export default function CatalogTopPerformersChart({ items, loading }: CatalogTopPerformersChartProps) {
   if (loading) {
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm text-center text-sm text-[#A8A19A] py-12">
+      <div className="bg-surface border border-line rounded-2xl p-6 text-center text-sm text-ink-faint py-12">
         Loading top performers…
       </div>
     );
@@ -64,12 +64,12 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
   }
 
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm space-y-6">
+    <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
       <div className="flex items-center gap-2">
-        <Trophy size={18} className="text-[#9A8073]" />
+        <Trophy size={18} className="text-taupe" />
         <div>
-          <h2 className="text-base font-semibold text-[#2D2A26]">Top Performing Items</h2>
-          <p className="text-sm text-[#A8A19A] mt-0.5">
+          <h2 className="text-base font-semibold text-ink">Top Performing Items</h2>
+          <p className="text-sm text-ink-faint mt-0.5">
             {hasAnyRevenue ? 'Top 8, ranked by revenue generated.' : 'No orders yet — top 8 by views in the meantime.'}
           </p>
         </div>
@@ -108,41 +108,41 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
         </ResponsiveContainer>
       </div>
 
-      <div className="-mx-6 -mb-6 border-t border-[#EBE6E0]">
-        <p className="px-6 pt-4 pb-2 text-xs font-semibold text-[#A8A19A] uppercase tracking-wider">
+      <div className="-mx-6 -mb-6 border-t border-line">
+        <p className="px-6 pt-4 pb-2 text-xs font-semibold text-ink-faint uppercase tracking-wider">
           All {allRankedItems.length} Item{allRankedItems.length === 1 ? '' : 's'}
         </p>
         {/* Mobile cards — no sideways scroll needed for a 5-column table */}
         <div className="md:hidden overflow-y-auto max-h-[420px] divide-y divide-[#F0EAE3]">
           {allRankedItems.map(item => (
-            <div key={item.id} className="px-6 py-3 hover:bg-[#F0EAE3]/20 transition-colors">
-              <p className="font-medium text-[#2D2A26] truncate">{item.name}</p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-[#827A73]">
+            <div key={item.id} className="px-6 py-3 hover:bg-sunken/20 transition-colors">
+              <p className="font-medium text-ink truncate">{item.name}</p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-ink-muted">
                 <span>Est. {item.estimated_days ?? 7}d</span>
                 <span>{item.views_count} views</span>
                 <span>{item.order_count || 0} orders</span>
-                <span className="font-semibold text-[#2D2A26]">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold text-ink">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           ))}
         </div>
 
         <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[420px]">
-          <table className="w-full text-left text-sm text-[#524A44] min-w-[560px]">
-            <thead className="bg-[#FAF6F3] text-xs uppercase text-[#A8A19A] border-y border-[#EBE6E0] sticky top-0 z-10">
+          <table className="w-full text-left text-sm text-ink-body min-w-[560px]">
+            <thead className="bg-canvas text-xs uppercase text-ink-faint border-y border-line sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Item</th>
-                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Est. Days</th>
-                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Views</th>
-                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Orders</th>
-                <th className="px-6 py-3 font-medium bg-[#FAF6F3]">Revenue</th>
+                <th className="px-6 py-3 font-medium bg-canvas">Item</th>
+                <th className="px-6 py-3 font-medium bg-canvas">Est. Days</th>
+                <th className="px-6 py-3 font-medium bg-canvas">Views</th>
+                <th className="px-6 py-3 font-medium bg-canvas">Orders</th>
+                <th className="px-6 py-3 font-medium bg-canvas">Revenue</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0EAE3]">
               {allRankedItems.map(item => (
-                <tr key={item.id} className="hover:bg-[#F0EAE3]/20 transition-colors">
-                  <td className="px-6 py-3 font-medium text-[#2D2A26] max-w-[220px] truncate">{item.name}</td>
-                  <td className="px-6 py-3 text-[#827A73]">{item.estimated_days ?? 7}</td>
+                <tr key={item.id} className="hover:bg-sunken/20 transition-colors">
+                  <td className="px-6 py-3 font-medium text-ink max-w-[220px] truncate">{item.name}</td>
+                  <td className="px-6 py-3 text-ink-muted">{item.estimated_days ?? 7}</td>
                   <td className="px-6 py-3">{item.views_count}</td>
                   <td className="px-6 py-3">{item.order_count || 0}</td>
                   <td className="px-6 py-3">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>

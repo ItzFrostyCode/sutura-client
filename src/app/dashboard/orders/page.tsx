@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
-import { ShoppingBag, Package, CheckCircle2, Clock, XCircle, Plus } from 'lucide-react';
+import { ShoppingBag, Package, CheckCircle2, Clock, XCircle, Plus, DollarSign, TrendingUp, Sparkles } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 
 import { CatalogOrder } from '@/components/orders/orderHelpers';
@@ -16,12 +16,12 @@ import CatalogModuleTabs from '@/components/catalog/CatalogModuleTabs';
 
 type StatusFilter = 'all' | 'pending' | 'ready' | 'completed' | 'cancelled';
 
-const STATUS_TABS: { id: StatusFilter; label: string; icon: React.ReactNode }[] = [
-  { id: 'all',       label: 'All',       icon: <ShoppingBag size={14} /> },
-  { id: 'pending',   label: 'Pending',   icon: <Clock size={14} /> },
-  { id: 'ready',     label: 'Ready',     icon: <Package size={14} /> },
-  { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={14} /> },
-  { id: 'cancelled', label: 'Cancelled', icon: <XCircle size={14} /> },
+const STATUS_TABS: { id: StatusFilter; label: string; icon: typeof ShoppingBag }[] = [
+  { id: 'all',       label: 'All Orders',      icon: ShoppingBag },
+  { id: 'pending',   label: 'Pending Prep',    icon: Clock },
+  { id: 'ready',     label: 'Ready for Pickup', icon: Package },
+  { id: 'completed', label: 'Completed',       icon: CheckCircle2 },
+  { id: 'cancelled', label: 'Cancelled',       icon: XCircle },
 ];
 
 function OrdersPageContent() {
@@ -63,9 +63,6 @@ function OrdersPageContent() {
     }
   }, [shop, user, fetchOrders]);
 
-  // Deep-link support: ?order=<id> from Collect Payments' Catalog Orders tab
-  // jumps straight to that order — clearing any filter that would hide it,
-  // then scrolling it into view.
   useEffect(() => {
     const jumpToHighlighted = () => {
       if (jumpedToHighlight || loading || !highlightId || orders.length === 0) return;
@@ -113,13 +110,17 @@ function OrdersPageContent() {
   const filtered = search
     ? byStatus.filter(o =>
         (o.catalog_item?.name || '').toLowerCase().includes(search.toLowerCase()) ||
-        (o.customer?.name || '').toLowerCase().includes(search.toLowerCase())
+        (o.customer?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(o.id).includes(search)
       )
     : byStatus;
 
   // Status counts for badges
   const countFor = (s: StatusFilter) =>
     s === 'all' ? orders.length : orders.filter(o => o.status === s).length;
+
+  const readyCount = orders.filter(o => o.status === 'ready').length;
+  const totalRevenue = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (Number.parseFloat(o.total_amount) || 0), 0);
 
   let noOrdersMessage = '';
   if (search) {
@@ -132,84 +133,128 @@ function OrdersPageContent() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9A8073]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-taupe" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 text-[#2D2A26]">
-      <CatalogModuleTabs />
+    <div className="space-y-6 text-ink animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Walk-in Orders</h1>
-          <p className="text-sm text-[#827A73] mt-1">
-            Quick in-store sales off the Design Catalog — store pickup only.
+          <span className="text-[11px] font-bold text-taupe uppercase tracking-wider block">Boutique & Retail Sales</span>
+          <h1 className="text-2xl font-black text-ink tracking-tight">Catalog Showcase</h1>
+          <p className="text-xs text-ink-muted mt-0.5">
+            Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-sm text-[#A8A19A]">
-            <ShoppingBag size={16} />
-            <span>{orders.length} total orders</span>
-          </div>
+        <div className="flex items-center gap-3 shrink-0">
           <button
+            type="button"
             onClick={() => setIsNewOrderModalOpen(true)}
-            className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+            className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer"
           >
-            <Plus size={16} /> New Walk-in Order
+            <Plus size={15} />
+            <span>New Walk-in Order</span>
           </button>
         </div>
       </div>
 
+      <CatalogModuleTabs />
+
+      {/* Top 3 KPI Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Total Retail Orders</span>
+            <div className="text-2xl font-black font-mono text-ink">{orders.length}</div>
+            <div className="text-xs text-ink-muted">
+              {orders.filter(o => o.status === 'completed').length} completed • {orders.filter(o => o.status === 'pending' || o.status === 'ready').length} active
+            </div>
+          </div>
+          <div className="w-11 h-11 rounded-xl bg-canvas border border-line flex items-center justify-center text-taupe shrink-0 shadow-2xs">
+            <ShoppingBag size={20} />
+          </div>
+        </div>
+
+        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Ready for Pickup</span>
+            <div className="text-2xl font-black font-mono text-blue-700">{readyCount}</div>
+            <div className="text-xs text-ink-muted">Awaiting customer collection</div>
+          </div>
+          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs">
+            <Package size={20} />
+          </div>
+        </div>
+
+        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Fulfilled Retail Sales</span>
+            <div className="text-2xl font-black font-mono text-ink">₱{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="text-xs text-ink-muted">Completed catalog walk-in purchases</div>
+          </div>
+          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+            <TrendingUp size={20} />
+          </div>
+        </div>
+      </div>
+
       {/* Main card */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-        {/* Status filter pills + search — used to be two separate rows, the
-            first with nothing in it but the search box pushed to the far
-            right (ml-auto with an empty left side), which just read as a
-            wide strip of dead space above the real content. One row now,
-            filters on the left and search on the right, same as every other
-            list page in the app (Customers, Jobs, Staff). */}
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-[#EBE6E0]">
-          {STATUS_TABS.map(t => {
-            const count = countFor(t.id);
-            return (
-              <button
-                key={t.id}
-                onClick={() => setStatusFilter(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap ${
-                  statusFilter === t.id
-                    ? 'bg-taupe text-white'
-                    : 'bg-[#FAF6F3] border border-[#EBE6E0] text-[#827A73] hover:border-taupe hover:text-[#2D2A26]'
-                }`}
-              >
-                {t.icon}
-                {t.label}
-                {count > 0 && (
-                  <span className={`ml-0.5 px-1.5 py-0.5 rounded-full ${
-                    statusFilter === t.id ? 'bg-white/20 text-white' : 'bg-[#EBE6E0] text-[#827A73]'
-                  }`}>{count}</span>
-                )}
-              </button>
-            );
-          })}
-          <div className="w-full sm:w-auto sm:ml-auto shrink-0">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search product or customer..." className="w-full sm:w-52" />
+      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
+        {/* Status filter tabs + search toolbar */}
+        <div className="p-4 sm:p-5 border-b border-line flex flex-col md:flex-row md:items-center justify-between gap-4 bg-canvas/30">
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 md:pb-0">
+            {STATUS_TABS.map(t => {
+              const count = countFor(t.id);
+              const Icon = t.icon;
+              const isActive = statusFilter === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setStatusFilter(t.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'bg-taupe text-white shadow-2xs'
+                      : 'bg-surface border border-line text-ink-muted hover:text-ink hover:bg-canvas'
+                  }`}
+                >
+                  <Icon size={13} className={isActive ? 'text-white' : 'text-ink-faint'} />
+                  <span>{t.label}</span>
+                  <span className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-canvas text-ink-muted border border-line'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-full md:w-64 shrink-0">
+            <SearchInput 
+              value={search} 
+              onChange={setSearch} 
+              placeholder="Search product, customer, order #..." 
+              className="w-full" 
+            />
           </div>
         </div>
 
         {/* Orders list */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           {filtered.length === 0 ? (
             <div className="text-center py-16">
-              <ShoppingBag className="mx-auto h-12 w-12 text-[#C5BDBA] mb-3" />
-              <h3 className="font-semibold text-[#2D2A26]">No orders found</h3>
-              <p className="text-sm text-[#827A73] mt-1">
+              <ShoppingBag className="mx-auto h-12 w-12 text-ink-faint opacity-40 mb-3" />
+              <h3 className="font-bold text-ink text-sm">No orders found</h3>
+              <p className="text-xs text-ink-muted mt-1">
                 {noOrdersMessage}
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {filtered.map(order => (
                 <OrderListItem
                   key={order.id}
@@ -236,7 +281,7 @@ function OrdersPageContent() {
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9A8073]" /></div>}>
+    <Suspense fallback={<div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-taupe" /></div>}>
       <OrdersPageContent />
     </Suspense>
   );

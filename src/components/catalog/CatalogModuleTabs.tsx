@@ -13,22 +13,20 @@ const TABS = [
 
 /**
  * Module-level tabs that unite the Design Catalog (made-to-order reference
- * listings), Walk-in Orders (quick in-store sales off the catalog), and
- * Analytics under one module, so this isn't a separate sidebar item.
+ * listings), Walk-in Orders (quick in-store sales off the catalog), Analytics,
+ * and Item Reviews under one unified atelier module.
  */
 export default function CatalogModuleTabs() {
   const pathname = usePathname();
 
-  // Pick whichever tab's href is the longest matching prefix, so a sub-route
-  // like /dashboard/catalog/analytics doesn't also light up the Design
-  // Catalog tab just because it shares the same /dashboard/catalog prefix.
+  // Pick whichever tab's href is the longest matching prefix
   const activeHref = TABS
     .map(t => t.href)
     .filter(href => pathname === href || pathname.startsWith(`${href}/`))
-    .sort((a, b) => b.length - a.length)[0];
+    .sort((a, b) => b.length - a.length)[0] || '/dashboard/catalog';
 
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b border-[#EBE6E0]">
+    <div className="flex items-center gap-6 sm:gap-8 border-b border-line overflow-x-auto hide-scrollbar whitespace-nowrap -mb-px">
       {TABS.map(tab => {
         const active = tab.href === activeHref;
         const Icon = tab.icon;
@@ -36,17 +34,18 @@ export default function CatalogModuleTabs() {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+            className={`flex items-center gap-2 pb-3.5 pt-1 text-xs sm:text-sm font-bold tracking-tight border-b-2 transition-all whitespace-nowrap shrink-0 -mb-0.5 ${
               active
-                ? 'border-[#9A8073] text-[#2D2A26]'
-                : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
+                ? 'border-taupe text-taupe'
+                : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
             }`}
           >
-            <Icon size={16} />
-            {tab.label}
+            <Icon size={16} className={active ? 'text-taupe' : 'text-ink-muted'} />
+            <span>{tab.label}</span>
           </Link>
         );
       })}
     </div>
   );
 }
+

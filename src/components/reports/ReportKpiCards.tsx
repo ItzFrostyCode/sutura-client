@@ -27,15 +27,24 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
   // an owner picked "This Month"/"Last Month"/"Year to Date".
   const revenueSub = REVENUE_PERIOD_LABELS[period] ?? REVENUE_PERIOD_LABELS.all_time;
 
-  const overdueColor = data?.overdue_jobs
-    ? 'text-red-500 bg-red-50 border-red-200'
-    : 'text-[#A8A19A] bg-gray-50 border-gray-200';
+  // Three semantic tones, not thirteen decorative ones. Colour here means
+  // something — sage is money actually collected or a healthy rate, danger is
+  // a real problem, neutral is everything else. The old grid gave six
+  // unrelated hues to thirteen cards, so hue carried no information at all.
+  const TONE: Record<'neutral' | 'good' | 'bad' | 'idle', string> = {
+    neutral: 'text-taupe bg-taupe/10 border-taupe/20',
+    good:    'text-sage bg-sage/10 border-sage/20',
+    bad:     'text-danger bg-danger/10 border-danger/20',
+    idle:    'text-ink-faint bg-sunken border-line',
+  };
 
-  let completionColor = 'text-red-500 bg-red-50 border-red-200';
+  const overdueColor = data?.overdue_jobs ? TONE.bad : TONE.idle;
+
+  let completionColor = TONE.bad;
   if (backendRate >= 80) {
-    completionColor = 'text-[#4A7C59] bg-[#4A7C59]/10 border-[#4A7C59]/20';
+    completionColor = TONE.good;
   } else if (backendRate >= 50) {
-    completionColor = 'text-amber-500 bg-amber-50 border-amber-200';
+    completionColor = TONE.neutral;
   }
 
   const kpis = [
@@ -43,36 +52,29 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       label: 'Today\'s Revenue',
       value: `₱${Number(data?.today_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
       sub: 'Payments collected today',
-      icon: <DollarSign className="text-[#4A7C59]" size={20} />,
-      color: 'text-[#4A7C59] bg-[#4A7C59]/10 border-[#4A7C59]/20',
-    },
-    {
-      label: 'Total Revenue',
-      value: `₱${Number(data?.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-      sub: revenueSub,
-      icon: <TrendingUp className="text-[#7A8B76]" size={20} />,
-      color: 'text-[#7A8B76] bg-[#7A8B76]/10 border-[#7A8B76]/20',
+      icon: <DollarSign size={20} />,
+      color: TONE.good,
     },
     {
       label: 'Outstanding Balance',
       value: `₱${Number(data?.total_outstanding_balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
       sub: 'Unpaid from clients',
-      icon: <Wallet className="text-amber-500" size={20} />,
-      color: 'text-amber-500 bg-amber-50 border-amber-200',
+      icon: <Wallet size={20} />,
+      color: TONE.neutral,
     },
     {
       label: 'Avg. Order Value',
       value: `₱${Number(data?.avg_order_value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
       sub: 'Per completed order',
-      icon: <BarChart2 className="text-[#9A8073]" size={20} />,
-      color: 'text-[#9A8073] bg-[#9A8073]/10 border-[#9A8073]/20',
+      icon: <BarChart2 size={20} />,
+      color: TONE.neutral,
     },
     {
       label: 'Completed Orders',
       value: `${data?.completed_jobs || 0} / ${data?.total_jobs || 0}`,
       sub: `${backendRate}% completion rate`,
-      icon: <PackageCheck className="text-taupe" size={20} />,
-      color: 'text-[#9A8073] bg-[#9A8073]/10 border-[#9A8073]/20',
+      icon: <PackageCheck size={20} />,
+      color: TONE.neutral,
     },
     {
       // How long a job actually takes from creation to completion — real
@@ -82,28 +84,28 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       label: 'Avg. Turnaround Time',
       value: data?.avg_turnaround_days != null ? `${data.avg_turnaround_days}d` : '—',
       sub: 'Days from order to completion',
-      icon: <Timer className="text-violet-500" size={20} />,
-      color: 'text-violet-500 bg-violet-50 border-violet-200',
+      icon: <Timer size={20} />,
+      color: TONE.neutral,
     },
     {
       label: 'Rejected Payments',
       value: `₱${Number(data?.rejected_payments_amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
       sub: 'Flagged as fake, balance reversed',
-      icon: <Flag className="text-[#B26959]" size={20} />,
-      color: 'text-[#B26959] bg-[#B26959]/10 border-[#B26959]/20',
+      icon: <Flag size={20} />,
+      color: Number(data?.rejected_payments_amount || 0) > 0 ? TONE.bad : TONE.idle,
     },
     {
       label: 'Forfeited Deposits',
       value: `₱${Number(data?.forfeited_deposit_amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
       sub: 'Kept from abandoned orders',
-      icon: <PackageX className="text-[#B26959]" size={20} />,
-      color: 'text-[#B26959] bg-[#B26959]/10 border-[#B26959]/20',
+      icon: <PackageX size={20} />,
+      color: Number(data?.forfeited_deposit_amount || 0) > 0 ? TONE.bad : TONE.idle,
     },
     {
       label: 'Overdue Orders',
       value: data?.overdue_jobs ?? 0,
       sub: 'Past due, not completed — click to view',
-      icon: <AlertTriangle className="text-red-500" size={20} />,
+      icon: <AlertTriangle size={20} />,
       color: overdueColor,
       href: '/dashboard/jobs?overdue=true',
     },
@@ -111,8 +113,8 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       label: 'Upcoming Appointments',
       value: data?.upcoming_appointments || 0,
       sub: 'Confirmed & scheduled',
-      icon: <CalendarIcon className="text-violet-500" size={20} />,
-      color: 'text-violet-500 bg-violet-50 border-violet-200',
+      icon: <CalendarIcon size={20} />,
+      color: TONE.neutral,
     },
     {
       // How many bookings actually turn into paying work — the core
@@ -122,21 +124,21 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       label: 'Booking Conversion',
       value: `${data?.booking_conversion_rate ?? 0}%`,
       sub: 'Appointments that became a job order',
-      icon: <CalendarCheck className="text-teal-600" size={20} />,
-      color: 'text-teal-600 bg-teal-50 border-teal-200',
+      icon: <CalendarCheck size={20} />,
+      color: TONE.neutral,
     },
     {
       label: 'Active Staff',
       value: data?.total_staff || 0,
       sub: 'Current workforce',
-      icon: <Users className="text-blue-500" size={20} />,
-      color: 'text-blue-500 bg-blue-50 border-blue-200',
+      icon: <Users size={20} />,
+      color: TONE.neutral,
     },
     {
       label: 'Completion Rate',
       value: `${backendRate}%`,
       sub: 'Orders finished',
-      icon: <Target className="text-[#4A7C59]" size={20} />,
+      icon: <Target size={20} />,
       color: completionColor,
     },
     {
@@ -150,24 +152,38 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       // changes, so it says so explicitly instead of silently reading like
       // it's scoped to "This Week"/"This Month" the way the rest are.
       sub: data?.total_reviews ? `All-time, from ${data.total_reviews} review${data.total_reviews === 1 ? '' : 's'} — click to view` : 'No reviews yet',
-      icon: <Star className="text-amber-500" size={20} />,
-      color: 'text-amber-500 bg-amber-50 border-amber-200',
+      icon: <Star size={20} />,
+      color: data?.avg_rating != null && data.avg_rating >= 4 ? TONE.good : TONE.neutral,
       href: '/dashboard/reviews',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div className="space-y-5">
+      {/* Total Revenue is the one number that matters most on a reports
+          page — was sitting at the exact same visual weight as "Forfeited
+          Deposits," among 13 identical cards with no hierarchy at all. */}
+      <div className="bg-taupe rounded-xl p-6 text-white">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70 flex items-center gap-1.5">
+          <TrendingUp size={12} /> Total Revenue
+        </p>
+        <p className="text-figure text-4xl sm:text-5xl font-bold mt-3 break-words">
+          ₱{Number(data?.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+        </p>
+        <p className="text-xs text-white/70 mt-2">{revenueSub}</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {kpis.map((kpi) => {
-        const cardClass = 'bg-white border border-[#EBE6E0] rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow';
+        const cardClass = 'bg-surface border border-line rounded-xl p-5 flex items-start justify-between gap-3 hover:border-line-strong transition-colors';
         const content = (
           <>
             <div>
-              <p className="text-sm font-medium text-[#827A73] mb-1">{kpi.label}</p>
-              <h3 className="text-2xl font-bold text-[#2D2A26] tracking-tight mb-1">{kpi.value}</h3>
-              <p className="text-xs text-[#A8A19A]">{kpi.sub}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted mb-1.5">{kpi.label}</p>
+              <h3 className="text-figure text-2xl font-semibold text-ink mb-1 break-words">{kpi.value}</h3>
+              <p className="text-xs text-ink-faint">{kpi.sub}</p>
             </div>
-            <div className={`p-2.5 rounded-xl border ${kpi.color}`}>{kpi.icon}</div>
+            <div className={`p-2.5 rounded-lg border shrink-0 ${kpi.color}`}>{kpi.icon}</div>
           </>
         );
         return kpi.href ? (
@@ -180,6 +196,7 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

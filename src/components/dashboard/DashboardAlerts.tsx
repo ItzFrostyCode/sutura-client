@@ -22,7 +22,7 @@ export default function DashboardAlerts({
 }: DashboardAlertsProps) {
   const [dpExpanded, setDpExpanded] = useState(false);
   return (
-    <div className="space-y-6 text-[#2D2A26]">
+    <div className="space-y-6 text-ink">
       {/* Balance Collection Alert */}
       {unpaidJobs.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
@@ -109,46 +109,46 @@ export default function DashboardAlerts({
       {(dueToday.length > 0 || dueThisWeek.length > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Due Today */}
-          <div className="bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-sm">
+          <div className="bg-surface border border-line rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Clock size={14} className="text-[#B26959]" />
-                <p className="text-sm font-semibold text-[#2D2A26]">Due Today</p>
+                <Clock size={14} className="text-danger" />
+                <p className="text-sm font-semibold text-ink">Due Today</p>
               </div>
-              <span className="bg-[#B26959]/10 text-[#B26959] border border-[#B26959]/20 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-danger/10 text-danger border border-danger/20 text-xs font-bold px-2 py-0.5 rounded-full">
                 {dueToday.length}
               </span>
             </div>
             <div className="space-y-2">
               {dueToday.length === 0
-                ? <p className="text-xs text-[#A8A19A] italic">Nothing due today.</p>
+                ? <p className="text-xs text-ink-faint italic">Nothing due today.</p>
                 : dueToday.map(j => (
-                  <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-[#EBE6E0] last:border-0 hover:text-[#9A8073] transition-colors">
-                    <p className="text-sm font-medium text-[#2D2A26] truncate">{j.customer?.name || 'Walk-in'}</p>
-                    <span className="text-xs text-[#A8A19A] shrink-0 ml-2">{j.order_number || `#${j.id}`}</span>
+                  <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-line last:border-0 hover:text-taupe transition-colors">
+                    <p className="text-sm font-medium text-ink truncate">{j.customer?.name || 'Walk-in'}</p>
+                    <span className="text-xs text-ink-faint shrink-0 ml-2">{j.order_number || `#${j.id}`}</span>
                   </Link>
                 ))
               }
             </div>
           </div>
           {/* Due This Week */}
-          <div className="bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-sm">
+          <div className="bg-surface border border-line rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={14} className="text-[#9A8073]" />
-                <p className="text-sm font-semibold text-[#2D2A26]">Due This Week</p>
+                <CheckCircle2 size={14} className="text-taupe" />
+                <p className="text-sm font-semibold text-ink">Due This Week</p>
               </div>
-              <span className="bg-[#9A8073]/10 text-[#9A8073] border border-[#9A8073]/20 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-taupe/10 text-taupe border border-taupe/20 text-xs font-bold px-2 py-0.5 rounded-full">
                 {dueThisWeek.length}
               </span>
             </div>
             <div className="space-y-2">
               {dueThisWeek.length === 0
-                ? <p className="text-xs text-[#A8A19A] italic">No upcoming deadlines</p>
+                ? <p className="text-xs text-ink-faint italic">No upcoming deadlines</p>
                 : dueThisWeek.slice(0, 5).map(j => (
-                  <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-[#EBE6E0] last:border-0 hover:text-[#9A8073] transition-colors">
-                    <p className="text-sm font-medium text-[#2D2A26] truncate">{j.customer?.name || 'Walk-in'}</p>
-                    <span className="text-xs text-[#A8A19A] shrink-0 ml-2">
+                  <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-line last:border-0 hover:text-taupe transition-colors">
+                    <p className="text-sm font-medium text-ink truncate">{j.customer?.name || 'Walk-in'}</p>
+                    <span className="text-xs text-ink-faint shrink-0 ml-2">
                       {new Date(j.due_date!).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                     </span>
                   </Link>

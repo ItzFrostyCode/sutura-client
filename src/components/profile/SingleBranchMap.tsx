@@ -27,7 +27,7 @@ export default function SingleBranchMap({ shopName, branchName, address, city, l
   const pos: [number, number] = [latitude, longitude];
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-[#EBE6E0]" style={{ height: 360 }}>
+    <div className="rounded-2xl overflow-hidden border border-line" style={{ height: 360 }}>
       <MapContainer center={pos} zoom={15} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"

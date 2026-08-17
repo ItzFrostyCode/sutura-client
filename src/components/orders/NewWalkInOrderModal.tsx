@@ -139,9 +139,9 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="absolute inset-0 bg-[#2D2A26]/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-[#2D2A26]/60" />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-[#EBE6E0] overflow-hidden">
+      <div className="relative bg-white rounded-2xl w-full max-w-md border border-line overflow-hidden">
         <div className="bg-gradient-to-r from-[#9A8073] to-[#7A6560] px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
@@ -162,21 +162,21 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
         </div>
 
         {loading ? (
-          <div className="py-16 flex items-center justify-center text-[#A8A19A]">
+          <div className="py-16 flex items-center justify-center text-ink-faint">
             <Loader2 size={24} className="animate-spin mr-2" />
             <span className="text-sm">Loading...</span>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                <ShoppingBag size={11} /> Catalog Item <span className="text-[#B26959]">*</span>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                <ShoppingBag size={11} /> Catalog Item <span className="text-danger">*</span>
               </label>
               <select
                 required
                 value={catalogItemId}
                 onChange={e => setCatalogItemId(e.target.value)}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               >
                 <option value="">Select item...</option>
                 {items.map(i => (
@@ -187,11 +187,11 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
             {selectedItem?.sizes && selectedItem.sizes.length > 0 && (
               <div>
-                <label className="block text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">Size</label>
+                <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Size</label>
                 <select
                   value={selectedSize}
                   onChange={e => setSelectedSize(e.target.value)}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
                 >
                   <option value="">— Not applicable —</option>
                   {selectedItem.sizes.map(s => (
@@ -203,13 +203,13 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
             {branches.length > 1 && (
               <div>
-                <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                  <MapPin size={11} /> Branch <span className="font-normal normal-case text-[#A8A19A]">(optional)</span>
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                  <MapPin size={11} /> Branch <span className="font-normal normal-case text-ink-faint">(optional)</span>
                 </label>
                 <select
                   value={branchId}
                   onChange={e => setBranchId(e.target.value)}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
                 >
                   <option value="">Not specified</option>
                   {branches.map(b => (
@@ -220,13 +220,13 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
             )}
 
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                <User size={11} /> Customer <span className="font-normal normal-case text-[#A8A19A]">(optional)</span>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                <User size={11} /> Customer <span className="font-normal normal-case text-ink-faint">(optional)</span>
               </label>
               <select
                 value={customerId}
                 onChange={e => setCustomerId(e.target.value)}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               >
                 <option value="">Guest / walk-in</option>
                 {customers.map(c => (
@@ -237,11 +237,11 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                  <CreditCard size={11} /> Total (₱) <span className="text-[#B26959]">*</span>
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                  <CreditCard size={11} /> Total (₱) <span className="text-danger">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] text-sm">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint text-sm">₱</span>
                   <input
                     required
                     type="number"
@@ -249,18 +249,18 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
                     step="0.01"
                     value={totalAmount}
                     onChange={e => setTotalAmount(e.target.value)}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl pl-7 pr-3 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full bg-canvas border border-line rounded-xl pl-7 pr-3 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
-                <p className="text-[10px] text-[#A8A19A] mt-1">Adjust for bulk vs. single-piece pricing.</p>
+                <p className="text-[10px] text-ink-faint mt-1">Adjust for bulk vs. single-piece pricing.</p>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">Payment</label>
+                <label className="block text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Payment</label>
                 <select
                   value={paymentStatus}
                   onChange={e => setPaymentStatus(e.target.value as 'pending' | 'paid')}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
                 >
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
@@ -269,13 +269,13 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
             </div>
 
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
                 <CreditCard size={11} /> Payment Method
               </label>
               <select
                 value={paymentMethod}
                 onChange={e => setPaymentMethod(e.target.value as 'cash' | 'gcash' | 'bank_transfer')}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               >
                 <option value="cash">Cash</option>
                 <option value="gcash">GCash</option>
@@ -294,22 +294,22 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
                   value={paymentReference}
                   onChange={e => setPaymentReference(e.target.value)}
                   placeholder={paymentMethod === 'gcash' ? 'GCash Reference # (e.g. 9876543210)' : 'Bank Transfer Reference #'}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-xs text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe"
                 />
                 {receiptUrl ? (
                   <div className="relative inline-block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={receiptUrl} alt="Receipt screenshot" className="h-16 w-16 object-cover rounded-lg border border-[#EBE6E0]" />
+                    <img src={receiptUrl} alt="Receipt screenshot" className="h-16 w-16 object-cover rounded-lg border border-line" />
                     <button
                       type="button"
                       onClick={() => setReceiptUrl('')}
-                      className="absolute -top-2 -right-2 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-[#B26959] rounded-full p-1 shadow-sm"
+                      className="absolute -top-2 -right-2 bg-surface border border-line text-ink-muted hover:text-danger rounded-full p-1"
                     >
                       <X size={11} />
                     </button>
                   </div>
                 ) : (
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3 py-1.5 rounded-lg transition-colors">
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3 py-1.5 rounded-lg transition-colors">
                     {uploadingReceipt ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                     <span>{uploadingReceipt ? 'Uploading...' : 'Attach receipt screenshot'}</span>
                     <input

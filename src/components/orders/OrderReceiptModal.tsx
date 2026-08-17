@@ -26,7 +26,7 @@ export default function OrderReceiptModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface rounded-2xl border border-line w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div id="receipt-print-area" className="p-6 text-black">
           <div className="text-center border-b border-dashed border-gray-400 pb-4 mb-4">
             <h2 className="text-xl font-bold tracking-tight">{shop?.name ?? 'Sutura Shop'}</h2>
@@ -69,10 +69,10 @@ export default function OrderReceiptModal({
           </p>
         </div>
 
-        <div className="flex gap-2 p-4 border-t border-[#EBE6E0] no-print">
+        <div className="flex gap-2 p-4 border-t border-line no-print">
           <button
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-sm font-semibold text-[#524A44] hover:bg-[#FAF6F3] transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-line text-sm font-semibold text-ink-body hover:bg-canvas transition-colors"
           >
             <X size={16} /> Close
           </button>

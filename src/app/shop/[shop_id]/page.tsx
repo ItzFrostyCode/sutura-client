@@ -21,6 +21,8 @@ import ProfileAboutTab from '@/components/profile/ProfileAboutTab';
 import PostImageLightbox from '@/components/profile/PostImageLightbox';
 import BrandLogo from '@/components/BrandLogo';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
+import ShopLogoAvatar from '@/components/ShopLogoAvatar';
+import { getMediaUrl } from '@/lib/media';
 
 // Leaflet touches `window`, so load the map client-only — same approach the
 // dashboard's own branches map uses.
@@ -713,7 +715,12 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
             {shop.banner_path ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={shop.banner_path} alt="" className="h-32 md:h-48 w-full object-cover" />
+              <img
+                src={getMediaUrl(shop.banner_path)}
+                alt=""
+                className="h-32 md:h-48 w-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             ) : (
               <div className="h-32 md:h-48 bg-gradient-to-br from-[#F0EAE3] to-[#EBE6E0] w-full" />
             )}
@@ -721,22 +728,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
             <div className="px-5 md:px-8 relative">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-12 md:-mt-10">
                 <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-5 text-center md:text-left">
-                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm shrink-0">
-                    {shop.logo_path ? (
-                      <Image
-                        src={shop.logo_path}
-                        alt={shop.name}
-                        width={112}
-                        height={112}
-                        unoptimized
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[#8C6B5D] text-4xl font-serif bg-[#FAF6F3]">
-                        {shop.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+                  <ShopLogoAvatar
+                    src={shop.logo_path}
+                    name={shop.name}
+                    className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white bg-white shadow-md overflow-hidden shrink-0"
+                  />
 
                   <div className="mb-1 md:mb-2">
                     <h1 className="text-2xl md:text-3xl font-serif font-bold text-zinc-900">{shop.name}</h1>
@@ -855,7 +851,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   </div>
                 )}
 
-                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 space-y-3">
                   {activeBranch ? (
                     <>
                       <div className="flex items-start gap-3 text-[#827A73] text-sm">
@@ -900,7 +896,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                 </div>
 
                 {shop.social_links && shop.social_links.filter(l => l.url).length > 0 && (
-                  <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-sm flex flex-wrap gap-2">
+                  <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 flex flex-wrap gap-2">
                     {shop.social_links.filter(l => l.url).map(link => {
                       const key = link.label?.toLowerCase() ?? '';
                       const styleClass = key.includes('facebook')
@@ -944,7 +940,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               </div>
 
               <div className="md:col-span-2 space-y-4">
-                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6">
                   <h3 className="font-serif text-lg font-bold text-zinc-900 mb-2">About</h3>
                   <p className="text-[#524A44] leading-relaxed">
                     {shop.description || 'A premium tailoring establishment dedicated to exceptional craftsmanship.'}
@@ -1004,7 +1000,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedService(service); }}
                       role="button"
                       tabIndex={0}
-                      className="relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm hover:border-[#9A8073]/40 hover:shadow-md transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9A8073]"
+                      className="relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden hover:border-[#9A8073]/60 transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9A8073]"
                     >
                       {isOwnerViewingOwnShop && (
                         <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
@@ -1017,7 +1013,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               setIsServiceModalOpen(true);
                             }}
                             title="Edit service"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/95 shadow-sm border border-[#EBE6E0] text-[#524A44] hover:text-taupe transition-colors focus:outline-none"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[#EBE6E0] text-[#524A44] hover:text-taupe transition-colors focus:outline-none"
                           >
                             <Pencil size={14} />
                           </button>
@@ -1029,7 +1025,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               setIsServiceDeleteOpen(true);
                             }}
                             title="Delete service"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/95 shadow-sm border border-[#EBE6E0] text-[#524A44] hover:text-[#B26959] transition-colors focus:outline-none"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[#EBE6E0] text-[#524A44] hover:text-[#B26959] transition-colors focus:outline-none"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -1041,7 +1037,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                         {service.image_url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
-                            src={service.image_url}
+                            src={getMediaUrl(service.image_url)}
                             alt={service.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -1126,7 +1122,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedPackage(pkg); }}
                         role="button"
                         tabIndex={0}
-                        className="bg-white border border-taupe/30 rounded-2xl overflow-hidden shadow-sm hover:border-taupe/60 hover:shadow-md transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9A8073]"
+                        className="bg-white border border-taupe/50 rounded-2xl overflow-hidden hover:border-taupe transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9A8073]"
                       >
                         <div className="h-52 bg-taupe/10 border-b border-[#EBE6E0] flex items-center justify-center shrink-0">
                           <Package size={40} className="text-taupe/50" />
@@ -1337,12 +1333,12 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               <Link
                                 href={`/shop/${shopId}/catalog/${item.id}`}
                                 key={item.id}
-                                className="group block bg-white border border-[#EBE6E0] overflow-hidden hover:shadow-md hover:border-[#D1C7BD] transition-all"
+                                className="group block bg-white border border-[#EBE6E0] overflow-hidden hover:border-[#9A8073]/60 transition-all"
                               >
                                 <div className="aspect-3/4 bg-[#F0EAE3] overflow-hidden relative">
                                   {primaryImage ? (
                                     <Image
-                                      src={primaryImage}
+                                      src={getMediaUrl(primaryImage)}
                                       alt={item.name}
                                       className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                                       fill
@@ -1353,7 +1349,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                                   )}
 
                                   {/* Hover Overlay for Material */}
-                                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                                  <div className="absolute inset-0 bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
                                     <span className="text-xs font-medium tracking-widest uppercase text-zinc-900 border border-zinc-900 px-4 py-2">
                                       {item.material || 'View Details'}
                                     </span>
@@ -1409,7 +1405,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   )}
                 </h3>
 
-                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6">
                   <div className="space-y-4">
                     {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
                       const hours = shop.operating_hours?.[day];
@@ -1458,15 +1454,15 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                       key={branch.id} 
                       className={`bg-white rounded-2xl p-6 transition-all flex flex-col justify-between ${
                         isSelected 
-                          ? 'border-2 border-[#2D2A26] shadow-md ring-2 ring-white ring-offset-1 ring-offset-[#2D2A26]' 
-                          : 'border border-[#EBE6E0] hover:border-[#9A8073] hover:shadow-md'
+                          ? 'border-2 border-[#2D2A26] ring-2 ring-white ring-offset-1 ring-offset-[#2D2A26]' 
+                          : 'border border-[#EBE6E0] hover:border-[#9A8073]'
                       }`}
                     >
                       <div>
                         {branch.guide_image_url && (
                           <div className="-mx-6 -mt-6 mb-4 aspect-video bg-[#F0EAE3] overflow-hidden rounded-t-2xl">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={branch.guide_image_url} alt={branch.name} className="w-full h-full object-cover" />
+                            <img src={getMediaUrl(branch.guide_image_url)} alt={branch.name} className="w-full h-full object-cover" />
                           </div>
                         )}
                         <div className="flex items-start justify-between mb-4">
@@ -1475,7 +1471,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             {branch.name}
                           </h3>
                           {isSelected && (
-                            <span className="text-[10px] font-bold text-white bg-[#2D2A26] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                            <span className="text-[10px] font-bold text-white bg-[#2D2A26] px-3 py-1 rounded-full uppercase tracking-wider">
                               Selected Location
                             </span>
                           )}
@@ -1517,7 +1513,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             <button
                               type="button"
                               onClick={() => setMapModalBranch(branch)}
-                              className="px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors flex items-center justify-center bg-white shadow-sm"
+                              className="px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors flex items-center justify-center bg-white"
                               title="View on Map"
                             >
                               <MapPin className="w-4 h-4" />
@@ -1526,7 +1522,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               href={`https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors flex items-center justify-center bg-white shadow-sm"
+                              className="px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors flex items-center justify-center bg-white"
                               title="Get Directions"
                             >
                               <ExternalLink className="w-4 h-4" />
@@ -1561,7 +1557,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               </div>
 
               {isOwnerViewingOwnShop && isAddingPost && (
-                <form onSubmit={submitPost} className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-sm space-y-3 mb-8">
+                <form onSubmit={submitPost} className="bg-white border border-[#EBE6E0] rounded-2xl p-5 space-y-3 mb-8">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-[#827A73] uppercase tracking-wider">Photos</span>
                     <span className={`text-xs font-semibold ${postImageUrls.length >= MAX_POST_IMAGES ? 'text-[#B26959]' : 'text-[#827A73]'}`}>
@@ -1659,32 +1655,24 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               ) : (
                 <div className="flex flex-wrap justify-center gap-6">
                   {posts.map(post => (
-                    <div key={post.id} className="group relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm w-full sm:w-[calc(50%-0.75rem)] max-w-md">
+                    <div key={post.id} className="group relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden w-full sm:w-[calc(50%-0.75rem)] max-w-md">
                       {isOwnerViewingOwnShop && (
                         <button
                           type="button"
                           onClick={() => deletePost(post.id)}
                           title="Remove post"
-                          className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/95 shadow-sm border border-[#EBE6E0] text-[#524A44] hover:text-[#B26959] focus:outline-none opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
+                          className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[#EBE6E0] text-[#524A44] hover:text-[#B26959] focus:outline-none opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
                         >
                           <Trash2 size={14} />
                         </button>
                       )}
                       <div className="p-4 flex items-center gap-3">
-                        {shop.logo_path ? (
-                          <Image
-                            src={shop.logo_path}
-                            alt={shop.name}
-                            width={36}
-                            height={36}
-                            unoptimized
-                            className="w-9 h-9 rounded-full object-cover border border-zinc-200"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-taupe/10 flex items-center justify-center text-taupe font-bold text-sm shrink-0">
-                            {shop.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                        <ShopLogoAvatar
+                          src={shop.logo_path}
+                          name={shop.name}
+                          className="w-9 h-9 rounded-full border border-zinc-200"
+                          textClassName="text-sm font-bold text-[#8C6B5D]"
+                        />
                         <div className="min-w-0">
                           <p className="font-semibold text-sm text-zinc-900 truncate">{shop.name}</p>
                           <p className="text-xs text-[#A8A19A]">
@@ -1897,7 +1885,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
             <button type="button" onClick={() => setIsRatingModalOpen(false)} className="px-4 py-2 text-sm text-[#A8A19A] hover:text-zinc-900">
               Cancel
             </button>
-            <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-white shadow-sm hover:bg-black text-[#2D2A26] rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors">
+            <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-white border border-[#EBE6E0] hover:bg-black text-[#2D2A26] rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors">
               {isSubmitting && <Loader2 size={16} className="animate-spin" />}
               Submit Rating
             </button>

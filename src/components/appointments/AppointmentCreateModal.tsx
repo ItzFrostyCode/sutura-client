@@ -5,7 +5,7 @@ import { useBranch } from '@/context/BranchContext';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   Appointment, CustomerData, BranchData, StaffData, AppointmentType,
-  APPOINTMENT_TYPES, TYPE_CONFIG, TYPE_DEFAULT_DURATIONS
+  APPOINTMENT_TYPES, TYPE_CONFIG, TYPE_DEFAULT_DURATIONS, getLocalDateString
 } from './appointmentHelpers';
 import { roleLabel } from '@/components/staff/staffHelpers';
 import CustomerFormModal from '@/components/customers/CustomerFormModal';
@@ -79,11 +79,13 @@ export default function AppointmentCreateModal({
     if (editingApt) {
       const d = new Date(editingApt.scheduled_at);
       const custId = editingApt.customer?.id?.toString() || '';
+      const localDate = getLocalDateString(d);
+      const today = getLocalDateString(new Date());
       setFormData({
         customer_id: custId,
         appointment_type: editingApt.appointment_type,
         shop_branch_id: editingApt.shop_branch_id?.toString() || '',
-        scheduled_date: d.toISOString().split('T')[0],
+        scheduled_date: localDate < today ? today : localDate,
         scheduled_time: d.toTimeString().substring(0, 5),
         duration_minutes: (editingApt.duration_minutes || TYPE_DEFAULT_DURATIONS[editingApt.appointment_type]).toString(),
         assigned_staff_id: editingApt.assigned_staff_id?.toString() || '',
@@ -91,8 +93,10 @@ export default function AppointmentCreateModal({
       });
     } else {
       const defaultBranchId = selectedBranchId?.toString() || '';
+      const today = getLocalDateString(new Date());
       setFormData({
         ...defaultForm,
+        scheduled_date: today,
         shop_branch_id: defaultBranchId || (branches.length === 1 ? branches[0].id.toString() : '')
       });
     }
@@ -130,17 +134,17 @@ export default function AppointmentCreateModal({
         {/* Step indicator — same "Back / Step X of 3" pattern as the public
             customer booking wizard, minus its Payment step (not applicable
             here — the owner isn't paying themselves for a walk-in). */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#EBE6E0]">
+        <div className="flex items-center justify-between pb-3 border-b border-line">
           {step > 1 ? (
             <button
               type="button"
               onClick={() => setStep(s => s - 1)}
-              className="text-sm font-medium text-[#827A73] hover:text-[#2D2A26] transition-colors"
+              className="text-sm font-medium text-ink-muted hover:text-ink transition-colors"
             >
               ← Back
             </button>
           ) : <span />}
-          <span className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider">Step {step} of 3</span>
+          <span className="text-xs font-semibold text-ink-faint uppercase tracking-wider">Step {step} of 3</span>
         </div>
 
         {/* STEP 1: Customer & Appointment Type */}
@@ -149,7 +153,7 @@ export default function AppointmentCreateModal({
         {/* Customer */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label htmlFor="customer_id" className="block text-sm font-medium text-[#524A44]">Customer <span className="text-rose-500">*</span></label>
+            <label htmlFor="customer_id" className="block text-sm font-medium text-ink-body">Customer <span className="text-rose-500">*</span></label>
             <button
               type="button"
               onClick={() => setShowAddCustomer(true)}
@@ -159,7 +163,7 @@ export default function AppointmentCreateModal({
             </button>
           </div>
           <select id="customer_id" required value={formData.customer_id} onChange={e => setFormData({ ...formData, customer_id: e.target.value })}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
             <option value="" disabled>Select a customer</option>
             {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ''}</option>)}
           </select>
@@ -170,7 +174,7 @@ export default function AppointmentCreateModal({
             Job Order linking are finalized later during Job Order creation
             (or, for Fitting, auto-linked by the system) — not captured here. */}
         <div>
-          <span className="block text-sm font-medium text-[#524A44] mb-1">Appointment Type <span className="text-rose-500">*</span></span>
+          <span className="block text-sm font-medium text-ink-body mb-1">Appointment Type <span className="text-rose-500">*</span></span>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {APPOINTMENT_TYPES.map(t => {
               const tc = TYPE_CONFIG[t];
@@ -187,7 +191,7 @@ export default function AppointmentCreateModal({
                   className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border text-[10px] font-semibold transition-all ${
                     formData.appointment_type === t
                       ? `${tc.bg} ${tc.border} ${tc.text} ring-2 ring-offset-1 ${tc.border.replace('border-', 'ring-')}`
-                      : 'bg-white border-[#EBE6E0] text-[#827A73] hover:border-[#9A8073]/40'
+                      : 'bg-white border-line text-ink-muted hover:border-taupe/40'
                   }`}
                 >
                   {tc.icon}
@@ -205,17 +209,17 @@ export default function AppointmentCreateModal({
         <div className="space-y-4">
         {/* Duration is auto-calculated from the Appointment Type chosen in
             Step 1 (see TYPE_DEFAULT_DURATIONS) — no manual selector. */}
-        <p className="text-xs text-[#827A73] -mt-1">
-          Duration: <span className="font-semibold text-[#524A44]">{formData.duration_minutes} minutes</span> (auto-set for {TYPE_CONFIG[formData.appointment_type].label})
+        <p className="text-xs text-ink-muted -mt-1">
+          Duration: <span className="font-semibold text-ink-body">{formData.duration_minutes} minutes</span> (auto-set for {TYPE_CONFIG[formData.appointment_type].label})
         </p>
 
         {/* Branch (multi-branch only) — set before the calendar so slots are
             already filtered to this branch's own existing bookings. */}
         {branches.length > 1 && (
           <div>
-            <label htmlFor="shop_branch_id" className="block text-sm font-medium text-[#524A44] mb-1">Branch <span className="text-rose-500">*</span></label>
+            <label htmlFor="shop_branch_id" className="block text-sm font-medium text-ink-body mb-1">Branch <span className="text-rose-500">*</span></label>
             <select id="shop_branch_id" required value={formData.shop_branch_id} onChange={e => setFormData({ ...formData, shop_branch_id: e.target.value })}
-              className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
+              className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
               <option value="" disabled>Select branch...</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -251,9 +255,9 @@ export default function AppointmentCreateModal({
         {/* Assign Staff */}
         {staff.length > 0 && (
           <div>
-            <label htmlFor="assigned_staff_id" className="block text-sm font-medium text-[#524A44] mb-1">Assign Staff (Optional)</label>
+            <label htmlFor="assigned_staff_id" className="block text-sm font-medium text-ink-body mb-1">Assign Staff (Optional)</label>
             <select id="assigned_staff_id" value={formData.assigned_staff_id} onChange={e => setFormData({ ...formData, assigned_staff_id: e.target.value })}
-              className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
+              className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
               <option value="">Unassigned</option>
               {staff.map(s => {
                 const roles = [s.role, ...(s.additional_roles || [])].filter((r): r is string => Boolean(r)).map(roleLabel).join(', ');
@@ -275,9 +279,9 @@ export default function AppointmentCreateModal({
 
         {/* Notes */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-[#524A44] mb-1">Notes (Optional)</label>
+          <label htmlFor="notes" className="block text-sm font-medium text-ink-body mb-1">Notes (Optional)</label>
           <textarea id="notes" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
-            rows={2} className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] resize-none"
+            rows={2} className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
             placeholder="Any special notes or instructions..." />
         </div>
         </div>
@@ -287,12 +291,12 @@ export default function AppointmentCreateModal({
         <div className="pt-2 flex justify-end gap-3">
           {step === 1 && (
             <>
-              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors">Cancel</button>
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
               <button
                 type="button"
                 disabled={!step1Valid}
                 onClick={() => setStep(2)}
-                className="bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
               >
                 Next Step →
               </button>
@@ -303,13 +307,13 @@ export default function AppointmentCreateModal({
               type="button"
               disabled={!step2Valid}
               onClick={() => setStep(3)}
-              className="bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               Next Step →
             </button>
           )}
           {step === 3 && (
-            <button type="submit" disabled={isSubmitting} className="bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50">
+            <button type="submit" disabled={isSubmitting} className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50">
               {isSubmitting && <Loader2 size={15} className="animate-spin" />}
               {editingApt ? 'Save Changes' : 'Save Appointment'}
             </button>

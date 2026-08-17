@@ -160,16 +160,16 @@ export default function SizeChartEditor({
     });
   };
 
-  const labelClass = 'block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider';
+  const labelClass = 'block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider';
   const displayRows = mode === 'single-row' ? ensureSingleRow(columns) : rows;
   const singleRowValues = displayRows[0]?.values ?? [];
 
   return (
-    <div className="border-t border-[#EBE6E0] pt-4 mt-2">
+    <div className="border-t border-line pt-4 mt-2">
       <div className="flex items-center justify-between mb-1">
         <div>
-          <span className={labelClass}>{title} <span className="text-[#A8A19A] normal-case font-normal">(optional)</span></span>
-          <p className="text-[11px] text-[#A8A19A] mt-0.5 max-w-md">{description}</p>
+          <span className={labelClass}>{title} <span className="text-ink-faint normal-case font-normal">(optional)</span></span>
+          <p className="text-[11px] text-ink-faint mt-0.5 max-w-md">{description}</p>
         </div>
         <button
           type="button"
@@ -184,26 +184,26 @@ export default function SizeChartEditor({
         <div className="space-y-5 mt-3">
           <div className="max-w-xs">
             <label className={labelClass}>Reference Chart Image</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-[#EBE6E0] border-dashed rounded-xl relative overflow-hidden group bg-[#FAF6F3]/50">
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-line border-dashed rounded-xl relative overflow-hidden group bg-canvas/50">
               <div className="space-y-1 text-center relative z-10">
                 {uploading ? (
-                  <Loader2 className="mx-auto h-8 w-8 text-[#A8A19A] animate-spin" />
+                  <Loader2 className="mx-auto h-8 w-8 text-ink-faint animate-spin" />
                 ) : imageUrl ? (
                   <div className="flex flex-col items-center">
-                    <ImageIcon className="mx-auto h-8 w-8 text-[#7A8B76] mb-2" />
-                    <span className="text-sm text-[#7A8B76] font-medium">Image uploaded</span>
-                    <button type="button" onClick={() => onChange({ ...value, image_url: null })} className="mt-2 text-xs text-[#B26959] hover:text-[#91544A] font-medium focus:outline-none">Remove image</button>
+                    <ImageIcon className="mx-auto h-8 w-8 text-sage mb-2" />
+                    <span className="text-sm text-sage font-medium">Image uploaded</span>
+                    <button type="button" onClick={() => onChange({ ...value, image_url: null })} className="mt-2 text-xs text-danger hover:text-[#91544A] font-medium focus:outline-none">Remove image</button>
                   </div>
                 ) : (
                   <>
-                    <Upload className="mx-auto h-8 w-8 text-[#A8A19A]" />
-                    <div className="flex text-sm text-[#827A73] justify-center">
+                    <Upload className="mx-auto h-8 w-8 text-ink-faint" />
+                    <div className="flex text-sm text-ink-muted justify-center">
                       <label htmlFor={`size-chart-image-${title}`} className="relative cursor-pointer bg-transparent rounded-md font-medium text-taupe hover:underline focus-within:outline-none">
                         <span>Upload a file</span>
                         <input id={`size-chart-image-${title}`} name="size-chart-image" type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
                       </label>
                     </div>
-                    <p className="text-xs text-[#A8A19A]">PNG, JPG up to 2MB</p>
+                    <p className="text-xs text-ink-faint">PNG, JPG up to 2MB</p>
                   </>
                 )}
               </div>
@@ -218,22 +218,22 @@ export default function SizeChartEditor({
               <div className="flex items-center justify-between mb-1">
                 <label className={labelClass}>Measurement Table</label>
                 {(columns.length > 0 || rows.length > 0) && (
-                  <button type="button" onClick={resetTable} className="text-[11px] font-semibold text-[#B26959] hover:underline focus:outline-none">
+                  <button type="button" onClick={resetTable} className="text-[11px] font-semibold text-danger hover:underline focus:outline-none">
                     Clear table
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-[#A8A19A] mb-2">
+              <p className="text-[11px] text-ink-faint mb-2">
                 Click the <strong>+</strong> at the top-right to add a measurement column (e.g. &quot;Chest (in)&quot;), or at the bottom to add a size row (e.g. &quot;Medium&quot;). Click the <strong>×</strong> next to a row or column name to remove it.
               </p>
 
-              <div className="overflow-x-auto border border-[#EBE6E0] rounded-lg">
+              <div className="overflow-x-auto border border-line rounded-lg">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-[#FAF6F3]">
-                      <th className="px-2 py-1.5 text-left font-semibold text-[#827A73]">Size</th>
+                    <tr className="bg-canvas">
+                      <th className="px-2 py-1.5 text-left font-semibold text-ink-muted">Size</th>
                       {columns.map((col, ci) => (
-                        <th key={col} className="px-2 py-1.5 text-left font-semibold text-[#827A73]">
+                        <th key={col} className="px-2 py-1.5 text-left font-semibold text-ink-muted">
                           {editingColumnIndex === ci ? (
                             <input
                               autoFocus
@@ -252,7 +252,7 @@ export default function SizeChartEditor({
                               <span className="truncate cursor-text" onDoubleClick={() => startRenameColumn(ci, col)} title="Double-click to rename">
                                 {col}
                               </span>
-                              <button type="button" onClick={() => removeColumn(ci)} title={`Remove ${col} column`} className="shrink-0 text-[#A8A19A] hover:text-[#B26959] focus:outline-none">
+                              <button type="button" onClick={() => removeColumn(ci)} title={`Remove ${col} column`} className="shrink-0 text-ink-faint hover:text-danger focus:outline-none">
                                 <X size={10} />
                               </button>
                             </div>
@@ -284,8 +284,8 @@ export default function SizeChartEditor({
                   </thead>
                   <tbody>
                     {rows.map((row, ri) => (
-                      <tr key={row.size} className="border-t border-[#EBE6E0]">
-                        <td className="px-2 py-1 font-semibold text-[#2D2A26] whitespace-nowrap">
+                      <tr key={row.size} className="border-t border-line">
+                        <td className="px-2 py-1 font-semibold text-ink whitespace-nowrap">
                           {editingRowKey === row.size ? (
                             <input
                               autoFocus
@@ -304,7 +304,7 @@ export default function SizeChartEditor({
                               <span className="truncate cursor-text" onDoubleClick={() => startRenameRow(row.size)} title="Double-click to rename">
                                 {row.size}
                               </span>
-                              <button type="button" onClick={() => removeRow(row.size)} title={`Remove ${row.size} row`} className="shrink-0 text-[#A8A19A] hover:text-[#B26959] focus:outline-none">
+                              <button type="button" onClick={() => removeRow(row.size)} title={`Remove ${row.size} row`} className="shrink-0 text-ink-faint hover:text-danger focus:outline-none">
                                 <X size={10} />
                               </button>
                             </div>
@@ -316,14 +316,14 @@ export default function SizeChartEditor({
                               type="text"
                               value={val ?? ''}
                               onChange={(e) => updateCell(ri, ci, e.target.value)}
-                              className="w-16 px-1 py-0.5 bg-white border border-[#EBE6E0] rounded text-xs focus:outline-none focus:border-taupe"
+                              className="w-16 px-1 py-0.5 bg-surface border border-line rounded text-xs focus:outline-none focus:border-taupe"
                             />
                           </td>
                         ))}
                         <td></td>
                       </tr>
                     ))}
-                    <tr className="border-t border-[#EBE6E0]">
+                    <tr className="border-t border-line">
                       <td className="px-2 py-1.5" colSpan={columns.length + 2}>
                         {addingRow ? (
                           <input
@@ -355,12 +355,12 @@ export default function SizeChartEditor({
               <div className="flex items-center justify-between mb-1">
                 <label className={labelClass}>Measurement Fields</label>
                 {columns.length > 0 && (
-                  <button type="button" onClick={resetTable} className="text-[11px] font-semibold text-[#B26959] hover:underline focus:outline-none">
+                  <button type="button" onClick={resetTable} className="text-[11px] font-semibold text-danger hover:underline focus:outline-none">
                     Clear all
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-[#A8A19A] mb-2">
+              <p className="text-[11px] text-ink-faint mb-2">
                 Add whatever measurement fields you need — double-click a field name to rename it, click <strong>×</strong> to remove it.
               </p>
               <div className="space-y-2">
@@ -382,7 +382,7 @@ export default function SizeChartEditor({
                         />
                       ) : (
                         <span
-                          className="text-xs font-medium text-[#524A44] cursor-text truncate block"
+                          className="text-xs font-medium text-ink-body cursor-text truncate block"
                           onDoubleClick={() => startRenameColumn(ci, col)}
                           title="Double-click to rename"
                         >
@@ -395,9 +395,9 @@ export default function SizeChartEditor({
                       value={singleRowValues[ci] ?? ''}
                       onChange={(e) => updateCell(0, ci, e.target.value)}
                       placeholder="—"
-                      className="flex-1 px-3 py-1.5 bg-white border border-[#EBE6E0] rounded-lg text-xs focus:outline-none focus:border-taupe"
+                      className="flex-1 px-3 py-1.5 bg-surface border border-line rounded-lg text-xs focus:outline-none focus:border-taupe"
                     />
-                    <button type="button" onClick={() => removeColumn(ci)} title={`Remove ${col}`} className="shrink-0 text-[#A8A19A] hover:text-[#B26959] focus:outline-none">
+                    <button type="button" onClick={() => removeColumn(ci)} title={`Remove ${col}`} className="shrink-0 text-ink-faint hover:text-danger focus:outline-none">
                       <X size={14} />
                     </button>
                   </div>

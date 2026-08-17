@@ -71,21 +71,21 @@ export default function CancellationReasonModal({ isOpen, onClose, onConfirm, co
             onClick={() => setSelected(reason.value)}
             className={`w-full text-left flex items-start gap-2.5 p-3 rounded-xl border transition-colors ${
               selected === reason.value
-                ? (reason.flagged ? 'border-[#B26959] bg-[#B26959]/5' : 'border-taupe bg-[#FAF6F3]')
-                : 'border-[#EBE6E0] hover:border-[#D1C7BD]'
+                ? (reason.flagged ? 'border-danger bg-danger/5' : 'border-taupe bg-canvas')
+                : 'border-line hover:border-line-strong'
             }`}
           >
             <input type="radio" checked={selected === reason.value} readOnly className="mt-0.5 accent-taupe" />
             <div>
-              <p className={`text-xs font-semibold ${reason.flagged ? 'text-[#B26959]' : 'text-[#2D2A26]'}`}>{reason.title}</p>
-              <p className="text-[10.5px] text-[#A8A19A] mt-0.5">{reason.description}</p>
+              <p className={`text-xs font-semibold ${reason.flagged ? 'text-danger' : 'text-ink'}`}>{reason.title}</p>
+              <p className="text-[10.5px] text-ink-faint mt-0.5">{reason.description}</p>
               {reason.value === 'other' && selected === 'other' && (
                 <input
                   type="text"
                   value={otherText}
                   onChange={e => setOtherText(e.target.value)}
                   placeholder="Explain what happened…"
-                  className="w-full mt-1.5 px-2.5 py-1.5 border border-[#D1C7BD] rounded-lg text-xs"
+                  className="w-full mt-1.5 px-2.5 py-1.5 border border-line-strong rounded-lg text-xs"
                   onClick={e => e.stopPropagation()}
                 />
               )}
@@ -93,8 +93,8 @@ export default function CancellationReasonModal({ isOpen, onClose, onConfirm, co
           </button>
         ))}
 
-        <div className="pt-2 border-t border-[#EBE6E0] flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26]">
+        <div className="pt-2 border-t border-line flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink">
             Never mind, keep it active
           </button>
           <button

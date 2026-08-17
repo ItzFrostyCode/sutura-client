@@ -179,11 +179,11 @@ export default function PromoPostModal({ isOpen, onClose, mode = 'services' }: P
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Generate Promo Post" maxWidth="max-w-2xl">
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-[#A8A19A]">
+        <div className="flex items-center justify-center py-16 text-ink-faint">
           <Loader2 size={24} className="animate-spin" />
         </div>
       ) : !hasAnySale ? (
-        <div className="text-center py-12 text-sm text-[#827A73]">
+        <div className="text-center py-12 text-sm text-ink-muted">
           {mode === 'catalog'
             ? 'No active catalog items to promote yet. Add one to your Design Catalog first.'
             : 'No services are currently on sale. Set a Sale Price on a Service first.'}
@@ -191,32 +191,32 @@ export default function PromoPostModal({ isOpen, onClose, mode = 'services' }: P
       ) : (
         <div className="space-y-5">
           <div>
-            <span className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">Include in Post</span>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto border border-[#EBE6E0] rounded-lg p-2">
+            <span className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Include in Post</span>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto border border-line rounded-lg p-2">
               {mode === 'catalog' ? catalogItems.map(item => (
-                <label key={`catalog-${item.id}`} className="flex items-center gap-2 text-sm px-1.5 py-1 rounded hover:bg-[#FAF6F3] cursor-pointer">
+                <label key={`catalog-${item.id}`} className="flex items-center gap-2 text-sm px-1.5 py-1 rounded hover:bg-canvas cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checkedItems.has(`catalog-${item.id}`)}
                     onChange={() => toggleItem(`catalog-${item.id}`)}
-                    className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                    className="rounded border-line text-taupe focus:ring-taupe"
                   />
                   <span className="flex-1 truncate">{item.name}</span>
-                  <span className="text-[#2D2A26] font-semibold text-xs">₱{Number(item.price).toLocaleString()}</span>
+                  <span className="text-ink font-semibold text-xs">₱{Number(item.price).toLocaleString()}</span>
                 </label>
               )) : services.map(svc => {
                 const sale = getActiveSale({ price: svc.base_price ?? 0, sale_price: svc.sale_price, sale_starts_at: svc.sale_starts_at, sale_ends_at: svc.sale_ends_at });
                 if (!sale) return null;
                 return (
-                  <label key={`service-${svc.id}`} className="flex items-center gap-2 text-sm px-1.5 py-1 rounded hover:bg-[#FAF6F3] cursor-pointer">
+                  <label key={`service-${svc.id}`} className="flex items-center gap-2 text-sm px-1.5 py-1 rounded hover:bg-canvas cursor-pointer">
                     <input
                       type="checkbox"
                       checked={checkedItems.has(`service-${svc.id}`)}
                       onChange={() => toggleItem(`service-${svc.id}`)}
-                      className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                      className="rounded border-line text-taupe focus:ring-taupe"
                     />
                     <span className="flex-1 truncate">{svc.name}</span>
-                    <span className="text-[#A8A19A] line-through text-xs">₱{sale.original.toLocaleString()}</span>
+                    <span className="text-ink-faint line-through text-xs">₱{sale.original.toLocaleString()}</span>
                     <span className="text-rose-600 font-semibold text-xs">₱{sale.sale.toLocaleString()}</span>
                   </label>
                 );
@@ -225,32 +225,32 @@ export default function PromoPostModal({ isOpen, onClose, mode = 'services' }: P
           </div>
 
           <div>
-            <label htmlFor="promo-value-props" className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">
-              Value Props <span className="font-normal normal-case text-[#A8A19A]">(one per line, editable)</span>
+            <label htmlFor="promo-value-props" className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
+              Value Props <span className="font-normal normal-case text-ink-faint">(one per line, editable)</span>
             </label>
             <textarea
               id="promo-value-props"
               value={valueProps}
               onChange={e => setValueProps(e.target.value)}
               rows={4}
-              className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe resize-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe resize-none"
             />
           </div>
 
           <div>
-            <label htmlFor="promo-cta" className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">Call to Action</label>
+            <label htmlFor="promo-cta" className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Call to Action</label>
             <input
               id="promo-cta"
               type="text"
               value={ctaLine}
               onChange={e => setCtaLine(e.target.value)}
-              className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
             />
           </div>
 
           <div>
-            <span className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">Preview</span>
-            <pre className="whitespace-pre-wrap bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg p-4 text-sm text-[#2D2A26] font-sans">{caption}</pre>
+            <span className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Preview</span>
+            <pre className="whitespace-pre-wrap bg-canvas border border-line rounded-lg p-4 text-sm text-ink font-sans">{caption}</pre>
             <button
               type="button"
               onClick={handleCopy}
@@ -263,8 +263,8 @@ export default function PromoPostModal({ isOpen, onClose, mode = 'services' }: P
 
           {images.length > 0 && (
             <div>
-              <span className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-2">
-                Photos to Attach <span className="font-normal normal-case text-[#A8A19A]">(tap to toggle, then save/download to attach on Facebook)</span>
+              <span className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
+                Photos to Attach <span className="font-normal normal-case text-ink-faint">(tap to toggle, then save/download to attach on Facebook)</span>
               </span>
               <div className="grid grid-cols-4 gap-2">
                 {images.map(img => (
@@ -277,7 +277,7 @@ export default function PromoPostModal({ isOpen, onClose, mode = 'services' }: P
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
-                    <span className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center ${img.checked ? 'bg-taupe text-white' : 'bg-white/80 text-[#A8A19A]'}`}>
+                    <span className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center ${img.checked ? 'bg-taupe text-white' : 'bg-white/80 text-ink-faint'}`}>
                       {img.checked ? <Check size={12} /> : <ImageIcon size={10} />}
                     </span>
                   </button>

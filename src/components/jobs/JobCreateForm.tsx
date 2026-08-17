@@ -167,7 +167,7 @@ export default function JobCreateForm() {
   const renderMeasurementSelector = () => {
     if (isBulkOrder) {
       return (
-        <p className="text-xs text-[#827A73] italic py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 h-[38px] flex items-center">
+        <p className="text-xs text-ink-muted italic py-2.5 bg-canvas border border-line rounded-lg px-3 h-[38px] flex items-center">
           Bulk Order (Roster Sheet will be used)
         </p>
       );
@@ -175,7 +175,7 @@ export default function JobCreateForm() {
 
     if (!formData.customer_id) {
       return (
-        <p className="text-xs text-[#A8A19A] italic py-3">
+        <p className="text-xs text-ink-faint italic py-3">
           Please select a customer first.
         </p>
       );
@@ -183,11 +183,11 @@ export default function JobCreateForm() {
 
     if (customerMeasurements.length === 0) {
       return (
-        <div className="text-xs text-[#B26959] bg-[#B26959]/5 border border-[#B26959]/10 rounded-lg p-2.5 flex items-center justify-between">
+        <div className="text-xs text-danger bg-danger/5 border border-danger/10 rounded-lg p-2.5 flex items-center justify-between">
           <span>No measurement profiles found.</span>
           <Link
             href={`/dashboard/measurements?customer_id=${formData.customer_id}`}
-            className="font-semibold underline text-[#B26959] hover:text-[#B26959]/80 ml-2"
+            className="font-semibold underline text-danger hover:text-danger/80 ml-2"
           >
             Record Measurements
           </Link>
@@ -213,7 +213,7 @@ export default function JobCreateForm() {
           onChange={(e) =>
             setFormData({ ...formData, measurement_id: e.target.value })
           }
-          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
         >
           <option value="">
             No profile selected / Consultation Only
@@ -225,7 +225,7 @@ export default function JobCreateForm() {
           ))}
         </select>
         {formData.measurement_id && formData.measurement_id === mostRecentId && (
-          <p className="text-[11px] text-[#7A8B76] font-medium">
+          <p className="text-[11px] text-sage font-medium">
             ✓ Retrieved this customer&apos;s last saved measurements — no need to re-measure a returning client.
           </p>
         )}
@@ -244,9 +244,9 @@ export default function JobCreateForm() {
     const filledMetrics = Object.entries(selected.metrics || {}).filter(([, v]) => v);
 
     return (
-      <div className="bg-[#FAF6F3]/60 border border-[#EBE6E0]/60 rounded-xl p-3.5 space-y-2">
+      <div className="bg-canvas/60 border border-line/60 rounded-xl p-3.5 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold text-[#827A73] uppercase tracking-wider">
+          <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">
             {selected.profile_name} — Saved Measurements
           </span>
           <Link
@@ -263,11 +263,11 @@ export default function JobCreateForm() {
             ))}
           </div>
         ) : (
-          <p className="text-xs text-[#A8A19A] italic">No measurement fields recorded yet.</p>
+          <p className="text-xs text-ink-faint italic">No measurement fields recorded yet.</p>
         )}
         {selected.notes && (
-          <p className="text-xs text-[#524A44] border-t border-[#EBE6E0]/60 pt-2 mt-1">
-            <span className="font-semibold text-[#827A73]">Notes: </span>
+          <p className="text-xs text-ink-body border-t border-line/60 pt-2 mt-1">
+            <span className="font-semibold text-ink-muted">Notes: </span>
             {selected.notes}
           </p>
         )}
@@ -308,7 +308,7 @@ export default function JobCreateForm() {
               [field.label]: e.target.value,
             })
           }
-          className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+          className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
         >
           <option value="">Select an option</option>
           {field.options?.map((opt) => (
@@ -330,8 +330,8 @@ export default function JobCreateForm() {
                 key={opt}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
                   isSelected
-                    ? 'border-taupe bg-[#FAF6F3] text-[#2D2A26]'
-                    : 'border-[#EBE6E0] bg-white text-[#827A73] hover:border-[#D1C7BD] hover:text-[#2D2A26]'
+                    ? 'border-taupe bg-canvas text-ink'
+                    : 'border-line bg-white text-ink-muted hover:border-line-strong hover:text-ink'
                 }`}
               >
                 <input
@@ -351,7 +351,7 @@ export default function JobCreateForm() {
                   className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
                     isSelected
                       ? 'border-taupe bg-taupe text-white'
-                      : 'border-[#A8A19A]'
+                      : 'border-ink-faint'
                   }`}
                 >
                   {isSelected && (
@@ -383,8 +383,8 @@ export default function JobCreateForm() {
                 key={opt}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
                   isChecked
-                    ? 'border-taupe bg-[#FAF6F3] text-[#2D2A26]'
-                    : 'border-[#EBE6E0] bg-white text-[#827A73] hover:border-[#D1C7BD] hover:text-[#2D2A26]'
+                    ? 'border-taupe bg-canvas text-ink'
+                    : 'border-line bg-white text-ink-muted hover:border-line-strong hover:text-ink'
                 }`}
               >
                 <input
@@ -401,7 +401,7 @@ export default function JobCreateForm() {
                   className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
                     isChecked
                       ? 'border-taupe bg-taupe text-white'
-                      : 'border-[#A8A19A]'
+                      : 'border-ink-faint'
                   }`}
                 >
                   {isChecked && (
@@ -433,7 +433,7 @@ export default function JobCreateForm() {
             [field.label]: e.target.value,
           })
         }
-        className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
         placeholder={`Enter ${field.label.toLowerCase()}...`}
       />
     );
@@ -741,7 +741,7 @@ export default function JobCreateForm() {
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-[#A8A19A] animate-pulse flex flex-col items-center justify-center gap-3">
+      <div className="py-12 text-center text-ink-faint animate-pulse flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-taupe" />
         <span>Loading form data...</span>
       </div>
@@ -766,31 +766,31 @@ export default function JobCreateForm() {
   // selected, so the form visibly reacts to the choice instead of staying visually static.
   const sectionTwoMeta = selectedService?.service_type
     ? SERVICE_TYPE_META[selectedService.service_type]
-    : { icon: FileText, bg: 'bg-[#F0EAE3]', border: 'border-[#EBE6E0]', text: 'text-[#A8A19A]' };
+    : { icon: FileText, bg: 'bg-sunken', border: 'border-line', text: 'text-ink-faint' };
   const SectionTwoIcon = sectionTwoMeta.icon;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/jobs"
-          className="p-2 bg-white shadow-sm border border-[#EBE6E0] rounded-lg hover:bg-[#F0EAE3] text-[#827A73] hover:text-[#2D2A26] transition-colors"
+          className="p-2 bg-surface border border-line rounded-lg hover:bg-sunken text-ink-muted hover:text-ink transition-colors"
         >
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">
+          <h1 className="text-2xl font-bold text-ink tracking-tight">
             Create Job Order
           </h1>
-          <p className="text-[#827A73] text-sm mt-1">
+          <p className="text-ink-muted text-sm mt-1">
             Start a new garment production workflow.
           </p>
         </div>
       </div>
 
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         {error && (
-          <div className="mb-6 bg-[#B26959]/10 border border-[#B26959]/50 text-[#B26959] px-4 py-3 rounded-lg text-sm">
+          <div className="mb-6 bg-danger/10 border border-danger/50 text-danger px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
@@ -818,17 +818,17 @@ export default function JobCreateForm() {
           defaultOpen={false}
         >
         <div className="mb-6 space-y-1.5">
-          <label htmlFor="garment_category" className="text-sm font-medium text-[#524A44]">
-            Garment Category <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+          <label htmlFor="garment_category" className="text-sm font-medium text-ink-body">
+            Garment Category <span className="text-xs font-normal text-ink-faint">(optional)</span>
           </label>
-          <p className="text-[11px] text-[#A8A19A]">
+          <p className="text-[11px] text-ink-faint">
             Matches this job to your shop&apos;s garment specializations — helps customers find you for the right kind of work.
           </p>
           <select
             id="garment_category"
             value={formData.garment_category}
             onChange={(e) => setFormData(prev => ({ ...prev, garment_category: e.target.value as typeof prev.garment_category }))}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+            className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
           >
             <option value="">Not specified</option>
             <option value="barong">Barong Tagalog</option>
@@ -844,8 +844,8 @@ export default function JobCreateForm() {
         </div>
 
         <div className="mb-6 space-y-1.5">
-          <span className="text-sm font-medium text-[#524A44]">Fabric / Material Source</span>
-          <p className="text-[11px] text-[#A8A19A]">
+          <span className="text-sm font-medium text-ink-body">Fabric / Material Source</span>
+          <p className="text-[11px] text-ink-faint">
             Some walk-ins bring their own fabric or an existing garment instead of using shop stock — flagging it here keeps it from getting mixed up with other jobs during cutting.
           </p>
           <div className="flex gap-2 mt-1">
@@ -855,7 +855,7 @@ export default function JobCreateForm() {
               className={`flex-1 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                 formData.material_source === 'shop_supplied'
                   ? 'border-taupe bg-taupe/10 text-taupe'
-                  : 'border-[#EBE6E0] text-[#827A73] hover:bg-[#FAF6F3]'
+                  : 'border-line text-ink-muted hover:bg-canvas'
               }`}
             >
               Shop-Supplied
@@ -866,7 +866,7 @@ export default function JobCreateForm() {
               className={`flex-1 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                 formData.material_source === 'customer_supplied'
                   ? 'border-taupe bg-taupe/10 text-taupe'
-                  : 'border-[#EBE6E0] text-[#827A73] hover:bg-[#FAF6F3]'
+                  : 'border-line text-ink-muted hover:bg-canvas'
               }`}
             >
               Customer&apos;s Own Fabric/Garment
@@ -884,10 +884,10 @@ export default function JobCreateForm() {
 
         {catalogItems.length > 0 && (
           <div className="mb-6 space-y-1.5">
-            <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
-              Link to Design Catalog Item <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+            <span className="text-sm font-medium text-ink-body flex items-center gap-1.5">
+              Link to Design Catalog Item <span className="text-xs font-normal text-ink-faint">(optional)</span>
             </span>
-            <p className="text-[11px] text-[#A8A19A]">
+            <p className="text-[11px] text-ink-faint">
               If the customer picked one of your showcased designs, link it here — its photo carries over automatically as a reference for whoever works the job.
             </p>
             <select
@@ -903,7 +903,7 @@ export default function JobCreateForm() {
                   setReferenceImages([pickedImage]);
                 }
               }}
-              className="w-full px-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+              className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
             >
               <option value="">Not from the catalog / custom design</option>
               {catalogItems.map((item) => (
@@ -914,10 +914,10 @@ export default function JobCreateForm() {
         )}
 
         <div className="mb-6 space-y-1.5">
-          <span className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
-            {isSelectedAlterationRepair ? 'Damage / Condition Photo' : 'Design Reference / Notes Photo'} <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+          <span className="text-sm font-medium text-ink-body flex items-center gap-1.5">
+            {isSelectedAlterationRepair ? 'Damage / Condition Photo' : 'Design Reference / Notes Photo'} <span className="text-xs font-normal text-ink-faint">(optional)</span>
           </span>
-          <p className="text-[11px] text-[#A8A19A]">
+          <p className="text-[11px] text-ink-faint">
             {(() => {
               if (isSelectedAlterationRepair) {
                 return 'A photo of the garment as received — pairs with the Pre-Existing Damage notes below as evidence if the customer later disputes when a stain/tear happened.';
@@ -933,11 +933,11 @@ export default function JobCreateForm() {
               {referenceImages.map((url) => (
                 <div key={url} className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="Design reference" className="h-20 w-20 object-cover rounded-lg border border-[#EBE6E0]" />
+                  <img src={url} alt="Design reference" className="h-20 w-20 object-cover rounded-lg border border-line" />
                   <button
                     type="button"
                     onClick={() => setReferenceImages(prev => prev.filter(u => u !== url))}
-                    className="absolute -top-2 -right-2 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-[#B26959] rounded-full p-1 shadow-sm"
+                    className="absolute -top-2 -right-2 bg-surface border border-line text-ink-muted hover:text-danger rounded-full p-1"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -945,7 +945,7 @@ export default function JobCreateForm() {
               ))}
             </div>
           )}
-          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3 py-1.5 rounded-lg transition-colors mt-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3 py-1.5 rounded-lg transition-colors mt-1">
             {uploadingReference ? <Loader2 size={14} className="animate-spin text-taupe" /> : null}
             <span>{uploadingReference ? 'Uploading...' : '+ Add reference photo'}</span>
             <input
@@ -978,7 +978,7 @@ export default function JobCreateForm() {
             value={referenceLink}
             onChange={e => setReferenceLink(e.target.value)}
             placeholder="Reference link (Pinterest, Facebook post, Google Drive, etc.)"
-            className="w-full mt-1.5 px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+            className="w-full mt-1.5 px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
           />
         </div>
         </CollapsibleSection>
@@ -992,13 +992,13 @@ export default function JobCreateForm() {
                 only when this job is linked to an appointment that was
                 itself booked online; otherwise it's tagged Walk-in. */}
             <div>
-              <span className="block text-xs font-semibold text-[#827A73] mb-2 uppercase tracking-wider">
-                Order Source <span className="text-[10px] font-normal normal-case text-[#A8A19A]">(auto-detected)</span>
+              <span className="block text-xs font-semibold text-ink-muted mb-2 uppercase tracking-wider">
+                Order Source <span className="text-[10px] font-normal normal-case text-ink-faint">(auto-detected)</span>
               </span>
               <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-medium text-sm ${
                 effectiveIntakeChannel === 'online'
                   ? 'border-blue-200 bg-blue-50 text-blue-800'
-                  : 'border-taupe bg-[#FAF6F3] text-[#2D2A26]'
+                  : 'border-taupe bg-canvas text-ink'
               }`}>
                 {effectiveIntakeChannel === 'online' ? <ShoppingBag size={18} /> : <Store size={18} />}
                 <span>{effectiveIntakeChannel === 'online' ? 'Online' : 'Walk-in'}</span>
@@ -1027,7 +1027,7 @@ export default function JobCreateForm() {
                     value={formData.po_number}
                     onChange={(e) => setFormData({ ...formData, po_number: e.target.value })}
                     placeholder="e.g. PO-2025-00142 or company ref number"
-                    className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-blue-400"
+                    className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-blue-400"
                   />
                 </div>
               </div>
@@ -1037,25 +1037,25 @@ export default function JobCreateForm() {
               <div>
                 <label
                   htmlFor="customer_id"
-                  className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                  className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
                 >
-                  Customer <span className="text-[#B26959]">*</span>
+                  Customer <span className="text-danger">*</span>
                 </label>
                 {customerLocked && formData.customer_id ? (
                   (() => {
                     const lockedCustomer = customers.find((c) => c.id.toString() === formData.customer_id);
                     return (
-                      <div className="flex items-center justify-between gap-3 bg-[#FAF6F3] border border-taupe/30 rounded-lg px-3 py-2">
+                      <div className="flex items-center justify-between gap-3 bg-canvas border border-taupe/30 rounded-lg px-3 py-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="w-7 h-7 rounded-full bg-taupe/15 text-taupe flex items-center justify-center text-xs font-bold shrink-0">
                             {(lockedCustomer?.name || '?').charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[#2D2A26] truncate">
+                            <p className="text-sm font-semibold text-ink truncate">
                               {lockedCustomer?.name || `Customer #${formData.customer_id}`}
                             </p>
                             {lockedCustomer?.email && (
-                              <p className="text-[11px] text-[#A8A19A] truncate">{lockedCustomer.email}</p>
+                              <p className="text-[11px] text-ink-faint truncate">{lockedCustomer.email}</p>
                             )}
                           </div>
                         </div>
@@ -1077,7 +1077,7 @@ export default function JobCreateForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, customer_id: e.target.value })
                     }
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                    className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                   >
                     <option value="" disabled>
                       Select a customer
@@ -1094,7 +1094,7 @@ export default function JobCreateForm() {
               <div>
                 <label
                   htmlFor="measurement_id"
-                  className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                  className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
                 >
                   Measurement Profile
                 </label>
@@ -1107,9 +1107,9 @@ export default function JobCreateForm() {
             <div>
               <label
                 htmlFor="service_id"
-                className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
               >
-                Type of Service <span className="text-[#B26959]">*</span>
+                Type of Service <span className="text-danger">*</span>
               </label>
               <select
                 id="service_id"
@@ -1144,7 +1144,7 @@ export default function JobCreateForm() {
                     }
                   }
                 }}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
               >
                 <option value="" disabled>
                   Select a service
@@ -1185,7 +1185,7 @@ export default function JobCreateForm() {
               <div className={`space-y-1 border ${sectionTwoMeta.border} ${sectionTwoMeta.bg} rounded-xl p-4`}>
                 <label htmlFor="pre_existing_damage_notes" className={`flex items-center gap-1.5 text-xs font-bold ${sectionTwoMeta.text} uppercase tracking-wider`}>
                   <SectionTwoIcon size={12} />
-                  Pre-Existing Damage / Condition Notes <span className="text-[#B26959]">*</span>
+                  Pre-Existing Damage / Condition Notes <span className="text-danger">*</span>
                 </label>
                 <p className="text-[11px] text-amber-700 mb-1">
                   Log any existing stains, tears, or missing parts before starting work — protects the shop from false damage claims later. Consider also attaching a photo in the Damage / Condition Photo section above.
@@ -1195,7 +1195,7 @@ export default function JobCreateForm() {
                   value={preExistingDamageNotes}
                   onChange={(e) => setPreExistingDamageNotes(e.target.value)}
                   rows={2}
-                  className="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe resize-y"
+                  className="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe resize-y"
                   placeholder="e.g. Small stain near hemline, missing one button on left cuff. No damage noted if left blank is not allowed — describe condition even if 'No visible damage.'"
                 />
               </div>
@@ -1204,7 +1204,7 @@ export default function JobCreateForm() {
             {/* Dynamic Custom Fields Section */}
             {formData.service_id && selectedService?.custom_fields && selectedService.custom_fields.length > 0 ? (
               <div className={`space-y-4 border ${sectionTwoMeta.border} rounded-xl p-4`}>
-                <h4 className={`flex items-center gap-1.5 text-xs font-bold ${sectionTwoMeta.text} border-b border-[#EBE6E0] pb-2 uppercase tracking-wider`}>
+                <h4 className={`flex items-center gap-1.5 text-xs font-bold ${sectionTwoMeta.text} border-b border-line pb-2 uppercase tracking-wider`}>
                   <SectionTwoIcon size={12} />
                   Custom Service Fields
                 </h4>
@@ -1213,10 +1213,10 @@ export default function JobCreateForm() {
                     <div key={field.id} className="space-y-1">
                       <label
                         htmlFor={field.id}
-                        className="block text-xs font-semibold text-[#524A44]"
+                        className="block text-xs font-semibold text-ink-body"
                       >
                         {field.label}{' '}
-                        {field.required && <span className="text-[#B26959]">*</span>}
+                        {field.required && <span className="text-danger">*</span>}
                       </label>
                       {renderCustomField(field)}
                     </div>
@@ -1228,7 +1228,7 @@ export default function JobCreateForm() {
             <div>
               <label
                 htmlFor="notes"
-                className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
               >
                 Notes & Instructions
               </label>
@@ -1238,13 +1238,13 @@ export default function JobCreateForm() {
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe min-h-24 resize-y"
+                className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe min-h-24 resize-y"
                 placeholder="Enter measurements, specific requests, or design notes here..."
               />
             </div>
 
             {/* Team Roster / Size Sheet Toggle */}
-            <div className="border-t border-[#EBE6E0] pt-4">
+            <div className="border-t border-line pt-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -1256,9 +1256,9 @@ export default function JobCreateForm() {
                       setFormData((prev) => ({ ...prev, measurement_id: '' }));
                     }
                   }}
-                  className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                  className="rounded border-line text-taupe focus:ring-taupe"
                 />
-                <span className="text-sm font-semibold text-[#524A44]">
+                <span className="text-sm font-semibold text-ink-body">
                   Include Team Roster / Size Sheet (For Bulk Sublimation / Uniforms)
                 </span>
               </label>
@@ -1266,7 +1266,7 @@ export default function JobCreateForm() {
               {isBulkOrder && (
                 <div className={`mt-4 ${SERVICE_TYPE_META.bulk_sublimation.bg} border ${SERVICE_TYPE_META.bulk_sublimation.border} rounded-xl p-4 space-y-3`}>
                   <div>
-                    <label htmlFor="team-name-input" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">
+                    <label htmlFor="team-name-input" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">
                       Team Name
                     </label>
                     <input
@@ -1275,15 +1275,15 @@ export default function JobCreateForm() {
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder="e.g. Gilas Pilipinas, Blacklist Esports"
-                      className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe max-w-md"
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe max-w-md"
                     />
                   </div>
 
                   {selectedService?.min_order_qty && selectedService.min_order_qty > 1 && (
                     <p className={`text-xs font-semibold px-3 py-2 rounded-lg border ${
                       roster.length < selectedService.min_order_qty
-                        ? 'bg-[#B26959]/5 border-[#B26959]/20 text-[#B26959]'
-                        : 'bg-[#7A8B76]/5 border-[#7A8B76]/20 text-[#7A8B76]'
+                        ? 'bg-danger/5 border-danger/20 text-danger'
+                        : 'bg-sage/5 border-sage/20 text-sage'
                     }`}>
                       {roster.length} / {selectedService.min_order_qty} minimum pieces
                       {roster.length < selectedService.min_order_qty && ' — add more players/items to meet this service\'s minimum order quantity'}
@@ -1301,7 +1301,7 @@ export default function JobCreateForm() {
 
                   <div className="flex flex-col gap-3 pt-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <h4 className="text-xs font-bold text-[#827A73] uppercase tracking-wider">Roster List</h4>
+                      <h4 className="text-xs font-bold text-ink-muted uppercase tracking-wider">Roster List</h4>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -1309,7 +1309,7 @@ export default function JobCreateForm() {
                             const newRow = { id: `${Date.now()}-${Math.random()}`, name: '', print_name: '', number: '', size: 'M' };
                             setRoster([...roster, newRow]);
                           }}
-                          className="bg-[#FAF6F3] hover:bg-[#EBE6E0] border border-[#EBE6E0] text-[#2D2A26] px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
+                          className="bg-canvas hover:bg-line border border-line text-ink px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
                         >
                           + Add 1 Player
                         </button>
@@ -1325,7 +1325,7 @@ export default function JobCreateForm() {
                             }));
                             setRoster([...roster, ...newRows]);
                           }}
-                          className="bg-[#FAF6F3] hover:bg-[#EBE6E0] border border-[#EBE6E0] text-[#2D2A26] px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
+                          className="bg-canvas hover:bg-line border border-line text-ink px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
                         >
                           + Add 5 Players
                         </button>
@@ -1341,7 +1341,7 @@ export default function JobCreateForm() {
                             }));
                             setRoster([...roster, ...newRows]);
                           }}
-                          className="bg-[#FAF6F3] hover:bg-[#EBE6E0] border border-[#EBE6E0] text-[#2D2A26] px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
+                          className="bg-canvas hover:bg-line border border-line text-ink px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
                         >
                           + Add 10 Players
                         </button>
@@ -1376,7 +1376,7 @@ export default function JobCreateForm() {
                             newRoster[idx].name = e.target.value;
                             setRoster(newRoster);
                           }}
-                          className="col-span-2 sm:col-span-1 w-full bg-white border border-[#EBE6E0] rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
+                          className="col-span-2 sm:col-span-1 w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
                         />
                         <input
                           type="text"
@@ -1387,7 +1387,7 @@ export default function JobCreateForm() {
                             newRoster[idx].print_name = e.target.value;
                             setRoster(newRoster);
                           }}
-                          className="w-full bg-white border border-[#EBE6E0] rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
+                          className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
                         />
                         <input
                           type="text"
@@ -1398,7 +1398,7 @@ export default function JobCreateForm() {
                             newRoster[idx].number = e.target.value;
                             setRoster(newRoster);
                           }}
-                          className="w-full bg-white border border-[#EBE6E0] rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
+                          className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
                         />
                         <select
                           value={row.size}
@@ -1407,7 +1407,7 @@ export default function JobCreateForm() {
                             newRoster[idx].size = e.target.value;
                             setRoster(newRoster);
                           }}
-                          className="w-full bg-white border border-[#EBE6E0] rounded px-2 py-1.5 text-xs focus:outline-none"
+                          className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none"
                         >
                           {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map(sz => (
                             <option key={sz} value={sz}>{sz}</option>
@@ -1418,7 +1418,7 @@ export default function JobCreateForm() {
                             type="button"
                             onClick={() => setRoster(roster.filter((r) => r.id !== row.id))}
                             title="Remove"
-                            className="flex items-center justify-center w-6 h-6 rounded-md text-[#B26959] hover:bg-[#B26959]/10 transition-colors shrink-0 justify-self-end sm:justify-self-auto"
+                            className="flex items-center justify-center w-6 h-6 rounded-md text-danger hover:bg-danger/10 transition-colors shrink-0 justify-self-end sm:justify-self-auto"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1426,7 +1426,7 @@ export default function JobCreateForm() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between border-t border-[#EBE6E0] pt-2 text-xs text-[#827A73] font-semibold">
+                  <div className="flex items-center justify-between border-t border-line pt-2 text-xs text-ink-muted font-semibold">
                     <span>Total Items: {roster.length}</span>
                   </div>
                 </div>
@@ -1458,16 +1458,16 @@ export default function JobCreateForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, is_outsourced: e.target.checked })
                     }
-                    className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                    className="rounded border-line text-taupe focus:ring-taupe"
                   />
-                  <span className="text-sm font-semibold text-[#524A44]">
+                  <span className="text-sm font-semibold text-ink-body">
                     Outsource this production (Sent to external shop/tailor)
                   </span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowOutsourcingHelp(p => !p)}
-                  className="text-[#A8A19A] hover:text-[#9A8073] transition-colors"
+                  className="text-ink-faint hover:text-taupe transition-colors"
                   title="What is this?"
                 >
                   <HelpCircle size={14} />
@@ -1475,7 +1475,7 @@ export default function JobCreateForm() {
               </div>
 
               {showOutsourcingHelp && (
-                <div className="mt-2 max-w-md p-3 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-xs text-[#524A44] leading-relaxed">
+                <div className="mt-2 max-w-md p-3 bg-canvas border border-line rounded-lg text-xs text-ink-body leading-relaxed">
                   Turn this on when you&apos;re subcontracting this job — or part of it, like beadwork or embroidery — to another shop or freelance artisan, usually because you&apos;re overbooked or don&apos;t have that skill or machine in-house. The customer still pays your full Total Amount either way — enter what <strong>you</strong> pay the partner below so you can see your real profit on this job, not just what the customer paid.
                 </div>
               )}
@@ -1485,9 +1485,9 @@ export default function JobCreateForm() {
                   <div>
                     <label
                       htmlFor="partner_shop_name"
-                      className="block text-xs font-semibold text-[#827A73] mb-1"
+                      className="block text-xs font-semibold text-ink-muted mb-1"
                     >
-                      Partner Shop / Sewer Name <span className="text-[#B26959]">*</span>
+                      Partner Shop / Sewer Name <span className="text-danger">*</span>
                     </label>
                     <input
                       id="partner_shop_name"
@@ -1498,19 +1498,19 @@ export default function JobCreateForm() {
                         setFormData({ ...formData, partner_shop_name: e.target.value })
                       }
                       placeholder="e.g. Maria's Dressmaking Shop"
-                      className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                     />
                   </div>
 
                   <div>
                     <label
                       htmlFor="outsourcing_cost"
-                      className="block text-xs font-semibold text-[#827A73] mb-1"
+                      className="block text-xs font-semibold text-ink-muted mb-1"
                     >
-                      What You&apos;re Paying Them <span className="font-normal normal-case text-[#A8A19A]">(optional)</span>
+                      What You&apos;re Paying Them <span className="font-normal normal-case text-ink-faint">(optional)</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] font-medium text-sm">₱</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-medium text-sm">₱</span>
                       <input
                         id="outsourcing_cost"
                         type="number"
@@ -1521,7 +1521,7 @@ export default function JobCreateForm() {
                           setFormData({ ...formData, outsourcing_cost: e.target.value })
                         }
                         placeholder="0.00"
-                        className="w-full pl-7 pr-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full pl-7 pr-3 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
@@ -1532,7 +1532,7 @@ export default function JobCreateForm() {
                     const profit = total - cost;
                     const isLoss = profit <= 0;
                     return (
-                      <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm ${isLoss ? 'bg-red-50 border-red-200 text-red-600' : 'bg-[#7A8B76]/10 border-[#7A8B76]/20 text-[#7A8B76]'}`}>
+                      <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm ${isLoss ? 'bg-red-50 border-red-200 text-red-600' : 'bg-sage/10 border-sage/20 text-sage'}`}>
                         <span className="font-medium">{isLoss ? "You're losing money on this job" : 'Your profit on this job'}</span>
                         <span className="font-bold">₱{profit.toFixed(2)}</span>
                       </div>
@@ -1544,11 +1544,11 @@ export default function JobCreateForm() {
 
             {/* Fulfillment — store pickup only. The approved thesis excludes
                 logistics/courier/delivery management from the system's scope. */}
-            <div className="bg-[#FAF6F3]/50 border border-[#EBE6E0]/60 rounded-xl p-4 mt-4">
-              <span className="block text-xs font-semibold text-[#827A73] mb-2 uppercase tracking-wider">
+            <div className="bg-canvas/50 border border-line/60 rounded-xl p-4 mt-4">
+              <span className="block text-xs font-semibold text-ink-muted mb-2 uppercase tracking-wider">
                 Fulfillment Method
               </span>
-              <div className="bg-[#FAF6F3]/60 border border-[#EBE6E0]/60 rounded-lg p-3 text-xs text-[#827A73] flex items-center gap-2">
+              <div className="bg-canvas/60 border border-line/60 rounded-lg p-3 text-xs text-ink-muted flex items-center gap-2">
                 <Store size={16} className="shrink-0" />
                 <span>
                   Customer will pick up the garments in-store. (Shop address will be used)
@@ -1563,11 +1563,11 @@ export default function JobCreateForm() {
               Only: backroom production staffing is a Shop Owner decision,
               not part of Front-Desk intake. */}
           <CollapsibleSection
-            icon={<Users size={16} className="text-[#9A8073]" />}
-            iconBoxClassName="bg-[#9A8073]/10 border border-[#9A8073]/20"
+            icon={<Users size={16} className="text-taupe" />}
+            iconBoxClassName="bg-taupe/10 border border-taupe/20"
             title={
               <span className="flex items-center gap-2 flex-wrap">
-                Multi-Stage Staff Assignment <span className="font-normal text-[#A8A19A] text-xs">(Optional)</span>
+                Multi-Stage Staff Assignment <span className="font-normal text-ink-faint text-xs">(Optional)</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
                   Owner/Manager Only
                 </span>
@@ -1580,7 +1580,7 @@ export default function JobCreateForm() {
                 <div key={stage}>
                   <label
                     htmlFor={`stage_${stage}`}
-                    className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                    className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
                   >
                     {STAFF_STAGE_LABELS[stage]} Staff
                   </label>
@@ -1590,7 +1590,7 @@ export default function JobCreateForm() {
                     onChange={(e) =>
                       setStaffStageAssignments({ ...staffStageAssignments, [stage]: e.target.value })
                     }
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                    className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                   >
                     <option value="">Unassigned</option>
                     {staff.map((s) => {
@@ -1608,8 +1608,8 @@ export default function JobCreateForm() {
           </CollapsibleSection>
 
           <CollapsibleSection
-            icon={<Receipt size={16} className="text-[#7A8B76]" />}
-            iconBoxClassName="bg-[#7A8B76]/10 border border-[#7A8B76]/20"
+            icon={<Receipt size={16} className="text-sage" />}
+            iconBoxClassName="bg-sage/10 border border-sage/20"
             title="Timeline & Invoice Summary"
             defaultOpen
           >
@@ -1618,9 +1618,9 @@ export default function JobCreateForm() {
               <div>
                 <label
                   htmlFor="due_date"
-                  className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                  className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
                 >
-                  Due Date {isCustomTailoring && <span className="text-[#B26959]">*</span>}
+                  Due Date {isCustomTailoring && <span className="text-danger">*</span>}
                 </label>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex-1">
@@ -1633,7 +1633,7 @@ export default function JobCreateForm() {
                         setIsDueDateCustom(true);
                         setFormData({ ...formData, due_date: e.target.value });
                       }}
-                      className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                       min={new Date().toISOString().split('T')[0]}
                     />
                     {(() => {
@@ -1656,9 +1656,9 @@ export default function JobCreateForm() {
                       onChange={(e) =>
                         setFormData({ ...formData, is_rush: e.target.checked })
                       }
-                      className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                      className="rounded border-line text-taupe focus:ring-taupe"
                     />
-                    <span className="text-sm font-semibold text-[#524A44]">
+                    <span className="text-sm font-semibold text-ink-body">
                       Mark as Rush Order
                     </span>
                     <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
@@ -1676,9 +1676,9 @@ export default function JobCreateForm() {
                   <div>
                     <label
                       htmlFor="rush_fee"
-                      className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider"
+                      className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
                     >
-                      Rush Fee (₱) <span className="text-[#B26959]">*</span>
+                      Rush Fee (₱) <span className="text-danger">*</span>
                     </label>
                     <input
                       id="rush_fee"
@@ -1691,9 +1691,9 @@ export default function JobCreateForm() {
                         setFormData({ ...formData, rush_fee: e.target.value })
                       }
                       placeholder="0.00"
-                      className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                     />
-                    <p className="text-[10px] text-[#827A73] mt-1">
+                    <p className="text-[10px] text-ink-muted mt-1">
                       This fee is automatically added to the Total Amount below.
                     </p>
                   </div>
@@ -1703,7 +1703,7 @@ export default function JobCreateForm() {
 
             {/* Financial Invoice Box */}
             <div className="space-y-4 mt-2">
-              <span className="text-xs font-bold text-[#827A73] uppercase tracking-wider block border-b border-[#EBE6E0] pb-2">
+              <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block border-b border-line pb-2">
                 Invoice & Balance Summary
               </span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
@@ -1712,9 +1712,9 @@ export default function JobCreateForm() {
                   <div className="flex items-center justify-between mb-1">
                     <label
                       htmlFor="total_amount"
-                      className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider"
+                      className="block text-xs font-semibold text-ink-muted uppercase tracking-wider"
                     >
-                      Total Amount (₱) <span className="text-[#B26959]">*</span>
+                      Total Amount (₱) <span className="text-danger">*</span>
                     </label>
                     {isTotalAmountCustom && selectedService && (
                       <button
@@ -1746,16 +1746,16 @@ export default function JobCreateForm() {
                       setIsTotalAmountCustom(true);
                       setFormData({ ...formData, total_amount: e.target.value });
                     }}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                    className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                     placeholder={selectedService && (selectedService.base_price === null || selectedService.base_price === undefined) ? 'Enter your quote for this job' : '0.00'}
                   />
                   {selectedService && (selectedService.base_price === null || selectedService.base_price === undefined) && !formData.total_amount && (
-                    <p className="text-[10px] text-[#827A73] mt-1">
+                    <p className="text-[10px] text-ink-muted mt-1">
                       This service has no fixed price (Custom Quote) — enter the amount you&apos;re charging for this specific job.
                     </p>
                   )}
                   {formData.is_rush && Number.parseFloat(formData.total_amount) < (Number.parseFloat(formData.rush_fee) || 0) && (
-                    <p className="text-[10px] text-[#B26959] mt-1 font-semibold">
+                    <p className="text-[10px] text-danger mt-1 font-semibold">
                       Must be ≥ Rush Fee (₱{Number.parseFloat(formData.rush_fee).toFixed(2)})
                     </p>
                   )}
@@ -1765,7 +1765,7 @@ export default function JobCreateForm() {
                 <div>
                   <label
                     htmlFor="downpayment"
-                    className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-1"
+                    className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1"
                   >
                     Downpayment (₱)
                   </label>
@@ -1778,7 +1778,7 @@ export default function JobCreateForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, downpayment: e.target.value })
                     }
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                    className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
                     placeholder="0.00"
                   />
                   {/* A customer handing over more cash than owed (e.g. ₱200 for a
@@ -1786,7 +1786,7 @@ export default function JobCreateForm() {
                       data — only the amount actually applied toward the job is
                       capped at the total; the rest is just change given back. */}
                   {(Number.parseFloat(formData.downpayment) || 0) > (Number.parseFloat(formData.total_amount) || 0) && (
-                    <p className="text-[10px] text-[#7A8B76] mt-1 font-semibold">
+                    <p className="text-[10px] text-sage mt-1 font-semibold">
                       Change Due: ₱{((Number.parseFloat(formData.downpayment) || 0) - (Number.parseFloat(formData.total_amount) || 0)).toFixed(2)} — only ₱{Number.parseFloat(formData.total_amount || '0').toFixed(2)} will be applied to the job.
                     </p>
                   )}
@@ -1794,11 +1794,11 @@ export default function JobCreateForm() {
 
                 {/* Remaining Balance card */}
                 <div>
-                  <span className="block text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-1">
+                  <span className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1">
                     Remaining Balance
                   </span>
-                  <div className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 flex items-center justify-between h-[38px] select-none">
-                    <span className="font-bold text-sm text-[#2D2A26]">
+                  <div className="w-full bg-canvas border border-line rounded-lg px-3 flex items-center justify-between h-[38px] select-none">
+                    <span className="font-bold text-sm text-ink">
                       ₱{Math.max(0, (Number.parseFloat(formData.total_amount) || 0) - Math.min(Number.parseFloat(formData.downpayment) || 0, Number.parseFloat(formData.total_amount) || 0)).toFixed(2)}
                     </span>
                     {renderBalanceBadge()}
@@ -1808,17 +1808,17 @@ export default function JobCreateForm() {
             </div>
           </CollapsibleSection>
 
-          <div className="pt-6 border-t border-[#EBE6E0] flex justify-end gap-4">
+          <div className="pt-6 border-t border-line flex justify-end gap-4">
             <Link
               href="/dashboard/jobs"
-              className="px-6 py-2.5 rounded-lg font-medium text-[#827A73] hover:text-[#2D2A26] hover:bg-[#F0EAE3] transition-colors"
+              className="px-6 py-2.5 rounded-lg font-medium text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-taupe hover:bg-taupe/90 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-[#9A8073]/20"
+              className="bg-taupe hover:bg-taupe/90 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {submitting && <Loader2 size={18} className="animate-spin" />}
               Create Job Order

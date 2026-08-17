@@ -37,7 +37,7 @@ export default function CustomerHistoryTab({
         description: `Customer profile for ${customer.name} was added to the shop database.`,
         date: new Date(customer.created_at),
         icon: User,
-        color: 'bg-[#9A8073] text-white border-[#9A8073]',
+        color: 'bg-taupe text-white border-taupe',
       });
     }
 
@@ -104,9 +104,9 @@ export default function CustomerHistoryTab({
   const timelineEvents = getTimelineEvents();
 
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm animate-fade-in">
-      <h2 className="text-base font-bold text-[#2D2A26] mb-6">Client Activity History</h2>
-      <div className="relative pl-6 border-l-2 border-[#EBE6E0] space-y-8 ml-3">
+    <div className="bg-surface border border-line rounded-2xl p-6 shadow-sm animate-fade-in">
+      <h2 className="text-base font-bold text-ink mb-6">Client Activity History</h2>
+      <div className="relative pl-6 border-l-2 border-line space-y-8 ml-3">
         {timelineEvents.map(event => {
           const Icon = event.icon;
           return (
@@ -117,18 +117,18 @@ export default function CustomerHistoryTab({
               </span>
               <div>
                 <div className="flex items-center justify-between gap-4">
-                  <h4 className="font-bold text-sm text-[#2D2A26]">{event.title}</h4>
-                  <span className="text-[10px] font-semibold text-[#827A73]">
+                  <h4 className="font-bold text-sm text-ink">{event.title}</h4>
+                  <span className="text-[10px] font-semibold text-ink-muted">
                     {event.date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <p className="text-xs text-[#827A73] mt-1">{event.description}</p>
+                <p className="text-xs text-ink-muted mt-1">{event.description}</p>
               </div>
             </div>
           );
         })}
         {timelineEvents.length === 0 && (
-          <div className="text-center py-8 text-sm text-[#A8A19A] italic">
+          <div className="text-center py-8 text-sm text-ink-faint italic">
             No activities recorded yet.
           </div>
         )}

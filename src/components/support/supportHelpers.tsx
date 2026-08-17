@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Info, CreditCard, CircleDot, Loader2, CheckCircle2, X, Paperclip } from 'lucide-react';
+import type { BadgeVariant } from '@/components/shared/Badge';
 
 export interface TicketReply {
   id: number;
@@ -27,22 +28,22 @@ export interface Ticket {
 export const TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   problem:        { label: 'Problem / Bug',     icon: <AlertTriangle size={14} />, color: 'text-red-500 bg-red-50 border-red-200' },
   update_request: { label: 'Update Request',    icon: <RefreshCw size={14} />,     color: 'text-blue-500 bg-blue-50 border-blue-200' },
-  general:        { label: 'General Inquiry',   icon: <Info size={14} />,          color: 'text-[#827A73] bg-[#F0EAE3] border-[#EBE6E0]' },
+  general:        { label: 'General Inquiry',   icon: <Info size={14} />,          color: 'text-ink-muted bg-sunken border-line' },
   billing:        { label: 'Billing Issue',     icon: <CreditCard size={14} />,    color: 'text-violet-500 bg-violet-50 border-violet-200' },
 };
 
 export const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
-  low:    { label: 'Low',    color: 'text-[#7A8B76] bg-[#7A8B76]/10 border-[#7A8B76]/20' },
+  low:    { label: 'Low',    color: 'text-sage bg-sage/10 border-sage/20' },
   medium: { label: 'Medium', color: 'text-amber-600 bg-amber-50 border-amber-200' },
   high:   { label: 'High',   color: 'text-orange-500 bg-orange-50 border-orange-200' },
   urgent: { label: 'Urgent', color: 'text-red-600 bg-red-50 border-red-200' },
 };
 
-export const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  open:        { label: 'Open',        icon: <CircleDot size={14} />,    color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  in_progress: { label: 'In Progress', icon: <Loader2 size={14} />,      color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  resolved:    { label: 'Resolved',    icon: <CheckCircle2 size={14} />, color: 'text-[#7A8B76] bg-[#7A8B76]/10 border-[#7A8B76]/20' },
-  closed:      { label: 'Closed',      icon: <X size={14} />,            color: 'text-[#A8A19A] bg-[#F0EAE3] border-[#EBE6E0]' },
+export const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; variant: BadgeVariant }> = {
+  open:        { label: 'Open',        icon: <CircleDot size={14} />,    variant: 'accent' },
+  in_progress: { label: 'In Progress', icon: <Loader2 size={14} />,      variant: 'warning' },
+  resolved:    { label: 'Resolved',    icon: <CheckCircle2 size={14} />, variant: 'success' },
+  closed:      { label: 'Closed',      icon: <X size={14} />,            variant: 'neutral' },
 };
 
 export const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
@@ -74,7 +75,7 @@ export const renderAttachments = (urls?: string[], isMe?: boolean) => {
         const img = isImage(url);
         const vid = isVideo(url);
         return (
-          <div key={url} className={`relative rounded-lg overflow-hidden border ${isMe ? 'border-white/20 bg-black/10' : 'border-[#EBE6E0] bg-black/5'} aspect-video flex items-center justify-center`}>
+          <div key={url} className={`relative rounded-lg overflow-hidden border ${isMe ? 'border-white/20 bg-black/10' : 'border-line bg-black/5'} aspect-video flex items-center justify-center`}>
             {img ? (
               <button
                 type="button"
@@ -100,7 +101,7 @@ export const renderAttachments = (urls?: string[], isMe?: boolean) => {
                 target="_blank"
                 rel="noreferrer"
                 className={`flex items-center justify-center p-4 text-xs font-medium transition-colors ${
-                  isMe ? 'text-white/90 hover:text-white' : 'text-[#827A73] hover:text-[#2D2A26]'
+                  isMe ? 'text-white/90 hover:text-white' : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 <Paperclip size={16} className="mr-1.5 shrink-0" />

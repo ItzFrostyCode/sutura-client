@@ -2,6 +2,8 @@ import React from 'react';
 
 import { Trash2, Plus, Upload, Loader2 } from 'lucide-react';
 import { ShopSettingsData } from './useSettings';
+import ShopLogoAvatar from '@/components/ShopLogoAvatar';
+import { getMediaUrl } from '@/lib/media';
 
 interface SettingsBasicInfoProps {
   readonly formData: ShopSettingsData;
@@ -45,24 +47,22 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
     <div className="space-y-6">
       {/* Shop Branding — logo and banner */}
       {activeTab === 'basic_info' && (
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-1">Shop Branding</h2>
-        <p className="text-sm text-[#827A73] mb-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-1">Shop Branding</h2>
+        <p className="text-sm text-ink-muted mb-6">
           Your logo and banner are the first thing customers see on your storefront and in search results.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <span className="text-sm font-medium text-[#524A44]">Logo</span>
+            <span className="text-sm font-medium text-ink-body">Logo</span>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
-                {formData.logo_path ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={formData.logo_path} alt="Shop logo" className="w-full h-full object-cover" />
-                ) : (
-                  <Upload size={18} className="text-[#C5BDBA]" />
-                )}
-              </div>
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+              <ShopLogoAvatar
+                src={formData.logo_path}
+                name={formData.name || 'Shop'}
+                className="w-20 h-20 rounded-full border border-line bg-canvas overflow-hidden shrink-0"
+                textClassName="text-2xl font-serif font-bold text-[#8C6B5D]"
+              />
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3.5 py-2 rounded-lg transition-colors">
                 {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                 <span>{uploadingLogo ? 'Uploading...' : 'Upload Logo'}</span>
                 <input
@@ -82,17 +82,22 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
           </div>
 
           <div className="space-y-2">
-            <span className="text-sm font-medium text-[#524A44]">Banner</span>
+            <span className="text-sm font-medium text-ink-body">Banner</span>
             <div className="flex items-center gap-4">
-              <div className="w-32 h-20 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="w-32 h-20 rounded-xl border border-line bg-canvas overflow-hidden shrink-0 flex items-center justify-center">
                 {formData.banner_path ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={formData.banner_path} alt="Shop banner" className="w-full h-full object-cover" />
+                  <img
+                    src={getMediaUrl(formData.banner_path)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
                 ) : (
-                  <Upload size={18} className="text-[#C5BDBA]" />
+                  <Upload size={18} className="text-ink-faint" />
                 )}
               </div>
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3.5 py-2 rounded-lg transition-colors">
                 {uploadingBanner ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                 <span>{uploadingBanner ? 'Uploading...' : 'Upload Banner'}</span>
                 <input
@@ -116,60 +121,60 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
 
       {/* Basic Info & Contact */}
       {activeTab === 'basic_info' && (
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-6">Basic Info & Contact</h2>
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-6">Basic Info & Contact</h2>
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label htmlFor="shop-name" className="text-sm font-medium text-[#524A44]">Shop Name</label>
+              <label htmlFor="shop-name" className="text-sm font-medium text-ink-body">Shop Name</label>
               <input
                 id="shop-name"
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={onChange}
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-email" className="text-sm font-medium text-[#524A44]">Contact Email</label>
+              <label htmlFor="shop-email" className="text-sm font-medium text-ink-body">Contact Email</label>
               <input
                 id="shop-email"
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={onChange}
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="shop-description" className="text-sm font-medium text-[#524A44]">Description</label>
+            <label htmlFor="shop-description" className="text-sm font-medium text-ink-body">Description</label>
             <textarea
               id="shop-description"
               name="description"
               value={formData.description}
               onChange={onChange}
               rows={3}
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label htmlFor="shop-address" className="text-sm font-medium text-[#524A44]">Address</label>
+              <label htmlFor="shop-address" className="text-sm font-medium text-ink-body">Address</label>
               <input
                 id="shop-address"
                 type="text"
                 name="address"
                 value={formData.address}
                 onChange={onChange}
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-landmark" className="text-sm font-medium text-[#524A44]">Landmark</label>
+              <label htmlFor="shop-landmark" className="text-sm font-medium text-ink-body">Landmark</label>
               <input
                 id="shop-landmark"
                 type="text"
@@ -177,40 +182,40 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                 value={formData.landmark ?? ''}
                 onChange={onChange}
                 placeholder="e.g. Near City Hall, Beside Jollibee"
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-city" className="text-sm font-medium text-[#524A44]">City</label>
+              <label htmlFor="shop-city" className="text-sm font-medium text-ink-body">City</label>
               <input
                 id="shop-city"
                 type="text"
                 name="city"
                 value={formData.city}
                 onChange={onChange}
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-province" className="text-sm font-medium text-[#524A44]">Province</label>
+              <label htmlFor="shop-province" className="text-sm font-medium text-ink-body">Province</label>
               <input
                 id="shop-province"
                 type="text"
                 name="province"
                 value={formData.province}
                 onChange={onChange}
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-phone" className="text-sm font-medium text-[#524A44]">Phone Number</label>
+              <label htmlFor="shop-phone" className="text-sm font-medium text-ink-body">Phone Number</label>
               <input
                 id="shop-phone"
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={onChange}
-                className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
               />
             </div>
           </div>
@@ -220,14 +225,14 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
 
       {/* Payment Collection Details */}
       {activeTab === 'basic_info' && (
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-1">Payment Details</h2>
-        <p className="text-sm text-[#827A73] mb-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-1">Payment Details</h2>
+        <p className="text-sm text-ink-muted mb-6">
           Where customers should send GCash or bank transfer payments. Printed on receipts so there&apos;s no confusion over where the money went — the system still only tracks payment status, it never moves money itself.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1">
-            <label htmlFor="shop-gcash-number" className="text-sm font-medium text-[#524A44]">GCash Number</label>
+            <label htmlFor="shop-gcash-number" className="text-sm font-medium text-ink-body">GCash Number</label>
             <input
               id="shop-gcash-number"
               type="text"
@@ -235,11 +240,11 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.gcash_number}
               onChange={onChange}
               placeholder="09XX XXX XXXX"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-gcash-name" className="text-sm font-medium text-[#524A44]">GCash Account Name</label>
+            <label htmlFor="shop-gcash-name" className="text-sm font-medium text-ink-body">GCash Account Name</label>
             <input
               id="shop-gcash-name"
               type="text"
@@ -247,22 +252,22 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.gcash_account_name}
               onChange={onChange}
               placeholder="Name on the GCash account"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-[#524A44]">GCash QR Code</span>
-            <p className="text-xs text-[#A8A19A]">Customers can scan this to pay instead of typing the number in.</p>
+            <span className="text-sm font-medium text-ink-body">GCash QR Code</span>
+            <p className="text-xs text-ink-faint">Customers can scan this to pay instead of typing the number in.</p>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-xl border border-line bg-canvas overflow-hidden shrink-0 flex items-center justify-center">
                 {formData.gcash_qr_path ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={formData.gcash_qr_path} alt="GCash QR code" className="w-full h-full object-contain" />
                 ) : (
-                  <Upload size={18} className="text-[#C5BDBA]" />
+                  <Upload size={18} className="text-ink-faint" />
                 )}
               </div>
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3.5 py-2 rounded-lg transition-colors">
                 {uploadingGcashQr ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                 <span>{uploadingGcashQr ? 'Uploading...' : 'Upload QR Code'}</span>
                 <input
@@ -281,7 +286,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             </div>
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-bank-name" className="text-sm font-medium text-[#524A44]">Bank Name</label>
+            <label htmlFor="shop-bank-name" className="text-sm font-medium text-ink-body">Bank Name</label>
             <input
               id="shop-bank-name"
               type="text"
@@ -289,22 +294,22 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.bank_name}
               onChange={onChange}
               placeholder="e.g. BDO, BPI, Metrobank"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-bank-account-number" className="text-sm font-medium text-[#524A44]">Bank Account Number</label>
+            <label htmlFor="shop-bank-account-number" className="text-sm font-medium text-ink-body">Bank Account Number</label>
             <input
               id="shop-bank-account-number"
               type="text"
               name="bank_account_number"
               value={formData.bank_account_number}
               onChange={onChange}
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-bank-account-name" className="text-sm font-medium text-[#524A44]">Bank Account Name</label>
+            <label htmlFor="shop-bank-account-name" className="text-sm font-medium text-ink-body">Bank Account Name</label>
             <input
               id="shop-bank-account-name"
               type="text"
@@ -312,22 +317,22 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.bank_account_name}
               onChange={onChange}
               placeholder="Name on the bank account"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-[#524A44]">Bank / InstaPay QR Code</span>
-            <p className="text-xs text-[#A8A19A]">Optional — a scannable QR (InstaPay QR Ph, etc.) or a photo of the account details.</p>
+            <span className="text-sm font-medium text-ink-body">Bank / InstaPay QR Code</span>
+            <p className="text-xs text-ink-faint">Optional — a scannable QR (InstaPay QR Ph, etc.) or a photo of the account details.</p>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3] overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-xl border border-line bg-canvas overflow-hidden shrink-0 flex items-center justify-center">
                 {formData.bank_qr_path ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={formData.bank_qr_path} alt="Bank QR code" className="w-full h-full object-contain" />
                 ) : (
-                  <Upload size={18} className="text-[#C5BDBA]" />
+                  <Upload size={18} className="text-ink-faint" />
                 )}
               </div>
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#9A8073] hover:text-[#8A7063] bg-[#FAF6F3] hover:bg-[#F0EAE3] border border-[#EBE6E0] px-3.5 py-2 rounded-lg transition-colors">
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3.5 py-2 rounded-lg transition-colors">
                 {uploadingBankQr ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                 <span>{uploadingBankQr ? 'Uploading...' : 'Upload QR Code'}</span>
                 <input
@@ -351,14 +356,14 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
 
       {/* Social Media Links */}
       {activeTab === 'social_links' && (
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-6">Social Media Links</h2>
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-6">Social Media Links</h2>
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-[#827A73]">These links will be displayed on your public shop profile.</p>
+          <p className="text-sm text-ink-muted">These links will be displayed on your public shop profile.</p>
           <button
             type="button"
             onClick={() => handleSocialChange([...(formData.social_links || []), { label: '', url: '' }])}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-[#9A8073] bg-[#FAF6F3] rounded-lg hover:bg-[#F0EAE3] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-taupe bg-canvas rounded-lg hover:bg-sunken transition-colors"
           >
             <Plus size={16} /> Add Link
           </button>
@@ -376,7 +381,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                     handleSocialChange(newLinks);
                   }}
                   placeholder="Platform (e.g., Facebook)"
-                  className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] text-sm focus:border-taupe outline-none"
+                  className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:border-taupe outline-none"
                 />
               </div>
               <div className="w-full md:w-2/3 flex items-center gap-2">
@@ -389,7 +394,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                     handleSocialChange(newLinks);
                   }}
                   placeholder="https://..."
-                  className="flex-1 px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] text-sm focus:border-taupe outline-none"
+                  className="flex-1 px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:border-taupe outline-none"
                 />
                 <button
                   type="button"
@@ -397,7 +402,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                     const newLinks = formData.social_links.filter((_, i) => i !== idx);
                     handleSocialChange(newLinks);
                   }}
-                  className="p-2 text-[#B26959] hover:bg-[#B26959]/10 rounded-lg transition-colors"
+                  className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
                   title="Remove link"
                 >
                   <Trash2 size={18} />
@@ -406,8 +411,8 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             </div>
           ))}
           {(!formData.social_links || formData.social_links.length === 0) && (
-            <div className="text-center py-6 bg-[#FAF6F3] rounded-xl border border-dashed border-[#EBE6E0]">
-              <p className="text-sm text-[#827A73]">No social links added yet.</p>
+            <div className="text-center py-6 bg-canvas rounded-xl border border-dashed border-line">
+              <p className="text-sm text-ink-muted">No social links added yet.</p>
             </div>
           )}
         </div>
@@ -416,11 +421,11 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
 
       {/* Booking Flow Setup */}
       {activeTab === 'booking_flow' && (
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-6">Booking Flow Setup</h2>
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-6">Booking Flow Setup</h2>
         <div className="space-y-6">
           <div className="space-y-1">
-            <label htmlFor="booking-policy" className="text-sm font-medium text-[#524A44]">
+            <label htmlFor="booking-policy" className="text-sm font-medium text-ink-body">
               Cancellation Policy & Service Description
             </label>
             <textarea
@@ -429,12 +434,12 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.booking_policy || ''}
               onChange={onChange}
               rows={4}
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="max-appointments-per-day" className="text-sm font-medium text-[#524A44]">
+            <label htmlFor="max-appointments-per-day" className="text-sm font-medium text-ink-body">
               Max Appointments Per Day (Optional)
             </label>
             <input
@@ -447,16 +452,16 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                 setFormData(prev => ({ ...prev, max_appointments_per_day: val === '' ? null : Number.parseInt(val, 10) }));
               }}
               placeholder="Leave blank for unlimited"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm max-w-xs"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm max-w-xs"
             />
-            <p className="text-[11px] text-[#827A73]">
+            <p className="text-[11px] text-ink-muted">
               During peak season, blocks further online bookings once a day hits this cap — protects production quality instead of overcommitting. Doesn&apos;t apply to walk-ins you enter yourself.
             </p>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#524A44]">Custom Booking Questions</span>
+              <span className="text-sm font-medium text-ink-body">Custom Booking Questions</span>
               <button
                 onClick={() => handleAddQuestion()}
                 className="text-xs text-taupe hover:text-taupe-hover"
@@ -473,7 +478,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
                   value={q}
                   onChange={e => handleQuestionChange(idx, e.target.value)}
                   placeholder={`Question ${idx + 1}`}
-                  className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] text-sm focus:outline-none focus:border-taupe"
+                  className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-taupe"
                 />
                 <button
                   type="button"
@@ -492,17 +497,17 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
 
       {/* Map Coordinates */}
       {activeTab === 'map_coordinates' && (
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-medium text-[#2D2A26]">Map Coordinates</h2>
-          <p className="text-sm text-[#827A73] mt-1">
+          <h2 className="text-lg font-medium text-ink">Map Coordinates</h2>
+          <p className="text-sm text-ink-muted mt-1">
             Required for your shop to appear on the customer map discovery interface. Right-click your location on
             Google Maps to copy the Latitude and Longitude.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1">
-            <label htmlFor="shop-latitude" className="text-sm font-medium text-[#524A44]">Latitude (e.g. 7.1907)</label>
+            <label htmlFor="shop-latitude" className="text-sm font-medium text-ink-body">Latitude (e.g. 7.1907)</label>
             <input
               id="shop-latitude"
               type="text"
@@ -510,11 +515,11 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.latitude}
               onChange={onChange}
               placeholder="7.1907"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-longitude" className="text-sm font-medium text-[#524A44]">Longitude (e.g. 125.4553)</label>
+            <label htmlFor="shop-longitude" className="text-sm font-medium text-ink-body">Longitude (e.g. 125.4553)</label>
             <input
               id="shop-longitude"
               type="text"
@@ -522,7 +527,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               value={formData.longitude}
               onChange={onChange}
               placeholder="125.4553"
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
             />
           </div>
         </div>

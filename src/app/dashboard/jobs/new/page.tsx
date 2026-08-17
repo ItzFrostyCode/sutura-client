@@ -7,7 +7,7 @@ export default function NewJobOrderPage() {
   return (
     <Suspense
       fallback={
-        <div className="py-12 text-center text-[#A8A19A] animate-pulse">
+        <div className="py-12 text-center text-ink-faint animate-pulse">
           Loading form details...
         </div>
       }

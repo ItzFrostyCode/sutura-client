@@ -73,7 +73,7 @@ export default function ServicePackageFormModal({
         {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
         <div>
-          <label htmlFor="package_name" className="block text-sm font-medium text-[#524A44] mb-1">
+          <label htmlFor="package_name" className="block text-sm font-medium text-ink-body mb-1">
             Package Name <span className="text-rose-500">*</span>
           </label>
           <input
@@ -83,26 +83,26 @@ export default function ServicePackageFormModal({
             value={name}
             onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
             placeholder="e.g. Debut Package, Wedding Package"
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
           />
         </div>
 
         <div>
-          <label htmlFor="package_description" className="block text-sm font-medium text-[#524A44] mb-1">Description (Optional)</label>
+          <label htmlFor="package_description" className="block text-sm font-medium text-ink-body mb-1">Description (Optional)</label>
           <textarea
             id="package_description"
             rows={2}
             value={description}
             onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe resize-none"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
             placeholder="What's this package for?"
           />
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-[#524A44] mb-1">
+          <span className="block text-sm font-medium text-ink-body mb-1">
             Bundled Services <span className="text-rose-500">*</span>
-            <span className="text-xs font-normal text-[#A8A19A] ml-1">(select at least 2 or more)</span>
+            <span className="text-xs font-normal text-ink-faint ml-1">(select at least 2 or more)</span>
           </span>
 
           {selectedServices.length > 0 && (
@@ -126,30 +126,30 @@ export default function ServicePackageFormModal({
           )}
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={15} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={15} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search your services to add..."
-              className="w-full pl-9 pr-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+              className="w-full pl-9 pr-4 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe"
             />
           </div>
 
           {search && (
-            <div className="mt-1.5 max-h-40 overflow-y-auto border border-[#EBE6E0] rounded-lg bg-white shadow-sm">
+            <div className="mt-1.5 max-h-40 overflow-y-auto border border-line rounded-lg bg-white">
               {suggestions.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-[#A8A19A]">No matching services.</p>
+                <p className="px-3 py-2 text-xs text-ink-faint">No matching services.</p>
               ) : (
                 suggestions.map(s => (
                   <button
                     type="button"
                     key={s.id}
                     onClick={() => addService(s.id)}
-                    className="w-full text-left px-3 py-2 text-sm text-[#2D2A26] hover:bg-[#FAF6F3] transition-colors flex items-center justify-between"
+                    className="w-full text-left px-3 py-2 text-sm text-ink hover:bg-canvas transition-colors flex items-center justify-between"
                   >
                     <span>{s.name}</span>
-                    <span className="text-xs text-[#A8A19A]">₱{Number(s.base_price || 0).toLocaleString()}</span>
+                    <span className="text-xs text-ink-faint">₱{Number(s.base_price || 0).toLocaleString()}</span>
                   </button>
                 ))
               )}
@@ -158,14 +158,14 @@ export default function ServicePackageFormModal({
         </div>
 
         <div>
-          <label htmlFor="bundle_price" className="block text-sm font-medium text-[#524A44] mb-1">
+          <label htmlFor="bundle_price" className="block text-sm font-medium text-ink-body mb-1">
             Bundle Price
             {selectedServices.length > 0 && (
-              <span className="text-xs font-normal text-[#A8A19A] ml-1">(sum of selected: ₱{sumPrice.toLocaleString()})</span>
+              <span className="text-xs font-normal text-ink-faint ml-1">(sum of selected: ₱{sumPrice.toLocaleString()})</span>
             )}
           </label>
           {noPriceServices.length > 0 && (
-            <p className="text-xs text-[#B26959] mb-1.5 flex items-start gap-1.5">
+            <p className="text-xs text-danger mb-1.5 flex items-start gap-1.5">
               <AlertTriangle size={13} className="mt-0.5 shrink-0" />
               <span>
                 {noPriceServices.map(s => s.name).join(', ')} {noPriceServices.length === 1 ? 'has' : 'have'} no fixed price (Custom Quote) — not included in the sum above. Set the Bundle Price manually to account for it.
@@ -180,7 +180,7 @@ export default function ServicePackageFormModal({
             value={bundlePrice}
             onChange={e => setFormData(prev => ({ ...prev, bundlePrice: e.target.value }))}
             placeholder={sumPrice > 0 ? `Leave blank to charge ₱${sumPrice.toLocaleString()}` : 'Optional discounted bundle price'}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
           />
         </div>
 
@@ -190,13 +190,13 @@ export default function ServicePackageFormModal({
             type="checkbox"
             checked={isActive}
             onChange={e => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-            className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+            className="rounded border-line text-taupe focus:ring-taupe"
           />
-          <span className="text-sm text-[#524A44]">Active (visible and orderable)</span>
+          <span className="text-sm text-ink-body">Active (visible and orderable)</span>
         </label>
 
         <div className="pt-2 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors">Cancel</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
           <button
             type="submit"
             disabled={isSubmitting || !name.trim() || selectedIds.length < 2}

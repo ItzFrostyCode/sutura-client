@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import PageHeader from '@/components/shared/PageHeader';
 import { Plus } from 'lucide-react';
 import SubscriptionGate from '@/components/SubscriptionGate';
 import { Staff } from '@/components/staff/staffHelpers';
@@ -199,68 +200,85 @@ export default function StaffPage() {
   const overloadedStaffCount = visibleStaff.filter(s => (s.active_jobs || 0) >= 5).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Staff Management</h1>
-          <p className="text-[#827A73] text-sm mt-1">Manage your tailors, cutters, and front desk team.</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingId(null);
-            setFormData({
-              name: '',
-              email: '',
-              password: '',
-              phone: '',
-              role: 'tailor',
-              additional_roles: [],
-              specialization: '',
-              hired_at: new Date().toISOString().split('T')[0],
-              is_active: true,
-              shop_branch_id: '',
-              is_branch_manager: false,
-              bio: '',
-              is_available: true,
-            });
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          <Plus size={18} />
-          Add Staff
-        </button>
-      </div>
+    <div className="space-y-6 animate-fade-in text-ink">
+      <PageHeader
+        eyebrow="Atelier Roster"
+        title="Staff & Artisan Management"
+        description="Manage your tailors, cutters, seamstresses, and branch managers."
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setEditingId(null);
+              setFormData({
+                name: '',
+                email: '',
+                password: '',
+                phone: '',
+                role: 'tailor',
+                additional_roles: [],
+                specialization: '',
+                hired_at: new Date().toISOString().split('T')[0],
+                is_active: true,
+                shop_branch_id: '',
+                is_branch_manager: false,
+                bio: '',
+                is_available: true,
+              });
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
+          >
+            <Plus size={16} />
+            <span>Add Artisan / Staff</span>
+          </button>
+        }
+      />
 
       {/* Workload Summary Cards */}
       <SubscriptionGate feature="staff">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="p-5 rounded-2xl bg-white shadow-xs border border-[#EBE6E0]">
-            <p className="text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-1">
-              Active Tailors / Cutters
-            </p>
-            <p className="text-2xl font-bold text-[#2D2A26]">
-              {activeStaff.length}{' '}
-              <span className="text-xs font-normal text-[#A8A19A]">/ {visibleStaff.length} total</span>
-            </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Active Artisans</span>
+              <div className="text-2xl font-black font-mono text-ink">
+                {activeStaff.length}{' '}
+                <span className="text-xs font-normal font-sans text-ink-muted">/ {visibleStaff.length} total staff</span>
+              </div>
+              <div className="text-xs text-ink-muted">Active tailoring & production team</div>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-canvas border border-line flex items-center justify-center text-taupe shrink-0 shadow-2xs">
+              <Plus size={20} className="hidden" />
+              <span className="font-bold text-sm text-taupe font-mono">{activeStaff.length}</span>
+            </div>
           </div>
-          <div className="p-5 rounded-2xl bg-white shadow-xs border border-[#EBE6E0]">
-            <p className="text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-1">
-              Total Active Jobs Assigned
-            </p>
-            <p className="text-2xl font-bold text-[#2D2A26]">{totalActiveJobs}</p>
+
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Total Active Jobs Assigned</span>
+              <div className="text-2xl font-black font-mono text-ink">{totalActiveJobs}</div>
+              <div className="text-xs text-ink-muted">Live stages currently in workroom</div>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs">
+              <span className="font-bold text-sm font-mono">{totalActiveJobs}</span>
+            </div>
           </div>
-          <div className="p-5 rounded-2xl bg-white shadow-xs border border-[#EBE6E0]">
-            <p className="text-xs font-semibold text-[#827A73] uppercase tracking-wider mb-1">
-              Avg Workload per Staff
-            </p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-[#2D2A26]">{avgJobs} jobs</p>
-              {overloadedStaffCount > 0 && (
-                <span className="text-[10px] font-bold text-[#B26959] bg-[#B26959]/10 px-2 py-0.5 rounded border border-[#B26959]/20">
-                  {overloadedStaffCount} Overloaded
-                </span>
-              )}
+
+          <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Avg Workload per Staff</span>
+              <div className="flex items-baseline gap-2">
+                <div className="text-2xl font-black font-mono text-ink">{avgJobs} <span className="text-xs font-normal font-sans text-ink-muted">jobs/staff</span></div>
+                {overloadedStaffCount > 0 && (
+                  <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 uppercase tracking-wider">
+                    {overloadedStaffCount} Overloaded
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-ink-muted">Balanced workroom capacity</div>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
+              <span className="font-bold text-xs font-mono">{avgJobs}</span>
             </div>
           </div>
         </div>

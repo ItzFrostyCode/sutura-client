@@ -107,9 +107,9 @@ export const CustomTooltip = ({ active, payload, label }: {
 }) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-4 py-3">
-        <p className="text-xs text-[#A8A19A] mb-1">{label}</p>
-        <p className="text-base font-bold text-[#2D2A26]">
+      <div className="bg-surface border border-line rounded-xl px-4 py-3">
+        <p className="text-xs text-ink-faint mb-1">{label}</p>
+        <p className="text-base font-bold text-ink">
           ₱{payload[0].value.toLocaleString()}
         </p>
       </div>
@@ -124,8 +124,8 @@ export const PieTooltip = ({ active, payload }: {
 }) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-4 py-3">
-        <p className="text-xs font-medium text-[#2D2A26]">
+      <div className="bg-surface border border-line rounded-xl px-4 py-3">
+        <p className="text-xs font-medium text-ink">
           {STATUS_LABELS[payload[0].name] ?? payload[0].name}
         </p>
         <p className="text-base font-bold text-taupe">{payload[0].value} orders</p>

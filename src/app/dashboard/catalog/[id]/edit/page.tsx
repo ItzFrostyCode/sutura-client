@@ -67,10 +67,10 @@ export default function EditCatalogItemPage({ params }: Readonly<{ params: Promi
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF6F3]">
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-taupe mx-auto mb-4" />
-          <p className="text-sm text-[#827A73] font-medium">Loading catalog details...</p>
+          <p className="text-sm text-ink-muted font-medium">Loading catalog details...</p>
         </div>
       </div>
     );

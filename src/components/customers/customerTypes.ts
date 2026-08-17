@@ -9,7 +9,10 @@ export interface CustomerData {
   total_spend?: number;
   active_jobs?: number;
   completed_jobs?: number;
+  no_show_count?: number;
   created_at: string;
+  is_walk_in?: boolean;
+  intake_channel?: 'walk_in' | 'online';
 }
 
 export interface MeasurementProfile {

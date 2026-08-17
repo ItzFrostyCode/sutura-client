@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Plus, Trash2, Package as PackageIcon, Megaphone } from 'lucide-react';
+import { Plus, Trash2, Package as PackageIcon, Megaphone, Layers, Tag, Clock } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
 import { Service, ServicePackage, deriveTiersFromService } from '@/components/services/serviceHelpers';
@@ -15,6 +15,8 @@ import ServiceTrashModal from '@/components/services/ServiceTrashModal';
 import ServicePackageListView from '@/components/services/ServicePackageListView';
 import ServicePackageFormModal from '@/components/services/ServicePackageFormModal';
 import PromoPostModal from '@/components/promotions/PromoPostModal';
+import PageHeader from '@/components/shared/PageHeader';
+import StatBand from '@/components/shared/StatBand';
 
 export default function ServicesPage() {
   const { shop, user } = useAuthStore();
@@ -265,81 +267,92 @@ export default function ServicesPage() {
   const editingPackage = editingPackageId ? (packages.find(p => p.id === editingPackageId) || null) : null;
 
   return (
-    <div className="space-y-6 text-[#2D2A26]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Services Catalog</h1>
-          <p className="text-[#827A73] text-sm mt-1">Manage your tailoring offerings, combo packages, and turnaround times.</p>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => setIsPromoModalOpen(true)}
-            title="Generate Promo Post"
-            className="flex items-center gap-2 bg-[#FAF6F3] border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            <Megaphone size={18} />
-            Generate Promo Post
-          </button>
-          {activeTab === 'services' ? (
-            <>
-              <button
-                onClick={() => setShowTrash(true)}
-                title="View deleted services"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-[#FAF6F3] border border-[#EBE6E0] text-[#827A73] hover:bg-[#F0EAE3] transition-colors"
-              >
-                <Trash2 size={18} />
-              </button>
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setError('');
-                  setIsModalOpen(true);
-                }}
-                className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <Plus size={18} />
-                Add Service
-              </button>
-            </>
-          ) : (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Offerings"
+        title="Services Catalog"
+        description="Manage your tailoring offerings, combo packages, and turnaround times."
+        actions={
+          <>
             <button
-              onClick={() => {
-                setEditingPackageId(null);
-                setPackageError('');
-                setIsPackageModalOpen(true);
-              }}
-              disabled={services.length < 2}
-              title={services.length < 2 ? 'Add at least 2 services first' : undefined}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setIsPromoModalOpen(true)}
+              className="flex items-center gap-2 bg-surface border border-line text-ink-body hover:bg-sunken px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
             >
-              <Plus size={18} />
-              Add Package
+              <Megaphone size={16} />
+              <span className="hidden sm:inline">Generate Promo Post</span>
+              <span className="sm:hidden">Promo</span>
             </button>
-          )}
-        </div>
-      </div>
+            {activeTab === 'services' ? (
+              <>
+                <button
+                  onClick={() => setShowTrash(true)}
+                  title="View deleted services"
+                  aria-label="View deleted services"
+                  className="flex items-center justify-center w-11 h-11 rounded-lg bg-surface border border-line text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <button
+                  onClick={() => { setEditingId(null); setError(''); setIsModalOpen(true); }}
+                  className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+                >
+                  <Plus size={17} />
+                  Add Service
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => { setEditingPackageId(null); setPackageError(''); setIsPackageModalOpen(true); }}
+                disabled={services.length < 2}
+                title={services.length < 2 ? 'Add at least 2 services first' : undefined}
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              >
+                <Plus size={17} />
+                Add Package
+              </button>
+            )}
+          </>
+        }
+      />
+
+      {services.length > 0 && (() => {
+        const activeServices = services.filter(s => s.is_active);
+        const prices = services.map(s => Number(s.base_price || 0)).filter(p => p > 0);
+        const avgPrice = prices.length > 0 ? prices.reduce((sum, p) => sum + p, 0) / prices.length : 0;
+        const avgDays = services.reduce((sum, s) => sum + (s.estimated_days || 0), 0) / services.length;
+        return (
+          <StatBand
+            items={[
+              { label: 'Active Services', value: `${activeServices.length} / ${services.length}`, icon: PackageIcon },
+              { label: 'Packages', value: packages.length, icon: Layers },
+              { label: 'Avg. Price', value: `₱${avgPrice.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`, icon: Tag },
+              { label: 'Avg. Turnaround', value: `${avgDays.toFixed(0)}d`, icon: Clock },
+            ]}
+          />
+        );
+      })()}
 
       {/* Tabs */}
-      <div className="flex border-b border-[#EBE6E0]">
+      <div className="flex border-b border-line overflow-x-auto hide-scrollbar">
         <button
           onClick={() => setActiveTab('services')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-            activeTab === 'services' ? 'border-taupe text-taupe' : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
+          className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px min-h-[44px] ${
+            activeTab === 'services' ? 'border-taupe text-taupe' : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
           Individual Services
         </button>
         <button
           onClick={() => setActiveTab('packages')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-            activeTab === 'packages' ? 'border-taupe text-taupe' : 'border-transparent text-[#827A73] hover:text-[#2D2A26]'
+          className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px min-h-[44px] ${
+            activeTab === 'packages' ? 'border-taupe text-taupe' : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
           <PackageIcon size={15} />
           Packages
           {packages.length > 0 && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-              activeTab === 'packages' ? 'bg-taupe/10 text-taupe' : 'bg-[#F0EAE3] text-[#A8A19A]'
+              activeTab === 'packages' ? 'bg-taupe/10 text-taupe' : 'bg-sunken text-ink-faint'
             }`}>{packages.length}</span>
           )}
         </button>

@@ -115,14 +115,14 @@ export default function ServiceDetailModal({
   const bookingUrl = shopId ? `/shop/${shopId}/book?${bookingParam}=${service.id}` : '#';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in">
       <div 
         className="fixed inset-0" 
         onClick={onClose}
         aria-hidden="true"
       />
       
-      <div className="relative bg-white rounded-3xl shadow-2xl border border-[#EBE6E0] overflow-hidden max-w-2xl w-full flex flex-col max-h-[90vh] animate-scale-in z-10">
+      <div className="relative bg-white rounded-3xl border border-line overflow-hidden max-w-2xl w-full flex flex-col max-h-[90vh] animate-scale-in z-10">
         {/* Floating Close Button */}
         <button
           onClick={onClose}
@@ -133,7 +133,7 @@ export default function ServiceDetailModal({
         </button>
 
         {/* Modal Header Cover Image */}
-        <div className="h-60 sm:h-72 w-full bg-[#FAF6F3] relative shrink-0">
+        <div className="h-60 sm:h-72 w-full bg-canvas relative shrink-0">
           {service.image_url ? (
             <Image
               src={service.image_url}
@@ -143,7 +143,7 @@ export default function ServiceDetailModal({
               unoptimized
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#C5BDBA]">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint">
               <ImageIcon size={48} className="opacity-30" />
               <span className="text-sm font-medium">No Image Available</span>
             </div>
@@ -152,7 +152,7 @@ export default function ServiceDetailModal({
           {service.categories && service.categories.length > 0 && (
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-1.5">
               {service.categories.map(cat => (
-                <span key={cat} className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#9A8073] px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-sm animate-fade-in">
+                <span key={cat} className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-taupe px-3.5 py-1.5 rounded-full uppercase tracking-wider animate-fade-in">
                   <Tag size={12} />
                   {cat}
                 </span>
@@ -164,21 +164,21 @@ export default function ServiceDetailModal({
         {/* Modal Scrollable Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-[#2D2A26] tracking-tight pr-8">{service.name}</h3>
+            <h3 className="text-2xl font-bold text-ink tracking-tight pr-8">{service.name}</h3>
             
             <div className="flex flex-wrap items-center gap-4 text-sm">
               {displayPrice !== undefined && displayPrice !== null ? (
-                <div className="text-xl font-bold text-[#9A8073]">
+                <div className="text-xl font-bold text-taupe">
                   ₱{Number(displayPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  <span className="text-xs text-[#827A73] font-medium tracking-normal ml-1">starting price</span>
+                  <span className="text-xs text-ink-muted font-medium tracking-normal ml-1">starting price</span>
                 </div>
               ) : (
-                <div className="text-xl font-bold text-[#9A8073]">
+                <div className="text-xl font-bold text-taupe">
                   Custom Quote
                 </div>
               )}
               {service.estimated_days !== undefined && (
-                <div className="flex items-center gap-1.5 text-[#827A73] font-medium bg-[#FAF6F3] border border-[#EBE6E0] px-3 py-1 rounded-full text-xs">
+                <div className="flex items-center gap-1.5 text-ink-muted font-medium bg-canvas border border-line px-3 py-1 rounded-full text-xs">
                   <Clock size={13} />
                   <span>{service.estimated_days} Days Est. Turnaround</span>
                 </div>
@@ -189,18 +189,18 @@ export default function ServiceDetailModal({
           {/* Description */}
           {service.description && (
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-[#2D2A26] uppercase tracking-wider">Description</h4>
-              <p className="text-sm text-[#524A44] leading-relaxed whitespace-pre-wrap">{service.description}</p>
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Description</h4>
+              <p className="text-sm text-ink-body leading-relaxed whitespace-pre-wrap">{service.description}</p>
             </div>
           )}
 
           {/* Tags */}
           {service.tags && service.tags.length > 0 && (
             <div className="space-y-2 pt-2">
-              <h4 className="text-xs font-bold text-[#2D2A26] uppercase tracking-wider">Includes</h4>
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Includes</h4>
               <div className="flex flex-wrap gap-1.5">
                 {service.tags.map(tag => (
-                  <span key={tag} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#FAF6F3] text-[#524A44] border border-[#EBE6E0]">
+                  <span key={tag} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-canvas text-ink-body border border-line">
                     {tag}
                   </span>
                 ))}
@@ -210,33 +210,33 @@ export default function ServiceDetailModal({
 
           {/* Size Chart */}
           {(service.size_chart_image_url || (service.size_chart_columns && service.size_chart_columns.length > 0)) && (
-            <div className="space-y-3 pt-2 border-t border-[#EBE6E0]">
-              <h4 className="text-xs font-bold text-[#2D2A26] uppercase tracking-wider">Size Chart</h4>
+            <div className="space-y-3 pt-2 border-t border-line">
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Size Chart</h4>
               {service.size_chart_image_url && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={service.size_chart_image_url}
                   alt="Size chart"
-                  className="w-full rounded-xl border border-[#EBE6E0]"
+                  className="w-full rounded-xl border border-line"
                 />
               )}
               {service.size_chart_columns && service.size_chart_columns.length > 0 && service.size_chart_rows && service.size_chart_rows.length > 0 && (
-                <div className="overflow-x-auto border border-[#EBE6E0] rounded-xl">
+                <div className="overflow-x-auto border border-line rounded-xl">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-[#FAF6F3]">
-                        <th className="px-3 py-2 text-left font-bold text-[#827A73] uppercase tracking-wide">Size</th>
+                      <tr className="bg-canvas">
+                        <th className="px-3 py-2 text-left font-bold text-ink-muted uppercase tracking-wide">Size</th>
                         {service.size_chart_columns.map(col => (
-                          <th key={col} className="px-3 py-2 text-left font-bold text-[#827A73] uppercase tracking-wide">{col}</th>
+                          <th key={col} className="px-3 py-2 text-left font-bold text-ink-muted uppercase tracking-wide">{col}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {service.size_chart_rows.map(row => (
-                        <tr key={row.size} className="border-t border-[#EBE6E0]">
-                          <td className="px-3 py-2 font-semibold text-[#2D2A26] whitespace-nowrap">{row.size}</td>
+                        <tr key={row.size} className="border-t border-line">
+                          <td className="px-3 py-2 font-semibold text-ink whitespace-nowrap">{row.size}</td>
                           {row.values.map((val, i) => (
-                            <td key={`${row.size}-${i}`} className="px-3 py-2 text-[#524A44]">{val || '—'}</td>
+                            <td key={`${row.size}-${i}`} className="px-3 py-2 text-ink-body">{val || '—'}</td>
                           ))}
                         </tr>
                       ))}
@@ -244,16 +244,16 @@ export default function ServiceDetailModal({
                   </table>
                 </div>
               )}
-              <p className="text-[11px] text-[#A8A19A]">Follow this shop&apos;s own size chart when submitting measurements — sizing can vary between shops.</p>
+              <p className="text-[11px] text-ink-faint">Follow this shop&apos;s own size chart when submitting measurements — sizing can vary between shops.</p>
             </div>
           )}
 
           {/* Custom Specifications Form */}
           {customFields.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-[#EBE6E0]">
+            <div className="space-y-4 pt-4 border-t border-line">
               <div>
-                <h4 className="text-xs font-bold text-[#2D2A26] uppercase tracking-wider">Custom Order Specifications</h4>
-                <p className="text-[11px] text-[#827A73] mt-0.5">Please provide details to build your customized order quote.</p>
+                <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Custom Order Specifications</h4>
+                <p className="text-[11px] text-ink-muted mt-0.5">Please provide details to build your customized order quote.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
@@ -261,8 +261,8 @@ export default function ServiceDetailModal({
                   const fieldId = `field-${field.name}`;
                   return (
                     <div key={field.name} className="space-y-1.5">
-                      <label htmlFor={fieldId} className="block text-xs font-bold text-[#2D2A26] uppercase tracking-wider">
-                        {field.label} {field.required && <span className="text-[#B26959]">*</span>}
+                      <label htmlFor={fieldId} className="block text-xs font-bold text-ink uppercase tracking-wider">
+                        {field.label} {field.required && <span className="text-danger">*</span>}
                       </label>
 
                       {/* Dropdown Type */}
@@ -272,7 +272,7 @@ export default function ServiceDetailModal({
                           value={formData[field.name] || ''}
                           onChange={e => handleInputChange(field.name, e.target.value)}
                           required={field.required}
-                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
+                          className="w-full bg-canvas border border-line rounded-xl px-4 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe/50 focus:ring-1 focus:ring-taupe/50 transition-all"
                         >
                           <option value="">Select option...</option>
                           {field.options?.map(opt => (
@@ -292,7 +292,7 @@ export default function ServiceDetailModal({
                           onChange={e => handleInputChange(field.name, e.target.value)}
                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                           required={field.required}
-                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-base sm:text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
+                          className="w-full bg-canvas border border-line rounded-xl px-4 py-2.5 text-base sm:text-sm text-ink focus:outline-none focus:border-taupe/50 focus:ring-1 focus:ring-taupe/50 transition-all"
                         />
                       )}
 
@@ -305,22 +305,22 @@ export default function ServiceDetailModal({
                           onChange={e => handleInputChange(field.name, e.target.value)}
                           placeholder="0"
                           required={field.required}
-                          className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-4 py-2.5 text-base sm:text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073]/50 focus:ring-1 focus:ring-[#9A8073]/50 transition-all"
+                          className="w-full bg-canvas border border-line rounded-xl px-4 py-2.5 text-base sm:text-sm text-ink focus:outline-none focus:border-taupe/50 focus:ring-1 focus:ring-taupe/50 transition-all"
                         />
                       )}
 
                       {/* Multi Select Type */}
                       {field.type === 'multi_select' && (
-                        <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-3 grid grid-cols-2 gap-2">
+                        <div className="bg-canvas border border-line rounded-xl p-3 grid grid-cols-2 gap-2">
                           {field.options?.map(opt => {
                             const isChecked = Array.isArray(formData[field.name]) && (formData[field.name] as string[]).includes(opt);
                             return (
-                              <label key={opt} className="flex items-center gap-2 text-xs font-semibold text-[#524A44] cursor-pointer">
+                              <label key={opt} className="flex items-center gap-2 text-xs font-semibold text-ink-body cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={e => handleCheckboxChange(field.name, opt, e.target.checked)}
-                                  className="w-4 h-4 accent-[#9A8073] rounded border-[#EBE6E0]"
+                                  className="w-4 h-4 accent-[#9A8073] rounded border-line"
                                 />
                                 {opt}
                               </label>
@@ -337,12 +337,12 @@ export default function ServiceDetailModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-6 bg-[#FAF6F3] border-t border-[#EBE6E0] flex flex-col sm:flex-row gap-3">
+        <div className="p-6 bg-canvas border-t border-line flex flex-col sm:flex-row gap-3">
           <a
             href={getMessengerUrl(facebookUrl, getInquiryText())}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 bg-[#2D2A26] hover:bg-[#9A8073] text-white py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 shadow-sm transition-all"
+            className="flex-1 bg-[#2D2A26] hover:bg-taupe text-white py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"
           >
             <MessageCircle size={16} />
             Inquire via Messenger
@@ -351,7 +351,7 @@ export default function ServiceDetailModal({
           {shopId && (
             <a
               href={bookingUrl}
-              className="flex-1 bg-white hover:bg-[#EBE6E0] text-[#2D2A26] border border-[#EBE6E0] py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"
+              className="flex-1 bg-white hover:bg-line text-ink border border-line py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"
             >
               <Calendar size={16} />
               Book Appointment

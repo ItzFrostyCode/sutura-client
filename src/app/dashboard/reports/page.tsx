@@ -251,53 +251,53 @@ export default function ReportsPage() {
   // ─── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="space-y-8 pb-12">
+      <div className="space-y-8">
         {/* Skeleton Filters */}
         <div className="flex gap-4 animate-pulse">
-          <div className="h-10 bg-[#EBE6E0] rounded-xl w-48"></div>
-          <div className="h-10 bg-[#EBE6E0] rounded-xl w-32 ml-auto"></div>
+          <div className="h-10 bg-line rounded-xl w-48"></div>
+          <div className="h-10 bg-line rounded-xl w-32 ml-auto"></div>
         </div>
         {/* Skeleton KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={`kpi-skel-${i}`} className="h-32 bg-white rounded-2xl border border-[#EBE6E0] p-5 flex flex-col justify-between shadow-sm animate-pulse">
+            <div key={`kpi-skel-${i}`} className="h-32 bg-white rounded-2xl border border-line p-5 flex flex-col justify-between animate-pulse">
               <div className="flex items-center justify-between">
-                <div className="h-4 bg-[#FAF6F3] rounded w-24"></div>
-                <div className="h-8 w-8 bg-[#FAF6F3] rounded-full"></div>
+                <div className="h-4 bg-canvas rounded w-24"></div>
+                <div className="h-8 w-8 bg-canvas rounded-full"></div>
               </div>
               <div>
-                <div className="h-8 bg-[#EBE6E0] rounded w-32 mb-2"></div>
-                <div className="h-3 bg-[#FAF6F3] rounded w-16"></div>
+                <div className="h-8 bg-line rounded w-32 mb-2"></div>
+                <div className="h-3 bg-canvas rounded w-16"></div>
               </div>
             </div>
           ))}
         </div>
         {/* Skeleton Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-80 bg-white rounded-2xl border border-[#EBE6E0] shadow-sm p-6 flex flex-col animate-pulse">
-            <div className="h-5 bg-[#EBE6E0] rounded w-48 mb-6"></div>
+          <div className="h-80 bg-white rounded-2xl border border-line p-6 flex flex-col animate-pulse">
+            <div className="h-5 bg-line rounded w-48 mb-6"></div>
             <div className="flex-1 flex items-end gap-2">
               {[40, 70, 45, 90, 60, 80].map((h, i) => (
-                <div key={i} className="flex-1 bg-[#FAF6F3] rounded-t-sm" style={{ height: `${h}%` }}></div>
+                <div key={i} className="flex-1 bg-canvas rounded-t-sm" style={{ height: `${h}%` }}></div>
               ))}
             </div>
           </div>
-          <div className="h-80 bg-white rounded-2xl border border-[#EBE6E0] shadow-sm p-6 flex flex-col animate-pulse">
-            <div className="h-5 bg-[#EBE6E0] rounded w-48 mb-6"></div>
+          <div className="h-80 bg-white rounded-2xl border border-line p-6 flex flex-col animate-pulse">
+            <div className="h-5 bg-line rounded w-48 mb-6"></div>
             <div className="flex-1 flex items-center justify-center">
               <div className="w-40 h-40 rounded-full border-[12px] border-[#FAF6F3]"></div>
             </div>
           </div>
         </div>
         {/* Skeleton Table */}
-        <div className="h-64 bg-white rounded-2xl border border-[#EBE6E0] shadow-sm p-6 flex flex-col animate-pulse">
-          <div className="h-5 bg-[#EBE6E0] rounded w-48 mb-6"></div>
+        <div className="h-64 bg-white rounded-2xl border border-line p-6 flex flex-col animate-pulse">
+          <div className="h-5 bg-line rounded w-48 mb-6"></div>
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between">
-                <div className="h-4 bg-[#FAF6F3] rounded w-1/3"></div>
-                <div className="h-4 bg-[#FAF6F3] rounded w-1/4"></div>
-                <div className="h-4 bg-[#FAF6F3] rounded w-1/6"></div>
+                <div className="h-4 bg-canvas rounded w-1/3"></div>
+                <div className="h-4 bg-canvas rounded w-1/4"></div>
+                <div className="h-4 bg-canvas rounded w-1/6"></div>
               </div>
             ))}
           </div>
@@ -307,7 +307,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-8 pb-12 print-container">
+    <div className="space-y-8 print-container">
       {/* Print CSS Stylesheet */}
       <style>{`
         @media print {

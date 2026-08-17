@@ -164,15 +164,15 @@ export default function ServiceFormModal({
     onSubmit(payload);
   };
 
-  const labelClass = 'block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider';
-  const sectionHeadingClass = 'text-xs font-bold text-[#9A8073] uppercase tracking-wider pb-2 border-b border-[#EBE6E0]';
-  const inputClass = 'w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors';
+  const labelClass = 'block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider';
+  const sectionHeadingClass = 'text-xs font-bold text-taupe uppercase tracking-wider pb-2 border-b border-line';
+  const inputClass = 'w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Service Group' : 'Add Service Group'} maxWidth="max-w-2xl">
-      <form onSubmit={handleSubmit} className="space-y-6 text-[#2D2A26]">
+      <form onSubmit={handleSubmit} className="space-y-6 text-ink">
         {error && (
-          <div className="p-3 text-sm text-[#B26959] bg-[#B26959]/10 border border-[#B26959]/20 rounded-lg">
+          <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg">
             {error}
           </div>
         )}
@@ -193,12 +193,12 @@ export default function ServiceFormModal({
                 className={inputClass}
                 placeholder="e.g. Alterations & Repairs"
               />
-              <p className="text-xs text-[#A8A19A] mt-1">The name customers and staff see for this service group.</p>
+              <p className="text-xs text-ink-faint mt-1">The name customers and staff see for this service group.</p>
             </div>
 
             <div>
               <label className={labelClass}>
-                Service Type(s) * <span className="text-[#A8A19A] normal-case font-normal">(select one or more)</span>
+                Service Type(s) * <span className="text-ink-faint normal-case font-normal">(select one or more)</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {SERVICE_TYPES.map(t => {
@@ -211,18 +211,18 @@ export default function ServiceFormModal({
                       type="button"
                       onClick={() => toggleServiceType(t.value)}
                       className={`flex items-center gap-2 p-2.5 rounded-lg border-2 text-left transition-all focus:outline-none ${
-                        isSelected ? 'border-taupe bg-taupe/10' : 'border-[#EBE6E0] hover:border-[#D1C7BD]'
+                        isSelected ? 'border-taupe bg-taupe/10' : 'border-line hover:border-line-strong'
                       }`}
                     >
                       <span className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${meta.bg} ${meta.border}`}>
                         <Icon size={14} className={meta.text} />
                       </span>
-                      <span className="text-xs font-semibold text-[#2D2A26] leading-tight">{t.label}</span>
+                      <span className="text-xs font-semibold text-ink leading-tight">{t.label}</span>
                     </button>
                   );
                 })}
               </div>
-              <p className="text-xs text-[#A8A19A] mt-1">
+              <p className="text-xs text-ink-faint mt-1">
                 {selectedServiceTypes.length > 0
                   ? SERVICE_TYPES.filter(t => selectedServiceTypes.includes(t.value)).map(t => t.hint).join(' • ')
                   : 'Determines which order fields apply when this service is booked (team roster, fitting schedule, damage notes, etc.) — all selected types\' fields will apply.'}
@@ -231,14 +231,14 @@ export default function ServiceFormModal({
 
             <div>
               <label className={labelClass}>
-                Category <span className="text-[#A8A19A] normal-case font-normal">(select one or more, optional)</span>
+                Category <span className="text-ink-faint normal-case font-normal">(select one or more, optional)</span>
               </label>
               {selectedCategories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {selectedCategories.map(cat => (
                     <span key={cat} className="inline-flex items-center gap-1 px-2.5 py-1 bg-taupe/10 text-taupe text-xs font-semibold rounded-full">
                       {cat}
-                      <button type="button" onClick={() => removeCategory(cat)} className="hover:text-[#B26959] focus:outline-none">
+                      <button type="button" onClick={() => removeCategory(cat)} className="hover:text-danger focus:outline-none">
                         <X size={11} />
                       </button>
                     </span>
@@ -284,13 +284,13 @@ export default function ServiceFormModal({
               {tiers.length > 0 && (
                 <div className="space-y-1.5 mb-2">
                   {tiers.map(tier => (
-                    <div key={tier.label} className="flex items-center justify-between gap-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-1.5">
-                      <span className="text-sm text-[#2D2A26] truncate">{tier.label}</span>
+                    <div key={tier.label} className="flex items-center justify-between gap-2 bg-canvas border border-line rounded-lg px-3 py-1.5">
+                      <span className="text-sm text-ink truncate">{tier.label}</span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-semibold text-[#7A8B76]">
+                        <span className="text-xs font-semibold text-sage">
                           {tier.amount ? `₱${Number(tier.amount).toLocaleString()}` : 'No price yet'}
                         </span>
-                        <button type="button" onClick={() => removeTier(tier.label)} className="text-[#A8A19A] hover:text-[#B26959] focus:outline-none">
+                        <button type="button" onClick={() => removeTier(tier.label)} className="text-ink-faint hover:text-danger focus:outline-none">
                           <X size={14} />
                         </button>
                       </div>
@@ -332,7 +332,7 @@ export default function ServiceFormModal({
                   <Plus size={16} />
                 </button>
               </div>
-              <p className={`text-xs mt-1 ${tiers.length === 0 ? 'text-[#B26959] font-medium' : 'text-[#A8A19A]'}`}>
+              <p className={`text-xs mt-1 ${tiers.length === 0 ? 'text-danger font-medium' : 'text-ink-faint'}`}>
                 {tiers.length === 0
                   // Save stays disabled with tiers.length === 0 but nothing
                   // ever explained that — typing a name into the field above
@@ -364,7 +364,7 @@ export default function ServiceFormModal({
                   className={inputClass}
                   placeholder="e.g. 1500"
                 />
-                <p className="text-[11px] text-[#A8A19A] mt-1">Headline price shown on the catalog card. Leave blank if it always depends on the items above.</p>
+                <p className="text-[11px] text-ink-faint mt-1">Headline price shown on the catalog card. Leave blank if it always depends on the items above.</p>
               </div>
               <div>
                 <label className={labelClass}>
@@ -394,7 +394,7 @@ export default function ServiceFormModal({
                   className={inputClass}
                   placeholder="e.g. 10"
                 />
-                <p className="text-xs text-[#A8A19A] mt-1">Team/bulk orders below this quantity will be blocked at job creation.</p>
+                <p className="text-xs text-ink-faint mt-1">Team/bulk orders below this quantity will be blocked at job creation.</p>
               </div>
             )}
 
@@ -415,26 +415,26 @@ export default function ServiceFormModal({
               <label className={labelClass}>
                 Service Group Image
               </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-[#EBE6E0] border-dashed rounded-xl relative overflow-hidden group bg-[#FAF6F3]/50">
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-line border-dashed rounded-xl relative overflow-hidden group bg-canvas/50">
                 <div className="space-y-1 text-center relative z-10">
                   {uploadingImage ? (
-                    <Loader2 className="mx-auto h-8 w-8 text-[#A8A19A] animate-spin" />
+                    <Loader2 className="mx-auto h-8 w-8 text-ink-faint animate-spin" />
                   ) : imageUrl ? (
                     <div className="flex flex-col items-center">
-                      <ImageIcon className="mx-auto h-8 w-8 text-[#7A8B76] mb-2" />
-                      <span className="text-sm text-[#7A8B76] font-medium">Image uploaded</span>
-                      <button type="button" onClick={() => setImageUrl(null)} className="mt-2 text-xs text-[#B26959] hover:text-[#91544A] font-medium focus:outline-none">Remove image</button>
+                      <ImageIcon className="mx-auto h-8 w-8 text-sage mb-2" />
+                      <span className="text-sm text-sage font-medium">Image uploaded</span>
+                      <button type="button" onClick={() => setImageUrl(null)} className="mt-2 text-xs text-danger hover:text-[#91544A] font-medium focus:outline-none">Remove image</button>
                     </div>
                   ) : (
                     <>
-                      <Upload className="mx-auto h-8 w-8 text-[#A8A19A]" />
-                      <div className="flex text-sm text-[#827A73] justify-center">
+                      <Upload className="mx-auto h-8 w-8 text-ink-faint" />
+                      <div className="flex text-sm text-ink-muted justify-center">
                         <label htmlFor="service-image" className="relative cursor-pointer bg-transparent rounded-md font-medium text-taupe hover:underline focus-within:outline-none">
                           <span>Upload a file</span>
                           <input id="service-image" name="service-image" type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
                         </label>
                       </div>
-                      <p className="text-xs text-[#A8A19A]">PNG, JPG up to 2MB</p>
+                      <p className="text-xs text-ink-faint">PNG, JPG up to 2MB</p>
                     </>
                   )}
                 </div>
@@ -450,9 +450,9 @@ export default function ServiceFormModal({
                 id="is_active"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 accent-taupe border-[#EBE6E0] rounded focus:ring-taupe"
+                className="w-4 h-4 accent-taupe border-line rounded focus:ring-taupe"
               />
-              <label htmlFor="is_active" className="text-sm text-[#524A44]">
+              <label htmlFor="is_active" className="text-sm text-ink-body">
                 Active &amp; Visible to Customers
               </label>
             </div>
@@ -461,8 +461,8 @@ export default function ServiceFormModal({
 
         <SizeChartEditor key={editingId ?? 'new'} mode="table" value={sizeChart} onChange={setSizeChart} shopId={shop?.id ?? 0} />
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#EBE6E0]">
-          <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 text-sm font-medium text-[#524A44] hover:bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg transition-colors focus:outline-none">
+        <div className="flex justify-end gap-3 pt-4 border-t border-line">
+          <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 text-sm font-medium text-ink-body hover:bg-canvas border border-line rounded-lg transition-colors focus:outline-none">
             Cancel
           </button>
           <button type="submit" disabled={isSubmitting || tiers.length === 0 || selectedServiceTypes.length === 0} className="px-4 py-2 text-sm font-medium text-white bg-taupe rounded-lg hover:bg-taupe-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors focus:outline-none">

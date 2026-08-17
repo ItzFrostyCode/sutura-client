@@ -93,21 +93,21 @@ export default function WhatsNewTour({ onClose }: { readonly onClose: () => void
   };
 
   return (
-    <div className="fixed inset-0 bg-[#2D2A26]/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl w-full max-w-md shadow-xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+    <div className="fixed inset-0 bg-[#2D2A26]/60 z-[100] flex items-center justify-center p-4">
+      <div className="bg-surface border border-line rounded-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
         <div className="flex justify-between items-center px-5 pt-5">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-taupe">
             <Sparkles size={12} /> What&apos;s New
           </span>
-          <button onClick={handleClose} className="text-[#A8A19A] hover:text-[#2D2A26] cursor-pointer">
+          <button onClick={handleClose} className="text-ink-faint hover:text-ink cursor-pointer">
             <X size={18} />
           </button>
         </div>
 
         <div className="px-6 py-6 text-center">
           <div className="text-4xl mb-3">{step.emoji}</div>
-          <h3 className="text-lg font-bold text-[#2D2A26] mb-2">{step.title}</h3>
-          <p className="text-sm text-[#524A44] leading-relaxed">{step.description}</p>
+          <h3 className="text-lg font-bold text-ink mb-2">{step.title}</h3>
+          <p className="text-sm text-ink-body leading-relaxed">{step.description}</p>
         </div>
 
         {/* Step dots */}
@@ -115,17 +115,17 @@ export default function WhatsNewTour({ onClose }: { readonly onClose: () => void
           {STEPS.map((s, i) => (
             <span
               key={s.title}
-              className={`h-1.5 rounded-full transition-all ${i === index ? 'w-5 bg-taupe' : 'w-1.5 bg-[#EBE6E0]'}`}
+              className={`h-1.5 rounded-full transition-all ${i === index ? 'w-5 bg-taupe' : 'w-1.5 bg-line'}`}
             />
           ))}
         </div>
 
-        <div className="border-t border-[#EBE6E0] px-5 py-4 flex items-center justify-between gap-3">
+        <div className="border-t border-line px-5 py-4 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setIndex(i => Math.max(0, i - 1))}
             disabled={index === 0}
-            className="p-2 rounded-lg text-[#827A73] hover:bg-[#FAF6F3] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            className="p-2 rounded-lg text-ink-muted hover:bg-canvas disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             aria-label="Previous"
           >
             <ChevronLeft size={16} />
@@ -134,7 +134,7 @@ export default function WhatsNewTour({ onClose }: { readonly onClose: () => void
           <button
             type="button"
             onClick={handleGoThere}
-            className="flex-1 text-center px-3 py-2 rounded-lg text-xs font-semibold text-taupe hover:bg-[#FAF6F3] transition-colors cursor-pointer"
+            className="flex-1 text-center px-3 py-2 rounded-lg text-xs font-semibold text-taupe hover:bg-canvas transition-colors cursor-pointer"
           >
             {step.ctaLabel} →
           </button>

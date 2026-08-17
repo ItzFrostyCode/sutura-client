@@ -23,7 +23,7 @@ export default function StoreProfileRedirect() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="animate-spin text-[#9A8073]" size={32} />
+      <Loader2 className="animate-spin text-taupe" size={32} />
     </div>
   );
 }

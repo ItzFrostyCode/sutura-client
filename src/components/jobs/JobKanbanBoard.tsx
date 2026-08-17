@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, type LucideIcon } from 'lucide-react';
+import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, type LucideIcon } from 'lucide-react';
 import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
@@ -13,12 +13,14 @@ interface JobKanbanBoardProps {
   readonly onUpdateStatus: (id: number, status: string, cancellationReason?: string) => void;
   readonly onApprove: (id: number) => void;
   readonly onReject: (id: number) => void;
+  readonly highlightedJobId?: number | null;
+  readonly stageFilter?: string;
 }
 
 const SUKI_TAG_CONFIG: Record<string, { label: string; cls: string; Icon: LucideIcon }> = {
   b2b_suki:       { label: 'B2B',      cls: 'bg-amber-50 text-amber-700 border-amber-200', Icon: Star },
   reseller:       { label: 'Reseller', cls: 'bg-purple-50 text-purple-700 border-purple-200', Icon: Store },
-  walk_in_retail: { label: 'Walk-in',  cls: 'bg-[#F0EAE3] text-[#827A73] border-[#EBE6E0]', Icon: User },
+  walk_in_retail: { label: 'Walk-in',  cls: 'bg-sunken text-ink-muted border-line', Icon: User },
 };
 
 // Completed piles up forever (unlike in-progress stages, which naturally
@@ -36,6 +38,8 @@ export default function JobKanbanBoard({
   onUpdateStatus,
   onApprove,
   onReject,
+  highlightedJobId,
+  stageFilter,
 }: JobKanbanBoardProps) {
   // DP gate: tracks which job card just triggered the block (shows flash warning)
   const [dpGateJobId, setDpGateJobId] = useState<number | null>(null);
@@ -95,11 +99,14 @@ export default function JobKanbanBoard({
   // Shown first, ahead of the sequential production stages, so a held job
   // isn't buried — kept out of `activeColumns` itself (see ON_HOLD_COLUMN)
   // so the "A → B → C" flow banner elsewhere on the page stays accurate.
-  const boardColumns = onHoldJobs.length > 0 ? [ON_HOLD_COLUMN, ...activeColumns] : activeColumns;
+  const baseColumns = onHoldJobs.length > 0 ? [ON_HOLD_COLUMN, ...activeColumns] : activeColumns;
+  const boardColumns = stageFilter && stageFilter !== 'all'
+    ? baseColumns.filter(c => c.id === stageFilter)
+    : baseColumns;
 
   return (
     <>
-    <div className="flex gap-4 overflow-x-auto pb-4 items-start" style={{ minHeight: 'calc(100vh - 340px)' }}>
+    <div className="flex gap-3.5 overflow-x-auto pb-4 items-start" style={{ minHeight: 'calc(100vh - 270px)' }}>
       {boardColumns.map(col => {
         const colJobs = col.id === 'on_hold' ? onHoldJobs : (groupedJobs[col.id] ?? []);
         const isCollapsible = col.id === 'completed' && colJobs.length > COMPLETED_COLLAPSE_AT;
@@ -108,53 +115,72 @@ export default function JobKanbanBoard({
         return (
         <div
           key={col.id}
-          className={`flex-none w-72 glass-panel border ${col.border} rounded-2xl flex flex-col`}
-          style={{ maxHeight: 'calc(100vh - 340px)' }}
+          id={`kanban-col-${col.id}`}
+          className="flex-none w-72 sm:w-[300px] bg-canvas/30 border border-line rounded-2xl flex flex-col shadow-2xs overflow-hidden"
+          style={{ maxHeight: 'calc(100vh - 270px)' }}
         >
           {/* Column Header */}
-          <div className={`px-4 py-3 border-b ${col.border} flex items-center justify-between ${col.color} rounded-t-2xl`}>
+          <div className="px-3.5 py-2.5 border-b border-line flex items-center justify-between bg-surface">
             <div className="flex items-center gap-2">
               <ColumnIcon id={col.id} />
-              <h3 className="font-semibold text-[#2D2A26] text-sm">{col.title}</h3>
+              <h3 className="font-bold text-ink text-xs sm:text-sm">{col.title}</h3>
             </div>
-            <span className="bg-white/70 text-[#2D2A26] text-xs px-2 py-0.5 rounded-full font-semibold shadow-sm">
+            <span className="bg-sunken text-ink text-[11px] px-2 py-0.5 rounded-full font-black tabular-nums border border-line/60">
               {colJobs.length}
             </span>
           </div>
 
           {/* Cards */}
-          <div className="p-3 space-y-3 overflow-y-auto flex-1">
+          <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1 hide-scrollbar">
             {visibleJobs.map(job => (
-              <div key={job.id}>
-                <div className={`bg-white border p-3.5 rounded-xl hover:shadow-sm transition-all group relative ${
-                  job.status === 'pending' ? 'border-amber-200 hover:border-amber-300'
-                    : job.status === 'on_hold' ? 'border-amber-300 hover:border-amber-400'
-                    : 'border-[#D1C7BD] hover:border-[#9A8073]/50'
+              <div key={job.id} id={`job-card-${job.id}`}>
+                <div className={`bg-white border p-3.5 rounded-xl transition-all group relative ${
+                  highlightedJobId === job.id
+                    ? 'ring-2 ring-amber-500 ring-offset-2 scale-[1.02] shadow-md bg-amber-50/40 duration-300'
+                    : job.status === 'pending'
+                    ? 'border-amber-200 hover:border-amber-300'
+                    : job.status === 'on_hold'
+                    ? 'border-amber-300 hover:border-amber-400'
+                    : 'border-line-strong hover:border-taupe/50'
                 }`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <Link href={`/dashboard/jobs/${job.id}`} className="block">
-                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span className="text-xs font-bold text-[#827A73] hover:underline">{job.order_number || `#${job.id}`}</span>
-                        <TypeBadge type={job.intake_channel} />
-                      </div>
-                    </Link>
-                    <select
-                      value={job.status}
-                      onChange={(e) => handleStatusChange(job, e.target.value)}
-                      title="Change status"
-                      // Always visible now, not hover-only — a control with zero
-                      // resting-state affordance meant it was only ever discovered
-                      // by accident (and never on a touch screen at all, where
-                      // hover doesn't fire). Quiet by default, a bit more present
-                      // on hover/focus so it doesn't just blend into the card.
-                      className="text-[10px] bg-[#F0EAE3] text-[#827A73] border border-[#D1C7BD]/70 rounded p-1 opacity-70 hover:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus:ring-1 focus:ring-taupe cursor-pointer"
-                    >
-                      {columnsForJobs([job]).map(c => (
-                        <option key={c.id} value={c.id}>{c.title}</option>
-                      ))}
-                      <option value="on_hold">On Hold</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
+                  <div className="flex justify-between items-start mb-2 gap-1.5">
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap min-w-0">
+                      <Link href={`/dashboard/jobs/${job.id}`} className="text-xs font-bold text-ink hover:underline truncate">
+                        {job.order_number || `#${job.id}`}
+                      </Link>
+                      <TypeBadge type={job.intake_channel} />
+                    </div>
+
+                    {/* Header Actions: View button + Stage changer/Pending badge */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Link
+                        href={`/dashboard/jobs/${job.id}`}
+                        title={`View ${job.order_number || 'Job Details'}`}
+                        className="h-6 w-6 rounded-md bg-canvas hover:bg-surface text-ink-muted hover:text-ink border border-line flex items-center justify-center transition-colors shadow-2xs active:scale-95"
+                      >
+                        <Eye size={12} />
+                      </Link>
+
+                      {job.status === 'pending' ? (
+                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 shrink-0 flex items-center gap-1">
+                          <AlertTriangle size={9} className="text-amber-700" />
+                          <span>Pending</span>
+                        </span>
+                      ) : (
+                        <select
+                          value={job.status}
+                          onChange={(e) => handleStatusChange(job, e.target.value)}
+                          title="Change stage"
+                          className="text-[10px] font-bold bg-canvas text-ink-body border border-line rounded-md px-1.5 py-0.5 hover:border-taupe/70 focus:border-taupe transition-colors focus:outline-none cursor-pointer shrink-0"
+                        >
+                          {columnsForJobs([job]).map(c => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                          <option value="on_hold">On Hold</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      )}
+                    </div>
                   </div>
 
                   {job.status === 'on_hold' && job.hold_reason && (
@@ -167,7 +193,7 @@ export default function JobKanbanBoard({
                   <Link href={`/dashboard/jobs/${job.id}`} className="block space-y-1.5">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <div className="min-w-0">
-                        <h4 className="font-semibold text-[#2D2A26] text-sm truncate">{job.customer?.name || 'Walk-in'}</h4>
+                        <h4 className="font-bold text-ink text-sm truncate">{job.customer?.name || 'Walk-in'}</h4>
                         {job.customer?.suki_tag && SUKI_TAG_CONFIG[job.customer.suki_tag] && (
                           <span className={`inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded border mt-0.5 ${SUKI_TAG_CONFIG[job.customer.suki_tag].cls}`}>
                             {(() => {
@@ -179,37 +205,37 @@ export default function JobKanbanBoard({
                         )}
                       </div>
                       {(() => {
-                        let payBadge = 'bg-[#B26959]/15 text-[#B26959] border-[#B26959]/20';
-                        if (job.payment_status === 'paid') payBadge = 'bg-[#7A8B76]/15 text-[#7A8B76] border-[#7A8B76]/20';
-                        else if (job.payment_status === 'partial') payBadge = 'bg-[#BCA89F]/15 text-[#BCA89F] border-[#BCA89F]/20';
+                        let payBadge = 'bg-rose-50 text-rose-700 border-rose-200';
+                        if (job.payment_status === 'paid') payBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                        else if (job.payment_status === 'partial') payBadge = 'bg-amber-50 text-amber-800 border-amber-200';
                         return (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm border uppercase shrink-0 ${payBadge}`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase shrink-0 ${payBadge}`}>
                             {job.payment_status}
                           </span>
                         );
                       })()}
                     </div>
                     
-                    <div className="flex items-center gap-1.5 text-xs text-[#827A73]">
+                    <div className="flex items-center gap-1.5 text-xs text-ink-muted">
                       <Scissors size={11} />
-                      {job.service?.name || 'Custom Sew'}
+                      <span className="truncate">{job.service?.name || 'Custom Sew'}</span>
                     </div>
 
                     {Number.parseFloat(job.balance as string || '0') > 0 && (
-                      <div className="text-[10px] font-medium text-[#B26959] mt-1">
+                      <div className="text-[10px] font-bold text-rose-600 mt-1">
                         Bal: ₱{Number.parseFloat(job.balance as string).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </div>
                     )}
                   </Link>
 
-                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#EBE6E0]">
-                    <div className="flex items-center gap-1 text-xs text-[#A8A19A]">
+                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-line">
+                    <div className="flex items-center gap-1 text-xs text-ink-faint">
                       <User size={11} />
-                      {job.assigned_staff?.name || 'Unassigned'}
+                      <span className="truncate max-w-[100px]">{job.assigned_staff?.name || 'Unassigned'}</span>
                     </div>
                     {job.due_date && (
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <div className="flex items-center gap-1 text-xs text-[#BCA89F]/80">
+                        <div className="flex items-center gap-1 text-xs text-ink-muted">
                           <Calendar size={11} />
                           {new Date(job.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                         </div>
@@ -217,7 +243,7 @@ export default function JobKanbanBoard({
                           const dueStatus = getDueStatus(job.due_date, job.status);
                           if (!dueStatus) return null;
                           return (
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-sm border uppercase tracking-wider ${dueStatus.className}`}>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${dueStatus.className}`}>
                               {dueStatus.label}
                             </span>
                           );
@@ -273,16 +299,18 @@ export default function JobKanbanBoard({
                       ) : (
                         <>
                           <button
+                            type="button"
                             onClick={e => { e.preventDefault(); e.stopPropagation(); handleApprove(job); }}
-                            className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg bg-[#7A8B76]/15 text-[#7A8B76] border border-[#7A8B76]/25 hover:bg-[#7A8B76]/25 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
                           >
-                            <Check size={11} /> Approve
+                            <Check size={13} /> <span>Approve</span>
                           </button>
                           <button
+                            type="button"
                             onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
-                            className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold py-1.5 rounded-lg bg-[#B26959]/10 text-[#B26959] border border-[#B26959]/20 hover:bg-[#B26959]/20 transition-colors"
+                            className="flex-none flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors"
                           >
-                            <X size={11} /> Reject
+                            <X size={13} /> <span>Reject</span>
                           </button>
                         </>
                       )}
@@ -304,8 +332,8 @@ export default function JobKanbanBoard({
             )}
 
             {colJobs.length === 0 && (
-              <div className="text-center py-8 text-[#827A73] border-2 border-dashed border-[#EBE6E0] rounded-xl">
-                <span className="text-xs">No orders here</span>
+              <div className="text-center py-6 text-ink-faint border border-dashed border-line/80 rounded-xl bg-surface/40 flex flex-col items-center justify-center">
+                <span className="text-[11px] font-medium">No orders in this stage</span>
               </div>
             )}
           </div>

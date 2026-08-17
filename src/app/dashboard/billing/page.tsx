@@ -7,10 +7,11 @@ import { refreshSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import api from '@/lib/axios';
 import {
   CreditCard, CheckCircle, Zap, ShieldCheck, Loader2,
-  Check, Crown, Rocket, Sparkles, AlertTriangle,
+  Check, Crown, Rocket, AlertTriangle,
   Building2, Users, Scissors, Calendar, Clock, History,
   ChevronRight, TrendingUp,
 } from 'lucide-react';
+import Badge from '@/components/shared/Badge';
 
 interface Plan {
   id: number;
@@ -33,10 +34,13 @@ interface Subscription {
 }
 
 // ── Per-plan metadata ─────────────────────────────────────────────────────────
+// Flat, one accent color (taupe) — no shadow/glow, no second accent hue. The
+// recommended plan (Premium) is distinguished by a solid taupe border +
+// outline ribbon, not a glow effect, so it stays "clean, simple, modern"
+// instead of reaching for a color the rest of the app doesn't use.
 const PLAN_META: Record<string, {
   icon: React.ElementType;
   badge?: string;
-  badgeClass: string;
   cardClass: string;
   btnClass: string;
   iconBg: string;
@@ -44,26 +48,23 @@ const PLAN_META: Record<string, {
   basic: {
     icon: Rocket,
     badge: undefined,
-    badgeClass: '',
-    cardClass: 'border-[#EBE6E0] hover:border-[#D1C7BD]',
-    btnClass: 'bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44]',
-    iconBg: 'bg-[#F0EAE3] text-[#9A8073]',
+    cardClass: 'border-line hover:border-line-strong',
+    btnClass: 'bg-sunken hover:bg-line text-ink-body',
+    iconBg: 'bg-sunken text-taupe',
   },
   pro: {
     icon: Zap,
     badge: undefined,
-    badgeClass: '',
-    cardClass: 'border-[#EBE6E0] hover:border-[#D1C7BD]',
-    btnClass: 'bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44]',
-    iconBg: 'bg-[#F0EAE3] text-[#9A8073]',
+    cardClass: 'border-line hover:border-line-strong',
+    btnClass: 'bg-sunken hover:bg-line text-ink-body',
+    iconBg: 'bg-sunken text-taupe',
   },
   premium: {
     icon: Crown,
     badge: 'Most Popular',
-    badgeClass: 'bg-gradient-to-r from-amber-500 to-amber-400 text-white',
-    cardClass: 'border-amber-400 ring-1 ring-amber-300 shadow-[0_0_32px_rgba(251,191,36,0.15)]',
-    btnClass: 'bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-white shadow-md',
-    iconBg: 'bg-amber-50 text-amber-600',
+    cardClass: 'border-taupe ring-1 ring-taupe/30',
+    btnClass: 'bg-taupe hover:bg-taupe-hover text-white',
+    iconBg: 'bg-sunken text-taupe',
   },
 };
 
@@ -107,40 +108,38 @@ function UsageBar({ label, used, max, icon: Icon }: {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2 text-[#524A44]">
-          <Icon size={14} className="text-[#9A8073]" />
+        <div className="flex items-center gap-2 text-ink-body">
+          <Icon size={14} className="text-taupe" />
           <span className="font-medium">{label}</span>
         </div>
-        <span className={`text-xs font-semibold ${isAtLimit ? 'text-[#B26959]' : 'text-[#827A73]'}`}>
-          {used} / {max === null ? '∞' : max}
-        </span>
+        {max === null ? (
+          <span className="text-xs font-semibold text-sage">{used} used · Unlimited</span>
+        ) : (
+          <span className={`text-xs font-semibold ${isAtLimit ? 'text-danger' : 'text-ink-muted'}`}>
+            {used} / {max}
+          </span>
+        )}
       </div>
-      <div className="h-2 bg-[#F0EAE3] rounded-full overflow-hidden">
-        {max !== null && (
+      {/* A full-width bar for "unlimited" used to render as solid amber —
+          visually indistinguishable from "at capacity, warning," the exact
+          opposite of what unlimited means. Unlimited gets no progress bar
+          at all now, just the label above. */}
+      {max !== null && (
+        <div className="h-2 bg-sunken rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              isAtLimit ? 'bg-[#B26959]' : pct > 75 ? 'bg-amber-400' : 'bg-[#9A8073]'
+              isAtLimit ? 'bg-danger' : pct > 75 ? 'bg-amber-400' : 'bg-taupe'
             }`}
             style={{ width: `${pct}%` }}
           />
-        )}
-        {max === null && (
-          <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 w-full opacity-40" />
-        )}
-      </div>
+        </div>
+      )}
       {isAtLimit && max !== null && (
-        <p className="text-[11px] text-[#B26959]">Limit reached — upgrade to add more.</p>
+        <p className="text-[11px] text-danger">Limit reached — upgrade to add more.</p>
       )}
     </div>
   );
 }
-
-// ── Mock billing history (replace with real API when available) ───────────────
-const MOCK_HISTORY = [
-  { id: 1, date: '2026-07-01', description: 'Pro Plan — Monthly', amount: 799,  status: 'paid' },
-  { id: 2, date: '2026-06-01', description: 'Pro Plan — Monthly', amount: 799,  status: 'paid' },
-  { id: 3, date: '2026-05-01', description: 'Basic Plan — Monthly', amount: 299, status: 'paid' },
-];
 
 export default function BillingPage() {
   const { shop, user } = useAuthStore();
@@ -228,18 +227,18 @@ export default function BillingPage() {
     return (
       <div className="space-y-6">
         <div>
-          <div className="h-7 w-48 bg-[#EBE6E0] rounded-md animate-pulse" />
-          <div className="h-4 w-96 bg-[#EBE6E0] rounded-md animate-pulse mt-2" />
+          <div className="h-7 w-48 bg-line rounded-md animate-pulse" />
+          <div className="h-4 w-96 bg-line rounded-md animate-pulse mt-2" />
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-3xl p-8 border border-[#EBE6E0] shadow-sm flex flex-col h-full space-y-6 animate-pulse">
+            <div key={i} className="bg-surface rounded-3xl p-8 border border-line flex flex-col h-full space-y-6 animate-pulse">
               <div className="space-y-4">
-                <div className="h-10 w-10 bg-[#FAF6F3] rounded-xl" />
-                <div className="h-6 w-32 bg-[#EBE6E0] rounded-md" />
-                <div className="h-4 w-full bg-[#FAF6F3] rounded-md" />
+                <div className="h-10 w-10 bg-canvas rounded-xl" />
+                <div className="h-6 w-32 bg-line rounded-md" />
+                <div className="h-4 w-full bg-canvas rounded-md" />
               </div>
-              <div className="h-10 w-full bg-[#FAF6F3] rounded-xl mt-6" />
+              <div className="h-10 w-full bg-canvas rounded-xl mt-6" />
             </div>
           ))}
         </div>
@@ -276,18 +275,17 @@ export default function BillingPage() {
     return 'Select Plan';
   };
 
-  const statusBadge: Record<string, string> = {
-    active:    'bg-emerald-50 text-emerald-700 border-emerald-100',
-    trial:     'bg-blue-50   text-blue-700   border-blue-100',
-    cancelled: 'bg-rose-50   text-rose-700   border-rose-100',
-    expired:   'bg-[#F0EAE3] text-[#827A73]  border-[#EBE6E0]',
+  const statusVariant: Record<string, 'success' | 'accent' | 'danger' | 'neutral'> = {
+    active: 'success',
+    trial: 'accent',
+    cancelled: 'danger',
+    expired: 'neutral',
   };
-  const statusColor = statusBadge[currentSubscription?.status ?? ''] ?? statusBadge.expired;
 
   const getPlanIconData = () => {
-    if (activePlanSlug === 'premium') return { bgClass: 'bg-amber-50 text-amber-500', Icon: Crown };
-    if (activePlanSlug === 'pro')     return { bgClass: 'bg-[#F0EAE3] text-[#9A8073]', Icon: Zap };
-    return { bgClass: 'bg-[#F0EAE3] text-[#9A8073]', Icon: CreditCard };
+    if (activePlanSlug === 'premium') return { bgClass: 'bg-sunken text-taupe', Icon: Crown };
+    if (activePlanSlug === 'pro')     return { bgClass: 'bg-sunken text-taupe', Icon: Zap };
+    return { bgClass: 'bg-sunken text-taupe', Icon: CreditCard };
   };
   const { bgClass: iconBgClass, Icon: PlanIcon } = getPlanIconData();
 
@@ -301,8 +299,8 @@ export default function BillingPage() {
     <div className="max-w-6xl mx-auto space-y-10">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#2D2A26] mb-1">Billing &amp; Plans</h1>
-        <p className="text-[#827A73]">Manage your subscription, track usage, and scale your shop.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-ink mb-1">Billing &amp; Plans</h1>
+        <p className="text-ink-muted">Manage your subscription, track usage, and scale your shop.</p>
       </div>
 
       {/* Expiry alert */}
@@ -319,31 +317,33 @@ export default function BillingPage() {
 
       {/* ── SECTION A: Current Plan ─────────────────────────────────────────── */}
       <section className="space-y-4">
-        <h2 className="text-base font-semibold text-[#2D2A26] flex items-center gap-2">
-          <CreditCard size={16} className="text-[#9A8073]" /> Current Plan
-        </h2>
+        <p className="text-xs font-semibold uppercase tracking-widest text-taupe flex items-center gap-1.5">
+          <CreditCard size={12} /> Current Plan
+        </p>
 
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl shadow-sm overflow-hidden">
-          {/* Plan identity row */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-6 border-b border-[#EBE6E0]">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${iconBgClass}`}>
+        {/* Hero identity block — the plan name/price is the one fact this
+            whole page exists to answer, so it gets the taupe-filled
+            treatment instead of sitting flush with a data table. */}
+        <div className="bg-taupe rounded-2xl overflow-hidden text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-6">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-white/15">
               <PlanIcon size={22} />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-[#A8A19A] mb-0.5">Active Subscription</p>
-              <h3 className="text-xl font-bold text-[#2D2A26]">
+              <p className="text-xs text-white/70 mb-0.5">Active Subscription</p>
+              <h3 className="font-heading text-2xl font-bold">
                 {currentSubscription?.plan?.name ?? 'No Active Plan'}
               </h3>
             </div>
             <div className="text-right flex flex-col items-end gap-2">
               {currentSubscription?.plan?.price_monthly != null && (
-                <p className="text-2xl font-bold text-[#2D2A26]">
+                <p className="font-heading text-3xl font-bold">
                   ₱{currentSubscription.plan.price_monthly.toLocaleString()}
-                  <span className="text-sm font-normal text-[#A8A19A]">/mo</span>
+                  <span className="text-sm font-normal text-white/70">/mo</span>
                 </p>
               )}
               {currentSubscription?.status && (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColor}`}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/15">
                   <CheckCircle size={12} />
                   {currentSubscription.status.toUpperCase()}
                 </span>
@@ -352,12 +352,12 @@ export default function BillingPage() {
           </div>
 
           {/* Billing details grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#EBE6E0]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-white/15 border-t border-white/15">
             <div className="p-5 flex items-start gap-3">
-              <Calendar size={16} className="text-[#9A8073] mt-0.5 shrink-0" />
+              <Calendar size={16} className="text-white/70 mt-0.5 shrink-0" />
               <div>
-                <p className="text-[11px] text-[#A8A19A] uppercase tracking-wider font-semibold mb-0.5">Renewal Date</p>
-                <p className="text-sm font-semibold text-[#2D2A26]">
+                <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">Renewal Date</p>
+                <p className="text-sm font-semibold">
                   {currentSubscription?.ends_at
                     ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
                     : '—'}
@@ -365,22 +365,22 @@ export default function BillingPage() {
               </div>
             </div>
             <div className="p-5 flex items-start gap-3">
-              <TrendingUp size={16} className="text-[#9A8073] mt-0.5 shrink-0" />
+              <TrendingUp size={16} className="text-white/70 mt-0.5 shrink-0" />
               <div>
-                <p className="text-[11px] text-[#A8A19A] uppercase tracking-wider font-semibold mb-0.5">Billing Cycle</p>
-                <p className="text-sm font-semibold text-[#2D2A26] capitalize">
+                <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">Billing Cycle</p>
+                <p className="text-sm font-semibold capitalize">
                   {currentSubscription?.billing_cycle ?? 'Monthly'}
                 </p>
               </div>
             </div>
             <div className="p-5 flex items-start gap-3">
-              <Clock size={16} className="text-[#9A8073] mt-0.5 shrink-0" />
+              <Clock size={16} className="text-white/70 mt-0.5 shrink-0" />
               <div>
-                <p className="text-[11px] text-[#A8A19A] uppercase tracking-wider font-semibold mb-0.5">Days Remaining</p>
+                <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">Days Remaining</p>
                 <p className={`text-sm font-semibold ${
                   daysUntilExpiry !== null && daysUntilExpiry <= 7
-                    ? 'text-[#B26959]'
-                    : 'text-[#2D2A26]'
+                    ? 'text-amber-200'
+                    : 'text-white'
                 }`}>
                   {daysUntilExpiry !== null
                     ? daysUntilExpiry <= 0 ? 'Expired' : `${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`
@@ -394,20 +394,20 @@ export default function BillingPage() {
 
       {/* ── SECTION B: Feature Usage ────────────────────────────────────────── */}
       <section className="space-y-4">
-        <h2 className="text-base font-semibold text-[#2D2A26] flex items-center gap-2">
-          <TrendingUp size={16} className="text-[#9A8073]" /> Feature Usage
-        </h2>
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm space-y-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-taupe flex items-center gap-1.5">
+          <TrendingUp size={12} /> Feature Usage
+        </p>
+        <div className="bg-surface border border-line rounded-2xl p-6 space-y-5">
           <UsageBar label="Branches"       used={usageCounts.branches} max={limits.branches} icon={Building2} />
           <UsageBar label="Staff Accounts" used={usageCounts.staff}    max={limits.staff}    icon={Users} />
           <UsageBar label="Services"       used={usageCounts.services} max={limits.services} icon={Scissors} />
           {activePlanSlug !== 'premium' && (
-            <div className="pt-2 border-t border-[#EBE6E0] flex items-center justify-between">
-              <p className="text-xs text-[#827A73]">Need more? Upgrade your plan to unlock higher limits.</p>
+            <div className="pt-2 border-t border-line flex items-center justify-between">
+              <p className="text-xs text-ink-muted">Need more? Upgrade your plan to unlock higher limits.</p>
               <button
                 type="button"
                 onClick={() => document.getElementById('plan-btn-premium')?.scrollIntoView({ behavior: 'smooth' })}
-                className="flex items-center gap-1 text-xs font-semibold text-[#9A8073] hover:text-[#2D2A26] transition-colors"
+                className="flex items-center gap-1 text-xs font-semibold text-taupe hover:text-ink transition-colors"
               >
                 Upgrade <ChevronRight size={13} />
               </button>
@@ -418,9 +418,9 @@ export default function BillingPage() {
 
       {/* ── SECTION C: Choose Your Plan ─────────────────────────────────────── */}
       <section className="space-y-5">
-        <h2 className="text-base font-semibold text-[#2D2A26] flex items-center gap-2">
-          <Sparkles size={16} className="text-amber-500" /> Choose Your Plan
-        </h2>
+        <p className="text-xs font-semibold uppercase tracking-widest text-taupe flex items-center gap-1.5">
+          <Crown size={12} /> Choose Your Plan
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map(plan => {
@@ -434,16 +434,16 @@ export default function BillingPage() {
               <div
                 key={plan.id}
                 className={`relative bg-white rounded-2xl p-6 flex flex-col border transition-all duration-200 ${
-                  isActive ? 'border-[#9A8073] ring-1 ring-[#9A8073]' : meta.cardClass
+                  isActive ? 'border-taupe ring-1 ring-taupe' : meta.cardClass
                 }`}
               >
                 {meta.badge && !isActive && (
-                  <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 shadow ${meta.badgeClass}`}>
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 bg-white border border-taupe text-taupe">
                     <Crown size={11} /> {meta.badge}
                   </div>
                 )}
                 {isActive && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#9A8073] text-white flex items-center gap-1 shadow">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-taupe text-white flex items-center gap-1">
                     <Check size={11} /> Active
                   </div>
                 )}
@@ -453,19 +453,19 @@ export default function BillingPage() {
                     <Icon size={18} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[#2D2A26]">{plan.name}</h3>
-                    <p className="text-xs text-[#A8A19A]">{plan.description}</p>
+                    <h3 className="text-lg font-bold text-ink">{plan.name}</h3>
+                    <p className="text-xs text-ink-faint">{plan.description}</p>
                   </div>
                 </div>
 
                 <div className="mb-5">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-[#2D2A26]">
+                    <span className="text-3xl font-extrabold text-ink">
                       ₱{plan.price_monthly.toLocaleString()}
                     </span>
-                    <span className="text-sm text-[#A8A19A]">/mo</span>
+                    <span className="text-sm text-ink-faint">/mo</span>
                   </div>
-                  <p className="text-xs text-[#A8A19A] mt-0.5">
+                  <p className="text-xs text-ink-faint mt-0.5">
                     ₱{(plan.price_monthly * 10).toLocaleString()}/yr (save 2 months)
                   </p>
                 </div>
@@ -473,8 +473,8 @@ export default function BillingPage() {
                 <div className="space-y-2.5 mb-6 flex-1">
                   {features.map(f => (
                     <div key={f} className="flex items-start gap-2.5">
-                      <ShieldCheck size={15} className={`shrink-0 mt-0.5 ${plan.slug === 'premium' ? 'text-amber-500' : 'text-taupe'}`} />
-                      <span className="text-[13px] text-[#524A44]">{f}</span>
+                      <ShieldCheck size={15} className="shrink-0 mt-0.5 text-taupe" />
+                      <span className="text-[13px] text-ink-body">{f}</span>
                     </div>
                   ))}
                 </div>
@@ -485,7 +485,7 @@ export default function BillingPage() {
                   disabled={isActive || upgradingTo !== null}
                   className={`w-full py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
                     isActive
-                      ? 'bg-[#F0EAE3] text-[#A8A19A] cursor-not-allowed'
+                      ? 'bg-sunken text-ink-faint cursor-not-allowed'
                       : meta.btnClass
                   }`}
                 >
@@ -499,21 +499,21 @@ export default function BillingPage() {
 
       {/* ── SECTION D: Plan Comparison Table ────────────────────────────────── */}
       <section className="space-y-4">
-        <h2 className="text-base font-semibold text-[#2D2A26] flex items-center gap-2">
-          <ShieldCheck size={16} className="text-[#9A8073]" /> Compare Plans
-        </h2>
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-widest text-taupe flex items-center gap-1.5">
+          <ShieldCheck size={12} /> Compare Plans
+        </p>
+        <div className="bg-surface border border-line rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#FAF6F3] border-b border-[#EBE6E0]">
-                <th className="text-left px-5 py-3.5 text-[#827A73] font-semibold text-[12px] uppercase tracking-wider w-1/4">Feature</th>
+              <tr className="bg-canvas border-b border-line">
+                <th className="text-left px-5 py-3.5 text-ink-muted font-semibold text-[12px] uppercase tracking-wider w-1/4">Feature</th>
                 {['basic', 'pro', 'premium'].map(slug => (
                   <th key={slug} className={`text-center px-5 py-3.5 text-[12px] font-bold uppercase tracking-wider ${
-                    activePlanSlug === slug ? 'text-[#9A8073]' : 'text-[#A8A19A]'
+                    activePlanSlug === slug ? 'text-taupe' : 'text-ink-faint'
                   }`}>
                     {slug.charAt(0).toUpperCase() + slug.slice(1)}
                     {activePlanSlug === slug && (
-                      <span className="ml-1.5 text-[10px] bg-[#9A8073] text-white px-1.5 py-0.5 rounded-full normal-case font-semibold">
+                      <span className="ml-1.5 text-[10px] bg-taupe text-white px-1.5 py-0.5 rounded-full normal-case font-semibold">
                         current
                       </span>
                     )}
@@ -521,19 +521,19 @@ export default function BillingPage() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EBE6E0]">
+            <tbody className="divide-y divide-line">
               {/* Sourced live from each plan's real max_staff instead of a
                   hardcoded row — this is exactly the number the backend
                   actually enforces when adding staff, so it can't drift out
                   of sync with what StaffController::store() allows. */}
-              <tr className="hover:bg-[#FAF6F3]/50 transition-colors">
-                <td className="px-5 py-3.5 text-[#524A44] font-medium">Staff Accounts</td>
+              <tr className="hover:bg-canvas/50 transition-colors">
+                <td className="px-5 py-3.5 text-ink-body font-medium">Staff Accounts</td>
                 {(['basic', 'pro', 'premium'] as const).map(slug => {
                   const planMaxStaff = plans.find(p => p.slug === slug)?.max_staff;
                   const label = planMaxStaff === -1 || planMaxStaff == null ? 'Unlimited' : `Up to ${planMaxStaff}`;
                   return (
                     <td key={slug} className={`px-5 py-3.5 text-center ${
-                      activePlanSlug === slug ? 'text-[#2D2A26] font-semibold' : 'text-[#827A73]'
+                      activePlanSlug === slug ? 'text-ink font-semibold' : 'text-ink-muted'
                     }`}>
                       {label}
                     </td>
@@ -541,11 +541,11 @@ export default function BillingPage() {
                 })}
               </tr>
               {COMPARE_ROWS.map((row, i) => (
-                <tr key={i} className="hover:bg-[#FAF6F3]/50 transition-colors">
-                  <td className="px-5 py-3.5 text-[#524A44] font-medium">{row.label}</td>
+                <tr key={i} className="hover:bg-canvas/50 transition-colors">
+                  <td className="px-5 py-3.5 text-ink-body font-medium">{row.label}</td>
                   {(['basic', 'pro', 'premium'] as const).map(slug => (
                     <td key={slug} className={`px-5 py-3.5 text-center ${
-                      activePlanSlug === slug ? 'text-[#2D2A26] font-semibold' : 'text-[#827A73]'
+                      activePlanSlug === slug ? 'text-ink font-semibold' : 'text-ink-muted'
                     }`}>
                       {(row as Record<string, string>)[slug] === '—' ? (
                         <span className="text-[#EBE6E0]">—</span>
@@ -563,47 +563,49 @@ export default function BillingPage() {
 
       {/* ── SECTION E: Billing History ───────────────────────────────────────── */}
       <section className="space-y-4">
-        <h2 className="text-base font-semibold text-[#2D2A26] flex items-center gap-2">
-          <History size={16} className="text-[#9A8073]" /> Billing History
-        </h2>
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-          {MOCK_HISTORY.length === 0 ? (
-            <div className="text-center py-12 text-[#A8A19A] text-sm">No billing history yet.</div>
-          ) : (
+        <p className="text-xs font-semibold uppercase tracking-widest text-taupe flex items-center gap-1.5">
+          <History size={12} /> Subscription History
+        </p>
+        <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+          {/* No per-transaction payment ledger exists on the backend yet —
+              this used to show 3 fabricated past charges that had nothing to
+              do with the actual shop. Showing the one real record that does
+              exist (the current subscription itself) instead of inventing
+              history that was never real. */}
+          {currentSubscription ? (
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#FAF6F3] border-b border-[#EBE6E0]">
-                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-[#827A73]">Date</th>
-                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-[#827A73]">Description</th>
-                  <th className="text-right px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-[#827A73]">Amount</th>
-                  <th className="text-center px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-[#827A73]">Status</th>
+                <tr className="bg-canvas border-b border-line">
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink-muted">Started</th>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink-muted">Plan</th>
+                  <th className="text-right px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink-muted">Rate</th>
+                  <th className="text-center px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink-muted">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EBE6E0]">
-                {MOCK_HISTORY.map(entry => (
-                  <tr key={entry.id} className="hover:bg-[#FAF6F3]/50 transition-colors">
-                    <td className="px-5 py-3.5 text-[#524A44]">
-                      {new Date(entry.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </td>
-                    <td className="px-5 py-3.5 text-[#2D2A26] font-medium">{entry.description}</td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-[#2D2A26]">₱{entry.amount.toLocaleString()}</td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide ${
-                        entry.status === 'paid'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-[#F0EAE3] text-[#827A73] border border-[#EBE6E0]'
-                      }`}>
-                        {entry.status === 'paid' && <CheckCircle size={10} />}
-                        {entry.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-line">
+                <tr>
+                  <td className="px-5 py-3.5 text-ink-body">
+                    {currentSubscription.starts_at
+                      ? new Date(currentSubscription.starts_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '—'}
+                  </td>
+                  <td className="px-5 py-3.5 text-ink font-medium">{currentSubscription.plan?.name ?? '—'}</td>
+                  <td className="px-5 py-3.5 text-right font-semibold text-ink">
+                    ₱{(currentSubscription.plan?.price_monthly ?? 0).toLocaleString()}/mo
+                  </td>
+                  <td className="px-5 py-3.5 text-center">
+                    <Badge variant={statusVariant[currentSubscription.status] ?? 'neutral'}>
+                      {currentSubscription.status}
+                    </Badge>
+                  </td>
+                </tr>
               </tbody>
             </table>
+          ) : (
+            <div className="text-center py-12 text-ink-faint text-sm">No subscription history yet.</div>
           )}
-          <div className="px-5 py-3.5 border-t border-[#EBE6E0] bg-[#FAF6F3]">
-            <p className="text-[11px] text-[#A8A19A]">
+          <div className="px-5 py-3.5 border-t border-line bg-canvas">
+            <p className="text-[11px] text-ink-faint">
               Payments are simulated — no actual charges are made during this capstone phase.
             </p>
           </div>

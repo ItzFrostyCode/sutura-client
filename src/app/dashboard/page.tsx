@@ -6,22 +6,19 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
 import Link from 'next/link';
 
-import QuickJobModal from '@/components/jobs/QuickJobModal';
 import { AnalyticsData, JobItem, StaffPresence } from '@/components/dashboard/dashboardHelpers';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import DashboardAlerts from '@/components/dashboard/DashboardAlerts';
-import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
-import ShopVisibilityPill from '@/components/dashboard/ShopVisibilityPill';
+import ActionQueue from '@/components/dashboard/ActionQueue';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import StaffOnline from '@/components/dashboard/StaffOnline';
-import RecentReviews from '@/components/dashboard/RecentReviews';
 import NewsView from '@/components/dashboard/NewsView';
 import WelcomeView from '@/components/dashboard/WelcomeView';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
-  Calendar, Scissors, Users, AlertTriangle, CreditCard,
-  PackageCheck, Zap, Clock, CheckCircle2, TrendingUp, PauseCircle,
+  Calendar, Scissors, Users, CreditCard,
+  ShoppingBag, Package, UserCog, Building2,
 } from 'lucide-react';
+
 export default function DashboardPage() {
   const { shop, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
@@ -32,23 +29,21 @@ export default function DashboardPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState('this_month');
-  const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'news' | 'welcome'>('dashboard');
 
   // Visibility toggle
   const [shopVisible, setShopVisible] = useState<boolean | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
 
-  // Balance alert
+  // Completed-but-unpaid jobs, from a dedicated uncapped backend query
   const [unpaidJobs, setUnpaidJobs] = useState<JobItem[]>([]);
-  const [balanceExpanded, setBalanceExpanded] = useState(false);
 
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
 
   const fetchOnlineStaff = useCallback(() => {
     // Staff list/management is owner-only (matches GET /shops/{shop}/staff) —
-    // staff/branch managers share this dashboard now and shouldn't 403 on it.
+    // staff/branch managers share this dashboard and shouldn't 403 on it.
     if (!shop?.id || !isShopOwner) return;
     api.get(`/shops/${shop.id}/staff`)
       .then(res => {
@@ -58,9 +53,8 @@ export default function DashboardPage() {
         const online = raw
           // StaffController::index has no server-side branch_id filter (unlike
           // jobs/appointments/analytics), so this widget filters client-side —
-          // otherwise selecting a branch left "Online Staff" silently still
-          // showing every branch's staff, the same gap already fixed for
-          // Reports/Payments/Orders.
+          // otherwise selecting a branch left "Online Staff" silently showing
+          // every branch's staff.
           .filter(s => selectedBranchId === null || s.shop_branch_id === selectedBranchId)
           .filter(s => {
             if (!s.user?.last_seen_at) return false;
@@ -76,13 +70,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (shop?.id) {
       setTimeout(() => setLoading(true), 0);
-      // Home now respects the header's branch selector too (user request) —
-      // matches AnalyticsController::index/JobOrderController::index's
-      // existing branch_id support, the same param Jobs/Appointments/
-      // Reports already send. Omitted entirely (not sent as null/empty)
-      // when "All Branches" is selected, since the backend's own
-      // $request->filled('branch_id') check treats an empty value the same
-      // as not sending it at all — this is just being explicit about it.
+      // Home respects the header's branch selector — matches
+      // AnalyticsController::index's branch_id support. Omitted entirely when
+      // "All Branches" is selected, since the backend's $request->filled()
+      // check treats an empty value the same as absent.
       const params: Record<string, string | number> = {};
       if (selectedBranchId !== null) {
         params.branch_id = selectedBranchId;
@@ -92,25 +83,18 @@ export default function DashboardPage() {
         api.get(`/shops/${shop.id}/analytics`, { params })
           .then(res => {
             setData(res.data.data);
-            // Was re-derived client-side from the jobs fetch below, which is
-            // capped at per_page=200 — a shop with more historical job orders
-            // than that could have an older completed-unpaid job silently
-            // drop out of the count, same undercounting shape as the
-            // notification badge bug. completed_unpaid_jobs comes from a
-            // dedicated, uncapped backend query instead.
+            // From a dedicated, uncapped backend query — was previously
+            // re-derived from a per_page=200 jobs fetch, which silently
+            // dropped older completed-unpaid jobs from the count.
             setUnpaidJobs(res.data.data?.completed_unpaid_jobs || []);
             setLoading(false);
           })
           .catch(() => setLoading(false));
       } else {
-        // Deferred (not called synchronously) so it resolves after the
-        // setLoading(true) scheduled above, instead of being clobbered by it.
         setTimeout(() => setLoading(false), 0);
       }
       // Shop visibility toggle is owner-only (matches PUT /shops/{shop}).
-      // Reads/writes `is_hidden` (inverted) — the field this dashboard used
-      // to call `is_visible` was never actually wired up on the backend, so
-      // this toggle silently did nothing; consolidated onto the real field.
+      // Reads/writes `is_hidden` (inverted).
       if (isShopOwner) {
         api.get(`/shops/${shop.id}`)
           .then(res => setShopVisible(!res.data.data?.is_hidden))
@@ -131,12 +115,9 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [shop?.id, fetchOnlineStaff]);
 
-  // The backend has no concept of a 'period' string at all — it only reads
-  // start_date/end_date (see AnalyticsController::index) — so sending
-  // period=this_year etc. directly used to be silently ignored: every
-  // period button re-fetched the exact same "current month" data. Convert
-  // to real dates client-side instead, matching the pattern already used by
-  // the Reports page's own getDateRangeForPeriod().
+  // The backend reads start_date/end_date, not a 'period' string — converting
+  // client-side (same pattern as the Reports page) so the period buttons
+  // actually re-scope the query instead of silently refetching this month.
   const getDateRangeForChartPeriod = (period: string): { start_date?: string; end_date?: string } => {
     const now = new Date();
     if (period === 'this_month') {
@@ -192,397 +173,177 @@ export default function DashboardPage() {
     }
   };
 
-  // Due Today / Due This Week — from dedicated, unbounded backend queries,
-  // not re-derived from the capped (per_page=200) allJobs fetch. A
-  // long-lead-time order (a bridal gown booked months ahead, say) can have
-  // been *created* well outside that fetch's recency window while still
-  // being due today — confirmed live: a job backdated 6 months with today's
-  // due_date was invisible to the old client-side filter, found correctly
-  // by this one. Same undercounting shape as the notification badge,
-  // Balance Collection, and downpayment alerts already fixed.
+  // All from dedicated, unbounded backend queries — never re-derived from a
+  // capped list fetch (a long-lead-time order can be created well outside a
+  // recency window while still being due today).
   const dueToday = data?.due_today_jobs ?? [];
   const dueThisWeek = data?.due_this_week_jobs ?? [];
-
-  // Today's appointments now come from analytics data
   const todayAppointments = data?.today_appointments ?? [];
-
-  // Active jobs with no downpayment collected — from a dedicated, unbounded
-  // backend query (pending_dp_jobs_list), not re-derived from the capped
-  // (per_page=200) allJobs fetch. Same undercounting risk as the
-  // notification badge and Balance Collection alert bugs already fixed:
-  // a shop with more than 200 historical job orders could have an older
-  // still-active unpaid job silently drop out of a client-side filter.
   const pendingDpJobs = data?.pending_dp_jobs_list ?? [];
-
-  // Needs Attention cards
-  const needsAttentionCards = [
-    {
-      id: 'overdue',
-      count: data?.overdue_jobs ?? 0,
-      label: 'Overdue Orders',
-      sub: 'Past due date, not completed',
-      icon: AlertTriangle,
-      href: '/dashboard/jobs',
-      color: 'bg-red-50 border-red-200 text-red-700',
-      iconColor: 'bg-red-100 text-red-600',
-    },
-    {
-      id: 'deposits',
-      count: data?.pending_deposit_jobs ?? 0,
-      label: 'Pending Deposits',
-      sub: 'No payment received yet',
-      icon: CreditCard,
-      href: '/dashboard/payments?tab=job_balances',
-      color: 'bg-amber-50 border-amber-200 text-amber-800',
-      iconColor: 'bg-amber-100 text-amber-600',
-    },
-    {
-      id: 'pickup',
-      count: data?.ready_for_pickup_jobs ?? 0,
-      label: 'Ready for Pickup',
-      sub: 'Waiting for customer collection',
-      icon: PackageCheck,
-      href: '/dashboard/jobs',
-      color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
-      iconColor: 'bg-emerald-100 text-emerald-600',
-    },
-    {
-      id: 'rush',
-      count: data?.rush_jobs_active ?? 0,
-      label: 'Active Rush Orders',
-      sub: 'Expedited priority production',
-      icon: Zap,
-      href: '/dashboard/jobs',
-      color: 'bg-violet-50 border-violet-200 text-violet-800',
-      iconColor: 'bg-violet-100 text-violet-600',
-    },
-    // Both of these already exist as full aging-alert lists on Reports (with
-    // their own daily digest notifications) — Needs Attention only showed 4
-    // of the 6 real categories the system tracks, which read as incomplete
-    // next to Reports' own "Unclaimed Pickups"/"Jobs On Hold" tables.
-    {
-      id: 'unclaimed',
-      count: data?.unclaimed_pickups?.length ?? 0,
-      label: 'Unclaimed Pickups',
-      sub: 'Ready 14+ days, not yet collected',
-      icon: Clock,
-      href: '/dashboard/reports',
-      color: 'bg-orange-50 border-orange-200 text-orange-800',
-      iconColor: 'bg-orange-100 text-orange-600',
-    },
-    {
-      id: 'on_hold',
-      count: data?.jobs_on_hold?.length ?? 0,
-      label: 'Jobs On Hold',
-      sub: 'Paused 7+ days',
-      icon: PauseCircle,
-      href: '/dashboard/reports',
-      color: 'bg-slate-50 border-slate-200 text-slate-700',
-      iconColor: 'bg-slate-100 text-slate-600',
-    },
-  ].filter(c => c.count > 0);
 
   if (loading) {
     return <DashboardSkeleton />;
   }
 
+  const peso = (v: unknown) =>
+    `₱${Number(v ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+
+  // ── Metric chips: compact inline counters replacing the old full-row DashboardMetrics ──
+  const metricChips = [
+    { label: 'Orders', value: data?.total_jobs || 0, icon: Scissors },
+    { label: 'Collections', value: data?.total_collections || 0, icon: ShoppingBag },
+    { label: 'Customers', value: data?.total_customers || 0, icon: Users },
+    { label: 'Appointments', value: data?.total_appointments || 0, icon: Calendar },
+    { label: 'Services', value: data?.total_services || 0, icon: Package },
+    { label: 'Staff', value: data?.total_staff || 0, icon: UserCog },
+    { label: 'Branches', value: data?.total_branches || 0, icon: Building2 },
+  ];
+
   return (
-    <div className="space-y-6 pb-12 text-[#2D2A26]">
-      {/* Header */}
-      <DashboardHeader userName={user?.name || ''} activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="space-y-6">
+      {/* ── Header with tabs ──────────────────────────────────────────────── */}
+      <DashboardHeader
+        userName={user?.name || ''}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        shopVisible={shopVisible}
+        toggleVisibility={toggleVisibility}
+        visibilityLoading={visibilityLoading}
+      />
 
       {activeTab === 'news' && <NewsView />}
       {activeTab === 'welcome' && <WelcomeView />}
 
       {activeTab === 'dashboard' && (
-      <>
-      {/* ── Needs Attention Section ──────────────────────────────────────────── */}
-      {needsAttentionCards.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#B26959] mb-3 flex items-center gap-1.5">
-            <AlertTriangle size={12} />
-            Needs Attention
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {needsAttentionCards.map(card => (
-              <Link
-                key={card.id}
-                href={card.href}
-                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm flex-1 min-w-[160px] ${card.color}`}
-              >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.iconColor}`}>
-                  <card.icon size={16} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-2xl font-bold leading-none mb-0.5">{card.count}</p>
-                  <p className="text-xs font-semibold truncate">{card.label}</p>
-                  <p className="text-[10px] opacity-70 truncate">{card.sub}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+        <>
+      {/* ── Section 2: Financial Snapshot + Metric Chips ─────────────────── */}
+      <section>
+        <h2 className="text-eyebrow-accent mb-3">Financial Snapshot</h2>
 
-      {/* ── Financial Snapshot Row ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#827A73]">Financial Snapshot</p>
-        <ShopVisibilityPill shopVisible={shopVisible} toggleVisibility={toggleVisibility} visibilityLoading={visibilityLoading} />
-      </div>
-      {/* Sharp corners, flush tiles sharing hairline dividers instead of
-          gapped rounded cards — matches the ink-economy house style
-          established on the print pages (no boxed-in-a-box sections). */}
-      <div className="grid grid-cols-2 md:grid-cols-4 bg-white shadow-sm border border-[#EBE6E0] divide-x divide-y md:divide-y-0 divide-[#EBE6E0]">
-        {[
-          {
-            label: 'Today\'s Revenue',
-            value: `₱${(data?.today_revenue ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-            icon: TrendingUp,
-            color: 'text-[#7A8B76]',
-            bg: 'bg-[#7A8B76]/10',
-          },
-          {
-            label: 'Outstanding Balance',
-            value: `₱${(data?.total_outstanding_balance ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-            icon: CreditCard,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-          },
-          {
-            label: 'Active Orders',
-            value: (data?.total_jobs ?? 0) - (data?.completed_jobs ?? 0),
-            icon: Scissors,
-            color: 'text-[#9A8073]',
-            bg: 'bg-[#9A8073]/10',
-          },
-          {
-            label: 'Today\'s Appointments',
-            value: todayAppointments.length,
-            icon: Calendar,
-            color: 'text-violet-600',
-            bg: 'bg-violet-50',
-          },
-        ].map((m) => (
-          <div key={m.label} className="p-5 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-[#827A73] uppercase tracking-wider">{m.label}</p>
-              <div className={`w-8 h-8 ${m.bg} flex items-center justify-center`}>
-                <m.icon size={16} className={m.color} />
+        {/* Four equal stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Outstanding Balance — hero card */}
+          <div className="bg-taupe rounded-xl p-5 text-white flex flex-col justify-between min-h-[120px]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
+              Outstanding Balance
+            </p>
+            <p className="text-figure text-2xl sm:text-3xl font-bold mt-3 break-words">
+              {peso(data?.total_outstanding_balance)}
+            </p>
+          </div>
+
+          {/* Secondary stats */}
+          {[
+            { label: "Today's Revenue", value: peso(data?.today_revenue), icon: CreditCard },
+            { label: 'Active Orders', value: (data?.total_jobs ?? 0) - (data?.completed_jobs ?? 0), icon: Scissors },
+            { label: "Today's Appointments", value: todayAppointments.length, icon: Calendar },
+          ].map(stat => (
+            <div key={stat.label} className="bg-surface border border-line rounded-xl p-5 flex flex-col justify-between min-h-[120px]">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">{stat.label}</p>
+                <stat.icon size={15} className="text-ink-faint shrink-0" />
               </div>
+              <p className="text-figure text-2xl font-semibold text-ink mt-3 break-words">{stat.value}</p>
             </div>
-            <p className="text-2xl font-semibold text-[#2D2A26] tracking-tight">{m.value}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Alerts (Balance Collection + Due Today/Week) */}
-      <DashboardAlerts
+        {/* Inline metric chips */}
+        <div className="flex items-center gap-2 mt-3 overflow-x-auto hide-scrollbar pb-1">
+          {metricChips.map(chip => {
+            const Icon = chip.icon;
+            return (
+              <div
+                key={chip.label}
+                className="flex items-center gap-1.5 bg-surface border border-line rounded-full px-3 py-1.5 shrink-0"
+              >
+                <Icon size={12} className="text-taupe" />
+                <span className="text-[11px] font-medium text-ink-muted">{chip.label}</span>
+                <span className="text-[11px] font-bold text-ink tabular-nums">{chip.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Section 3: Action Queue (includes deadlines) ─────────────────── */}
+      <ActionQueue
+        data={data}
         unpaidJobs={unpaidJobs}
         pendingDpJobs={pendingDpJobs}
-        balanceExpanded={balanceExpanded}
-        setBalanceExpanded={setBalanceExpanded}
         dueToday={dueToday}
         dueThisWeek={dueThisWeek}
       />
 
-      {/* Extended Metrics Row */}
-      <DashboardMetrics data={data} />
+      {/* ── Section 4: Today's Agenda + Staff Online ─────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Appointments — 3 of 5 cols */}
+        <section className="lg:col-span-3 bg-surface border border-line rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
+            <div className="min-w-0">
+              <h2 className="text-eyebrow-accent">Schedule</h2>
+              <p className="text-display text-lg font-semibold text-ink mt-1">Today&apos;s agenda</p>
+            </div>
+            <Link href="/dashboard/appointments" className="text-xs font-semibold text-taupe hover:underline shrink-0">
+              View calendar →
+            </Link>
+          </div>
 
-      {/* Main grid: left 2/3 + right 1/3 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* LEFT COLUMN — Today's Agenda + Quick Actions */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Today's Agenda */}
-          <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-5 pb-4 border-b border-[#EBE6E0]">
-              <div>
-                <h3 className="font-semibold text-[#2D2A26]">Today&apos;s Agenda</h3>
-                <p className="text-xs text-[#A8A19A] mt-0.5">Client bookings and fittings scheduled for today</p>
+          {todayAppointments.length === 0 ? (
+            <div className="px-5 py-10 flex flex-col items-center text-center">
+              <div className="w-11 h-11 rounded-full bg-canvas border border-line flex items-center justify-center mb-3">
+                <Calendar size={18} className="text-ink-faint" />
               </div>
-              <Link href="/dashboard/appointments" className="text-xs font-semibold text-[#9A8073] hover:underline shrink-0">
-                View Calendar →
+              <p className="text-sm text-ink-muted">No appointments scheduled for today.</p>
+              <Link href="/dashboard/appointments" className="mt-3 text-xs font-semibold text-taupe hover:underline">
+                Book an appointment
               </Link>
             </div>
-
-            {todayAppointments.length === 0 ? (
-              <div className="py-10 flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-[#FAF6F3] border border-[#EBE6E0] flex items-center justify-center mb-3">
-                  <Calendar size={20} className="text-[#C5BDBA]" />
-                </div>
-                <p className="text-sm text-[#A8A19A]">No appointments scheduled for today.</p>
-                <Link href="/dashboard/appointments" className="mt-3 text-xs font-semibold text-[#9A8073] hover:underline">
-                  + Book an appointment
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-[#EBE6E0]">
-                {todayAppointments.map((apt) => {
-                  const time = new Date(apt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
-                  return (
-                    <Link
-                      key={apt.id}
-                      href={`/dashboard/appointments`}
-                      className="flex items-center gap-4 py-3 first:pt-0 last:pb-0 hover:bg-[#FAF6F3] -mx-1 px-1 rounded-lg transition-colors"
-                    >
-                      <div className="text-[13px] font-bold text-[#B26959] bg-[#B26959]/5 border border-[#B26959]/10 px-3 py-1.5 rounded-lg shrink-0 w-[72px] text-center">
-                        {time}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#2D2A26] truncate">{apt.customer?.name ?? 'Walk-in'}</p>
-                        <p className="text-xs text-[#827A73]">
-                          {apt.appointment_type?.toUpperCase()} {apt.service ? `• ${apt.service.name}` : ''}
-                        </p>
-                      </div>
-                      {(() => {
-                        let statusClass = 'bg-amber-50 border-amber-200 text-amber-700';
-                        if (apt.status === 'confirmed') statusClass = 'bg-blue-50 border-blue-200 text-blue-700';
-                        if (apt.status === 'completed') statusClass = 'bg-emerald-50 border-emerald-200 text-emerald-700';
-                        return (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${statusClass}`}>
-                            {apt.status}
-                          </span>
-                        );
-                      })()}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Due Today / This Week */}
-          {(dueToday.length > 0 || dueThisWeek.length > 0) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Clock size={14} className="text-[#B26959]" />
-                    <p className="text-sm font-semibold text-[#2D2A26]">Due Today</p>
-                  </div>
-                  <span className="bg-[#B26959]/10 text-[#B26959] border border-[#B26959]/20 text-xs font-bold px-2 py-0.5 rounded-full">
-                    {dueToday.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {dueToday.length === 0
-                    ? <p className="text-xs text-[#A8A19A] italic">Nothing due today.</p>
-                    : dueToday.map(j => (
-                      <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-[#EBE6E0] last:border-0 hover:text-[#9A8073] transition-colors">
-                        <p className="text-sm font-medium text-[#2D2A26] truncate">{j.customer?.name || 'Walk-in'}</p>
-                        <span className="text-xs text-[#A8A19A] shrink-0 ml-2">{j.order_number || `#${j.id}`}</span>
-                      </Link>
-                    ))
-                  }
-                </div>
-              </div>
-              <div className="bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={14} className="text-[#9A8073]" />
-                    <p className="text-sm font-semibold text-[#2D2A26]">Due This Week</p>
-                  </div>
-                  <span className="bg-[#9A8073]/10 text-[#9A8073] border border-[#9A8073]/20 text-xs font-bold px-2 py-0.5 rounded-full">
-                    {dueThisWeek.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {dueThisWeek.length === 0
-                    ? <p className="text-xs text-[#A8A19A] italic">No upcoming deadlines</p>
-                    : dueThisWeek.slice(0, 5).map(j => (
-                      <Link key={j.id} href={`/dashboard/jobs/${j.id}`} className="flex items-center justify-between py-1.5 border-b border-[#EBE6E0] last:border-0 hover:text-[#9A8073] transition-colors">
-                        <p className="text-sm font-medium text-[#2D2A26] truncate">{j.customer?.name || 'Walk-in'}</p>
-                        <span className="text-xs text-[#A8A19A] shrink-0 ml-2">
-                          {new Date(j.due_date!).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                        </span>
-                      </Link>
-                    ))
-                  }
-                </div>
-              </div>
+          ) : (
+            <div className="divide-y divide-line">
+              {todayAppointments.map(apt => {
+                const time = new Date(apt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+                const tone =
+                  apt.status === 'completed' ? 'bg-sage/10 text-sage border-sage/20'
+                  : apt.status === 'confirmed' ? 'bg-taupe/10 text-taupe border-taupe/20'
+                  : 'bg-sunken text-ink-muted border-line';
+                return (
+                  <Link
+                    key={apt.id}
+                    href="/dashboard/appointments"
+                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-canvas transition-colors min-h-[44px]"
+                  >
+                    <span className="text-figure text-sm font-bold text-ink tabular-nums shrink-0 w-[68px]">{time}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-semibold text-ink truncate">{apt.customer?.name ?? 'Walk-in'}</span>
+                      <span className="block text-xs text-ink-muted truncate">
+                        {apt.appointment_type?.replace(/_/g, ' ')}{apt.service ? ` · ${apt.service.name}` : ''}
+                      </span>
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 capitalize ${tone}`}>
+                      {apt.status}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
+        </section>
 
-          {/* Quick Actions */}
-          <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-            <h3 className="font-semibold text-[#2D2A26] mb-1">Quick Actions</h3>
-            <p className="text-xs text-[#A8A19A] mb-5">Core daily operations at your fingertips</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Quick Entry — opens modal */}
-              <button
-                type="button"
-                onClick={() => setQuickModalOpen(true)}
-                className="flex flex-col gap-2 bg-[#FAF6F3] border border-[#EBE6E0] hover:border-[#9A8073] hover:shadow-sm p-4 rounded-xl transition-all group text-left"
-              >
-                <div className="w-8 h-8 rounded-lg bg-white border border-[#EBE6E0] flex items-center justify-center group-hover:border-[#9A8073]/30 transition-colors">
-                  <Scissors size={15} className="text-[#9A8073]" />
-                </div>
-                <span className="text-sm font-semibold text-[#2D2A26]">New Custom Job</span>
-                <span className="text-[11px] text-[#827A73] leading-relaxed">Log fabric cut, tailoring setup &amp; measurements</span>
-              </button>
-
-              {[
-                {
-                  href: '/dashboard/appointments',
-                  icon: Calendar,
-                  title: 'Book Appointment',
-                  desc: 'Schedule measurements, fittings & consultations',
-                },
-                {
-                  href: '/dashboard/customers',
-                  icon: Users,
-                  title: 'View Customer Sizes',
-                  desc: 'Check sizing cards and historical order logs',
-                },
-              ].map(action => (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className="flex flex-col gap-2 bg-[#FAF6F3] border border-[#EBE6E0] hover:border-[#9A8073] hover:shadow-sm p-4 rounded-xl transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-white border border-[#EBE6E0] flex items-center justify-center group-hover:border-[#9A8073]/30 transition-colors">
-                    <action.icon size={15} className="text-[#9A8073]" />
-                  </div>
-                  <span className="text-sm font-semibold text-[#2D2A26]">{action.title}</span>
-                  <span className="text-[11px] text-[#827A73] leading-relaxed">{action.desc}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN — Staff Online + Recent Reviews */}
-        <div className="flex flex-col gap-6">
+        {/* Staff Online — 2 of 5 cols */}
+        <div className="lg:col-span-2">
           <StaffOnline onlineStaff={onlineStaff} />
-          <RecentReviews />
         </div>
       </div>
 
-      {/* Business Performance Chart — full width below */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#EBE6E0]">
-          <div>
-            <h3 className="font-semibold text-[#2D2A26]">Business Performance</h3>
-            <p className="text-xs text-[#A8A19A] mt-0.5">Order history and monthly revenue tracking</p>
-          </div>
-          <Link href="/dashboard/reports" className="text-xs font-semibold text-[#9A8073] hover:underline shrink-0">
-            View Full Reports →
-          </Link>
-        </div>
-          <DashboardCharts
-            data={data}
-            activePeriod={chartPeriod}
-            onPeriodChange={handleChartPeriod}
-          />
-      </div>
-      </>
-      )}
-
-      <QuickJobModal
-        isOpen={quickModalOpen}
-        onClose={() => setQuickModalOpen(false)}
-        onCreated={() => {}}
+      {/* ── Section 5: Performance Charts (self-contained) ───────────────── */}
+      <DashboardCharts
+        data={data}
+        activePeriod={chartPeriod}
+        onPeriodChange={handleChartPeriod}
       />
+        </>
+      )}
     </div>
   );
 }

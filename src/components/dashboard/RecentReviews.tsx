@@ -38,22 +38,22 @@ export default function RecentReviews() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-[#EBE6E0] p-6 h-[300px] flex items-center justify-center">
-        <span className="text-[#A8A19A] text-sm animate-pulse">Loading reviews...</span>
+      <div className="bg-surface rounded-2xl border border-line p-6 h-[300px] flex items-center justify-center">
+        <span className="text-ink-faint text-sm animate-pulse">Loading reviews...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-[#EBE6E0] flex flex-col min-h-[280px]">
-      <div className="p-5 border-b border-[#EBE6E0] flex justify-between items-center">
-        <h3 className="font-semibold text-[#2D2A26] flex items-center gap-2">
-          <MessageSquare size={16} className="text-[#9A8073]" />
+    <div className="bg-surface rounded-2xl border border-line flex flex-col min-h-[280px]">
+      <div className="p-5 border-b border-line flex justify-between items-center">
+        <h3 className="font-semibold text-ink flex items-center gap-2">
+          <MessageSquare size={16} className="text-taupe" />
           Recent Reviews
         </h3>
         <Link
           href={shop?.slug ? `/shop/${shop.slug}?tab=reviews` : '/dashboard/reviews'}
-          className="text-xs font-medium text-taupe hover:text-[#524A44] transition-colors"
+          className="text-xs font-medium text-taupe hover:text-ink-body transition-colors"
         >
           View All
         </Link>
@@ -63,8 +63,8 @@ export default function RecentReviews() {
         {reviews.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <Star size={32} className="text-[#EBE6E0] mb-2" />
-            <p className="text-sm font-medium text-[#827A73]">No reviews yet.</p>
-            <p className="text-xs text-[#A8A19A] mt-1 max-w-[200px]">
+            <p className="text-sm font-medium text-ink-muted">No reviews yet.</p>
+            <p className="text-xs text-ink-faint mt-1 max-w-[200px]">
               When customers rate your shop, their feedback will appear here.
             </p>
           </div>
@@ -72,17 +72,17 @@ export default function RecentReviews() {
           reviews.map(review => (
             <div key={review.id} className="pb-4 border-b border-[#FAF6F3] last:border-0 last:pb-0">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-[#2D2A26] truncate">{review.user.name}</span>
+                <span className="text-sm font-medium text-ink truncate">{review.user.name}</span>
                 <div className="flex text-yellow-400">
                   {Array.from({ length: 5 }, (_, i) => (
                     <Star key={i} size={10} className={i < review.rating ? 'fill-current' : 'text-[#EBE6E0]'} />
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-[#827A73] line-clamp-2 leading-relaxed">
+              <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">
                 {review.comment || <span className="italic">No written comment</span>}
               </p>
-              <div className="text-[10px] text-[#A8A19A] mt-1">
+              <div className="text-[10px] text-ink-faint mt-1">
                 {new Date(review.created_at).toLocaleDateString()}
               </div>
             </div>

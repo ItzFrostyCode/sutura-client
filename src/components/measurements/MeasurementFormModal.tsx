@@ -86,7 +86,7 @@ export default function MeasurementFormModal({
     >
       <form onSubmit={onSubmit} className="space-y-5">
         {error && (
-          <div className="bg-[#B26959]/10 border border-[#B26959]/30 text-[#B26959] px-4 py-3 rounded-lg text-sm animate-fade-in">
+          <div className="bg-danger/10 border border-danger/30 text-danger px-4 py-3 rounded-lg text-sm animate-fade-in">
             {error}
           </div>
         )}
@@ -95,26 +95,26 @@ export default function MeasurementFormModal({
           <>
             {/* Customer */}
             <div>
-              <label htmlFor="measurement-customer" className="block text-sm font-medium text-[#524A44] mb-1.5">
-                Customer <span className="text-[#B26959]">*</span>
+              <label htmlFor="measurement-customer" className="block text-sm font-medium text-ink-body mb-1.5">
+                Customer <span className="text-danger">*</span>
               </label>
               {customers.length === 0 ? (
-                <div className="bg-[#FAF6F3] border border-[#EBE6E0] border-dashed rounded-lg px-4 py-3 text-sm text-[#827A73]">
+                <div className="bg-canvas border border-line border-dashed rounded-lg px-4 py-3 text-sm text-ink-muted">
                   No customers yet.{' '}
-                  <Link href="/dashboard/customers" className="text-[#9A8073] font-semibold hover:underline">
+                  <Link href="/dashboard/customers" className="text-taupe font-semibold hover:underline">
                     Add one first
                   </Link>{' '}
                   — a measurement profile always belongs to a customer.
                 </div>
               ) : (
                 <div className="relative">
-                  <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" />
+                  <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
                   <select
                     id="measurement-customer"
                     required
                     value={form.customer_id}
                     onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))}
-                    className="w-full pl-9 pr-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073]/30 appearance-none cursor-pointer"
+                    className="w-full pl-9 pr-4 py-2.5 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30 appearance-none cursor-pointer"
                   >
                     <option value="">Select customer...</option>
                     {customers.map(c => (
@@ -127,9 +127,9 @@ export default function MeasurementFormModal({
 
             {/* Profile Name */}
             <div>
-              <label htmlFor="measurement-profile-name" className="block text-sm font-medium text-[#524A44] mb-1.5">
-                Profile Name <span className="text-[#B26959]">*</span>
-                <span className="text-[#A8A19A] font-normal ml-1">(e.g. &quot;Formal Suit&quot;, &quot;School Uniform&quot;)</span>
+              <label htmlFor="measurement-profile-name" className="block text-sm font-medium text-ink-body mb-1.5">
+                Profile Name <span className="text-danger">*</span>
+                <span className="text-ink-faint font-normal ml-1">(e.g. &quot;Formal Suit&quot;, &quot;School Uniform&quot;)</span>
               </label>
               <input
                 id="measurement-profile-name"
@@ -138,17 +138,17 @@ export default function MeasurementFormModal({
                 value={form.profile_name}
                 onChange={e => setForm(f => ({ ...f, profile_name: e.target.value }))}
                 placeholder="e.g. Wedding Barong"
-                className="w-full px-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073]/30"
+                className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30"
               />
             </div>
 
             <div>
-              <label htmlFor="measurement-source" className="block text-sm font-medium text-[#524A44] mb-1.5">Record Type</label>
+              <label htmlFor="measurement-source" className="block text-sm font-medium text-ink-body mb-1.5">Record Type</label>
               <select
                 id="measurement-source"
                 value={form.source}
                 onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073]/30"
+                className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30"
               >
                 <option value="shop_owner">Shop Owner (tailor&apos;s own format)</option>
                 <option value="customer">Customer-Side (encoded from the customer)</option>
@@ -157,8 +157,8 @@ export default function MeasurementFormModal({
 
             {/* Measurement Fields — same flexible builder used on Services & Catalog */}
             <div>
-              <p className="text-sm font-medium text-[#524A44] mb-1 flex items-center gap-2">
-                <Ruler size={14} className="text-[#9A8073]" />
+              <p className="text-sm font-medium text-ink-body mb-1 flex items-center gap-2">
+                <Ruler size={14} className="text-taupe" />
                 Body Measurements
               </p>
               <SizeChartEditor
@@ -174,8 +174,8 @@ export default function MeasurementFormModal({
 
             {/* Notes */}
             <div>
-              <label htmlFor="measurement-notes" className="block text-sm font-medium text-[#524A44] mb-1.5">
-                Notes <span className="text-[#A8A19A] font-normal">(optional)</span>
+              <label htmlFor="measurement-notes" className="block text-sm font-medium text-ink-body mb-1.5">
+                Notes <span className="text-ink-faint font-normal">(optional)</span>
               </label>
               <textarea
                 id="measurement-notes"
@@ -183,15 +183,15 @@ export default function MeasurementFormModal({
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="e.g. Client prefers loose fit, allergic to polyester..."
-                className="w-full px-4 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073]/30 resize-none"
+                className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30 resize-none"
               />
             </div>
 
-            <div className="pt-1 flex justify-end gap-3 border-t border-[#EBE6E0] mt-4">
+            <div className="pt-1 flex justify-end gap-3 border-t border-line mt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26] transition-colors hover:bg-[#F0EAE3]"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink transition-colors hover:bg-sunken"
               >
                 Cancel
               </button>
@@ -199,7 +199,7 @@ export default function MeasurementFormModal({
                 type="button"
                 disabled={!form.customer_id || !form.profile_name}
                 onClick={() => setView('preview')}
-                className="bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
+                className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
               >
                 <Eye size={15} />
                 Review
@@ -209,30 +209,30 @@ export default function MeasurementFormModal({
         ) : (
           <>
             {/* Preview — read-only summary shown before the save actually commits */}
-            <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg p-4 space-y-3">
+            <div className="bg-canvas border border-line rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[#A8A19A] uppercase tracking-wider font-semibold">Customer</p>
-                  <p className="text-sm font-semibold text-[#2D2A26]">{selectedCustomer?.name || '—'}</p>
+                  <p className="text-xs text-ink-faint uppercase tracking-wider font-semibold">Customer</p>
+                  <p className="text-sm font-semibold text-ink">{selectedCustomer?.name || '—'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-[#A8A19A] uppercase tracking-wider font-semibold">Profile</p>
-                  <p className="text-sm font-semibold text-[#2D2A26]">{form.profile_name || '—'}</p>
+                  <p className="text-xs text-ink-faint uppercase tracking-wider font-semibold">Profile</p>
+                  <p className="text-sm font-semibold text-ink">{form.profile_name || '—'}</p>
                 </div>
               </div>
 
-              <div className="border-t border-[#EBE6E0] pt-3">
-                <p className="text-xs text-[#A8A19A] uppercase tracking-wider font-semibold mb-2">
+              <div className="border-t border-line pt-3">
+                <p className="text-xs text-ink-faint uppercase tracking-wider font-semibold mb-2">
                   Measurements ({filledFields.length} field{filledFields.length === 1 ? '' : 's'})
                 </p>
                 {sizeChart.columns.length === 0 ? (
-                  <p className="text-sm text-[#A8A19A] italic">No measurement fields added.</p>
+                  <p className="text-sm text-ink-faint italic">No measurement fields added.</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {sizeChart.columns.map((col, i) => (
-                      <div key={col} className="flex items-center justify-between bg-white border border-[#EBE6E0] rounded-lg px-3 py-2">
-                        <span className="text-xs text-[#827A73]">{col}</span>
-                        <span className="text-sm font-semibold text-[#2D2A26]">{sizeChart.rows[0]?.values[i] || '—'}</span>
+                      <div key={col} className="flex items-center justify-between bg-surface border border-line rounded-lg px-3 py-2">
+                        <span className="text-xs text-ink-muted">{col}</span>
+                        <span className="text-sm font-semibold text-ink">{sizeChart.rows[0]?.values[i] || '—'}</span>
                       </div>
                     ))}
                   </div>
@@ -240,24 +240,24 @@ export default function MeasurementFormModal({
               </div>
 
               {form.notes && (
-                <div className="border-t border-[#EBE6E0] pt-3">
-                  <p className="text-xs text-[#A8A19A] uppercase tracking-wider font-semibold mb-1">Notes</p>
-                  <p className="text-sm text-[#524A44]">{form.notes}</p>
+                <div className="border-t border-line pt-3">
+                  <p className="text-xs text-ink-faint uppercase tracking-wider font-semibold mb-1">Notes</p>
+                  <p className="text-sm text-ink-body">{form.notes}</p>
                 </div>
               )}
             </div>
 
             {editingId && (
-              <p className="text-xs text-[#827A73] bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              <p className="text-xs text-ink-muted bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                 Saving creates a new version of this profile — the current version is kept in its history, not overwritten.
               </p>
             )}
 
-            <div className="pt-1 flex justify-end gap-3 border-t border-[#EBE6E0] mt-4">
+            <div className="pt-1 flex justify-end gap-3 border-t border-line mt-4">
               <button
                 type="button"
                 onClick={() => setView('edit')}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26] transition-colors hover:bg-[#F0EAE3] flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink transition-colors hover:bg-sunken flex items-center gap-2"
               >
                 <Pencil size={14} />
                 Back to Edit
@@ -265,7 +265,7 @@ export default function MeasurementFormModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
+                className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
               >
                 {isSubmitting && <Loader2 size={15} className="animate-spin" />}
                 Confirm & Save

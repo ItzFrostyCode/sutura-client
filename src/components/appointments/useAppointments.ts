@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -6,7 +6,7 @@ import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import {
   Appointment, ServiceData, CustomerData, BranchData, StaffData,
-  AppointmentStatus, AppointmentType, getErrorMessage
+  AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString
 } from './appointmentHelpers';
 
 export function useAppointments() {
@@ -17,7 +17,7 @@ export function useAppointments() {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading]           = useState(true);
-  const [viewMode, setViewMode]         = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode]         = useState<'table' | 'cards' | 'calendar'>('table');
   const [calSubMode, setCalSubMode]     = useState<'month' | 'day'>('month');
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
   const [typeFilter, setTypeFilter]     = useState<AppointmentType | 'all'>('all');
@@ -53,7 +53,8 @@ export function useAppointments() {
   const [branches,  setBranches]  = useState<BranchData[]>([]);
   const [staff,     setStaff]     = useState<StaffData[]>([]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Timezone-safe local date string
+  const todayStr = getLocalDateString(new Date());
 
   const minTimeFor = (dateStr: string): string => {
     if (dateStr !== todayStr) return '00:00';
@@ -65,26 +66,36 @@ export function useAppointments() {
 
   const fetchAppointments = useCallback(() => {
     if (!shop?.id) return;
-    setTimeout(() => setLoading(true), 0);
+    const timer = setTimeout(() => setLoading(true), 0);
     const params: Record<string, string | number> = {};
     if (selectedBranchId !== null) {
       params.branch_id = selectedBranchId;
     }
     api.get(`/shops/${shop.id}/appointments`, { params })
-      .then(res => { setAppointments(res.data.data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [shop, selectedBranchId]);
+      .then(res => {
+        setAppointments(res.data.data || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        toast.error(getErrorMessage(err, 'Failed to load appointments.'));
+      });
+    return () => clearTimeout(timer);
+  }, [shop, selectedBranchId, toast]);
 
   useEffect(() => {
-    fetchAppointments();
+    const cleanup = fetchAppointments();
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, [fetchAppointments]);
 
   useEffect(() => {
     if (shop?.id) {
-      api.get(`/shops/${shop.id}/services`).then(r => setServices(r.data.data)).catch(() => {});
-      api.get(`/shops/${shop.id}/customers`).then(r => setCustomers(r.data.data)).catch(() => {});
-      api.get(`/shops/${shop.id}/branches`).then(r => setBranches(r.data.data)).catch(() => {});
-      api.get(`/shops/${shop.id}/staff`).then(r => setStaff(r.data.data)).catch(() => {});
+      api.get(`/shops/${shop.id}/services`).then(r => setServices(r.data.data || [])).catch(() => {});
+      api.get(`/shops/${shop.id}/customers`).then(r => setCustomers(r.data.data || [])).catch(() => {});
+      api.get(`/shops/${shop.id}/branches`).then(r => setBranches(r.data.data || [])).catch(() => {});
+      api.get(`/shops/${shop.id}/staff`).then(r => setStaff(r.data.data || [])).catch(() => {});
     } else if (user?.id && !shop?.id) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
@@ -92,19 +103,15 @@ export function useAppointments() {
   }, [shop?.id, user?.id]);
 
   const userRoles: string[] = user?.roles?.map(r => r.name) ?? [];
-  const isOwnerOrManager = userRoles.some(r => ['shop_owner', 'branch_manager'].includes(r));
+  const isOwnerOrManager = userRoles.some(r => ['shop_owner', 'branch_manager', 'super_admin'].includes(r));
 
-  // Confirm / Reject Review — both return whether the action actually
-  // succeeded so the caller can decide whether to close the review modal.
-  // Closing unconditionally would hide a rejection reason (e.g. a double-
-  // booking conflict) the owner needs to see and react to right there,
-  // instead of silently vanishing as if nothing happened.
+  // Confirm / Reject Review
   const handleConfirmReview = async (id: number): Promise<boolean> => {
     if (!shop) return false;
     setActionLoadingId(id);
     try {
       await api.put(`/shops/${shop.id}/appointments/${id}`, { status: 'confirmed' });
-      toast.success('Appointment confirmed!');
+      toast.success('Appointment confirmed successfully!');
       fetchAppointments();
       return true;
     } catch (err: unknown) {
@@ -136,7 +143,7 @@ export function useAppointments() {
     setActionLoadingId(id);
     try {
       await api.put(`/shops/${shop.id}/appointments/${id}`, { status: newStatus });
-      toast.success(`Status updated to ${newStatus}`);
+      toast.success(`Status updated to ${newStatus.replaceAll('_', ' ')}`);
       fetchAppointments();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to update status.'));
@@ -145,9 +152,7 @@ export function useAppointments() {
     }
   };
 
-  // Quick "Add New Customer" from inside the Schedule Appointment modal —
-  // keeps the owner from having to abandon the appointment they're mid-way
-  // through creating just to go register a first-time walk-in customer.
+  // Quick "Add New Customer" from inside the Schedule Appointment modal
   const handleCreateCustomer = async (payload: Record<string, string | null>): Promise<CustomerData> => {
     if (!shop) throw new Error('No shop selected.');
     const res = await api.post(`/shops/${shop.id}/customers`, payload);
@@ -163,12 +168,13 @@ export function useAppointments() {
     setError('');
     try {
       if (editingApt) {
-        const res = await api.put(`/shops/${shop.id}/appointments/${editingApt.id}`, payload);
-        setAppointments(prev => prev.map(a => a.id === editingApt.id ? { ...a, ...res.data.data } : a));
+        await api.put(`/shops/${shop.id}/appointments/${editingApt.id}`, payload);
+        toast.success('Appointment updated successfully!');
       } else {
-        const res = await api.post(`/shops/${shop.id}/appointments`, payload);
-        setAppointments(prev => [...prev, res.data.data]);
+        await api.post(`/shops/${shop.id}/appointments`, payload);
+        toast.success('Appointment booked successfully!');
       }
+      fetchAppointments();
       setShowCreateModal(false);
       setEditingApt(null);
       setError('');
@@ -188,12 +194,10 @@ export function useAppointments() {
         scheduled_at,
         notes: notes || undefined,
       });
-      setAppointments(prev =>
-        prev.map(a => a.id === aptId ? { ...a, scheduled_at, notes: notes || a.notes } : a)
-      );
       setShowRescheduleModal(false);
       setRescheduleApt(null);
       toast.success('Appointment rescheduled!');
+      fetchAppointments();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to reschedule.'));
     } finally {
@@ -211,9 +215,6 @@ export function useAppointments() {
         outcome:        outcome,
         fitting_notes:  fittingNotes || undefined,
       });
-      setAppointments(prev =>
-        prev.map(a => a.id === aptId ? { ...a, status: 'completed', outcome: outcome as any } : a)
-      );
       setShowCompleteModal(false);
 
       if (measurementAction === 'record') {
@@ -222,7 +223,8 @@ export function useAppointments() {
         if (custId) router.push(`/dashboard/measurements?customer_id=${custId}`);
       }
       setCompleteApt(null);
-      toast.success('Appointment completed successfully!');
+      toast.success('Appointment marked as completed!');
+      fetchAppointments();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to complete appointment.'));
     } finally {
@@ -235,10 +237,10 @@ export function useAppointments() {
     setIsSubmitting(true);
     try {
       await api.delete(`/shops/${shop.id}/appointments/${aptId}`);
-      setAppointments(prev => prev.map(a => a.id === aptId ? { ...a, status: 'cancelled' } : a));
       setShowCancelModal(false);
       setCancelApt(null);
       toast.success('Appointment cancelled.');
+      fetchAppointments();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to cancel appointment.'));
     } finally {
@@ -255,19 +257,65 @@ export function useAppointments() {
     router.push(`/dashboard/jobs/new?customer_id=${custId}${serviceParam}&notes=${notesParam}&appointment_id=${apt.id}`);
   };
 
-  // Filtering
-  const filtered = appointments.filter(a => {
-    const matchStatus = statusFilter === 'all' || a.status === statusFilter;
-    const matchType   = typeFilter   === 'all' || a.appointment_type === typeFilter;
-    const q           = search.toLowerCase();
-    const matchSearch = !q
-      || a.customer?.name?.toLowerCase().includes(q)
-      || a.service?.name?.toLowerCase().includes(q)
-      || a.appointment_type?.toLowerCase().includes(q);
-    return matchStatus && matchType && matchSearch;
-  });
+  // Multi-attribute searching and filtering
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return appointments.filter(a => {
+      const matchStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchType   = typeFilter   === 'all' || a.appointment_type === typeFilter;
+      if (!matchStatus || !matchType) return false;
+      if (!q) return true;
 
-  const pendingCount = appointments.filter(a => a.status === 'pending').length;
+      return (
+        a.customer?.name?.toLowerCase().includes(q) ||
+        a.customer?.email?.toLowerCase().includes(q) ||
+        a.customer?.phone?.toLowerCase().includes(q) ||
+        a.service?.name?.toLowerCase().includes(q) ||
+        a.appointment_type?.toLowerCase().includes(q) ||
+        a.garment_category?.toLowerCase().includes(q) ||
+        a.notes?.toLowerCase().includes(q) ||
+        a.branch?.name?.toLowerCase().includes(q) ||
+        a.assigned_staff?.name?.toLowerCase().includes(q)
+      );
+    });
+  }, [appointments, statusFilter, typeFilter, search]);
+
+  // Operational metrics
+  const stats = useMemo(() => {
+    const todayLocal = getLocalDateString(new Date());
+    let todayCount = 0;
+    let pendingCount = 0;
+    let confirmedCount = 0;
+    let inProgressCount = 0;
+    let completedCount = 0;
+    let cancelledCount = 0;
+    let noShowCount = 0;
+
+    for (const a of appointments) {
+      const datePart = a.scheduled_at ? a.scheduled_at.split('T')[0].split(' ')[0] : '';
+      if (datePart === todayLocal && a.status !== 'cancelled') {
+        todayCount++;
+      }
+      if (a.status === 'pending') pendingCount++;
+      else if (a.status === 'confirmed') confirmedCount++;
+      else if (a.status === 'in_progress') inProgressCount++;
+      else if (a.status === 'completed') completedCount++;
+      else if (a.status === 'cancelled') cancelledCount++;
+      else if (a.status === 'no_show') noShowCount++;
+    }
+
+    return {
+      todayCount,
+      pendingCount,
+      confirmedCount,
+      inProgressCount,
+      activeCount: confirmedCount + inProgressCount,
+      completedCount,
+      cancelledCount,
+      noShowCount,
+      totalCount: appointments.length,
+    };
+  }, [appointments]);
 
   return {
     appointments,
@@ -333,6 +381,8 @@ export function useAppointments() {
     handleCancelConfirm,
     handleCreateJob,
     filtered,
-    pendingCount,
+    stats,
+    pendingCount: stats.pendingCount,
+    refreshAppointments: fetchAppointments,
   };
 }
