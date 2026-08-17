@@ -21,7 +21,7 @@ interface SearchInputProps {
 export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '', id, disabled }: SearchInputProps) {
   return (
     <div className={`relative ${className}`}>
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] pointer-events-none" size={16} />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" size={16} />
       <input
         id={id}
         type="text"
@@ -29,7 +29,7 @@ export default function SearchInput({ value, onChange, placeholder = 'Search...'
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full pl-9 pr-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors disabled:opacity-50"
+        className="w-full pl-9 pr-4 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors disabled:opacity-50"
       />
     </div>
   );

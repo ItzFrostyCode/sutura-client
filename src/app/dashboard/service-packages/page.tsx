@@ -204,20 +204,20 @@ export default function ServicePackagesPage() {
   })();
 
   return (
-    <div className="space-y-6 text-[#2D2A26]">
+    <div className="space-y-6 text-ink">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/services"
-            className="p-2 rounded-lg text-[#827A73] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors"
+            className="p-2 rounded-lg text-ink-muted hover:bg-sunken hover:text-ink transition-colors"
             title="Back to Services"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Service Packages</h1>
-            <p className="text-[#827A73] text-sm mt-0.5">
+            <h1 className="text-2xl font-bold text-ink tracking-tight">Service Packages</h1>
+            <p className="text-ink-muted text-sm mt-0.5">
               Bundle two or more services into a combo deal with a discounted price.
             </p>
           </div>

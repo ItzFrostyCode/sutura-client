@@ -13,7 +13,7 @@ import { Store, ShoppingBag, Scissors, Pause } from 'lucide-react';
 // — see columnsForJobs(), which only shows whichever of the two columns is
 // actually relevant to the jobs on the board.
 export const ALL_COLUMNS = [
-  { id: 'pending',                title: 'Pending',                color: 'bg-[#EBE6E0]/50',   border: 'border-[#D1C7BD]' },
+  { id: 'pending',                title: 'Pending',                color: 'bg-line/50',   border: 'border-line-strong' },
   { id: 'design',                 title: 'Design',                 color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
   { id: 'pattern_making',         title: 'Pattern Making',         color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
   { id: 'mass_cutting_printing',  title: 'Mass Cutting & Printing', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
@@ -23,7 +23,7 @@ export const ALL_COLUMNS = [
   { id: 'final_adjustments',      title: 'Final Adjustments',      color: 'bg-rose-50/50',      border: 'border-rose-200/50' },
   { id: 'qc_ironing',             title: 'QC & Ironing',           color: 'bg-fuchsia-50/50',   border: 'border-fuchsia-200/50' },
   { id: 'ready_for_pickup',       title: 'Ready for Pickup',       color: 'bg-emerald-50/50',   border: 'border-emerald-200/50' },
-  { id: 'completed',              title: 'Completed',              color: 'bg-[#9A8073]/10',    border: 'border-[#9A8073]/30' },
+  { id: 'completed',              title: 'Completed',              color: 'bg-taupe/10',    border: 'border-taupe/30' },
 ];
 
 /**
@@ -151,7 +151,7 @@ export const getDueStatus = (dueDateStr: string | null | undefined, status: stri
   const todayTime = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   
   if (dueTime < todayTime) {
-    return { label: 'Overdue', className: 'bg-[#B26959]/10 text-[#B26959] border-[#B26959]/20' };
+    return { label: 'Overdue', className: 'bg-danger/10 text-danger border-danger/20' };
   }
   
   const diffTime = dueTime - todayTime;
@@ -173,7 +173,7 @@ export function TypeBadge({ type }: { readonly type: string }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[#F0EAE3] text-[#827A73] px-1.5 py-0.5 rounded">
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded">
       <Store size={9} /> Walk-in
     </span>
   );
@@ -184,7 +184,7 @@ export function ColumnIcon({ id }: { readonly id: string }) {
     case 'ready_for_pickup':
       return <Store size={14} className="text-emerald-600" />;
     case 'completed':
-      return <Scissors size={14} className="text-[#9A8073]" />;
+      return <Scissors size={14} className="text-taupe" />;
     case 'on_hold':
       return <Pause size={14} className="text-amber-600" />;
     default:

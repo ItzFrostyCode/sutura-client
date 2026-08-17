@@ -45,7 +45,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26] relative overflow-hidden py-12">
       <div className="absolute top-0 right-1/4 w-full h-[600px] bg-linear-to-bl from-[#F0EAE3] to-[#EBE4DC] blur-[100px] pointer-events-none" />
       
-      <div className="w-full max-w-md p-8 rounded-2xl glass-panel border border-[#EBE6E0] backdrop-blur-xl shadow-2xl relative z-10">
+      <div className="w-full max-w-md p-8 rounded-2xl glass-panel border border-[#EBE6E0] relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-[#2D2A26] mb-2">Create Account</h1>
           <p className="text-[#827A73]">Join SUTURA as a Shop Owner or Customer</p>

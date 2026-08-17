@@ -22,9 +22,9 @@ export default function JobStaffAssignmentCard({
   savingStaff,
 }: JobStaffAssignmentCardProps) {
   return (
-    <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+    <div className="bg-surface border border-line rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium text-[#2D2A26]">Multi-Stage Staff Assignment</h2>
+        <h2 className="text-lg font-medium text-ink">Multi-Stage Staff Assignment</h2>
         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
           Owner/Manager Only
         </span>
@@ -33,7 +33,7 @@ export default function JobStaffAssignmentCard({
         {STAFF_STAGES.map(stage => (
           <div key={stage} className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-[#524A44]">
+              <label className="text-sm font-medium text-ink-body">
                 {STAFF_STAGE_LABELS[stage]} Staff
               </label>
               {staffAssignments[stage] && (
@@ -49,7 +49,7 @@ export default function JobStaffAssignmentCard({
             <select
               value={staffAssignments[stage]}
               onChange={(e) => setStaffAssignments({...staffAssignments, [stage]: e.target.value})}
-              className="w-full px-4 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
             >
               <option value="">Unassigned</option>
               {allStaff.map(staff => {
@@ -90,7 +90,7 @@ export default function JobStaffAssignmentCard({
           <button
             onClick={handleUpdateStaff}
             disabled={savingStaff}
-            className="w-full bg-[#F0EAE3] hover:bg-[#EBE6E0] border border-[#D1C7BD] text-[#2D2A26] px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-sunken hover:bg-line border border-line-strong text-ink px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             type="button"
           >
             {savingStaff ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={18} />}

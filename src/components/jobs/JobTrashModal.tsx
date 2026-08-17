@@ -60,21 +60,21 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Deleted Job Orders">
-      <div className="space-y-4 text-[#2D2A26]">
-        <p className="text-xs text-[#827A73]">
+      <div className="space-y-4 text-ink">
+        <p className="text-xs text-ink-muted">
           Job orders you&apos;ve deleted stay here — restore any of them back into the production pipeline.
           Jobs with recorded payments can&apos;t be deleted in the first place, so nothing with money attached
           ever ends up here.
         </p>
 
         {loading ? (
-          <div className="text-center py-10 text-xs text-[#A8A19A] flex items-center justify-center gap-2">
+          <div className="text-center py-10 text-xs text-ink-faint flex items-center justify-center gap-2">
             <Loader2 size={16} className="animate-spin text-taupe" />
             Loading deleted job orders...
           </div>
         ) : trashed.length === 0 ? (
-          <div className="text-center py-10 text-xs text-[#A8A19A] border border-dashed border-[#EBE6E0] rounded-xl flex flex-col items-center gap-2">
-            <Trash2 size={20} className="text-[#C5BDBA]" />
+          <div className="text-center py-10 text-xs text-ink-faint border border-dashed border-line rounded-xl flex flex-col items-center gap-2">
+            <Trash2 size={20} className="text-ink-faint" />
             Nothing in the trash right now.
           </div>
         ) : (
@@ -82,11 +82,11 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
             {trashed.map(job => (
               <div
                 key={job.id}
-                className="flex items-center justify-between p-3 bg-white border border-[#EBE6E0] rounded-lg"
+                className="flex items-center justify-between p-3 bg-surface border border-line rounded-lg"
               >
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-[#2D2A26] truncate">{job.order_number}</p>
-                  <p className="text-[11px] text-[#A8A19A] truncate">
+                  <p className="font-semibold text-sm text-ink truncate">{job.order_number}</p>
+                  <p className="text-[11px] text-ink-faint truncate">
                     {job.customer?.name || 'Walk-in'} · ₱{Number(job.total_amount).toLocaleString()}
                   </p>
                 </div>
@@ -94,7 +94,7 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
                   type="button"
                   onClick={() => handleRestore(job)}
                   disabled={restoringId === job.id}
-                  className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#7A8B76]/10 text-[#7A8B76] hover:bg-[#7A8B76]/20 border border-[#7A8B76]/20 transition-colors disabled:opacity-50"
+                  className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-sage/10 text-sage hover:bg-sage/20 border border-sage/20 transition-colors disabled:opacity-50"
                 >
                   {restoringId === job.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                   Restore
@@ -104,11 +104,11 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
           </div>
         )}
 
-        <div className="pt-2 border-t border-[#EBE6E0] flex justify-end">
+        <div className="pt-2 border-t border-line flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink transition-colors"
           >
             Close
           </button>

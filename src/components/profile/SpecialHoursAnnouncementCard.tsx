@@ -149,9 +149,9 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
   };
 
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-2xl shadow-sm">
-      <div className="flex items-center justify-between p-5 border-b border-[#EBE6E0]">
-        <h2 className="text-base font-bold text-[#2D2A26] flex items-center gap-2">
+    <div className="bg-surface border border-line rounded-2xl">
+      <div className="flex items-center justify-between p-5 border-b border-line">
+        <h2 className="text-base font-bold text-ink flex items-center gap-2">
           <Megaphone size={18} className="text-taupe" />
           Special Hours &amp; Announcements
         </h2>
@@ -167,14 +167,14 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
       </div>
 
       <div className="p-5 space-y-4">
-        <p className="text-xs text-[#827A73] -mt-1">
+        <p className="text-xs text-ink-muted -mt-1">
           Set a date range for a holiday closure, special hours, or a promo — whichever entry covers today shows as a banner at the top of your storefront, on every tab.
         </p>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-2xl p-5 space-y-3">
+          <form onSubmit={handleSubmit} className="bg-canvas border border-line rounded-2xl p-5 space-y-3">
             <div>
-              <label htmlFor="sh_title" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Title <span className="text-rose-500">*</span></label>
+              <label htmlFor="sh_title" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Title <span className="text-rose-500">*</span></label>
               <input
                 id="sh_title"
                 type="text"
@@ -182,18 +182,18 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
                 value={form.title}
                 onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g. Holiday Closure, Anniversary Sale"
-                className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
               />
             </div>
 
             {branches.length > 1 && (
               <div>
-                <label htmlFor="sh_branch" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Applies To</label>
+                <label htmlFor="sh_branch" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Applies To</label>
                 <select
                   id="sh_branch"
                   value={form.shop_branch_id}
                   onChange={e => setForm(prev => ({ ...prev, shop_branch_id: e.target.value === '' ? '' : Number(e.target.value) }))}
-                  className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                 >
                   <option value="">All Branches</option>
                   {branches.map(b => (
@@ -205,25 +205,25 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="sh_start" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Start Date <span className="text-rose-500">*</span></label>
+                <label htmlFor="sh_start" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Start Date <span className="text-rose-500">*</span></label>
                 <input
                   id="sh_start"
                   type="date"
                   required
                   value={form.start_date}
                   onChange={e => setForm(prev => ({ ...prev, start_date: e.target.value }))}
-                  className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                 />
               </div>
               <div>
-                <label htmlFor="sh_end" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">End Date <span className="text-rose-500">*</span></label>
+                <label htmlFor="sh_end" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">End Date <span className="text-rose-500">*</span></label>
                 <input
                   id="sh_end"
                   type="date"
                   required
                   value={form.end_date}
                   onChange={e => setForm(prev => ({ ...prev, end_date: e.target.value }))}
-                  className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                 />
               </div>
             </div>
@@ -233,64 +233,64 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
                 type="checkbox"
                 checked={form.is_closed}
                 onChange={e => setForm(prev => ({ ...prev, is_closed: e.target.checked }))}
-                className="rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                className="rounded border-line text-taupe focus:ring-taupe"
               />
-              <span className="text-sm font-medium text-[#524A44]">Shop is closed during this period</span>
+              <span className="text-sm font-medium text-ink-body">Shop is closed during this period</span>
             </label>
 
             {!form.is_closed && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="sh_open_time" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Special Open Time</label>
+                  <label htmlFor="sh_open_time" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Special Open Time</label>
                   <input
                     id="sh_open_time"
                     type="time"
                     value={form.special_open_time}
                     onChange={e => setForm(prev => ({ ...prev, special_open_time: e.target.value }))}
-                    className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                   />
                 </div>
                 <div>
-                  <label htmlFor="sh_close_time" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Special Close Time</label>
+                  <label htmlFor="sh_close_time" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Special Close Time</label>
                   <input
                     id="sh_close_time"
                     type="time"
                     value={form.special_close_time}
                     onChange={e => setForm(prev => ({ ...prev, special_close_time: e.target.value }))}
-                    className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label htmlFor="sh_message" className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Announcement Message <span className="font-normal normal-case text-[#A8A19A]">(optional)</span></label>
+              <label htmlFor="sh_message" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Announcement Message <span className="font-normal normal-case text-ink-faint">(optional)</span></label>
               <textarea
                 id="sh_message"
                 value={form.announcement_message}
                 onChange={e => setForm(prev => ({ ...prev, announcement_message: e.target.value }))}
                 rows={2}
                 placeholder="Shown as a banner at the top of your storefront during this date range."
-                className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe resize-none"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe resize-none"
               />
             </div>
 
             <div>
-              <span className="block text-xs font-semibold text-[#827A73] mb-1 uppercase tracking-wider">Announcement Image <span className="font-normal normal-case text-[#A8A19A]">(optional)</span></span>
+              <span className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Announcement Image <span className="font-normal normal-case text-ink-faint">(optional)</span></span>
               {form.announcement_image_url ? (
                 <div className="relative inline-block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.announcement_image_url} alt="Announcement" className="h-24 rounded-lg border border-[#EBE6E0] object-cover" />
+                  <img src={form.announcement_image_url} alt="Announcement" className="h-24 rounded-lg border border-line object-cover" />
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, announcement_image_url: '' }))}
-                    className="absolute -top-2 -right-2 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-rose-600 rounded-full p-1 shadow-sm"
+                    className="absolute -top-2 -right-2 bg-surface border border-line text-ink-muted hover:text-rose-600 rounded-full p-1"
                   >
                     <Trash2 size={12} />
                   </button>
                 </div>
               ) : (
-                <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-[#827A73] hover:text-taupe transition-colors bg-white border border-dashed border-[#EBE6E0] rounded-lg px-3 py-2">
+                <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink-muted hover:text-taupe transition-colors bg-white border border-dashed border-line rounded-lg px-3 py-2">
                   {uploading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                   <span>{uploading ? 'Uploading...' : 'Upload image'}</span>
                   <input
@@ -305,7 +305,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
-              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium text-[#827A73] hover:bg-white rounded-lg transition-colors">
+              <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm font-medium text-ink-muted hover:bg-white rounded-lg transition-colors">
                 Cancel
               </button>
               <button type="submit" disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-taupe text-white text-sm font-semibold rounded-lg hover:bg-taupe/90 transition-colors disabled:opacity-50">
@@ -317,45 +317,45 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
         )}
 
         {loading ? (
-          <div className="py-8 text-center text-[#A8A19A]"><Loader2 className="animate-spin mx-auto" /></div>
+          <div className="py-8 text-center text-ink-faint"><Loader2 className="animate-spin mx-auto" /></div>
         ) : items.length === 0 && !showForm ? (
-          <p className="text-sm text-[#A8A19A] text-center py-6">No special schedules yet.</p>
+          <p className="text-sm text-ink-faint text-center py-6">No special schedules yet.</p>
         ) : (
           <div className="space-y-2">
             {items.map(item => {
               const isExpired = item.end_date < new Date().toISOString().split('T')[0];
               return (
-              <div key={item.id} className={`bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 flex items-start justify-between gap-3 ${isExpired ? 'opacity-60' : ''}`}>
+              <div key={item.id} className={`bg-canvas border border-line rounded-xl p-4 flex items-start justify-between gap-3 ${isExpired ? 'opacity-60' : ''}`}>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-[#2D2A26]">{item.title}</p>
+                    <p className="text-sm font-semibold text-ink">{item.title}</p>
                     {item.branch ? (
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#F0EAE3] text-[#9A8073] border border-[#EBE6E0]">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-sunken text-taupe border border-line">
                         {item.branch.name}
                       </span>
                     ) : branches.length > 1 && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#F0EAE3] text-[#9A8073] border border-[#EBE6E0]">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-sunken text-taupe border border-line">
                         All Branches
                       </span>
                     )}
                     {isExpired && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white text-[#827A73] border border-[#EBE6E0]">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white text-ink-muted border border-line">
                         Expired
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#827A73] mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     {item.start_date} — {item.end_date} · {item.is_closed ? 'Closed' : `${item.special_open_time || ''} - ${item.special_close_time || ''}`}
                   </p>
                   {item.announcement_message && (
-                    <p className="text-xs text-[#524A44] mt-1.5 line-clamp-2">{item.announcement_message}</p>
+                    <p className="text-xs text-ink-body mt-1.5 line-clamp-2">{item.announcement_message}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button type="button" onClick={() => startEdit(item)} className="p-1.5 text-[#827A73] hover:text-taupe hover:bg-white rounded-lg transition-colors">
+                  <button type="button" onClick={() => startEdit(item)} className="p-1.5 text-ink-muted hover:text-taupe hover:bg-white rounded-lg transition-colors">
                     <Pencil size={14} />
                   </button>
-                  <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-[#827A73] hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                  <button type="button" onClick={() => handleDelete(item.id)} className="p-1.5 text-ink-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>

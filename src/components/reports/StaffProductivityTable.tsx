@@ -36,12 +36,12 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
   if (active && payload?.length) {
     const row = payload[0].payload;
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-4 py-3">
-        <p className="text-xs font-medium text-[#2D2A26] mb-1">{row.name || 'Unnamed Staff'}</p>
+      <div className="bg-surface border border-line rounded-xl px-4 py-3">
+        <p className="text-xs font-medium text-ink mb-1">{row.name || 'Unnamed Staff'}</p>
         <p className="text-base font-bold text-taupe">
           ₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
         </p>
-        <p className="text-xs text-[#A8A19A] mt-1">
+        <p className="text-xs text-ink-faint mt-1">
           {row.completed_jobs} of {row.total_jobs} jobs completed
         </p>
       </div>
@@ -53,7 +53,7 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
 export default function StaffProductivityTable({ data, loading }: StaffProductivityTableProps) {
   if (loading) {
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm text-center text-sm text-[#A8A19A] py-12">
+      <div className="bg-surface border border-line rounded-2xl p-6 text-center text-sm text-ink-faint py-12">
         Loading staff productivity…
       </div>
     );
@@ -67,12 +67,12 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
   const chartData = [...data].sort((a, b) => b.completed_jobs - a.completed_jobs);
 
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm space-y-6">
+    <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
       <div className="flex items-center gap-2">
-        <UserCog size={18} className="text-[#9A8073]" />
+        <UserCog size={18} className="text-taupe" />
         <div>
-          <h2 className="text-base font-semibold text-[#2D2A26]">Individual Staff Productivity</h2>
-          <p className="text-sm text-[#A8A19A] mt-0.5">Jobs completed and revenue attributed to each staff member.</p>
+          <h2 className="text-base font-semibold text-ink">Individual Staff Productivity</h2>
+          <p className="text-sm text-ink-faint mt-0.5">Jobs completed and revenue attributed to each staff member.</p>
         </div>
       </div>
 
@@ -109,20 +109,20 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
       </div>
 
       {/* Mobile cards — no sideways scroll needed */}
-      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-[#EBE6E0]">
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
         {data.map(row => (
           <div key={row.staff_id} className="px-6 py-3.5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-[#2D2A26]">{row.name || 'Unnamed Staff'}</p>
-                <p className="text-xs text-[#827A73]">{roleLabel(row.role)}</p>
+                <p className="font-medium text-ink">{row.name || 'Unnamed Staff'}</p>
+                <p className="text-xs text-ink-muted">{roleLabel(row.role)}</p>
               </div>
-              <p className="font-semibold text-[#2D2A26]">₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+              <p className="font-semibold text-ink">₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
             </div>
-            <p className="text-xs text-[#827A73] mt-1.5">
+            <p className="text-xs text-ink-muted mt-1.5">
               {row.completed_jobs} / {row.total_jobs} jobs · {row.completion_rate}% completion
               {!!row.avg_adjustments && row.avg_adjustments > 0 && (
-                <span className={row.avg_adjustments > 1 ? 'text-[#B26959] font-medium' : ''}> · {row.avg_adjustments} avg. adjustment rounds</span>
+                <span className={row.avg_adjustments > 1 ? 'text-danger font-medium' : ''}> · {row.avg_adjustments} avg. adjustment rounds</span>
               )}
             </p>
           </div>
@@ -130,8 +130,8 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
       </div>
 
       <div className="hidden md:block overflow-x-auto -mx-6 -mb-6">
-        <table className="w-full text-left text-sm text-[#524A44] min-w-[640px]">
-          <thead className="bg-[#FAF6F3]/50 text-xs uppercase text-[#A8A19A] border-y border-[#EBE6E0]">
+        <table className="w-full text-left text-sm text-ink-body min-w-[640px]">
+          <thead className="bg-canvas/50 text-xs uppercase text-ink-faint border-y border-line">
             <tr>
               <th className="px-6 py-3 font-medium">Staff Member</th>
               <th className="px-6 py-3 font-medium">Role</th>
@@ -143,15 +143,15 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
           </thead>
           <tbody className="divide-y divide-[#F0EAE3]">
             {data.map(row => (
-              <tr key={row.staff_id} className="hover:bg-[#F0EAE3]/20 transition-colors">
-                <td className="px-6 py-3 font-medium text-[#2D2A26]">{row.name || 'Unnamed Staff'}</td>
-                <td className="px-6 py-3 text-[#827A73]">{roleLabel(row.role)}</td>
+              <tr key={row.staff_id} className="hover:bg-sunken/20 transition-colors">
+                <td className="px-6 py-3 font-medium text-ink">{row.name || 'Unnamed Staff'}</td>
+                <td className="px-6 py-3 text-ink-muted">{roleLabel(row.role)}</td>
                 <td className="px-6 py-3">
                   ₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-6 py-3">{row.completed_jobs} / {row.total_jobs}</td>
                 <td className="px-6 py-3">{row.completion_rate}%</td>
-                <td className={`px-6 py-3 ${row.avg_adjustments && row.avg_adjustments > 1 ? 'text-[#B26959] font-semibold' : ''}`}>
+                <td className={`px-6 py-3 ${row.avg_adjustments && row.avg_adjustments > 1 ? 'text-danger font-semibold' : ''}`}>
                   {row.avg_adjustments ?? 0}
                 </td>
               </tr>

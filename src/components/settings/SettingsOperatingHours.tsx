@@ -16,18 +16,18 @@ export default function SettingsOperatingHours({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-medium text-[#2D2A26] flex items-center gap-2">
-            <Clock size={20} className="text-[#827A73]" />
+          <h2 className="text-lg font-medium text-ink flex items-center gap-2">
+            <Clock size={20} className="text-ink-muted" />
             Weekly Operating Hours
           </h2>
-          <p className="text-sm text-[#827A73] mt-1">
+          <p className="text-sm text-ink-muted mt-1">
             Set the regular hours your shop is open for business. Customers will use this to book appointments.
           </p>
         </div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-[#524A44]">Standard Hours</h2>
+          <h2 className="text-sm font-semibold text-ink-body">Standard Hours</h2>
           <button
             type="button"
             onClick={() => {
@@ -41,14 +41,14 @@ export default function SettingsOperatingHours({
               });
               toast.success('Monday hours applied to Tue-Fri');
             }}
-            className="text-xs font-semibold text-[#9A8073] bg-[#FAF6F3] border border-[#EBE6E0] px-3 py-1.5 rounded-lg hover:bg-[#F0EAE3] transition-colors"
+            className="text-xs font-semibold text-taupe bg-canvas border border-line px-3 py-1.5 rounded-lg hover:bg-sunken transition-colors"
           >
             Apply Monday to Tue-Fri
           </button>
         </div>
         <div className="space-y-3">
           {days.map(day => (
-            <div key={day} className="flex items-center justify-between p-3 rounded-xl border border-[#EBE6E0] bg-[#FAF6F3]">
+            <div key={day} className="flex items-center justify-between p-3 rounded-xl border border-line bg-canvas">
               <div className="flex items-center gap-4 w-32">
                 <input
                   type="checkbox"
@@ -72,9 +72,9 @@ export default function SettingsOperatingHours({
                       onHoursChange(day, 'close', operatingHours[day]?.close || '18:00');
                     }
                   }}
-                  className="w-4 h-4 text-[#9A8073] border-[#EBE6E0] rounded focus:ring-[#9A8073]"
+                  className="w-4 h-4 text-taupe border-line rounded focus:ring-taupe"
                 />
-                <span className="text-sm font-medium text-[#2D2A26] capitalize">{day}</span>
+                <span className="text-sm font-medium text-ink capitalize">{day}</span>
               </div>
               <div className="flex items-center gap-3 flex-1 justify-end">
                 {operatingHours[day]?.is_open ? (
@@ -83,18 +83,18 @@ export default function SettingsOperatingHours({
                       type="time"
                       value={operatingHours[day]?.open || '09:00'}
                       onChange={e => onHoursChange(day, 'open', e.target.value)}
-                      className="px-3 py-1.5 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:border-[#9A8073] outline-none"
+                      className="px-3 py-1.5 bg-surface border border-line rounded-lg text-sm text-ink focus:border-taupe outline-none"
                     />
-                    <span className="text-[#A8A19A] text-sm">to</span>
+                    <span className="text-ink-faint text-sm">to</span>
                     <input
                       type="time"
                       value={operatingHours[day]?.close || '18:00'}
                       onChange={e => onHoursChange(day, 'close', e.target.value)}
-                      className="px-3 py-1.5 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:border-[#9A8073] outline-none"
+                      className="px-3 py-1.5 bg-surface border border-line rounded-lg text-sm text-ink focus:border-taupe outline-none"
                     />
                   </>
                 ) : (
-                  <span className="text-sm text-[#B26959] font-medium px-4 py-1.5 bg-[#B26959]/10 rounded-lg">
+                  <span className="text-sm text-danger font-medium px-4 py-1.5 bg-danger/10 rounded-lg">
                     Closed
                   </span>
                 )}

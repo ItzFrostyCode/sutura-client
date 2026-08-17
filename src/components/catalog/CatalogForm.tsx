@@ -31,7 +31,7 @@ interface SectionImageUploadProps {
 function SectionImageUpload({ imageUrl, uploading, uploadId, alt, onRemove, onChange }: SectionImageUploadProps) {
   if (imageUrl) {
     return (
-      <div className="relative max-w-md aspect-video bg-white shadow-sm border border-[#EBE6E0] rounded-lg overflow-hidden group">
+      <div className="relative max-w-md aspect-video bg-surface border border-line rounded-lg overflow-hidden group">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageUrl} alt={alt} className="w-full h-full object-cover" />
         <button
@@ -45,9 +45,9 @@ function SectionImageUpload({ imageUrl, uploading, uploadId, alt, onRemove, onCh
     );
   }
   return (
-    <div className="border-2 border-dashed border-[#EBE6E0] rounded-lg p-4 text-center max-w-md bg-white">
+    <div className="border-2 border-dashed border-line rounded-lg p-4 text-center max-w-md bg-white">
       {uploading ? (
-        <div className="flex items-center justify-center gap-2 text-xs text-[#827A73]">
+        <div className="flex items-center justify-center gap-2 text-xs text-ink-muted">
           <Loader2 className="w-4 h-4 animate-spin text-taupe" />
           <span>Uploading visual guide...</span>
         </div>
@@ -57,7 +57,7 @@ function SectionImageUpload({ imageUrl, uploading, uploadId, alt, onRemove, onCh
           type="file"
           accept="image/*"
           onChange={e => onChange(e.target.files?.[0])}
-          className="text-xs text-[#827A73] file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#F0EAE3] file:text-taupe hover:file:bg-[#EBE6E0] cursor-pointer"
+          className="text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sunken file:text-taupe hover:file:bg-line cursor-pointer"
         />
       )}
     </div>
@@ -209,33 +209,33 @@ export default function CatalogForm({
   const saveDisabled = submitting || !formData.name || !formData.price || images.every(i => !i.url) || images.some(i => i.uploading);
 
   return (
-    <form onSubmit={handleFormSubmit} className="bg-[#FAF6F3] min-h-screen text-[#2D2A26] pb-16 font-sans selection:bg-[#EBE6E0]">
+    <form onSubmit={handleFormSubmit} className="bg-canvas min-h-screen text-ink pb-16 font-sans selection:bg-line">
       {/* Top Header Panel */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#EBE6E0] pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-line pb-6">
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard/catalog"
-              className="p-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#827A73] hover:text-[#2D2A26] hover:shadow-xs transition-all shrink-0"
+              className="p-2.5 bg-surface border border-line rounded-xl text-ink-muted hover:text-ink hover:border-line-strong transition-all shrink-0"
             >
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <h1 className="text-2xl font-serif font-bold text-[#2D2A26] tracking-tight">{title}</h1>
-              <p className="text-[#827A73] text-sm mt-0.5">{description}</p>
+              <h1 className="text-2xl font-serif font-bold text-ink tracking-tight">{title}</h1>
+              <p className="text-ink-muted text-sm mt-0.5">{description}</p>
             </div>
           </div>
           <div className="flex gap-3">
             <Link
               href="/dashboard/catalog"
-              className="px-5 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-sm font-semibold text-[#524A44] hover:bg-[#FAF6F3] transition-colors flex items-center justify-center animate-fade-in"
+              className="px-5 py-2.5 bg-surface border border-line rounded-xl text-sm font-semibold text-ink-body hover:bg-canvas transition-colors flex items-center justify-center animate-fade-in"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={saveDisabled}
-              className="px-5 py-2.5 bg-taupe hover:bg-taupe/90 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs cursor-pointer animate-fade-in"
+              className="px-5 py-2.5 bg-taupe hover:bg-taupe/90 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer animate-fade-in"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={16} />}
               {submitLabel}
@@ -248,12 +248,12 @@ export default function CatalogForm({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6 space-y-6">
-              <h2 className="text-lg font-medium text-[#2D2A26] border-b border-[#FAF6F3] pb-3">Basic Information</h2>
+            <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
+              <h2 className="text-lg font-medium text-ink border-b border-[#FAF6F3] pb-3">Basic Information</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="catalog-name" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
+                  <label htmlFor="catalog-name" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
                     Product / Design Name <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -263,14 +263,14 @@ export default function CatalogForm({
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="e.g. Traditional Jusi Barong"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="catalog-price" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
+                  <label htmlFor="catalog-price" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
                     Price (PHP) <span className="text-rose-500">*</span>
-                    <span className="text-[#A8A19A] normal-case font-normal"> — base/single-piece price; bulk pricing is arranged per job order</span>
+                    <span className="text-ink-faint normal-case font-normal"> — base/single-piece price; bulk pricing is arranged per job order</span>
                   </label>
                   <input
                     id="catalog-price"
@@ -279,14 +279,14 @@ export default function CatalogForm({
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="e.g. 24999"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="catalog-material" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">Fabric / Material</label>
+                  <label htmlFor="catalog-material" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Fabric / Material</label>
                   <input
                     id="catalog-material"
                     type="text"
@@ -294,21 +294,21 @@ export default function CatalogForm({
                     value={formData.material}
                     onChange={handleChange}
                     placeholder="e.g. Cocoon Silk, Piña"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                   {/* Fabric Texture Image Upload — a real button, styled distinctly
                       from the main Images panel on the right, so it isn't mistaken
                       for that gallery's own upload slots. */}
                   <div className="mt-2">
                     {formData.fabric_image_url ? (
-                      <div className="relative inline-flex items-center gap-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-xs">
+                      <div className="relative inline-flex items-center gap-2 bg-canvas border border-line rounded-lg px-3 py-2 text-xs">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={formData.fabric_image_url} alt="Fabric texture" className="w-10 h-10 object-cover rounded border border-[#EBE6E0]" />
-                        <span className="text-[#524A44] font-medium">Fabric texture uploaded</span>
+                        <img src={formData.fabric_image_url} alt="Fabric texture" className="w-10 h-10 object-cover rounded border border-line" />
+                        <span className="text-ink-body font-medium">Fabric texture uploaded</span>
                         <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, fabric_image_url: '' }))}
-                          className="ml-1 text-[#B26959] hover:text-[#B26959]/80 transition-colors"
+                          className="ml-1 text-danger hover:text-danger/80 transition-colors"
                         >
                           <X size={14} />
                         </button>
@@ -318,7 +318,7 @@ export default function CatalogForm({
                         type="button"
                         disabled={fabricImageUploading}
                         onClick={() => fabricImageInputRef.current?.click()}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#D5CEC8] bg-[#FAF6F3] text-xs font-semibold text-[#524A44] hover:bg-[#F0EAE3] hover:border-taupe transition-colors disabled:opacity-50 cursor-pointer"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#D5CEC8] bg-canvas text-xs font-semibold text-ink-body hover:bg-sunken hover:border-taupe transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         {fabricImageUploading ? (
                           <Loader2 size={14} className="animate-spin text-taupe" />
@@ -340,7 +340,7 @@ export default function CatalogForm({
                 </div>
 
                 <div>
-                  <label htmlFor="catalog-color" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">Color</label>
+                  <label htmlFor="catalog-color" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Color</label>
                   <input
                     id="catalog-color"
                     type="text"
@@ -348,12 +348,12 @@ export default function CatalogForm({
                     value={formData.color}
                     onChange={handleChange}
                     placeholder="e.g. Ivory, Navy Blue"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="catalog-garment" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">Garment Type</label>
+                  <label htmlFor="catalog-garment" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Garment Type</label>
                   <input
                     id="catalog-garment"
                     type="text"
@@ -361,14 +361,14 @@ export default function CatalogForm({
                     value={formData.garment_type}
                     onChange={handleChange}
                     placeholder="e.g. Barong, Gown, Suit"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="catalog-estimated-days" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
+                  <label htmlFor="catalog-estimated-days" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
                     Estimated Days to Complete
                   </label>
                   <input
@@ -379,12 +379,12 @@ export default function CatalogForm({
                     value={formData.estimated_days}
                     onChange={handleChange}
                     placeholder="e.g. 7"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="catalog-gallery" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">External Gallery Link (Optional)</label>
+                  <label htmlFor="catalog-gallery" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">External Gallery Link (Optional)</label>
                   <input
                     id="catalog-gallery"
                     type="url"
@@ -392,7 +392,7 @@ export default function CatalogForm({
                     value={formData.external_gallery_url}
                     onChange={handleChange}
                     placeholder="e.g. Pinterest board, Google Drive link"
-                    className="w-full px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
               </div>
@@ -404,24 +404,24 @@ export default function CatalogForm({
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={e => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-                  className="w-4 h-4 rounded border-[#EBE6E0] text-taupe focus:ring-taupe"
+                  className="w-4 h-4 rounded border-line text-taupe focus:ring-taupe"
                 />
-                <label htmlFor="catalog-is-active" className="text-sm font-medium text-[#524A44]">
+                <label htmlFor="catalog-is-active" className="text-sm font-medium text-ink-body">
                   Active &amp; Visible to Customers{' '}
-                  <span className="block text-xs font-normal text-[#A8A19A]">
+                  <span className="block text-xs font-normal text-ink-faint">
                     Uncheck to pause this item (e.g. out of stock) without deleting it — it&apos;s hidden from your public storefront but stays in your own catalog list.
                   </span>
                 </label>
               </div>
 
               {/* ── More Details Toggle ────────────────────────────────── */}
-              <div className="border-t border-[#EBE6E0] pt-4">
+              <div className="border-t border-line pt-4">
                 <button
                   type="button"
                   onClick={() => setShowMoreDetails(v => !v)}
-                  className="flex items-center gap-2 text-xs font-semibold text-[#9A8073] hover:text-[#2D2A26] transition-colors"
+                  className="flex items-center gap-2 text-xs font-semibold text-taupe hover:text-ink transition-colors"
                 >
-                  <span className={`w-5 h-5 rounded-full border border-[#EBE6E0] bg-[#FAF6F3] flex items-center justify-center transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>
+                  <span className={`w-5 h-5 rounded-full border border-line bg-canvas flex items-center justify-center transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>
                     <ChevronDown size={12} />
                   </span>
                   {showMoreDetails ? 'Hide optional details' : 'Add available sizes →'}
@@ -430,8 +430,8 @@ export default function CatalogForm({
                 {showMoreDetails && (
                   <div className="mt-5 grid grid-cols-1 gap-5">
                     <div>
-                      <label htmlFor="catalog-sizes" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">
-                        Available Sizes <span className="text-[#A8A19A] normal-case">— reference range for this design; leave blank if fully custom-measured</span>
+                      <label htmlFor="catalog-sizes" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
+                        Available Sizes <span className="text-ink-faint normal-case">— reference range for this design; leave blank if fully custom-measured</span>
                       </label>
                       {formData.sizes.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-2">
@@ -453,7 +453,7 @@ export default function CatalogForm({
                           onChange={(e) => setSizeInput(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSize(); } }}
                           placeholder="e.g. S, then press Enter"
-                          className="flex-1 px-4 py-2.5 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                          className="flex-1 px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                         />
                         <button
                           type="button"
@@ -469,7 +469,7 @@ export default function CatalogForm({
               </div>
 
               <div>
-                <label htmlFor="catalog-desc" className="block text-xs font-semibold text-[#524A44] uppercase tracking-wider mb-2">Description</label>
+                <label htmlFor="catalog-desc" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Description</label>
                 <textarea
                   id="catalog-desc"
                   rows={4}
@@ -477,7 +477,7 @@ export default function CatalogForm({
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Tell clients about the design, silhouette details, and styling recommendations..."
-                  className="w-full px-4 py-3 bg-white border border-[#EBE6E0] rounded-xl text-[#2D2A26] placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+                  className="w-full px-4 py-3 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                 />
               </div>
             </div>
@@ -485,22 +485,22 @@ export default function CatalogForm({
             {/* Accordion Sections for Specifications, Fit Guide, Care */}
             <div className="space-y-4">
               {/* Accordion 1: Specifications */}
-              <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl overflow-hidden">
+              <div className="bg-surface border border-line rounded-2xl overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleAccordion('specs')}
-                  className="w-full flex items-center justify-between p-5 text-left font-medium text-[#2D2A26] hover:bg-[#FAF6F3]/50 transition-colors"
+                  className="w-full flex items-center justify-between p-5 text-left font-medium text-ink hover:bg-canvas/50 transition-colors"
                 >
                   <div>
                     <span className="font-semibold text-sm">Product Specifications</span>
-                    <p className="text-xs text-[#827A73] mt-0.5">Collar designs, cuffs, embroidery details, linings</p>
+                    <p className="text-xs text-ink-muted mt-0.5">Collar designs, cuffs, embroidery details, linings</p>
                   </div>
                   {accordionOpen.specs ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
                 {accordionOpen.specs && (
-                  <div className="p-5 border-t border-[#EBE6E0] bg-[#FAF6F3]/20 space-y-4">
+                  <div className="p-5 border-t border-line bg-canvas/20 space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#827A73]">Dynamic details that list out product specifications.</span>
+                      <span className="text-xs text-ink-muted">Dynamic details that list out product specifications.</span>
                       <button
                         type="button"
                         onClick={() => setFeatures([...features, { id: Math.random().toString(), text: '' }])}
@@ -521,12 +521,12 @@ export default function CatalogForm({
                               setFeatures(newF);
                             }}
                             placeholder="e.g. Hand-stitched lapel, horn buttons"
-                            className="flex-1 px-4 py-2 bg-white border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe text-sm"
+                            className="flex-1 px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
                           />
                           <button
                             type="button"
                             onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
-                            className="p-2 text-[#A8A19A] hover:text-[#B26959] transition-colors"
+                            className="p-2 text-ink-faint hover:text-danger transition-colors"
                           >
                             <X size={18} />
                           </button>
@@ -534,8 +534,8 @@ export default function CatalogForm({
                       ))}
                     </div>
 
-                    <div className="border-t border-[#EBE6E0] pt-4 mt-4">
-                      <label htmlFor="features-upload" className="block text-xs font-semibold text-[#524A44] mb-2">
+                    <div className="border-t border-line pt-4 mt-4">
+                      <label htmlFor="features-upload" className="block text-xs font-semibold text-ink-body mb-2">
                         Section Visual Guide / Image (Optional)
                       </label>
                       <SectionImageUpload
@@ -552,7 +552,7 @@ export default function CatalogForm({
               </div>
 
               {/* Fit & Sizing Guidelines — the same Size Chart builder used on Services */}
-              <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-5">
+              <div className="bg-surface border border-line rounded-2xl p-5">
                 <SizeChartEditor
                   mode="table"
                   value={sizeChart}
@@ -564,34 +564,34 @@ export default function CatalogForm({
               </div>
 
               {/* Accordion 3: Garment Care & Alteration FAQ */}
-              <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl overflow-hidden">
+              <div className="bg-surface border border-line rounded-2xl overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleAccordion('care')}
-                  className="w-full flex items-center justify-between p-5 text-left font-medium text-[#2D2A26] hover:bg-[#FAF6F3]/50 transition-colors"
+                  className="w-full flex items-center justify-between p-5 text-left font-medium text-ink hover:bg-canvas/50 transition-colors"
                 >
                   <div>
                     <span className="font-semibold text-sm">Garment Care & Alterations FAQ</span>
-                    <p className="text-xs text-[#827A73] mt-0.5">Dry-cleaning rules, laundry instructions, alteration limits</p>
+                    <p className="text-xs text-ink-muted mt-0.5">Dry-cleaning rules, laundry instructions, alteration limits</p>
                   </div>
                   {accordionOpen.care ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
                 {accordionOpen.care && (
-                  <div className="p-5 border-t border-[#EBE6E0] bg-[#FAF6F3]/20 space-y-4">
+                  <div className="p-5 border-t border-line bg-canvas/20 space-y-4">
                     <div>
-                      <span className="block text-xs text-[#827A73] mb-1">Detailed text description for garment upkeep and store policies:</span>
+                      <span className="block text-xs text-ink-muted mb-1">Detailed text description for garment upkeep and store policies:</span>
                       <textarea
                         rows={4}
                         name="care_instructions"
                         value={formData.care_instructions}
                         onChange={handleChange}
                         placeholder="Dry clean only. Minor alterations (hem, sleeves) are free within 30 days of purchase..."
-                        className="w-full px-4 py-2 bg-white border border-[#EBE6E0] rounded-lg text-[#2D2A26] focus:outline-none focus:border-taupe text-sm"
+                        className="w-full px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
                       />
                     </div>
 
-                    <div className="border-t border-[#EBE6E0] pt-4 mt-2">
-                      <label htmlFor="care-upload" className="block text-xs font-semibold text-[#524A44] mb-2">
+                    <div className="border-t border-line pt-4 mt-2">
+                      <label htmlFor="care-upload" className="block text-xs font-semibold text-ink-body mb-2">
                         Section Visual Guide / Image (Optional)
                       </label>
                       <SectionImageUpload
@@ -611,9 +611,9 @@ export default function CatalogForm({
 
           <div className="space-y-6">
             {/* Images Upload Section */}
-            <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6 sticky top-6">
+            <div className="bg-surface border border-line rounded-2xl p-6 sticky top-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-[#2D2A26]">Images</h2>
+                <h2 className="text-lg font-medium text-ink">Images</h2>
                 <button
                   type="button"
                   onClick={() => setImages([...images, { id: Math.random().toString(), url: '', angle: 'Default', is_primary: false }])}
@@ -626,18 +626,18 @@ export default function CatalogForm({
                 {images.map((img, idx) => (
                   <div
                     key={img.id}
-                    className="space-y-3 p-4 bg-white border border-[#EBE6E0] rounded-xl relative group hover:border-[#9A8073]/50 transition-colors shadow-sm"
+                    className="space-y-3 p-4 bg-surface border border-line rounded-xl relative group hover:border-taupe/50 transition-colors"
                   >
                     <button
                       type="button"
                       onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                      className="absolute -top-2 -right-2 bg-white border border-[#EBE6E0] text-[#827A73] hover:text-rose-500 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm"
+                      className="absolute -top-2 -right-2 bg-surface border border-line text-ink-muted hover:text-rose-500 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     >
                       <X size={14} />
                     </button>
 
                     {img.url ? (
-                      <div className="relative aspect-3/4 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg overflow-hidden group/img">
+                      <div className="relative aspect-3/4 bg-canvas border border-line rounded-lg overflow-hidden group/img">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt="Uploaded" className="w-full h-full object-cover" />
                         <button
@@ -651,19 +651,19 @@ export default function CatalogForm({
                         </button>
                       </div>
                     ) : (
-                      <label className="relative flex flex-col items-center justify-center aspect-3/4 border-2 border-dashed border-[#D5CEC8] rounded-lg bg-[#FAF6F3] hover:bg-[#F0EAE3] hover:border-[#9A8073] transition-colors cursor-pointer group/upload">
+                      <label className="relative flex flex-col items-center justify-center aspect-3/4 border-2 border-dashed border-[#D5CEC8] rounded-lg bg-canvas hover:bg-sunken hover:border-taupe transition-colors cursor-pointer group/upload">
                         {img.uploading ? (
-                          <div className="flex flex-col items-center gap-2 text-[#9A8073]">
+                          <div className="flex flex-col items-center gap-2 text-taupe">
                             <Loader2 className="w-6 h-6 animate-spin" />
                             <span className="text-xs font-medium">Uploading...</span>
                           </div>
                         ) : (
                           <>
-                            <div className="p-3 bg-white rounded-full shadow-sm text-[#9A8073] mb-2 group-hover/upload:scale-110 transition-transform">
+                            <div className="p-3 bg-surface border border-line rounded-full text-taupe mb-2 group-hover/upload:scale-110 transition-transform">
                               <UploadCloud size={20} />
                             </div>
-                            <span className="text-sm font-semibold text-[#524A44]">Click to upload image</span>
-                            <span className="text-xs text-[#827A73] mt-1">JPEG, PNG up to 5MB</span>
+                            <span className="text-sm font-semibold text-ink-body">Click to upload image</span>
+                            <span className="text-xs text-ink-muted mt-1">JPEG, PNG up to 5MB</span>
                           </>
                         )}
                         <input
@@ -688,8 +688,8 @@ export default function CatalogForm({
 
                     <div className="flex items-end gap-3 mt-3">
                       <div className="flex-1">
-                        <label htmlFor={`img-angle-${img.id}`} className="block text-[11px] font-semibold text-[#827A73] uppercase tracking-wider mb-1">
-                          Photo Label <span className="text-[#A8A19A] normal-case font-normal">— shown as a caption on this photo (e.g. Front, Back, Detail)</span>
+                        <label htmlFor={`img-angle-${img.id}`} className="block text-[11px] font-semibold text-ink-muted uppercase tracking-wider mb-1">
+                          Photo Label <span className="text-ink-faint normal-case font-normal">— shown as a caption on this photo (e.g. Front, Back, Detail)</span>
                         </label>
                         <input
                           id={`img-angle-${img.id}`}
@@ -700,10 +700,10 @@ export default function CatalogForm({
                             setImages(prev => prev.map(im => (im.id === img.id ? { ...im, angle: newAngle } : im)));
                           }}
                           placeholder="e.g. Front, Back, Detail"
-                          className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-md text-[#2D2A26] text-sm focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073] transition-shadow"
+                          className="w-full px-3 py-2 bg-canvas border border-line rounded-md text-ink text-sm focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-shadow"
                         />
                       </div>
-                      <label className={`flex items-center gap-2 text-sm px-3 py-2 rounded-md border cursor-pointer transition-colors shrink-0 ${img.is_primary ? 'bg-[#9A8073]/10 border-[#9A8073] text-[#9A8073] font-medium' : 'bg-white border-[#EBE6E0] text-[#827A73] hover:bg-[#FAF6F3]'}`}>
+                      <label className={`flex items-center gap-2 text-sm px-3 py-2 rounded-md border cursor-pointer transition-colors shrink-0 ${img.is_primary ? 'bg-taupe/10 border-taupe text-taupe font-medium' : 'bg-white border-line text-ink-muted hover:bg-canvas'}`}>
                         <input
                           type="radio"
                           name="is_primary"
@@ -720,11 +720,11 @@ export default function CatalogForm({
                 ))}
               </div>
 
-              <div className="mt-8 border-t border-[#EBE6E0] pt-6">
+              <div className="mt-8 border-t border-line pt-6">
                 <button
                   type="submit"
                   disabled={saveDisabled}
-                  className="w-full bg-taupe hover:bg-taupe/90 text-white px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm shadow-sm cursor-pointer"
+                  className="w-full bg-taupe hover:bg-taupe/90 text-white px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm cursor-pointer"
                 >
                   {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={18} />}
                   {submitLabel}

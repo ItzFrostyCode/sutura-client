@@ -9,7 +9,7 @@ interface SkeletonProps {
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
     <div
-      className={`bg-[#EBE6E0] rounded-lg animate-pulse ${className}`}
+      className={`bg-line rounded-lg animate-pulse ${className}`}
     />
   );
 }
@@ -30,7 +30,7 @@ export function SkeletonText({ lines = 2, className = '' }: { readonly lines?: n
 
 export function SkeletonMetricCard() {
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-sm space-y-3">
+    <div className="bg-surface border border-line rounded-2xl p-5 space-y-3">
       <div className="flex items-center justify-between">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-8 w-8 rounded-xl" />
@@ -43,7 +43,7 @@ export function SkeletonMetricCard() {
 
 export function SkeletonCard({ className = '' }: { readonly className?: string }) {
   return (
-    <div className={`bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm ${className}`}>
+    <div className={`bg-white border border-line rounded-2xl p-6 ${className}`}>
       <Skeleton className="h-5 w-40 mb-4" />
       <SkeletonText lines={3} />
     </div>
@@ -52,7 +52,7 @@ export function SkeletonCard({ className = '' }: { readonly className?: string }
 
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
         <Skeleton className="h-8 w-64" />
@@ -77,7 +77,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Bottom chart */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         <Skeleton className="h-5 w-48 mb-6" />
         <Skeleton className="h-48 w-full rounded-xl" />
       </div>

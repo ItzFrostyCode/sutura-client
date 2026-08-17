@@ -40,26 +40,27 @@ export default function CatalogAnalyticsPage() {
   const totalRevenue = items.reduce((sum, i) => sum + (i.total_revenue || 0), 0);
 
   const kpiCards = [
-    { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye, color: 'text-[#9A8073]', bg: 'bg-[#9A8073]/10' },
+    { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye, color: 'text-taupe', bg: 'bg-taupe/10' },
     { label: 'Total Saves', value: totalSaves.toLocaleString(), icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50' },
-    { label: 'Total Orders', value: totalOrders.toLocaleString(), icon: ShoppingBag, color: 'text-[#7A8B76]', bg: 'bg-[#7A8B76]/10' },
+    { label: 'Total Orders', value: totalOrders.toLocaleString(), icon: ShoppingBag, color: 'text-sage', bg: 'bg-sage/10' },
     { label: 'Total Revenue', value: `₱${totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, icon: Wallet, color: 'text-emerald-700', bg: 'bg-emerald-50' },
   ];
 
   return (
-    <div className="space-y-6 pb-12 text-[#2D2A26]">
+    <div className="space-y-6 text-ink animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Catalog Showcase</h1>
-        <p className="text-[#827A73] text-sm mt-1">Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.</p>
+        <span className="text-[11px] font-bold text-taupe uppercase tracking-wider block">Performance & Metrics</span>
+        <h1 className="text-2xl font-black text-ink tracking-tight">Catalog Showcase</h1>
+        <p className="text-xs text-ink-muted mt-0.5">Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.</p>
       </div>
 
       <CatalogModuleTabs />
 
       {loading ? (
-        <div className="py-12 text-center text-[#A8A19A] animate-pulse">Loading analytics…</div>
+        <div className="py-12 text-center text-ink-faint animate-pulse">Loading analytics…</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-[#EBE6E0]">
-          <p className="text-[#827A73]">No catalog items yet. Add some to your Design Catalog to see performance analytics here.</p>
+        <div className="text-center py-16 bg-surface rounded-2xl border border-line shadow-2xs">
+          <p className="text-xs text-ink-muted">No catalog items yet. Add some to your Design Catalog to see performance analytics here.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -67,12 +68,14 @@ export default function CatalogAnalyticsPage() {
             {kpiCards.map(card => {
               const Icon = card.icon;
               return (
-                <div key={card.label} className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-sm">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${card.bg} mb-3`}>
-                    <Icon size={16} className={card.color} />
+                <div key={card.label} className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">{card.label}</span>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${card.bg} border border-line/40 shrink-0`}>
+                      <Icon size={15} className={card.color} />
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider">{card.label}</p>
-                  <p className="text-xl font-bold text-[#2D2A26] mt-1">{card.value}</p>
+                  <p className="text-xl sm:text-2xl font-black font-mono text-ink tracking-tight">{card.value}</p>
                 </div>
               );
             })}

@@ -34,7 +34,17 @@ export interface Job {
   deadline?: string;
   due_date?: string;
   customer?: { name: string; id: number; email?: string | null; suki_tag?: string | null };
-  service?: { name: string; id: number; service_type?: string | null };
+  service?: {
+    name: string;
+    id: number;
+    service_type?: string | null;
+    service_types?: string[] | null;
+    category?: string | null;
+    categories?: string[] | null;
+    base_price?: number | string | null;
+    min_order_qty?: number | null;
+    estimated_days?: number | null;
+  };
   assigned_staff?: { name: string; id: number };
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
   custom_order_data?: Record<string, unknown> | null;

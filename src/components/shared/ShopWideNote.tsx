@@ -17,7 +17,7 @@ export default function ShopWideNote() {
   if (!branchName) return null;
 
   return (
-    <p className="flex items-center gap-1 text-xs text-[#827A73] mt-1.5">
+    <p className="flex items-center gap-1 text-xs text-ink-muted mt-1.5">
       <Layers size={11} />
       Shop-wide — not specific to {branchName}. The branch switcher doesn&apos;t filter this page.
     </p>

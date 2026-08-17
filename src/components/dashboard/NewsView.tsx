@@ -26,18 +26,18 @@ export default function NewsView() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-fade-in text-[#2D2A26]">
+    <div className="space-y-6 animate-fade-in text-ink">
       <div>
-        <h2 className="text-lg font-semibold text-[#2D2A26] mb-1">System News & Updates</h2>
-        <p className="text-[#827A73] text-sm">Recent development activity, straight from the project&apos;s own commit history.</p>
+        <h2 className="text-lg font-semibold text-ink mb-1">System News & Updates</h2>
+        <p className="text-ink-muted text-sm">Recent development activity, straight from the project&apos;s own commit history.</p>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="animate-spin text-[#A8A19A]" size={24} />
+          <Loader2 className="animate-spin text-ink-faint" size={24} />
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-[#EBE6E0] text-[#827A73]">
+        <div className="text-center py-16 bg-white rounded-2xl border border-line text-ink-muted">
           No recent updates to show.
         </div>
       ) : (
@@ -45,18 +45,18 @@ export default function NewsView() {
           {items.map((item) => {
             const SourceIcon = item.source === 'Backend' ? Server : Monitor;
             return (
-              <div key={item.hash} className="bg-white border border-[#EBE6E0] rounded-2xl p-5 shadow-xs hover:border-[#D1C7BD] transition-all">
+              <div key={item.hash} className="bg-surface border border-line rounded-2xl p-5 hover:border-line-strong transition-all">
                 <div className="flex items-center justify-between gap-3 mb-1.5 flex-wrap">
-                  <h3 className="font-medium text-sm text-[#2D2A26] flex items-center gap-2">
-                    <GitCommit size={15} className="text-[#9A8073] shrink-0" />
+                  <h3 className="font-medium text-sm text-ink flex items-center gap-2">
+                    <GitCommit size={15} className="text-taupe shrink-0" />
                     {item.subject}
                   </h3>
-                  <span className="text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full border bg-[#F0EAE3] text-[#827A73] border-[#EBE6E0] flex items-center gap-1 shrink-0">
+                  <span className="text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full border bg-sunken text-ink-muted border-line flex items-center gap-1 shrink-0">
                     <SourceIcon size={11} />
                     {item.source}
                   </span>
                 </div>
-                <p className="text-xs text-[#A8A19A]">
+                <p className="text-xs text-ink-faint">
                   {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                   {' · '}
                   <span className="font-mono">{item.hash}</span>

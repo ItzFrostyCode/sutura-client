@@ -83,9 +83,9 @@ export default function SettingsBusinessType({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-2">Business Type</h2>
-        <p className="text-sm text-[#827A73] mb-5">
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-2">Business Type</h2>
+        <p className="text-sm text-ink-muted mb-5">
           Select the type that best describes your business. This controls which features are highlighted on your
           public profile.
         </p>
@@ -99,25 +99,25 @@ export default function SettingsBusinessType({
               onClick={() => onChange(opt.value)}
               className={`text-left p-4 rounded-xl border-2 transition-all ${
                 businessType === opt.value
-                  ? 'border-[#9A8073] bg-[#FAF6F3] shadow-sm'
-                : 'border-[#EBE6E0] hover:border-[#D1C7BD] bg-white'
+                  ? 'border-taupe bg-canvas'
+                : 'border-line hover:border-line-strong bg-white'
               }`}
             >
-              <div className="w-9 h-9 rounded-lg bg-[#FAF6F3] border border-[#EBE6E0] flex items-center justify-center mb-2 text-[#9A8073]">
+              <div className="w-9 h-9 rounded-lg bg-canvas border border-line flex items-center justify-center mb-2 text-taupe">
                 <OptionIcon size={18} />
               </div>
-              <div className="font-semibold text-[#2D2A26] text-sm mb-1">{opt.label}</div>
-              <div className="text-xs text-[#A8A19A] leading-snug">{opt.desc}</div>
-              {businessType === opt.value && <div className="mt-2 text-xs font-medium text-[#9A8073]">✓ Selected</div>}
+              <div className="font-semibold text-ink text-sm mb-1">{opt.label}</div>
+              <div className="text-xs text-ink-faint leading-snug">{opt.desc}</div>
+              {businessType === opt.value && <div className="mt-2 text-xs font-medium text-taupe">✓ Selected</div>}
             </button>
             );
           })}
         </div>
       </div>
 
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-[#2D2A26] mb-2">Garment Specializations</h2>
-        <p className="text-sm text-[#827A73] mb-5">
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <h2 className="text-lg font-medium text-ink mb-2">Garment Specializations</h2>
+        <p className="text-sm text-ink-muted mb-5">
           Select the garment types your shop specializes in. Customers discover shops by specialization when
           searching the map, so this directly affects how often you show up in results.
         </p>
@@ -132,15 +132,15 @@ export default function SettingsBusinessType({
                 onClick={() => toggleSpecialization(spec.id)}
                 className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all text-left ${
                   isChecked
-                    ? 'border-[#9A8073] bg-[#FAF6F3] text-[#2D2A26]'
-                    : 'border-[#EBE6E0] bg-white text-[#524A44] hover:bg-[#FAF6F3]'
+                    ? 'border-taupe bg-canvas text-ink'
+                    : 'border-line bg-white text-ink-body hover:bg-canvas'
                   }`}
               >
                 <SpecIcon size={16} className="shrink-0 text-current" />
                 <span className="flex-1">{spec.label}</span>
                 <span
                   className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] shrink-0 ${
-                    isChecked ? 'border-[#9A8073] bg-[#9A8073] text-white' : 'border-[#EBE6E0]'
+                    isChecked ? 'border-taupe bg-taupe text-white' : 'border-line'
                   }`}
                 >
                   {isChecked ? '✓' : ''}
@@ -151,18 +151,18 @@ export default function SettingsBusinessType({
         </div>
       </div>
 
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium text-[#2D2A26] mb-1 flex items-center gap-2">
+            <h2 className="text-lg font-medium text-ink mb-1 flex items-center gap-2">
               Shop Visibility
               {isHidden && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#F0EAE3] text-[#827A73] border border-[#EBE6E0]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sunken text-ink-muted border border-line">
                   <EyeOff size={10} /> Hidden
                 </span>
               )}
             </h2>
-            <p className="text-sm text-[#827A73] max-w-md">
+            <p className="text-sm text-ink-muted max-w-md">
               {isHidden
                 ? "Your shop is hidden — customers can't find or view it right now. You can still edit everything here while hidden."
                 : 'Your shop is visible to customers. Turn this off to temporarily take your storefront down without deleting anything.'}
@@ -171,21 +171,21 @@ export default function SettingsBusinessType({
           <button
             type="button"
             onClick={() => onHiddenChange(!isHidden)}
-            className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${!isHidden ? 'bg-[#9A8073]' : 'bg-[#EBE6E0]'}`}
+            className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${!isHidden ? 'bg-taupe' : 'bg-line'}`}
             aria-pressed={!isHidden}
             aria-label="Toggle shop visibility"
           >
             <span
-              className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${!isHidden ? 'translate-x-5' : ''}`}
+              className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition-transform ${!isHidden ? 'translate-x-5' : ''}`}
             />
           </button>
         </div>
       </div>
 
-      <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-6">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium text-[#2D2A26] mb-1 flex items-center gap-2">
+            <h2 className="text-lg font-medium text-ink mb-1 flex items-center gap-2">
               Featured Shop Placement
               {featuredGated && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
@@ -193,7 +193,7 @@ export default function SettingsBusinessType({
                 </span>
               )}
             </h2>
-            <p className="text-sm text-[#827A73] max-w-md">
+            <p className="text-sm text-ink-muted max-w-md">
               {featuredGated
                 ? 'Get pinned as a "Featured Shop" at the top of relevant search results. Upgrade to Premium to unlock this.'
                 : 'Pin your shop as a "Featured Shop" at the top of relevant customer search results.'}
@@ -210,12 +210,12 @@ export default function SettingsBusinessType({
             <button
               type="button"
               onClick={() => onFeaturedChange(!isFeatured)}
-              className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${isFeatured ? 'bg-[#9A8073]' : 'bg-[#EBE6E0]'}`}
+              className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${isFeatured ? 'bg-taupe' : 'bg-line'}`}
               aria-pressed={isFeatured}
               aria-label="Toggle featured shop placement"
             >
               <span
-                className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${isFeatured ? 'translate-x-5' : ''}`}
+                className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition-transform ${isFeatured ? 'translate-x-5' : ''}`}
               />
             </button>
           )}

@@ -57,10 +57,10 @@ export default function SubscriptionGate({ feature, children }: Readonly<Subscri
 
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center text-[#A8A19A]">
+      <div className="min-h-[400px] flex items-center justify-center text-ink-faint">
         <div className="flex flex-col items-center gap-3 animate-pulse">
-          <div className="w-10 h-10 rounded-full bg-[#EBE6E0]" />
-          <div className="h-3 w-32 bg-[#EBE6E0] rounded" />
+          <div className="w-10 h-10 rounded-full bg-line" />
+          <div className="h-3 w-32 bg-line rounded" />
         </div>
       </div>
     );
@@ -71,19 +71,19 @@ export default function SubscriptionGate({ feature, children }: Readonly<Subscri
     const isPremiumGate = requiredPlan === 'Premium';
 
     return (
-      <div className="relative min-h-[450px] w-full rounded-3xl overflow-hidden flex items-center justify-center p-8 bg-[#FAF6F3]/30 border border-[#EBE6E0]">
+      <div className="relative min-h-[450px] w-full rounded-3xl overflow-hidden flex items-center justify-center p-8 bg-canvas/30 border border-line">
         {/* Blurred content ghost */}
         <div className="absolute inset-0 blur-[6px] opacity-10 select-none pointer-events-none">
           {children}
         </div>
 
         {/* Lock Overlay Card */}
-        <div className="relative z-10 max-w-sm w-full bg-white border border-[#EBE6E0] rounded-2xl p-8 text-center shadow-[0_12px_40px_-8px_rgba(0,0,0,0.10)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="relative z-10 max-w-sm w-full bg-surface border border-line rounded-2xl p-8 text-center animate-in fade-in zoom-in-95 duration-200">
           {/* Icon */}
           <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
             isPremiumGate
               ? 'bg-amber-50 border border-amber-100 text-amber-600'
-              : 'bg-[#F0EAE3] border border-[#EBE6E0] text-[#9A8073]'
+              : 'bg-sunken border border-line text-taupe'
           }`}>
             {isPremiumGate ? <Zap size={22} /> : <Lock size={22} />}
           </div>
@@ -92,19 +92,19 @@ export default function SubscriptionGate({ feature, children }: Readonly<Subscri
           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider mb-3 ${
             isPremiumGate
               ? 'bg-amber-50 text-amber-700 border border-amber-100'
-              : 'bg-[#F0EAE3] text-[#9A8073] border border-[#EBE6E0]'
+              : 'bg-sunken text-taupe border border-line'
           }`}>
             {requiredPlan} Feature
           </span>
 
-          <h3 className="text-[17px] font-bold text-[#2D2A26] mb-2">{FEATURE_LABELS[feature]}</h3>
-          <p className="text-[13px] text-[#827A73] mb-6 leading-relaxed">
+          <h3 className="text-[17px] font-bold text-ink mb-2">{FEATURE_LABELS[feature]}</h3>
+          <p className="text-[13px] text-ink-muted mb-6 leading-relaxed">
             {FEATURE_DESC[feature]}
           </p>
 
           <Link
             href="/dashboard/billing"
-            className={`inline-flex justify-center items-center w-full font-semibold py-3 rounded-xl text-sm transition-all shadow-sm cursor-pointer gap-2 ${
+            className={`inline-flex justify-center items-center w-full font-semibold py-3 rounded-xl text-sm transition-all cursor-pointer gap-2 ${
               isPremiumGate
                 ? 'bg-amber-500 hover:bg-amber-600 text-white'
                 : 'bg-taupe hover:bg-taupe/90 text-white'
@@ -114,8 +114,8 @@ export default function SubscriptionGate({ feature, children }: Readonly<Subscri
             Upgrade to {requiredPlan}
           </Link>
 
-          <p className="text-[11px] text-[#A8A19A] mt-3">
-            View all plans on the <Link href="/dashboard/billing" className="underline hover:text-[#524A44]">Billing page</Link>
+          <p className="text-[11px] text-ink-faint mt-3">
+            View all plans on the <Link href="/dashboard/billing" className="underline hover:text-ink-body">Billing page</Link>
           </p>
         </div>
       </div>

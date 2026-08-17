@@ -125,9 +125,9 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="absolute inset-0 bg-[#2D2A26]/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-[#2D2A26]/60" />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md border border-[#EBE6E0] overflow-hidden">
+      <div className="relative bg-white rounded-2xl w-full max-w-md border border-line overflow-hidden">
 
         {/* Header */}
         <div className="bg-gradient-to-r from-[#9A8073] to-[#7A6560] px-6 py-4 flex items-center justify-between">
@@ -150,7 +150,7 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
         </div>
 
         {loading ? (
-          <div className="py-16 flex items-center justify-center text-[#A8A19A]">
+          <div className="py-16 flex items-center justify-center text-ink-faint">
             <Loader2 size={24} className="animate-spin mr-2" />
             <span className="text-sm">Loading...</span>
           </div>
@@ -159,14 +159,14 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
 
             {/* Customer */}
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                <User size={11} /> Customer <span className="text-[#B26959]">*</span>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                <User size={11} /> Customer <span className="text-danger">*</span>
               </label>
               <select
                 required
                 value={customerId}
                 onChange={e => setCustomerId(e.target.value)}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               >
                 <option value="">Select customer...</option>
                 {customers.map(c => (
@@ -177,14 +177,14 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
 
             {/* Service */}
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                <Scissors size={11} /> Type of Service <span className="text-[#B26959]">*</span>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                <Scissors size={11} /> Type of Service <span className="text-danger">*</span>
               </label>
               <select
                 required
                 value={serviceId}
                 onChange={e => setServiceId(e.target.value)}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               >
                 <option value="">Select service...</option>
                 {services.map(s => (
@@ -196,11 +196,11 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
             {/* Total + DP */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
-                  <CreditCard size={11} /> Total (₱) <span className="text-[#B26959]">*</span>
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
+                  <CreditCard size={11} /> Total (₱) <span className="text-danger">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] text-sm">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint text-sm">₱</span>
                   <input
                     required
                     type="number"
@@ -209,17 +209,17 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
                     value={total}
                     onChange={e => setTotal(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-7 pr-3 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                    className="w-full pl-7 pr-3 py-2.5 bg-canvas border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-taupe"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
                   Downpayment (₱)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A] text-sm">₱</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint text-sm">₱</span>
                   <input
                     type="number"
                     min="0"
@@ -227,7 +227,7 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
                     value={dp}
                     onChange={e => setDp(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-7 pr-3 py-2.5 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                    className="w-full pl-7 pr-3 py-2.5 bg-canvas border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-taupe"
                   />
                 </div>
               </div>
@@ -236,13 +236,13 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
             {/* DP Preset Buttons */}
             {totalNum > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[#A8A19A] font-semibold uppercase tracking-wider shrink-0">Quick DP:</span>
+                <span className="text-[10px] text-ink-faint font-semibold uppercase tracking-wider shrink-0">Quick DP:</span>
                 {DP_PRESETS.map(p => (
                   <button
                     key={p.label}
                     type="button"
                     onClick={() => handlePreset(p.pct)}
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-full border border-[#EBE6E0] bg-[#FAF6F3] text-[#827A73] hover:border-taupe hover:text-taupe transition-colors"
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-full border border-line bg-canvas text-ink-muted hover:border-taupe hover:text-taupe transition-colors"
                   >
                     {p.label}
                   </button>
@@ -272,7 +272,7 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
 
             {/* Due Date */}
             <div>
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1.5">
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
                 <CalendarDays size={11} /> Due Date
               </label>
               <input
@@ -280,30 +280,30 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl px-3.5 py-2.5 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               />
             </div>
 
             {/* Submit */}
-            <div className="flex gap-3 pt-2 border-t border-[#EBE6E0]">
+            <div className="flex gap-3 pt-2 border-t border-line">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl border border-[#EBE6E0] text-sm font-semibold text-[#524A44] hover:bg-[#FAF6F3] transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-line text-sm font-semibold text-ink-body hover:bg-canvas transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving || !customerId || !serviceId || !total}
-                className="flex-1 py-2.5 rounded-xl bg-[#9A8073] hover:bg-[#7A6560] text-white text-sm font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-xl bg-taupe hover:bg-[#7A6560] text-white text-sm font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
                 Create Job
               </button>
             </div>
 
-            <p className="text-center text-[10px] text-[#A8A19A]">
+            <p className="text-center text-[10px] text-ink-faint">
               Add measurements, custom specs & fulfillment after creation.
             </p>
           </form>

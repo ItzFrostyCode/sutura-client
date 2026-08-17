@@ -15,14 +15,14 @@ export default function CustomerAppointmentsTab({
   const branchName = (id?: number | null) => branches.find(b => b.id === id)?.name ?? '—';
 
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-2xl shadow-sm overflow-hidden animate-fade-in">
-      <div className="p-4 border-b border-[#EBE6E0] bg-[#FAF6F3]/30">
-        <h2 className="text-sm font-bold text-[#2D2A26]">Scheduled Customer Appointments</h2>
+    <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
+      <div className="p-4 border-b border-line bg-canvas/30">
+        <h2 className="text-sm font-bold text-ink">Scheduled Customer Appointments</h2>
       </div>
       {/* Mobile cards — no sideways scroll needed */}
-      <div className="md:hidden divide-y divide-[#EBE6E0]">
+      <div className="md:hidden divide-y divide-line">
         {appointments.length === 0 ? (
-          <p className="p-8 text-center text-[#A8A19A] italic text-sm">No appointments recorded for this customer.</p>
+          <p className="p-8 text-center text-ink-faint italic text-sm">No appointments recorded for this customer.</p>
         ) : appointments.map(appt => {
           let statusClass = 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse';
           if (appt.status === 'completed') statusClass = 'bg-green-50 text-green-700 border-green-200';
@@ -32,18 +32,18 @@ export default function CustomerAppointmentsTab({
             <div key={appt.id} className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-[#2D2A26]">
+                  <p className="font-semibold text-ink">
                     {new Date(appt.scheduled_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
-                  <p className="text-xs text-[#827A73]">{new Date(appt.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-xs text-ink-muted">{new Date(appt.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
                 <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase shrink-0 ${statusClass}`}>
                   {appt.status.replace('_', ' ')}
                 </span>
               </div>
-              <p className="text-[#524A44] text-sm font-medium">{appt.service?.name || 'Fitting Session / General'}</p>
-              <p className="text-xs text-[#827A73]">{branchName(appt.shop_branch_id)}</p>
-              {appt.notes && <p className="text-xs text-[#827A73] italic">&quot;{appt.notes}&quot;</p>}
+              <p className="text-ink-body text-sm font-medium">{appt.service?.name || 'Fitting Session / General'}</p>
+              <p className="text-xs text-ink-muted">{branchName(appt.shop_branch_id)}</p>
+              {appt.notes && <p className="text-xs text-ink-muted italic">&quot;{appt.notes}&quot;</p>}
             </div>
           );
         })}
@@ -52,7 +52,7 @@ export default function CustomerAppointmentsTab({
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse text-sm">
           <thead>
-            <tr className="bg-[#FAF6F3]/50 border-b border-[#EBE6E0] text-xs uppercase tracking-wider text-[#827A73]">
+            <tr className="bg-canvas/50 border-b border-line text-xs uppercase tracking-wider text-ink-muted">
               <th className="p-4 font-semibold">Date & Time</th>
               <th className="p-4 font-semibold">Garment Service</th>
               <th className="p-4 font-semibold">Branch</th>
@@ -60,15 +60,15 @@ export default function CustomerAppointmentsTab({
               <th className="p-4 font-semibold">Meeting Notes</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#EBE6E0]">
+          <tbody className="divide-y divide-line">
             {appointments.map(appt => (
-              <tr key={appt.id} className="hover:bg-[#FAF6F3]/20 transition-colors">
-                <td className="p-4 font-semibold text-[#2D2A26]">
+              <tr key={appt.id} className="hover:bg-canvas/20 transition-colors">
+                <td className="p-4 font-semibold text-ink">
                   {new Date(appt.scheduled_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                  <span className="block text-xs font-normal text-[#827A73]">{new Date(appt.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="block text-xs font-normal text-ink-muted">{new Date(appt.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                 </td>
-                <td className="p-4 text-[#524A44] font-medium">{appt.service?.name || 'Fitting Session / General'}</td>
-                <td className="p-4 text-xs text-[#827A73]">{branchName(appt.shop_branch_id)}</td>
+                <td className="p-4 text-ink-body font-medium">{appt.service?.name || 'Fitting Session / General'}</td>
+                <td className="p-4 text-xs text-ink-muted">{branchName(appt.shop_branch_id)}</td>
                 <td className="p-4">
                   {(() => {
                     let statusClass = 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse';
@@ -82,14 +82,14 @@ export default function CustomerAppointmentsTab({
                     );
                   })()}
                 </td>
-                <td className="p-4 text-xs text-[#827A73] max-w-sm truncate" title={appt.notes}>
+                <td className="p-4 text-xs text-ink-muted max-w-sm truncate" title={appt.notes}>
                   {appt.notes || '—'}
                 </td>
               </tr>
             ))}
             {appointments.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-[#A8A19A] italic">
+                <td colSpan={5} className="p-8 text-center text-ink-faint italic">
                   No appointments recorded for this customer.
                 </td>
               </tr>

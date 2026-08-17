@@ -59,9 +59,9 @@ function RevenueTooltip({ active, payload, label }: {
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-xl px-4 py-3 shadow-lg text-sm">
-      <p className="text-[#827A73] mb-1">{label}</p>
-      <p className="font-bold text-[#2D2A26]">
+    <div className="bg-surface border border-line rounded-xl px-4 py-3 text-sm">
+      <p className="text-ink-muted mb-1">{label}</p>
+      <p className="font-bold text-ink">
         ₱{(payload[0].value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
       </p>
     </div>
@@ -162,22 +162,33 @@ export default function DashboardCharts({
   // divided with plain border lines instead, the same way the header above
   // is already separated from this content.
   return (
-    <div className="text-[#2D2A26]">
+    <section className="bg-surface border border-line rounded-xl overflow-hidden text-ink">
+      {/* ── Section header (self-contained — no outer wrapper needed) ── */}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
+        <div className="min-w-0">
+          <h2 className="text-eyebrow-accent">Performance</h2>
+          <p className="text-display text-lg font-semibold text-ink mt-1">Business performance</p>
+        </div>
+        <Link href="/dashboard/reports" className="text-xs font-semibold text-taupe hover:underline shrink-0">
+          Full reports →
+        </Link>
+      </div>
+
       {/* ── Revenue chart ──────────────────────────────────────────── */}
-      <div className="px-6 pt-6 pb-6 border-b border-[#EBE6E0]">
+      <div className="px-6 pt-6 pb-6 border-b border-line">
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <div>
-            <p className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider mb-0.5">
+            <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-0.5">
               Revenue
             </p>
-            <p className="text-3xl font-bold text-[#2D2A26] tracking-tight">
+            <p className="text-3xl font-bold text-ink tracking-tight">
               ₱{data?.total_revenue
                 ? data.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })
                 : '0.00'}
             </p>
             {trend !== null && (
-              <p className={`text-xs mt-1 flex items-center gap-1 font-medium ${trend >= 0 ? 'text-emerald-600' : 'text-[#B26959]'}`}>
+              <p className={`text-xs mt-1 flex items-center gap-1 font-medium ${trend >= 0 ? 'text-emerald-600' : 'text-danger'}`}>
                 <TrendingUp size={12} className={trend < 0 ? 'rotate-180' : ''} />
                 {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% vs previous period
               </p>
@@ -185,16 +196,16 @@ export default function DashboardCharts({
           </div>
 
           {/* Period pills */}
-          <div className="flex gap-1 bg-[#F0EAE3] p-1 rounded-xl self-start">
+          <div className="flex gap-1 bg-sunken p-1 rounded-xl self-start">
             {PERIODS.map(p => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => handlePeriod(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ${
                   localPeriod === p.id
-                    ? 'bg-white text-[#2D2A26] shadow-sm'
-                    : 'text-[#827A73] hover:text-[#524A44]'
+                    ? 'bg-white text-ink border-line'
+                    : 'text-ink-muted hover:text-ink-body border-transparent'
                 }`}
               >
                 {p.label}
@@ -247,8 +258,8 @@ export default function DashboardCharts({
       {/* ── Bottom row: Donut + Recent Orders ──────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2">
         {/* Jobs by status donut */}
-        <div className="p-6 border-b lg:border-b-0 lg:border-r border-[#EBE6E0]">
-          <p className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider mb-4">
+        <div className="p-6 border-b lg:border-b-0 lg:border-r border-line">
+          <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-4">
             Jobs by Status
           </p>
           {pieData.length > 0 ? (
@@ -292,28 +303,28 @@ export default function DashboardCharts({
                 </ResponsiveContainer>
                 {/* Centre label */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <p className="text-2xl font-bold text-[#2D2A26]">{totalJobsInPie}</p>
-                  <p className="text-[11px] text-[#A8A19A] font-medium">Total Jobs</p>
+                  <p className="text-2xl font-bold text-ink">{totalJobsInPie}</p>
+                  <p className="text-[11px] text-ink-faint font-medium">Total Jobs</p>
                 </div>
               </div>
 
               {/* Legend */}
               <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 w-full max-w-xs">
                 {pieData.slice(0, 8).map(s => (
-                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-[#524A44]">
+                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-ink-body">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
                     <span className="truncate">{s.name}</span>
-                    <span className="ml-auto font-semibold text-[#2D2A26]">{s.value}</span>
+                    <span className="ml-auto font-semibold text-ink">{s.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-44 text-center">
-              <div className="w-10 h-10 bg-[#FAF6F3] rounded-full flex items-center justify-center mb-2">
-                <Package size={18} className="text-[#C5BDBA]" />
+              <div className="w-10 h-10 bg-canvas rounded-full flex items-center justify-center mb-2">
+                <Package size={18} className="text-ink-faint" />
               </div>
-              <p className="text-sm text-[#A8A19A]">No active jobs yet.</p>
+              <p className="text-sm text-ink-faint">No active jobs yet.</p>
             </div>
           )}
         </div>
@@ -321,10 +332,10 @@ export default function DashboardCharts({
         {/* Recent Orders */}
         <div className="p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-[#A8A19A] uppercase tracking-wider">
+            <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider">
               Recent Orders
             </p>
-            <Link href="/dashboard/jobs" className="text-xs font-semibold text-[#9A8073] hover:text-[#2D2A26] transition-colors">
+            <Link href="/dashboard/jobs" className="text-xs font-semibold text-taupe hover:text-ink transition-colors">
               View All
             </Link>
           </div>
@@ -334,35 +345,35 @@ export default function DashboardCharts({
               recentJobs.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between py-3 border-b border-[#EBE6E0] last:border-0"
+                  className="flex items-center justify-between py-3 border-b border-line last:border-0"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#2D2A26] truncate">
+                    <p className="text-sm font-medium text-ink truncate">
                       {order.customer?.name || 'Walk-in Customer'}
                     </p>
-                    <p className="text-xs text-[#A8A19A]">
+                    <p className="text-xs text-ink-faint">
                       {order.order_number || `#${order.id}`}
                       {order.created_at && (
                         <> · {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
                       )}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-[#2D2A26] shrink-0 ml-3">
+                  <span className="text-sm font-bold text-ink shrink-0 ml-3">
                     ₱{(Number(order.total_amount) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-10 h-10 bg-[#FAF6F3] rounded-full flex items-center justify-center mb-2">
-                  <Package size={18} className="text-[#C5BDBA]" />
+                <div className="w-10 h-10 bg-canvas rounded-full flex items-center justify-center mb-2">
+                  <Package size={18} className="text-ink-faint" />
                 </div>
-                <p className="text-sm text-[#A8A19A]">No recent orders yet.</p>
+                <p className="text-sm text-ink-faint">No recent orders yet.</p>
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

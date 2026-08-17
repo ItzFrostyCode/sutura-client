@@ -26,25 +26,22 @@ export interface AppointmentSlot {
 }
 
 interface InteractiveCalendarProps {
-  selectedBranchId: string | null;
-  durationMinutes: number;
-  operatingHours: Record<string, OperatingHours> | null;
-  specialHours: SpecialHour[] | null;
-  maxAppointmentsPerDay?: number | null;
-  appointments: AppointmentSlot[];
-  loadingAppts?: boolean;
-  selectedDate: string; // YYYY-MM-DD
-  selectedTime: string; // HH:mm
-  onDateChange: (date: string) => void;
-  onTimeChange: (time: string) => void;
+  readonly selectedBranchId: string | null;
+  readonly durationMinutes: number;
+  readonly operatingHours: Record<string, OperatingHours> | null;
+  readonly specialHours: SpecialHour[] | null;
+  readonly maxAppointmentsPerDay?: number | null;
+  readonly appointments: AppointmentSlot[];
+  readonly loadingAppts?: boolean;
+  readonly selectedDate: string; // YYYY-MM-DD
+  readonly selectedTime: string; // HH:mm
+  readonly onDateChange: (date: string) => void;
+  readonly onTimeChange: (time: string) => void;
 }
 
 /**
  * Shared date/time picker widget used by both the public storefront booking
- * page and the shop owner's Schedule Appointment modal. It's purely a UI
- * primitive — each caller fetches and passes in its own `appointments` list
- * (the public page anonymized, the owner's dashboard the real one), so this
- * component itself has no opinion on which system is calling it.
+ * page and the shop owner's Schedule Appointment modal.
  */
 export default function InteractiveCalendar({
   selectedBranchId,
@@ -64,14 +61,17 @@ export default function InteractiveCalendar({
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
-  // Calendar math
-  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const getLocalDateString = (d: Date): string => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateString(new Date());
 
   const getSpecialHoursForDate = (dateStr: string) => {
     if (!specialHours) return null;
@@ -79,7 +79,9 @@ export default function InteractiveCalendar({
   };
 
   const getOperatingHoursForDate = (dateStr: string) => {
-    const dateObj = new Date(dateStr);
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayName = dayNames[dateObj.getDay()];
     return operatingHours?.[dayName] || null;
@@ -99,21 +101,23 @@ export default function InteractiveCalendar({
   const isDateDisabled = (dateStr: string) => {
     if (dateStr < todayStr) return true; // past dates
 
+    // 1. Check Special Hours (Holidays / Emergency Closures)
     const special = getSpecialHoursForDate(dateStr);
     if (special?.is_closed) return true;
 
-    // If not special, check standard operating hours
+    // 2. Check Standard Operating Hours
     if (!special) {
       const opHours = getOperatingHoursForDate(dateStr);
       if (opHours && !opHours.is_open) return true;
     }
 
+    // 3. Check Capacity Cap
     if (isDateFullyBooked(dateStr)) return true;
 
     return false;
   };
 
-  // Generate available time slots for the selected date
+  // Generate available time slots based strictly on Standard Operating Hours & Special Hours
   const availableSlots = useMemo(() => {
     if (!selectedDate || isDateDisabled(selectedDate)) return [];
 
@@ -126,73 +130,105 @@ export default function InteractiveCalendar({
       closeTime = special.special_close_time || closeTime;
     } else {
       const opHours = getOperatingHoursForDate(selectedDate);
-      if (opHours && opHours.is_open) {
-        openTime = opHours.open;
-        closeTime = opHours.close;
+      if (opHours) {
+        if (!opHours.is_open) return []; // Closed on this day
+        openTime = opHours.open || openTime;
+        closeTime = opHours.close || closeTime;
       }
     }
 
-    // Create Date objects for open/close bounds
-    const startObj = new Date(`${selectedDate}T${openTime}:00`);
-    const endObj = new Date(`${selectedDate}T${closeTime}:00`);
-
-    // For today, if current time is past open time, adjust startObj
-    if (selectedDate === todayStr) {
-      const now = new Date();
-      if (now > startObj) {
-        // Round to next 30 min
-        const rounded = new Date(Math.ceil(now.getTime() / (30 * 60000)) * (30 * 60000));
-        startObj.setTime(Math.max(startObj.getTime(), rounded.getTime()));
-      }
-    }
+    const [startH, startM] = openTime.split(':').map(Number);
+    const [endH, endM] = closeTime.split(':').map(Number);
 
     const slots: string[] = [];
-    const currentSlot = new Date(startObj);
+    let currentMins = startH * 60 + (startM || 0);
+    const endMins = endH * 60 + (endM || 0);
 
-    while (currentSlot.getTime() + durationMinutes * 60000 <= endObj.getTime()) {
-      const slotStr = currentSlot.toTimeString().substring(0, 5);
+    while (currentMins + durationMinutes <= endMins) {
+      const h = Math.floor(currentMins / 60);
+      const m = currentMins % 60;
+      const slotStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
-      // Check for overlap with existing appointments
-      const slotStart = currentSlot.getTime();
-      const slotEnd = slotStart + durationMinutes * 60000;
+      // Check for overlap with existing confirmed/in-progress appointments
+      const slotStartMins = currentMins;
+      const slotEndMins = currentMins + durationMinutes;
 
       const isOverlapping = appointments.some(appt => {
-        // If branch filtering is active, only block slots for that branch
         if (selectedBranchId && appt.shop_branch_id && String(appt.shop_branch_id) !== selectedBranchId) {
           return false;
         }
 
-        const apptStart = new Date(appt.scheduled_at).getTime();
-        const apptEnd = apptStart + (appt.duration_minutes || 60) * 60000;
+        const apptDatePart = appt.scheduled_at.includes('T') ? appt.scheduled_at.split('T')[0] : appt.scheduled_at.split(' ')[0];
+        if (apptDatePart !== selectedDate) return false;
 
-        // Overlap condition: start of new slot is before existing appt ends, AND end of new slot is after existing appt starts
-        return (slotStart < apptEnd && slotEnd > apptStart);
+        const timePart = appt.scheduled_at.includes('T') ? appt.scheduled_at.split('T')[1] : appt.scheduled_at.split(' ')[1];
+        if (!timePart) return false;
+
+        const [ah, am] = timePart.split(':').map(Number);
+        const apptStartMins = ah * 60 + am;
+        const apptEndMins = apptStartMins + (appt.duration_minutes || 60);
+
+        return slotStartMins < apptEndMins && slotEndMins > apptStartMins;
       });
 
       if (!isOverlapping) {
         slots.push(slotStr);
       }
 
-      // Increment by 30 mins interval
-      currentSlot.setMinutes(currentSlot.getMinutes() + 30);
+      currentMins += 30; // 30-min slot intervals
     }
 
     return slots;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, durationMinutes, operatingHours, specialHours, appointments, selectedBranchId, todayStr]);
 
-  // Calendar rendering helper
-  const renderCalendarDays = () => {
-    const blanks = Array.from({ length: firstDayOfMonth }).map((_, i) => (
-      <div key={`blank-${i}`} className="p-2 border border-transparent"></div>
-    ));
+  // Unified Calendar Grid Generator (Standard Date-Grid Approach)
+  const calendarGrid = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
 
-    const days = Array.from({ length: daysInMonth }).map((_, i) => {
-      const d = i + 1;
+    const cells: { dateStr: string; dayNumber: number; isCurrentMonth: boolean }[] = [];
+
+    // Leading padding from previous month
+    if (firstDayIndex > 0) {
+      const prevMonthLastDate = new Date(year, month, 0).getDate();
+      for (let i = firstDayIndex - 1; i >= 0; i--) {
+        const d = prevMonthLastDate - i;
+        const prevDate = new Date(year, month - 1, d);
+        const y = prevDate.getFullYear();
+        const m = String(prevDate.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(d).padStart(2, '0');
+        cells.push({
+          dateStr: `${y}-${m}-${dayStr}`,
+          dayNumber: d,
+          isCurrentMonth: false,
+        });
+      }
+    }
+
+    // Days in current month
+    for (let d = 1; d <= totalDays; d++) {
+      const mStr = String(month + 1).padStart(2, '0');
       const dStr = String(d).padStart(2, '0');
-      const mStr = String(currentMonth.getMonth() + 1).padStart(2, '0');
-      const dateStr = `${currentMonth.getFullYear()}-${mStr}-${dStr}`;
+      cells.push({
+        dateStr: `${year}-${mStr}-${dStr}`,
+        dayNumber: d,
+        isCurrentMonth: true,
+      });
+    }
 
+    return cells;
+  }, [currentMonth]);
+
+  const renderCalendarDays = () => {
+    return calendarGrid.map(cell => {
+      if (!cell.isCurrentMonth) {
+        return <div key={cell.dateStr} className="p-2 border border-transparent" aria-hidden="true" />;
+      }
+
+      const { dateStr, dayNumber } = cell;
       const disabled = isDateDisabled(dateStr);
       const isSelected = selectedDate === dateStr;
       const isToday = todayStr === dateStr;
@@ -200,7 +236,7 @@ export default function InteractiveCalendar({
 
       return (
         <button
-          key={`day-${d}`}
+          key={dateStr}
           type="button"
           disabled={disabled}
           title={fullyBooked ? 'Fully booked — please choose another date' : undefined}
@@ -209,21 +245,105 @@ export default function InteractiveCalendar({
             onTimeChange(''); // reset time when date changes
           }}
           className={`relative h-10 w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
-            ${isSelected ? 'bg-[#9A8073] text-white shadow-md hover:bg-[#856D60]' : ''}
-            ${!isSelected && !disabled && isToday ? 'border-2 border-[#9A8073] text-[#9A8073]' : ''}
-            ${!isSelected && !disabled && !isToday ? 'text-[#2D2A26] hover:bg-[#EBE6E0]' : ''}
-            ${!isSelected && fullyBooked ? 'bg-[#B26959]/10 text-[#B26959] line-through' : ''}
+            ${isSelected ? 'bg-taupe text-white hover:bg-[#856D60]' : ''}
+            ${!isSelected && !disabled && isToday ? 'border-2 border-taupe text-taupe' : ''}
+            ${!isSelected && !disabled && !isToday ? 'text-ink hover:bg-line' : ''}
+            ${!isSelected && fullyBooked ? 'bg-danger/10 text-danger line-through' : ''}
             ${disabled && !fullyBooked ? 'text-zinc-300 cursor-not-allowed' : ''}
             ${disabled && fullyBooked ? 'cursor-not-allowed' : ''}
             ${!disabled ? 'cursor-pointer' : ''}
           `}
         >
-          {d}
+          {dayNumber}
         </button>
       );
     });
+  };
 
-    return [...blanks, ...days];
+  const formatSlotLabel = (slot: string) => {
+    const [h, m] = slot.split(':');
+    const ampm = Number(h) >= 12 ? 'PM' : 'AM';
+    const h12 = Number(h) % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
+  };
+
+  const getClosedReason = () => {
+    const special = getSpecialHoursForDate(selectedDate);
+    if (special?.is_closed) {
+      return {
+        title: `Closed: ${special.title || 'Holiday'}`,
+        description: 'The shop is closed for this date. Please pick another day.',
+      };
+    }
+    const opHours = getOperatingHoursForDate(selectedDate);
+    if (opHours && !opHours.is_open) {
+      return {
+        title: 'Closed on this day',
+        description: "This day is closed according to the shop's Standard Operating Hours.",
+      };
+    }
+    if (isDateFullyBooked(selectedDate)) {
+      return {
+        title: 'Fully Booked',
+        description: 'All appointment slots are taken for this date.',
+      };
+    }
+    return {
+      title: 'No Available Time Slots',
+      description: 'No open slots match the session duration. Please choose another date.',
+    };
+  };
+
+  const renderTimePickerContent = () => {
+    if (!selectedDate) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center text-zinc-400">
+          <CalendarIcon size={32} className="mb-2 opacity-20" />
+          <p className="text-sm">Please select a date first</p>
+        </div>
+      );
+    }
+
+    if (loadingAppts) {
+      return (
+        <div className="h-full flex items-center justify-center text-zinc-400">
+          <div className="animate-pulse flex items-center gap-2">
+            <div className="w-4 h-4 bg-zinc-300 rounded-full"></div>
+            <span className="text-sm">Checking availability...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (availableSlots.length === 0) {
+      const reason = getClosedReason();
+      return (
+        <div className="h-full flex flex-col items-center justify-center text-ink-muted">
+          <AlertCircle size={32} className="mb-2 text-taupe/60" />
+          <p className="text-sm font-semibold text-ink">{reason.title}</p>
+          <p className="text-xs mt-1 text-center max-w-[220px] text-ink-muted">{reason.description}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {availableSlots.map(slot => (
+          <button
+            key={slot}
+            type="button"
+            onClick={() => onTimeChange(slot)}
+            className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+              selectedTime === slot
+                ? 'border-taupe bg-taupe text-white'
+                : 'border-line text-ink-body hover:border-taupe/50 hover:bg-canvas'
+            }`}
+          >
+            {formatSlotLabel(slot)}
+          </button>
+        ))}
+      </div>
+    );
   };
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -232,11 +352,11 @@ export default function InteractiveCalendar({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {/* Date Picker Side */}
       <div className="space-y-4">
-        <label className="text-sm font-medium text-[#524A44] flex items-center gap-2">
-          <CalendarIcon size={16} /> Select Date <span className="text-[#B26959]">*</span>
+        <label className="text-sm font-medium text-ink-body flex items-center gap-2">
+          <CalendarIcon size={16} /> Select Date <span className="text-danger">*</span>
         </label>
 
-        <div className="bg-white border border-[#EBE6E0] rounded-xl p-4 shadow-sm">
+        <div className="bg-surface border border-line rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
@@ -246,7 +366,7 @@ export default function InteractiveCalendar({
             >
               <ChevronLeft size={20} />
             </button>
-            <span className="font-bold text-[#2D2A26]">
+            <span className="font-bold text-ink">
               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </span>
             <button
@@ -260,15 +380,15 @@ export default function InteractiveCalendar({
 
           <div className="grid grid-cols-7 gap-1 text-center mb-2">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <div key={d} className="text-[10px] font-bold text-[#A8A19A] uppercase tracking-wider">{d}</div>
+              <div key={d} className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-y-2 justify-items-center">
             {renderCalendarDays()}
           </div>
           {!!maxAppointmentsPerDay && (
-            <p className="text-[11px] text-[#A8A19A] mt-3 flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#B26959]/10 border border-[#B26959]/30 inline-block shrink-0"></span>
+            <p className="text-[11px] text-ink-faint mt-3 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-danger/10 border border-danger/30 inline-block shrink-0"></span>
               Dates crossed out are fully booked ({maxAppointmentsPerDay} slot{maxAppointmentsPerDay === 1 ? '' : 's'}/day max) — please choose another date.
             </p>
           )}
@@ -277,53 +397,12 @@ export default function InteractiveCalendar({
 
       {/* Time Picker Side */}
       <div className="space-y-4">
-        <label className="text-sm font-medium text-[#524A44] flex items-center gap-2">
-          <Clock size={16} /> Select Time <span className="text-[#B26959]">*</span>
+        <label className="text-sm font-medium text-ink-body flex items-center gap-2">
+          <Clock size={16} /> Select Time <span className="text-danger">*</span>
         </label>
 
-        <div className="bg-white border border-[#EBE6E0] rounded-xl p-4 shadow-sm h-[320px] overflow-y-auto">
-          {!selectedDate ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-400">
-              <CalendarIcon size={32} className="mb-2 opacity-20" />
-              <p className="text-sm">Please select a date first</p>
-            </div>
-          ) : loadingAppts ? (
-            <div className="h-full flex items-center justify-center text-zinc-400">
-              <div className="animate-pulse flex items-center gap-2">
-                <div className="w-4 h-4 bg-zinc-300 rounded-full"></div>
-                <span className="text-sm">Checking availability...</span>
-              </div>
-            </div>
-          ) : availableSlots.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-400">
-              <AlertCircle size={32} className="mb-2 text-[#B26959]/40" />
-              <p className="text-sm font-medium text-[#B26959]">Fully Booked or Closed</p>
-              <p className="text-xs mt-1 text-center max-w-[200px]">No available slots for this date. Please choose another date.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {availableSlots.map(slot => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => onTimeChange(slot)}
-                  className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all cursor-pointer
-                    ${selectedTime === slot
-                      ? 'border-[#9A8073] bg-[#9A8073] text-white shadow-md'
-                      : 'border-[#EBE6E0] text-[#524A44] hover:border-[#9A8073]/50 hover:bg-[#FAF6F3]'
-                    }
-                  `}
-                >
-                  {(() => {
-                    const [h, m] = slot.split(':');
-                    const ampm = Number(h) >= 12 ? 'PM' : 'AM';
-                    const h12 = Number(h) % 12 || 12;
-                    return `${h12}:${m} ${ampm}`;
-                  })()}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="bg-surface border border-line rounded-xl p-4 h-[320px] overflow-y-auto">
+          {renderTimePickerContent()}
         </div>
       </div>
     </div>

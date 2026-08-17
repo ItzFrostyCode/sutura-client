@@ -46,8 +46,8 @@ interface StatusTooltipProps {
 const StatusTooltip = ({ active, payload }: StatusTooltipProps) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-3 py-2">
-        <p className="text-xs font-medium text-[#2D2A26]">
+      <div className="bg-surface border border-line rounded-xl px-3 py-2">
+        <p className="text-xs font-medium text-ink">
           {STATUS_LABELS[payload[0]?.payload?.status] ?? payload[0]?.payload?.status}
         </p>
         <p className="text-sm font-bold text-taupe">{payload[0]?.value} orders</p>
@@ -74,12 +74,12 @@ const GarmentTooltip = ({ active, payload }: GarmentTooltipProps) => {
   if (active && payload?.length) {
     const p = payload[0]?.payload;
     return (
-      <div className="bg-white border border-[#EBE6E0] rounded-xl shadow-lg px-3 py-2">
-        <p className="text-xs font-medium text-[#2D2A26]">
+      <div className="bg-surface border border-line rounded-xl px-3 py-2">
+        <p className="text-xs font-medium text-ink">
           {GARMENT_CATEGORY_LABELS[p?.garment_category] ?? p?.garment_category}
         </p>
         <p className="text-sm font-bold text-taupe">{payload[0]?.value} orders</p>
-        <p className="text-xs text-[#827A73]">₱{Number(p?.revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+        <p className="text-xs text-ink-muted">₱{Number(p?.revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
       </div>
     );
   }
@@ -116,13 +116,13 @@ export default function ReportCharts({
   return (
     <div className="space-y-6">
       {/* Revenue Bar Chart */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
+      <div className="bg-surface border border-line rounded-2xl p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-base font-semibold text-[#2D2A26]">Monthly Revenue</h2>
-            <p className="text-sm text-[#A8A19A] mt-0.5">Revenue collected per month across all orders</p>
+            <h2 className="text-base font-semibold text-ink">Monthly Revenue</h2>
+            <p className="text-sm text-ink-faint mt-0.5">Revenue collected per month across all orders</p>
           </div>
-          <span className="text-2xl font-bold text-[#2D2A26]">
+          <span className="text-2xl font-bold text-ink">
             ₱
             {Number(data?.total_revenue || 0).toLocaleString('en-PH', {
               minimumFractionDigits: 2,
@@ -158,9 +158,9 @@ export default function ReportCharts({
       {/* Bottom Row: Order Status Pie + Outstanding Balance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Order Status Distribution */}
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#2D2A26] mb-1">Order Status Breakdown</h2>
-          <p className="text-sm text-[#A8A19A] mb-6">Distribution of orders across all production stages</p>
+        <div className="bg-surface border border-line rounded-2xl p-6">
+          <h2 className="text-base font-semibold text-ink mb-1">Order Status Breakdown</h2>
+          <p className="text-sm text-ink-faint mb-6">Distribution of orders across all production stages</p>
           <div className="h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -188,9 +188,9 @@ export default function ReportCharts({
         </div>
 
         {/* Completion Rate + Balance Gauges */}
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#2D2A26] mb-1">Performance Gauges</h2>
-          <p className="text-sm text-[#A8A19A] mb-4">Completion and collection rates at a glance</p>
+        <div className="bg-surface border border-line rounded-2xl p-6">
+          <h2 className="text-base font-semibold text-ink mb-1">Performance Gauges</h2>
+          <p className="text-sm text-ink-faint mb-4">Completion and collection rates at a glance</p>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Completion Rate Pie */}
@@ -231,8 +231,8 @@ export default function ReportCharts({
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <p className="text-xs font-medium text-[#524A44] text-center">Completion Rate</p>
-              <p className="text-xs text-[#A8A19A] text-center">
+              <p className="text-xs font-medium text-ink-body text-center">Completion Rate</p>
+              <p className="text-xs text-ink-faint text-center">
                 {data?.completed_jobs || 0} of {data?.total_jobs || 0} orders
               </p>
             </div>
@@ -274,16 +274,16 @@ export default function ReportCharts({
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <p className="text-xs font-medium text-[#524A44] text-center">Outstanding Balance</p>
-              <p className="text-xs text-[#A8A19A] text-center">
+              <p className="text-xs font-medium text-ink-body text-center">Outstanding Balance</p>
+              <p className="text-xs text-ink-faint text-center">
                 ₱{Number(data?.total_outstanding_balance || 0).toLocaleString()}
               </p>
             </div>
           </div>
 
           {/* Revenue Trend mini area */}
-          <div className="mt-4 pt-4 border-t border-[#EBE6E0]">
-            <p className="text-xs text-[#A8A19A] mb-2 font-medium">Revenue Trend</p>
+          <div className="mt-4 pt-4 border-t border-line">
+            <p className="text-xs text-ink-faint mb-2 font-medium">Revenue Trend</p>
             <div className="h-20 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueChartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
@@ -319,9 +319,9 @@ export default function ReportCharts({
           straight to the filtered Jobs board instead of leaving the owner
           with just a count they'd have to go hunt down themselves. */}
       {!!data?.garment_breakdown?.length && (
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-[#2D2A26] mb-1">Orders by Garment Category</h2>
-          <p className="text-sm text-[#A8A19A] mb-6">What kinds of garments customers are actually ordering — click a bar to see those jobs</p>
+        <div className="bg-surface border border-line rounded-2xl p-6">
+          <h2 className="text-base font-semibold text-ink mb-1">Orders by Garment Category</h2>
+          <p className="text-sm text-ink-faint mb-6">What kinds of garments customers are actually ordering — click a bar to see those jobs</p>
           <div className="h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart

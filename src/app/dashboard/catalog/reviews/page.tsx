@@ -23,7 +23,8 @@ interface CatalogItemReview {
 // Reviews tab on the storefront page — before this, a customer could rate
 // a catalog item and the owner had no page anywhere to see or respond to it.
 export default function CatalogItemReviewsPage() {
-  const { shop, user } = useAuthStore();
+  const { shop } = useAuthStore();
+  const shopId = shop?.id;
   const toast = useToast();
   const [reviews, setReviews] = useState<CatalogItemReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,27 +37,39 @@ export default function CatalogItemReviewsPage() {
   const [replyText, setReplyText] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
 
-  const fetchReviews = useCallback(() => {
-    if (!shop?.id) return;
-    setLoading(true);
+  const reloadReviews = useCallback(() => {
+    if (!shopId) return;
     const params = new URLSearchParams({ page: String(page) });
     if (filterRating) params.set('rating', filterRating);
-    api.get(`/shops/${shop.id}/catalog-item-reviews?${params.toString()}`)
+    api.get(`/shops/${shopId}/catalog-item-reviews?${params.toString()}`)
       .then(res => {
         setReviews(res.data.data.data || []);
         setLastPage(res.data.data.last_page || 1);
       })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, [shop, page, filterRating]);
+      .catch(err => console.error(err));
+  }, [shopId, page, filterRating]);
 
   useEffect(() => {
-    if (shop?.id) {
-      fetchReviews();
-    } else if (user?.id) {
-      setTimeout(() => setLoading(false), 0);
-    }
-  }, [shop?.id, user?.id, fetchReviews]);
+    let isMounted = true;
+    if (!shopId) return;
+
+    const params = new URLSearchParams({ page: String(page) });
+    if (filterRating) params.set('rating', filterRating);
+    api.get(`/shops/${shopId}/catalog-item-reviews?${params.toString()}`)
+      .then(res => {
+        if (!isMounted) return;
+        setReviews(res.data.data.data || []);
+        setLastPage(res.data.data.last_page || 1);
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shopId, page, filterRating]);
 
   const openReplyModal = (review: CatalogItemReview) => {
     setCurrentReview(review);
@@ -64,15 +77,15 @@ export default function CatalogItemReviewsPage() {
     setReplyModalOpen(true);
   };
 
-  const submitReply = async (e: React.FormEvent) => {
+  const submitReply = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!shop?.id || !currentReview) return;
+    if (!shopId || !currentReview) return;
     setReplySubmitting(true);
     try {
-      await api.put(`/shops/${shop.id}/catalog-item-reviews/${currentReview.id}`, { reply: replyText });
+      await api.put(`/shops/${shopId}/catalog-item-reviews/${currentReview.id}`, { reply: replyText });
       toast.success('Reply saved.');
       setReplyModalOpen(false);
-      fetchReviews();
+      reloadReviews();
     } catch {
       toast.error('Failed to save reply.');
     } finally {
@@ -81,10 +94,10 @@ export default function CatalogItemReviewsPage() {
   };
 
   const handleDelete = async (reviewId: number) => {
-    if (!shop?.id) return;
+    if (!shopId) return;
     if (!confirm('Delete this review? This cannot be undone.')) return;
     try {
-      await api.delete(`/shops/${shop.id}/catalog-item-reviews/${reviewId}`);
+      await api.delete(`/shops/${shopId}/catalog-item-reviews/${reviewId}`);
       setReviews(prev => prev.filter(r => r.id !== reviewId));
       toast.success('Review deleted.');
     } catch {
@@ -92,24 +105,129 @@ export default function CatalogItemReviewsPage() {
     }
   };
 
+  const renderReviewsContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-16">
+          <Loader2 className="animate-spin text-ink-faint" />
+        </div>
+      );
+    }
+
+    if (reviews.length === 0) {
+      return (
+        <div className="text-center py-16 bg-white rounded-2xl border border-line">
+          <Star className="mx-auto h-10 w-10 text-ink-faint mb-3" />
+          <p className="text-ink-muted">No item reviews yet.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-surface rounded-2xl border border-line divide-y divide-line overflow-hidden">
+        {reviews.map(review => (
+          <div key={review.id} className="p-6">
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-line flex items-center justify-center font-bold text-ink-body shrink-0">
+                    {review.user.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-ink leading-tight">{review.user.name}</p>
+                    <p className="text-xs text-ink-faint">{new Date(review.created_at).toLocaleDateString()}</p>
+                  </div>
+                  {review.catalog_item && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-sunken text-taupe border border-line rounded-full">
+                      {review.catalog_item.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star key={star} size={15} className={star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
+                  ))}
+                </div>
+
+                <p className="text-ink-body leading-relaxed">
+                  {review.comment || <span className="italic text-ink-faint">No written comment provided.</span>}
+                </p>
+
+                {review.reply && (
+                  <div className="mt-2 bg-sunken/50 border-l-2 border-taupe p-4 rounded-r-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Shop Response</span>
+                    </div>
+                    <p className="text-ink-body text-sm">{review.reply}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-row md:flex-col items-start md:items-end gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openReplyModal(review)}
+                  className="text-xs font-medium text-taupe hover:underline"
+                >
+                  {review.reply ? 'Edit Reply' : 'Reply'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(review.id)}
+                  className="text-xs font-medium text-danger hover:underline flex items-center gap-1"
+                >
+                  <Trash2 size={12} /> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {lastPage > 1 && (
+          <div className="p-4 flex justify-center gap-2 bg-canvas">
+            <button
+              type="button"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+              className="px-4 py-1.5 rounded-lg border border-line bg-white text-sm disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-1.5 text-sm text-ink-body font-medium">Page {page} of {lastPage}</span>
+            <button
+              type="button"
+              disabled={page === lastPage}
+              onClick={() => setPage(p => p + 1)}
+              className="px-4 py-1.5 rounded-lg border border-line bg-white text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6 pb-12 text-[#2D2A26]">
+    <div className="space-y-6 text-ink animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Catalog Showcase</h1>
-        <p className="text-[#827A73] text-sm mt-1">Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.</p>
+        <span className="text-[11px] font-bold text-taupe uppercase tracking-wider block">Customer Feedback</span>
+        <h1 className="text-2xl font-black text-ink tracking-tight">Catalog Showcase</h1>
+        <p className="text-xs text-ink-muted mt-0.5">Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.</p>
       </div>
 
       <CatalogModuleTabs />
 
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-lg font-semibold text-[#2D2A26]">Item Reviews</h2>
-          <p className="text-[#827A73] text-sm mt-0.5">Ratings and comments left on your individual catalog items.</p>
+          <h2 className="text-lg font-semibold text-ink">Item Reviews</h2>
+          <p className="text-ink-muted text-sm mt-0.5">Ratings and comments left on your individual catalog items.</p>
         </div>
         <select
           value={filterRating}
           onChange={e => { setFilterRating(e.target.value); setPage(1); }}
-          className="px-4 py-2 bg-white border border-[#EBE6E0] rounded-full text-sm text-[#2D2A26] focus:outline-none focus:border-taupe transition-colors"
+          className="px-4 py-2 bg-surface border border-line rounded-full text-sm text-ink focus:outline-none focus:border-taupe transition-colors"
         >
           <option value="">All Ratings</option>
           <option value="5">5 Stars</option>
@@ -120,105 +238,15 @@ export default function CatalogItemReviewsPage() {
         </select>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#A8A19A]" /></div>
-      ) : reviews.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-[#EBE6E0]">
-          <Star className="mx-auto h-10 w-10 text-[#C5BDBA] mb-3" />
-          <p className="text-[#827A73]">No item reviews yet.</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-[#EBE6E0] divide-y divide-[#EBE6E0] overflow-hidden">
-          {reviews.map(review => (
-            <div key={review.id} className="p-6">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#EBE6E0] flex items-center justify-center font-bold text-[#524A44] shrink-0">
-                      {review.user.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-[#2D2A26] leading-tight">{review.user.name}</p>
-                      <p className="text-xs text-[#A8A19A]">{new Date(review.created_at).toLocaleDateString()}</p>
-                    </div>
-                    {review.catalog_item && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-[#F0EAE3] text-[#9A8073] border border-[#EBE6E0] rounded-full">
-                        {review.catalog_item.name}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star key={star} size={15} className={star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
-                    ))}
-                  </div>
-
-                  <p className="text-[#524A44] leading-relaxed">
-                    {review.comment || <span className="italic text-[#A8A19A]">No written comment provided.</span>}
-                  </p>
-
-                  {review.reply && (
-                    <div className="mt-2 bg-[#F0EAE3]/50 border-l-2 border-taupe p-4 rounded-r-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Shop Response</span>
-                      </div>
-                      <p className="text-[#524A44] text-sm">{review.reply}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-row md:flex-col items-start md:items-end gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openReplyModal(review)}
-                    className="text-xs font-medium text-taupe hover:underline"
-                  >
-                    {review.reply ? 'Edit Reply' : 'Reply'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(review.id)}
-                    className="text-xs font-medium text-[#B26959] hover:underline flex items-center gap-1"
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {lastPage > 1 && (
-            <div className="p-4 flex justify-center gap-2 bg-[#FAF6F3]">
-              <button
-                type="button"
-                disabled={page === 1}
-                onClick={() => setPage(p => p - 1)}
-                className="px-4 py-1.5 rounded-lg border border-[#EBE6E0] bg-white text-sm disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="px-4 py-1.5 text-sm text-[#524A44] font-medium">Page {page} of {lastPage}</span>
-              <button
-                type="button"
-                disabled={page === lastPage}
-                onClick={() => setPage(p => p + 1)}
-                className="px-4 py-1.5 rounded-lg border border-[#EBE6E0] bg-white text-sm disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {renderReviewsContent()}
 
       <Modal isOpen={replyModalOpen} onClose={() => setReplyModalOpen(false)} title="Respond to Review">
         <form onSubmit={submitReply} className="space-y-4">
-          <div className="p-4 bg-[#FAF6F3] rounded-lg border border-[#EBE6E0]">
-            <p className="text-sm italic text-[#524A44]">&quot;{currentReview?.comment}&quot;</p>
+          <div className="p-4 bg-canvas rounded-lg border border-line">
+            <p className="text-sm italic text-ink-body">&quot;{currentReview?.comment}&quot;</p>
           </div>
           <div className="space-y-1">
-            <label htmlFor="catalog-item-review-reply" className="text-sm font-medium text-[#524A44]">Your Reply</label>
+            <label htmlFor="catalog-item-review-reply" className="text-sm font-medium text-ink-body">Your Reply</label>
             <textarea
               id="catalog-item-review-reply"
               required
@@ -226,11 +254,11 @@ export default function CatalogItemReviewsPage() {
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               placeholder="Thank the customer or address their feedback..."
-              className="w-full px-4 py-2 border border-[#EBE6E0] rounded-lg focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe bg-white"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe bg-white"
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#EBE6E0]">
-            <button type="button" onClick={() => setReplyModalOpen(false)} className="px-4 py-2 text-sm text-[#524A44] hover:text-[#2D2A26] transition-colors">
+          <div className="flex justify-end gap-3 pt-4 border-t border-line">
+            <button type="button" onClick={() => setReplyModalOpen(false)} className="px-4 py-2 text-sm text-ink-body hover:text-ink transition-colors">
               Cancel
             </button>
             <button

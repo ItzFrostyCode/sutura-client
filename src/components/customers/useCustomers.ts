@@ -3,19 +3,10 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { CustomerData } from './customerTypes';
+import { isWalkInCustomer, isWalkInEmail } from './customerHelpers';
 
-export interface CustomerData {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  profile_picture: string;
-  suki_tag?: string | null;
-  total_spend: number;
-  active_jobs: number;
-  completed_jobs: number;
-  created_at: string;
-}
+export { type CustomerData };
 
 export function useCustomers() {
   const router = useRouter();
@@ -34,8 +25,6 @@ export function useCustomers() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'online' | 'walkin' | 'b2b_suki' | 'reseller' | 'walk_in_retail'>('all');
-
-  const isWalkInEmail = (email?: string) => email ? (email.startsWith('walkin_') && email.endsWith('@sutura.com')) : false;
 
   useEffect(() => {
     if (!shop) {
@@ -83,18 +72,13 @@ export function useCustomers() {
         toast.success('Customer updated successfully.');
       } else {
         const res = await api.post(`/shops/${shop.id}/customers`, payload);
-        // A phone match against an existing walk-in (no email on file)
-        // reuses that customer's real id server-side instead of minting a
-        // duplicate — blindly prepending here would then show the same
-        // person twice in the list even though the backend didn't actually
-        // create anything new. Update the existing row in place instead.
         const returnedId = res.data.data.id;
         const alreadyListed = customers.some(c => c.id === returnedId);
         setCustomers(prev => {
           if (alreadyListed) {
             return prev.map(c => c.id === returnedId ? { ...c, ...res.data.data } : c);
           }
-          return [{ ...res.data.data, active_jobs: 0, completed_jobs: 0, total_spend: 0 }, ...prev];
+          return [{ ...res.data.data, active_jobs: 0, completed_jobs: 0, total_spend: 0, is_walk_in: true, intake_channel: 'walk_in' }, ...prev];
         });
         toast.success(alreadyListed ? 'Matched an existing customer with that phone number.' : 'Customer added successfully.');
       }
@@ -151,17 +135,13 @@ export function useCustomers() {
   };
 
   const filtered = customers.filter(c => {
-    // Phone was never searchable — a real gap for walk-in customers, who
-    // often only have a placeholder "walkin_" email (excluded above) and
-    // whose phone number is the identifier the owner actually remembers or
-    // gets told at the counter.
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.email && !isWalkInEmail(c.email) && c.email.toLowerCase().includes(search.toLowerCase())) ||
       (c.phone && c.phone.replace(/\s+/g, '').includes(search.replace(/\s+/g, '')));
 
     if (!matchesSearch) return false;
     
-    const isWalkIn = isWalkInEmail(c.email);
+    const isWalkIn = isWalkInCustomer(c);
     if (filterType === 'online') return !isWalkIn;
     if (filterType === 'walkin') return isWalkIn;
     // Suki type filters

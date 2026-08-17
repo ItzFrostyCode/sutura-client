@@ -21,7 +21,6 @@ function MeasurementsContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
-  const [filterCustomer, setFilterCustomer] = useState('');
   const [selectedVersionIds, setSelectedVersionIds] = useState<Record<string, number>>({});
 
   // Modal
@@ -178,13 +177,11 @@ function MeasurementsContent() {
   // Filtering
   const filtered = records.filter(r => {
     const q = search.toLowerCase();
-    const matchSearch =
+    return (
       !q ||
       r.profile_name.toLowerCase().includes(q) ||
-      r.customer?.name.toLowerCase().includes(q);
-    const matchCustomer =
-      !filterCustomer || r.customer_id.toString() === filterCustomer;
-    return matchSearch && matchCustomer;
+      (r.customer?.name && r.customer.name.toLowerCase().includes(q))
+    );
   });
 
   // Group by customer
@@ -196,51 +193,41 @@ function MeasurementsContent() {
   }, {} as Record<string, MeasurementRecord[]>);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight flex items-center gap-2">
-            <Ruler size={22} className="text-[#9A8073]" />
+          <h1 className="text-2xl font-bold text-ink tracking-tight flex items-center gap-2">
+            <Ruler size={22} className="text-taupe" />
             All Measurements
           </h1>
-          <p className="text-[#827A73] text-sm mt-1">
+          <p className="text-ink-muted text-sm mt-1">
             Search measurement profiles across every customer. To add a new profile, open a customer&apos;s own
             page and use their Measurements tab — it&apos;s faster since the customer is already selected.
           </p>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm cursor-pointer"
+          className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm cursor-pointer"
         >
           <Plus size={18} />
           New Profile
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={16} />
+      {/* Search Filter Bar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={16} />
           <input
             type="text"
             placeholder="Search profiles or customers..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073]/30 w-64 shadow-sm"
+            className="w-full pl-9 pr-4 py-2 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30 shadow-sm"
           />
         </div>
-        <select
-          value={filterCustomer}
-          onChange={e => setFilterCustomer(e.target.value)}
-          className="px-3 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#524A44] focus:outline-none focus:border-[#9A8073] shadow-sm cursor-pointer"
-        >
-          <option value="">All Customers</option>
-          {customers.map(c => (
-            <option key={c.id} value={c.id.toString()}>{c.name}</option>
-          ))}
-        </select>
-        <div className="ml-auto text-sm text-[#A8A19A] font-medium">
+        <div className="text-sm text-ink-faint font-medium">
           {filtered.length} profile{filtered.length === 1 ? '' : 's'}
         </div>
       </div>
@@ -250,24 +237,24 @@ function MeasurementsContent() {
         if (loading) {
           return (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <Loader2 className="w-8 h-8 text-[#9A8073] animate-spin" />
-              <p className="text-[#A8A19A] text-sm">Loading measurement profiles...</p>
+              <Loader2 className="w-8 h-8 text-taupe animate-spin" />
+              <p className="text-ink-faint text-sm">Loading measurement profiles...</p>
             </div>
           );
         }
         if (filtered.length === 0) {
           return (
-            <div className="bg-white border border-[#EBE6E0] rounded-2xl p-12 text-center shadow-sm">
-              <div className="w-14 h-14 bg-[#F0EAE3] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Ruler size={26} className="text-[#9A8073]" />
+            <div className="bg-surface border border-line rounded-2xl p-12 text-center shadow-sm">
+              <div className="w-14 h-14 bg-sunken rounded-full flex items-center justify-center mx-auto mb-4">
+                <Ruler size={26} className="text-taupe" />
               </div>
-              <h3 className="text-[#2D2A26] font-semibold mb-1">No measurement profiles yet</h3>
-              <p className="text-[#A8A19A] text-sm mb-5">
+              <h3 className="text-ink font-semibold mb-1">No measurement profiles yet</h3>
+              <p className="text-ink-faint text-sm mb-5">
                 Create reusable measurement profiles for your customers to speed up job order creation.
               </p>
               <button
                 onClick={openAdd}
-                className="inline-flex items-center gap-2 bg-[#9A8073] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-[#9A8073]/90 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 bg-taupe text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-taupe/90 transition-colors cursor-pointer"
               >
                 <Plus size={16} /> Create First Profile
               </button>
@@ -304,7 +291,7 @@ function MeasurementsContent() {
       {/* Delete Modal */}
       <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Delete Measurement Profile">
         <div className="space-y-4">
-          <p className="text-sm text-[#524A44]">
+          <p className="text-sm text-ink-body">
             Are you sure you want to delete this measurement profile? This action cannot be undone.
             Existing job orders that reference this profile will not be affected.
           </p>
@@ -312,14 +299,14 @@ function MeasurementsContent() {
             <button
               type="button"
               onClick={() => setIsDeleteOpen(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={confirmDelete}
               disabled={isSubmitting}
-              className="bg-[#B26959] hover:bg-[#B26959]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting && <Loader2 size={15} className="animate-spin" />}
               Yes, Delete
@@ -333,7 +320,7 @@ function MeasurementsContent() {
 
 export default function MeasurementsPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center text-[#A8A19A] animate-pulse">Loading measurements...</div>}>
+    <Suspense fallback={<div className="py-12 text-center text-ink-faint animate-pulse">Loading measurements...</div>}>
       <MeasurementsContent />
     </Suspense>
   );

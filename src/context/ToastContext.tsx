@@ -95,7 +95,7 @@ function ToastItem({ toast, onDismiss }: { readonly toast: Toast; readonly onDis
         pointer-events-auto relative overflow-hidden
         flex items-start gap-3 px-4 py-3.5
         ${config.bg} border ${config.border}
-        rounded-2xl shadow-[0_8px_30px_-4px_rgba(0,0,0,0.12)]
+        rounded-2xl border border-[#EBE6E0]
         animate-in slide-in-from-right-4 fade-in duration-300
       `}
       style={{ minWidth: 300 }}

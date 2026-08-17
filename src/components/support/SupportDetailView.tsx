@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ArrowLeft, Loader2, X, Zap, Paperclip, ImageIcon, FileVideo, Send } from 'lucide-react';
 import { Ticket, TYPE_LABELS, PRIORITY_LABELS, STATUS_CONFIG, formatDate, renderAttachments, UploadItem } from './supportHelpers';
+import Badge from '@/components/shared/Badge';
 
 interface SupportDetailViewProps {
   selected: Ticket;
@@ -24,13 +25,13 @@ interface ReplyUploadItemProps {
 
 function ReplyUploadItem({ upload, onRemove }: ReplyUploadItemProps) {
   return (
-    <div className="relative flex items-center gap-2 px-3 py-1.5 border border-[#EBE6E0] rounded-lg bg-[#FAF6F3] text-xs max-w-[200px]">
+    <div className="relative flex items-center gap-2 px-3 py-1.5 border border-line rounded-lg bg-canvas text-xs max-w-[200px]">
       {upload.file.type.startsWith('image/') ? (
         <ImageIcon size={14} className="text-taupe shrink-0" />
       ) : (
         <FileVideo size={14} className="text-taupe shrink-0" />
       )}
-      <span className="truncate flex-1 font-medium text-[#2D2A26]">{upload.name}</span>
+      <span className="truncate flex-1 font-medium text-ink">{upload.name}</span>
       {upload.status === 'uploading' && (
         <span className="text-[10px] text-taupe font-semibold">{upload.progress}%</span>
       )}
@@ -40,7 +41,7 @@ function ReplyUploadItem({ upload, onRemove }: ReplyUploadItemProps) {
       <button
         type="button"
         onClick={() => onRemove(upload.id)}
-        className="p-0.5 rounded-full hover:bg-[#EBE6E0] text-[#827A73] transition-colors"
+        className="p-0.5 rounded-full hover:bg-line text-ink-muted transition-colors"
       >
         <X size={12} />
       </button>
@@ -77,26 +78,26 @@ export default function SupportDetailView({
   const isClosed = selected.status === 'closed' || selected.status === 'resolved';
 
   return (
-    <div className="space-y-4 pb-12 max-w-3xl mx-auto text-[#2D2A26]">
+    <div className="space-y-4 max-w-3xl mx-auto text-ink">
       <div className="flex items-start gap-3">
-        <button onClick={onBack} className="p-2 rounded-lg hover:bg-[#F0EAE3] text-[#827A73] transition-colors mt-1">
+        <button onClick={onBack} className="p-2 rounded-lg hover:bg-sunken text-ink-muted transition-colors mt-1">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-[#2D2A26] tracking-tight">{selected.subject}</h1>
-              <p className="text-[#A8A19A] text-xs mt-0.5">Ticket #{selected.id} · Opened {formatDate(selected.created_at)}</p>
+              <h1 className="text-xl font-bold text-ink tracking-tight">{selected.subject}</h1>
+              <p className="text-ink-faint text-xs mt-0.5">Ticket #{selected.id} · Opened {formatDate(selected.created_at)}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+              <Badge variant={statusConfig.variant}>
                 {statusConfig.icon} {statusConfig.label}
-              </span>
+              </Badge>
               {!isClosed && (
                 <button
                   onClick={onCloseTicket}
                   disabled={closing}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border text-[#827A73] bg-white border-[#EBE6E0] hover:border-[#B26959] hover:text-[#B26959] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border text-ink-muted bg-white border-line hover:border-danger hover:text-danger transition-colors disabled:opacity-50"
                 >
                   {closing ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
                   Close Ticket
@@ -116,11 +117,11 @@ export default function SupportDetailView({
         </div>
       </div>
 
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-surface border border-line rounded-2xl overflow-hidden">
         <div className="max-h-[60vh] overflow-y-auto p-6 space-y-4">
           <div className="flex gap-3 justify-end">
             <div className="max-w-[80%] space-y-1">
-              <p className="text-xs text-[#A8A19A] text-right">{selected.submitted_by?.name || user?.name} · {formatDate(selected.created_at)}</p>
+              <p className="text-xs text-ink-faint text-right">{selected.submitted_by?.name || user?.name} · {formatDate(selected.created_at)}</p>
               <div className="bg-taupe text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed flex flex-col">
                 <span>{selected.message}</span>
                 {renderAttachments(selected.attachments, true)}
@@ -138,13 +139,13 @@ export default function SupportDetailView({
                   </div>
                 )}
                 <div className={`max-w-[80%] space-y-1 ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
-                  <p className={`text-xs text-[#A8A19A] ${isMe ? 'text-right' : 'text-left'}`}>
+                  <p className={`text-xs text-ink-faint ${isMe ? 'text-right' : 'text-left'}`}>
                     {reply.is_admin_reply ? 'SUTURA Admin' : reply.user?.name} · {formatDate(reply.created_at)}
                   </p>
                   <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed flex flex-col ${
                     isMe
                       ? 'bg-taupe text-white rounded-tr-sm'
-                      : 'bg-[#F0EAE3] text-[#2D2A26] rounded-tl-sm border border-[#EBE6E0]'
+                      : 'bg-sunken text-ink rounded-tl-sm border border-line'
                   }`}>
                     <span>{reply.message}</span>
                     {renderAttachments(reply.attachments, isMe)}
@@ -155,12 +156,12 @@ export default function SupportDetailView({
           })}
 
           {selected.status === 'resolved' && (
-            <div className="flex items-center gap-2 justify-center py-2 text-xs text-[#7A8B76] font-medium">
+            <div className="flex items-center gap-2 justify-center py-2 text-xs text-sage font-medium">
               Check resolved {selected.resolved_at ? `on ${formatDate(selected.resolved_at)}` : ''}
             </div>
           )}
           {selected.status === 'closed' && (
-            <div className="flex items-center gap-2 justify-center py-2 text-xs text-[#A8A19A] font-medium">
+            <div className="flex items-center gap-2 justify-center py-2 text-xs text-ink-faint font-medium">
               <X size={14} /> Ticket closed
             </div>
           )}
@@ -169,11 +170,11 @@ export default function SupportDetailView({
         </div>
 
         {isClosed ? (
-          <div className="border-t border-[#EBE6E0] p-4 text-center">
-            <p className="text-sm text-[#A8A19A]">This ticket is closed.</p>
+          <div className="border-t border-line p-4 text-center">
+            <p className="text-sm text-ink-faint">This ticket is closed.</p>
           </div>
         ) : (
-          <div className="border-t border-[#EBE6E0] p-4 space-y-3">
+          <div className="border-t border-line p-4 space-y-3">
             {replyUploads.length > 0 && (
               <div className="flex flex-wrap gap-2 pb-2">
                 {replyUploads.map(upload => (
@@ -202,7 +203,7 @@ export default function SupportDetailView({
               <button
                 type="button"
                 onClick={() => replyFileInputRef.current?.click()}
-                className="p-3 border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#827A73] hover:text-[#2D2A26] rounded-xl transition-colors shrink-0 bg-white"
+                className="p-3 border border-line hover:bg-sunken text-ink-muted hover:text-ink rounded-xl transition-colors shrink-0 bg-white"
                 title="Attach images/video"
               >
                 <Paperclip size={18} />
@@ -213,7 +214,7 @@ export default function SupportDetailView({
                 onChange={e => setReplyText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSendReply(); } }}
                 placeholder="Add a reply or update... (Enter to send, Shift+Enter for new line)"
-                className="flex-1 border border-[#EBE6E0] rounded-xl px-3 py-2.5 text-sm text-[#2D2A26] placeholder:text-[#A8A19A] bg-[#FAF6F3] focus:outline-none focus:ring-2 focus:ring-[#9A8073]/40 resize-none"
+                className="flex-1 border border-line rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint bg-canvas focus:outline-none focus:ring-2 focus:ring-taupe/40 resize-none"
               />
               <button
                 onClick={onSendReply}

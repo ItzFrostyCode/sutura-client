@@ -27,7 +27,7 @@ export default function HoldReasonModal({ isOpen, onClose, onConfirm }: HoldReas
       )}
     >
       <div className="space-y-3">
-        <p className="text-xs text-[#827A73]">
+        <p className="text-xs text-ink-muted">
           e.g. waiting on customer to confirm a design change, fabric delivery delayed, awaiting a fitting reschedule.
           This is shown to staff so they know why production paused.
         </p>
@@ -37,10 +37,10 @@ export default function HoldReasonModal({ isOpen, onClose, onConfirm }: HoldReas
           rows={3}
           maxLength={2000}
           placeholder="Reason for the hold…"
-          className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe resize-none"
+          className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe resize-none"
         />
-        <div className="pt-2 border-t border-[#EBE6E0] flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26]">
+        <div className="pt-2 border-t border-line flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink">
             Never mind
           </button>
           <button

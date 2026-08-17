@@ -131,7 +131,7 @@ export function usePayments() {
       const items: ReceiptItem[] = [];
       if (aptRes.data.success) {
         aptRes.data.data.forEach((app: AppointmentReceiptSource) => {
-          if (app.payment_method && app.payment_method !== 'cash' && app.payment_status === 'pending') {
+          if (app.payment_method && app.payment_method !== 'cash') {
             items.push({
               id: app.id, type: 'appointment',
               customer_name: app.customer?.name || 'Guest',
@@ -150,7 +150,7 @@ export function usePayments() {
       }
       if (ordRes.data.data) {
         ordRes.data.data.forEach((ord: OrderReceiptSource) => {
-          if (ord.payment_method && ord.payment_method !== 'cash' && ord.payment_status === 'pending') {
+          if (ord.payment_method && ord.payment_method !== 'cash') {
             items.push({
               id: ord.id, type: 'catalog_order',
               customer_name: ord.customer?.name || 'Guest',

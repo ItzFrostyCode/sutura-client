@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Plus, Image as ImageIcon, Megaphone } from 'lucide-react';
+import { Plus, Image as ImageIcon, Megaphone, Eye, TrendingUp, Star } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CatalogItemCard from '@/components/catalog/CatalogItemCard';
@@ -14,10 +15,13 @@ import CatalogPreviewModal from '@/components/catalog/CatalogPreviewModal';
 import CatalogModuleTabs from '@/components/catalog/CatalogModuleTabs';
 import PromoPostModal from '@/components/promotions/PromoPostModal';
 import ShopWideNote from '@/components/shared/ShopWideNote';
+import PageHeader from '@/components/shared/PageHeader';
+import StatBand from '@/components/shared/StatBand';
 import { useToast } from '@/context/ToastContext';
 
 export default function CatalogPage() {
   const { shop, user } = useAuthStore();
+  const router = useRouter();
   const toast = useToast();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +44,7 @@ export default function CatalogPage() {
 
   const fetchItems = useCallback(() => {
     if (shop?.id) {
+      setTimeout(() => setLoading(true), 0);
       api.get(`/shops/${shop.id}/catalog`)
         .then(res => {
           setItems(res.data.data);
@@ -59,14 +64,7 @@ export default function CatalogPage() {
   }, [fetchItems]);
 
   const handleView = (id: number) => {
-    // Owner previewing their own item in the dashboard is not a real customer
-    // view, so this only opens the modal — it must NOT increment views_count
-    // (that's tracked from the public storefront page instead).
-    const matched = items.find(i => i.id === id);
-    if (matched) {
-      setPreviewItem(matched);
-      setIsPreviewModalOpen(true);
-    }
+    router.push(`/dashboard/catalog/${id}`);
   };
 
   const confirmDelete = async () => {
@@ -90,7 +88,7 @@ export default function CatalogPage() {
   };
 
   if (loading) {
-    return <div className="text-[#A8A19A] py-12 text-center animate-pulse">Loading catalog...</div>;
+    return <div className="text-ink-faint py-12 text-center animate-pulse">Loading catalog...</div>;
   }
 
   const uniq = (arr: (string | undefined | null)[]) =>
@@ -111,41 +109,60 @@ export default function CatalogPage() {
       return 0;
     });
   const hasActiveFilter = !!(searchQuery || filterCategory || filterColor || filterSize);
-  const filterSelectClass = 'px-3 py-2 bg-white border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe';
+  const filterSelectClass = 'px-3 py-2 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe';
 
   return (
-    <div className="space-y-6 pb-12 text-[#2D2A26]">
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        eyebrow="Showroom"
+        title="Catalog Showcase"
+        description={<>Manage the garments showcased to your customers. <ShopWideNote /></>}
+        actions={
+          <>
+            <button
+              onClick={() => setIsPromoModalOpen(true)}
+              className="flex items-center gap-2 bg-surface border border-line text-ink-body hover:bg-sunken px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors min-h-11 shadow-2xs cursor-pointer"
+            >
+              <Megaphone size={16} />
+              <span className="hidden sm:inline">Generate Promo Post</span>
+              <span className="sm:hidden">Promo</span>
+            </button>
+            <Link
+              href="/dashboard/catalog/new"
+              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors min-h-11 shadow-2xs cursor-pointer"
+            >
+              <Plus size={17} />
+              Create New Item
+            </Link>
+          </>
+        }
+      />
       <CatalogModuleTabs />
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">Catalog Showcase</h1>
-          <p className="text-[#827A73] text-sm mt-1">Manage the premium garments showcased to your customers.</p>
-          <ShopWideNote />
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => setIsPromoModalOpen(true)}
-            title="Generate Promo Post"
-            className="flex items-center gap-2 bg-[#FAF6F3] border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-          >
-            <Megaphone size={18} />
-            Generate Promo Post
-          </button>
-          <Link
-            href="/dashboard/catalog/new"
-            className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-          >
-            <Plus size={18} />
-            Create New Item
-          </Link>
-        </div>
-      </div>
+
+      {items.length > 0 && (() => {
+        const totalViews = items.reduce((sum, i) => sum + (i.views_count || 0), 0);
+        const totalRevenue = items.reduce((sum, i) => sum + Number(i.total_revenue || 0), 0);
+        const rated = items.filter(i => i.reviews_count > 0);
+        const avgRating = rated.length > 0
+          ? rated.reduce((sum, i) => sum + Number(i.reviews_avg_rating || 0), 0) / rated.length
+          : null;
+        return (
+          <StatBand
+            items={[
+              { label: 'Catalog Size', value: items.length, icon: ImageIcon },
+              { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye },
+              { label: 'Catalog Revenue', value: `₱${totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, icon: TrendingUp, tone: 'sage' },
+              { label: 'Avg. Rating', value: avgRating !== null ? avgRating.toFixed(1) : '—', icon: Star },
+            ]}
+          />
+        );
+      })()}
 
       {items.length === 0 ? (
-        <div className="bg-white shadow-sm border border-[#EBE6E0] rounded-2xl p-12 text-center">
-          <ImageIcon className="w-12 h-12 text-[#827A73] mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-[#2D2A26] mb-2">No items in your catalog</h3>
-          <p className="text-[#827A73] text-sm mb-6 max-w-md mx-auto">
+        <div className="bg-surface border border-line rounded-xl p-12 text-center">
+          <ImageIcon className="w-12 h-12 text-ink-muted mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-ink mb-2">No items in your catalog</h3>
+          <p className="text-ink-muted text-sm mb-6 max-w-md mx-auto">
             Showcase your best tailoring work. Add items like Tuxedos, Dresses, or suits with detailed specs and images.
           </p>
           <Link 
@@ -160,7 +177,7 @@ export default function CatalogPage() {
         <>
           <div className="flex flex-wrap gap-3 items-center">
             <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search by item name..." className="w-56" />
-            <span className="text-xs font-semibold text-[#827A73] uppercase tracking-wider">Filter</span>
+            <span className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Filter</span>
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className={filterSelectClass}>
               <option value="">All Categories</option>
               {categoryOptions.map(o => <option key={o} value={o}>{o}</option>)}
@@ -186,16 +203,16 @@ export default function CatalogPage() {
             {(hasActiveFilter || sortOrder) && (
               <button
                 onClick={() => { setSearchQuery(''); setFilterCategory(''); setFilterColor(''); setFilterSize(''); setSortOrder(''); }}
-                className="text-xs font-semibold text-[#B26959] hover:underline"
+                className="text-xs font-semibold text-danger hover:underline"
               >
                 Clear filters
               </button>
             )}
-            <span className="text-xs text-[#A8A19A] ml-auto">{filteredItems.length} of {items.length}</span>
+            <span className="text-xs text-ink-faint ml-auto">{filteredItems.length} of {items.length}</span>
           </div>
 
           {filteredItems.length === 0 ? (
-            <div className="bg-white border border-[#EBE6E0] rounded-2xl p-10 text-center text-sm text-[#827A73]">
+            <div className="bg-surface border border-line rounded-xl p-10 text-center text-sm text-ink-muted">
               No items match the selected filters.
             </div>
           ) : (

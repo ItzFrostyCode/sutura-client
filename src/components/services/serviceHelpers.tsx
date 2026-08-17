@@ -30,7 +30,7 @@ export const SERVICE_TYPES: { value: ServiceType; label: string; hint: string }[
 // Shared icon + color per service_type, reused by both the Services catalog and Job
 // Creation's conditional fields so a type reads the same everywhere in the app.
 export const SERVICE_TYPE_META: Record<ServiceType, { icon: LucideIcon; text: string; bg: string; border: string }> = {
-  custom_tailoring:  { icon: Scissors, text: 'text-[#9A8073]', bg: 'bg-[#9A8073]/10', border: 'border-[#9A8073]/20' },
+  custom_tailoring:  { icon: Scissors, text: 'text-taupe', bg: 'bg-taupe/10', border: 'border-taupe/20' },
   bulk_sublimation:  { icon: Users,    text: 'text-blue-700',  bg: 'bg-blue-50',      border: 'border-blue-200' },
   fashion_bridal:    { icon: Sparkles, text: 'text-rose-700',  bg: 'bg-rose-50',      border: 'border-rose-200' },
   alteration_repair: { icon: Wrench,   text: 'text-amber-700', bg: 'bg-amber-50',     border: 'border-amber-200' },

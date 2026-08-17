@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import {
   ArrowLeft, Loader2, Pencil, Mail, Phone, Calendar, UserCircle,
-  Briefcase, CheckCircle2, Clock, Wifi, ArrowRight,
+  Briefcase, CheckCircle2, Clock, Wifi, ArrowRight, Building2, Scissors,
 } from 'lucide-react';
 import { Staff, formatLastSeen, roleLabel } from '@/components/staff/staffHelpers';
 import StaffFormModal from '@/components/staff/StaffFormModal';
@@ -135,7 +135,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-[#A8A19A]">
+      <div className="flex flex-col items-center justify-center py-24 text-ink-faint">
         <Loader2 className="w-8 h-8 animate-spin mb-3 text-taupe mx-auto" />
         <span className="text-sm font-medium">Loading staff profile...</span>
       </div>
@@ -145,7 +145,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
   if (!detail || !member) {
     return (
       <div className="max-w-3xl mx-auto py-24 text-center">
-        <p className="text-[#827A73]">Staff member not found.</p>
+        <p className="text-ink-muted">Staff member not found.</p>
         <button onClick={() => router.push('/dashboard/staff')} className="mt-4 text-taupe hover:underline text-sm font-medium">
           Back to Staff Management
         </button>
@@ -157,173 +157,255 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
   const specializations = Array.isArray(member.specialization)
     ? member.specialization
     : (member.specialization ? [member.specialization] : []);
-  // Only what's still open — the completed side of the log is exactly the
-  // "queue of what already happened" the owner didn't want to see here.
+  
   const currentAssignments = detail.assignments.filter(a => !a.completed_at);
+  const activeJobCount = detail.active;
+  const completedJobCount = detail.total_completed;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="space-y-6 animate-fade-in text-ink">
       {/* Header Panel */}
-      <div className="flex items-start justify-between bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg bg-white shadow-sm border border-[#EBE6E0] text-[#827A73] hover:text-[#2D2A26] transition-colors cursor-pointer shrink-0"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-full bg-[#F0EAE3] flex items-center justify-center text-[#827A73] overflow-hidden">
-              {member.user?.profile_picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={member.user.profile_picture} alt={member.user.name} className="w-full h-full object-cover" />
-              ) : (
-                <UserCircle size={28} />
-              )}
+      <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <button 
+              type="button"
+              onClick={() => router.push('/dashboard/staff')}
+              className="h-10 w-10 rounded-xl bg-canvas border border-line text-ink-muted hover:text-ink hover:border-taupe flex items-center justify-center transition-all shadow-2xs shrink-0 cursor-pointer"
+              title="Back to Staff"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-black text-ink tracking-tight">{member.user?.name}</h1>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-taupe/15 text-taupe border border-taupe/20">
+                  {roleLabel(member.role)}
+                </span>
+                {member.is_branch_manager && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200">
+                    Branch Manager
+                  </span>
+                )}
+                {member.is_active ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-zinc-100 text-ink-muted border border-zinc-200">
+                    Inactive
+                  </span>
+                )}
+                {member.is_active && member.is_available === false && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
+                    On Leave
+                  </span>
+                )}
+                <button 
+                  type="button"
+                  onClick={openEdit}
+                  className="h-7 w-7 rounded-lg border border-line text-ink-muted hover:bg-canvas hover:text-ink flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                  title="Edit Staff Info"
+                >
+                  <Pencil size={12} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">
+                {member.user?.email && (
+                  <a href={`mailto:${member.user.email}`} className="flex items-center gap-1 hover:text-taupe transition-colors">
+                    <Mail size={12} className="text-ink-faint shrink-0" /> {member.user.email}
+                  </a>
+                )}
+                {member.user?.phone && (
+                  <a href={`tel:${member.user.phone}`} className="flex items-center gap-1 hover:text-taupe transition-colors font-mono">
+                    <Phone size={12} className="text-ink-faint shrink-0" /> {member.user.phone}
+                  </a>
+                )}
+                <span className="flex items-center gap-1 text-ink-faint">
+                  <Calendar size={12} className="shrink-0" /> Hired {member.hired_at ? new Date(member.hired_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                </span>
+                <span className="flex items-center gap-1 text-ink-faint">
+                  <Building2 size={12} className="shrink-0" /> {member.branch?.name || 'All Branches'}
+                </span>
+                <span className="text-ink-faint">
+                  {isOnline ? (
+                    <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Online
+                    </span>
+                  ) : (
+                    `Last seen ${lastSeenLabel}`
+                  )}
+                </span>
+              </div>
             </div>
-            <span
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${isOnline ? 'bg-[#7A8B76]' : 'bg-[#C5BDBA]'}`}
-              title={isOnline ? 'Online' : `Last seen ${lastSeenLabel}`}
-            />
           </div>
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight">{member.user?.name}</h1>
-              <button
-                onClick={openEdit}
-                className="p-1.5 rounded-lg border border-[#EBE6E0] text-[#827A73] hover:bg-[#FAF6F3] hover:text-[#2D2A26] transition-all cursor-pointer"
-                title="Edit Staff Profile"
-              >
-                <Pencil size={13} />
-              </button>
-            </div>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F0EAE3] text-[#524A44]">
-                {roleLabel(member.role)}
-              </span>
-              {member.additional_roles?.map(r => (
-                <span key={r} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F0EAE3]/50 text-[#827A73] border border-[#EBE6E0]">
-                  {roleLabel(r)}
-                </span>
-              ))}
-              {member.is_branch_manager && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#9A8073]/10 text-[#9A8073] border border-[#9A8073]/20">
-                  Branch Manager
-                </span>
-              )}
-              {member.is_active ? (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-[#7A8B76]/10 text-[#7A8B76] border-[#7A8B76]/20">Active</span>
-              ) : (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-zinc-500/10 text-[#827A73] border-zinc-500/20">Inactive</span>
-              )}
-              {member.is_active && member.is_available === false && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">On Leave</span>
-              )}
-            </div>
-            <div className="flex items-center gap-4 text-xs text-[#827A73] mt-2 flex-wrap">
-              {member.user?.email && (
-                <span className="flex items-center gap-1"><Mail size={12} /> {member.user.email}</span>
-              )}
-              {member.user?.phone && (
-                <span className="flex items-center gap-1"><Phone size={12} /> {member.user.phone}</span>
-              )}
-              <span className="flex items-center gap-1">
-                <Calendar size={12} /> Hired {member.hired_at ? new Date(member.hired_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'N/A'}
-              </span>
-              {isOnline ? (
-                <span className="flex items-center gap-1 font-semibold text-[#7A8B76]"><Wifi size={12} /> Online now</span>
-              ) : (
-                <span className="flex items-center gap-1"><Clock size={12} /> Last seen {lastSeenLabel}</span>
-              )}
-            </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={openEdit}
+              className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+            >
+              <Pencil size={13} />
+              <span>Edit Profile</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Stats Summary Widgets */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* 4 Leveled KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {[
-          { label: 'Active Jobs', value: member.active_jobs ?? 0, icon: Briefcase, color: 'bg-amber-50 text-amber-700 border-amber-100' },
-          { label: 'Completed Jobs', value: member.completed_jobs ?? 0, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-          { label: 'Total Stage Assignments', value: detail.total_assigned, icon: Briefcase, color: 'bg-blue-50 text-blue-700 border-blue-100' },
-          { label: 'Branch', value: member.branch?.name || 'All branches', icon: Calendar, color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+          { label: 'Active Jobs', value: String(activeJobCount), sub: 'Currently assigned', icon: Scissors, color: 'bg-amber-50 text-amber-800 border-amber-200' },
+          { label: 'Completed Jobs', value: String(completedJobCount), sub: 'Fulfilled garments', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+          { label: 'Stage Tasks', value: String(detail.total_assigned), sub: 'Lifetime assignments', icon: Briefcase, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+          { label: 'Branch', value: member.branch?.name || 'All Branches', sub: 'Assigned location', icon: Building2, color: 'bg-canvas text-ink-muted border-line' },
         ].map(stat => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white border border-[#EBE6E0] rounded-xl p-4 flex items-center justify-between shadow-sm">
-              <div className="min-w-0">
-                <span className="text-[11px] font-semibold text-[#827A73] uppercase tracking-wider block">{stat.label}</span>
-                <span className="text-lg font-bold text-[#2D2A26] mt-0.5 block truncate">{stat.value}</span>
+            <div key={stat.label} className="h-24 bg-surface border border-line rounded-2xl p-4 flex flex-col justify-between shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">{stat.label}</span>
+                <div className={`p-1.5 rounded-lg border ${stat.color} shrink-0`}>
+                  <Icon size={13} />
+                </div>
               </div>
-              <div className={`p-2.5 rounded-lg border ${stat.color} shrink-0`}>
-                <Icon size={18} />
+              <div>
+                <div className="h-6 flex items-baseline font-black font-mono text-lg text-ink truncate">
+                  {stat.value}
+                </div>
+                <p className="text-[11px] text-ink-muted truncate">{stat.sub}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Single merged view — no tabs, no raw historical log. The full
-          per-stage assignment record already lives on each Job Order page
-          (JobStaffAssignmentCard) — duplicating that whole queue here just
-          to show "who worked what stage when" was noise, not signal, for
-          an owner looking at THIS person. This only ever links out to the
-          real job order instead of re-showing its data. */}
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm space-y-5">
-        <div>
-          <p className="text-xs font-semibold text-[#827A73] uppercase tracking-wide mb-1">Bio</p>
-          {member.bio ? (
-            <p className="text-sm text-[#524A44] whitespace-pre-wrap">{member.bio}</p>
-          ) : (
-            <p className="text-sm text-[#A8A19A] italic">No bio added yet — only visible to you, never shown to customers.</p>
-          )}
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-[#827A73] uppercase tracking-wide mb-2">Specialization</p>
-          {specializations.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {specializations.map(s => (
-                <span key={s} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-[#EBE6E0]/50 text-[#524A44] border border-[#EBE6E0]">
-                  {s}
-                </span>
-              ))}
+      {/* 2-Column Balanced Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column: Details (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <h3 className="font-bold text-ink text-xs uppercase tracking-wider pb-3 border-b border-line">
+              Bio & Specialization
+            </h3>
+
+            <div>
+              <p className="text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1">Bio</p>
+              {member.bio ? (
+                <p className="text-sm text-ink-body whitespace-pre-wrap">{member.bio}</p>
+              ) : (
+                <p className="text-xs text-ink-muted italic">No bio provided.</p>
+              )}
             </div>
-          ) : (
-            <p className="text-sm text-[#A8A19A] italic">Not specified.</p>
-          )}
-        </div>
-      </div>
 
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 shadow-sm">
-        <p className="text-xs font-semibold text-[#827A73] uppercase tracking-wide mb-3">
-          Currently Assigned ({currentAssignments.length})
-        </p>
-        {currentAssignments.length === 0 ? (
-          <p className="text-sm text-[#827A73] text-center py-6">No open job assignments right now.</p>
-        ) : (
-          <div className="divide-y divide-[#EBE6E0] border border-[#EBE6E0] rounded-xl overflow-hidden">
-            {currentAssignments.map(a => (
-              <Link
-                key={`${a.job_order_id}-${a.stage}`}
-                href={`/dashboard/jobs/${a.job_order_id}`}
-                className="flex items-center justify-between px-4 py-3 text-sm hover:bg-[#F0EAE3]/20 transition-colors group"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold text-[#2D2A26] truncate">{a.order_number || `#${a.job_order_id}`}</p>
-                  <p className="text-xs text-[#827A73] truncate">
-                    {a.customer_name || 'Walk-in'}{a.stage ? ` · ${a.stage}` : ''}
-                  </p>
+            <div>
+              <p className="text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Specialization</p>
+              {specializations.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {specializations.map(s => (
+                    <span key={s} className="px-2 py-0.5 rounded-md text-xs font-semibold bg-canvas text-ink-body border border-line">
+                      {s}
+                    </span>
+                  ))}
                 </div>
-                <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 capitalize shrink-0">
-                  {a.job_status}
-                  <ArrowRight size={13} className="text-[#A8A19A] group-hover:text-taupe transition-colors" />
-                </span>
-              </Link>
-            ))}
+              ) : (
+                <p className="text-xs text-ink-muted italic">Not specified.</p>
+              )}
+            </div>
+
+            {member.additional_roles && member.additional_roles.length > 0 && (
+              <div>
+                <p className="text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Additional Roles</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {member.additional_roles.map(r => (
+                    <span key={r} className="px-2 py-0.5 rounded-md text-xs font-semibold bg-canvas text-ink-body border border-line">
+                      {roleLabel(r)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-3">
+            <h3 className="font-bold text-ink text-xs uppercase tracking-wider pb-3 border-b border-line">
+              Workstation & Access
+            </h3>
+            
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-line/60">
+                <span className="text-ink-muted">Primary Role</span>
+                <span className="font-bold text-ink">{roleLabel(member.role)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-line/60">
+                <span className="text-ink-muted">Assigned Branch</span>
+                <span className="font-bold text-ink">{member.branch?.name || 'All Branches'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-line/60">
+                <span className="text-ink-muted">Branch Manager</span>
+                <span className="font-bold text-ink">{member.is_branch_manager ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-ink-muted">Account Status</span>
+                <span className="font-bold text-emerald-700">{member.is_active ? 'Active' : 'Inactive'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Currently Assigned (7 cols) */}
+        <div className="lg:col-span-7">
+          <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <h3 className="font-bold text-ink text-xs uppercase tracking-wider">
+                Currently Assigned ({currentAssignments.length})
+              </h3>
+              <span className="text-xs text-ink-muted">Active workroom queue</span>
+            </div>
+
+            {currentAssignments.length === 0 ? (
+              <p className="text-xs text-ink-muted text-center py-10">No active job assignments right now.</p>
+            ) : (
+              <div className="divide-y divide-line border border-line rounded-xl overflow-hidden">
+                {currentAssignments.map(a => (
+                  <Link
+                    key={`${a.job_order_id}-${a.stage}`}
+                    href={`/dashboard/jobs/${a.job_order_id}`}
+                    className="flex items-center justify-between p-3.5 hover:bg-canvas/50 transition-colors group cursor-pointer"
+                  >
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-ink">{a.order_number || `#JO-${a.job_order_id}`}</span>
+                        {a.stage && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-canvas px-2 py-0.5 rounded border border-line text-ink-body">
+                            {a.stage.replaceAll('_', ' ')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-ink-muted truncate">
+                        Client: <span className="font-semibold text-ink-body">{a.customer_name || 'Walk-in Client'}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                        {a.job_status.replaceAll('_', ' ')}
+                      </span>
+                      <ArrowRight size={14} className="text-ink-muted group-hover:text-taupe group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
+      {/* Edit Modal */}
       <StaffFormModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}

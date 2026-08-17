@@ -117,6 +117,7 @@ export function useJobs() {
         ...(newStatus === 'on_hold' && reason ? { hold_reason: reason } : {}),
       });
       toast.success('Job status updated successfully.');
+      fetchJobs();
     } catch (err) {
       console.error('Failed to update status', err);
       setJobs(oldJobs);
@@ -139,6 +140,7 @@ export function useJobs() {
       if (!job) return;
       await api.put(`/shops/${shop.id}/jobs/${jobId}`, { status: 'design', payment_status: job.payment_status, balance: job.balance });
       toast.success('Job order approved into production.');
+      fetchJobs();
     } catch (err: unknown) {
       setJobs(old);
       // Surface the backend's actual message (e.g. a validation error) rather
@@ -177,6 +179,7 @@ export function useJobs() {
       setRejectModalOpen(false);
       setRejectingJobId(null);
       toast.success('Job order rejected.');
+      fetchJobs();
     } catch (err: unknown) {
       setJobs(old);
       const error = err as { response?: { data?: { message?: string } } };

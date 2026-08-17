@@ -74,7 +74,7 @@ export default function ServiceSaleModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
-        <p className="text-sm text-[#524A44]">
+        <p className="text-sm text-ink-body">
           <span className="font-semibold">{service.name}</span> — Base Price: {originalPrice > 0 ? `₱${originalPrice.toLocaleString()}` : 'Not set'}
         </p>
 
@@ -85,13 +85,13 @@ export default function ServiceSaleModal({
         ) : (
           <>
             <div>
-              <span className="block text-sm font-medium text-[#524A44] mb-1">Discount Type</span>
+              <span className="block text-sm font-medium text-ink-body mb-1">Discount Type</span>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setDiscountType('percent')}
                   className={`py-2 rounded-lg border text-sm font-semibold transition-all ${
-                    discountType === 'percent' ? 'border-taupe bg-taupe/10 text-taupe' : 'border-[#EBE6E0] text-[#524A44] hover:border-taupe/40'
+                    discountType === 'percent' ? 'border-taupe bg-taupe/10 text-taupe' : 'border-line text-ink-body hover:border-taupe/40'
                   }`}
                 >
                   Percentage (%)
@@ -100,7 +100,7 @@ export default function ServiceSaleModal({
                   type="button"
                   onClick={() => setDiscountType('fixed')}
                   className={`py-2 rounded-lg border text-sm font-semibold transition-all ${
-                    discountType === 'fixed' ? 'border-taupe bg-taupe/10 text-taupe' : 'border-[#EBE6E0] text-[#524A44] hover:border-taupe/40'
+                    discountType === 'fixed' ? 'border-taupe bg-taupe/10 text-taupe' : 'border-line text-ink-body hover:border-taupe/40'
                   }`}
                 >
                   Exact Price (₱)
@@ -109,7 +109,7 @@ export default function ServiceSaleModal({
             </div>
 
             <div>
-              <label htmlFor="service_discount_value" className="block text-sm font-medium text-[#524A44] mb-1">
+              <label htmlFor="service_discount_value" className="block text-sm font-medium text-ink-body mb-1">
                 {discountType === 'percent' ? 'Discount Percentage' : 'Sale Price'}
               </label>
               <input
@@ -121,26 +121,26 @@ export default function ServiceSaleModal({
                 value={discountValue}
                 onChange={e => setDiscountValue(e.target.value)}
                 placeholder={discountType === 'percent' ? 'e.g. 20' : `e.g. ${(originalPrice * 0.8).toFixed(0)}`}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe"
+                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="service_sale_start" className="block text-sm font-medium text-[#524A44] mb-1">
-                  Starts <span className="text-xs font-normal text-[#A8A19A]">(optional)</span>
+                <label htmlFor="service_sale_start" className="block text-sm font-medium text-ink-body mb-1">
+                  Starts <span className="text-xs font-normal text-ink-faint">(optional)</span>
                 </label>
                 <input
                   id="service_sale_start"
                   type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                 />
               </div>
               <div>
-                <label htmlFor="service_sale_end" className="block text-sm font-medium text-[#524A44] mb-1">
-                  Ends <span className="text-xs font-normal text-[#A8A19A]">(optional — blank = no limit)</span>
+                <label htmlFor="service_sale_end" className="block text-sm font-medium text-ink-body mb-1">
+                  Ends <span className="text-xs font-normal text-ink-faint">(optional — blank = no limit)</span>
                 </label>
                 <input
                   id="service_sale_end"
@@ -148,7 +148,7 @@ export default function ServiceSaleModal({
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
                   min={startDate || undefined}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                  className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                 />
               </div>
             </div>
@@ -158,9 +158,9 @@ export default function ServiceSaleModal({
                 <div className="flex items-center gap-2">
                   <Tag size={16} className={isValidSale ? 'text-rose-600' : 'text-zinc-400'} />
                   <div>
-                    <p className="text-xs text-[#827A73]">Customer will see</p>
+                    <p className="text-xs text-ink-muted">Customer will see</p>
                     <p className="text-sm">
-                      <span className="line-through text-[#A8A19A] mr-2">₱{originalPrice.toLocaleString()}</span>
+                      <span className="line-through text-ink-faint mr-2">₱{originalPrice.toLocaleString()}</span>
                       <span className={`font-bold ${isValidSale ? 'text-rose-700' : 'text-zinc-500'}`}>
                         ₱{(previewSalePrice ?? 0).toLocaleString()}
                       </span>
@@ -191,7 +191,7 @@ export default function ServiceSaleModal({
             </button>
           ) : <span />}
           <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
             <button
               type="submit"
               disabled={isSubmitting || !isValidSale}

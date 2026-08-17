@@ -77,28 +77,28 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 
 export default function WelcomeView() {
   return (
-    <div className="bg-white border border-[#EBE6E0] rounded-3xl p-8 max-w-5xl mx-auto shadow-xs space-y-8 animate-fade-in text-[#2D2A26]">
+    <div className="bg-surface border border-line rounded-3xl p-8 max-w-5xl mx-auto space-y-8 animate-fade-in text-ink">
       <div className="text-center space-y-3 pb-6 border-b border-[#FAF6F3]">
-        <div className="w-16 h-16 bg-[#FAF6F3] rounded-full flex items-center justify-center mx-auto text-[#9A8073]">
+        <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto text-taupe">
           <BookOpen size={28} />
         </div>
-        <h2 className="text-2xl font-heading font-semibold text-[#2D2A26]">Welcome to SUTURA Tailoring Tracker</h2>
-        <p className="text-[#827A73] text-sm max-w-lg mx-auto">A complete guide to setting up and running your shop on SUTURA, from your first storefront edit to tracking a finished order.</p>
+        <h2 className="text-2xl font-heading font-semibold text-ink">Welcome to SUTURA Tailoring Tracker</h2>
+        <p className="text-ink-muted text-sm max-w-lg mx-auto">A complete guide to setting up and running your shop on SUTURA, from your first storefront edit to tracking a finished order.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {ONBOARDING_STEPS.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.title} className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-2xl p-6 flex gap-4 transition-all hover:border-[#D1C7BD]">
-              <div className="bg-white border border-[#EBE6E0] w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-[#9A8073]">
+            <div key={item.title} className="bg-canvas border border-line rounded-2xl p-6 flex gap-4 transition-all hover:border-line-strong">
+              <div className="bg-surface border border-line w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-taupe">
                 <Icon size={22} />
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-[#9A8073] uppercase tracking-wider">{item.step}</span>
-                <h4 className="font-semibold text-sm text-[#2D2A26]">{item.title}</h4>
-                <p className="text-xs text-[#827A73] leading-relaxed mb-3">{item.desc}</p>
-                <Link href={item.href} className="text-xs font-semibold text-[#9A8073] hover:text-[#91756A] flex items-center gap-1.5 transition-colors">
+                <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">{item.step}</span>
+                <h4 className="font-semibold text-sm text-ink">{item.title}</h4>
+                <p className="text-xs text-ink-muted leading-relaxed mb-3">{item.desc}</p>
+                <Link href={item.href} className="text-xs font-semibold text-taupe hover:text-[#91756A] flex items-center gap-1.5 transition-colors">
                   Configure now →
                 </Link>
               </div>
@@ -107,22 +107,22 @@ export default function WelcomeView() {
         })}
       </div>
 
-      <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-2xl p-6 flex gap-4">
-        <div className="bg-white border border-[#EBE6E0] w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-[#9A8073]">
+      <div className="bg-canvas border border-line rounded-2xl p-6 flex gap-4">
+        <div className="bg-surface border border-line w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-taupe">
           <LayoutDashboard size={22} />
         </div>
         <div className="space-y-1">
-          <span className="text-[10px] font-bold text-[#9A8073] uppercase tracking-wider">Once you&apos;re set up</span>
-          <h4 className="font-semibold text-sm text-[#2D2A26]">This Home page is your daily overview</h4>
-          <p className="text-xs text-[#827A73] leading-relaxed">
+          <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">Once you&apos;re set up</span>
+          <h4 className="font-semibold text-sm text-ink">This Home page is your daily overview</h4>
+          <p className="text-xs text-ink-muted leading-relaxed">
             Needs Attention flags overdue orders, pending deposits, unclaimed pickups, and jobs stuck on hold. Use the branch selector in the header to switch between locations — it filters everything on this page and across Jobs, Appointments, Payments, and Reports.
           </p>
         </div>
       </div>
 
-      <div className="pt-6 border-t border-[#FAF6F3] flex justify-between items-center flex-wrap gap-4 text-xs text-[#A8A19A]">
+      <div className="pt-6 border-t border-[#FAF6F3] flex justify-between items-center flex-wrap gap-4 text-xs text-ink-faint">
         <p>Need support? Feel free to contact our administrative team via Support Tickets.</p>
-        <Link href="/dashboard/support" className="px-4 py-2 bg-[#9A8073] hover:bg-[#91756A] text-white rounded-lg font-medium transition-all shadow-xs">
+        <Link href="/dashboard/support" className="px-4 py-2 bg-taupe hover:bg-[#91756A] text-white rounded-lg font-medium transition-all">
           Create Ticket
         </Link>
       </div>

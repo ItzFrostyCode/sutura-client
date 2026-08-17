@@ -145,8 +145,8 @@ export default function CustomerMeasurementsTab({
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-base font-bold text-[#2D2A26]">Measurement Profiles</h2>
-          <p className="text-xs text-[#827A73] mt-0.5">Store different versions of body dimensions for this client — all values in inches (″).</p>
+          <h2 className="text-base font-bold text-ink">Measurement Profiles</h2>
+          <p className="text-xs text-ink-muted mt-0.5">Store different versions of body dimensions for this client — all values in inches (″).</p>
         </div>
         <button
           onClick={openAdd}
@@ -157,7 +157,7 @@ export default function CustomerMeasurementsTab({
       </div>
 
       {measurements.length === 0 ? (
-        <div className="bg-[#FAF6F3]/50 border border-[#EBE6E0] border-dashed rounded-xl p-12 text-center text-sm text-[#A8A19A]">
+        <div className="bg-canvas/50 border border-line border-dashed rounded-xl p-12 text-center text-sm text-ink-faint">
           No measurements recorded for this client yet.
         </div>
       ) : (
@@ -187,7 +187,7 @@ export default function CustomerMeasurementsTab({
 
       <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Delete Measurement Profile">
         <div className="space-y-4">
-          <p className="text-sm text-[#524A44]">
+          <p className="text-sm text-ink-body">
             Are you sure you want to delete this measurement profile? This action cannot be undone.
             Existing job orders that reference this profile will not be affected.
           </p>
@@ -195,14 +195,14 @@ export default function CustomerMeasurementsTab({
             <button
               type="button"
               onClick={() => setIsDeleteOpen(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={confirmDelete}
               disabled={isSubmitting}
-              className="bg-[#B26959] hover:bg-[#B26959]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting && <Loader2 size={15} className="animate-spin" />}
               Yes, Delete

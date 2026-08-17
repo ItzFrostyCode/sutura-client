@@ -67,18 +67,18 @@ export default function SendCustomerMessageModal({
         {step === 'compose' ? (
           <>
             <div className="space-y-1.5">
-              <label htmlFor="msg-subject" className="text-sm font-medium text-[#524A44]">Subject</label>
+              <label htmlFor="msg-subject" className="text-sm font-medium text-ink-body">Subject</label>
               <input
                 id="msg-subject"
                 type="text"
                 value={subject}
                 onChange={e => setSubject(e.target.value)}
                 maxLength={150}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="msg-body" className="text-sm font-medium text-[#524A44]">Message</label>
+              <label htmlFor="msg-body" className="text-sm font-medium text-ink-body">Message</label>
               <textarea
                 id="msg-body"
                 value={message}
@@ -86,12 +86,12 @@ export default function SendCustomerMessageModal({
                 maxLength={5000}
                 rows={7}
                 placeholder={`Hi ${customerName.split(' ')[0] || ''},\n\nJust a quick update on your order...`}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-3 py-2 text-sm text-[#2D2A26] focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe resize-none"
+                className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe resize-none"
               />
-              <p className="text-[11px] text-[#A8A19A] text-right">{message.length}/5000</p>
+              <p className="text-[11px] text-ink-faint text-right">{message.length}/5000</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={handleClose} className="px-4 py-2 rounded-lg text-sm font-medium text-[#827A73] hover:bg-[#FAF6F3] transition-colors">
+              <button type="button" onClick={handleClose} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-muted hover:bg-canvas transition-colors">
                 Cancel
               </button>
               <button
@@ -106,19 +106,19 @@ export default function SendCustomerMessageModal({
           </>
         ) : (
           <>
-            <p className="text-xs text-[#827A73]">This is exactly what {customerName} will receive at <span className="font-semibold text-[#524A44]">{customerEmail}</span>:</p>
+            <p className="text-xs text-ink-muted">This is exactly what {customerName} will receive at <span className="font-semibold text-ink-body">{customerEmail}</span>:</p>
 
-            <div className="border border-[#EBE6E0] rounded-xl overflow-hidden">
-              <div className="bg-[#F0EAE3] px-4 py-2.5 flex items-center gap-2 text-xs text-[#827A73]">
+            <div className="border border-line rounded-xl overflow-hidden">
+              <div className="bg-sunken px-4 py-2.5 flex items-center gap-2 text-xs text-ink-muted">
                 <Mail size={13} />
                 <span className="truncate">To: {customerEmail}</span>
               </div>
               <div className="p-5 bg-white space-y-3">
-                <p className="text-sm font-semibold text-[#2D2A26]">{subject} — {shopName}</p>
-                <p className="text-sm text-[#524A44]">Hello {customerName},</p>
+                <p className="text-sm font-semibold text-ink">{subject} — {shopName}</p>
+                <p className="text-sm text-ink-body">Hello {customerName},</p>
                 <div className="space-y-2">
                   {message.split(/\r?\n/).filter(line => line !== '').map((line, i) => (
-                    <p key={i} className="text-sm text-[#524A44] leading-relaxed">{line}</p>
+                    <p key={i} className="text-sm text-ink-body leading-relaxed">{line}</p>
                   ))}
                 </div>
                 <div className="pt-2">
@@ -130,7 +130,7 @@ export default function SendCustomerMessageModal({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setStep('compose')} className="px-4 py-2 rounded-lg text-sm font-medium text-[#827A73] hover:bg-[#FAF6F3] transition-colors flex items-center gap-2">
+              <button type="button" onClick={() => setStep('compose')} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-muted hover:bg-canvas transition-colors flex items-center gap-2">
                 <Pencil size={14} /> Edit
               </button>
               <button

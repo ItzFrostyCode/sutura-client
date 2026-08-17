@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler } from 'lucide-react';
 import {
   Appointment, JobOrderData,
-  TypeBadge, StatusBadge
+  TypeBadge, StatusBadge, getLocalDateString
 } from './appointmentHelpers';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -38,11 +37,11 @@ interface AppointmentActionModalsProps {
 
   // Reference Data & Statuses
   readonly todayStr: string;
-  readonly minTimeFor: (dateStr: string) => string;
+  readonly minTimeFor: (dateStr: string) => string | undefined;
   readonly isSubmitting: boolean;
   readonly actionLoadingId: number | null;
 
-  // Async triggers
+  // Handlers
   readonly onConfirmReview: (aptId: number) => Promise<boolean>;
   readonly onRejectReview: (aptId: number) => Promise<boolean>;
   readonly onRescheduleSubmit: (aptId: number, date: string, time: string, notes: string) => Promise<void>;
@@ -70,12 +69,7 @@ export default function AppointmentActionModals({
     notes: '', job_order_id: '', measurement_action: 'none', outcome: 'completed', fitting_notes: ''
   });
 
-  // Fitting/Pickup completion needs to link a job order, but the `jobOrders`
-  // prop is just whatever page of the shop-wide list happens to be loaded
-  // elsewhere (often only the 15 most recent) — not reliable for an older
-  // order or a customer whose orders have scrolled off that page. Fetch this
-  // customer's own job orders directly, scoped by customer_id, every time
-  // the Complete modal opens for one of these two types.
+  // Fitting/Pickup completion needs to link a job order
   const [completionJobOrders, setCompletionJobOrders] = useState<JobOrderData[]>([]);
   const [loadingCompletionJobs, setLoadingCompletionJobs] = useState(false);
 
@@ -83,9 +77,11 @@ export default function AppointmentActionModals({
   useEffect(() => {
     if (rescheduleApt) {
       const d = new Date(rescheduleApt.scheduled_at);
+      const originalDate = getLocalDateString(d);
+      const currentToday = getLocalDateString(new Date());
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRescheduleForm({
-        scheduled_date: d.toISOString().split('T')[0],
+        scheduled_date: originalDate < currentToday ? currentToday : originalDate,
         scheduled_time: d.toTimeString().substring(0, 5),
         notes: rescheduleApt.notes || '',
       });
@@ -155,47 +151,47 @@ export default function AppointmentActionModals({
           <div className="space-y-5">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#2D2A26]">{reviewApt.customer?.name}</h3>
-                <p className="text-xs text-[#A8A19A]">{reviewApt.customer?.email}</p>
+                <h3 className="text-base font-bold text-ink">{reviewApt.customer?.name}</h3>
+                <p className="text-xs text-ink-faint">{reviewApt.customer?.email}</p>
               </div>
               <StatusBadge status={reviewApt.status} />
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Type</p>
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Type</p>
                 <div className="mt-1"><TypeBadge type={reviewApt.appointment_type} /></div>
               </div>
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Service</p>
-                <p className="text-[#2D2A26] font-medium mt-1">{reviewApt.service?.name || <span className="italic text-[#A8A19A]">None</span>}</p>
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Service</p>
+                <p className="text-ink font-medium mt-1">{reviewApt.service?.name || <span className="italic text-ink-faint">None</span>}</p>
               </div>
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Scheduled</p>
-                <p className="text-[#2D2A26] font-medium mt-1">
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Scheduled</p>
+                <p className="text-ink font-medium mt-1">
                   {new Date(reviewApt.scheduled_at).toLocaleDateString('en-PH', { dateStyle: 'medium' })}
                   {' at '}
                   {new Date(reviewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Duration</p>
-                <p className="text-[#2D2A26] font-medium mt-1">{reviewApt.duration_minutes ?? 60} minutes</p>
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Duration</p>
+                <p className="text-ink font-medium mt-1">{reviewApt.duration_minutes ?? 60} minutes</p>
               </div>
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Branch</p>
-                <p className="text-[#2D2A26] font-medium mt-1">{reviewApt.branch?.name || 'Main Branch'}</p>
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Branch</p>
+                <p className="text-ink font-medium mt-1">{reviewApt.branch?.name || 'Main Branch'}</p>
               </div>
               {reviewApt.assigned_staff && (
                 <div>
-                  <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Assigned Staff</p>
-                  <p className="text-[#2D2A26] font-medium mt-1">{reviewApt.assigned_staff.name}</p>
+                  <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
+                  <p className="text-ink font-medium mt-1">{reviewApt.assigned_staff.name}</p>
                 </div>
               )}
               {reviewApt.job_order && (
                 <div>
-                  <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Linked Job Order</p>
-                  <p className="text-[#2D2A26] font-medium mt-1">
+                  <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Linked Job Order</p>
+                  <p className="text-ink font-medium mt-1">
                     <a href={`/dashboard/jobs/${reviewApt.job_order.id}`} className="text-[#6B7FA8] hover:underline" target="_blank" rel="noopener noreferrer">
                       #{reviewApt.job_order.order_number || reviewApt.job_order.id}
                     </a>
@@ -206,26 +202,26 @@ export default function AppointmentActionModals({
 
             {reviewApt.notes && (
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider mb-1">Notes from Customer</p>
-                <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg p-3 text-sm text-[#2D2A26] whitespace-pre-wrap">{reviewApt.notes}</div>
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider mb-1">Notes from Customer</p>
+                <div className="bg-canvas border border-line rounded-lg p-3 text-sm text-ink whitespace-pre-wrap">{reviewApt.notes}</div>
               </div>
             )}
 
             {reviewApt.answers && Object.keys(reviewApt.answers).length > 0 && (
               <div>
-                <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider mb-2">Booking Answers</p>
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider mb-2">Booking Answers</p>
                 <div className="space-y-2">
                   {Object.entries(reviewApt.answers).map(([q, a]) => (
-                    <div key={q} className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg p-2.5">
-                       <p className="text-xs font-semibold text-[#827A73]">{q}</p>
-                       <p className="text-xs text-[#2D2A26] mt-0.5">{String(a)}</p>
+                    <div key={q} className="bg-canvas border border-line rounded-lg p-2.5">
+                       <p className="text-xs font-semibold text-ink-muted">{q}</p>
+                       <p className="text-xs text-ink mt-0.5">{String(a)}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="pt-2 flex flex-col gap-2 border-t border-[#EBE6E0]">
+            <div className="pt-2 flex flex-col gap-2 border-t border-line">
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
@@ -256,7 +252,7 @@ export default function AppointmentActionModals({
                     if (ok) { setShowReviewModal(false); setReviewApt(null); }
                   }}
                   disabled={actionLoadingId === reviewApt.id}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#7A8B76] hover:bg-[#7A8B76]/90 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-sage hover:bg-sage/90 transition-colors"
                 >
                   {actionLoadingId === reviewApt.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Confirm
                 </button>
@@ -269,29 +265,29 @@ export default function AppointmentActionModals({
       {/* ── 2. Reschedule Modal ─────────────────────────────────────────────── */}
       <Modal isOpen={showRescheduleModal} onClose={() => { setShowRescheduleModal(false); setRescheduleApt(null); }} title="Propose New Schedule">
         <form onSubmit={handleReschedule} className="space-y-4">
-          <p className="text-sm text-[#827A73]">Propose a new date and time. The customer will be notified of the change.</p>
+          <p className="text-sm text-ink-muted">Propose a new date and time. The customer will be notified of the change.</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="reschedule_date" className="block text-sm font-medium text-[#524A44] mb-1">New Date</label>
+              <label htmlFor="reschedule_date" className="block text-sm font-medium text-ink-body mb-1">New Date</label>
               <input id="reschedule_date" type="date" required min={todayStr} value={rescheduleForm.scheduled_date}
                 onChange={e => setRescheduleForm(f => ({ ...f, scheduled_date: e.target.value }))}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]" />
+                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe" />
             </div>
             <div>
-              <label htmlFor="reschedule_time" className="block text-sm font-medium text-[#524A44] mb-1">New Time</label>
+              <label htmlFor="reschedule_time" className="block text-sm font-medium text-ink-body mb-1">New Time</label>
               <input id="reschedule_time" type="time" required min={minTimeFor(rescheduleForm.scheduled_date)} value={rescheduleForm.scheduled_time}
                 onChange={e => setRescheduleForm(f => ({ ...f, scheduled_time: e.target.value }))}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]" />
+                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe" />
             </div>
           </div>
           <div>
-            <label htmlFor="reschedule_notes" className="block text-sm font-medium text-[#524A44] mb-1">Note to Customer (Optional)</label>
+            <label htmlFor="reschedule_notes" className="block text-sm font-medium text-ink-body mb-1">Note to Customer (Optional)</label>
             <textarea id="reschedule_notes" rows={2} value={rescheduleForm.notes} onChange={e => setRescheduleForm(f => ({ ...f, notes: e.target.value }))}
-              className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] resize-none"
+              className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
               placeholder="e.g. Unavailable on original date, please come on the new date..." />
           </div>
           <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={() => setShowRescheduleModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors">Cancel</button>
+            <button type="button" onClick={() => setShowRescheduleModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
             <button type="submit" disabled={isSubmitting} className="bg-[#6B7FA8] hover:bg-[#6B7FA8]/90 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50">
               {isSubmitting && <Loader2 size={15} className="animate-spin" />}
               <RefreshCw size={14} /> Confirm Reschedule
@@ -304,13 +300,13 @@ export default function AppointmentActionModals({
       <Modal isOpen={showCompleteModal} onClose={() => { setShowCompleteModal(false); setCompleteApt(null); }} title="Complete Appointment">
         {completeApt && (
           <form onSubmit={handleComplete} className="space-y-4">
-            <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 space-y-2">
+            <div className="bg-canvas border border-line rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-[#2D2A26]">{completeApt.customer?.name}</p>
+                <p className="font-semibold text-ink">{completeApt.customer?.name}</p>
                 <TypeBadge type={completeApt.appointment_type} />
               </div>
-              {completeApt.service && <p className="text-sm text-[#827A73]">{completeApt.service.name}</p>}
-              <p className="text-xs text-[#A8A19A]">
+              {completeApt.service && <p className="text-sm text-ink-muted">{completeApt.service.name}</p>}
+              <p className="text-xs text-ink-faint">
                 {new Date(completeApt.scheduled_at).toLocaleDateString('en-PH', { dateStyle: 'medium' })}
                 {' · '}{completeApt.duration_minutes ?? 60} min
               </p>
@@ -336,11 +332,11 @@ export default function AppointmentActionModals({
             {completeApt.appointment_type === 'fitting' && (
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="complete_job_order_id" className="block text-sm font-medium text-[#524A44] mb-1">Link to Job Order <span className="text-rose-500">*</span></label>
-                  <p className="text-xs text-[#827A73] mb-2">Fitting sessions must be linked to an existing job order.</p>
+                  <label htmlFor="complete_job_order_id" className="block text-sm font-medium text-ink-body mb-1">Link to Job Order <span className="text-rose-500">*</span></label>
+                  <p className="text-xs text-ink-muted mb-2">Fitting sessions must be linked to an existing job order.</p>
                   <select id="complete_job_order_id" required disabled={loadingCompletionJobs} value={completeForm.job_order_id}
                     onChange={e => setCompleteForm(f => ({ ...f, job_order_id: e.target.value }))}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] disabled:opacity-60">
+                    className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe disabled:opacity-60">
                     <option value="" disabled>{loadingCompletionJobs ? 'Loading job orders...' : 'Select job order...'}</option>
                     {completionJobOrders
                       .filter(j => !['completed', 'cancelled'].includes(j.status || ''))
@@ -348,11 +344,11 @@ export default function AppointmentActionModals({
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="complete_fitting_notes" className="block text-sm font-medium text-[#524A44] mb-1">Fitting Outcome / Adjustments Needed</label>
-                  <p className="text-xs text-[#827A73] mb-2">Gets attached directly to the job order so whoever does Final Adjustments knows exactly what to change.</p>
+                  <label htmlFor="complete_fitting_notes" className="block text-sm font-medium text-ink-body mb-1">Fitting Outcome / Adjustments Needed</label>
+                  <p className="text-xs text-ink-muted mb-2">Gets attached directly to the job order so whoever does Final Adjustments knows exactly what to change.</p>
                   <textarea id="complete_fitting_notes" rows={3} value={completeForm.fitting_notes}
                     onChange={e => setCompleteForm(f => ({ ...f, fitting_notes: e.target.value }))}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] resize-none"
+                    className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
                     placeholder="e.g. Take in the waist by 1 inch, shorten sleeves by half inch..." />
                 </div>
               </div>
@@ -360,10 +356,10 @@ export default function AppointmentActionModals({
 
             {completeApt.appointment_type === 'pickup' && (
               <div>
-                <label htmlFor="pickup_job_order_id" className="block text-sm font-medium text-[#524A44] mb-1">Linked Job Order <span className="text-rose-500">*</span></label>
+                <label htmlFor="pickup_job_order_id" className="block text-sm font-medium text-ink-body mb-1">Linked Job Order <span className="text-rose-500">*</span></label>
                 <select id="pickup_job_order_id" required disabled={loadingCompletionJobs} value={completeForm.job_order_id}
                   onChange={e => setCompleteForm(f => ({ ...f, job_order_id: e.target.value }))}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] disabled:opacity-60">
+                  className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe disabled:opacity-60">
                   <option value="" disabled>{loadingCompletionJobs ? 'Loading job orders...' : 'Select the job order being picked up...'}</option>
                   {completionJobOrders
                     .filter(j => j.status === 'ready_for_pickup')
@@ -374,13 +370,13 @@ export default function AppointmentActionModals({
 
             {/* Create job shortcut for consultation/alteration */}
             {['consultation', 'alteration'].includes(completeApt.appointment_type) && (
-              <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-3 flex items-center justify-between">
+              <div className="bg-canvas border border-line rounded-xl p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-[#2D2A26]">Create a Job Order?</p>
-                  <p className="text-xs text-[#827A73]">Optionally start a job order from this appointment.</p>
+                  <p className="text-sm font-medium text-ink">Create a Job Order?</p>
+                  <p className="text-xs text-ink-muted">Optionally start a job order from this appointment.</p>
                 </div>
                 <button type="button" onClick={() => onCreateJob(completeApt)}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#9A8073]/10 text-[#9A8073] hover:bg-[#FAF6F3] border border-[#9A8073]/20 transition-colors">
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-taupe/10 text-taupe hover:bg-canvas border border-taupe/20 transition-colors">
                   <Scissors size={12} /> Create Job
                 </button>
               </div>
@@ -388,13 +384,13 @@ export default function AppointmentActionModals({
 
             {/* Appointment Outcome Selector */}
             <div>
-              <label htmlFor="complete_outcome" className="block text-sm font-medium text-[#524A44] mb-1">Appointment Outcome</label>
+              <label htmlFor="complete_outcome" className="block text-sm font-medium text-ink-body mb-1">Appointment Outcome</label>
               <select
                 id="complete_outcome"
                 required
                 value={completeForm.outcome}
                 onChange={e => setCompleteForm(f => ({ ...f, outcome: e.target.value }))}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]">
+                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
                 <option value="completed">Completed Successfully</option>
                 <option value="rescheduled">Rescheduled to Future Date</option>
                 <option value="no_show">No Show / Client Didn't Arrive</option>
@@ -405,14 +401,14 @@ export default function AppointmentActionModals({
 
             {/* Completion notes */}
             <div>
-              <label htmlFor="complete_notes" className="block text-sm font-medium text-[#524A44] mb-1">Completion Notes (Optional)</label>
+              <label htmlFor="complete_notes" className="block text-sm font-medium text-ink-body mb-1">Completion Notes (Optional)</label>
               <textarea id="complete_notes" rows={2} value={completeForm.notes} onChange={e => setCompleteForm(f => ({ ...f, notes: e.target.value }))}
-                className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073] resize-none"
+                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
                 placeholder="Any notes from the session..." />
             </div>
 
             <div className="pt-2 flex justify-end gap-3">
-              <button type="button" onClick={() => setShowCompleteModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors">Cancel</button>
+              <button type="button" onClick={() => setShowCompleteModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
               <button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
                 {isSubmitting && <Loader2 size={15} className="animate-spin" />}
                 <CheckSquare size={14} /> Mark as Completed
@@ -425,11 +421,11 @@ export default function AppointmentActionModals({
       {/* ── 4. Cancel Confirmation Modal ────────────────────────────────────── */}
       <Modal isOpen={showCancelModal} onClose={() => { setShowCancelModal(false); setCancelApt(null); }} title="Cancel Appointment">
         <div className="space-y-4">
-          <p className="text-sm text-[#524A44]">
+          <p className="text-sm text-ink-body">
             Are you sure you want to cancel the appointment for <strong>{cancelApt?.customer?.name}</strong>? The customer will be notified.
           </p>
           <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={() => setShowCancelModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:bg-[#F0EAE3] transition-colors">Keep Appointment</button>
+            <button type="button" onClick={() => setShowCancelModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Keep Appointment</button>
             <button type="button" onClick={() => cancelApt && onCancelConfirm(cancelApt.id)} disabled={isSubmitting} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
               {isSubmitting && <Loader2 size={15} className="animate-spin" />} Yes, Cancel It
             </button>
@@ -440,11 +436,11 @@ export default function AppointmentActionModals({
       {/* ── 5. View Details Modal ────────────────────────────────────────────── */}
       <Modal isOpen={showViewModal} onClose={() => { setShowViewModal(false); setViewApt(null); }} title="Appointment Details">
         {viewApt && (
-          <div className="space-y-4 text-sm text-[#524A44]">
-            <div className="flex items-start justify-between border-b border-[#EBE6E0] pb-3">
+          <div className="space-y-4 text-sm text-ink-body">
+            <div className="flex items-start justify-between border-b border-line pb-3">
               <div>
-                <h4 className="font-bold text-[#2D2A26] text-base">{viewApt.customer?.name}</h4>
-                <p className="text-xs text-[#A8A19A]">{viewApt.customer?.email}</p>
+                <h4 className="font-bold text-ink text-base">{viewApt.customer?.name}</h4>
+                <p className="text-xs text-ink-faint">{viewApt.customer?.email}</p>
               </div>
               <div className="flex flex-col gap-1 items-end">
                 <TypeBadge type={viewApt.appointment_type} />
@@ -454,35 +450,35 @@ export default function AppointmentActionModals({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Scheduled At</p>
-                <p className="text-[#2D2A26] font-medium mt-0.5">
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Scheduled At</p>
+                <p className="text-ink font-medium mt-0.5">
                   {new Date(viewApt.scheduled_at).toLocaleDateString('en-PH', { dateStyle: 'medium' })}
                   {' at '}
                   {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Duration</p>
-                <p className="text-[#2D2A26] font-medium mt-0.5">{viewApt.duration_minutes ?? 60} minutes</p>
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Duration</p>
+                <p className="text-ink font-medium mt-0.5">{viewApt.duration_minutes ?? 60} minutes</p>
               </div>
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Service</p>
-                <p className="text-[#2D2A26] font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-[#A8A19A]">Consultation</span>}</p>
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Service</p>
+                <p className="text-ink font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-ink-faint">Consultation</span>}</p>
               </div>
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Branch</p>
-                <p className="text-[#2D2A26] font-medium mt-0.5">{viewApt.branch?.name || 'Main Branch'}</p>
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Branch</p>
+                <p className="text-ink font-medium mt-0.5">{viewApt.branch?.name || 'Main Branch'}</p>
               </div>
               {viewApt.assigned_staff && (
                 <div>
-                  <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Assigned Staff</p>
-                  <p className="text-[#2D2A26] font-medium mt-0.5">{viewApt.assigned_staff.name}</p>
+                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
+                  <p className="text-ink font-medium mt-0.5">{viewApt.assigned_staff.name}</p>
                 </div>
               )}
               {viewApt.job_order && (
                 <div>
-                  <p className="text-[11px] text-[#A8A19A] font-semibold uppercase tracking-wider">Linked Job Order</p>
-                  <p className="text-[#2D2A26] font-medium mt-1">
+                  <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Linked Job Order</p>
+                  <p className="text-ink font-medium mt-1">
                     <a href={`/dashboard/jobs/${viewApt.job_order.id}`} className="text-[#6B7FA8] hover:underline" target="_blank" rel="noopener noreferrer">
                       #{viewApt.job_order.order_number || viewApt.job_order.id}
                     </a>
@@ -491,7 +487,7 @@ export default function AppointmentActionModals({
               )}
               {viewApt.priority && (
                 <div>
-                  <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Priority</p>
+                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Priority</p>
                   <p className={`font-bold mt-0.5 capitalize text-xs ${
                     viewApt.priority === 'rush' ? 'text-rose-600' : viewApt.priority === 'urgent' ? 'text-amber-600' : 'text-zinc-600'
                   }`}>
@@ -501,13 +497,13 @@ export default function AppointmentActionModals({
               )}
               {viewApt.garment_category && (
                 <div>
-                  <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Garment Category</p>
-                  <p className="text-[#2D2A26] font-semibold mt-0.5 capitalize">{viewApt.garment_category}</p>
+                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Garment Category</p>
+                  <p className="text-ink font-semibold mt-0.5 capitalize">{viewApt.garment_category}</p>
                 </div>
               )}
               {viewApt.outcome && (
-                <div className="col-span-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-3">
-                  <p className="text-[10px] text-[#A8A19A] font-bold uppercase tracking-wider">Appointment Outcome</p>
+                <div className="col-span-2 bg-canvas border border-line rounded-xl p-3">
+                  <p className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Appointment Outcome</p>
                   <p className="text-emerald-700 font-bold mt-0.5 text-xs capitalize flex items-center gap-1">
                     <Check size={12} /> {viewApt.outcome.replace(/_/g, ' ')}
                   </p>
@@ -517,17 +513,17 @@ export default function AppointmentActionModals({
 
             {viewApt.notes && (
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Notes</p>
-                <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg p-3 text-xs mt-1 whitespace-pre-wrap text-[#2D2A26]">{viewApt.notes}</div>
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Notes</p>
+                <div className="bg-canvas border border-line rounded-lg p-3 text-xs mt-1 whitespace-pre-wrap text-ink">{viewApt.notes}</div>
               </div>
             )}
 
             {viewApt.reference_images && viewApt.reference_images.length > 0 && (
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider mb-2">Design Reference Images</p>
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider mb-2">Design Reference Images</p>
                 <div className="grid grid-cols-4 gap-2">
                   {viewApt.reference_images.map((url) => (
-                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden border border-[#EBE6E0] bg-zinc-100 hover:opacity-80 transition-opacity">
+                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden border border-line bg-zinc-100 hover:opacity-80 transition-opacity">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} alt="Reference" className="w-full h-full object-cover" />
                     </a>
@@ -538,7 +534,7 @@ export default function AppointmentActionModals({
 
             {viewApt.reference_link && (
               <div>
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider">Reference Link</p>
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Reference Link</p>
                 <a href={viewApt.reference_link} target="_blank" rel="noopener noreferrer" className="text-[#6B7FA8] hover:underline text-xs break-all">
                   {viewApt.reference_link}
                 </a>
@@ -546,21 +542,21 @@ export default function AppointmentActionModals({
             )}
 
             {viewApt.answers && Object.keys(viewApt.answers).length > 0 && (
-              <div className="border-t border-[#EBE6E0] pt-3">
-                <p className="text-xs text-[#A8A19A] font-semibold uppercase tracking-wider mb-2">Booking Answers</p>
+              <div className="border-t border-line pt-3">
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider mb-2">Booking Answers</p>
                 <div className="space-y-2">
                   {Object.entries(viewApt.answers).map(([q, a]) => (
-                    <div key={q} className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg p-2.5">
-                      <p className="text-xs font-semibold text-[#827A73]">{q}</p>
-                      <p className="text-xs text-[#2D2A26] mt-0.5">{String(a)}</p>
+                    <div key={q} className="bg-canvas border border-line rounded-lg p-2.5">
+                      <p className="text-xs font-semibold text-ink-muted">{q}</p>
+                      <p className="text-xs text-ink mt-0.5">{String(a)}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="pt-3 border-t border-[#EBE6E0] flex justify-end">
-              <button type="button" onClick={() => setShowViewModal(false)} className="bg-[#9A8073] hover:bg-[#9A8073]/90 text-white px-5 py-2 rounded-lg text-xs font-medium transition-colors">Close</button>
+            <div className="pt-3 border-t border-line flex justify-end">
+              <button type="button" onClick={() => setShowViewModal(false)} className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-xs font-medium transition-colors">Close</button>
             </div>
           </div>
         )}

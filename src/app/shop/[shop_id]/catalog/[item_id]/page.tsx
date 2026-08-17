@@ -5,6 +5,7 @@ import api from '@/lib/axios';
 import { Ruler, Info, ShieldCheck, ArrowLeft, Star, MessageSquare, Clock } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getMediaUrl } from '@/lib/media';
 
 interface CatalogItemImage {
   id: number;
@@ -166,7 +167,7 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
                 className={`aspect-3/4 w-full bg-zinc-100 overflow-hidden border-2 transition-all flex flex-col justify-between ${selectedImage === img.image_url ? 'border-zinc-900 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
               >
                 <div className="relative w-full flex-1">
-                  <Image src={img.image_url} alt={img.view_angle || 'Garment thumbnail'} className="w-full h-full object-cover object-top" fill unoptimized />
+                  <Image src={getMediaUrl(img.image_url)} alt={img.view_angle || 'Garment thumbnail'} className="w-full h-full object-cover object-top" fill unoptimized />
                 </div>
                 {img.view_angle && img.view_angle !== 'Default' && img.view_angle !== 'front' && (
                   <div className="bg-zinc-900 text-white text-[9px] py-0.5 text-center truncate px-1 w-full">
@@ -179,9 +180,9 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
           <div className="flex-1 bg-zinc-100 overflow-hidden relative aspect-3/4 lg:aspect-auto">
             {selectedImage ? (
               <>
-                <Image src={selectedImage} alt={item.name} className="w-full h-full object-contain lg:object-cover object-top" fill unoptimized />
+                <Image src={getMediaUrl(selectedImage)} alt={item.name} className="w-full h-full object-contain lg:object-cover object-top" fill unoptimized />
                 {selectedVariation && selectedVariation !== 'Default' && selectedVariation !== 'front' && (
-                  <div className="absolute bottom-4 left-4 bg-zinc-900/80 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm z-10">
+                  <div className="absolute bottom-4 left-4 bg-zinc-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg z-10">
                     Design Variation: {selectedVariation}
                   </div>
                 )}
@@ -430,7 +431,7 @@ export default function PublicProductDetailPage({ params }: Readonly<{ params: P
                 <Link href={`/shop/${shopId}/catalog/${recItem.id}`} key={recItem.id} className="group block text-center">
                   <div className="aspect-square bg-zinc-100 overflow-hidden mb-4 relative">
                     {recImage ? (
-                      <Image src={recImage} alt={recItem.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" fill unoptimized />
+                      <Image src={getMediaUrl(recImage)} alt={recItem.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" fill unoptimized />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[#524A44]">No Image</div>
                     )}

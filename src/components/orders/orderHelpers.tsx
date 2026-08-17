@@ -1,4 +1,4 @@
-import { ShoppingBag, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { ShoppingBag, CheckCircle, Clock, XCircle, Package } from 'lucide-react';
 
 export interface CatalogOrder {
   id: number;
@@ -27,26 +27,26 @@ export function StatusBadge({ status }: { readonly status: string }) {
   switch (status) {
     case 'pending':
       return (
-        <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium flex items-center gap-1">
-          <Clock className="w-3 h-3"/> Pending Prep
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
+          <Clock size={11} className="shrink-0" /> Pending Prep
         </span>
       );
     case 'ready':
       return (
-        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center gap-1">
-          <ShoppingBag className="w-3 h-3"/> Ready for Pickup
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+          <Package size={11} className="shrink-0" /> Ready for Pickup
         </span>
       );
     case 'completed':
       return (
-        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium flex items-center gap-1">
-          <CheckCircle className="w-3 h-3"/> Completed
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <CheckCircle size={11} className="shrink-0" /> Completed
         </span>
       );
     case 'cancelled':
       return (
-        <span className="px-2 py-1 bg-rose-100 text-rose-800 rounded-full text-xs font-medium flex items-center gap-1">
-          <XCircle className="w-3 h-3"/> Cancelled
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+          <XCircle size={11} className="shrink-0" /> Cancelled
         </span>
       );
     default:

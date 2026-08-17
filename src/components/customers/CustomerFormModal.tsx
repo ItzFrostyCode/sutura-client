@@ -50,15 +50,15 @@ export default function CustomerFormModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingCustomer ? "Edit Customer" : "Add New Customer"}>
-      <form onSubmit={handleSubmit} className="space-y-4 text-[#2D2A26]">
+      <form onSubmit={handleSubmit} className="space-y-4 text-ink">
         {error && (
-          <div className="bg-[#B26959]/10 border border-[#B26959]/50 text-[#B26959] px-4 py-3 rounded-lg text-sm">
+          <div className="bg-danger/10 border border-danger/50 text-danger px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
         
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-[#524A44] mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-ink-body mb-1">
             Full Name <span className="text-rose-500">*</span>
           </label>
           <input 
@@ -67,27 +67,27 @@ export default function CustomerFormModal({
             required
             value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
             placeholder="Juan Dela Cruz"
           />
         </div>
         
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-[#524A44] mb-1">
-            Email Address <span className="text-xs text-[#827A73] font-normal">(Optional)</span>
+          <label htmlFor="email" className="block text-sm font-medium text-ink-body mb-1">
+            Email Address <span className="text-xs text-ink-muted font-normal">(Optional)</span>
           </label>
           <input 
             id="email"
             type="email" 
             value={formData.email}
             onChange={e => setFormData({...formData, email: e.target.value})}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
             placeholder="juan@example.com"
           />
         </div>
         
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-[#524A44] mb-1">
+          <label htmlFor="phone" className="block text-sm font-medium text-ink-body mb-1">
             Phone Number <span className="text-rose-500">*</span>
           </label>
           <input 
@@ -96,21 +96,21 @@ export default function CustomerFormModal({
             required
             value={formData.phone}
             onChange={e => setFormData({...formData, phone: e.target.value})}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
             placeholder="+63 900 000 0000"
           />
         </div>
 
         {/* Suki Tag */}
         <div>
-          <label htmlFor="suki_tag" className="block text-sm font-medium text-[#524A44] mb-1">
-            Client Type <span className="text-xs text-[#827A73] font-normal">(Suki Classification)</span>
+          <label htmlFor="suki_tag" className="block text-sm font-medium text-ink-body mb-1">
+            Client Type <span className="text-xs text-ink-muted font-normal">(Suki Classification)</span>
           </label>
           <select
             id="suki_tag"
             value={formData.suki_tag}
             onChange={e => setFormData({...formData, suki_tag: e.target.value})}
-            className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-taupe text-sm"
+            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe text-sm"
           >
             <option value="">Select client type...</option>
             <option value="walk_in_retail">Walk-in Retail</option>
@@ -123,7 +123,7 @@ export default function CustomerFormModal({
           <button 
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink transition-colors"
           >
             Cancel
           </button>

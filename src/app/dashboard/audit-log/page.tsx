@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ScrollText, Loader2, ChevronLeft, ChevronRight, Tag, Percent, XCircle, CalendarClock, CheckCircle2, Trash2, RotateCcw, UserMinus, Scissors, MapPinOff, ImageOff } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import PageHeader from '@/components/shared/PageHeader';
 
 interface AuditLogEntry {
   id: number;
@@ -84,52 +85,49 @@ export default function AuditLogPage() {
   }, [shop, page]);
 
   return (
-    <div className="space-y-5 text-[#2D2A26]">
-      <div>
-        <h1 className="text-2xl font-bold text-[#2D2A26] tracking-tight flex items-center gap-2">
-          <ScrollText size={22} className="text-taupe" /> Audit Log
-        </h1>
-        <p className="text-[#827A73] text-sm mt-1">
-          A record of accountability-sensitive actions — discounts, payment rejections, and reschedules — with who did it, when, and why.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Accountability"
+        title="Audit Log"
+        description="A record of accountability-sensitive actions — discounts, payment rejections, and reschedules — with who did it, when, and why."
+      />
 
-      <div className="bg-white border border-[#EBE6E0] rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-surface border border-line rounded-xl overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-[#A8A19A]">
+          <div className="flex items-center justify-center py-16 text-ink-faint">
             <Loader2 className="animate-spin mr-2" size={20} /> Loading...
           </div>
         ) : logs.length === 0 ? (
-          <div className="text-center py-16 text-[#A8A19A] text-sm">No audit log entries yet.</div>
+          <div className="text-center py-16 text-ink-faint text-sm">No audit log entries yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#FAF6F3] border-b border-[#EBE6E0]">
+              <thead className="bg-canvas border-b border-line">
                 <tr>
-                  <th className="px-5 py-3 font-semibold text-[#827A73] text-xs uppercase tracking-wide">When</th>
-                  <th className="px-5 py-3 font-semibold text-[#827A73] text-xs uppercase tracking-wide">Who</th>
-                  <th className="px-5 py-3 font-semibold text-[#827A73] text-xs uppercase tracking-wide">Action</th>
-                  <th className="px-5 py-3 font-semibold text-[#827A73] text-xs uppercase tracking-wide">On</th>
-                  <th className="px-5 py-3 font-semibold text-[#827A73] text-xs uppercase tracking-wide">Details</th>
+                  <th className="px-5 py-3 font-semibold text-ink-muted text-xs uppercase tracking-wide">When</th>
+                  <th className="px-5 py-3 font-semibold text-ink-muted text-xs uppercase tracking-wide">Who</th>
+                  <th className="px-5 py-3 font-semibold text-ink-muted text-xs uppercase tracking-wide">Action</th>
+                  <th className="px-5 py-3 font-semibold text-ink-muted text-xs uppercase tracking-wide">On</th>
+                  <th className="px-5 py-3 font-semibold text-ink-muted text-xs uppercase tracking-wide">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EBE6E0]">
+              <tbody className="divide-y divide-line">
                 {logs.map(entry => {
-                  const meta = ACTION_META[entry.action] ?? { label: entry.action.replaceAll('_', ' '), icon: Tag, color: 'bg-[#F0EAE3] text-[#827A73] border-[#EBE6E0]' };
+                  const meta = ACTION_META[entry.action] ?? { label: entry.action.replaceAll('_', ' '), icon: Tag, color: 'bg-sunken text-ink-muted border-line' };
                   const Icon = meta.icon;
                   return (
-                    <tr key={entry.id} className="hover:bg-[#FAF6F3]/60 transition-colors">
-                      <td className="px-5 py-3 text-[#524A44] whitespace-nowrap">
+                    <tr key={entry.id} className="hover:bg-canvas transition-colors">
+                      <td className="px-5 py-3 text-ink-body whitespace-nowrap">
                         {new Date(entry.created_at).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })}
                       </td>
-                      <td className="px-5 py-3 text-[#524A44] font-medium whitespace-nowrap">{entry.user?.name ?? 'Unknown'}</td>
+                      <td className="px-5 py-3 text-ink-body font-medium whitespace-nowrap">{entry.user?.name ?? 'Unknown'}</td>
                       <td className="px-5 py-3 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${meta.color}`}>
                           <Icon size={12} /> {meta.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-[#827A73] whitespace-nowrap">{modelLabel(entry.model_type)} #{entry.model_id}</td>
-                      <td className="px-5 py-3 text-[#524A44]">{formatPayload(entry.action, entry.payload)}</td>
+                      <td className="px-5 py-3 text-ink-muted whitespace-nowrap">{modelLabel(entry.model_type)} #{entry.model_id}</td>
+                      <td className="px-5 py-3 text-ink-body">{formatPayload(entry.action, entry.payload)}</td>
                     </tr>
                   );
                 })}
@@ -139,14 +137,14 @@ export default function AuditLogPage() {
         )}
 
         {lastPage > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-[#EBE6E0] text-sm text-[#827A73]">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-line text-sm text-ink-muted">
             <span>Page {page} of {lastPage}</span>
             <div className="flex gap-2">
               <button
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
-                className="p-1.5 rounded-lg border border-[#EBE6E0] disabled:opacity-40 hover:bg-[#FAF6F3] transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-lg border border-line disabled:opacity-40 hover:bg-canvas transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -154,7 +152,7 @@ export default function AuditLogPage() {
                 type="button"
                 disabled={page >= lastPage}
                 onClick={() => setPage(p => Math.min(lastPage, p + 1))}
-                className="p-1.5 rounded-lg border border-[#EBE6E0] disabled:opacity-40 hover:bg-[#FAF6F3] transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-lg border border-line disabled:opacity-40 hover:bg-canvas transition-colors"
               >
                 <ChevronRight size={16} />
               </button>

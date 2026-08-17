@@ -18,15 +18,15 @@ export default function BranchDeleteModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Delete Branch">
       <div className="space-y-4">
-        <p className="text-[#524A44] text-sm">
+        <p className="text-ink-body text-sm">
           Are you sure you want to delete this branch? This cannot be undone. Branches with active orders or
           staff cannot be deleted.
         </p>
-        <div className="pt-4 flex justify-end gap-3 border-t border-[#EBE6E0]">
+        <div className="pt-4 flex justify-end gap-3 border-t border-line">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[#524A44] hover:text-[#2D2A26] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink transition-colors"
           >
             Cancel
           </button>
