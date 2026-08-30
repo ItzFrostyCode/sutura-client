@@ -49,6 +49,7 @@ cd /Users/yourname/Desktop/sutura-server
 ```
 
 **Not sure of the exact path?** Open the `sutura-server` folder in Finder (Mac) or File Explorer (Windows), then:
+
 - **Mac**: right-click the folder → "Get Info" and copy the path shown, or drag the folder icon straight into the terminal window after typing `cd ` (a space after `cd`) — the terminal will auto-fill the full path for you.
 - **Windows**: click the address bar in File Explorer, copy the path, and use `cd` with that path in quotes.
 
@@ -117,11 +118,11 @@ Open **http://localhost:3000** in your browser — that's the actual app.
 
 Go to `http://localhost:3000/login` and use:
 
-| Role | Email | Password |
-|---|---|---|
+| Role       | Email                | Password     |
+| ---------- | -------------------- | ------------ |
 | Shop Owner | `owner@sutura.com` | `password` |
-| Staff | `staff@sutura.com` | `password` |
-| Admin | `admin@sutura.com` | `password` |
+| Staff      | `staff@sutura.com` | `password` |
+| Admin      | `admin@sutura.com` | `password` |
 
 For this thesis's scope, you only need the **Shop Owner** account — that's the dashboard we've been building (Jobs, Appointments, Catalog, Payments, Staff, Reports, etc.).
 
