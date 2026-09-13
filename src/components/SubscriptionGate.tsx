@@ -55,15 +55,10 @@ const FEATURE_DESC: Record<GatedFeature, string> = {
 export default function SubscriptionGate({ feature, children }: Readonly<SubscriptionGateProps>) {
   const { loading, isGated } = useSubscriptionTier();
 
+  // While verifying subscription tier, render children directly so pages can
+  // show their unified native skeleton without flashing a jarring detached spinner.
   if (loading) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center text-ink-faint">
-        <div className="flex flex-col items-center gap-3 animate-pulse">
-          <div className="w-10 h-10 rounded-full bg-line" />
-          <div className="h-3 w-32 bg-line rounded" />
-        </div>
-      </div>
-    );
+    return <>{children}</>;
   }
 
   if (isGated(feature)) {

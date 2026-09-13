@@ -3,6 +3,7 @@ import { Info, Loader2, X, Lock } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
+import { BranchFormData } from './branchHelpers';
 
 interface BranchFormModalProps {
   readonly isOpen: boolean;
@@ -12,30 +13,8 @@ interface BranchFormModalProps {
   readonly isSubmitting: boolean;
   readonly errorMsg: string;
   readonly shopId?: number;
-  readonly formData: {
-    name: string;
-    address: string;
-    landmark?: string;
-    city: string;
-    contact_number: string;
-    latitude: string;
-    longitude: string;
-    operating_hours: string;
-    status: string;
-    guide_image_url?: string;
-  };
-  readonly setFormData: React.Dispatch<React.SetStateAction<{
-    name: string;
-    address: string;
-    landmark: string;
-    city: string;
-    contact_number: string;
-    latitude: string;
-    longitude: string;
-    operating_hours: string;
-    status: string;
-    guide_image_url: string;
-  }>>;
+  readonly formData: BranchFormData;
+  readonly setFormData: React.Dispatch<React.SetStateAction<BranchFormData>>;
 }
 
 export default function BranchFormModal({
@@ -50,6 +29,17 @@ export default function BranchFormModal({
   setFormData,
 }: BranchFormModalProps) {
   const [uploading, setUploading] = useState(false);
+  const [staffList, setStaffList] = useState<Array<{ id: number; role: string; user?: { name: string; email: string } }>>([]);
+
+  React.useEffect(() => {
+    if (isOpen && shopId) {
+      api.get(`/shops/${shopId}/staff`)
+        .then(res => {
+          setStaffList(Array.isArray(res.data?.data) ? res.data.data : []);
+        })
+        .catch(err => console.error('Failed to load staff for manager selection:', err));
+    }
+  }, [isOpen, shopId]);
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Branch' : 'Add New Branch'}>
       <form onSubmit={onSubmit} className="space-y-4">
@@ -186,6 +176,29 @@ export default function BranchFormModal({
           <p className="text-xs text-ink-faint mt-1.5 flex items-start gap-1.5">
             <Info size={13} className="mt-0.5 shrink-0" />
             <span>Tip: Open Google Maps, right-click your shop location, and copy the coordinates.</span>
+          </p>
+        </div>
+
+        {/* Designated Branch Manager */}
+        <div>
+          <label htmlFor="branch-manager" className="block text-sm font-medium text-ink-body mb-1">
+            Designated Branch Manager
+          </label>
+          <select
+            id="branch-manager"
+            value={formData.manager_id ?? ''}
+            onChange={e => setFormData(prev => ({ ...prev, manager_id: e.target.value ? Number(e.target.value) : '' }))}
+            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+          >
+            <option value="">-- No Branch Manager Assigned --</option>
+            {staffList.map(member => (
+              <option key={member.id} value={member.id}>
+                {member.user?.name || `Staff #${member.id}`} ({member.role?.replace(/_/g, ' ')})
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-ink-muted mt-1">
+            Assigning a manager establishes supervisory accountability and links staff to this branch.
           </p>
         </div>
 

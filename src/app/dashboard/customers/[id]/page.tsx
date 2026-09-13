@@ -327,33 +327,40 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         </div>
       )}
 
-      {/* Stroke Underline Tab Navigation */}
-      <div className="flex items-center gap-6 sm:gap-8 border-b border-line overflow-x-auto hide-scrollbar">
-        {[
-          { id: 'overview', label: 'Overview', icon: User },
-          { id: 'measurements', label: 'Measurements & Specs', icon: Ruler },
-          { id: 'orders', label: 'Job Orders', icon: Scissors },
-          { id: 'appointments', label: 'Appointments', icon: Calendar },
-          { id: 'history', label: 'Activity History', icon: History },
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as 'overview' | 'measurements' | 'orders' | 'appointments' | 'history')}
-              className={`flex items-center gap-2 pb-3.5 pt-1 text-xs sm:text-sm font-bold tracking-tight border-b-2 transition-all whitespace-nowrap cursor-pointer -mb-0.5 ${
-                isActive
-                  ? 'border-taupe text-taupe'
-                  : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
-              }`}
-            >
-              <Icon size={16} className={isActive ? 'text-taupe' : 'text-ink-muted'} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+      {/* Clean Tab Navigation (Google Style) */}
+      <div className="border-b border-line w-full">
+        <nav className="flex items-center gap-4 sm:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap" aria-label="Customer detail views">
+          {[
+            { id: 'overview', label: 'Overview', icon: User },
+            { id: 'measurements', label: 'Measurements & Specs', icon: Ruler },
+            { id: 'orders', label: 'Job Orders', icon: Scissors },
+            { id: 'appointments', label: 'Appointments', icon: Calendar },
+            { id: 'history', label: 'Activity History', icon: History },
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as 'overview' | 'measurements' | 'orders' | 'appointments' | 'history')}
+                className={`relative flex items-center gap-2 py-3 px-1 text-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'text-ink font-bold'
+                    : 'text-ink-muted hover:text-ink font-medium'
+                }`}
+              >
+                <Icon size={16} className={isActive ? 'text-ink' : 'text-ink-muted'} />
+                <span>{tab.label}</span>
+
+                {/* Simple active bottom stroke line */}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-taupe rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Tab Panels */}

@@ -41,13 +41,15 @@ export default function DashboardPage() {
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
 
+  const shopId = shop?.id;
+
   const fetchOnlineStaff = useCallback(() => {
     // Staff list/management is owner-only (matches GET /shops/{shop}/staff) —
     // staff/branch managers share this dashboard and shouldn't 403 on it.
-    if (!shop?.id || !isShopOwner) return;
-    api.get(`/shops/${shop.id}/staff`)
+    if (!shopId || !isShopOwner) return;
+    api.get(`/shops/${shopId}/staff`)
       .then(res => {
-        const raw: StaffPresence[] = (res.data.data || []);
+        const raw: StaffPresence[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const FIVE_MIN = 5 * 60 * 1000;
         const now = Date.now();
         const online = raw
@@ -65,55 +67,61 @@ export default function DashboardPage() {
         setOnlineStaff(online);
       })
       .catch(() => {});
-  }, [shop, isShopOwner, selectedBranchId]);
+  }, [shopId, isShopOwner, selectedBranchId]);
 
+  // Main analytics & shop settings fetch
   useEffect(() => {
-    if (shop?.id) {
-      setTimeout(() => setLoading(true), 0);
-      // Home respects the header's branch selector — matches
-      // AnalyticsController::index's branch_id support. Omitted entirely when
-      // "All Branches" is selected, since the backend's $request->filled()
-      // check treats an empty value the same as absent.
-      const params: Record<string, string | number> = {};
-      if (selectedBranchId !== null) {
-        params.branch_id = selectedBranchId;
-      }
+    if (!shopId) return;
+    setLoading(true);
 
-      if (canViewAnalytics) {
-        api.get(`/shops/${shop.id}/analytics`, { params })
-          .then(res => {
-            setData(res.data.data);
-            // From a dedicated, uncapped backend query — was previously
-            // re-derived from a per_page=200 jobs fetch, which silently
-            // dropped older completed-unpaid jobs from the count.
-            setUnpaidJobs(res.data.data?.completed_unpaid_jobs || []);
-            setLoading(false);
-          })
-          .catch(() => setLoading(false));
-      } else {
-        setTimeout(() => setLoading(false), 0);
-      }
-      // Shop visibility toggle is owner-only (matches PUT /shops/{shop}).
-      // Reads/writes `is_hidden` (inverted).
-      if (isShopOwner) {
-        api.get(`/shops/${shop.id}`)
-          .then(res => setShopVisible(!res.data.data?.is_hidden))
-          .catch(() => {});
-      }
-      fetchOnlineStaff();
-    } else if (user?.id) {
-      setTimeout(() => setLoading(false), 0);
-    } else {
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(timer);
+    // Home respects the header's branch selector — matches
+    // AnalyticsController::index's branch_id support. Omitted entirely when
+    // "All Branches" is selected, since the backend's $request->filled()
+    // check treats an empty value the same as absent.
+    const params: Record<string, string | number> = {};
+    if (selectedBranchId !== null) {
+      params.branch_id = selectedBranchId;
     }
-  }, [shop?.id, user?.id, fetchOnlineStaff, canViewAnalytics, isShopOwner, selectedBranchId]);
 
+    let isMounted = true;
+
+    if (canViewAnalytics) {
+      api.get(`/shops/${shopId}/analytics`, { params })
+        .then(res => {
+          if (!isMounted) return;
+          setData(res.data.data);
+          setUnpaidJobs(res.data.data?.completed_unpaid_jobs || []);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+
+    // Shop visibility toggle is owner-only (matches PUT /shops/{shop}).
+    // Reads/writes `is_hidden` (inverted).
+    if (isShopOwner) {
+      api.get(`/shops/${shopId}`)
+        .then(res => {
+          if (isMounted) setShopVisible(!res.data.data?.is_hidden);
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shopId, canViewAnalytics, isShopOwner, selectedBranchId]);
+
+  // Periodic online staff poll (every 30s)
   useEffect(() => {
-    if (!shop?.id) return;
+    if (!shopId || !isShopOwner) return;
+    fetchOnlineStaff();
     const interval = setInterval(fetchOnlineStaff, 30_000);
     return () => clearInterval(interval);
-  }, [shop?.id, fetchOnlineStaff]);
+  }, [shopId, isShopOwner, fetchOnlineStaff]);
 
   // The backend reads start_date/end_date, not a 'period' string — converting
   // client-side (same pattern as the Reports page) so the period buttons
@@ -173,15 +181,22 @@ export default function DashboardPage() {
     }
   };
 
+  // Helper to ensure any value (array, object-map, null, undefined) safely normalizes to a standard array
+  const asArray = <T,>(val: unknown): T[] => {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') return Object.values(val);
+    return [];
+  };
+
   // All from dedicated, unbounded backend queries — never re-derived from a
   // capped list fetch (a long-lead-time order can be created well outside a
   // recency window while still being due today).
-  const dueToday = data?.due_today_jobs ?? [];
-  const dueThisWeek = data?.due_this_week_jobs ?? [];
-  const todayAppointments = data?.today_appointments ?? [];
-  const pendingDpJobs = data?.pending_dp_jobs_list ?? [];
+  const dueToday = asArray<JobItem>(data?.due_today_jobs);
+  const dueThisWeek = asArray<JobItem>(data?.due_this_week_jobs);
+  const todayAppointments = asArray<NonNullable<AnalyticsData['today_appointments']>[number]>(data?.today_appointments);
+  const pendingDpJobs = asArray<JobItem>(data?.pending_dp_jobs_list);
 
-  if (loading) {
+  if (loading || !shop?.id) {
     return <DashboardSkeleton />;
   }
 

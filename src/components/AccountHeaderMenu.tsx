@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import { ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { roleLabel } from '@/components/staff/staffHelpers';
 
 // The account-menu cluster (bell + profile dropdown) from the dashboard
 // header, extracted so the storefront page can show the exact same thing for
@@ -14,9 +15,14 @@ import NotificationBell from './NotificationBell';
 // own Premium Plan badge and branch switcher are deliberately left out here —
 // both are dashboard-data-scoping concepts with no meaning on a public page.
 export default function AccountHeaderMenu() {
-  const { user, shop, logout } = useAuthStore();
+  const { user, shop, staffProfile, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
+  const isShopOwner = user?.roles?.some(r => r.name === 'shop_owner');
+  const roleDisplay = staffProfile?.role
+    ? roleLabel(staffProfile.role)
+    : (user?.roles?.[0]?.name ? roleLabel(user.roles[0].name) : 'Shop Owner');
+
   // This menu renders both in the dashboard header and (reused, per the
   // comment above) on the owner's own public storefront page. "My
   // Storefront" linking to the storefront is pointless when you're already
@@ -54,7 +60,7 @@ export default function AccountHeaderMenu() {
       <div className="relative" ref={profileRef}>
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors"
+          className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer"
         >
           <div className="w-10 h-10 rounded-full overflow-hidden bg-taupe flex items-center justify-center text-white font-semibold">
             {user?.name?.charAt(0) || 'U'}
@@ -65,10 +71,10 @@ export default function AccountHeaderMenu() {
         </button>
 
         {isProfileOpen && (
-          <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl border border-line py-2 z-50">
+          <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl border border-line py-2 z-50 shadow-lg">
             <div className="px-4 py-3 border-b border-line mb-2">
               <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
-              <p className="text-xs text-ink-muted truncate">{user?.roles?.[0]?.name?.replace('_', ' ') || 'Shop Owner'}</p>
+              <p className="text-xs text-ink-muted truncate font-medium">{roleDisplay}</p>
             </div>
 
             {isOnStorefront ? (
@@ -81,9 +87,11 @@ export default function AccountHeaderMenu() {
               </Link>
             )}
 
-            <Link href="/dashboard/billing" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
-              <Receipt size={16} /> Billing & Plans
-            </Link>
+            {isShopOwner && (
+              <Link href="/dashboard/billing" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
+                <Receipt size={16} /> Billing & Plans
+              </Link>
+            )}
             <Link href="/dashboard/account-settings" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
               <UserCog size={16} /> Account Settings
             </Link>

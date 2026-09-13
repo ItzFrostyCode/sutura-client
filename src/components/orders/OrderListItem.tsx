@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
-import { Receipt, XCircle, Tag, ShoppingBag, Store, User, ArrowRight, Loader2, Check } from 'lucide-react';
+import { Receipt, XCircle, Tag, ShoppingBag, Store, User, Loader2, Check, ZoomIn } from 'lucide-react';
 import { CatalogOrder, StatusBadge } from './orderHelpers';
 import OrderReceiptModal from './OrderReceiptModal';
+import OrderDiscountModal from './OrderDiscountModal';
+import { getMediaUrl } from '@/lib/media';
 
 interface OrderListItemProps {
   readonly order: CatalogOrder;
@@ -10,6 +11,7 @@ interface OrderListItemProps {
   readonly onUpdateStatus: (orderId: number, status: string) => Promise<void>;
   readonly onApplyDiscount: (orderId: number, amount: number, reason: string) => Promise<void>;
   readonly highlighted?: boolean;
+  readonly onPreviewImage?: (url: string, title: string) => void;
 }
 
 export default function OrderListItem({
@@ -18,14 +20,15 @@ export default function OrderListItem({
   onUpdateStatus,
   onApplyDiscount,
   highlighted,
+  onPreviewImage,
 }: Readonly<OrderListItemProps>) {
   const isUpdating = updating === order.id;
   const [showReceipt, setShowReceipt] = useState(false);
-  const [showDiscountForm, setShowDiscountForm] = useState(false);
-  const [discountAmount, setDiscountAmount] = useState('');
-  const [discountReason, setDiscountReason] = useState('');
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
   const isOpenOrder = order.status !== 'completed' && order.status !== 'cancelled';
+  const rawImage = order.catalog_item?.images?.[0]?.image_url;
+  const imageUrl = rawImage ? getMediaUrl(rawImage) : null;
 
   return (
     <div
@@ -38,21 +41,38 @@ export default function OrderListItem({
         
         {/* Left: Product Thumbnail & Title Info */}
         <div className="flex items-start gap-4 min-w-0 flex-1">
-          <div className="h-20 w-20 rounded-xl bg-canvas border border-line overflow-hidden shrink-0 relative shadow-2xs">
-            {order.catalog_item?.images?.[0]?.image_url ? (
-              <Image 
-                src={order.catalog_item.images[0].image_url} 
-                alt={order.catalog_item.name || 'Catalog Product'} 
-                fill 
-                className="object-cover" 
-              />
+          <button
+            type="button"
+            disabled={!imageUrl}
+            onClick={() => {
+              if (imageUrl && onPreviewImage) {
+                onPreviewImage(imageUrl, order.catalog_item?.name || 'Garment Preview');
+              }
+            }}
+            title={imageUrl ? 'Click to view photo' : 'No photo'}
+            className={`h-20 w-20 rounded-xl bg-canvas border border-line overflow-hidden shrink-0 relative shadow-2xs text-left ${
+              imageUrl ? 'cursor-pointer group/img' : ''
+            }`}
+          >
+            {imageUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={imageUrl} 
+                  alt={order.catalog_item?.name || 'Catalog Product'} 
+                  className="w-full h-full object-cover transition-transform group-hover/img:scale-105" 
+                />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                  <ZoomIn size={18} />
+                </div>
+              </>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-ink-faint text-[10px]">
                 <ShoppingBag size={18} className="opacity-40 mb-1" />
                 <span>No photo</span>
               </div>
             )}
-          </div>
+          </button>
 
           <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -120,10 +140,10 @@ export default function OrderListItem({
               <span>Receipt</span>
             </button>
 
-            {isOpenOrder && !showDiscountForm && (
+            {isOpenOrder && (
               <button
                 type="button"
-                onClick={() => setShowDiscountForm(true)}
+                onClick={() => setShowDiscountModal(true)}
                 className="flex-1 sm:flex-none h-9 px-3 bg-rose-50/60 hover:bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                 title="Apply Courtesy Discount"
               >
@@ -204,69 +224,25 @@ export default function OrderListItem({
         </div>
       </div>
 
-      {/* Inline Discount Form Drawer */}
-      {showDiscountForm && (
-        <div className="p-4 bg-rose-50/40 border-t border-rose-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <Tag size={14} className="text-rose-700" />
-            <span className="text-xs font-bold text-rose-900 uppercase tracking-wider">Apply Suki / Courtesy Discount</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-ink-muted">₱</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={order.total_amount}
-                placeholder="Amount"
-                value={discountAmount}
-                onChange={(e) => setDiscountAmount(e.target.value)}
-                className="w-28 pl-6 pr-2.5 py-1.5 bg-white border border-rose-200 rounded-xl text-xs font-bold text-ink focus:outline-none focus:border-rose-400 shadow-2xs"
-              />
-            </div>
-
-            <input
-              type="text"
-              placeholder="Reason (e.g. Suki loyal customer)"
-              value={discountReason}
-              onChange={(e) => setDiscountReason(e.target.value)}
-              className="w-full sm:w-48 px-3 py-1.5 bg-white border border-rose-200 rounded-xl text-xs text-ink focus:outline-none focus:border-rose-400 shadow-2xs"
-            />
-
-            <div className="flex items-center gap-1.5 ml-auto">
-              <button
-                type="button"
-                onClick={() => { setShowDiscountForm(false); setDiscountAmount(''); setDiscountReason(''); }}
-                className="px-3 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink border border-line rounded-xl bg-white hover:bg-canvas cursor-pointer transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={applyingDiscount || !discountAmount || Number.parseFloat(discountAmount) <= 0}
-                onClick={async () => {
-                  setApplyingDiscount(true);
-                  try {
-                    await onApplyDiscount(order.id, Number.parseFloat(discountAmount), discountReason);
-                    setShowDiscountForm(false);
-                    setDiscountAmount('');
-                    setDiscountReason('');
-                  } finally {
-                    setApplyingDiscount(false);
-                  }
-                }}
-                className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider bg-rose-700 hover:bg-rose-800 text-white rounded-xl cursor-pointer disabled:opacity-50 shadow-2xs transition-colors"
-              >
-                {applyingDiscount ? 'Applying...' : 'Apply Discount'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showReceipt && <OrderReceiptModal order={order} onClose={() => setShowReceipt(false)} />}
+
+      {showDiscountModal && (
+        <OrderDiscountModal
+          isOpen={showDiscountModal}
+          order={order}
+          onClose={() => setShowDiscountModal(false)}
+          onApplyDiscount={async (ordId, amt, rsn) => {
+            setApplyingDiscount(true);
+            try {
+              await onApplyDiscount(ordId, amt, rsn);
+              setShowDiscountModal(false);
+            } finally {
+              setApplyingDiscount(false);
+            }
+          }}
+          isSubmitting={applyingDiscount}
+        />
+      )}
     </div>
   );
 }

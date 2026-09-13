@@ -14,6 +14,7 @@ export interface CatalogItem {
   sizes?: string[] | null;
   description?: string;
   garment_type?: string;
+  category?: string;
   images: { id: number; image_url: string; is_primary: boolean }[];
   views_count: number;
   saves_count: number;

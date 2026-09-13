@@ -41,9 +41,13 @@ interface StaffDetail {
  */
 export default function StaffProfilePage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { shop } = useAuthStore();
+  const { shop, user, staffProfile } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
+
+  const roleNames = user?.roles?.map(r => r.name) || [];
+  const isShopOwner = roleNames.includes('shop_owner');
+  const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
 
   const [detail, setDetail] = useState<StaffDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +79,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
   }, [loadData]);
 
   const member = detail?.staff;
+  const canEdit = isShopOwner || isBranchManager || (user?.id !== undefined && user.id === member?.user_id);
 
   const openEdit = () => {
     if (!member) return;
@@ -201,14 +206,16 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
                     On Leave
                   </span>
                 )}
-                <button 
-                  type="button"
-                  onClick={openEdit}
-                  className="h-7 w-7 rounded-lg border border-line text-ink-muted hover:bg-canvas hover:text-ink flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                  title="Edit Staff Info"
-                >
-                  <Pencil size={12} />
-                </button>
+                {canEdit && (
+                  <button 
+                    type="button"
+                    onClick={openEdit}
+                    className="h-7 w-7 rounded-lg border border-line text-ink-muted hover:bg-canvas hover:text-ink flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                    title="Edit Staff Info"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">
@@ -241,16 +248,18 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={openEdit}
-              className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
-            >
-              <Pencil size={13} />
-              <span>Edit Profile</span>
-            </button>
-          </div>
+          {canEdit && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={openEdit}
+                className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <Pencil size={13} />
+                <span>Edit Profile</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

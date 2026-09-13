@@ -28,22 +28,15 @@ export default function LoginPage() {
         const { user, token, shop, staff_profile } = response.data.data;
         
         
-        let activeShop = shop;
-        if (user.roles[0]?.name === 'staff' || user.roles[0]?.name === 'branch_manager') {
-          if (staff_profile?.shop) {
-            activeShop = staff_profile.shop;
-          }
-        }
+        const activeShop = shop || staff_profile?.shop;
+        const roleNames = user?.roles?.map((r: { name: string }) => r.name) || [];
+        const isAuthorized = roleNames.some((name: string) => ['shop_owner', 'branch_manager', 'staff'].includes(name)) || !!staff_profile;
 
-        const roleName = user.roles[0]?.name;
-
-        if (roleName === 'staff' || roleName === 'branch_manager' || roleName === 'shop_owner') {
-          // Staff and branch managers share the same owner dashboard — there is
-          // no separate staff portal. What each role can see/do there is
-          // enforced by the API (and a handful of role checks in the UI),
-          // not by routing them to a different page.
+        if (isAuthorized) {
+          // Staff, branch managers, and shop owners share the dashboard —
+          // permissions and views adapt dynamically based on the account.
           setAuth(user, token, activeShop, staff_profile);
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         } else {
           // admin / customer accounts don't have a web dashboard yet — avoid
           // navigating to a route that doesn't exist and 404ing right after login.

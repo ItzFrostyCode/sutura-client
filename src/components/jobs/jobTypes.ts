@@ -78,6 +78,8 @@ export interface Job {
   catalog_item?: {
     id: number;
     name: string;
+    category?: string | null;
+    price?: number | string | null;
     fabric_image_url?: string | null;
     images?: { id: number; image_url: string; is_primary: boolean }[];
   } | null;

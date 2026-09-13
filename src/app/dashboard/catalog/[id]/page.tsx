@@ -11,7 +11,7 @@ import { parseFeatures, parseCareInstructions, formatCatalogPrice } from '@/comp
 import {
   ArrowLeft, Loader2, Edit3, Trash2, Eye, Heart, Star,
   ShoppingBag, DollarSign, Clock, ExternalLink, Image as ImageIcon,
-  CheckCircle2, Ruler, Sparkles, Shirt,
+  CheckCircle2, Ruler, Sparkles, Shirt, Scissors,
   AlertCircle, EyeOff, Plus, Search
 } from 'lucide-react';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
@@ -950,6 +950,14 @@ export default function CatalogItemDetailPage({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 self-end md:self-center shrink-0 flex-wrap">
+          <Link
+            href={`/dashboard/jobs/new?catalog_item_id=${item.id}`}
+            className="px-4 py-2 rounded-xl bg-taupe hover:bg-[#8A7063] text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs"
+            title="Create a tailored job order from this design"
+          >
+            <Scissors size={14} />
+            <span>Tailor this Design</span>
+          </Link>
           <button
             type="button"
             onClick={handleToggleStatus}
