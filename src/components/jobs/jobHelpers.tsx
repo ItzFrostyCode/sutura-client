@@ -114,6 +114,17 @@ export interface Job {
   custom_order_data?: Record<string, unknown> | null;
   hold_reason?: string | null;
   garment_category?: string | null;
+  catalog_item_id?: number | null;
+  catalog_item?: {
+    id: number;
+    name: string;
+    category?: string | null;
+    garment_type?: string | null;
+    price?: number | string | null;
+    fabric_image_url?: string | null;
+    images?: Array<{ id?: number; image_url: string; is_primary?: boolean | number }>;
+  } | null;
+  reference_images?: string[] | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';

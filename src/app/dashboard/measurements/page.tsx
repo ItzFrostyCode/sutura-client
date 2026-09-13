@@ -1,15 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import Modal from '@/components/Modal';
-import { Ruler, Plus, Search, Loader2 } from 'lucide-react';
+import { Ruler, Plus, Search, Loader2, ArrowLeft, Users } from 'lucide-react';
 import { MeasurementRecord, CustomerData } from '@/components/measurements/measurementTypes';
 import { emptyForm, emptyMetrics } from '@/components/measurements/measurementHelpers';
 import MeasurementFormModal from '@/components/measurements/MeasurementFormModal';
 import MeasurementList from '@/components/measurements/MeasurementList';
+import CustomersModuleTabs from '@/components/customers/CustomersModuleTabs';
+import PageHeader from '@/components/shared/PageHeader';
 import { useToast } from '@/context/ToastContext';
 
 function MeasurementsContent() {
@@ -194,26 +197,31 @@ function MeasurementsContent() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight flex items-center gap-2">
-            <Ruler size={22} className="text-taupe" />
-            All Measurements
-          </h1>
-          <p className="text-ink-muted text-sm mt-1">
-            Search measurement profiles across every customer. To add a new profile, open a customer&apos;s own
-            page and use their Measurements tab — it&apos;s faster since the customer is already selected.
-          </p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm cursor-pointer"
-        >
-          <Plus size={18} />
-          New Profile
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Relationships"
+        title="All Measurements"
+        description="Search measurement profiles across every customer. To add a new profile, open a customer's own page and use their Measurements tab — it's faster since the customer is already selected."
+        actions={
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/customers"
+              className="flex items-center gap-2 bg-surface hover:bg-sunken border border-line text-ink px-4 py-2.5 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors min-h-10.5 shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft size={14} />
+              <span>Back to Client Book</span>
+            </Link>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
+            >
+              <Plus size={16} />
+              New Profile
+            </button>
+          </div>
+        }
+      >
+        <CustomersModuleTabs activeTab="measurements" />
+      </PageHeader>
 
       {/* Search Filter Bar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">

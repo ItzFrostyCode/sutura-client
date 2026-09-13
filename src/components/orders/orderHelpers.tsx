@@ -18,9 +18,14 @@ export interface CatalogOrder {
   };
   customer: {
     name: string;
+    email?: string | null;
   } | null;
   shop_branch_id?: number | null;
   branch?: { id: number; name: string } | null;
+  payment_receipt_path?: string | null;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  updated_at?: string | null;
 }
 
 export function StatusBadge({ status }: { readonly status: string }) {

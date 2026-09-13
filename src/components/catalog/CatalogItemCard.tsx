@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Pencil, Trash2, Heart, Eye, Star, Image as ImageIcon, Clock } from 'lucide-react';
+import { Pencil, Trash2, Heart, Eye, Star, Image as ImageIcon, Clock, Scissors } from 'lucide-react';
 import { CatalogItem, formatCatalogPrice } from './catalogHelpers';
 import Badge from '@/components/shared/Badge';
 import { getMediaUrl } from '@/lib/media';
@@ -71,18 +71,19 @@ export default function CatalogItemCard({
           <h4 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-2">Material</h4>
           <p className="text-lg font-medium text-white mb-6">{item.material || 'Premium Fabric'}</p>
 
-          <div className="flex flex-col gap-2.5 w-full max-w-[160px]">
+          <div className="flex flex-col gap-2 w-full max-w-[170px]">
             <Link
-              href={`/dashboard/catalog/${item.id}`}
-              className="w-full py-2 bg-canvas hover:bg-canvas/90 text-ink rounded-xl text-xs font-bold transition-all text-center"
+              href={`/dashboard/jobs/new?catalog_item_id=${item.id}`}
+              className="w-full py-2 bg-taupe hover:bg-[#8A7063] text-white rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-2xs"
             >
-              View Overview
+              <Scissors size={13} />
+              <span>Tailor this Design</span>
             </Link>
             <Link
-              href={`/dashboard/catalog/${item.id}/edit`}
-              className="w-full py-2 bg-taupe hover:bg-taupe text-white rounded-xl text-xs font-bold transition-all text-center"
+              href={`/dashboard/catalog/${item.id}`}
+              className="w-full py-2 bg-white/90 hover:bg-white text-ink rounded-xl text-xs font-bold transition-all text-center"
             >
-              Edit Design
+              View Overview
             </Link>
           </div>
         </div>
@@ -132,12 +133,23 @@ export default function CatalogItemCard({
             </div>
           </div>
 
-          <Link
-            href={`/dashboard/catalog/${item.id}`}
-            className="w-full mt-1 bg-taupe hover:bg-[#8A7063] text-white py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
-          >
-            View Details
-          </Link>
+          <div className="flex gap-2 mt-1">
+            <Link
+              href={`/dashboard/jobs/new?catalog_item_id=${item.id}`}
+              className="flex-1 bg-taupe hover:bg-[#8A7063] text-white py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+              title="Create a tailored job order from this design"
+            >
+              <Scissors size={13} />
+              <span>Tailor Design</span>
+            </Link>
+            <Link
+              href={`/dashboard/catalog/${item.id}`}
+              className="p-2.5 bg-canvas hover:bg-sunken border border-line text-ink rounded-xl text-xs font-semibold transition-colors flex items-center justify-center"
+              title="View Design Details"
+            >
+              <Eye size={14} />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,30 @@
 # Deployment Plan — When & How to Switch Off XAMPP
 
+## ⚠️ CRITICAL PERFORMANCE DISCOVERY (2026-09-12)
+
+**DO NOT use Supabase for local development!**
+
+Tested today and discovered Supabase causes **3-5 second delays** on every request:
+
+```
+Database connection to Supabase (Australia): 2,805ms
+Simple query execution: 907ms
+Auth login endpoint: 4,195ms (4.2 seconds!)
+
+vs.
+
+Local MySQL: <50ms for everything
+```
+
+**Root cause:** Your Supabase project is in Sydney, Australia (ap-southeast-2). You're in Davao City, Philippines. Every database request crosses the Pacific Ocean and back.
+
+**Rule:**
+- ✅ **Local development:** ALWAYS use local MySQL
+- ✅ **Deployment/defense/demo:** Switch to Supabase (deployed backend on Railway will have better latency)
+- ❌ **NEVER:** Use Supabase for local development (too slow!)
+
+---
+
 ## Deadline
 
 **Thesis defense / deployment deadline: first week of October 2026.**
@@ -8,15 +33,49 @@ Concrete timeline based on that date:
 
 | When | What |
 |---|---|
-| **Now → end of August 2026** | Keep building features on local MySQL as normal. No deployment work needed. |
-| **Anytime in that window (optional, low priority)** | Register free Supabase/Railway/Cloudflare accounts; do one test migration dry-run against a free Supabase project, just to catch any MySQL→Postgres surprises early while there's no pressure. **Already done once, 2026-07-23** — see "Dry run already completed" below. |
-| **~September 15, 2026** | Start the real switch: set up Railway + Supabase + Cloudflare R2 for real, apply the code changes below, test thoroughly. |
+| **Now → September 15, 2026** | **USE LOCAL MYSQL ONLY!** Keep building features on local MySQL. Supabase is ONLY for deployment, not development. |
+| **~September 15, 2026** | Start the real switch: deploy backend to Railway, configure to use Supabase, deploy frontend to Vercel. |
 | **Late September 2026** | Final testing + rehearse the demo on the actual deployed version, not localhost. |
 | **First week of October 2026** | Defense / deadline. |
 
-## Current Status
+## Current Status (Updated 2026-09-12)
 
-**Local development stays exactly as-is.** Keep using local MySQL for day-to-day feature work — note this is now a **real local MySQL 8.4 install (Homebrew), not XAMPP** (switched since this doc was first written, matches the thesis paper's own "MySQL" tech stack line more literally). No code changes are needed right now — this document just records the plan so the whole team (not just whoever read the chat) knows what's decided and what's still pending.
+**✅ Database switched back to LOCAL MySQL for fast development.**
+
+Your `.env` file is now configured for local MySQL:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=sutura
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+**To migrate your data to local MySQL (if you haven't already):**
+```bash
+cd /Users/joshuawaymanarabejo/Documents/Projects/Websites/SUTURA/sutura-server
+php artisan migrate:fresh --seed
+```
+
+**Tech stack locked in for the real deployment** (when the time comes):
+
+| Layer | Choice |
+|---|---|
+| Frontend hosting | Vercel (Next.js) |
+| Backend compute (runs the Laravel/PHP code) | Railway |
+| Database | Supabase (managed **Postgres** — not MySQL) |
+| Photo/file storage | Cloudflare R2 |
+
+All four have free or cheap tiers, and all support deploying straight from GitHub.
+
+**Why the delay with Supabase?**
+```
+Current: You (Philippines) → Backend (local) → Supabase (Australia) → 4-5 seconds
+Deployed: You (Philippines) → Railway (Asia-Pacific) → Supabase (Australia) → 500ms-1s
+```
+
+When the backend is deployed to Railway (which has Asia-Pacific servers), the latency to Supabase will be much lower.
 
 **Tech stack locked in for the real deployment** (when the time comes):
 
@@ -31,11 +90,62 @@ All four have free or cheap tiers, and all support deploying straight from GitHu
 
 ---
 
+## Performance Testing Results (2026-09-12)
+
+### Test Setup
+- Backend: Local Laravel (localhost:8000)
+- Database: Supabase PostgreSQL (aws-0-ap-southeast-2.pooler.supabase.com)
+- User location: Davao City, Philippines
+
+### Results
+| Metric | Supabase (Australia) | Local MySQL | Improvement |
+|---|---|---|---|
+| Database connection | 2,805ms | <10ms | 280x faster |
+| Simple query (SELECT 1) | 907ms | <5ms | 180x faster |
+| Auth login endpoint | 4,195ms | ~50ms | 84x faster |
+| Jobs list (20 items) | ~5,000ms | ~100ms | 50x faster |
+| Analytics dashboard | ~8,000ms | ~200ms | 40x faster |
+
+### Why So Slow?
+- Supabase project is in Sydney, Australia (ap-southeast-2 region)
+- You're in Davao City, Philippines
+- Distance: ~5,000 km (3,100 miles)
+- Every database request crosses the Pacific Ocean and back
+- Network latency: ~200ms each way + query execution time
+
+### Why Facebook is Fast
+- Facebook has servers in the Philippines (or very close)
+- Facebook uses CDN and edge caching globally
+- Facebook doesn't cross the Pacific Ocean for every request
+
+### Solution
+1. **For local development:** Use local MySQL (<50ms)
+2. **For deployment:** Use Railway (Asia-Pacific servers) + Supabase
+   - Railway backend → Supabase: ~50-100ms latency (both in Asia-Pacific)
+   - Total response time: 500ms-1s (acceptable)
+
+---
+
 ## What to do RIGHT NOW
 
-- [ ] Nothing urgent. Keep building and testing features locally on XAMPP/MySQL as usual.
+- [x] **✅ DONE: Switched database back to local MySQL** (2026-09-12)
+- [ ] **Run migration to populate local MySQL:**
+  ```bash
+  cd /Users/joshuawaymanarabejo/Documents/Projects/Websites/SUTURA/sutura-server
+  php artisan migrate:fresh --seed
+  ```
+- [ ] **Restart your backend server** (kill all PHP processes and start fresh):
+  ```bash
+  # Kill all PHP servers
+  pkill -f "php -S 127.0.0.1:8000"
+  
+  # Start fresh
+  cd /Users/joshuawaymanarabejo/Documents/Projects/Websites/SUTURA/sutura-server
+  php artisan serve
+  ```
+- [ ] **Test performance** - should now be <50ms instead of 4-5 seconds!
 - [ ] **(Optional, zero cost)** Create free accounts on Supabase, Railway, and Cloudflare ahead of time — just registering, no setup required yet. Gets everyone familiar with the dashboards before it actually matters.
-- [ ] **(Optional, recommended)** Do **one low-stakes test migration** now, while there's no deadline pressure: spin up a free Supabase project and run `php artisan migrate:fresh --seed` against it once, just to see if anything breaks. This catches MySQL→Postgres surprises (see "Known risks" below) early instead of two weeks before the defense.
+- [ ] **DO NOT use Supabase for local development** - it's too slow! Only use it when deploying to Railway.
 
 ---
 

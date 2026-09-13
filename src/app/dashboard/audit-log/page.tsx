@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ScrollText, Loader2, ChevronLeft, ChevronRight, Tag, Percent, XCircle, CalendarClock, CheckCircle2, Trash2, RotateCcw, UserMinus, Scissors, MapPinOff, ImageOff } from 'lucide-react';
+import { ScrollText, Loader2, ChevronLeft, ChevronRight, Tag, Percent, XCircle, CalendarClock, CheckCircle2, Trash2, RotateCcw, UserMinus, Scissors, MapPinOff, ImageOff, Building2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import PageHeader from '@/components/shared/PageHeader';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 
 interface AuditLogEntry {
   id: number;
@@ -18,17 +19,18 @@ interface AuditLogEntry {
 }
 
 const ACTION_META: Record<string, { label: string; icon: typeof Tag; color: string }> = {
-  discount_applied:        { label: 'Discount Applied',      icon: Percent,       color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  payment_rejected:        { label: 'Payment Rejected',      icon: XCircle,       color: 'bg-red-50 text-red-600 border-red-200' },
-  appointment_rescheduled: { label: 'Appointment Rescheduled', icon: CalendarClock, color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  appointment_completed:   { label: 'Appointment Completed',  icon: CheckCircle2,  color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  job_order_deleted:       { label: 'Job Order Deleted',      icon: Trash2,        color: 'bg-red-50 text-red-600 border-red-200' },
-  job_order_restored:      { label: 'Job Order Restored',     icon: RotateCcw,     color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  staff_removed:           { label: 'Staff Removed',          icon: UserMinus,     color: 'bg-red-50 text-red-600 border-red-200' },
-  service_deleted:         { label: 'Service Deleted',        icon: Scissors,      color: 'bg-red-50 text-red-600 border-red-200' },
-  service_restored:        { label: 'Service Restored',       icon: RotateCcw,     color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  branch_deleted:          { label: 'Branch Deleted',         icon: MapPinOff,     color: 'bg-red-50 text-red-600 border-red-200' },
-  catalog_item_deleted:    { label: 'Catalog Item Deleted',   icon: ImageOff,      color: 'bg-red-50 text-red-600 border-red-200' },
+  discount_applied:        { label: 'Discount Applied',        icon: Percent,       color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  payment_rejected:        { label: 'Payment Rejected',        icon: XCircle,       color: 'bg-red-50 text-red-600 border-red-200' },
+  appointment_rescheduled: { label: 'Appointment Rescheduled',   icon: CalendarClock, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  appointment_completed:   { label: 'Appointment Completed',    icon: CheckCircle2,  color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  job_order_deleted:       { label: 'Job Order Deleted',        icon: Trash2,        color: 'bg-red-50 text-red-600 border-red-200' },
+  job_order_restored:      { label: 'Job Order Restored',       icon: RotateCcw,     color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  staff_removed:           { label: 'Staff Removed',            icon: UserMinus,     color: 'bg-red-50 text-red-600 border-red-200' },
+  service_deleted:         { label: 'Service Deleted',          icon: Scissors,      color: 'bg-red-50 text-red-600 border-red-200' },
+  service_restored:        { label: 'Service Restored',         icon: RotateCcw,     color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  branch_deleted:          { label: 'Branch Deleted',           icon: MapPinOff,     color: 'bg-red-50 text-red-600 border-red-200' },
+  catalog_item_deleted:    { label: 'Catalog Item Deleted',     icon: ImageOff,      color: 'bg-red-50 text-red-600 border-red-200' },
+  branch_set_main:         { label: 'Set as Main Branch',       icon: Building2,     color: 'bg-amber-50 text-amber-800 border-amber-200' },
 };
 
 // Model class names come back fully-qualified (App\Models\JobOrder) — strip
@@ -38,8 +40,24 @@ const modelLabel = (modelType: string) => {
   return short.replace(/([a-z])([A-Z])/g, '$1 $2');
 };
 
-const formatPayload = (action: string, payload: Record<string, unknown> | null): string => {
-  if (!payload) return '—';
+const formatPayload = (action: string, rawPayload: Record<string, unknown> | string | null): string => {
+  if (!rawPayload) return '—';
+
+  let payload: Record<string, unknown>;
+  if (typeof rawPayload === 'string') {
+    try {
+      payload = JSON.parse(rawPayload);
+    } catch {
+      return rawPayload;
+    }
+  } else {
+    payload = rawPayload;
+  }
+
+  if (payload.description && typeof payload.description === 'string') {
+    return payload.description;
+  }
+
   switch (action) {
     case 'discount_applied':
       return `₱${Number(payload.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}${payload.reason ? ` — "${payload.reason}"` : ''}`;
@@ -59,8 +77,23 @@ const formatPayload = (action: string, payload: Record<string, unknown> | null):
     case 'branch_deleted':
     case 'catalog_item_deleted':
       return `${payload.name ?? '—'}`;
-    default:
-      return JSON.stringify(payload);
+    case 'branch_set_main':
+      return `Designated "${payload.name ?? payload.branch_name ?? 'Branch'}" as Primary Headquarters`;
+    default: {
+      if (typeof payload === 'object' && payload !== null) {
+        if ('name' in payload && Object.keys(payload).length === 1) {
+          return `"${payload.name}"`;
+        }
+        if ('reason' in payload && Object.keys(payload).length === 1) {
+          return `"${payload.reason}"`;
+        }
+        const entries = Object.entries(payload)
+          .filter(([_, v]) => v !== null && v !== undefined && v !== '')
+          .map(([k, v]) => `${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+        if (entries.length > 0) return entries.join(' · ');
+      }
+      return String(payload ?? '—');
+    }
   }
 };
 
@@ -94,8 +127,8 @@ export default function AuditLogPage() {
 
       <div className="bg-surface border border-line rounded-xl overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-ink-faint">
-            <Loader2 className="animate-spin mr-2" size={20} /> Loading...
+          <div className="p-4">
+            <TableSkeleton rows={8} cols={5} />
           </div>
         ) : logs.length === 0 ? (
           <div className="text-center py-16 text-ink-faint text-sm">No audit log entries yet.</div>
@@ -113,7 +146,11 @@ export default function AuditLogPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {logs.map(entry => {
-                  const meta = ACTION_META[entry.action] ?? { label: entry.action.replaceAll('_', ' '), icon: Tag, color: 'bg-sunken text-ink-muted border-line' };
+                  const meta = ACTION_META[entry.action] ?? {
+                    label: entry.action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                    icon: Tag,
+                    color: 'bg-sunken text-ink-muted border-line',
+                  };
                   const Icon = meta.icon;
                   return (
                     <tr key={entry.id} className="hover:bg-canvas transition-colors">

@@ -4,6 +4,7 @@ import React from 'react';
 import { Loader2, Pencil, Trash2, Package as PackageIcon, ToggleLeft, ToggleRight } from 'lucide-react';
 import { ServicePackage } from './serviceHelpers';
 import SearchInput from '@/components/shared/SearchInput';
+import { CardGridSkeleton } from '@/components/ui/Skeleton';
 
 interface ServicePackageListViewProps {
   readonly filteredPackages: ServicePackage[];
@@ -27,13 +28,14 @@ export default function ServicePackageListView({
 }: ServicePackageListViewProps) {
   return (
     <div className="space-y-4">
-      <SearchInput id="package-search" value={search} onChange={onSearchChange} placeholder="Search packages..." className="max-w-sm" />
+      {/* Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <SearchInput id="package-search" value={search} onChange={onSearchChange} placeholder="Search packages..." className="flex-1 min-w-0" />
+      </div>
 
       {/* Loading state */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-ink-faint">
-          <Loader2 size={24} className="animate-spin" />
-        </div>
+        <CardGridSkeleton count={6} cols="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
       ) : filteredPackages.length === 0 ? (
         /* Empty state */
         <div className="text-center py-16 bg-canvas/50 border border-dashed border-line rounded-2xl">

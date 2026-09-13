@@ -62,12 +62,14 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
     );
   }
 
-  if (data.length === 0) {
+  const safeData = Array.isArray(data) ? data : [];
+
+  if (safeData.length === 0) {
     return null;
   }
 
   // Sorted descending so the chart reads top-to-bottom as a ranking.
-  const chartData = [...data].sort((a, b) => b.total_revenue - a.total_revenue);
+  const chartData = [...safeData].sort((a, b) => b.total_revenue - a.total_revenue);
 
   return (
     <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
@@ -116,7 +118,7 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
 
       {/* Mobile cards — no sideways scroll needed for a 9-column table */}
       <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
-        {data.map(row => (
+        {safeData.map(row => (
           <div key={row.branch_id ?? 'unassigned'} className="px-6 py-4 space-y-2.5">
             <div className="flex items-center justify-between">
               <p className="font-medium text-ink">
@@ -165,7 +167,7 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0EAE3]">
-            {data.map(row => (
+            {safeData.map(row => (
               <tr key={row.branch_id ?? 'unassigned'} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3 font-medium text-ink">
                   {row.branch_name}

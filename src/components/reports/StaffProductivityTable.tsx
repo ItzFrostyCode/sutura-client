@@ -59,12 +59,14 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
     );
   }
 
-  if (data.length === 0) {
+  const safeData = Array.isArray(data) ? data : [];
+
+  if (safeData.length === 0) {
     return null;
   }
 
   // Sorted descending so the chart reads top-to-bottom as a ranking.
-  const chartData = [...data].sort((a, b) => b.completed_jobs - a.completed_jobs);
+  const chartData = [...safeData].sort((a, b) => b.completed_jobs - a.completed_jobs);
 
   return (
     <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
@@ -110,7 +112,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
 
       {/* Mobile cards — no sideways scroll needed */}
       <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
-        {data.map(row => (
+        {safeData.map(row => (
           <div key={row.staff_id} className="px-6 py-3.5">
             <div className="flex items-center justify-between">
               <div>
@@ -142,7 +144,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0EAE3]">
-            {data.map(row => (
+            {safeData.map(row => (
               <tr key={row.staff_id} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3 font-medium text-ink">{row.name || 'Unnamed Staff'}</td>
                 <td className="px-6 py-3 text-ink-muted">{roleLabel(row.role)}</td>

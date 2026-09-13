@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, type LucideIcon } from 'lucide-react';
+import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, type LucideIcon } from 'lucide-react';
 import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
+import { getMediaUrl } from '@/lib/media';
 
 interface JobKanbanBoardProps {
   readonly groupedJobs: Record<string, JobItem[]>;
@@ -216,10 +217,56 @@ export default function JobKanbanBoard({
                       })()}
                     </div>
                     
-                    <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                      <Scissors size={11} />
-                      <span className="truncate">{job.service?.name || 'Custom Sew'}</span>
-                    </div>
+                    {/* Visual Anchor: Design Thumbnail & Details */}
+                    {(() => {
+                      const catalogImage =
+                        job.catalog_item?.images?.find((i: { is_primary?: boolean | number; image_url: string }) => Boolean(i.is_primary))?.image_url ||
+                        job.catalog_item?.images?.[0]?.image_url ||
+                        job.catalog_item?.fabric_image_url;
+                      const refImage =
+                        catalogImage ||
+                        (job.reference_images && job.reference_images.length > 0 ? job.reference_images[0] : null);
+                      const standardSize = (job.custom_order_data as Record<string, unknown> | null | undefined)?.standard_size;
+
+                      return (
+                        <div className="flex items-center gap-2.5 my-2 p-1.5 rounded-lg bg-canvas/40 border border-line/60">
+                          {refImage ? (
+                            <div className="w-10 h-10 rounded-md overflow-hidden bg-sunken shrink-0 border border-line">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={getMediaUrl(refImage)}
+                                alt="Design Preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-sunken flex items-center justify-center text-ink-faint shrink-0 border border-line">
+                              <Shirt size={16} />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            {job.catalog_item ? (
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-taupe truncate">
+                                <Sparkles size={10} className="shrink-0" />
+                                <span className="truncate">{job.catalog_item.name}</span>
+                              </div>
+                            ) : (
+                              <div className="text-[10px] font-bold text-ink-muted truncate">
+                                {job.garment_category ? job.garment_category.toUpperCase() : (job.service?.name || 'Custom Garment')}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1 text-[10px] text-ink-muted mt-0.5">
+                              {typeof standardSize === 'string' && standardSize ? (
+                                <span className="px-1 py-0.2 rounded bg-surface border border-line font-bold text-[9px] text-ink">
+                                  Size {standardSize}
+                                </span>
+                              ) : null}
+                              <span className="truncate">{job.service?.name || 'Tailored'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {Number.parseFloat(job.balance as string || '0') > 0 && (
                       <div className="text-[10px] font-bold text-rose-600 mt-1">

@@ -96,9 +96,16 @@ export default function DashboardCharts({
     onPeriodChange?.(id);
   };
 
+  const asArray = <T,>(val: unknown): T[] => {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') return Object.values(val);
+    return [];
+  };
+
   // Revenue area chart data
-  const chartData = data?.revenue_data && data.revenue_data.length > 0
-    ? data.revenue_data
+  const rawRevenue = asArray<{ month: string; date?: string; revenue: number }>(data?.revenue_data);
+  const chartData = rawRevenue.length > 0
+    ? rawRevenue
     : [
         { month: 'Week 1', revenue: 0 },
         { month: 'Week 2', revenue: 0 },
@@ -117,8 +124,8 @@ export default function DashboardCharts({
   const visibleChartData = chartData.filter(d => !('date' in d) || !d.date || d.date <= today0);
 
   // Jobs-by-status donut data (exclude zero-count statuses)
-  const pieData = (data?.jobs_by_status ?? [])
-    .filter(s => s.count > 0)
+  const pieData = asArray<{ status: string; count: number }>(data?.jobs_by_status)
+    .filter(s => s && s.count > 0)
     .map(s => ({
       name: STATUS_LABELS[s.status] ?? s.status,
       value: s.count,
@@ -127,7 +134,7 @@ export default function DashboardCharts({
 
   const totalJobsInPie = pieData.reduce((acc, s) => acc + s.value, 0);
 
-  const recentJobs = data?.recent_jobs || [];
+  const recentJobs = asArray<NonNullable<AnalyticsData['recent_jobs']>[number]>(data?.recent_jobs);
 
   // Revenue trend: compare first half vs second half of data.
   // Only over buckets that have *fully* completed — viewing "This Month"
@@ -342,9 +349,9 @@ export default function DashboardCharts({
 
           <div className="flex-1 space-y-0">
             {recentJobs.length > 0 ? (
-              recentJobs.map((order) => (
+              recentJobs.map((order, index) => (
                 <div
-                  key={order.id}
+                  key={order.id ?? `job-${index}`}
                   className="flex items-center justify-between py-3 border-b border-line last:border-0"
                 >
                   <div className="min-w-0">

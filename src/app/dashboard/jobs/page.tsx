@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import {
   Plus, Store, ShoppingBag, AlertCircle, Truck, Scissors, Zap, Trash2, X,
-  AlertTriangle, Layers, Palette, Ruler, Printer,
+  AlertTriangle, Layers, Palette, Ruler, Printer, Sparkles,
   Shirt, UserCheck, CheckCircle2, CheckCheck, Pause, SlidersHorizontal, type LucideIcon
 } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
@@ -16,6 +16,7 @@ import JobTrashModal from '@/components/jobs/JobTrashModal';
 import { useJobs } from '@/components/jobs/useJobs';
 import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
+import { KanbanSkeleton } from '@/components/ui/Skeleton';
 
 interface StageIconFilter {
   id: string;
@@ -27,7 +28,7 @@ interface StageIconFilter {
 
 export default function JobOrdersPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center text-ink-faint">Loading…</div>}>
+    <Suspense fallback={<div className="p-4"><KanbanSkeleton columns={4} /></div>}>
       <JobOrdersPageContent />
     </Suspense>
   );
@@ -58,6 +59,11 @@ function JobOrdersPageContent() {
     fetchJobs,
     overdueOnly,
     garmentCategoryFilter,
+    designOriginFilter,
+    setDesignOriginFilter,
+    catalogJobsCount,
+    customBespokeCount,
+    alterationJobsCount,
   } = useJobs();
 
   const [quickModalOpen, setQuickModalOpen] = useState(false);
@@ -190,28 +196,10 @@ function JobOrdersPageContent() {
 
   return (
     <div className="space-y-5 h-full flex flex-col">
-      {overdueOnly && (
-        <div className="flex items-center justify-between gap-3 bg-danger/10 border border-danger/20 text-danger text-sm font-medium rounded-lg px-4 py-2.5">
-          <span className="flex items-center gap-2"><AlertCircle size={16} /> Showing overdue jobs only</span>
-          <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline">
-            <X size={13} /> Clear filter
-          </Link>
-        </div>
-      )}
-      {garmentCategoryFilter && (
-        <div className="flex items-center justify-between gap-3 bg-taupe/10 border border-taupe/20 text-taupe text-sm font-medium rounded-lg px-4 py-2.5">
-          <span className="flex items-center gap-2">
-            <AlertCircle size={16} /> Showing {GARMENT_CATEGORY_LABELS[garmentCategoryFilter] ?? garmentCategoryFilter} jobs only
-          </span>
-          <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline">
-            <X size={13} /> Clear filter
-          </Link>
-        </div>
-      )}
       <PageHeader
-        eyebrow={`${walkInCount + onlineCount} Active Orders`}
-        title="Production Pipeline"
-        description="Track garment production from intake through pickup — walk-in and online orders."
+        eyebrow={`${jobs.length} Tailored Job Orders`}
+        title="Production Orders"
+        description="Unified artisan pipeline tracking all bespoke, lookbook-inspired, and alteration jobs."
         actions={
           <>
             <button
@@ -219,21 +207,21 @@ function JobOrdersPageContent() {
               onClick={() => setTrashModalOpen(true)}
               title="View deleted job orders"
               aria-label="View deleted job orders"
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-surface border border-line text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
+              className="flex items-center justify-center w-10 h-10 rounded-lg bg-surface border border-line text-ink-muted hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
             >
               <Trash2 size={15} />
             </button>
             <button
               type="button"
               onClick={() => setQuickModalOpen(true)}
-              className="flex items-center gap-1.5 bg-surface border border-line hover:border-taupe text-ink-body hover:text-taupe px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors h-10"
+              className="flex items-center gap-1.5 bg-surface border border-line hover:border-taupe text-ink-body hover:text-taupe px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors h-10 cursor-pointer"
             >
               <Zap size={14} className="text-taupe" />
               <span>Quick Walk-in</span>
             </button>
             <Link
               href="/dashboard/jobs/new"
-              className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white px-4 py-2 rounded-lg font-bold text-xs transition-colors h-10 shadow-2xs"
+              className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white px-4 py-2 rounded-lg font-bold text-xs transition-colors h-10 shadow-2xs cursor-pointer"
             >
               <Plus size={15} />
               <span>Create Job Order</span>
@@ -241,144 +229,217 @@ function JobOrdersPageContent() {
           </>
         }
       />
-
-      {/* ── Main White Surface Card Panel (Enclosing Toolbar + Kanban Board) ── */}
-      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs flex flex-col flex-1">
-        {/* Inner Toolbar (Channel Tabs + Icon-Only Stage Filters + Search) */}
-        <div className="p-3 sm:p-3.5 border-b border-line bg-canvas/20 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
-            {/* Channel Tabs + Settings Button Group (Row 1 on Mobile) */}
-            <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-              <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setTab('all')}
-                  className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                    tab === 'all'
-                      ? 'bg-surface text-ink shadow-xs border border-line/80'
-                      : 'text-ink-muted hover:text-ink'
-                  }`}
-                >
-                  <span>All Orders</span>
-                  <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{jobs.length}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab('walk_in')}
-                  className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                    tab === 'walk_in'
-                      ? 'bg-surface text-ink shadow-xs border border-line/80'
-                      : 'text-ink-muted hover:text-ink'
-                  }`}
-                >
-                  <Store size={12} />
-                  <span>Walk-in</span>
-                  <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{walkInCount}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab('online')}
-                  className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                    tab === 'online'
-                      ? 'bg-surface text-ink shadow-xs border border-line/80'
-                      : 'text-ink-muted hover:text-ink'
-                  }`}
-                >
-                  <ShoppingBag size={12} />
-                  <span>Online</span>
-                  <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{onlineCount}</span>
-                </button>
-              </div>
-
-              {/* ── Settings Button (Next to Channel Tabs) ── */}
-              <button
-                type="button"
-                onClick={() => setSettingsModalOpen(true)}
-                title="Stage Notification Dot Settings"
-                className="h-9.5 w-9.5 rounded-lg bg-canvas border border-line text-ink-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-all shadow-2xs shrink-0 active:scale-95"
-              >
-                <SlidersHorizontal size={15} />
-              </button>
+          {overdueOnly && (
+            <div className="flex items-center justify-between gap-3 bg-danger/10 border border-danger/20 text-danger text-sm font-medium rounded-lg px-4 py-2.5">
+              <span className="flex items-center gap-2"><AlertCircle size={16} /> Showing overdue jobs only</span>
+              <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline">
+                <X size={13} /> Clear filter
+              </Link>
             </div>
+          )}
+          {garmentCategoryFilter && (
+            <div className="flex items-center justify-between gap-3 bg-taupe/10 border border-taupe/20 text-taupe text-sm font-medium rounded-lg px-4 py-2.5">
+              <span className="flex items-center gap-2">
+                <AlertCircle size={16} /> Showing {GARMENT_CATEGORY_LABELS[garmentCategoryFilter] ?? garmentCategoryFilter} jobs only
+              </span>
+              <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline">
+                <X size={13} /> Clear filter
+              </Link>
+            </div>
+          )}
 
-            {/* ── Icon-Only Stage Filters (Thumb-Friendly Touch Target Sizing) ── */}
-            <div className="h-11 sm:h-9.5 flex items-center gap-1.5 sm:gap-1 p-1 bg-canvas border border-line rounded-xl sm:rounded-lg overflow-x-auto hide-scrollbar w-full sm:w-auto touch-pan-x">
-              {STAGE_ICON_FILTERS.map(stage => {
-                const Icon = stage.icon;
-                const isSelected = stageFilter === stage.id;
-                const count = stage.id === 'all'
-                  ? jobs.length
-                  : stage.id === 'on_hold'
-                  ? onHoldJobs.length
-                  : (groupedJobs[stage.id]?.length || 0);
+          {/* ── Main White Surface Card Panel (Enclosing Toolbar + Kanban Board) ── */}
+          <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs flex flex-col flex-1">
+            {/* Inner Toolbar (Channel Tabs + Icon-Only Stage Filters + Search) */}
+            <div className="p-3 sm:p-3.5 border-b border-line bg-canvas/20 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
+                {/* Channel Tabs + Settings Button Group (Row 1 on Mobile) */}
+                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                  <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setTab('all')}
+                      className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        tab === 'all'
+                          ? 'bg-surface text-ink shadow-xs border border-line/80'
+                          : 'text-ink-muted hover:text-ink'
+                      }`}
+                    >
+                      <span>All Orders</span>
+                      <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{jobs.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTab('walk_in')}
+                      className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        tab === 'walk_in'
+                          ? 'bg-surface text-ink shadow-xs border border-line/80'
+                          : 'text-ink-muted hover:text-ink'
+                      }`}
+                    >
+                      <Store size={12} />
+                      <span>Walk-in</span>
+                      <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{walkInCount}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTab('online')}
+                      className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        tab === 'online'
+                          ? 'bg-surface text-ink shadow-xs border border-line/80'
+                          : 'text-ink-muted hover:text-ink'
+                      }`}
+                    >
+                      <ShoppingBag size={12} />
+                      <span>Online</span>
+                      <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{onlineCount}</span>
+                    </button>
+                  </div>
 
-                return (
+                  {/* ── Settings Button (Next to Channel Tabs) ── */}
                   <button
-                    key={stage.id}
                     type="button"
-                    onClick={() => {
-                      setStageFilter(stage.id);
-                      if (stage.id !== 'all') {
-                        const el = document.getElementById(`kanban-col-${stage.id}`);
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                      }
-                    }}
-                    title={`${stage.title} (${count})`}
-                    className={`relative min-w-[38px] h-9 sm:min-w-8 sm:h-7 rounded-lg sm:rounded-md flex items-center justify-center transition-all shrink-0 active:scale-95 ${
-                      isSelected
-                        ? 'bg-surface text-ink shadow-xs border border-line/90 font-bold'
-                        : 'text-ink-muted hover:text-ink hover:bg-surface/50'
+                    onClick={() => setSettingsModalOpen(true)}
+                    title="Stage Notification Dot Settings"
+                    className="h-9.5 w-9.5 rounded-lg bg-canvas border border-line text-ink-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-all shadow-2xs shrink-0 active:scale-95"
+                  >
+                    <SlidersHorizontal size={15} />
+                  </button>
+                </div>
+
+                {/* ── Design Origin Filters (Option A Unified Tailoring Pipeline) ── */}
+                <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0 overflow-x-auto hide-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setDesignOriginFilter('all')}
+                    className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+                      designOriginFilter === 'all'
+                        ? 'bg-surface text-ink shadow-xs border border-line/80'
+                        : 'text-ink-muted hover:text-ink'
                     }`}
                   >
-                    <Icon size={16} className={`transition-colors ${stage.iconColor ?? ''}`} />
-                    {stage.dotColor && (
-                      <span className={`absolute top-1 right-1 w-2 h-2 sm:w-1.5 sm:h-1.5 rounded-full ${stage.dotColor} ring-1.5 ring-white`} />
-                    )}
+                    <span>All</span>
+                    <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{jobs.length}</span>
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={() => setDesignOriginFilter('catalog')}
+                    className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+                      designOriginFilter === 'catalog'
+                        ? 'bg-surface text-ink shadow-xs border border-line/80'
+                        : 'text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    <Sparkles size={11} className="text-taupe" />
+                    <span>Catalog</span>
+                    <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{catalogJobsCount}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDesignOriginFilter('custom')}
+                    className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+                      designOriginFilter === 'custom'
+                        ? 'bg-surface text-ink shadow-xs border border-line/80'
+                        : 'text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    <Scissors size={11} />
+                    <span>Custom</span>
+                    <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{customBespokeCount}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDesignOriginFilter('alteration')}
+                    className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+                      designOriginFilter === 'alteration'
+                        ? 'bg-surface text-ink shadow-xs border border-line/80'
+                        : 'text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    <Shirt size={11} />
+                    <span>Alterations</span>
+                    <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{alterationJobsCount}</span>
+                  </button>
+                </div>
+
+                {/* ── Icon-Only Stage Filters (Thumb-Friendly Touch Target Sizing) ── */}
+                <div className="h-11 sm:h-9.5 flex items-center gap-1.5 sm:gap-1 p-1 bg-canvas border border-line rounded-xl sm:rounded-lg overflow-x-auto hide-scrollbar w-full sm:w-auto touch-pan-x">
+                  {STAGE_ICON_FILTERS.map(stage => {
+                    const Icon = stage.icon;
+                    const isSelected = stageFilter === stage.id;
+                    const count = stage.id === 'all'
+                      ? jobs.length
+                      : stage.id === 'on_hold'
+                      ? onHoldJobs.length
+                      : (groupedJobs[stage.id]?.length || 0);
+
+                    return (
+                      <button
+                        key={stage.id}
+                        type="button"
+                        onClick={() => {
+                          setStageFilter(stage.id);
+                          if (stage.id !== 'all') {
+                            const el = document.getElementById(`kanban-col-${stage.id}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                          }
+                        }}
+                        title={`${stage.title} (${count})`}
+                        className={`relative min-w-[38px] h-9 sm:min-w-8 sm:h-7 rounded-lg sm:rounded-md flex items-center justify-center transition-all shrink-0 active:scale-95 ${
+                          isSelected
+                            ? 'bg-surface text-ink shadow-xs border border-line/90 font-bold'
+                            : 'text-ink-muted hover:text-ink hover:bg-surface/50'
+                        }`}
+                      >
+                        <Icon size={16} className={`transition-colors ${stage.iconColor ?? ''}`} />
+                        {stage.dotColor && (
+                          <span className={`absolute top-1 right-1 w-2 h-2 sm:w-1.5 sm:h-1.5 rounded-full ${stage.dotColor} ring-1.5 ring-white`} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Search Input */}
+              <div className="w-full lg:w-60 shrink-0">
+                <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-full" />
+              </div>
+            </div>
+
+            {tab === 'online' && (
+              <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
+                <Truck size={13} />
+                <span>Online production flow: <strong>{activeColumns.map(c => c.title).join(' → ')}</strong>.</span>
+              </div>
+            )}
+
+            {tab === 'walk_in' && (
+              <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
+                <Scissors size={13} />
+                <span>Walk-in production flow: <strong>{activeColumns.map(c => c.title).join(' → ')}</strong>.</span>
+              </div>
+            )}
+
+            {/* Board Area */}
+            <div className="p-3 sm:p-4 flex-1 overflow-hidden">
+              {loading ? (
+                <KanbanSkeleton columns={4} />
+              ) : (
+                <JobKanbanBoard
+                  groupedJobs={groupedJobs}
+                  activeColumns={activeColumns}
+                  onHoldJobs={onHoldJobs}
+                  actionLoadingId={actionLoadingId}
+                  onUpdateStatus={updateJobStatus}
+                  onApprove={handleApproveJob}
+                  onReject={openRejectModal}
+                  highlightedJobId={highlightedJobId}
+                  stageFilter={stageFilter}
+                />
+              )}
             </div>
           </div>
-
-          {/* Search Input */}
-          <div className="w-full lg:w-60 shrink-0">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-full" />
-          </div>
-        </div>
-
-        {tab === 'online' && (
-          <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
-            <Truck size={13} />
-            <span>Online production flow: <strong>{activeColumns.map(c => c.title).join(' → ')}</strong>.</span>
-          </div>
-        )}
-
-        {tab === 'walk_in' && (
-          <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
-            <Scissors size={13} />
-            <span>Walk-in production flow: <strong>{activeColumns.map(c => c.title).join(' → ')}</strong>.</span>
-          </div>
-        )}
-
-        {/* Board Area */}
-        <div className="p-3 sm:p-4 flex-1 overflow-hidden">
-          {loading ? (
-            <div className="py-16 text-center text-ink-faint animate-pulse">Loading production pipeline...</div>
-          ) : (
-            <JobKanbanBoard
-              groupedJobs={groupedJobs}
-              activeColumns={activeColumns}
-              onHoldJobs={onHoldJobs}
-              actionLoadingId={actionLoadingId}
-              onUpdateStatus={updateJobStatus}
-              onApprove={handleApproveJob}
-              onReject={openRejectModal}
-              highlightedJobId={highlightedJobId}
-              stageFilter={stageFilter}
-            />
-          )}
-        </div>
-      </div>
 
       {/* ── Notification Indicator Settings Modal (Full Screen on Mobile / Centered on Desktop) ── */}
       {settingsModalOpen && (

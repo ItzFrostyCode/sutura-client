@@ -40,6 +40,11 @@ const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badg
     icon: <Smartphone size={15} className="text-blue-600" />,
     badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
+  paymaya: {
+    label: 'PayMaya',
+    icon: <CreditCard size={15} className="text-teal-600" />,
+    badgeCls: 'bg-teal-50 text-teal-700 border-teal-200',
+  },
   bank_transfer: {
     label: 'Bank Transfer',
     icon: <CreditCard size={15} className="text-purple-600" />,
@@ -74,6 +79,7 @@ export default function JobFinancialsCard({
 
   // Discount State
   const [showDiscountForm, setShowDiscountForm] = useState(false);
+  const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [discountInput, setDiscountInput] = useState('');
   const [discountReason, setDiscountReason] = useState('');
   const [applyingDiscount, setApplyingDiscount] = useState(false);
@@ -109,11 +115,16 @@ export default function JobFinancialsCard({
   };
 
   const handleApplyDiscountSubmit = async () => {
-    const amt = Number.parseFloat(discountInput);
-    if (!amt || amt <= 0) return;
+    const rawVal = Number.parseFloat(discountInput);
+    if (!rawVal || rawVal <= 0) return;
+    const computedAmt = discountType === 'percent'
+      ? Math.min(remainingBalance, Math.round(((totalAmount * rawVal) / 100) * 100) / 100)
+      : Math.min(remainingBalance, rawVal);
+    if (computedAmt <= 0) return;
+
     setApplyingDiscount(true);
     try {
-      await onApplyDiscount(amt, discountReason);
+      await onApplyDiscount(computedAmt, discountReason.trim() || 'Courtesy / Suki Discount');
       setShowDiscountForm(false);
       setDiscountInput('');
       setDiscountReason('');
@@ -290,45 +301,129 @@ export default function JobFinancialsCard({
             {!jobIsCompleted && !jobIsCancelled && remainingBalance > 0 && (
               <div className="pt-1">
                 {showDiscountForm ? (
-                  <div className="bg-rose-50/60 border border-rose-200 rounded-xl p-4 space-y-3">
+                  <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 uppercase tracking-wider">
                         <Tag size={14} className="text-rose-600" />
-                        Apply Suki / Courtesy Discount
+                        Apply Suki / Tawad / Courtesy Discount
                       </div>
-                      {typeof job.customer_job_count === 'number' && (
-                        <span className="text-[10px] font-semibold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full">
-                          {job.customer_job_count === 1 ? 'First order' : `${job.customer_job_count} past orders`}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 bg-white border border-rose-200 rounded-lg p-0.5 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setDiscountType('fixed')}
+                          className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                            discountType === 'fixed'
+                              ? 'bg-rose-600 text-white shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
+                          }`}
+                        >
+                          ₱ Fixed
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDiscountType('percent')}
+                          className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                            discountType === 'percent'
+                              ? 'bg-rose-600 text-white shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
+                          }`}
+                        >
+                          % Percent
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Quick Preset Chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider mr-0.5">Quick Presets:</span>
+                      {[
+                        { label: '🌟 Suki Customer', reason: 'Suki Customer (Loyal Patron)', type: 'fixed' as const, val: 100 },
+                        { label: '🎓 Student (10%)', reason: 'Student ID Discount (10% Off)', type: 'percent' as const, val: 10 },
+                        { label: '🧓 Senior / PWD (20%)', reason: 'Senior Citizen / PWD Statutory (20% Off)', type: 'percent' as const, val: 20 },
+                        { label: '🤝 Tawad / Negotiated', reason: 'Negotiated / Tawad with Customer', type: 'fixed' as const, val: 0 },
+                        { label: '🏷️ Promo / Seasonal', reason: 'Shop Promotional Courtesy Discount', type: 'fixed' as const, val: 0 },
+                      ].map(chip => (
+                        <button
+                          key={chip.label}
+                          type="button"
+                          onClick={() => {
+                            setDiscountType(chip.type);
+                            setDiscountReason(chip.reason);
+                            if (chip.val > 0) {
+                              setDiscountInput(String(chip.val));
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-white hover:bg-rose-100/70 border border-rose-200 hover:border-rose-300 text-[11px] font-medium text-rose-800 rounded-lg transition-all shadow-2xs cursor-pointer"
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Inputs */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-semibold text-xs">₱</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-bold text-xs">
+                          {discountType === 'fixed' ? '₱' : '%'}
+                        </span>
                         <input
                           type="number"
-                          step="0.01"
+                          step={discountType === 'fixed' ? '0.01' : '1'}
                           min="0.01"
-                          max={remainingBalance}
+                          max={discountType === 'fixed' ? remainingBalance : 100}
                           value={discountInput}
                           onChange={e => setDiscountInput(e.target.value)}
-                          placeholder="Discount amount"
-                          className="w-full pl-7 pr-3 py-2 bg-surface border border-rose-200 rounded-lg text-ink focus:outline-none focus:border-rose-400 text-xs shadow-2xs"
+                          placeholder={discountType === 'fixed' ? 'Discount in ₱ (e.g. 150)' : 'Discount in % (e.g. 10)'}
+                          className="w-full pl-7 pr-3 py-2 bg-surface border border-rose-200 rounded-lg text-ink focus:outline-none focus:border-rose-400 text-xs shadow-2xs font-semibold"
                         />
                       </div>
                       <input
                         type="text"
                         value={discountReason}
                         onChange={e => setDiscountReason(e.target.value)}
-                        placeholder="Reason (e.g. Suki loyal customer)"
+                        placeholder="Reason (e.g. Suki loyal customer / Tawad)"
                         className="w-full px-3 py-2 bg-surface border border-rose-200 rounded-lg text-xs text-ink focus:outline-none focus:border-rose-400 shadow-2xs"
                       />
                     </div>
+
+                    {/* Live Calculation Preview Card */}
+                    {(() => {
+                      const rawVal = Number.parseFloat(discountInput) || 0;
+                      const computedAmt = discountType === 'percent'
+                        ? Math.min(remainingBalance, Math.round(((totalAmount * rawVal) / 100) * 100) / 100)
+                        : Math.min(remainingBalance, rawVal);
+                      const projectedBal = Math.max(0, remainingBalance - computedAmt);
+
+                      return rawVal > 0 ? (
+                        <div className="bg-white border border-rose-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs shadow-2xs gap-2">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <span className="text-[10px] text-ink-muted uppercase block">Remaining</span>
+                              <span className="font-bold text-ink font-mono">₱{remainingBalance.toFixed(2)}</span>
+                            </div>
+                            <span className="text-rose-500 font-bold">−</span>
+                            <div>
+                              <span className="text-[10px] text-rose-700 uppercase block">Discount</span>
+                              <span className="font-bold text-rose-700 font-mono">₱{computedAmt.toFixed(2)}</span>
+                            </div>
+                            <span className="text-ink-muted font-bold">=</span>
+                            <div>
+                              <span className="text-[10px] text-emerald-700 uppercase block">New Balance</span>
+                              <span className="font-bold text-emerald-700 font-mono">₱{projectedBal.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-rose-800 font-medium italic">
+                            {discountReason ? `"${discountReason}"` : 'Courtesy discount'}
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+
                     <div className="flex justify-end gap-2 pt-1">
                       <button
                         type="button"
                         onClick={() => { setShowDiscountForm(false); setDiscountInput(''); setDiscountReason(''); }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -336,9 +431,16 @@ export default function JobFinancialsCard({
                         type="button"
                         disabled={applyingDiscount || !discountInput || Number.parseFloat(discountInput) <= 0}
                         onClick={handleApplyDiscountSubmit}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 transition-colors shadow-2xs"
+                        className="px-4 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
                       >
-                        {applyingDiscount ? 'Applying…' : 'Apply Discount'}
+                        {applyingDiscount ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" />
+                            <span>Applying…</span>
+                          </>
+                        ) : (
+                          <span>Apply Discount</span>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -457,9 +559,10 @@ export default function JobFinancialsCard({
                             >
                               <option value="cash">Cash</option>
                               <option value="gcash">GCash</option>
+                              <option value="paymaya">PayMaya</option>
                               <option value="bank_transfer">Bank Transfer</option>
                             </select>
-                            {(editMethod === 'gcash' || editMethod === 'bank_transfer') && (
+                            {editMethod !== 'cash' && (
                               <input
                                 type="text"
                                 value={editReference}
@@ -653,10 +756,11 @@ export default function JobFinancialsCard({
                 {/* Payment Method Selector Cards */}
                 <div className="space-y-1.5">
                   <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">Payment Channel</span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {[
                       { key: 'cash', label: 'Cash', icon: Banknote },
                       { key: 'gcash', label: 'GCash', icon: Smartphone },
+                      { key: 'paymaya', label: 'PayMaya', icon: CreditCard },
                       { key: 'bank_transfer', label: 'Bank', icon: CreditCard },
                     ].map(m => {
                       const isSelected = method === m.key;
@@ -666,14 +770,14 @@ export default function JobFinancialsCard({
                           key={m.key}
                           type="button"
                           onClick={() => setMethod(m.key)}
-                          className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all shadow-2xs ${
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all shadow-2xs ${
                             isSelected
                               ? 'bg-taupe/10 border-taupe text-ink font-bold ring-1 ring-taupe/50'
                               : 'bg-canvas border-line text-ink-muted hover:text-ink hover:bg-surface'
                           }`}
                         >
-                          <Icon size={16} className={`mb-1 ${isSelected ? 'text-taupe' : 'text-ink-muted'}`} />
-                          <span className="text-xs leading-none">{m.label}</span>
+                          <Icon size={15} className={`mb-1 ${isSelected ? 'text-taupe' : 'text-ink-muted'}`} />
+                          <span className="text-[11px] leading-none">{m.label}</span>
                         </button>
                       );
                     })}
@@ -681,11 +785,11 @@ export default function JobFinancialsCard({
                 </div>
 
                 {/* GCash / Bank Reference & Receipt Screenshot */}
-                {(method === 'gcash' || method === 'bank_transfer') && (
+                {method !== 'cash' && (
                   <div className="space-y-3 p-3 bg-canvas border border-line rounded-xl">
                     <div className="space-y-1">
                       <label htmlFor="ref-no" className="text-[11px] font-bold text-ink-muted uppercase">
-                        {method === 'gcash' ? 'GCash Reference Number' : 'Bank Reference Number'}
+                        {method === 'gcash' ? 'GCash Reference Number' : method === 'paymaya' ? 'PayMaya Reference Number' : 'Bank Reference Number'}
                       </label>
                       <input
                         id="ref-no"
