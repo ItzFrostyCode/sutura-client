@@ -5,7 +5,8 @@ import {
   Building2, UserCheck, Sparkles, MoreHorizontal, FileText, Ruler
 } from 'lucide-react';
 import {
-  Appointment, formatScheduled, StatusBadge, TypeBadge, getCustomerInitials
+  Appointment, formatScheduled, StatusBadge, TypeBadge, getCustomerInitials,
+  ChannelBadge, RescheduledBadge, WalkInPriorityBadge
 } from './appointmentHelpers';
 
 interface AppointmentListViewProps {
@@ -300,10 +301,18 @@ export default function AppointmentListView({
                 {initials}
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-sm text-ink truncate group-hover:text-taupe transition-colors">
-                  {apt.customer?.name || 'Walk-in Client'}
-                </p>
-                <p className="text-[11px] text-ink-faint truncate">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold text-sm text-ink truncate group-hover:text-taupe transition-colors">
+                    {apt.customer?.name || 'Walk-in Client'}
+                  </p>
+                  <ChannelBadge channel={apt.intake_channel} />
+                  {apt.notes?.includes('[Walk-in Priority]') ? (
+                    <WalkInPriorityBadge />
+                  ) : (apt.outcome === 'rescheduled' || apt.notes?.includes('[Rescheduled from')) ? (
+                    <RescheduledBadge />
+                  ) : null}
+                </div>
+                <p className="text-[11px] text-ink-faint truncate mt-0.5">
                   {apt.customer?.email || apt.customer?.phone || 'No contact info'}
                 </p>
               </div>
@@ -421,7 +430,15 @@ export default function AppointmentListView({
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-sm text-ink truncate">{apt.customer?.name || 'Walk-in Client'}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-bold text-sm text-ink truncate">{apt.customer?.name || 'Walk-in Client'}</p>
+                        <ChannelBadge channel={apt.intake_channel} />
+                        {apt.notes?.includes('[Walk-in Priority]') ? (
+                          <WalkInPriorityBadge />
+                        ) : (apt.outcome === 'rescheduled' || apt.notes?.includes('[Rescheduled from')) ? (
+                          <RescheduledBadge />
+                        ) : null}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-ink-faint mt-0.5">
                         {apt.customer?.phone ? (
                           <span className="flex items-center gap-1 truncate">

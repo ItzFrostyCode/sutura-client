@@ -251,7 +251,7 @@ function NotificationsContent() {
       <PageHeader
         eyebrow="ALERTS & ACTIVITY"
         title="Notifications"
-        description="Review your order activity, customer appointments, and delivery preferences."
+        description="Review your order activity, customer appointments, and pickup notifications."
         actions={
           activeTab === 'list' && totalCount > 0 ? (
             <button

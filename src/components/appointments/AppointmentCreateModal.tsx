@@ -50,7 +50,12 @@ export default function AppointmentCreateModal({
   // otherwise its already-booked slot would look occupied by itself.
   const calendarAppointments = appointments
     .filter(a => OCCUPYING_STATUSES.has(a.status) && a.id !== editingApt?.id)
-    .map(a => ({ scheduled_at: a.scheduled_at, duration_minutes: a.duration_minutes, shop_branch_id: a.shop_branch_id ?? null }));
+    .map(a => ({
+      scheduled_at: a.scheduled_at,
+      duration_minutes: a.duration_minutes,
+      shop_branch_id: a.shop_branch_id ?? null,
+      status: a.status,
+    }));
 
   // Quick "Add New Customer" — lets the owner register a first-time walk-in
   // without abandoning the appointment they're already mid-way through.
@@ -239,6 +244,7 @@ export default function AppointmentCreateModal({
             loadingAppts={false}
             selectedDate={formData.scheduled_date}
             selectedTime={formData.scheduled_time}
+            mode="walk_in"
             onDateChange={date => setFormData(prev => ({ ...prev, scheduled_date: date }))}
             onTimeChange={time => setFormData(prev => ({ ...prev, scheduled_time: time }))}
           />
