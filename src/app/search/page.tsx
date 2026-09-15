@@ -4,11 +4,10 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Star, Store, ChevronLeft, ChevronRight, SlidersHorizontal, Info } from 'lucide-react';
+import { Star, Store, ChevronLeft, ChevronRight, SlidersHorizontal, Info, Search as SearchIconLucide } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
 import PublicNav from '@/components/shared/PublicNav';
-import SearchInput from '@/components/shared/SearchInput';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import { GARMENT_CATEGORIES, applyCategoryFilter } from '@/lib/garmentCategories';
 import type { CatalogItemResult } from '@/types/publicCatalog';
@@ -117,18 +116,45 @@ function SearchPageContent() {
     <div className="min-h-dvh flex flex-col bg-canvas">
       <PublicNav />
 
-      {/* Search bar */}
-      <div className="bg-surface border-b border-line">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <form onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }} className="flex gap-2 max-w-xl">
-            <SearchInput value={q} onChange={setQ} placeholder="Search catalog items, e.g. Barong, Uniform..." className="flex-1" />
+      {/* Search header — one prominent, oversized search bar (the page's
+          own focal surface, per DESIGN.md's hierarchy rule) plus a quick
+          category-shortcut chip row underneath. No cart/notifications/
+          seller-centre utility row -- those aren't real features on this
+          public discovery surface, only the reference's visual weight for
+          the search bar itself is being matched. */}
+      <div className="bg-taupe">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <form onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }} className="flex gap-2 max-w-2xl">
+            <div className="flex-1 relative">
+              <SearchIconLucide className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" size={18} />
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search catalog items, e.g. Barong, Uniform..."
+                className="w-full pl-11 pr-4 py-3 bg-white border-2 border-transparent rounded-lg text-sm text-ink focus:outline-none focus:border-ink/20 transition-colors"
+              />
+            </div>
             <button
               type="submit"
-              className="px-5 py-2 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
+              className="px-6 py-3 bg-ink hover:bg-ink/90 text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
             >
               Search
             </button>
           </form>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3">
+            {GARMENT_CATEGORIES.filter((c) => c.value).map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setCategory(category === value ? '' : value)}
+                className="text-xs text-white/80 hover:text-white transition-colors"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
