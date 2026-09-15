@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  Star, MapPin, Store, Search as SearchIcon,
+  Star, MapPin, Store, Search as SearchIcon, Clock,
   Shirt, Crown, UserRound, GraduationCap, Sparkles, Stethoscope,
   HeartPulse, Briefcase, Wrench, Grid3x3, Radar, ShieldCheck, LineChart,
 } from 'lucide-react';
@@ -23,6 +23,8 @@ interface CatalogItemResult {
   name: string;
   garment_type: string;
   price: number | null;
+  material: string | null;
+  estimated_days: number | null;
   reviews_count: number;
   reviews_avg_rating: number | null;
   images: CatalogImageResult[];
@@ -141,12 +143,7 @@ export default function HomePage() {
         </div>
 
         {/* Catalog Showroom — 6x8 */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-display text-xl text-ink">Catalog Showroom</h2>
-          <Link href="/search" className="text-sm font-medium text-taupe hover:text-taupe-hover flex items-center gap-1">
-            <SearchIcon size={13} /> Browse shops
-          </Link>
-        </div>
+        <h2 className="text-display text-xl text-ink mb-4">Catalog Showroom</h2>
 
         {loading && (
           <div className="text-center py-16 text-sm text-ink-muted">Loading catalog…</div>
@@ -159,40 +156,66 @@ export default function HomePage() {
         )}
 
         {!loading && items.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={item.shop ? `/shop/${item.shop.slug}` : '/search'}
-                className="bg-surface border border-line rounded-xl overflow-hidden hover:border-line-strong transition-colors"
-              >
-                <div className="aspect-square bg-sunken relative">
-                  {item.images[0]?.image_url ? (
-                    <Image src={getMediaUrl(item.images[0].image_url)} alt={item.name} fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Store size={22} className="text-ink-faint" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-2.5">
-                  <p className="text-xs font-medium text-ink line-clamp-2 leading-snug min-h-[2rem]">{item.name}</p>
-                  {item.price !== null && (
-                    <p className="text-sm font-bold text-taupe mt-1">₱{Number(item.price).toLocaleString()}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-ink-faint truncate">{item.shop?.name}</span>
-                    {item.reviews_avg_rating !== null && (
-                      <span className="flex items-center gap-0.5 shrink-0">
-                        <Star size={10} className="text-taupe fill-taupe" />
-                        <span className="text-[10px] font-semibold text-ink">{Number(item.reviews_avg_rating).toFixed(1)}</span>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.shop ? `/shop/${item.shop.slug}` : '/search'}
+                  className="group block bg-surface border border-line overflow-hidden hover:border-line-strong transition-colors"
+                >
+                  <div className="aspect-3/4 bg-sunken relative overflow-hidden">
+                    {item.images[0]?.image_url ? (
+                      <Image
+                        src={getMediaUrl(item.images[0].image_url)}
+                        alt={item.name}
+                        fill
+                        className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Store size={22} className="text-ink-faint" />
+                      </div>
+                    )}
+                    {/* Hover overlay — shop attribution shows on hover instead
+                        of a static name line, matching the storefront's own
+                        catalog card pattern (material on hover there). */}
+                    <div className="absolute inset-0 bg-surface/80 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-2 text-center">
+                      <span className="text-[11px] font-medium tracking-wide text-ink">
+                        {item.shop?.name ?? 'View Details'}
                       </span>
+                    </div>
+                  </div>
+                  <div className="p-2.5">
+                    {item.reviews_count ? (
+                      <div className="flex items-center gap-1 mb-1">
+                        <Star size={11} className="fill-taupe text-taupe" />
+                        <span className="text-[11px] font-semibold text-ink">{Number(item.reviews_avg_rating).toFixed(1)}</span>
+                        <span className="text-[11px] text-ink-faint">({item.reviews_count})</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 mb-1 text-ink-faint">
+                        <Clock size={11} />
+                        <span className="text-[11px]">Est. {item.estimated_days ?? 7}d</span>
+                      </div>
+                    )}
+                    {item.price !== null && (
+                      <p className="text-sm font-bold text-taupe">₱{Number(item.price).toLocaleString()}</p>
                     )}
                   </div>
-                </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="flex justify-center mt-8">
+              <Link
+                href="/search"
+                className="px-6 py-2.5 border border-line rounded-lg text-sm font-semibold text-ink hover:border-line-strong hover:bg-sunken transition-colors flex items-center gap-2"
+              >
+                <SearchIcon size={14} /> See All
               </Link>
-            ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
 
