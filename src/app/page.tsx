@@ -136,30 +136,31 @@ export default function HomePage() {
       </section>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
-        {/* Categories */}
-        <h2 className="text-display text-xl text-ink mb-4">Categories</h2>
-        <div className="grid grid-cols-5 gap-3 mb-10">
-          {GARMENT_CATEGORIES.map(({ value, label, Icon }) => (
-            <button
-              key={value || 'all'}
-              type="button"
-              onClick={() => setCategory(value)}
-              className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-colors ${
-                category === value ? 'bg-sunken' : 'hover:bg-sunken'
-              }`}
-            >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center border ${
-                category === value ? 'bg-taupe border-taupe text-white' : 'bg-surface border-line text-ink-muted'
-              }`}>
-                <Icon size={18} />
-              </div>
-              <span className={`text-[10px] font-medium text-center leading-tight ${
-                category === value ? 'text-taupe' : 'text-ink-muted'
-              }`}>
-                {label}
-              </span>
-            </button>
-          ))}
+        {/* Categories — plain white panel, flat icon circles, no per-item
+            border/fill chrome, matching the simpler reference layout. */}
+        <div className="bg-surface border border-line rounded-xl p-5 mb-10">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-5">Categories</h2>
+          <div className="grid grid-cols-5 gap-x-3 gap-y-6">
+            {GARMENT_CATEGORIES.map(({ value, label, Icon }) => (
+              <button
+                key={value || 'all'}
+                type="button"
+                onClick={() => setCategory(value)}
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
+                  category === value ? 'bg-taupe/10 ring-1 ring-taupe text-taupe' : 'bg-sunken text-ink-muted group-hover:bg-line'
+                }`}>
+                  <Icon size={22} />
+                </div>
+                <span className={`text-xs text-center leading-tight ${
+                  category === value ? 'text-taupe font-semibold' : 'text-ink-muted'
+                }`}>
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Catalog Showroom — 6x8 */}
