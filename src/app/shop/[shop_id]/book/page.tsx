@@ -856,8 +856,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                   {[
                     { value: 'cash', label: 'Cash on Shop' },
                     { value: 'gcash', label: 'GCash' },
-                    { value: 'paymaya', label: 'PayMaya' },
-                    { value: 'bank_transfer', label: 'Bank Transfer' }
+                    { value: 'paymaya', label: 'PayMaya' }
                   ].map(m => (
                     <button
                       type="button" key={m.value}
@@ -876,7 +875,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                 {paymentMethod !== 'cash' && (
                   <div className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl space-y-3">
                     <div className="text-xs text-zinc-700">
-                      <span>Please send payment to the shop&apos;s verified {paymentMethod === 'gcash' ? 'GCash' : paymentMethod === 'paymaya' ? 'PayMaya' : 'Bank'} details:</span>
+                      <span>Please send payment to the shop&apos;s verified {paymentMethod === 'gcash' ? 'GCash' : 'PayMaya'} details:</span>
                       <div className="mt-1.5 p-2.5 bg-white border border-zinc-200 rounded-lg space-y-1">
                         {paymentMethod === 'gcash' && (
                           <>
@@ -896,20 +895,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                           <div className="font-bold text-zinc-950">
                             PayMaya: {shopSettings?.gcash_number || '0950 5585 800'} ({shopSettings?.gcash_account_name || shopSettings?.name || 'Tailor Shop'})
                           </div>
-                        )}
-                        {paymentMethod === 'bank_transfer' && (
-                          <>
-                            <div className="font-bold text-zinc-950">
-                              Bank: {shopSettings?.bank_name || 'BPI'} - {shopSettings?.bank_account_number || '1234-5678-90'} ({shopSettings?.bank_account_name || shopSettings?.name || 'Sutura Account'})
-                            </div>
-                            {shopSettings?.bank_qr_path && (
-                              <div className="pt-2">
-                                <span className="text-[10px] text-zinc-500 font-medium block mb-1">Scan Shop Bank QR Code:</span>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={shopSettings.bank_qr_path} alt="Shop Bank QR" className="w-36 h-36 object-contain rounded-lg border border-zinc-200" />
-                              </div>
-                            )}
-                          </>
                         )}
                       </div>
                     </div>

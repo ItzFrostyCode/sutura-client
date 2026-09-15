@@ -46,11 +46,6 @@ const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badg
     icon: <CreditCard size={15} className="text-teal-600" />,
     badgeCls: 'bg-teal-50 text-teal-700 border-teal-200',
   },
-  bank_transfer: {
-    label: 'Bank Transfer',
-    icon: <CreditCard size={15} className="text-purple-600" />,
-    badgeCls: 'bg-purple-50 text-purple-700 border-purple-200',
-  },
 };
 
 export default function JobFinancialsCard({
@@ -561,7 +556,6 @@ export default function JobFinancialsCard({
                               <option value="cash">Cash</option>
                               <option value="gcash">GCash</option>
                               <option value="paymaya">PayMaya</option>
-                              <option value="bank_transfer">Bank Transfer</option>
                             </select>
                             {editMethod !== 'cash' && (
                               <input
@@ -762,7 +756,6 @@ export default function JobFinancialsCard({
                       { key: 'cash', label: 'Cash', icon: Banknote },
                       { key: 'gcash', label: 'GCash', icon: Smartphone },
                       { key: 'paymaya', label: 'PayMaya', icon: CreditCard },
-                      { key: 'bank_transfer', label: 'Bank', icon: CreditCard },
                     ].map(m => {
                       const isSelected = method === m.key;
                       const Icon = m.icon;
