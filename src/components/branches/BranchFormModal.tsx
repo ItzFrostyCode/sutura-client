@@ -3,6 +3,7 @@ import { Info, Loader2, X, Lock } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { BranchFormData } from './branchHelpers';
 
 interface BranchFormModalProps {
@@ -261,7 +262,7 @@ export default function BranchFormModal({
                         setFormData(prev => ({ ...prev, guide_image_url: res.data.data.url }));
                       } catch (err) {
                         console.error('Guide image upload failed', err);
-                        alert('Failed to upload image. File may be too large.');
+                        alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
                       } finally {
                         setUploading(false);
                       }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 
@@ -242,8 +243,8 @@ export function useSettings() {
         });
         setFormDataWithDirty(prev => ({ ...prev, logo_path: res.data.data.url }));
         toast.success('Logo uploaded — click Save Changes to apply.');
-      } catch {
-        toast.error('Failed to upload logo. Please try again.');
+      } catch (err) {
+        toast.error(getErrorMessage(err, 'Failed to upload logo. Please try again.'));
       }
     }
   };
@@ -259,8 +260,8 @@ export function useSettings() {
         });
         setFormDataWithDirty(prev => ({ ...prev, banner_path: res.data.data.url }));
         toast.success('Banner uploaded — click Save Changes to apply.');
-      } catch {
-        toast.error('Failed to upload banner. Please try again.');
+      } catch (err) {
+        toast.error(getErrorMessage(err, 'Failed to upload banner. Please try again.'));
       }
     }
   };
@@ -276,8 +277,8 @@ export function useSettings() {
         });
         setFormDataWithDirty(prev => ({ ...prev, gcash_qr_path: res.data.data.url }));
         toast.success('GCash QR uploaded — click Save Changes to apply.');
-      } catch {
-        toast.error('Failed to upload GCash QR. Please try again.');
+      } catch (err) {
+        toast.error(getErrorMessage(err, 'Failed to upload GCash QR. Please try again.'));
       }
     }
   };
@@ -293,8 +294,8 @@ export function useSettings() {
         });
         setFormDataWithDirty(prev => ({ ...prev, bank_qr_path: res.data.data.url }));
         toast.success('Bank QR uploaded — click Save Changes to apply.');
-      } catch {
-        toast.error('Failed to upload bank QR. Please try again.');
+      } catch (err) {
+        toast.error(getErrorMessage(err, 'Failed to upload bank QR. Please try again.'));
       }
     }
   };
@@ -313,8 +314,8 @@ export function useSettings() {
           gallery_images: [...prev.gallery_images, res.data.data.url],
         }));
         toast.success('Image uploaded successfully.');
-      } catch {
-        toast.error('Failed to upload image. Please try again.');
+      } catch (err) {
+        toast.error(getErrorMessage(err, 'Failed to upload image. Please try again.'));
       }
     }
   };

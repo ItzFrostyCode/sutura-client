@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { getMediaUrl } from '@/lib/media';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
@@ -609,8 +610,8 @@ export default function GarmentDesignSection({
                 });
                 const url = res.data?.data?.url || res.data?.url;
                 if (url) setReferenceImages((prev) => [...prev, url]);
-              } catch {
-                alert('Failed to upload reference photo.');
+              } catch (err) {
+                alert(getErrorMessage(err, 'Failed to upload reference photo.'));
               } finally {
                 setUploadingReference(false);
               }

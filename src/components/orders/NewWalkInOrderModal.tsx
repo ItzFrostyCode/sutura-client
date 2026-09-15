@@ -6,6 +6,7 @@ import {
   UserPlus, Banknote, Smartphone, Check, Ruler
 } from 'lucide-react';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
@@ -193,8 +194,8 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setReceiptUrl(res.data?.data?.url || res.data?.url || '');
-    } catch {
-      toast.error('Failed to upload receipt screenshot.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to upload receipt screenshot.'));
     } finally {
       setUploadingReceipt(false);
     }
