@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, type LucideIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronRight, type LucideIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
@@ -684,6 +684,20 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {isOwnerViewingOwnShop && <AccountHeaderMenu />}
         </div>
       </nav>
+
+      {/* Breadcrumb — lets a visitor navigate back up the discovery
+          hierarchy (Home / Search) without relying on the browser's own
+          Back button. Same max-w-7xl/px-6 container as the nav above so it
+          stays aligned to the same margin. */}
+      <div className="border-b border-zinc-200 bg-white">
+        <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-1.5 text-xs text-zinc-500 overflow-x-auto">
+          <Link href="/" className="hover:text-zinc-900 font-medium shrink-0">Home</Link>
+          <ChevronRight size={12} className="shrink-0" />
+          <Link href="/search" className="hover:text-zinc-900 font-medium shrink-0">Search</Link>
+          <ChevronRight size={12} className="shrink-0" />
+          <span className="text-zinc-900 font-semibold truncate">{shop.name}</span>
+        </div>
+      </div>
 
       {(shop.active_special_hours?.announcement_message || shop.active_special_hours?.announcement_image_url) && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3.5 px-6 animate-in fade-in slide-in-from-top-2 duration-200">
