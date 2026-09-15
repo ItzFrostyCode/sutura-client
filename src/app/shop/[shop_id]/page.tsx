@@ -670,14 +670,14 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           profile dropdown) as the dashboard header — same component, not a
           second build of it — minus the Premium Plan badge and branch
           switcher, which are dashboard-data-scoping concepts with no meaning
-          on a public page. The logo click stays on the storefront (its own
-          home tab) for everyone, owner included — "My Management" in the
-          account menu is the one dedicated way back to the dashboard, so the
-          logo isn't a second, redundant shortcut out of the page you're
-          previewing. */}
+          on a public page. The logo click always goes to the platform's own
+          landing page (`/`), not this shop's own home tab — standard
+          logo-means-home convention, for every viewer including the owner
+          previewing their own shop; "My Management" in the account menu
+          remains the dedicated way back to the dashboard. */}
       <nav className="border-b border-zinc-200 bg-white sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href={`/shop/${shopId}`} className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <BrandLogo iconOnly className="w-8 h-8" />
             <span className="font-serif font-bold text-lg tracking-tight text-zinc-900">SUTURA</span>
           </Link>
