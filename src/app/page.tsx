@@ -11,7 +11,7 @@ import api from '@/lib/axios';
 import PublicNav from '@/components/shared/PublicNav';
 import SearchInput from '@/components/shared/SearchInput';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
-import { GARMENT_CATEGORIES } from '@/lib/garmentCategories';
+import { GARMENT_CATEGORIES, applyCategoryFilter } from '@/lib/garmentCategories';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
 const ABOUT_PILLARS = [
@@ -48,7 +48,7 @@ export default function HomePage() {
   useEffect(() => {
     setLoading(true);
     const params: Record<string, string | number> = { per_page: 48 };
-    if (category) params.garment_type = category;
+    applyCategoryFilter(params, category);
 
     api.get('/public/catalog-items', { params })
       .then((res) => setItems(res.data.data ?? []))
@@ -135,10 +135,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
         {/* Categories */}
         <h2 className="text-display text-xl text-ink mb-4">Categories</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-10">
+        <div className="grid grid-cols-5 gap-3 mb-10">
           {GARMENT_CATEGORIES.map(({ value, label, Icon }) => (
             <button
               key={value || 'all'}
