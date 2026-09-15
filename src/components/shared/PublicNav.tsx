@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const LINKS = [
   { href: '/search', label: 'Search' },
@@ -17,6 +19,13 @@ const LINKS = [
  */
 export default function PublicNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/search');
+  };
 
   return (
     <nav className="border-b border-line bg-surface sticky top-0 z-50">
@@ -40,12 +49,29 @@ export default function PublicNav() {
               </Link>
             );
           })}
-          <Link
-            href="/login"
-            className="ml-2 px-3 py-2 rounded-lg text-sm font-medium text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
-          >
-            Log In
-          </Link>
+          {isAuthenticated && user ? (
+            <div className="ml-2 flex items-center gap-1 pl-2 border-l border-line">
+              <span className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-ink">
+                <UserIcon size={14} className="text-ink-faint" />
+                {user.name?.split(' ')[0] ?? 'Account'}
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                title="Log out"
+                className="p-2 rounded-lg text-ink-muted hover:text-danger hover:bg-sunken transition-colors"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="ml-2 px-3 py-2 rounded-lg text-sm font-medium text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
+            >
+              Log In
+            </Link>
+          )}
         </div>
       </div>
     </nav>

@@ -44,9 +44,15 @@ export default function LoginPage() {
           // not by routing them to a different page.
           setAuth(user, token, activeShop, staff_profile);
           router.push('/dashboard');
+        } else if (roleName === 'customer') {
+          // No authenticated customer shell exists yet (see the Discovery/Map
+          // build plan's explicitly-deferred item) — land on Search, the
+          // closest thing to a customer home today, rather than a dead end.
+          setAuth(user, token, activeShop, staff_profile);
+          router.push('/search');
         } else {
-          // admin / customer accounts don't have a web dashboard yet — avoid
-          // navigating to a route that doesn't exist and 404ing right after login.
+          // admin accounts don't have a web dashboard yet — avoid navigating
+          // to a route that doesn't exist and 404ing right after login.
           setError('This account type does not have a dashboard yet. Please contact support.');
           setLoading(false);
           return;
