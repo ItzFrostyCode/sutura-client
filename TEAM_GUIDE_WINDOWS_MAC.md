@@ -54,9 +54,9 @@ SUTURA/ (Workspace Folder - NOT a Git Repo)
 ## 3. Windows Setup Guide (Using XAMPP)
 
 ### Step 1: Requirements Check
-- **PHP 8.3 or higher**:
-  - Laravel 13 strictly requires PHP 8.3+.
-  - If your XAMPP has PHP 8.1 or 8.2, download the XAMPP build that includes PHP 8.3+ from [apachefriends.org](https://www.apachefriends.org) or install PHP 8.3 from [windows.php.net](https://windows.php.net).
+- **PHP 8.2 or higher**:
+  - Laravel 12 requires PHP 8.2+. (The project ran Laravel 13, which needs PHP 8.3+, until XAMPP for Windows turned out to never have shipped a PHP 8.3 build at all — downgraded to Laravel 12 specifically so XAMPP's stock PHP works.)
+  - If your XAMPP has PHP 8.0 or 8.1, reinstall XAMPP choosing the **8.2.12** build from [apachefriends.org](https://www.apachefriends.org/download.html).
   - Open terminal and type `php -v` to confirm.
 - **Node.js 20+**: (`node -v` to confirm).
 - **Composer**: (`composer -V` to confirm).
@@ -156,7 +156,7 @@ iPhones and Macs save camera photos as **HEIC** by default. Windows PCs and Andr
 
 ## 6. Checking That Everyone's PHP/Node/XAMPP Versions Actually Match
 
-`php -v` or `node -v` succeeding only proves the command is *found* — not that the version is new enough. This project needs **PHP 8.3+** (Laravel 13) and **Node 20+** (Next.js 16 / React 19); an older version left on PATH from a previous XAMPP/Node install would pass that basic check and then fail much later with a confusing Composer/npm error, which is exactly the kind of "conflict" that's hard to diagnose remotely.
+`php -v` or `node -v` succeeding only proves the command is *found* — not that the version is new enough. This project needs **PHP 8.2+** (Laravel 12) and **Node 20+** (Next.js 16 / React 19); an older version left on PATH from a previous XAMPP/Node install would pass that basic check and then fail much later with a confusing Composer/npm error, which is exactly the kind of "conflict" that's hard to diagnose remotely.
 
 **Already fixed (2026-09-15):** both `setup-windows.bat` scripts now parse the *actual* version number and fail immediately with a clear message (and a fix) if it's too old, instead of silently proceeding. The backend script also verifies the required PHP extensions are enabled and attempts to auto-create the `sutura` database. Everyone should re-run `setup-windows.bat` (or `composer install`/`npm install` again on Mac) after pulling this fix to confirm their machine actually reports a passing version — screenshot the `[OK] PHP ...` / `[OK] Node.js ...` lines and compare across the team if something still looks off.
 
