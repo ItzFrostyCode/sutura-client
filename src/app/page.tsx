@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   MapPin, Search as SearchIcon,
@@ -13,6 +14,28 @@ import SearchInput from '@/components/shared/SearchInput';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import { GARMENT_CATEGORIES, applyCategoryFilter } from '@/lib/garmentCategories';
 import type { CatalogItemResult } from '@/types/publicCatalog';
+import { getMediaUrl } from '@/lib/media';
+import { Store, Star } from 'lucide-react';
+
+interface ShopResult {
+  id: number;
+  slug: string;
+  name: string;
+  logo_path: string | null;
+  banner_path: string | null;
+  reviews_count: number;
+  reviews_avg_rating: number | null;
+  branches: { city: string | null; name: string }[];
+}
+
+interface ServiceResult {
+  id: number;
+  name: string;
+  base_price: number | null;
+  estimated_days: number | null;
+  image_url: string | null;
+  shop: { name: string; slug: string } | null;
+}
 
 const ABOUT_PILLARS = [
   {
@@ -38,6 +61,18 @@ export default function HomePage() {
   const [category, setCategory] = useState('');
   const [items, setItems] = useState<CatalogItemResult[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [shops, setShops] = useState<ShopResult[]>([]);
+  const [services, setServices] = useState<ServiceResult[]>([]);
+
+  useEffect(() => {
+    api.get('/public/shops', { params: { per_page: 8 } })
+      .then((res) => setShops(res.data.data ?? []))
+      .catch(() => setShops([]));
+    api.get('/public/services', { params: { per_page: 8 } })
+      .then((res) => setServices(res.data.data ?? []))
+      .catch(() => setServices([]));
+  }, []);
 
   // Live search suggestions — real matching catalog items, not fabricated
   // Shopee-style long-tail phrases (no search-history/trending infra exists
@@ -193,6 +228,95 @@ export default function HomePage() {
               </Link>
             </div>
           </>
+        )}
+
+        {/* Shops */}
+        {shops.length > 0 && (
+          <div className="mt-14">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-display text-xl text-ink">Shops</h2>
+              <Link href="/search" className="text-sm font-medium text-taupe hover:text-taupe-hover">See all →</Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {shops.map((shop) => (
+                <Link
+                  key={shop.id}
+                  href={`/shop/${shop.slug}`}
+                  className="bg-surface border border-line rounded-2xl overflow-hidden hover:border-line-strong transition-colors"
+                >
+                  <div className="h-28 bg-sunken relative">
+                    {shop.banner_path ? (
+                      <Image src={getMediaUrl(shop.banner_path)} alt={shop.name} fill unoptimized className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Store size={24} className="text-ink-faint" />
+                      </div>
+                    )}
+                    <div className="absolute -bottom-4 left-3 w-10 h-10 rounded-full border-2 border-surface bg-surface overflow-hidden">
+                      {shop.logo_path ? (
+                        <Image src={getMediaUrl(shop.logo_path)} alt="" fill unoptimized className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-sunken">
+                          <Store size={14} className="text-ink-faint" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3.5 pt-6">
+                    <h3 className="text-sm font-bold text-ink truncate">{shop.name}</h3>
+                    {shop.branches[0] && (
+                      <p className="text-xs text-ink-muted flex items-center gap-1 mt-1 truncate">
+                        <MapPin size={11} className="shrink-0" />
+                        {shop.branches[0].city ?? shop.branches[0].name}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 mt-2">
+                      <Star size={12} className="text-taupe fill-taupe" />
+                      <span className="text-xs font-semibold text-ink">
+                        {shop.reviews_avg_rating ? Number(shop.reviews_avg_rating).toFixed(1) : 'New'}
+                      </span>
+                      <span className="text-xs text-ink-faint">({shop.reviews_count})</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Services — a distinct concept from catalog items: Alterations,
+            Bespoke Tailoring, Sublimation, etc. belong here, not in the
+            garment_type category list above. */}
+        {services.length > 0 && (
+          <div className="mt-14">
+            <h2 className="text-display text-xl text-ink mb-4">Services</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {services.map((service) => (
+                <Link
+                  key={service.id}
+                  href={service.shop ? `/shop/${service.shop.slug}` : '/search'}
+                  className="bg-surface border border-line rounded-xl overflow-hidden hover:border-line-strong transition-colors"
+                >
+                  <div className="aspect-video bg-sunken relative">
+                    {service.image_url ? (
+                      <Image src={getMediaUrl(service.image_url)} alt={service.name} fill unoptimized className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Store size={20} className="text-ink-faint" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-semibold text-ink line-clamp-2 leading-snug min-h-[2rem]">{service.name}</p>
+                    {service.base_price !== null && (
+                      <p className="text-sm font-bold text-taupe mt-1">₱{Number(service.base_price).toLocaleString()}</p>
+                    )}
+                    <p className="text-[11px] text-ink-faint mt-0.5 truncate">{service.shop?.name}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
       </main>
 

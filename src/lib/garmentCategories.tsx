@@ -1,4 +1,4 @@
-import { Shirt, Crown, UserRound, GraduationCap, Sparkles, Drama, Layers, Grid3x3, Wrench, type LucideIcon } from 'lucide-react';
+import { Shirt, Crown, UserRound, GraduationCap, Sparkles, Drama, Layers, Grid3x3, type LucideIcon } from 'lucide-react';
 
 export interface GarmentCategory {
   value: string;
@@ -27,7 +27,6 @@ export const GARMENT_CATEGORIES: GarmentCategory[] = [
   { value: 'suit', label: 'Suit', Icon: UserRound, filterBy: 'garment_type' },
   { value: 'gown', label: 'Gown', Icon: Crown, filterBy: 'garment_type' },
   { value: 'costume', label: 'Costumes', Icon: Drama, filterBy: 'q' },
-  { value: 'alteration_repair', label: 'Alterations', Icon: Wrench, filterBy: 'garment_type' },
   { value: 'other', label: 'More Styles', Icon: Layers, filterBy: 'garment_type' },
 ];
 
