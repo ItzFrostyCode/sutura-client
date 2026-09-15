@@ -6,8 +6,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Star, MapPin, Store, Search as SearchIcon, Clock,
-  Shirt, Crown, UserRound, GraduationCap, Sparkles, Stethoscope,
-  HeartPulse, Briefcase, Wrench, Grid3x3, Radar, ShieldCheck, LineChart,
+  Shirt, Crown, UserRound, GraduationCap, Layers,
+  Grid3x3, Radar, ShieldCheck, LineChart,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
@@ -31,20 +31,19 @@ interface CatalogItemResult {
   shop: { name: string; slug: string } | null;
 }
 
-// Mirrors GARMENT_CATEGORY_LABELS in reportHelpers.tsx — the real,
-// established garment taxonomy (JobOrder.garment_category /
-// CatalogItem.garment_type), not an invented Shopee-style category list.
+// Generalized to what's actually populated in catalog_items.garment_type
+// right now (checked live: uniform 17, gown 10, other 8, suit 8, barong 5) --
+// the full 9-value GARMENT_CATEGORY_LABELS taxonomy used elsewhere (Reports)
+// is the right list for internal reporting, but half of it (Filipiniana, Lab
+// Gown, Scrub Suit, Corporate Wear, Alterations) has zero catalog items
+// today, so showing it here just meant half the row led to an empty state.
 const CATEGORIES: { value: string; label: string; Icon: typeof Shirt }[] = [
   { value: '', label: 'All', Icon: Grid3x3 },
+  { value: 'uniform', label: 'Uniforms', Icon: GraduationCap },
+  { value: 'gown', label: 'Gowns', Icon: Crown },
+  { value: 'suit', label: 'Suits', Icon: UserRound },
   { value: 'barong', label: 'Barong Tagalog', Icon: Shirt },
-  { value: 'gown', label: 'Gown', Icon: Crown },
-  { value: 'suit', label: 'Suit', Icon: UserRound },
-  { value: 'filipiniana', label: 'Filipiniana', Icon: Sparkles },
-  { value: 'uniform', label: 'School Uniform', Icon: GraduationCap },
-  { value: 'lab_gown', label: 'Lab Gown', Icon: Stethoscope },
-  { value: 'scrub_suit', label: 'Scrub Suit', Icon: HeartPulse },
-  { value: 'corporate_wear', label: 'Corporate Wear', Icon: Briefcase },
-  { value: 'alteration_repair', label: 'Alterations', Icon: Wrench },
+  { value: 'other', label: 'More Styles', Icon: Layers },
 ];
 
 const ABOUT_PILLARS = [
@@ -117,8 +116,9 @@ export default function HomePage() {
       </section>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">
-        {/* Categories — 10x1 */}
-        <div className="grid grid-cols-5 sm:grid-cols-10 gap-3 mb-10">
+        {/* Categories */}
+        <h2 className="text-display text-xl text-ink mb-4">Categories</h2>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-10">
           {CATEGORIES.map(({ value, label, Icon }) => (
             <button
               key={value || 'all'}
