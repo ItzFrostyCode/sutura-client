@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { Star, MapPin, Store } from 'lucide-react';
 import api from '@/lib/axios';
+import { getMediaUrl } from '@/lib/media';
 import PublicNav from '@/components/shared/PublicNav';
 import SearchInput from '@/components/shared/SearchInput';
 
@@ -36,7 +38,16 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export default function SearchPage() {
-  const [q, setQ] = useState('');
+  return (
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-ink-muted">Loading…</div>}>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
+  const searchParams = useSearchParams();
+  const [q, setQ] = useState(searchParams.get('q') ?? '');
   const [minRating, setMinRating] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [results, setResults] = useState<ShopResult[]>([]);
@@ -112,14 +123,23 @@ export default function SearchPage() {
                 >
                   <div className="h-32 bg-sunken relative">
                     {shop.banner_path ? (
-                      <Image src={shop.banner_path} alt={shop.name} fill className="object-cover" />
+                      <Image src={getMediaUrl(shop.banner_path)} alt={shop.name} fill className="object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Store size={28} className="text-ink-faint" />
                       </div>
                     )}
+                    <div className="absolute -bottom-5 left-4 w-12 h-12 rounded-full border-2 border-surface bg-surface overflow-hidden">
+                      {shop.logo_path ? (
+                        <Image src={getMediaUrl(shop.logo_path)} alt="" fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-sunken">
+                          <Store size={16} className="text-ink-faint" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="p-4">
+                  <div className="p-4 pt-7">
                     <h2 className="text-sm font-bold text-ink truncate">{shop.name}</h2>
                     {shop.branches[0] && (
                       <p className="text-xs text-ink-muted flex items-center gap-1 mt-1 truncate">
@@ -130,7 +150,7 @@ export default function SearchPage() {
                     <div className="flex items-center gap-1 mt-2">
                       <Star size={13} className="text-taupe fill-taupe" />
                       <span className="text-xs font-semibold text-ink">
-                        {shop.reviews_avg_rating ? shop.reviews_avg_rating.toFixed(1) : 'New'}
+                        {shop.reviews_avg_rating ? Number(shop.reviews_avg_rating).toFixed(1) : 'New'}
                       </span>
                       <span className="text-xs text-ink-faint">({shop.reviews_count})</span>
                     </div>

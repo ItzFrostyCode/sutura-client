@@ -46,10 +46,10 @@ export default function LoginPage() {
           router.push('/dashboard');
         } else if (roleName === 'customer') {
           // No authenticated customer shell exists yet (see the Discovery/Map
-          // build plan's explicitly-deferred item) — land on Search, the
-          // closest thing to a customer home today, rather than a dead end.
+          // build plan's explicitly-deferred item) — land on the public
+          // browse-first home page rather than a dead end.
           setAuth(user, token, activeShop, staff_profile);
-          router.push('/search');
+          router.push('/');
         } else {
           // admin accounts don't have a web dashboard yet — avoid navigating
           // to a route that doesn't exist and 404ing right after login.

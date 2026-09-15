@@ -30,7 +30,7 @@ export default function PublicNav() {
   return (
     <nav className="border-b border-line bg-surface sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/search" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <BrandLogo iconOnly className="w-8 h-8" />
           <span className="font-serif font-bold text-lg tracking-tight text-ink">SUTURA</span>
         </Link>
