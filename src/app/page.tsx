@@ -73,6 +73,12 @@ export default function HomePage() {
   const [items, setItems] = useState<CatalogItemResult[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Live search suggestions — real matching catalog items, not fabricated
+  // Shopee-style long-tail phrases (no search-history/trending infra exists
+  // in this app to source those from honestly).
+  const [suggestions, setSuggestions] = useState<CatalogItemResult[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     const params: Record<string, string | number> = { per_page: 48 };
@@ -84,8 +90,22 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, [category]);
 
-  function handleSearchSubmit() {
-    const trimmed = q.trim();
+  useEffect(() => {
+    if (!q.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const handle = setTimeout(() => {
+      api.get('/public/catalog-items', { params: { q: q.trim(), per_page: 6 } })
+        .then((res) => setSuggestions(res.data.data ?? []))
+        .catch(() => setSuggestions([]));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [q]);
+
+  function goToSearch(query: string) {
+    const trimmed = query.trim();
+    setSuggestionsOpen(false);
     router.push(trimmed ? `/search?q=${encodeURIComponent(trimmed)}` : '/search');
   }
 
@@ -103,16 +123,48 @@ export default function HomePage() {
             Search verified tailoring shops by garment type, browse their branches on the map, or track a garment you already ordered — no account needed.
           </p>
           <form
-            onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }}
-            className="max-w-lg mx-auto flex gap-2"
+            onSubmit={(e) => { e.preventDefault(); goToSearch(q); }}
+            className="max-w-lg mx-auto relative"
           >
-            <SearchInput value={q} onChange={setQ} placeholder="Try 'Barong', 'School Uniform', 'Alterations'..." className="flex-1" />
-            <button
-              type="submit"
-              className="px-5 py-2 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
-            >
-              Search
-            </button>
+            <div className="flex gap-2">
+              <SearchInput
+                value={q}
+                onChange={setQ}
+                placeholder="Try 'Barong', 'School Uniform', 'Alterations'..."
+                className="flex-1"
+                onFocus={() => setSuggestionsOpen(true)}
+                onBlur={() => setTimeout(() => setSuggestionsOpen(false), 150)}
+              />
+              <button
+                type="submit"
+                className="px-5 py-2 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
+              >
+                Search
+              </button>
+            </div>
+
+            {suggestionsOpen && q.trim() && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface border border-line rounded-lg overflow-hidden text-left z-10">
+                <button
+                  type="button"
+                  onClick={() => goToSearch(q)}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-ink hover:bg-sunken transition-colors border-b border-line"
+                >
+                  <SearchIcon size={14} className="text-ink-faint shrink-0" />
+                  Search &ldquo;<span className="font-semibold">{q.trim()}</span>&rdquo;
+                </button>
+                {suggestions.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => goToSearch(item.name)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-ink-muted hover:bg-sunken hover:text-ink transition-colors truncate"
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
         </div>
       </section>
