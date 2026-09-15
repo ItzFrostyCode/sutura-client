@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Star, Store, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Star, Store, ChevronLeft, ChevronRight, SlidersHorizontal, Info } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
 import PublicNav from '@/components/shared/PublicNav';
@@ -136,7 +136,9 @@ function SearchPageContent() {
         {/* Shops related to the query */}
         {relatedShops.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-sm font-bold text-ink mb-3">Shops related to &ldquo;{q.trim()}&rdquo;</h2>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">
+              Shops related to &ldquo;{q.trim()}&rdquo;
+            </h2>
             <div className="flex gap-3 overflow-x-auto pb-1">
               {relatedShops.map((shop) => (
                 <Link
@@ -166,9 +168,16 @@ function SearchPageContent() {
           </div>
         )}
 
-        {/* Sort tabs + result count */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <p className="text-xs text-ink-faint">{loading ? 'Searching…' : `${total} result${total === 1 ? '' : 's'}`}</p>
+        {q.trim() && (
+          <p className="flex items-center gap-1.5 text-xs text-ink-muted mb-3">
+            <Info size={13} className="text-ink-faint" />
+            Search result for &lsquo;<span className="text-taupe">{q.trim()}</span>&rsquo;
+          </p>
+        )}
+
+        {/* Sort bar — sort tabs on the left, result count + pagination on
+            the right, one row, matching the reference layout. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-surface border border-line rounded-lg px-3 py-2">
           <div className="flex items-center gap-1 flex-wrap">
             <button
               type="button"
@@ -177,6 +186,7 @@ function SearchPageContent() {
             >
               <SlidersHorizontal size={12} /> Filters
             </button>
+            <span className="text-xs text-ink-faint mr-1 hidden sm:inline">Sort by</span>
             {SORT_TABS.map((tab) => (
               <button
                 key={tab.value || 'default'}
@@ -190,6 +200,31 @@ function SearchPageContent() {
               </button>
             ))}
           </div>
+
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-ink-faint">{loading ? 'Searching…' : `${total} result${total === 1 ? '' : 's'}`}</p>
+            {lastPage > 1 && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-ink-muted">{page}/{lastPage}</span>
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="p-1 rounded border border-line text-ink-muted hover:bg-sunken disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={13} />
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= lastPage}
+                  onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
+                  className="p-1 rounded border border-line text-ink-muted hover:bg-sunken disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
@@ -197,19 +232,27 @@ function SearchPageContent() {
           <aside className={`${filtersOpen ? 'block' : 'hidden'} lg:block`}>
             <div className="bg-surface border border-line rounded-xl p-4 space-y-6 lg:sticky lg:top-20">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Category</p>
-                <div className="space-y-1">
-                  {GARMENT_CATEGORIES.map(({ value, label }) => (
-                    <button
-                      key={value || 'all'}
-                      type="button"
-                      onClick={() => setCategory(value)}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                        category === value ? 'bg-sunken text-taupe font-semibold' : 'text-ink-muted hover:bg-sunken'
-                      }`}
-                    >
-                      {label}
-                    </button>
+                <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">By Category</p>
+                <div className="space-y-2.5">
+                  {GARMENT_CATEGORIES.filter((c) => c.value).map(({ value, label }) => (
+                    <label key={value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={category === value}
+                        // Visually a checkbox list (matches the reference),
+                        // but the backend/results model only supports one
+                        // active garment_type/name filter at a time -- so
+                        // checking one clears any other, same as a radio
+                        // group would, rather than combining categories.
+                        onChange={() => setCategory(category === value ? '' : value)}
+                        className="w-3.5 h-3.5 rounded border-line-strong text-taupe focus:ring-taupe focus:ring-offset-0 accent-taupe"
+                      />
+                      <span className={`text-xs transition-colors ${
+                        category === value ? 'text-taupe font-semibold' : 'text-ink-muted group-hover:text-ink'
+                      }`}>
+                        {label}
+                      </span>
+                    </label>
                   ))}
                 </div>
               </div>
@@ -239,17 +282,24 @@ function SearchPageContent() {
 
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Rating</p>
-                <div className="space-y-1">
-                  {[['', 'Any'], ['4', '4 stars & up'], ['3', '3 stars & up']].map(([value, label]) => (
+                <div className="space-y-2">
+                  {['5', '4', '3', '2', '1'].map((value) => (
                     <button
-                      key={value || 'any'}
+                      key={value}
                       type="button"
-                      onClick={() => setMinRating(value)}
-                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                        minRating === value ? 'bg-sunken text-taupe font-semibold' : 'text-ink-muted hover:bg-sunken'
+                      onClick={() => setMinRating(minRating === value ? '' : value)}
+                      className={`w-full flex items-center gap-0.5 px-1 py-1 rounded-lg transition-colors ${
+                        minRating === value ? 'bg-sunken' : 'hover:bg-sunken'
                       }`}
                     >
-                      {label}
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={13}
+                          className={star <= Number(value) ? 'text-taupe fill-taupe' : 'text-line-strong'}
+                        />
+                      ))}
+                      {value !== '5' && <span className="text-[11px] text-ink-muted ml-1">&amp; Up</span>}
                     </button>
                   ))}
                 </div>
