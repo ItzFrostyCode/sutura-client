@@ -23,8 +23,20 @@ the shared platform services.
 
 ---
 
+## Status Update — 2026-09-15
+
+The assignments above reflect the original May 2026 plan and stay as-is below for manuscript/figure traceability (Use Case Diagrams, BPMN, etc. still map to the original per-member ownership for defense documentation purposes).
+
+**Actual current reality diverges**: as of this date, neither `origin/feature/customer-module` nor `origin/feature/staff-module` carry any commits beyond the shared merge point with the other module branches — no unique work has been pushed to either yet. With the defense/deployment deadline in the first week of October 2026, **Arabejo, Joshua Wayman A. is now building the Customer/Guest Module and the Tailoring Staff Module himself**, in addition to his original Shop Owner Module. This was prompted directly by Lead Panelist Eric P. Ricablanca's feedback emphasizing Objectives 3 (Shop Discovery & Search), 4 (Map-Based Interface), and 6 (Order Tracking & Measurement) — the customer-facing surfaces for all three were still entirely unbuilt.
+
+First concrete output of this: [`customer-module/DISCOVERY_MAP_TRACKING_BUILD_PLAN.md`](file:///Users/joshuawaymanarabejo/Documents/Projects/Websites/SUTURA/customer-module/DISCOVERY_MAP_TRACKING_BUILD_PLAN.md) — a build plan for Objectives 3/4/6's customer-facing gap, reconciled against the actual shipped `sutura-server`/`sutura-client` code rather than this document's originally-planned (and since-diverged) API endpoints and database fields. The "API Endpoints Owned" lists under Module 1 and Module 4 below describe the *original* plan and do not match what was actually implemented — see that build plan doc, and `sutura-server/CLAUDE.md` / `sutura-client/CLAUDE.md`, for the real routes and schema before building against anything below.
+
+Subscription/billing ownership (Phase 5, "Bongo (subscription)") is unaffected by this update and stays with Bongo as originally assigned.
+
+---
+
 ## Module 1 — Customer Module
-**Owner:** Bulotano, Renalyn C.
+**Owner:** Bulotano, Renalyn C. *(see Status Update above — Arabejo, Joshua Wayman A. is now building this module)*
 
 ### Thesis Basis
 - **Use Case Diagram (Figure 5, Page 63):** Customer actor with Login, Search and Filter Shop,
@@ -384,7 +396,7 @@ The endpoint list and table names above are the **originally proposed** shape �
 ---
 
 ## Module 4 — Tailoring Staff Module
-**Owner:** Masudog, Clareynz June A.
+**Owner:** Masudog, Clareynz June A. *(see Status Update above — Arabejo, Joshua Wayman A. is now building this module)*
 
 ### Thesis Basis
 - **Use Case Diagram (Figure 3, Page 63):** Tailoring Staff actor with Login, Manage Measurement,

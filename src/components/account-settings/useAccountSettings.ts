@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore, StaffProfile } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { User, ShieldCheck } from 'lucide-react';
@@ -135,8 +136,8 @@ export function useAccountSettings() {
       if (user && token) {
         setAuth(res.data.data, token, shop ?? undefined, staffProfile || undefined);
       }
-    } catch {
-      toast.error('Failed to upload photo. Please try again.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to upload photo. Please try again.'));
     } finally {
       setUploadingAvatar(false);
     }

@@ -152,20 +152,6 @@ The system also includes a web-based public discovery platform tailored for cust
 To ensure platform quality and reliability, SUTURA implements a strict pre-verification process for all newly registered businesses. Upon creating an account, shop owners must first undergo a thorough review and approval process by the system administrator before gaining any access to the system or its internal dashboard features. This approach guarantees that only fully verified and legitimate tailoring establishments can configure shop settings, access internal management workflows, and ultimately appear on the public marketplace and interactive map interface. 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Objectives
 To centralize and digitize the discoverability and service tracking of tailoring shops within Davao City by providing integrated tools for location-based shop discovery, tier-based subscription management, real-time order progress monitoring, and data-driven business analytics, ultimately improving both the tailoring shop's digital visibility and the customer's service experience
 Specifically, this study aims to:
@@ -175,32 +161,6 @@ Specifically, this study aims to:
 ●Tailoring Shop Dashboard for storefront management, the shop owner will configure their digital profile, manage service catalogs and apparel specializations, set itemized pricing, handle appointment schedules, and control their public platform visibility. 
 ●Order Tracking and Measurement Module for real-time production monitoring, the tailoring staff will record and retrieve digital customer measurements, manage appointment-based order intake, and update garment production stages, while customers monitor their order progress from placement to pickup.
 ●Interactive Analytics Dashboard for data-driven reporting, the system administrator and tailoring shop owners will generate real-time visual reports on subscription activity, monthly sales revenue, outstanding customer balances, and individual shop productivity. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

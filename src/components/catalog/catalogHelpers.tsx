@@ -1,5 +1,6 @@
 import React from 'react';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { BulletItem, ImageItem, CatalogFormData, CatalogItemResponse } from './catalogTypes';
 import type { SizeChartValue } from '@/components/shared/SizeChartEditor';
 
@@ -170,7 +171,7 @@ export async function uploadSectionImage({
     else if (section === 'care') setCareImage(url);
   } catch (err) {
     console.error(`${section} image upload failed`, err);
-    alert('Failed to upload image. File may be too large.');
+    alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
   } finally {
     setUploadingSection(null);
   }
@@ -204,7 +205,7 @@ export async function uploadCatalogImage({
     setImages(prev => prev.map(img => (img.id === imageId ? { ...img, url, uploading: false } : img)));
   } catch (err) {
     console.error('Upload failed', err);
-    alert('Failed to upload image. File may be too large.');
+    alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
     setImages(prev => prev.map(img => (img.id === imageId ? { ...img, uploading: false } : img)));
   }
 }

@@ -1,3 +1,4 @@
+
 # SUTURA — Complete Shop Owner Dashboard UI Redesign Brief
 
 > Paste this whole file as your opening prompt in a fresh session.
@@ -15,6 +16,7 @@ Completely redesign the **UI/UX** of the SUTURA Shop Owner dashboard — from sc
 ## HARD RULES
 
 **Never do these:**
+
 - ❌ Delete any file
 - ❌ Remove any backend endpoint, column, model, or feature
 - ❌ Invent fake/mock/placeholder data — every number on screen must come from a real API response
@@ -23,6 +25,7 @@ Completely redesign the **UI/UX** of the SUTURA Shop Owner dashboard — from sc
 - ❌ Touch anything outside the Shop Owner Module (no Customer portal, no Admin frontend)
 
 **Allowed:**
+
 - ✅ Add backend endpoints/fields **if** the UI genuinely needs data that doesn't exist yet, and it's in-scope, logical, and real-world practical
 - ✅ Fix bugs and data-consistency issues you find
 - ✅ Restructure frontend components freely
@@ -48,6 +51,7 @@ Concretely: keep the *logic and data wiring*, replace the *entire presentation l
 **Who uses this dashboard:** A shop owner (or branch manager/staff, role-gated) running production *while* using the software — often mid-fitting, standing at a workbench. Every extra tap costs real time. Desktop-first for data density, but must work on a phone on the shop floor.
 
 **Stack:**
+
 - Frontend: `sutura-client/` — Next.js 16.3, React 19, TypeScript, Tailwind CSS v4, Zustand, lucide-react, recharts, react-leaflet
 - Backend: `sutura-server/` — Laravel API, MySQL 8.4
 - Run: backend `php artisan serve` (:8000), frontend `npm run dev` (:3000)
@@ -86,11 +90,13 @@ One accent color per surface. `#B26959` is reserved strictly for negative/warnin
 ## LAYOUT ARCHITECTURE (the owner explicitly wants this)
 
 ### Header — keep this structure, it's confirmed good
+
 - **Left:** logo + wordmark
 - **Right:** notification bell + profile menu
 - Branch selector stays accessible (must be visible on mobile too, not hidden below `md:`)
 
 ### Sidebar — this is the main structural change requested
+
 - **Collapsible**: expands to full labels ↔ collapses to icons-only
 - Collapsed state must free up real horizontal space for content
 - Icon-only mode needs tooltips on hover
@@ -131,15 +137,16 @@ Reached via the header, not the sidebar: **Notifications**, **My Storefront**, *
 
 Must work correctly at **every** one of these widths. 320px is the hard floor — nothing may overflow horizontally.
 
-| Width | Target |
-|---|---|
+| Width           | Target                                                          |
+| --------------- | --------------------------------------------------------------- |
 | **320px** | Smallest phone. No horizontal scroll, ever. Sidebar off-canvas. |
-| 375px | Typical phone |
-| 768px | Tablet |
-| 1024px | Small laptop |
-| 1440px | Desktop |
+| 375px           | Typical phone                                                   |
+| 768px           | Tablet                                                          |
+| 1024px          | Small laptop                                                    |
+| 1440px          | Desktop                                                         |
 
 Rules:
+
 - Data tables → card lists on mobile, never a squeezed table or sideways scroll of the whole page
 - Wide content (tables, charts) scrolls inside its **own** `overflow-x-auto` container — the page body never scrolls sideways
 - Tab bars use `overflow-x-auto` with `shrink-0 whitespace-nowrap` children — never `flex-wrap` inside a bordered pill
@@ -155,18 +162,19 @@ Rules:
 
 ### Required behavior
 
-| | Desktop (≥ `md`) | Mobile (< `md`) |
-|---|---|---|
-| Position | Centered popup | **Full screen** |
-| Insets | `p-4`, max-width, `max-h-[90vh]` | `inset-0`, **zero padding** |
-| Corners | `rounded-2xl` | **Square** — no radius |
-| Backdrop | Visible, dimmed | **Not visible at all** — modal covers 100% |
-| Height | Fits content | `100dvh` (**`dvh`, not `vh`** — `vh` is wrong under mobile browser chrome) |
-| Header | Title + ✕ | **Sticky top**, title + ✕, always reachable |
-| Footer | Inline actions | **Sticky bottom** action bar, never scrolled off |
-| Body | Scrolls | Scrolls **between** the sticky header and footer only |
+|          | Desktop (≥`md`)                   | Mobile (<`md`)                                                                          |
+| -------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Position | Centered popup                       | **Full screen**                                                                     |
+| Insets   | `p-4`, max-width, `max-h-[90vh]` | `inset-0`, **zero padding**                                                       |
+| Corners  | `rounded-2xl`                      | **Square** — no radius                                                             |
+| Backdrop | Visible, dimmed                      | **Not visible at all** — modal covers 100%                                         |
+| Height   | Fits content                         | `100dvh` (**`dvh`, not `vh`** — `vh` is wrong under mobile browser chrome) |
+| Header   | Title + ✕                           | **Sticky top**, title + ✕, always reachable                                        |
+| Footer   | Inline actions                       | **Sticky bottom** action bar, never scrolled off                                    |
+| Body     | Scrolls                              | Scrolls**between** the sticky header and footer only                                |
 
 ### Also required
+
 - Lock background scroll while open (and restore on close)
 - Respect iOS safe areas on the sticky footer: `padding-bottom: env(safe-area-inset-bottom)`
 - Focus trap; `Esc` closes; backdrop click closes (desktop) — but a full-screen mobile modal has no backdrop to click, so the ✕ must always be visible
@@ -174,11 +182,14 @@ Rules:
 - **The sticky-footer rule is not cosmetic:** a real bug this session had Approve/Reject buttons pushed off-screen below a long list on mobile. Primary actions must always be reachable without scrolling.
 
 ### Build ONE primitive, then migrate all 28
+
 Create a single `<Modal>` (plus a `<ConfirmDialog>` variant for the small destructive ones) that implements all of the above, and route **every** modal through it. Kill all 9 hand-rolled overlays. Two of these need a variant:
+
 - `CatalogPreviewModal`, `OrderReceiptModal` → image/document-heavy, full-bleed on mobile
 - `ServiceDeleteModal`, `StaffDeleteModal`, `CustomerDeleteModal`, `BranchDeleteModal`, `CatalogDeleteModal`, `ServiceTrashModal`, `JobTrashModal` → small confirm dialogs, may stay centered on mobile but must be comfortably sized and thumb-reachable
 
 ### Other overlays — same principle
+
 - **Notification panel** — dropdown on desktop → full-screen sheet on mobile
 - **Profile / account menu** — dropdown → bottom sheet on mobile
 - **Branch selector** — dropdown → bottom sheet on mobile
@@ -214,6 +225,7 @@ Also the shared shell: sidebar, header, modals, toasts, empty states, loading sk
 ## DESIGN DIRECTION
 
 Load and follow these installed skills (they're in `.claude/skills/`):
+
 - **`minimalist-ui`** — warm monochrome, typographic contrast, flat bento grids, no gradients, no heavy shadows. This is closest to the intended taste.
 - **`redesign-existing-projects`** — audits current design and identifies generic AI patterns to eliminate
 - **`design-taste-frontend`** — anti-slop, audit-first on redesigns

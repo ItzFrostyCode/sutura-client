@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, FormEvent, Suspense, use } from 'react';
+import React, { useEffect, useState, useMemo, Suspense, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
-import { ArrowLeft, ArrowRight, CheckCircle2, MessageSquare, Ruler, Shirt, Scissors, Package, AlertCircle, MapPin, Upload, X, Link as LinkIcon } from 'lucide-react';
+import { getErrorMessage } from '@/lib/apiError';
+import { ArrowLeft, ArrowRight, CheckCircle2, MessageSquare, Ruler, Shirt, Scissors, Package, AlertCircle, MapPin, Upload, X, Link as LinkIcon, Clock } from 'lucide-react';
 import Image from 'next/image';
-import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
+import InteractiveCalendar, { OperatingHours, SpecialHour } from '@/components/shared/InteractiveCalendar';
 
 interface Branch {
   id: number;
@@ -27,19 +28,17 @@ interface ShopSettings {
   booking_policy?: string | null;
   booking_questions?: string[] | null;
   max_appointments_per_day?: number | null;
-  operating_hours?: Record<string, { is_open: boolean; open: string; close: string }> | string | null;
+  operating_hours?: Record<string, OperatingHours> | string | null;
   branches?: Branch[];
   services?: Service[];
-  special_hours?: {
-    id: number;
-    title: string;
-    start_date: string;
-    end_date: string;
-    is_closed: boolean;
-    special_open_time: string | null;
-    special_close_time: string | null;
-    announcement_message: string | null;
-  }[];
+  special_hours?: SpecialHour[];
+  gcash_number?: string | null;
+  gcash_account_name?: string | null;
+  gcash_qr_path?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
+  bank_qr_path?: string | null;
 }
 
 interface PackageInfo {
@@ -47,6 +46,12 @@ interface PackageInfo {
   name: string;
   bundle_price: string | null;
   services: { id: number; name: string; base_price: string | null }[];
+}
+
+function getDurationMinutesNumber(type: string): number {
+  if (type === 'consultation') return 30;
+  if (type === 'pickup') return 15;
+  return 60;
 }
 
 function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
@@ -98,6 +103,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   // (non-anonymized) appointment list instead.
   const [calendarAppointments, setCalendarAppointments] = useState<{ scheduled_at: string; duration_minutes: number; shop_branch_id: number | null }[]>([]);
   const [loadingAppts, setLoadingAppts] = useState(false);
+  const [bookedApt, setBookedApt] = useState<{ id?: number } | null>(null);
 
   useEffect(() => {
     if (!shopId) return;
@@ -114,6 +120,25 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     };
     void load();
   }, [shopId]);
+
+  const rawOperatingHours = shopSettings?.operating_hours;
+  const parsedOperatingHours = useMemo((): Record<string, OperatingHours> | null => {
+    if (!rawOperatingHours) return null;
+    if (typeof rawOperatingHours === 'string') {
+      try {
+        return JSON.parse(rawOperatingHours) as Record<string, OperatingHours>;
+      } catch {
+        return null;
+      }
+    }
+    return rawOperatingHours;
+  }, [rawOperatingHours]);
+
+  const submitButtonLabel = useMemo(() => {
+    if (submitting) return 'Processing...';
+    if (uploadingReceipt) return 'Uploading receipt...';
+    return 'Confirm Booking';
+  }, [submitting, uploadingReceipt]);
 
   const getSpecialHoursForDate = (dateStr: string) => {
     if (!shopSettings?.special_hours) return null;
@@ -137,7 +162,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
       }
     } catch (err) {
       console.error('Failed to upload receipt image:', err);
-      alert('Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).');
+      alert(getErrorMessage(err, 'Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).'));
       // Reset so the input doesn't look "filled" from a failed upload —
       // otherwise the browser still shows a selected filename even though
       // paymentReceiptUrl was never actually set.
@@ -170,7 +195,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
       }
     } catch (err) {
       console.error('Failed to upload reference image:', err);
-      alert('Failed to upload image. Please make sure it is a valid image (PNG/JPG/JPEG).');
+      alert(getErrorMessage(err, 'Failed to upload image. Please make sure it is a valid image (PNG/JPG/JPEG).'));
     } finally {
       setUploadingReference(false);
     }
@@ -202,7 +227,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         const branchFromSlug = branchSlugParam && settings?.branches?.find((b: Branch) => b.slug === branchSlugParam);
         if (branchFromSlug) {
           setSelectedBranchId(branchFromSlug.id.toString());
-        } else if (settings?.branches && settings.branches.length === 1) {
+        } else if (settings?.branches?.length === 1) {
           setSelectedBranchId(settings.branches[0].id.toString());
         }
 
@@ -232,7 +257,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     }
   }, [shopId, branchSlugParam, serviceIdParam, packageIdParam]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
@@ -241,7 +266,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     // Compile remarks and catalog reference / package context
     let notesPayload = '';
     if (refName) {
-      notesPayload += `[Design Reference: ${refName}${refSize ? ` — Size ${refSize}` : ''}]\n`;
+      const sizeNote = refSize ? ` — Size ${refSize}` : '';
+      notesPayload += `[Design Reference: ${refName}${sizeNote}]\n`;
     }
     if (packageInfo) {
       notesPayload += `[Package Inquiry: ${packageInfo.name} — includes ${packageInfo.services.map(s => s.name).join(', ')}]\n`;
@@ -251,7 +277,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
     }
 
     try {
-      await api.post(`/catalog/${shopId}/book`, {
+      const res = await api.post(`/catalog/${shopId}/book`, {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
@@ -268,10 +294,17 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         payment_reference: paymentMethod !== 'cash' ? paymentReference : null,
         payment_receipt_path: paymentMethod !== 'cash' ? paymentReceiptUrl : null,
       });
+      setBookedApt(res.data?.data || null);
       setSuccess(true);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      alert('Failed to book appointment. Please check all fields.');
+      const e = err as { response?: { data?: { message?: string } } };
+      const errorMessage = e.response?.data?.message || 'Failed to book appointment. Please check all fields.';
+      alert(errorMessage);
+      // Re-fetch appointments so the calendar updates with newly booked/reserved slots
+      api.get(`/catalog/${shopId}/appointments`)
+        .then(res => setCalendarAppointments(res.data.data || []))
+        .catch(() => {});
     } finally {
       setSubmitting(false);
     }
@@ -280,22 +313,89 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   if (loading) return <div className="min-h-dvh flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26]">Loading booking system...</div>;
 
   if (success) {
+    const selectedBranchObj = shopSettings?.branches?.find((b: Branch) => b.id.toString() === selectedBranchId);
+    const selectedServiceObj = shopSettings?.services?.find((s: Service) => s.id.toString() === selectedServiceId);
+
     return (
       <div className="min-h-dvh bg-[#FAF6F3] text-[#2D2A26] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white shadow-sm p-8 rounded-2xl text-center border border-[#EBE6E0]">
-          <div className="w-16 h-16 bg-[#7A8B76]/20 text-[#7A8B76] rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 size={32} />
+        <div className="max-w-md w-full bg-white shadow-sm p-6 sm:p-8 rounded-2xl border border-[#EBE6E0] space-y-5 text-center">
+          <div className="space-y-2">
+            <div className="w-14 h-14 bg-[#7A8B76]/20 text-[#7A8B76] rounded-full flex items-center justify-center mx-auto mb-2">
+              <CheckCircle2 size={30} />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-ink">Appointment Requested!</h2>
+            <p className="text-xs sm:text-sm text-ink-muted">
+              Your booking request has been submitted to <span className="font-semibold text-ink">{shopSettings?.name}</span>. The atelier will review and confirm your schedule shortly.
+            </p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 mt-1">
+              <Clock size={12} className="text-amber-600 shrink-0" />
+              <span>Status: Awaiting Shop Confirmation</span>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
-          <p className="text-[#827A73] mb-8">
-            Your appointment request has been sent to {shopSettings?.name}. They will review it shortly.
-          </p>
-          <button 
-            onClick={() => router.push(`/shop/${shopId}/catalog`)}
-            className="w-full bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#2D2A26] font-medium py-3 rounded-lg transition-colors cursor-pointer"
-          >
-            Back to Catalog
-          </button>
+
+          {/* Official Booking Summary Ticket */}
+          <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 text-left space-y-3">
+            <div className="flex items-center justify-between border-b border-[#EBE6E0] pb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Booking Reference</span>
+              <span className="font-mono text-xs font-bold text-taupe">
+                #APT-{bookedApt?.id ?? 'PENDING'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div>
+                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Date</span>
+                <p className="font-semibold text-ink mt-0.5">{date || 'Selected Date'}</p>
+              </div>
+              <div>
+                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Time</span>
+                <p className="font-semibold text-ink mt-0.5">{time || '12:00'} ({durationMinutes} mins)</p>
+              </div>
+              <div>
+                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Type</span>
+                <p className="font-semibold text-ink capitalize mt-0.5">{appointmentType}</p>
+              </div>
+              {selectedServiceObj && (
+                <div>
+                  <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Service</span>
+                  <p className="font-semibold text-ink mt-0.5 truncate">{selectedServiceObj.name}</p>
+                </div>
+              )}
+              {selectedBranchObj && (
+                <div className="col-span-2 border-t border-[#EBE6E0]/80 pt-2">
+                  <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Atelier Branch</span>
+                  <p className="font-semibold text-ink mt-0.5">{selectedBranchObj.name} {selectedBranchObj.city ? `— ${selectedBranchObj.city}` : ''}</p>
+                </div>
+              )}
+              <div className="col-span-2 border-t border-[#EBE6E0]/80 pt-2">
+                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Customer</span>
+                <p className="font-medium text-ink mt-0.5">{customer.name} ({customer.email})</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <button 
+              type="button"
+              onClick={() => router.push(`/shop/${shopId}/catalog`)}
+              className="w-full bg-taupe hover:bg-taupe-hover text-white font-semibold py-3 rounded-xl transition-colors cursor-pointer text-sm shadow-2xs"
+            >
+              Back to Catalog
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccess(false);
+                setStep(1);
+                setDate('');
+                setTime('');
+                setBookedApt(null);
+              }}
+              className="w-full bg-white hover:bg-[#F0EAE3] text-ink font-medium py-2 rounded-xl border border-line transition-colors cursor-pointer text-xs"
+            >
+              Book Another Appointment
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -382,7 +482,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
 
               {/* Appointment Type Selector */}
               <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#524A44] block">What are you coming in for? <span className="text-[#B26959]">*</span></label>
+                  <span className="text-sm font-medium text-[#524A44] block">What are you coming in for? <span className="text-[#B26959]">*</span></span>
                   <div className="grid grid-cols-1 gap-2">
                     {BOOKING_TYPES.map(t => (
                       <button
@@ -420,9 +520,9 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                 <div className="col-span-1 md:col-span-2">
                   <InteractiveCalendar
                     selectedBranchId={selectedBranchId ? String(selectedBranchId) : null}
-                    durationMinutes={appointmentType === 'consultation' ? 30 : appointmentType === 'pickup' ? 15 : 60}
-                    operatingHours={shopSettings?.operating_hours as any}
-                    specialHours={shopSettings?.special_hours as any}
+                    durationMinutes={getDurationMinutesNumber(appointmentType)}
+                    operatingHours={parsedOperatingHours}
+                    specialHours={shopSettings?.special_hours ?? null}
                     maxAppointmentsPerDay={shopSettings?.max_appointments_per_day ?? null}
                     appointments={calendarAppointments}
                     loadingAppts={loadingAppts}
@@ -506,7 +606,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                     </div>
                     {appointmentType === 'consultation' ? (
                       <p className="text-amber-800/80 mt-1.5 leading-normal">
-                        💡 <strong>Located far away?</strong> You can avoid traveling and message us directly using the <strong>"💬 Chat Shop"</strong> button on our homepage to start an online consultation!
+                        💡 <strong>Located far away?</strong> You can avoid traveling and message us directly using the <strong>&ldquo;💬 Chat Shop&rdquo;</strong> button on our homepage to start an online consultation!
                       </p>
                     ) : (
                       <p className="text-amber-800/80 mt-1.5 leading-normal font-semibold">
@@ -567,9 +667,9 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
               {appointmentType === 'consultation' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-[#524A44] block">
+                    <span className="text-sm font-medium text-[#524A44] block">
                       Design Reference Images <span className="text-xs font-normal text-[#A8A19A]">(optional, up to 10)</span>
-                    </label>
+                    </span>
                     {referenceImages.length > 0 && (
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {referenceImages.map(url => (
@@ -641,37 +741,27 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
               )}
 
               {/* Render Operating Hours */}
-              {(() => {
-                const hours = shopSettings?.operating_hours;
-                if (!hours) return null;
-                try {
-                  const parsed = typeof hours === 'string' ? JSON.parse(hours) : hours;
-                  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                  return (
-                    <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 mt-4 space-y-2.5">
-                      <h4 className="text-xs font-bold text-[#827A73] uppercase tracking-wider">Shop Operating Hours</h4>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-[#524A44]">
-                        {days.map(d => {
-                          const h = parsed[d];
-                          return (
-                            <div key={d} className="flex justify-between border-b border-[#EBE6E0]/40 pb-1.5">
-                              <span className="capitalize font-medium text-[#2D2A26]">{d}</span>
-                              <span className="text-[#827A73]">
-                                {h?.is_open 
-                                  ? `${h.open} - ${h.close}`
-                                  : <span className="text-[#B26959] font-medium">Closed</span>
-                                }
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                } catch (e) {
-                  return null;
-                }
-              })()}
+              {parsedOperatingHours && (
+                <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 mt-4 space-y-2.5">
+                  <h4 className="text-xs font-bold text-[#827A73] uppercase tracking-wider">Shop Operating Hours</h4>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-[#524A44]">
+                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(d => {
+                      const h = parsedOperatingHours[d];
+                      return (
+                        <div key={d} className="flex justify-between border-b border-[#EBE6E0]/40 pb-1.5">
+                          <span className="capitalize font-medium text-[#2D2A26]">{d}</span>
+                          <span className="text-[#827A73]">
+                            {h?.is_open 
+                              ? `${h.open} - ${h.close}`
+                              : <span className="text-[#B26959] font-medium">Closed</span>
+                            }
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-6">
                 <button 
@@ -762,11 +852,11 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                 <h3 className="text-lg font-medium">Payment / Booking Deposit</h3>
                 <p className="text-xs text-[#827A73]">Select how you would like to handle your reservation/fitting deposit (if applicable).</p>
                 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { value: 'cash', label: 'Cash on Shop' },
                     { value: 'gcash', label: 'GCash' },
-                    { value: 'bank_transfer', label: 'Bank Transfer' }
+                    { value: 'paymaya', label: 'PayMaya' }
                   ].map(m => (
                     <button
                       type="button" key={m.value}
@@ -784,13 +874,30 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
 
                 {paymentMethod !== 'cash' && (
                   <div className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl space-y-3">
-                    <p className="text-xs text-zinc-700">
-                      Please send payment to the shop&apos;s verified GCash / Bank details:
-                      <br />
-                      <strong className="text-zinc-950 font-bold">GCash: 0950 5585 800 (Printify Shop)</strong>
-                      <br />
-                      <strong className="text-zinc-950 font-bold">Bank: BPI - 1234-5678-90 (Sutura Account)</strong>
-                    </p>
+                    <div className="text-xs text-zinc-700">
+                      <span>Please send payment to the shop&apos;s verified {paymentMethod === 'gcash' ? 'GCash' : 'PayMaya'} details:</span>
+                      <div className="mt-1.5 p-2.5 bg-white border border-zinc-200 rounded-lg space-y-1">
+                        {paymentMethod === 'gcash' && (
+                          <>
+                            <div className="font-bold text-zinc-950">
+                              GCash: {shopSettings?.gcash_number || '0950 5585 800'} {shopSettings?.gcash_account_name ? `(${shopSettings.gcash_account_name})` : `(${shopSettings?.name || 'Tailor Shop'})`}
+                            </div>
+                            {shopSettings?.gcash_qr_path && (
+                              <div className="pt-2">
+                                <span className="text-[10px] text-zinc-500 font-medium block mb-1">Scan Shop GCash QR Code:</span>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={shopSettings.gcash_qr_path} alt="Shop GCash QR" className="w-36 h-36 object-contain rounded-lg border border-zinc-200" />
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {paymentMethod === 'paymaya' && (
+                          <div className="font-bold text-zinc-950">
+                            PayMaya: {shopSettings?.gcash_number || '0950 5585 800'} ({shopSettings?.gcash_account_name || shopSettings?.name || 'Tailor Shop'})
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     
                     <div className="space-y-2">
                       <label htmlFor="ref-code" className="text-xs font-medium text-[#524A44] block">
@@ -804,6 +911,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                         placeholder={
                           paymentMethod === 'gcash'
                             ? 'Enter the 13-digit GCash reference number, if you have it'
+                            : paymentMethod === 'paymaya'
+                            ? 'Enter your PayMaya reference number, if you have it'
                             : 'Enter your bank’s transaction/confirmation number, if you have it'
                         }
                         className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-[#2D2A26] text-base sm:text-xs focus:outline-none focus:border-[#9A8073]"
@@ -832,7 +941,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                   disabled={submitting || uploadingReceipt}
                   className="w-full bg-[#9A8073] hover:bg-[#91756A] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  {submitting ? 'Processing...' : uploadingReceipt ? 'Uploading receipt...' : 'Confirm Booking'}
+                  {submitButtonLabel}
                 </button>
               </div>
             </form>

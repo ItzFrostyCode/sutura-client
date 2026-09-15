@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
@@ -266,8 +267,8 @@ export function usePayments() {
       fd.append('file', file);
       const res = await api.post(`/shops/${shop.id}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setPayReceiptPath(res.data.data?.url || res.data.url || '');
-    } catch {
-      toast.error('Failed to upload receipt screenshot.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to upload receipt screenshot.'));
     } finally {
       setPayReceiptUploading(false);
     }

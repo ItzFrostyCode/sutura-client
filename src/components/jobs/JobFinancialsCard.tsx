@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Job, Payment } from './jobTypes';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import {
   CreditCard,
   Banknote,
@@ -44,11 +45,6 @@ const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badg
     label: 'PayMaya',
     icon: <CreditCard size={15} className="text-teal-600" />,
     badgeCls: 'bg-teal-50 text-teal-700 border-teal-200',
-  },
-  bank_transfer: {
-    label: 'Bank Transfer',
-    icon: <CreditCard size={15} className="text-purple-600" />,
-    badgeCls: 'bg-purple-50 text-purple-700 border-purple-200',
   },
 };
 
@@ -107,8 +103,8 @@ export default function JobFinancialsCard({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       onDone(res.data?.data?.url || res.data?.url || '');
-    } catch {
-      alert('Failed to upload receipt image.');
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload receipt image.'));
     } finally {
       setUploading(false);
     }
@@ -337,11 +333,11 @@ export default function JobFinancialsCard({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider mr-0.5">Quick Presets:</span>
                       {[
-                        { label: '🌟 Suki Customer', reason: 'Suki Customer (Loyal Patron)', type: 'fixed' as const, val: 100 },
-                        { label: '🎓 Student (10%)', reason: 'Student ID Discount (10% Off)', type: 'percent' as const, val: 10 },
-                        { label: '🧓 Senior / PWD (20%)', reason: 'Senior Citizen / PWD Statutory (20% Off)', type: 'percent' as const, val: 20 },
-                        { label: '🤝 Tawad / Negotiated', reason: 'Negotiated / Tawad with Customer', type: 'fixed' as const, val: 0 },
-                        { label: '🏷️ Promo / Seasonal', reason: 'Shop Promotional Courtesy Discount', type: 'fixed' as const, val: 0 },
+                        { label: 'Suki Patron', reason: 'Suki Customer (Loyal Patron)', type: 'fixed' as const, val: 100 },
+                        { label: 'Student (10%)', reason: 'Student ID Discount (10% Off)', type: 'percent' as const, val: 10 },
+                        { label: 'Senior / PWD (20%)', reason: 'Senior Citizen / PWD Courtesy (20% Off)', type: 'percent' as const, val: 20 },
+                        { label: 'Tawad / Negotiated', reason: 'Negotiated / Tawad with Customer', type: 'fixed' as const, val: 0 },
+                        { label: 'Promo / Seasonal', reason: 'Shop Promotional Courtesy Discount', type: 'fixed' as const, val: 0 },
                       ].map(chip => (
                         <button
                           key={chip.label}
@@ -560,7 +556,6 @@ export default function JobFinancialsCard({
                               <option value="cash">Cash</option>
                               <option value="gcash">GCash</option>
                               <option value="paymaya">PayMaya</option>
-                              <option value="bank_transfer">Bank Transfer</option>
                             </select>
                             {editMethod !== 'cash' && (
                               <input
@@ -761,7 +756,6 @@ export default function JobFinancialsCard({
                       { key: 'cash', label: 'Cash', icon: Banknote },
                       { key: 'gcash', label: 'GCash', icon: Smartphone },
                       { key: 'paymaya', label: 'PayMaya', icon: CreditCard },
-                      { key: 'bank_transfer', label: 'Bank', icon: CreditCard },
                     ].map(m => {
                       const isSelected = method === m.key;
                       const Icon = m.icon;

@@ -22,6 +22,7 @@ import {
 import { Job } from './jobTypes';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
 import StatusStepper from '@/components/shared/StatusStepper';
@@ -70,8 +71,8 @@ export default function JobProductionTimeline({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setCompletionPhotoUrl(res.data?.data?.url || res.data?.url || '');
-    } catch {
-      alert('Failed to upload completion photo.');
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload completion photo.'));
     } finally {
       setUploadingPhoto(false);
     }
@@ -90,8 +91,8 @@ export default function JobProductionTimeline({
       if (!url) throw new Error('No URL returned from upload');
       await api.post(`/shops/${shop.id}/jobs/${job.id}/progress-photos`, { url });
       onProgressPhotoAdded();
-    } catch {
-      alert('Failed to upload progress photo.');
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload progress photo.'));
     } finally {
       setUploadingProgressPhoto(false);
     }
@@ -349,7 +350,7 @@ export default function JobProductionTimeline({
               <span className="text-[11px] font-normal text-ink-faint lowercase">(optional)</span>
             </span>
             <p className="text-[11px] text-ink-faint">
-              A quick photo of the finished garment — doubles as proof-of-delivery, QC evidence, and builds your portfolio.
+              A quick photo of the finished garment — doubles as proof-of-completion, QC evidence, and builds your portfolio.
             </p>
             {completionPhotoUrl ? (
               <div className="relative inline-block mt-1">

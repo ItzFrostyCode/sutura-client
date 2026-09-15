@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Ruler, ShirtIcon, Scissors, Package } from 'lucide-react';
+import { MessageSquare, Ruler, ShirtIcon, Scissors, Package, Globe, Store, RefreshCw } from 'lucide-react';
 
 export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup'] as const;
 export type AppointmentType = typeof APPOINTMENT_TYPES[number];
@@ -112,6 +112,47 @@ export function StatusBadge({ status }: { readonly status: AppointmentStatus }) 
   );
 }
 
+export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'online' }) {
+  const isOnline = channel === 'online';
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase border ${
+        isOnline
+          ? 'bg-sky-50 text-sky-700 border-sky-200'
+          : 'bg-stone-50 text-stone-600 border-stone-200'
+      }`}
+      title={isOnline ? 'Booked online by customer via storefront' : 'Walk-in booking entered in atelier'}
+    >
+      {isOnline ? <Globe size={11} className="text-sky-600 shrink-0" /> : <Store size={11} className="text-stone-500 shrink-0" />}
+      <span>{isOnline ? 'Online Booking' : 'Walk-in'}</span>
+    </span>
+  );
+}
+
+export function RescheduledBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight bg-amber-50 text-amber-800 border border-amber-200"
+      title="This appointment was rescheduled from an earlier date/time"
+    >
+      <RefreshCw size={10} className="text-amber-600 shrink-0" />
+      <span>Rescheduled</span>
+    </span>
+  );
+}
+
+export function WalkInPriorityBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight bg-amber-50 text-amber-900 border border-amber-300"
+      title="This online booking slot was claimed by an in-store walk-in client. Reschedule required."
+    >
+      <RefreshCw size={10} className="text-amber-700 shrink-0" />
+      <span>Walk-in Preempted</span>
+    </span>
+  );
+}
+
 /**
  * Returns a local YYYY-MM-DD string without UTC timezone drift
  */
@@ -123,7 +164,9 @@ export function getLocalDateString(d: Date = new Date()): string {
 }
 
 export function formatScheduled(iso: string) {
-  const formattedStr = iso.includes('T') ? iso : iso.replace(' ', 'T');
+  // Strip trailing Z or +00:00 to ensure local atelier time is preserved without browser double-offset
+  const cleanStr = iso ? iso.replace(/Z|\+00:00$/, '') : '';
+  const formattedStr = cleanStr.includes('T') ? cleanStr : cleanStr.replace(' ', 'T');
   const d = new Date(formattedStr);
 
   const now = new Date();

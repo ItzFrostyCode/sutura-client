@@ -535,7 +535,7 @@ function JobOrdersPageContent() {
                 {
                   key: 'ready_for_pickup',
                   title: 'Ready for Pickup',
-                  desc: 'Finished garments awaiting customer claim or delivery',
+                  desc: 'Finished garments awaiting customer claim and in-store pickup',
                   dot: 'bg-emerald-500',
                   icon: Store,
                   iconCls: 'text-emerald-600'

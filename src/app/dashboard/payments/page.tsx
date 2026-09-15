@@ -1061,7 +1061,7 @@ export default function PaymentQueuePage() {
                   {[
                     { id: 'cash', label: 'Cash' },
                     { id: 'gcash', label: 'GCash' },
-                    { id: 'bank_transfer', label: 'Bank' },
+                    { id: 'paymaya', label: 'PayMaya' },
                   ].map(m => (
                     <button
                       key={m.id}
@@ -1079,8 +1079,8 @@ export default function PaymentQueuePage() {
                 </div>
               </div>
 
-              {/* Reference # for GCash / Bank */}
-              {(payMethod === 'gcash' || payMethod === 'bank_transfer') && (
+              {/* Reference # for GCash / PayMaya */}
+              {(payMethod === 'gcash' || payMethod === 'paymaya') && (
                 <div className="space-y-1">
                   <label htmlFor="pay-reference-input" className="text-xs font-bold text-ink">Reference #</label>
                   <input

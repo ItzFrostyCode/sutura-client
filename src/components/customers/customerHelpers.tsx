@@ -8,7 +8,6 @@ export const isWalkInCustomer = (customer?: { email?: string; is_walk_in?: boole
   if (customer.is_walk_in === true || customer.intake_channel === 'walk_in') return true;
   if (customer.email && customer.email.startsWith('walkin_') && customer.email.endsWith('@sutura.com')) return true;
   if (!customer.email || customer.email.trim() === '') return true;
-  if (customer.suki_tag === 'walk_in_retail') return true;
   return false;
 };
 
