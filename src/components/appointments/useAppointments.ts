@@ -232,11 +232,13 @@ export function useAppointments() {
     }
   };
 
-  const handleCancelConfirm = async (aptId: number) => {
+  const handleCancelConfirm = async (aptId: number, reason: string, blockRebooking: boolean) => {
     if (!shop) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/appointments/${aptId}`);
+      await api.delete(`/shops/${shop.id}/appointments/${aptId}`, {
+        data: { reason, block_rebooking: blockRebooking },
+      });
       setShowCancelModal(false);
       setCancelApt(null);
       toast.success('Appointment cancelled.');

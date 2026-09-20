@@ -2,8 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Package } from 'lucide-react';
-import PublicNav from '@/components/shared/PublicNav';
+import { ArrowLeft, Package } from 'lucide-react';
 
 export default function TrackLandingPage() {
   const router = useRouter();
@@ -18,7 +17,17 @@ export default function TrackLandingPage() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
+      <div className="sticky top-0 z-50 bg-surface border-b border-line px-4 h-[50px] flex items-center justify-center relative">
+        <button
+          type="button"
+          onClick={() => router.push('/')}
+          aria-label="Back"
+          className="absolute left-4 p-1 text-ink-muted"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-sm font-bold text-ink">Track Order</h1>
+      </div>
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm text-center">
           <div className="w-14 h-14 rounded-full bg-sunken flex items-center justify-center mx-auto mb-5">
@@ -33,7 +42,7 @@ export default function TrackLandingPage() {
               type="text"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="e.g. AB12CD34"
+              placeholder="e.g. TNED8K2P"
               className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-sm text-ink text-center tracking-widest font-medium uppercase focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors"
               maxLength={12}
             />

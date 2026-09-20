@@ -34,7 +34,7 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
   const [totalAmount, setTotalAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid'>('pending');
   const [branchId, setBranchId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash' | 'bank_transfer'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash' | 'paymaya'>('cash');
   const [paymentReference, setPaymentReference] = useState('');
   const [receiptUrl, setReceiptUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
@@ -274,16 +274,16 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
               </label>
               <select
                 value={paymentMethod}
-                onChange={e => setPaymentMethod(e.target.value as 'cash' | 'gcash' | 'bank_transfer')}
+                onChange={e => setPaymentMethod(e.target.value as 'cash' | 'gcash' | 'paymaya')}
                 className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-taupe"
               >
                 <option value="cash">Cash</option>
                 <option value="gcash">GCash</option>
-                <option value="bank_transfer">Bank Transfer</option>
+                <option value="paymaya">PayMaya</option>
               </select>
             </div>
 
-            {/* GCash/Bank reference + receipt screenshot — this is exactly
+            {/* GCash/PayMaya reference + receipt screenshot — this is exactly
                 what the Payments page's "Receipts to Verify" queue expects
                 (usePayments.ts checks payment_method !== 'cash') to surface
                 this order for verification at all. */}
@@ -293,7 +293,7 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
                   type="text"
                   value={paymentReference}
                   onChange={e => setPaymentReference(e.target.value)}
-                  placeholder={paymentMethod === 'gcash' ? 'GCash Reference # (e.g. 9876543210)' : 'Bank Transfer Reference #'}
+                  placeholder={paymentMethod === 'gcash' ? 'GCash Reference # (e.g. 9876543210)' : 'PayMaya Reference #'}
                   className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe"
                 />
                 {receiptUrl ? (

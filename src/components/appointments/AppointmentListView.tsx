@@ -357,7 +357,7 @@ export default function AppointmentListView({
 
           {/* Status */}
           <td className="px-5 py-3.5 align-middle whitespace-nowrap">
-            <StatusBadge status={apt.status} />
+            <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
           </td>
 
           {/* Actions (Single neat row) */}
@@ -435,7 +435,7 @@ export default function AppointmentListView({
                       </div>
                     </div>
                   </div>
-                  <StatusBadge status={apt.status} />
+                  <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
                 </div>
 
                 {/* Service Details Box */}

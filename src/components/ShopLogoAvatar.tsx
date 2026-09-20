@@ -62,8 +62,8 @@ export default function ShopLogoAvatar({
           Positioned at the bottom-right of the avatar with high z-index and white border. */}
       {isOpen !== undefined && (
         <span
-          aria-label={isOpen ? 'Online · Open now' : 'Offline · Closed now'}
-          title={isOpen ? 'Online · Open now' : 'Offline · Closed now'}
+          aria-label={isOpen ? 'Open now' : 'Closed now'}
+          title={isOpen ? 'Open now' : 'Closed now'}
           className={`absolute bottom-0 right-0 z-20 w-4 h-4 md:w-4.5 md:h-4.5 rounded-full border-2 border-white shadow-md transition-all ${
             isOpen ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
           }`}

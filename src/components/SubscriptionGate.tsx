@@ -12,7 +12,8 @@ interface SubscriptionGateProps {
 
 // ── Labels shown in the lock overlay ──────────────────────────────────────────
 const FEATURE_LABELS: Record<GatedFeature, string> = {
-  portfolio:          'Visual Portfolio Gallery',
+  catalog:            'Apparel Catalog Showcase',
+  portfolio:          'Apparel Catalog Showcase',
   staff:              'Staff Management',
   analytics:          'Visual Dashboard & Analytics',
   notifications:      'SMS/Email Notifications',
@@ -26,6 +27,7 @@ const FEATURE_LABELS: Record<GatedFeature, string> = {
 
 // ── Which plan unlocks each feature ──────────────────────────────────────────
 const REQUIRED_PLAN: Record<GatedFeature, 'Pro' | 'Premium'> = {
+  catalog:            'Pro',
   portfolio:          'Pro',
   staff:              'Pro',
   analytics:          'Pro',
@@ -40,7 +42,8 @@ const REQUIRED_PLAN: Record<GatedFeature, 'Pro' | 'Premium'> = {
 
 // ── Feature descriptions shown below the lock title ──────────────────────────
 const FEATURE_DESC: Record<GatedFeature, string> = {
-  portfolio:          "Showcase your work with a photo-rich portfolio visible to customers browsing your shop profile.",
+  catalog:            "Showcase your work with a photo-rich catalog visible to customers browsing your shop profile.",
+  portfolio:          "Showcase your work with a photo-rich catalog visible to customers browsing your shop profile.",
   staff:              "Add staff members, assign job stages, and manage your whole team from one place.",
   analytics:          "Get a bird\u2019s-eye view of your shop with visual charts for revenue, orders, and customers.",
   notifications:      "Automatically send SMS or email updates to customers when their order status changes.",

@@ -42,7 +42,7 @@ export function getShopStatus(operating_hours?: OperatingHours | string | null):
   const open = isShopOpen(operating_hours);
   return {
     isOpen: open,
-    label: open ? 'Online · Open' : 'Offline · Closed',
+    label: open ? 'Open now' : 'Closed now',
     dotClass: open ? 'bg-[#22c55e]' : 'bg-[#ef4444]',
     badgeClass: open
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'

@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Star, Store, Scissors, ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Search, X, RotateCcw,
-  TrendingUp, TrendingDown, Minus, MapPin,
+  TrendingUp, TrendingDown, Minus, MapPin, Clock,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
@@ -62,6 +62,7 @@ interface RelatedShop {
     fabric_image_url?: string | null;
     images?: { id: number; image_url: string; is_primary?: boolean }[];
   }[];
+  matching_items_count?: number | null;
 }
 
 interface SearchServiceResult {
@@ -73,7 +74,26 @@ interface SearchServiceResult {
   sale_price?: number | null;
   estimated_days?: number | null;
   image_url?: string | null;
-  shop?: { id: number; name: string; slug: string; logo_path?: string | null } | null;
+  shop?: {
+    id: number;
+    name: string;
+    slug: string;
+    logo_path?: string | null;
+    banner_path?: string | null;
+    operating_hours?: OperatingHours | null;
+    subscription_plan?: string | null;
+    is_featured?: boolean;
+    owner?: { id: number; name: string } | null;
+    branches?: {
+      id: number;
+      name: string;
+      district: string | null;
+      city: string | null;
+      latitude: string | null;
+      longitude: string | null;
+      address?: string;
+    }[];
+  } | null;
 }
 
 // Real seeded Davao City districts (shop_branches.district) — same list
@@ -196,10 +216,11 @@ function SearchPageContent() {
     if (loc?.lat && loc?.lng) {
       setUserCoords({ lat: loc.lat, lng: loc.lng });
     }
-    // Don't clobber a district that arrived via URL (e.g. the hamburger
-    // menu's district drill-down) with whatever was saved from a previous
-    // visit — the explicit link should win.
-    if (loc?.district && !searchParams.get('district')) setDistrict(loc.district);
+    // Only set active filter district if explicitly specified in URL query
+    const urlDistrict = searchParams.get('district');
+    if (urlDistrict) {
+      setDistrict(urlDistrict);
+    }
   }, [searchParams]);
 
   function handleToggleOldLocation() {
@@ -415,6 +436,11 @@ function SearchPageContent() {
     const handle = setTimeout(() => {
       const params: Record<string, string | number> = { per_page: 30 };
       if (effectiveQ.trim()) params.q = effectiveQ.trim();
+      if (district) params.district = district;
+      if (userCoords) {
+        params.lat = userCoords.lat;
+        params.lng = userCoords.lng;
+      }
       if (sortBy) params.sort_by = sortBy;
 
       api.get('/public/services', { params })
@@ -430,7 +456,7 @@ function SearchPageContent() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, sortBy]);
+  }, [effectiveQ, district, userCoords, sortBy]);
 
   const activeFilterCount = [category, minPrice || maxPrice, minRating, district, color].filter(Boolean).length;
 
@@ -451,17 +477,19 @@ function SearchPageContent() {
           <button
             type="button"
             onClick={() => router.push(`/location${effectiveQ ? `?q=${encodeURIComponent(effectiveQ)}` : ''}`)}
-            className="flex-1 flex items-center justify-between min-w-0 py-0.5 group text-left"
+            className="flex-1 min-w-0 py-0.5 group text-left"
           >
-            <div className="min-w-0 flex flex-col items-start text-left">
-              <span className="text-[10px] font-semibold tracking-wider text-canvas/75 uppercase truncate max-w-full">
-                {effectiveQ ? `LOCATIONS FOR “${effectiveQ}”` : 'LOCATIONS'}
+            <div className="min-w-0 flex flex-col text-left">
+              <span className="text-[11px] font-normal text-canvas/85 truncate block w-full leading-tight">
+                {savedLocation?.address || 'Davao City, Philippines'}
               </span>
-              <span className="text-[16px] font-extrabold text-canvas leading-tight truncate max-w-full group-hover:text-white">
-                {district || (savedLocation?.address ? savedLocation.address.split(',')[0] : 'Stores near you')}
-              </span>
+              <div className="flex items-center gap-1 mt-0.5 max-w-full">
+                <span className="text-xs font-medium text-white truncate leading-tight">
+                  {savedLocation?.district || district || 'Davao City'}
+                </span>
+                <ChevronDown size={14} className="text-canvas/80 shrink-0 group-hover:translate-y-0.5 transition-transform" />
+              </div>
             </div>
-            <ChevronDown size={18} className="text-canvas shrink-0 ml-2 group-hover:translate-y-0.5 transition-transform" />
           </button>
 
           {oldLocation ? (
@@ -516,7 +544,7 @@ function SearchPageContent() {
                   : tab === 'services'
                     ? 'Services'
                     : tab === 'showroom'
-                      ? 'Showroom'
+                      ? 'Catalog'
                       : 'All';
               return (
                 <button
@@ -552,7 +580,7 @@ function SearchPageContent() {
               <div className="divide-y divide-line border-t border-line">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 flex items-center gap-3.5 animate-pulse">
-                    <div className="w-16 h-16 rounded-xl bg-sunken shrink-0" />
+                    <div className="w-14 h-14 rounded-full bg-sunken shrink-0" />
                     <div className="flex-1 space-y-2">
                       <div className="h-3 w-1/3 bg-sunken rounded" />
                       <div className="h-4 w-2/3 bg-sunken rounded" />
@@ -571,13 +599,31 @@ function SearchPageContent() {
                   const distKm = store.distance_km != null ? store.distance_km : null;
                   const branch = store.branches?.[0];
                   const districtText = branch?.district || branch?.city || 'Davao City';
-                  const imageSrc = store.banner_path || store.logo_path;
+                  const imageSrc = store.logo_path || store.banner_path;
 
-                  // Store carousel items: derived from store.catalog_items (eager loaded & query-matched)
-                  // or fallback to items matching this shop
-                  const storeCarouselItems = (store.catalog_items && store.catalog_items.length > 0)
-                    ? store.catalog_items
-                    : items.filter((i) => i.shop?.id === store.id || (i as any).shop_id === store.id);
+                  // Match items specifically for this store based on search
+                  const itemsMatchingStore = items.filter(
+                    (i) => i.shop?.id === store.id || (i as any).shop_id === store.id
+                  );
+                  const qLower = effectiveQ.trim().toLowerCase();
+                  const matchingCatalogItems = (store.catalog_items || []).filter((item) => {
+                    if (!qLower) return true;
+                    return (
+                      item.name?.toLowerCase().includes(qLower) ||
+                      item.garment_type?.toLowerCase().includes(qLower) ||
+                      item.material?.toLowerCase().includes(qLower)
+                    );
+                  });
+
+                  // Prioritize search matches, fallback to general store catalog items
+                  const storeCarouselItems = itemsMatchingStore.length > 0
+                    ? itemsMatchingStore
+                    : (matchingCatalogItems.length > 0 ? matchingCatalogItems : (store.catalog_items ?? []));
+
+                  // Count of items found based on search for this specific store
+                  const matchedCount = effectiveQ.trim()
+                    ? (store.matching_items_count ?? (itemsMatchingStore.length || matchingCatalogItems.length))
+                    : (store.catalog_items?.length ?? storeCarouselItems.length);
 
                   return (
                     <div
@@ -591,7 +637,7 @@ function SearchPageContent() {
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1">
                           <div className="relative w-14 h-14 shrink-0">
-                            <div className="w-full h-full rounded-xl overflow-hidden bg-sunken relative border border-line">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-sunken relative border border-line">
                               {imageSrc ? (
                                 <Image
                                   src={getMediaUrl(imageSrc)}
@@ -606,10 +652,10 @@ function SearchPageContent() {
                                 </div>
                               )}
                             </div>
-                            {/* Online / Offline status dot */}
+                            {/* Open / Closed store status dot */}
                             <span
-                              aria-label={isShopOpen(store.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
-                              title={isShopOpen(store.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
+                              aria-label={isShopOpen(store.operating_hours) ? 'Open now' : 'Closed now'}
+                              title={isShopOpen(store.operating_hours) ? 'Open now' : 'Closed now'}
                               className={`absolute -bottom-0.5 -right-0.5 z-10 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${
                                 isShopOpen(store.operating_hours) ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
                               }`}
@@ -651,9 +697,20 @@ function SearchPageContent() {
                         <ChevronRight size={18} className="text-ink-faint group-hover:text-ink transition-colors shrink-0" />
                       </Link>
 
+                      {/* Carousel Header: Item count */}
+                      {storeCarouselItems.length > 0 && (
+                        <div className="px-0.5 pt-0.5">
+                          <span className="text-[11px] font-bold text-ink">
+                            {effectiveQ.trim()
+                              ? `${matchedCount} matching catalog design${matchedCount === 1 ? '' : 's'}`
+                              : `Catalog designs (${matchedCount})`}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Carousel: [All list of base sa search na naca caroucel] */}
                       {storeCarouselItems.length > 0 && (
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory">
                           {storeCarouselItems.map((item) => {
                             const itemImg = item.images?.[0]?.image_url || (item as any).primary_image_url || item.fabric_image_url;
                             return (
@@ -661,33 +718,33 @@ function SearchPageContent() {
                                 key={item.id}
                                 type="button"
                                 onClick={() => router.push(gate(`/shop/${store.slug}?tab=catalog&item=${item.id}${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`))}
-                                className="w-[28%] min-w-[92px] max-w-[115px] sm:w-[110px] shrink-0 text-left group/item rounded-none border-0 bg-transparent transition-all active:scale-[0.98]"
+                                className="snap-start w-[34%] min-w-[118px] max-w-[142px] sm:w-[130px] shrink-0 text-left group/item rounded-none border-0 bg-transparent transition-all active:scale-[0.98]"
                               >
-                                <div className="aspect-square bg-sunken relative overflow-hidden rounded-none">
+                                <div className="aspect-square bg-sunken relative overflow-hidden rounded-xs border border-line/60">
                                   {itemImg ? (
                                     <Image
                                       src={getMediaUrl(itemImg)}
                                       alt={item.name}
                                       fill
                                       unoptimized
-                                      className="object-cover group-hover/item:scale-105 transition-transform duration-300"
+                                      className="object-cover object-top group-hover/item:scale-105 transition-transform duration-300"
                                     />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-ink-faint">
+                                    <div className="w-full h-full flex items-center justify-center text-[11px] text-ink-faint">
                                       No photo
                                     </div>
                                   )}
                                   {item.price && (
-                                    <div className="absolute bottom-1 right-1 bg-ink/90 backdrop-blur-xs text-white text-[9px] font-bold px-1 py-0.5 rounded-none">
+                                    <div className="absolute bottom-1 right-1 bg-ink/90 backdrop-blur-xs text-white text-[10px] font-bold px-1.5 py-0.5 rounded-xs">
                                       ₱{Number(item.price).toLocaleString()}
                                     </div>
                                   )}
                                 </div>
-                                <div className="pt-1.5 px-0 pb-0">
-                                  <p className="text-[11px] font-bold text-ink truncate leading-tight group-hover/item:text-taupe">
+                                <div className="pt-1.5 px-0.5 pb-0">
+                                  <p className="text-xs font-semibold text-ink truncate leading-tight group-hover/item:text-taupe transition-colors">
                                     {item.name}
                                   </p>
-                                  <p className="text-[10px] text-ink-faint truncate mt-0.5">
+                                  <p className="text-[11px] text-ink-muted truncate mt-0.5">
                                     {item.garment_type || item.material || 'Custom Tailored'}
                                   </p>
                                 </div>
@@ -741,23 +798,25 @@ function SearchPageContent() {
         {/* TAB: SERVICES or ALL (Tailoring Services Section) */}
         {(activeTab === 'services' || (activeTab === 'all' && (servicesLoading || services.length > 0))) && (
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-3 px-1 pt-2 border-t border-line">
+            <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">
                 <Scissors size={17} className="text-taupe shrink-0" />
                 <h2 className="text-base font-bold text-ink">Tailoring Services</h2>
               </div>
-              <span className="text-xs text-ink-muted">
-                {servicesTotal} {servicesTotal === 1 ? 'service' : 'services'}
+              <span className="text-xs text-ink-muted font-medium">
+                {servicesTotal}
               </span>
             </div>
 
             {servicesLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="divide-y divide-line border-t border-line">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-3.5 rounded-xl border border-line bg-surface space-y-2 animate-pulse">
-                    <div className="h-4 w-1/2 bg-sunken rounded" />
-                    <div className="h-3 w-3/4 bg-sunken rounded" />
-                    <div className="h-4 w-1/4 bg-sunken rounded" />
+                  <div key={i} className="py-3.5 flex items-center gap-3.5 animate-pulse">
+                    <div className="w-14 h-14 rounded-full bg-sunken shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-1/3 bg-sunken rounded" />
+                      <div className="h-4 w-2/3 bg-sunken rounded" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -765,70 +824,179 @@ function SearchPageContent() {
               <div className="bg-transparent border-y border-line px-0 py-8 text-center text-sm text-ink-muted">
                 No tailoring services matched your search.
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(activeTab === 'all' ? services.slice(0, 4) : services).map((service) => (
-                  <Link
-                    key={service.id}
-                    href={gate(`/shop/${service.shop?.slug || service.shop?.id}?tab=services&service_id=${service.id}`)}
-                    className="p-3.5 rounded-xl border border-line bg-surface hover:border-taupe/60 hover:shadow-xs transition-all flex flex-col justify-between group active:scale-[0.99]"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <h3 className="text-sm font-bold text-ink group-hover:text-taupe transition-colors leading-snug">
-                          {service.name}
-                        </h3>
-                        {service.category && (
-                          <span className="text-[10px] font-semibold text-taupe bg-taupe/10 px-2 py-0.5 rounded-full shrink-0">
-                            {service.category}
-                          </span>
+            ) : (() => {
+              // Group services by shop — show a store row then service cards carousel
+              const displayServices = services;
+              const shopOrder: number[] = [];
+              const shopMap: Record<number, typeof displayServices> = {};
+              for (const svc of displayServices) {
+                const sid = svc.shop?.id ?? 0;
+                if (!shopMap[sid]) { shopMap[sid] = []; shopOrder.push(sid); }
+                shopMap[sid].push(svc);
+              }
+              return (
+                <div className="divide-y divide-line border-t border-line">
+                  {shopOrder.map((shopId, shopIndex) => {
+                    const shopServices = shopMap[shopId];
+                    const matchedStore = stores.find((s) => s.id === shopId);
+                    const rawShop = shopServices[0]?.shop;
+                    const shopInfo = matchedStore || rawShop;
+                    const shopName = shopInfo?.name || 'Tailoring Shop';
+                    const shopSlug = shopInfo?.slug || (rawShop as any)?.slug || shopId;
+                    const shopHref = gate(`/shop/${shopSlug}?tab=services`);
+                    const logoSrc = shopInfo?.logo_path || (shopInfo as any)?.banner_path;
+                    const distKm = matchedStore?.distance_km != null ? matchedStore.distance_km : null;
+                    const branch = shopInfo?.branches?.[0];
+                    const districtText = branch?.district || branch?.city || 'Davao City';
+                    const ownerName = shopInfo?.owner?.name;
+                    const operatingHours = shopInfo?.operating_hours;
+                    const isFeatured = (shopInfo as any)?.subscription_plan === 'premium' || (shopInfo as any)?.is_featured;
+                    const rating = matchedStore?.reviews_avg_rating;
+                    const reviewsCount = matchedStore?.reviews_count;
+
+                    return (
+                      <div key={shopId} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-3">
+                        {/* Store row — same layout as Nearby Stores */}
+                        <Link
+                          href={shopHref}
+                          className="flex items-center justify-between gap-3 group active:opacity-80"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                            <div className="relative w-14 h-14 shrink-0">
+                              <div className="w-full h-full rounded-full overflow-hidden bg-sunken relative border border-line">
+                                {logoSrc ? (
+                                  <Image
+                                    src={getMediaUrl(logoSrc)}
+                                    alt={shopName}
+                                    fill
+                                    unoptimized
+                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Store size={22} className="text-ink-faint" />
+                                  </div>
+                                )}
+                              </div>
+                              {/* Open / Closed store status dot */}
+                              <span
+                                aria-label={isShopOpen(operatingHours) ? 'Open now' : 'Closed now'}
+                                title={isShopOpen(operatingHours) ? 'Open now' : 'Closed now'}
+                                className={`absolute -bottom-0.5 -right-0.5 z-10 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${
+                                  isShopOpen(operatingHours) ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
+                                }`}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {distKm != null ? (
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                    {shopIndex === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
+                                  </span>
+                                ) : isFeatured ? (
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                    ★ FEATURED STORE
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                    DAVAO CITY
+                                  </span>
+                                )}
+                                {rating ? (
+                                  <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
+                                    <Star size={10} className="fill-current text-taupe" />
+                                    {Number(rating).toFixed(1)} ({reviewsCount ?? 0})
+                                  </span>
+                                ) : null}
+                              </div>
+                              <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
+                                {shopName}
+                              </h3>
+                              <p className="text-[11px] text-ink-muted truncate">
+                                {ownerName ? `by ${ownerName}` : `by Tailoring Master`}
+                              </p>
+                              <p className="text-[11px] text-ink-faint truncate">
+                                {districtText} · Davao City
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight size={18} className="text-ink-faint group-hover:text-ink transition-colors shrink-0" />
+                        </Link>
+
+                        {/* Service carousel header: matching services count */}
+                        {shopServices.length > 0 && (
+                          <div className="px-0.5 pt-0.5">
+                            <span className="text-[11px] font-bold text-ink">
+                              {effectiveQ.trim()
+                                ? `${shopServices.length} matching service${shopServices.length === 1 ? '' : 's'}`
+                                : `Services (${shopServices.length})`}
+                            </span>
+                          </div>
                         )}
+
+                        {/* Service cards — 1 and 1/2 card horizontal carousel */}
+                        <div className="flex overflow-x-auto gap-2.5 pb-2 pt-1 no-scrollbar snap-x snap-mandatory">
+                          {shopServices.map((service) => {
+                            const priceDisplay = service.base_price !== null && service.base_price !== undefined
+                              ? `₱${Number(service.sale_price ?? service.base_price).toLocaleString(undefined, { minimumFractionDigits: 0 })}`
+                              : 'Custom Quote';
+                            const serviceHref = gate(`/shop/${shopSlug}?tab=services&service_id=${service.id}`);
+
+                            return (
+                              <Link
+                                key={service.id}
+                                href={serviceHref}
+                                className="snap-start shrink-0 w-[205px] bg-surface border border-line hover:border-taupe transition-all duration-300 flex flex-col justify-between overflow-hidden group active:scale-[0.98]"
+                              >
+                                {/* Top: Picture */}
+                                <div className="h-36 w-full bg-sunken relative overflow-hidden shrink-0 border-b border-line">
+                                  {service.image_url ? (
+                                    <Image
+                                      src={getMediaUrl(service.image_url)}
+                                      alt={service.name}
+                                      fill
+                                      unoptimized
+                                      className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-ink-faint">
+                                      <Scissors size={24} className="text-taupe/40" />
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Bottom: Details (No description) */}
+                                <div className="p-2.5 flex-1 flex flex-col justify-between">
+                                  <div>
+                                    <span className="text-[9px] font-medium uppercase tracking-wide text-taupe truncate block">
+                                      {(service as any).category || (service as any).service_type || 'Tailoring Service'}
+                                    </span>
+                                    <h4 className="text-xs font-semibold text-ink group-hover:text-taupe transition-colors leading-snug mt-0.5 line-clamp-2">
+                                      {service.name}
+                                    </h4>
+                                  </div>
+
+                                  <div className="flex items-center justify-between pt-1.5 border-t border-line/50 mt-2">
+                                    <span className="text-xs font-bold text-ink truncate">
+                                      {priceDisplay}
+                                    </span>
+
+                                    <span className="flex items-center gap-1 text-[10px] text-ink-muted font-medium shrink-0 ml-1">
+                                      <Clock size={10} className="text-taupe shrink-0" />
+                                      <span>Est. {service.estimated_days ? `${service.estimated_days}d` : '7-10d'}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
                       </div>
-
-                      {service.shop && (
-                        <p className="text-[11px] font-medium text-ink-muted flex items-center gap-1 mb-1.5">
-                          <span>by</span>
-                          <span className="text-ink font-semibold group-hover:underline">
-                            {service.shop.name}
-                          </span>
-                        </p>
-                      )}
-
-                      {service.description && (
-                        <p className="text-xs text-ink-faint line-clamp-2 leading-relaxed mb-3">
-                          {service.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="pt-2 border-t border-line/50 flex items-center justify-between text-xs mt-auto">
-                      <div>
-                        <span className="text-[10px] text-ink-faint uppercase font-bold tracking-wider block">Starts at</span>
-                        <span className="text-sm font-black text-ink">
-                          {service.base_price !== null && service.base_price !== undefined
-                            ? `₱${Number(service.sale_price ?? service.base_price).toLocaleString()}`
-                            : 'Price upon request'}
-                        </span>
-                      </div>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-taupe group-hover:translate-x-0.5 transition-transform">
-                        <span>View Service</span>
-                        <ChevronRight size={13} />
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'all' && services.length > 4 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('services')}
-                className="w-full mt-3 py-2.5 rounded-xl border border-line bg-surface text-xs font-bold text-taupe hover:bg-sunken transition-colors"
-              >
-                View all {servicesTotal} services →
-              </button>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -837,73 +1005,49 @@ function SearchPageContent() {
           <div>
             {activeTab === 'all' && (
               <div className="flex items-center justify-between mb-3 px-1 pt-2 border-t border-line">
-                <h2 className="text-base font-bold text-ink">Showroom Catalog</h2>
-                <span className="text-xs text-ink-muted">
-                  {total} {total === 1 ? 'item' : 'items'}
+                <h2 className="text-base font-bold text-ink">Catalog</h2>
+                <span className="text-xs text-ink-muted font-medium">
+                  {total}
                 </span>
               </div>
             )}
 
-        {/* Quick Sort & View on Map Bar */}
-        <div className="flex items-center justify-between gap-1.5 mb-2.5">
-          <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar py-0.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => setSortBy('')}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
-                !sortBy ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
-              }`}
-            >
-              Default
-            </button>
-            <button
-              type="button"
-              onClick={handleSortNearest}
-              disabled={locating}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap flex items-center gap-1 ${
-                sortBy === 'distance'
-                  ? 'bg-taupe text-white border-taupe font-semibold shadow-xs'
-                  : 'bg-surface border-line text-ink-muted hover:border-line-strong'
-              }`}
-            >
-              <MapPin size={10} className={sortBy === 'distance' ? 'text-white' : 'text-taupe'} />
-              <span>{locating ? 'Locating…' : 'Nearest'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortBy(sortBy === 'top_sales' ? '' : 'top_sales')}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
-                sortBy === 'top_sales' ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
-              }`}
-            >
-              Top Sales
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortBy(sortBy === 'price_asc' ? 'price_desc' : 'price_asc')}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap flex items-center gap-0.5 ${
-                sortBy.startsWith('price') ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
-              }`}
-            >
-              <span>Price</span>
-              {sortBy === 'price_asc' && <TrendingUp size={11} className="text-white" />}
-              {sortBy === 'price_desc' && <TrendingDown size={11} className="text-white" />}
-            </button>
-          </div>
-
-          <Link
-            href={`/map?q=${encodeURIComponent(effectiveQ.trim())}`}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface border border-line-strong hover:border-ink text-[11px] font-semibold text-ink transition-colors shrink-0 shadow-xs"
-            title="View matching shops on map"
+        {/* Quick Sort Bar */}
+        <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar py-0.5 min-w-0 mb-2.5">
+          <button
+            type="button"
+            onClick={() => setSortBy('')}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
+              !sortBy ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+            }`}
           >
-            <MapPin size={11} className="text-taupe shrink-0" />
-            <span>Map</span>
-          </Link>
+            Default
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortBy(sortBy === 'top_sales' ? '' : 'top_sales')}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
+              sortBy === 'top_sales' ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+            }`}
+          >
+            Top Sales
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortBy(sortBy === 'price_asc' ? 'price_desc' : 'price_asc')}
+            className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap flex items-center gap-0.5 ${
+              sortBy.startsWith('price') ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+            }`}
+          >
+            <span>Price</span>
+            {sortBy === 'price_asc' && <TrendingUp size={11} className="text-white" />}
+            {sortBy === 'price_desc' && <TrendingDown size={11} className="text-white" />}
+          </button>
         </div>
 
         <div className="flex items-center justify-between mb-2 px-0.5">
           <p className="text-[11px] text-ink-faint">
-            {loading ? 'Searching…' : `${total} result${total === 1 ? '' : 's'}`}
+            {loading ? 'Searching…' : null}
           </p>
 
           {/* Real toggle, not decorative — catalog_items.fabric_image_url

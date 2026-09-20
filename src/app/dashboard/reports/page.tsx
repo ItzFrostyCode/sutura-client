@@ -11,6 +11,7 @@ import ReportFilters from '@/components/reports/ReportFilters';
 import BranchComparisonTable, { BranchPerformance } from '@/components/reports/BranchComparisonTable';
 import StaffProductivityTable, { StaffPerformance } from '@/components/reports/StaffProductivityTable';
 import OutstandingBalancesList from '@/components/reports/OutstandingBalancesList';
+import SubscriptionActivityTimeline, { SubscriptionActivityData } from '@/components/reports/SubscriptionActivityTimeline';
 import UnclaimedPickupsList from '@/components/reports/UnclaimedPickupsList';
 import JobsOnHoldList from '@/components/reports/JobsOnHoldList';
 import { useBranch } from '@/context/BranchContext';
@@ -26,6 +27,8 @@ export default function ReportsPage() {
   const [branchComparisonLoading, setBranchComparisonLoading] = useState(false);
   const [staffProductivity, setStaffProductivity] = useState<StaffPerformance[]>([]);
   const [staffProductivityLoading, setStaffProductivityLoading] = useState(false);
+  const [subscriptionActivity, setSubscriptionActivity] = useState<SubscriptionActivityData | null>(null);
+  const [subscriptionActivityLoading, setSubscriptionActivityLoading] = useState(false);
 
   const handleExportCSV = () => {
     if (!data) return;
@@ -203,6 +206,27 @@ export default function ReportsPage() {
     fetchStaffProductivity();
   }, [shop?.id, period, isShopOwner, selectedBranchId]);
 
+  // Subscription activity (Objective 7) — owner-only strategic view, same
+  // gate as staff productivity above.
+  useEffect(() => {
+    if (!shop?.id || !isShopOwner) return;
+
+    async function fetchSubscriptionActivity() {
+      setSubscriptionActivityLoading(true);
+      try {
+        const res = await api.get(`/shops/${shop?.id}/analytics/subscription`);
+        setSubscriptionActivity(res.data.data);
+      } catch (err) {
+        console.error('Failed to fetch subscription activity', err);
+        setSubscriptionActivity(null);
+      } finally {
+        setSubscriptionActivityLoading(false);
+      }
+    }
+
+    fetchSubscriptionActivity();
+  }, [shop?.id, isShopOwner]);
+
   // ─── Derived chart data ──────────────────────────────────────────────────
 
   const revenueChartData =
@@ -355,6 +379,10 @@ export default function ReportsPage() {
 
           {isShopOwner && (
             <StaffProductivityTable data={staffProductivity} loading={staffProductivityLoading} />
+          )}
+
+          {isShopOwner && (
+            <SubscriptionActivityTimeline data={subscriptionActivity} loading={subscriptionActivityLoading} />
           )}
 
           {data?.outstanding_balances && (

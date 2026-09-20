@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Scissors, UserCog, Package, Users, Building2,
   Calendar, ShoppingBag, Home, CreditCard,
-  Sparkles, ScrollText, Menu, X, HelpCircle, LayoutGrid,
+  Sparkles, ScrollText, Menu, X, HelpCircle, LayoutGrid, ChevronRight,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
@@ -22,7 +22,7 @@ import HelpPanel from '@/components/shell/HelpPanel';
 const SIDEBAR_KEY = 'sutura.sidebar';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
-  const { user, isAuthenticated, logout, setAuth, token } = useAuthStore();
+  const { user, isAuthenticated, logout, setAuth, token, hydrated } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -63,6 +63,12 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }, []);
 
   useEffect(() => {
+    // Wait for the store's post-mount localStorage read (see AuthHydrator)
+    // before deciding anything — acting on the momentary SSR-safe "logged
+    // out" default would redirect an actually-logged-in owner straight
+    // back to /login on every single dashboard load.
+    if (!hydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
     } else if (!user && token) {
@@ -77,12 +83,20 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             setAuth(user, token, activeShop, staff_profile);
           }
         })
-        .catch(() => {
-          logout();
-          router.push('/login');
+        .catch((err) => {
+          // Only a genuine "this token is invalid" response (401) means the
+          // session is actually dead — a network hiccup or a transient
+          // server error isn't proof of that, and was logging real,
+          // still-valid owners out on nothing more than a flaky request.
+          // axios's own global 401 interceptor already handles the real-401
+          // case; this must not pile a second, over-eager logout on top.
+          if (err?.response?.status === 401) {
+            logout();
+            router.push('/login');
+          }
         });
     }
-  }, [isAuthenticated, user, token, router, setAuth, logout]);
+  }, [hydrated, isAuthenticated, user, token, router, setAuth, logout]);
 
   const roleName = user?.roles?.[0]?.name;
 
@@ -98,7 +112,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     setManualShowTour(false);
   };
 
-  if (!mounted || !isAuthenticated) return null;
+  if (!mounted || !hydrated || !isAuthenticated) return null;
 
   // Staff and branch managers share this dashboard — scoped by the API and
   // role checks, not by separate routes.
@@ -125,7 +139,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       // Catalog/Services are shop_owner-only on the backend — hidden to match.
       title: 'Showroom',
       items: [
-        ...(isShopOwner ? [{ name: 'Design Catalog', path: '/dashboard/catalog', icon: ShoppingBag }] : []),
+        ...(isShopOwner ? [{ name: 'Catalog', path: '/dashboard/catalog', icon: ShoppingBag }] : []),
         ...(isShopOwner ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
       ],
     },
@@ -142,6 +156,15 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
 
   const isActivePath = (path: string) =>
     pathname === path || (path !== '/dashboard' && pathname.startsWith(path));
+
+  // Header breadcrumb — same NAV_GROUPS labels the sidebar already uses, so
+  // "Home > Jobs" always names the current page the exact same way the rail
+  // does, instead of a second, independently-maintained label list drifting
+  // out of sync with it.
+  const currentNavItem = NAV_GROUPS
+    .flatMap(g => g.items)
+    .find(item => isActivePath(item.path));
+  const breadcrumbLabel = currentNavItem && currentNavItem.path !== '/dashboard' ? currentNavItem.name : null;
 
   /** One nav item, used by both the desktop rail and the mobile drawer.
    *  Collapsed mode drops the label and shows a tooltip instead — the
@@ -201,23 +224,49 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
 
   return (
     <div className="h-screen bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
-      {/* ── Header: logo + shop name left · grid + help + bell + profile right ── */}
-      <header className="print:hidden h-16 bg-surface border-b border-line flex items-center justify-between gap-3 px-4 lg:px-6 sticky top-0 z-50">
-        <div className="flex items-center gap-3 min-w-0">
+      {/* ── Header: split into the same two columns as the body below it —
+          a left segment whose width and right border track the sidebar
+          rail exactly (logo + shop switcher), and a right segment matching
+          the main content area (breadcrumb + grid/help/bell/profile) — so
+          the header's own vertical stroke lines up with the sidebar's
+          border-r instead of the header reading as one undivided bar. ── */}
+      <header className="print:hidden h-16 bg-surface border-b border-line flex items-stretch gap-0 sticky top-0 z-50">
+        <div
+          className={`flex items-center gap-3 min-w-0 shrink-0 border-r border-line px-4 lg:px-6 transition-[width] duration-200 ease-out ${
+            railExpanded ? 'w-60' : 'w-16'
+          }`}
+        >
           <Link
             href="/dashboard"
             aria-label="SUTURA home"
             className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
           >
-            <BrandLogo />
+            <BrandLogo iconOnly={!railExpanded} />
           </Link>
 
-          <div className="flex items-center min-w-0">
-            <ShopSwitcher />
-          </div>
+          {railExpanded && (
+            <div className="flex items-center min-w-0">
+              <ShopSwitcher />
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex-1 flex items-center justify-between gap-3 px-4 lg:px-6 min-w-0">
+          {/* Breadcrumb — "Home" always, current section named the same way
+              the sidebar names it, so the two never drift apart. */}
+          <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-sm min-w-0">
+            <Link href="/dashboard" className="text-ink-muted hover:text-ink font-medium transition-colors shrink-0">
+              Home
+            </Link>
+            {breadcrumbLabel && (
+              <>
+                <ChevronRight size={14} className="text-ink-faint shrink-0" />
+                <span className="text-ink font-semibold truncate">{breadcrumbLabel}</span>
+              </>
+            )}
+          </nav>
+
+          <div className="flex items-center gap-2 shrink-0">
           {/* 3x3 Grid Navigation Launcher (left of Help) */}
           <button
             type="button"
@@ -255,6 +304,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             </button>
           )}
           <AccountHeaderMenu />
+          </div>
         </div>
       </header>
 

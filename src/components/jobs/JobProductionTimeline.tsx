@@ -112,8 +112,11 @@ export default function JobProductionTimeline({
     }
   };
 
-  const roster = (job.custom_order_data as { team_roster?: unknown[] } | null | undefined)?.team_roster;
-  const isBulkOrder = (Array.isArray(roster) && roster.length > 0) || job.service?.service_type === 'bulk_sublimation';
+  const customData = job.custom_order_data as { team_roster?: unknown[]; size_breakdown?: Record<string, number> } | null | undefined;
+  const roster = customData?.team_roster;
+  const isBulkOrder = (Array.isArray(roster) && roster.length > 0) ||
+    (customData?.size_breakdown && typeof customData.size_breakdown === 'object' && Object.keys(customData.size_breakdown).length > 0) ||
+    job.service?.service_type === 'bulk_sublimation';
 
   const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = [
     { key: 'pending',              label: 'Pending',               Icon: Clock },

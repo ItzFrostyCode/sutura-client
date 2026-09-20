@@ -225,7 +225,7 @@ export default function InteractiveCalendar({
   const renderCalendarDays = () => {
     return calendarGrid.map(cell => {
       if (!cell.isCurrentMonth) {
-        return <div key={cell.dateStr} className="p-2 border border-transparent" aria-hidden="true" />;
+        return <div key={cell.dateStr} className="w-full aspect-square max-w-10" aria-hidden="true" />;
       }
 
       const { dateStr, dayNumber } = cell;
@@ -244,7 +244,7 @@ export default function InteractiveCalendar({
             onDateChange(dateStr);
             onTimeChange(''); // reset time when date changes
           }}
-          className={`relative h-10 w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
+          className={`relative w-full aspect-square max-w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
             ${isSelected ? 'bg-taupe text-white hover:bg-[#856D60]' : ''}
             ${!isSelected && !disabled && isToday ? 'border-2 border-taupe text-taupe' : ''}
             ${!isSelected && !disabled && !isToday ? 'text-ink hover:bg-line' : ''}
@@ -265,6 +265,14 @@ export default function InteractiveCalendar({
     const ampm = Number(h) >= 12 ? 'PM' : 'AM';
     const h12 = Number(h) % 12 || 12;
     return `${h12}:${m} ${ampm}`;
+  };
+
+  const formatSlotRange = (slot: string) => {
+    const [h, m] = slot.split(':').map(Number);
+    const endMins = h * 60 + m + durationMinutes;
+    const endH = String(Math.floor(endMins / 60) % 24).padStart(2, '0');
+    const endM = String(endMins % 60).padStart(2, '0');
+    return `${formatSlotLabel(slot)} - ${formatSlotLabel(`${endH}:${endM}`)}`;
   };
 
   const getClosedReason = () => {
@@ -327,19 +335,22 @@ export default function InteractiveCalendar({
     }
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="divide-y divide-line">
         {availableSlots.map(slot => (
           <button
             key={slot}
             type="button"
             onClick={() => onTimeChange(slot)}
-            className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-all cursor-pointer ${
               selectedTime === slot
-                ? 'border-taupe bg-taupe text-white'
-                : 'border-line text-ink-body hover:border-taupe/50 hover:bg-canvas'
+                ? 'bg-ink text-white'
+                : 'text-ink-body hover:bg-sunken hover:text-ink'
             }`}
           >
-            {formatSlotLabel(slot)}
+            <span className="text-sm font-medium">{formatSlotRange(slot)}</span>
+            <span className={`text-xs font-bold uppercase tracking-wide ${selectedTime === slot ? 'text-white/70' : 'text-ink-faint'}`}>
+              {selectedTime === slot ? '✓ Selected' : 'Select'}
+            </span>
           </button>
         ))}
       </div>
@@ -349,7 +360,16 @@ export default function InteractiveCalendar({
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    // @container (not md:) — this widget renders both inside the customer
+    // storefront's fixed 320px MobileFrame column and the shop owner's much
+    // wider dashboard modal. A viewport breakpoint can't tell those apart
+    // (a desktop browser previewing the narrow customer frame still has a
+    // >768px real viewport), so it used to force the 2-column desktop
+    // layout — and the 3-column time-slot grid below it — onto a 320px-wide
+    // box, which is what was cramming/overlapping the day and slot grids.
+    // Container queries key off this element's own rendered width instead.
+    <div className="@container">
+    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-8">
       {/* Date Picker Side */}
       <div className="space-y-4">
         <label className="text-sm font-medium text-ink-body flex items-center gap-2">
@@ -383,7 +403,7 @@ export default function InteractiveCalendar({
               <div key={d} className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-y-2 justify-items-center">
+          <div className="grid grid-cols-7 gap-1">
             {renderCalendarDays()}
           </div>
           {!!maxAppointmentsPerDay && (
@@ -395,16 +415,26 @@ export default function InteractiveCalendar({
         </div>
       </div>
 
-      {/* Time Picker Side */}
-      <div className="space-y-4">
+      {/* Time Picker Side — its own nested @container: this panel is full
+          width in 1-column mode but only half the outer container's width
+          in 2-column mode, so the slot grid needs to react to ITS OWN
+          rendered width, not the outer date/time layout's. */}
+      <div className="space-y-4 @container">
         <label className="text-sm font-medium text-ink-body flex items-center gap-2">
           <Clock size={16} /> Select Time <span className="text-danger">*</span>
         </label>
 
-        <div className="bg-surface border border-line rounded-xl p-4 h-[320px] overflow-y-auto">
+        {/* No card frame, no bg fill, no own fixed-height scrollbox — the
+            list blends into the page instead of sitting in its own panel,
+            and flows with the page's own scroll instead of nesting a
+            second scroll inside a small box. min-h keeps the empty/loading
+            placeholder states centered instead of collapsing to zero
+            height without a card to size against. */}
+        <div className="min-h-[200px]">
           {renderTimePickerContent()}
         </div>
       </div>
+    </div>
     </div>
   );
 }

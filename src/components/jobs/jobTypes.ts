@@ -46,6 +46,8 @@ export interface Job {
     estimated_days?: number | null;
   };
   assigned_staff?: { name: string; id: number };
+  shop_branch_id?: number | null;
+  branch?: { id: number; name: string } | null;
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
   custom_order_data?: Record<string, unknown> | null;
   payments?: Payment[];
@@ -81,6 +83,15 @@ export interface Job {
     fabric_image_url?: string | null;
     images?: { id: number; image_url: string; is_primary: boolean }[];
   } | null;
+  materials?: {
+    id: number;
+    material_name: string;
+    quantity_used: string | number;
+    unit: string;
+    unit_cost: string | number | null;
+    subtotal_cost: string | number | null;
+    logged_by: { id: number; name: string } | null;
+  }[];
 }
 
 export interface Staff {

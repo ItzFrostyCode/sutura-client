@@ -123,15 +123,31 @@ export default function ServiceListView({
                   </span>
                 </div>
 
-                {/* Image area */}
-                <div className="h-40 bg-canvas border-b border-line overflow-hidden">
+                {/* Image area — a stored image_url pointing at a file that no
+                    longer exists (moved/renamed/never uploaded) used to fall
+                    through to the browser's own broken-image glyph instead
+                    of this card's themed "No image" placeholder; onError
+                    swaps to the same fallback markup used when there's no
+                    URL at all. */}
+                <div className="h-40 bg-canvas border-b border-line overflow-hidden relative">
                   {service.image_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={service.image_url}
-                      alt={service.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={service.image_url}
+                        alt={service.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full absolute inset-0 hidden flex-col items-center justify-center gap-2 text-ink-faint bg-canvas">
+                        <ImageIcon size={28} />
+                        <span className="text-[11px]">No image</span>
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint">
                       <ImageIcon size={28} />

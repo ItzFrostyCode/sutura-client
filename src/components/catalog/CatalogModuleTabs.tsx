@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation';
 import { ShoppingBag, Package, BarChart3, Star } from 'lucide-react';
 
 const TABS = [
-  { label: 'Design Catalog', href: '/dashboard/catalog', icon: ShoppingBag },
+  { label: 'Catalog Items', href: '/dashboard/catalog', icon: ShoppingBag },
   { label: 'Walk-in Orders', href: '/dashboard/orders', icon: Package },
   { label: 'Analytics', href: '/dashboard/catalog/analytics', icon: BarChart3 },
   { label: 'Reviews', href: '/dashboard/catalog/reviews', icon: Star },
 ];
 
 /**
- * Module-level tabs that unite the Design Catalog (made-to-order reference
+ * Module-level tabs that unite the Catalog (craftsmanship & bespoke reference
  * listings), Walk-in Orders (quick in-store sales off the catalog), Analytics,
  * and Item Reviews under one unified atelier module.
  */
@@ -22,7 +22,7 @@ export default function CatalogModuleTabs() {
   // Pick whichever tab's href is the longest matching prefix
   const activeHref = TABS
     .map(t => t.href)
-    .filter(href => pathname === href || pathname.startsWith(`${href}/`))
+    .filter(href => pathname === href || pathname.startsWith(`${href}/`) || (href === '/dashboard/catalog' && pathname.startsWith('/dashboard/portfolio')))
     .sort((a, b) => b.length - a.length)[0] || '/dashboard/catalog';
 
   return (

@@ -74,8 +74,10 @@ export const STAFF_STAGE_LABELS: Record<StaffStage, string> = {
 // Size Sheet was submitted, OR the linked service is itself typed as bulk
 // sublimation (a job can be bulk by service type alone, with no roster yet).
 function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
-  const roster = (job.custom_order_data as { team_roster?: unknown[] } | null | undefined)?.team_roster;
+  const data = job.custom_order_data as { team_roster?: unknown[]; size_breakdown?: Record<string, number> } | null | undefined;
+  const roster = data?.team_roster;
   if (Array.isArray(roster) && roster.length > 0) return true;
+  if (data?.size_breakdown && typeof data.size_breakdown === 'object' && Object.keys(data.size_breakdown).length > 0) return true;
   return job.service?.service_type === 'bulk_sublimation';
 }
 

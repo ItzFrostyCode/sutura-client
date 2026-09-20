@@ -2,6 +2,7 @@ export interface CatalogItemResponse {
   id: number;
   name: string;
   price: number;
+  service_id?: number | null;
   estimated_days?: number | null;
   material?: string;
   color?: string;
@@ -35,6 +36,7 @@ export interface ImageItem {
 export interface CatalogFormData {
   name: string;
   price: string;
+  service_id: string;
   estimated_days: string;
   material: string;
   color: string;

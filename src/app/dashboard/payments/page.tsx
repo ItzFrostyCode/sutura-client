@@ -23,10 +23,10 @@ const getMethodBadge = (method: string) => {
       </span>
     );
   }
-  if (m === 'bank_transfer') {
+  if (m === 'paymaya' || m === 'bank_transfer') {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200/60">
-        <CreditCard size={11} /> Bank
+        <CreditCard size={11} /> {m === 'paymaya' ? 'PayMaya' : 'Bank'}
       </span>
     );
   }
@@ -1052,7 +1052,7 @@ export default function PaymentQueuePage() {
                   {[
                     { id: 'cash', label: 'Cash' },
                     { id: 'gcash', label: 'GCash' },
-                    { id: 'bank_transfer', label: 'Bank' },
+                    { id: 'paymaya', label: 'PayMaya' },
                   ].map(m => (
                     <button
                       key={m.id}
@@ -1070,8 +1070,8 @@ export default function PaymentQueuePage() {
                 </div>
               </div>
 
-              {/* Reference # for GCash / Bank */}
-              {(payMethod === 'gcash' || payMethod === 'bank_transfer') && (
+              {/* Reference # for GCash / PayMaya */}
+              {(payMethod === 'gcash' || payMethod === 'paymaya') && (
                 <div className="space-y-1">
                   <label htmlFor="pay-reference-input" className="text-xs font-bold text-ink">Reference #</label>
                   <input

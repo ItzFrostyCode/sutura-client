@@ -54,15 +54,9 @@ export default function ShopSwitcher() {
       {/* Name and tier are labels, not controls — only the chevron is
           interactive, so the hover state lands on the thing you can actually
           click instead of highlighting the whole identity block. */}
-      <span className="text-sm font-semibold text-ink truncate max-w-[120px] sm:max-w-[220px]">
+      <span className="text-sm font-semibold text-ink truncate min-w-0">
         {shop.name}
       </span>
-
-      {!tierLoading && (
-        <span className="hidden sm:inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-ink-muted border border-line rounded-full px-2 py-0.5 shrink-0">
-          {tier}
-        </span>
-      )}
 
       <button
         type="button"
@@ -83,8 +77,17 @@ export default function ShopSwitcher() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 w-[280px] bg-surface border border-line rounded-xl overflow-hidden z-50 animate-rise"
+          className="absolute left-0 top-full mt-2 w-[280px] bg-surface border border-line rounded-xl overflow-hidden z-50 animate-rise"
         >
+          <div className="flex items-center justify-between gap-2 px-3.5 py-3 border-b border-line bg-canvas">
+            <span className="text-sm font-semibold text-ink truncate">{shop.name}</span>
+            {!tierLoading && (
+              <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-ink-muted border border-line rounded-full px-2 py-0.5 shrink-0 bg-surface">
+                {tier}
+              </span>
+            )}
+          </div>
+
           {branches.length > 4 && (
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-line">
               <Search size={14} className="text-ink-faint shrink-0" />

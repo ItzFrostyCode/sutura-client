@@ -126,12 +126,42 @@ export default function JobCreateForm() {
   const [isTotalAmountCustom, setIsTotalAmountCustom] = useState(false);
   const [isDueDateCustom, setIsDueDateCustom] = useState(false);
 
-  // Bulk Team Roster State
+  // Bulk Team Roster / Size Sheet State — the owner-facing counterpart to
+  // the customer-facing bulk apparel form on the public booking page
+  // (shop/[shop_id]/book), matching the same custom_order_data shape so a
+  // future "convert appointment inquiry to job order" flow can map one to
+  // the other. Not every bulk order needs named/personalized items — some
+  // are just "30 pcs, sizes S/M/L" with no roster at all (see
+  // personalizationMode below).
   const [isBulkOrder, setIsBulkOrder] = useState(false);
   const [teamName, setTeamName] = useState('');
-  const [roster, setRoster] = useState<{ id: string; name: string; print_name: string; number: string; size: string }[]>([
-    { id: 'roster-0', name: '', print_name: '', number: '', size: 'M' }
+  const [roster, setRoster] = useState<{ id: string; name: string; print_name: string; number: string; position: string; size: string }[]>([
+    { id: 'roster-0', name: '', print_name: '', number: '', position: '', size: 'M' }
   ]);
+  // Which shape this bulk order's items take — a plain per-size quantity
+  // tally (most department/course/event shirts) or a personalized roster
+  // (intramurals, officer shirts). Defaults to the simpler, more common
+  // case per real shop workflows rather than always defaulting to roster.
+  const [personalizationMode, setPersonalizationMode] = useState<'size_breakdown' | 'roster'>('size_breakdown');
+  const [sizeBreakdown, setSizeBreakdown] = useState<Record<string, number>>({
+    XS: 0, S: 0, M: 0, L: 0, XL: 0, '2XL': 0, '3XL': 0, '4XL': 0,
+  });
+  // Column visibility for the roster grid — Name is always required, but
+  // Number/Position are conditionally relevant (an SSC officer shirt order
+  // needs Position, not Number; a department shirt roster might need
+  // neither). Toggling these hides the column AND excludes it from the
+  // submitted team_roster payload, rather than just leaving it blank.
+  const [includeNumberColumn, setIncludeNumberColumn] = useState(true);
+  const [includePositionColumn, setIncludePositionColumn] = useState(false);
+  const [orderPurpose, setOrderPurpose] = useState('Department / Course Shirts');
+  const [customOrderPurpose, setCustomOrderPurpose] = useState('');
+  const [garmentComponent, setGarmentComponent] = useState<'top_only' | 'bottom_only' | 'full_set' | 'custom_set'>('top_only');
+  const [garmentType, setGarmentType] = useState('Round Neck T-Shirt');
+  const [customGarmentType, setCustomGarmentType] = useState('');
+  const [artworkStatus, setArtworkStatus] = useState<'not_yet_provided' | 'submitted' | 'for_review' | 'approved' | 'revision_requested'>('not_yet_provided');
+
+  const sizeBreakdownTotal = Object.values(sizeBreakdown).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+  const effectiveBulkQty = personalizationMode === 'size_breakdown' ? sizeBreakdownTotal : roster.length;
 
   // Alteration/Repair — protects the shop from false damage claims by logging
   // the garment's condition before work starts.
@@ -661,10 +691,19 @@ export default function JobCreateForm() {
 
     const selectedForSubmit = services.find((s) => s.id.toString() === formData.service_id);
 
-    if (isBulkOrder && selectedForSubmit?.min_order_qty && roster.length < selectedForSubmit.min_order_qty) {
-      setError(`This service requires a minimum of ${selectedForSubmit.min_order_qty} pieces — the roster currently has ${roster.length}.`);
-      setSubmitting(false);
-      return;
+    if (isBulkOrder) {
+      if (effectiveBulkQty === 0) {
+        setError(personalizationMode === 'size_breakdown'
+          ? 'Enter at least one size quantity for this bulk order.'
+          : 'Add at least one item to the roster for this bulk order.');
+        setSubmitting(false);
+        return;
+      }
+      if (selectedForSubmit?.min_order_qty && effectiveBulkQty < selectedForSubmit.min_order_qty) {
+        setError(`This service requires a minimum of ${selectedForSubmit.min_order_qty} pieces — this order currently has ${effectiveBulkQty}.`);
+        setSubmitting(false);
+        return;
+      }
     }
 
     // Checks garment_category too, not just the selected service's type — a
@@ -712,8 +751,36 @@ export default function JobCreateForm() {
           ...customFieldValues,
           po_number: formData.po_number || null,
           team_name: teamName || null,
-          team_roster: isBulkOrder
-            ? roster.map(({ name, print_name, number, size }) => ({ name, print_name, number, size }))
+          // Same key names StoreJobOrderRequest validates
+          // (custom_order_data.*) and the same shape the public booking
+          // page's bulk apparel form builds — keeping both entry points on
+          // one schema instead of inventing a second one here.
+          order_purpose: isBulkOrder
+            ? (orderPurpose === 'Other Custom Group' ? (customOrderPurpose.trim() || 'Custom Group') : orderPurpose)
+            : null,
+          garment_type: isBulkOrder
+            ? (garmentType === 'Other' ? (customGarmentType.trim() || 'Other') : garmentType)
+            : null,
+          garment_component: isBulkOrder ? garmentComponent : null,
+          artwork_status: isBulkOrder ? artworkStatus : null,
+          total_quantity: isBulkOrder ? effectiveBulkQty : null,
+          has_personalization: isBulkOrder ? personalizationMode === 'roster' : null,
+          size_breakdown: isBulkOrder && personalizationMode === 'size_breakdown'
+            ? Object.fromEntries(Object.entries(sizeBreakdown).filter(([, qty]) => qty > 0))
+            : null,
+          personalization_config: isBulkOrder && personalizationMode === 'roster' ? {
+            include_names: true,
+            include_numbers: includeNumberColumn,
+            include_positions: includePositionColumn,
+          } : null,
+          team_roster: isBulkOrder && personalizationMode === 'roster'
+            ? roster.map(({ name, print_name, number, position, size }) => ({
+              name,
+              print_name,
+              size,
+              ...(includeNumberColumn ? { number } : {}),
+              ...(includePositionColumn ? { position } : {}),
+            }))
             : null,
           pre_existing_damage_notes: isAlterationJob
             ? preExistingDamageNotes.trim()
@@ -1259,54 +1326,235 @@ export default function JobCreateForm() {
                   className="rounded border-line text-taupe focus:ring-taupe"
                 />
                 <span className="text-sm font-semibold text-ink-body">
-                  Include Team Roster / Size Sheet (For Bulk Sublimation / Uniforms)
+                  Bulk / Group Order Details (Printing &amp; Sublimation, Uniforms, Team Orders)
                 </span>
               </label>
 
               {isBulkOrder && (
                 <div className={`mt-4 ${SERVICE_TYPE_META.bulk_sublimation.bg} border ${SERVICE_TYPE_META.bulk_sublimation.border} rounded-xl p-4 space-y-3`}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="team-name-input" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">
+                        Organization / Group Name
+                      </label>
+                      <input
+                        id="team-name-input"
+                        type="text"
+                        value={teamName}
+                        onChange={(e) => setTeamName(e.target.value)}
+                        placeholder="e.g. IT Department, Gilas Pilipinas, Supreme Student Council"
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="order-purpose-select" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">
+                        Order Purpose / Category
+                      </label>
+                      <select
+                        id="order-purpose-select"
+                        value={orderPurpose}
+                        onChange={(e) => setOrderPurpose(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      >
+                        <option value="Department / Course Shirts">Department / Course Shirts</option>
+                        <option value="Intramurals / Sports Fest">Intramurals / Sports Fest</option>
+                        <option value="Student Council / Officers">Student Council / Officer Shirts</option>
+                        <option value="School Event / Foundation Day">School Event / Foundation Day</option>
+                        <option value="Batch / Graduation Apparel">Batch / Graduation Apparel</option>
+                        <option value="Company / Corporate Apparel">Company / Corporate Apparel</option>
+                        <option value="Family / Community Event">Family / Community Event</option>
+                        <option value="Other Custom Group">Other / Custom Group...</option>
+                      </select>
+                      {orderPurpose === 'Other Custom Group' && (
+                        <input
+                          type="text"
+                          value={customOrderPurpose}
+                          onChange={(e) => setCustomOrderPurpose(e.target.value)}
+                          placeholder="Describe the order purpose"
+                          className="mt-1.5 w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-taupe"
+                        />
+                      )}
+                    </div>
+                  </div>
+
                   <div>
-                    <label htmlFor="team-name-input" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">
-                      Team Name
+                    <label className="block text-xs font-semibold text-ink-muted mb-1.5 uppercase tracking-wider">
+                      Garment Component
                     </label>
-                    <input
-                      id="team-name-input"
-                      type="text"
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      placeholder="e.g. Gilas Pilipinas, Blacklist Esports"
-                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe max-w-md"
-                    />
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {([
+                        { id: 'top_only', label: 'Top Only' },
+                        { id: 'bottom_only', label: 'Bottom Only' },
+                        { id: 'full_set', label: 'Full Set' },
+                        { id: 'custom_set', label: 'Custom Set' },
+                      ] as const).map((comp) => (
+                        <button
+                          key={comp.id}
+                          type="button"
+                          onClick={() => setGarmentComponent(comp.id)}
+                          className={`px-2.5 py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                            garmentComponent === comp.id
+                              ? 'border-taupe bg-taupe/15 text-ink'
+                              : 'border-line bg-surface text-ink-muted hover:border-taupe/40'
+                          }`}
+                        >
+                          {comp.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="garment-type-select" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">
+                        Garment Type
+                      </label>
+                      <select
+                        id="garment-type-select"
+                        value={garmentType}
+                        onChange={(e) => setGarmentType(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      >
+                        <option value="Round Neck T-Shirt">Round Neck T-Shirt</option>
+                        <option value="V-Neck T-Shirt">V-Neck T-Shirt</option>
+                        <option value="Sleeveless / Sando">Sleeveless / Sando</option>
+                        <option value="Tank Top">Tank Top</option>
+                        <option value="Jersey-style Top">Jersey-style Top</option>
+                        <option value="Long Sleeve">Long Sleeve</option>
+                        <option value="Polo-style Shirt">Polo-style Shirt</option>
+                        <option value="Sports Shorts">Sports Shorts</option>
+                        <option value="Other">Other...</option>
+                      </select>
+                      {garmentType === 'Other' && (
+                        <input
+                          type="text"
+                          value={customGarmentType}
+                          onChange={(e) => setCustomGarmentType(e.target.value)}
+                          placeholder="e.g. Hoodie, Crop Top"
+                          className="mt-1.5 w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-taupe"
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="artwork-status-select" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">
+                        Artwork / Design Status
+                      </label>
+                      <select
+                        id="artwork-status-select"
+                        value={artworkStatus}
+                        onChange={(e) => setArtworkStatus(e.target.value as typeof artworkStatus)}
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                      >
+                        <option value="not_yet_provided">Not Yet Provided</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="for_review">For Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="revision_requested">Revision Requested</option>
+                      </select>
+                    </div>
                   </div>
 
                   {selectedService?.min_order_qty && selectedService.min_order_qty > 1 && (
                     <p className={`text-xs font-semibold px-3 py-2 rounded-lg border ${
-                      roster.length < selectedService.min_order_qty
+                      effectiveBulkQty < selectedService.min_order_qty
                         ? 'bg-danger/5 border-danger/20 text-danger'
                         : 'bg-sage/5 border-sage/20 text-sage'
                     }`}>
-                      {roster.length} / {selectedService.min_order_qty} minimum pieces
-                      {roster.length < selectedService.min_order_qty && ' — add more players/items to meet this service\'s minimum order quantity'}
+                      {effectiveBulkQty} / {selectedService.min_order_qty} minimum pieces
+                      {effectiveBulkQty < selectedService.min_order_qty && ' — add more sizes/items to meet this service\'s minimum order quantity'}
                     </p>
                   )}
 
-                  {roster.length >= 10 && (
+                  {effectiveBulkQty >= 10 && (
                     <p className="text-xs font-semibold px-3 py-2 rounded-lg border bg-amber-50 border-amber-200 text-amber-700 flex items-start gap-2">
                       <Gift size={14} className="mt-0.5 shrink-0" />
                       <span>
-                        Freebies unlocked: {roster.length >= 20 ? 'Free Layout + Free Banner + Free Coach Shirt' : roster.length >= 15 ? 'Free Layout + Free Banner' : 'Free Layout Design'} (remember to apply manually to pricing)
+                        Freebies unlocked: {effectiveBulkQty >= 20 ? 'Free Layout + Free Banner + Free Coach Shirt' : effectiveBulkQty >= 15 ? 'Free Layout + Free Banner' : 'Free Layout Design'} (remember to apply manually to pricing)
                       </span>
                     </p>
                   )}
 
+                  {/* Some bulk orders (department shirts, course shirts) just
+                      need a per-size quantity tally with no names at all —
+                      others (intramurals, officer shirts) need a real roster.
+                      Forcing every bulk order through the personalized-roster
+                      grid was the actual gap here: a shop owner taking a
+                      plain "30 pcs department shirts" order had to either
+                      invent 30 fake roster rows or abandon the roster
+                      entirely and lose the structured size data too. */}
+                  <div className="flex gap-2 border-t border-line pt-3">
+                    {([
+                      { id: 'size_breakdown', label: 'Size Breakdown Only' },
+                      { id: 'roster', label: 'Personalized Roster' },
+                    ] as const).map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setPersonalizationMode(mode.id)}
+                        className={`flex-1 px-3 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                          personalizationMode === mode.id
+                            ? 'border-taupe bg-taupe/15 text-ink'
+                            : 'border-line bg-surface text-ink-muted hover:border-taupe/40'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {personalizationMode === 'size_breakdown' && (
+                    <div className="space-y-2 pt-1">
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                        {Object.keys(sizeBreakdown).map((size) => (
+                          <div key={size}>
+                            <label htmlFor={`size-qty-${size}`} className="block text-[10px] font-bold text-ink-muted text-center mb-0.5">{size}</label>
+                            <input
+                              id={`size-qty-${size}`}
+                              type="number"
+                              min={0}
+                              value={sizeBreakdown[size]}
+                              onChange={(e) => setSizeBreakdown((prev) => ({ ...prev, [size]: Math.max(0, Number.parseInt(e.target.value, 10) || 0) }))}
+                              className="w-full bg-surface border border-line rounded px-1 py-1.5 text-xs text-center text-ink focus:outline-none focus:border-taupe"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs font-semibold text-ink-body">Total Quantity: {sizeBreakdownTotal} pcs</p>
+                    </div>
+                  )}
+
+                  {personalizationMode === 'roster' && (
+                  <>
                   <div className="flex flex-col gap-3 pt-2">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-body cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includeNumberColumn}
+                          onChange={(e) => setIncludeNumberColumn(e.target.checked)}
+                          className="rounded border-line text-taupe focus:ring-taupe"
+                        />
+                        Include Number
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-ink-body cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includePositionColumn}
+                          onChange={(e) => setIncludePositionColumn(e.target.checked)}
+                          className="rounded border-line text-taupe focus:ring-taupe"
+                        />
+                        Include Position/Role
+                      </label>
+                    </div>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h4 className="text-xs font-bold text-ink-muted uppercase tracking-wider">Roster List</h4>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
-                            const newRow = { id: `${Date.now()}-${Math.random()}`, name: '', print_name: '', number: '', size: 'M' };
+                            const newRow = { id: `${Date.now()}-${Math.random()}`, name: '', print_name: '', number: '', position: '', size: 'M' };
                             setRoster([...roster, newRow]);
                           }}
                           className="bg-canvas hover:bg-line border border-line text-ink px-2.5 py-1 rounded text-xs font-bold cursor-pointer transition-colors"
@@ -1321,6 +1569,7 @@ export default function JobCreateForm() {
                               name: '',
                               print_name: '',
                               number: '',
+                              position: '',
                               size: 'M'
                             }));
                             setRoster([...roster, ...newRows]);
@@ -1337,6 +1586,7 @@ export default function JobCreateForm() {
                               name: '',
                               print_name: '',
                               number: '',
+                              position: '',
                               size: 'M'
                             }));
                             setRoster([...roster, ...newRows]);
@@ -1349,11 +1599,19 @@ export default function JobCreateForm() {
                     </div>
                   </div>
                   
-                  <div className="hidden sm:grid grid-cols-[28px_1fr_1fr_72px_72px_28px] gap-2 text-[10px] font-semibold text-blue-700/70 uppercase tracking-wider px-1">
+                  {/* Column count varies with which optional columns are on
+                      — Position gets its own dedicated slot instead of
+                      being crammed into Number, and both are skippable
+                      entirely for orders that don't need them. */}
+                  <div
+                    className="hidden sm:grid gap-2 text-[10px] font-semibold text-blue-700/70 uppercase tracking-wider px-1"
+                    style={{ gridTemplateColumns: `28px 1fr 1fr ${includeNumberColumn ? '72px ' : ''}${includePositionColumn ? '96px ' : ''}72px 28px` }}
+                  >
                     <span></span>
                     <span>Player/Employee Name</span>
                     <span>Print Name / Nickname</span>
-                    <span>Number</span>
+                    {includeNumberColumn && <span>Number</span>}
+                    {includePositionColumn && <span>Position/Role</span>}
                     <span>Size</span>
                     <span></span>
                   </div>
@@ -1361,7 +1619,8 @@ export default function JobCreateForm() {
                     {roster.map((row, idx) => (
                       <div
                         key={row.id}
-                        className={`grid grid-cols-2 sm:grid-cols-[28px_1fr_1fr_72px_72px_28px] gap-2 items-center p-2 rounded-lg border border-blue-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'}`}
+                        className={`grid gap-2 items-center p-2 rounded-lg border border-blue-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'}`}
+                        style={{ gridTemplateColumns: `28px 1fr 1fr ${includeNumberColumn ? '72px ' : ''}${includePositionColumn ? '96px ' : ''}72px 28px` }}
                       >
                         <span className="hidden sm:flex items-center justify-center text-[10px] font-bold text-blue-700 w-6 h-6 rounded-full bg-blue-100 shrink-0">
                           {idx + 1}
@@ -1376,7 +1635,7 @@ export default function JobCreateForm() {
                             newRoster[idx].name = e.target.value;
                             setRoster(newRoster);
                           }}
-                          className="col-span-2 sm:col-span-1 w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
+                          className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
                         />
                         <input
                           type="text"
@@ -1389,17 +1648,32 @@ export default function JobCreateForm() {
                           }}
                           className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
                         />
-                        <input
-                          type="text"
-                          value={row.number}
-                          placeholder="e.g. 12"
-                          onChange={(e) => {
-                            const newRoster = [...roster];
-                            newRoster[idx].number = e.target.value;
-                            setRoster(newRoster);
-                          }}
-                          className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
-                        />
+                        {includeNumberColumn && (
+                          <input
+                            type="text"
+                            value={row.number}
+                            placeholder="e.g. 12"
+                            onChange={(e) => {
+                              const newRoster = [...roster];
+                              newRoster[idx].number = e.target.value;
+                              setRoster(newRoster);
+                            }}
+                            className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
+                          />
+                        )}
+                        {includePositionColumn && (
+                          <input
+                            type="text"
+                            value={row.position}
+                            placeholder="e.g. President"
+                            onChange={(e) => {
+                              const newRoster = [...roster];
+                              newRoster[idx].position = e.target.value;
+                              setRoster(newRoster);
+                            }}
+                            className="w-full bg-surface border border-line rounded px-2 py-1.5 text-xs focus:outline-none focus:border-taupe"
+                          />
+                        )}
                         <select
                           value={row.size}
                           onChange={(e) => {
@@ -1429,6 +1703,8 @@ export default function JobCreateForm() {
                   <div className="flex items-center justify-between border-t border-line pt-2 text-xs text-ink-muted font-semibold">
                     <span>Total Items: {roster.length}</span>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
             </div>

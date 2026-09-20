@@ -7,7 +7,7 @@ import api from '@/lib/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map as MapIcon, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronLeft, ChevronRight, Bookmark, SlidersHorizontal, Minus, TrendingUp, TrendingDown, RotateCcw, Scissors, type LucideIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map as MapIcon, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, Bookmark, SlidersHorizontal, Minus, TrendingUp, TrendingDown, RotateCcw, Scissors, Globe, type LucideIcon } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
@@ -291,6 +291,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedService, setSelectedService] = useState<PublicService | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<PublicServicePackage | null>(null);
+  // Service highlight/expand — same auto-scroll pattern as catalog items
+  const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null);
+  const [highlightedServiceId, setHighlightedServiceId] = useState<number | null>(null);
+  const hasScrolledToService = useRef(false);
+  const isAutoScrollingService = useRef(false);
   // A ?branch= slug in the URL means we arrived here from the owner's "Preview
   // Customer View" link for a specific branch — land straight on Locations
   // with it highlighted.
@@ -323,6 +328,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [catalogItems, setCatalogItems] = useState<CatalogListItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogSearch, setCatalogSearch] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
+  const [serviceSearch, setServiceSearch] = useState('');
   // Portfolio filter states: 1. Price (sort & min/max), 2. Color, 3. Rating, 4. Garment Type
   const [priceSort, setPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
   const [minPrice, setMinPrice] = useState('');
@@ -411,6 +417,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
   // Sticky Header on scroll past tab bar & Portfolio filter modal
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [headerOpacity, setHeaderOpacity] = useState(0);
   const [isPortfolioFilterOpen, setIsPortfolioFilterOpen] = useState(false);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
@@ -511,6 +518,10 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
       let isNavVisible = false;
       const scrollY = container ? container.scrollTop : window.scrollY;
+
+      // Smooth brown header fade-in: starts at 20px, reaches 1.0 at 140px (well before tabs at ~260px)
+      const progress = Math.min(1, Math.max(0, (scrollY - 20) / 120));
+      setHeaderOpacity(progress);
 
       if (container) {
         const containerRect = container.getBoundingClientRect();
@@ -623,13 +634,70 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         const targetServiceId = searchParams.get('service_id') || searchParams.get('service');
         if (targetServiceId) {
           const match = active.find((s: PublicService) => String(s.id) === String(targetServiceId));
-          if (match) setSelectedService(match);
+          if (match) {
+            // Open inline panel (not modal) and trigger auto-scroll
+            setExpandedServiceId(match.id);
+          }
         }
       })
       .catch(() => {
         // Fall back silently — services section won't show
       });
   }, [shopId, searchParams]);
+
+  // Auto-scroll + highlight a specific service when ?service_id= is in the URL
+  useEffect(() => {
+    const targetServiceId = searchParams.get('service_id') || searchParams.get('service');
+    if (!targetServiceId || services.length === 0 || hasScrolledToService.current) return;
+
+    const svcId = Number(targetServiceId);
+    if (Number.isNaN(svcId)) return;
+
+    const tryScroll = (attempts = 0) => {
+      const targetElement = document.getElementById(`service-item-${svcId}`);
+      if (targetElement) {
+        hasScrolledToService.current = true;
+        setHighlightedServiceId(svcId);
+        setExpandedServiceId(svcId);
+        isAutoScrollingService.current = true;
+
+        const container = targetElement.closest('.overflow-y-auto') as HTMLElement | null;
+        if (container) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetElement.getBoundingClientRect();
+          const elementTopRelativeToContainer = targetRect.top - containerRect.top + container.scrollTop;
+          container.scrollTo({
+            top: Math.max(0, elementTopRelativeToContainer - 105),
+            behavior: 'smooth',
+          });
+        } else {
+          const targetRect = targetElement.getBoundingClientRect();
+          window.scrollTo({
+            top: Math.max(0, window.scrollY + targetRect.top - 105),
+            behavior: 'smooth',
+          });
+        }
+
+        const scrollLockTimer = setTimeout(() => {
+          isAutoScrollingService.current = false;
+        }, 1200);
+
+        const fadeTimer = setTimeout(() => {
+          setHighlightedServiceId(null);
+        }, 2500);
+
+        return () => {
+          clearTimeout(scrollLockTimer);
+          clearTimeout(fadeTimer);
+        };
+      } else if (attempts < 6) {
+        setTimeout(() => tryScroll(attempts + 1), 150);
+      }
+    };
+
+    const timer = setTimeout(() => tryScroll(0), 100);
+    return () => clearTimeout(timer);
+  }, [searchParams, services, activeTab]);
 
   // Fetch public service packages (combo bundles)
   useEffect(() => {
@@ -905,34 +973,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     }
   };
 
-  const handleRemoveRating = async () => {
-    if (!user) {
-      toast.error('Please log in to manage your rating.');
-      return;
-    }
-    if (!shop) return;
-    setIsSubmitting(true);
-    try {
-      await api.post(`/shops/${shop.slug}/reviews`, { rating: 0 });
-      setMyReview(null);
-      setRatingValue(0);
-      setIsRatingModalOpen(false);
-      setHoveredStar(null);
-      toast.success('Rating removed.');
-      fetchShop();
-      setReviewsRefreshKey(k => k + 1);
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e.response?.data?.message || 'Failed to remove rating.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const submitRating = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     if (!user) {
-      toast.error('Please log in to leave a review.');
+      toast.error('Please log in to rate this shop.');
       return;
     }
     if (!shop) {
@@ -984,7 +1029,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   if (shop.branches && shop.branches.length > 0) {
     tabList.push({ id: 'locations', label: 'Branch', icon: MapIcon });
   }
-  tabList.push({ id: 'reviews', label: 'Reviews', icon: Star });
+  tabList.push({ id: 'reviews', label: 'Ratings', icon: Star });
 
   // Post photo grid: shows at most 4 thumbnails so a 12-photo post doesn't
   // overwhelm the feed — the 4th tile gets a "+N" overlay for the rest.
@@ -1027,16 +1072,16 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
   return (
     <div className="flex-1 flex flex-col bg-surface text-ink selection:bg-sunken selection:text-indigo-900 relative">
-      {/* Unified Sticky Header (Back & Saved buttons always sticky; Store Name, Location, and Search/Filter fade in when scrolling past tabs) */}
+      {/* Unified Sticky Header (Back, Rate, & Saved buttons always sticky; Store Name, Location, and Search/Filter fade in smoothly before tabs) */}
       <header
-        className={`sticky top-0 z-50 w-full transition-all duration-300 -mb-[54px] ${
-          showStickyHeader
-            ? 'bg-taupe text-canvas shadow-md pointer-events-auto'
-            : 'bg-transparent shadow-none pointer-events-none'
-        }`}
+        className="sticky top-0 z-50 w-full transition-colors duration-150 -mb-[54px] pointer-events-none"
+        style={{
+          backgroundColor: headerOpacity > 0 ? `rgba(140, 107, 93, ${headerOpacity})` : 'transparent',
+          boxShadow: headerOpacity > 0.8 ? '0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+        }}
       >
         <div className="max-w-3xl mx-auto px-3 pt-2 pb-1.5 pointer-events-auto">
-          {/* Top Row: Back (sticky), Store Name & Location (fades in), Saved (sticky) */}
+          {/* Top Row: Back (sticky), Store Name & Location (fades in), Rate (sticky), Saved (sticky) */}
           <div className="flex items-center gap-2 h-10">
             <button
               type="button"
@@ -1046,47 +1091,69 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               }}
               aria-label="Back"
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 active:scale-95 ${
-                showStickyHeader
+                headerOpacity > 0.5
                   ? 'text-canvas hover:bg-white/15'
-                  : 'bg-black/45 backdrop-blur-md text-white hover:bg-black/60 shadow-md'
+                  : 'bg-black/75 backdrop-blur-md text-white hover:bg-black/90 shadow-md border border-white/20'
               }`}
             >
               <ChevronLeft size={22} />
             </button>
 
             <div
-              className={`min-w-0 flex-1 text-left transition-all duration-300 ${
-                showStickyHeader
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 -translate-y-2 pointer-events-none'
-              }`}
+              className="min-w-0 flex-1 text-left transition-all duration-200"
+              style={{
+                opacity: headerOpacity,
+                transform: `translateY(${(1 - headerOpacity) * -6}px)`,
+              }}
             >
               <h2 className="text-[13px] font-extrabold text-canvas truncate leading-tight text-left">
                 {shop.name}
               </h2>
-              <p className="text-[10px] text-canvas/75 truncate mt-0.5 text-left">
+              <p className="text-[10px] text-canvas/80 truncate mt-0.5 text-left">
                 {activeBranch
                   ? `${activeBranch.name}, ${activeBranch.city}`
                   : `${shop.branches?.[0]?.district || shop.district || shop.city || 'Poblacion District'}, Davao City`}
               </p>
             </div>
 
+            {/* Rate store button — positioned right next to Save */}
+            <button
+              type="button"
+              onClick={() => {
+                setRatingValue(myReview?.rating || 0);
+                setIsRatingModalOpen(true);
+              }}
+              aria-label="Rate this shop"
+              title={myReview?.rating ? `Your rating: ${myReview.rating}★` : "Rate shop"}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 active:scale-95 ${
+                headerOpacity > 0.5
+                  ? 'text-canvas hover:bg-white/15'
+                  : 'bg-black/75 backdrop-blur-md text-white hover:bg-black/90 shadow-md border border-white/20'
+              }`}
+            >
+              <Star
+                size={17}
+                className={myReview?.rating ? 'fill-amber-400 text-amber-400' : 'text-current'}
+              />
+            </button>
+
+            {/* Bookmark / Save button */}
             <button
               type="button"
               onClick={() => setIsBookmarked(!isBookmarked)}
               aria-label="Bookmark shop"
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 active:scale-95 ${
-                showStickyHeader
+                headerOpacity > 0.5
                   ? 'text-canvas hover:bg-white/15'
-                  : 'bg-black/45 backdrop-blur-md text-white hover:bg-black/60 shadow-md'
+                  : 'bg-black/75 backdrop-blur-md text-white hover:bg-black/90 shadow-md border border-white/20'
               }`}
             >
               <Bookmark size={17} className={isBookmarked ? 'fill-current text-white' : ''} />
             </button>
           </div>
 
-          {/* Bottom Row: Search & Filter (in Catalog tab when scrolled) */}
-          {activeTab === 'catalog' && (
+          {/* Bottom Row: Search & Filter (in Catalog and Services tabs when scrolled) */}
+          {(activeTab === 'catalog' || activeTab === 'services') && (
             <div
               className={`transition-all duration-300 overflow-hidden ${
                 showStickyHeader
@@ -1099,15 +1166,31 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   <Search size={15} className="text-taupe shrink-0" />
                   <input
                     type="text"
-                    placeholder="Search this collection... e.g. barong, gown"
-                    value={catalogSearch}
-                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    placeholder={
+                      activeTab === 'services'
+                        ? 'Search services & packages...'
+                        : 'Search this collection... e.g. barong, gown'
+                    }
+                    value={activeTab === 'services' ? serviceSearch : catalogSearch}
+                    onChange={(e) => {
+                      if (activeTab === 'services') {
+                        setServiceSearch(e.target.value);
+                      } else {
+                        setCatalogSearch(e.target.value);
+                      }
+                    }}
                     className="flex-1 min-w-0 bg-transparent text-xs text-ink placeholder:text-ink-faint focus:outline-none"
                   />
-                  {catalogSearch && (
+                  {(activeTab === 'services' ? serviceSearch : catalogSearch) && (
                     <button
                       type="button"
-                      onClick={() => setCatalogSearch('')}
+                      onClick={() => {
+                        if (activeTab === 'services') {
+                          setServiceSearch('');
+                        } else {
+                          setCatalogSearch('');
+                        }
+                      }}
                       aria-label="Clear search"
                       className="shrink-0 text-ink-faint hover:text-ink"
                     >
@@ -1116,24 +1199,26 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={openFilterPanel}
-                  className={`h-9 px-3 rounded-full border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold ${
-                    activeFilterCount > 0
-                      ? 'bg-white text-taupe border-white shadow-xs'
-                      : 'bg-white/15 text-canvas border-white/20 hover:bg-white/25 active:scale-95'
-                  }`}
-                  title="Filter collection"
-                >
-                  <SlidersHorizontal size={15} />
-                  <span>Filter</span>
-                  {activeFilterCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-ink text-white text-[9px] font-bold flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
+                {activeTab === 'catalog' && (
+                  <button
+                    type="button"
+                    onClick={openFilterPanel}
+                    className={`h-9 px-3 rounded-full border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold ${
+                      activeFilterCount > 0
+                        ? 'bg-white text-taupe border-white shadow-xs'
+                        : 'bg-white/15 text-canvas border-white/20 hover:bg-white/25 active:scale-95'
+                    }`}
+                    title="Filter collection"
+                  >
+                    <SlidersHorizontal size={15} />
+                    <span>Filter</span>
+                    {activeFilterCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-ink text-white text-[9px] font-bold flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1198,7 +1283,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                 isOpen={isShopCurrentlyOpen}
               />
 
-              {/* Owner actions or Rate Store button */}
+              {/* Owner actions or Message button */}
               <div className="flex items-center gap-2">
                 {isOwnerViewingOwnShop && <AccountHeaderMenu />}
                 {isOwnerViewingOwnShop ? (
@@ -1211,34 +1296,24 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                     <Pencil size={13} /> Edit
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRatingValue(myReview?.rating || 0);
-                      setIsRatingModalOpen(true);
-                    }}
-                    className="px-3.5 py-1.5 bg-sunken hover:bg-line text-ink-body rounded-lg transition-colors text-xs font-semibold active:scale-95"
+                  <a
+                    href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Message on Facebook"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-full text-xs font-bold shadow-xs hover:shadow-sm transition-all duration-150 active:scale-95 cursor-pointer"
                   >
-                    {myReview?.rating ? 'Edit Rating' : 'Rate Store'}
-                  </button>
+                    <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                    </svg>
+                    <span>Message</span>
+                  </a>
                 )}
               </div>
             </div>
 
             <div className="mt-2.5">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-xl font-serif font-bold text-ink leading-tight">{shop.name}</h1>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${
-                    isShopCurrentlyOpen
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-rose-50 text-rose-700 border-rose-200'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${isShopCurrentlyOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                  {isShopCurrentlyOpen ? 'Online · Open' : 'Offline · Closed'}
-                </span>
-              </div>
+              <h1 className="text-xl font-serif font-bold text-ink leading-tight">{shop.name}</h1>
               <p className="text-xs text-ink-muted mt-1">
                 Shop Owner · <span className="font-semibold text-ink-body">{shop.owner?.name || 'Juancho L. Rivera'}</span>
               </p>
@@ -1256,24 +1331,24 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   {shop.reviews_avg_rating ? Number(shop.reviews_avg_rating).toFixed(1) : '4.9'}
                 </span>
                 <span className="text-xs text-ink-faint">
-                  ({shop.reviews_count || 126} reviews)
+                  ({shop.reviews_count || 126} ratings)
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Streamlined Tabs: About, Catalog, Service, Branch, Review */}
-          <div ref={tabBarRef} className="flex overflow-x-auto no-scrollbar border-b border-line mt-3 mb-4">
+          {/* Streamlined Tabs: Catalog, Service, About, Branch, Reviews */}
+          <div ref={tabBarRef} className="flex overflow-x-auto no-scrollbar border-b border-line mt-1.5 mb-3">
             {tabList.map(tab => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 min-w-[64px] py-2.5 sm:py-3 text-center text-xs sm:text-sm font-bold whitespace-nowrap transition-all border-b-2 -mb-px ${
+                  className={`flex-1 min-w-0 py-2 text-center text-xs font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${
                     isActive
-                      ? 'border-ink text-ink font-extrabold'
-                      : 'border-transparent text-ink-muted hover:text-ink'
+                      ? 'border-ink text-ink font-semibold'
+                      : 'border-transparent text-ink-muted hover:text-ink font-normal'
                   }`}
                 >
                   {tab.label}
@@ -1282,34 +1357,78 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
             })}
           </div>
 
-          {/* TAB: ABOUT (Merged with Opening Hours & Fitting CTA, matching Image 2) */}
+          {/* TAB: ABOUT — 3 Distinct Sections: 1. Links (Social Links first!), 2. Description, 3. Hours */}
           {activeTab === 'about' && (
-            <div className="space-y-4 max-w-lg mx-auto">
-              {/* Headline & Story */}
-              <div>
-                <h2 className="text-lg font-serif font-bold text-ink mb-1.5">
-                  About {shop.name}
-                </h2>
+            <div className="space-y-3.5 max-w-lg mx-auto">
+              {/* SECTION 1: Social Links (Mauna!) */}
+              <div className="bg-surface border border-line rounded-2xl p-4 shadow-xs">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe size={16} className="text-taupe" />
+                  <h3 className="text-sm font-bold text-ink">Social Links</h3>
+                </div>
+
+                {shop.social_links && shop.social_links.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {shop.social_links.map((link) => {
+                      const lower = link.label?.toLowerCase() || '';
+                      const isFb = lower.includes('facebook') || lower.includes('fb');
+                      const isIg = lower.includes('instagram') || lower.includes('ig');
+                      const isTiktok = lower.includes('tiktok');
+
+                      return (
+                        <a
+                          key={link.url}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-canvas hover:bg-sunken text-xs font-semibold text-ink transition-all active:scale-95"
+                        >
+                          {isFb ? (
+                            <svg className="w-4 h-4 fill-[#1877F2] shrink-0" viewBox="0 0 24 24">
+                              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                            </svg>
+                          ) : isIg ? (
+                            <svg className="w-4 h-4 fill-[#E4405F] shrink-0" viewBox="0 0 24 24">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                            </svg>
+                          ) : isTiktok ? (
+                            <span className="text-xs font-black shrink-0">🎵</span>
+                          ) : (
+                            <Globe size={15} className="text-taupe shrink-0" />
+                          )}
+                          <span>{link.label || 'Social Link'}</span>
+                          <ExternalLink size={12} className="text-ink-faint ml-0.5" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-xs text-ink-muted flex items-center justify-between py-1">
+                    <span>No social links listed yet.</span>
+                    <a
+                      href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-taupe font-bold hover:underline inline-flex items-center gap-1"
+                    >
+                      Message on Facebook <ExternalLink size={11} />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 2: Description */}
+              <div className="bg-surface border border-line rounded-2xl p-4 shadow-xs">
+                <div className="flex items-center gap-2 mb-2">
+                  <Info size={16} className="text-taupe" />
+                  <h3 className="text-sm font-bold text-ink">Description</h3>
+                </div>
                 <p className="text-xs text-ink-muted leading-relaxed whitespace-pre-line">
                   {shop.description || 'No description provided yet.'}
                 </p>
               </div>
 
-              {/* Specialization Chips — real shop data only */}
-              {shop.specializations && shop.specializations.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {shop.specializations.map((spec) => (
-                    <span
-                      key={spec}
-                      className="px-3 py-1 bg-sunken rounded-full text-xs font-semibold text-ink-body capitalize"
-                    >
-                      {spec}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Opening Hours Card — Sunday to Saturday with 12h AM/PM format */}
+              {/* SECTION 3: Opening Hours */}
               <div className="bg-surface border border-line rounded-2xl p-4 shadow-xs">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -1370,8 +1489,8 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                 )}
               </div>
 
-              {/* Request a fitting CTA Button (Image 2 style) */}
-              <div className="pt-2">
+              {/* Request a fitting CTA Button */}
+              <div className="pt-1">
                 <Link
                   href={`/shop/${shopId}/book`}
                   className="w-full flex items-center justify-center py-3.5 bg-[#2B2725] hover:bg-[#1A1817] active:scale-[0.99] text-white text-sm font-bold rounded-full transition-all shadow-md"
@@ -1392,204 +1511,160 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {/* TAB: SERVICES */}
           {activeTab === 'services' && (
             <div>
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-serif font-bold text-ink">Our Services</h2>
-                  <p className="text-ink-muted text-sm mt-1">Browse our tailoring offerings and estimated turnaround times.</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {isOwnerViewingOwnShop && (
-                    <button
-                      type="button"
-                      onClick={() => { setEditingServiceId(null); setServiceError(''); setIsServiceModalOpen(true); }}
-                      className="flex items-center gap-1.5 bg-taupe hover:bg-taupe/90 text-white text-sm font-semibold px-3.5 py-2 rounded-lg transition-colors"
-                    >
-                      <Plus size={15} /> Add Service
-                    </button>
-                  )}
-                  {services.length > 0 && (
-                    <button type="button" onClick={() => setActiveTab('catalog')} className="text-sm font-semibold text-taupe hover:underline flex items-center gap-1 whitespace-nowrap">
-                      View Catalog &rarr;
-                    </button>
-                  )}
-                </div>
-              </div>
-
               {services.length === 0 && packages.length === 0 ? (
                 <div className="text-center py-16 bg-surface rounded-2xl border border-line">
                   <p className="text-ink-muted">No services listed yet.</p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {services.map(service => (
-                    <div
-                      key={service.id}
-                      onClick={() => {
-                        setSelectedService(service);
-                        // No dedicated service detail page — opening this
-                        // modal IS the "view", so record it here.
-                        if (user) api.post('/recently-viewed', { type: 'service', id: service.id }).catch(() => {});
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedService(service); }}
-                      role="button"
-                      tabIndex={0}
-                      className="relative bg-surface border border-line rounded-2xl overflow-hidden hover:border-taupe/60 transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-taupe"
-                    >
-                      {isOwnerViewingOwnShop && (
-                        <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingServiceId(service.id);
-                              setServiceError('');
-                              setIsServiceModalOpen(true);
-                            }}
-                            title="Edit service"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-line text-ink-body hover:text-taupe transition-colors focus:outline-none"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingServiceId(service.id);
-                              setIsServiceDeleteOpen(true);
-                            }}
-                            title="Delete service"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-line text-ink-body hover:text-danger transition-colors focus:outline-none"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
+              ) : (() => {
+                const selectedService = services.find((s) => s.id === expandedServiceId);
 
-                      {/* Image */}
-                      <div className="h-52 bg-sunken border-b border-line overflow-hidden shrink-0">
-                        {service.image_url ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img
-                            src={getMediaUrl(service.image_url)}
-                            alt={service.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint">
-                            <ImageIcon size={28} />
-                            <span className="text-[11px]">No image</span>
-                          </div>
-                        )}
-                      </div>
+                if (selectedService) {
+                  const activeSale = selectedService.base_price
+                    ? getActiveSale({
+                        price: selectedService.base_price,
+                        sale_price: selectedService.sale_price,
+                        sale_starts_at: selectedService.sale_starts_at,
+                        sale_ends_at: selectedService.sale_ends_at,
+                      })
+                    : null;
+                  const priceDisplay = activeSale ? (
+                    <span className="font-bold flex items-center gap-1.5">
+                      <span className="line-through text-ink-faint font-normal text-xs">
+                        ₱{activeSale.original.toLocaleString()}
+                      </span>
+                      <span className="text-rose-600">
+                        ₱{activeSale.sale.toLocaleString()}
+                      </span>
+                    </span>
+                  ) : selectedService.base_price !== null && selectedService.base_price !== undefined ? (
+                    `₱${Number.parseFloat(selectedService.base_price.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                  ) : (
+                    'Custom Quote'
+                  );
 
-                      {/* Card body */}
-                      <div className="p-5 space-y-2 flex flex-col flex-1">
-                        <h3 className="font-serif font-bold text-ink text-base leading-snug line-clamp-2">{service.name}</h3>
-
-                        <div className="flex items-center gap-2 text-xs">
-                          {(() => {
-                            const activeSale = service.base_price ? getActiveSale({ price: service.base_price, sale_price: service.sale_price, sale_starts_at: service.sale_starts_at, sale_ends_at: service.sale_ends_at }) : null;
-                            if (activeSale) {
-                              return (
-                                <span className="font-bold flex items-center gap-1.5">
-                                  <span className="line-through text-ink-faint font-normal">₱{activeSale.original.toLocaleString()}</span>
-                                  <span className="text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
-                                </span>
-                              );
-                            }
-                            return (
-                              <span className="font-bold text-taupe">
-                                {service.base_price !== null && service.base_price !== undefined ? (
-                                  `₱${Number.parseFloat(service.base_price.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-                                ) : (
-                                  'Custom Quote'
-                                )}
-                              </span>
-                            );
-                          })()}
-                          {service.estimated_days ? (
-                            <span className="flex items-center gap-1 text-ink-faint">
-                              <Clock size={11} /> {service.estimated_days}d
-                            </span>
-                          ) : null}
-                        </div>
-
-                        {service.description && (
-                          <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">{service.description}</p>
-                        )}
-
-                        {/* CTA */}
-                        <div className="mt-auto pt-3 space-y-2">
-                          <Link
-                            href={`/shop/${shopId}/book?service_id=${service.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="block w-full text-center bg-ink hover:bg-taupe text-white py-2.5 rounded-xl text-xs font-semibold transition-colors focus:outline-none shadow-xs"
-                          >
-                            Book Appointment →
-                          </Link>
-                          {getSocialUrl(shop.social_links, 'facebook') && (
-                            <a
-                              href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex w-full items-center justify-center gap-1.5 bg-surface border border-line hover:bg-sunken text-ink-body py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
-                            >
-                              <MessageCircle size={13} /> Inquire on Facebook
-                            </a>
+                  return (
+                    <div className="animate-fade-in pb-8">
+                      {/* Top Header: [Back] [Service] [Owner actions] */}
+                      <div className="flex items-center justify-between py-3 mb-4 border-b border-line">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedServiceId(null)}
+                          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-ink hover:text-taupe transition-colors"
+                        >
+                          <ArrowLeft size={16} /> Back
+                        </button>
+                        <h2 className="text-sm sm:text-base font-bold text-ink">Service</h2>
+                        <div className="flex items-center gap-1.5">
+                          {isOwnerViewingOwnShop && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingServiceId(selectedService.id);
+                                  setServiceError('');
+                                  setIsServiceModalOpen(true);
+                                }}
+                                title="Edit service"
+                                className="w-7 h-7 flex items-center justify-center bg-surface border border-line text-ink-body hover:text-taupe transition-colors"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeletingServiceId(selectedService.id);
+                                  setIsServiceDeleteOpen(true);
+                                }}
+                                title="Delete service"
+                                className="w-7 h-7 flex items-center justify-center bg-surface border border-line text-ink-body hover:text-danger transition-colors"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </>
                           )}
+                          {!isOwnerViewingOwnShop && <div className="w-10" />}
                         </div>
                       </div>
-                    </div>
-                  ))}
 
-                  {packages.map(pkg => {
-                    const sumPrice = pkg.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0);
-                    const displayPrice = pkg.bundle_price ? Number(pkg.bundle_price) : sumPrice;
-                    return (
-                      <div
-                        key={`package-${pkg.id}`}
-                        onClick={() => setSelectedPackage(pkg)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedPackage(pkg); }}
-                        role="button"
-                        tabIndex={0}
-                        className="bg-surface border border-taupe/50 rounded-2xl overflow-hidden hover:border-taupe transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-taupe"
-                      >
-                        <div className="h-52 bg-taupe/10 border-b border-line flex items-center justify-center shrink-0">
-                          <Package size={40} className="text-taupe/50" />
+                      {/* Service Detail Card matching Screenshot 1 */}
+                      <div className="bg-surface border border-line rounded-none overflow-hidden shadow-xs">
+                        {/* Summary Header */}
+                        <div className="p-4 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                            <div className="w-14 h-14 shrink-0 bg-sunken overflow-hidden border border-line relative">
+                              {selectedService.image_url ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={getMediaUrl(selectedService.image_url)}
+                                  alt={selectedService.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-ink-faint">
+                                  <ImageIcon size={20} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-serif font-bold text-ink text-sm sm:text-base leading-snug truncate">
+                                {selectedService.name}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1 text-xs">
+                                <span className="font-bold text-ink">
+                                  {priceDisplay}
+                                </span>
+                                {selectedService.estimated_days ? (
+                                  <span className="flex items-center gap-1 text-ink-muted">
+                                    <Clock size={11} /> {selectedService.estimated_days}d
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronDown size={18} className="text-ink-faint shrink-0" />
                         </div>
 
-                        <div className="p-5 space-y-2 flex flex-col flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <Package size={13} className="text-taupe shrink-0" />
-                            <h3 className="font-serif font-bold text-ink text-base leading-snug line-clamp-2">{pkg.name}</h3>
+                        {/* Large Image */}
+                        {selectedService.image_url && (
+                          <div className="h-64 sm:h-80 bg-sunken overflow-hidden border-t border-line relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={getMediaUrl(selectedService.image_url)}
+                              alt={selectedService.name}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
+                        )}
 
-                          <span className="text-xs font-bold text-taupe">
-                            ₱{displayPrice.toLocaleString()}
-                          </span>
+                        {/* Description & CTAs */}
+                        <div className="p-5 space-y-4">
+                          {selectedService.description && (
+                            <p className="text-sm text-ink-body leading-relaxed whitespace-pre-wrap">
+                              {selectedService.description}
+                            </p>
+                          )}
 
-                          <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">
-                            {pkg.description || `Includes: ${pkg.services.map(s => s.name).join(', ')}`}
-                          </p>
+                          {selectedService.size_chart_image_url && (
+                            <div className="space-y-2">
+                              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Size Chart</h4>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={selectedService.size_chart_image_url} alt="Size chart" className="w-full border border-line" />
+                            </div>
+                          )}
 
-                          <div className="mt-auto pt-3 space-y-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPackage(pkg);
-                              }}
-                              className="block w-full text-center bg-taupe hover:bg-taupe/90 text-white py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                          <div className="space-y-2 pt-2">
+                            <Link
+                              href={`/shop/${shopId}/book?service_id=${selectedService.id}`}
+                              className="block w-full text-center bg-[#2D2A26] hover:bg-black text-white py-3.5 text-sm font-semibold transition-colors focus:outline-none"
                             >
-                              View Package →
-                            </button>
+                              Book Appointment →
+                            </Link>
                             {getSocialUrl(shop.social_links, 'facebook') && (
                               <a
                                 href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex w-full items-center justify-center gap-1.5 bg-surface border border-line hover:bg-sunken text-ink-body py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                                className="flex w-full items-center justify-center gap-1.5 bg-surface border border-line hover:bg-sunken text-ink-body py-2.5 text-xs font-semibold transition-colors focus:outline-none"
                               >
                                 <MessageCircle size={13} /> Inquire on Facebook
                               </a>
@@ -1597,10 +1672,217 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    </div>
+                  );
+                }
+
+                const filteredServices = services.filter((service) => {
+                  if (!serviceSearch.trim()) return true;
+                  const q = serviceSearch.toLowerCase().trim();
+                  return (
+                    service.name.toLowerCase().includes(q) ||
+                    ((service as any).category && (service as any).category.toLowerCase().includes(q)) ||
+                    ((service as any).service_type && (service as any).service_type.toLowerCase().includes(q)) ||
+                    (service.description && service.description.toLowerCase().includes(q))
+                  );
+                });
+
+                const filteredPackages = packages.filter((pkg) => {
+                  if (!serviceSearch.trim()) return true;
+                  const q = serviceSearch.toLowerCase().trim();
+                  return (
+                    pkg.name.toLowerCase().includes(q) ||
+                    (pkg.description && pkg.description.toLowerCase().includes(q)) ||
+                    pkg.services.some((s) => s.name.toLowerCase().includes(q))
+                  );
+                });
+
+                const totalFilteredCount = filteredServices.length + filteredPackages.length;
+
+                return (
+                  <div>
+                    {/* Search bar inside Service tab */}
+                    <div className="mb-3 flex items-center gap-2 h-9 px-3 rounded-full bg-surface border border-line shadow-xs">
+                      <Search size={14} className="text-taupe shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Search services & packages..."
+                        value={serviceSearch}
+                        onChange={(e) => setServiceSearch(e.target.value)}
+                        className="flex-1 min-w-0 bg-transparent text-xs text-ink placeholder:text-ink-faint focus:outline-none"
+                      />
+                      {serviceSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setServiceSearch('')}
+                          aria-label="Clear search"
+                          className="shrink-0 text-ink-faint hover:text-ink"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span className="text-xs text-ink-muted whitespace-nowrap">
+                          Showing {totalFilteredCount} services.
+                        </span>
+                        {serviceSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setServiceSearch('')}
+                            className="flex items-center gap-1 border border-line bg-canvas px-2 py-0.5 rounded-full text-[10px] font-medium text-ink-body hover:border-taupe hover:text-taupe transition-colors shrink-0"
+                          >
+                            <span>&quot;{serviceSearch}&quot;</span>
+                            <X size={10} />
+                          </button>
+                        )}
+                      </div>
+                      {isOwnerViewingOwnShop && (
+                        <button
+                          type="button"
+                          onClick={() => { setEditingServiceId(null); setServiceError(''); setIsServiceModalOpen(true); }}
+                          className="flex items-center gap-1.5 bg-taupe hover:bg-taupe/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                        >
+                          <Plus size={14} /> Add Service
+                        </button>
+                      )}
+                    </div>
+
+                    {totalFilteredCount === 0 ? (
+                      <div className="text-center py-12 bg-surface border border-line text-ink-muted text-xs">
+                        No services or packages matched &quot;{serviceSearch}&quot;.
+                      </div>
+                    ) : (
+                      /* Unified Grid: Services & Packages (1 card / 1 column for 320px mobile) */
+                      <div className="grid grid-cols-1 gap-3">
+                        {filteredServices.map((service) => {
+                          const isHighlighted = highlightedServiceId === service.id;
+                          const activeSale = service.base_price
+                            ? getActiveSale({
+                                price: service.base_price,
+                                sale_price: service.sale_price,
+                                sale_starts_at: service.sale_starts_at,
+                                sale_ends_at: service.sale_ends_at,
+                              })
+                            : null;
+
+                          return (
+                            <div
+                              key={`service-${service.id}`}
+                              id={`service-item-${service.id}`}
+                              onClick={() => {
+                                setExpandedServiceId(service.id);
+                                if (user) api.post('/recently-viewed', { type: 'service', id: service.id }).catch(() => {});
+                              }}
+                              className={`group flex flex-col justify-between w-full bg-surface border border-line overflow-hidden hover:border-taupe transition-all duration-300 cursor-pointer ${
+                                isHighlighted ? 'ring-2 ring-taupe' : ''
+                              }`}
+                            >
+                              {/* Top: Picture */}
+                              <div className="h-48 w-full bg-sunken relative overflow-hidden shrink-0 border-b border-line">
+                                {service.image_url ? (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img
+                                    src={getMediaUrl(service.image_url)}
+                                    alt={service.name}
+                                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-ink-faint">
+                                    <Scissors size={28} className="text-taupe/40" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Bottom: Details (No description) */}
+                              <div className="p-3 flex-1 flex flex-col justify-between">
+                                <div>
+                                  <span className="text-[10px] font-medium uppercase tracking-wide text-taupe truncate block">
+                                    {(service as any).category || (service as any).service_type || 'Tailoring Service'}
+                                  </span>
+                                  <h3 className="text-sm font-semibold text-ink group-hover:text-taupe transition-colors leading-snug mt-1 line-clamp-2">
+                                    {service.name}
+                                  </h3>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-line/50 mt-2.5">
+                                  <span className="text-sm font-bold text-ink">
+                                    {activeSale ? (
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="line-through text-ink-faint text-xs font-normal">
+                                          ₱{activeSale.original.toLocaleString()}
+                                        </span>
+                                        <span className="text-rose-600">
+                                          ₱{activeSale.sale.toLocaleString()}
+                                        </span>
+                                      </span>
+                                    ) : service.base_price !== null && service.base_price !== undefined ? (
+                                      `₱${Number(service.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                                    ) : (
+                                      'Custom Quote'
+                                    )}
+                                  </span>
+
+                                  <span className="flex items-center gap-1 text-xs text-ink-muted font-medium shrink-0">
+                                    <Clock size={12} className="text-taupe shrink-0" />
+                                    <span>Est. {service.estimated_days ? `${service.estimated_days}d` : '7-10d'}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {filteredPackages.map((pkg) => {
+                          const sumPrice = pkg.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0);
+                          const displayPrice = pkg.bundle_price ? Number(pkg.bundle_price) : sumPrice;
+
+                          return (
+                            <div
+                              key={`package-${pkg.id}`}
+                              onClick={() => setSelectedPackage(pkg)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedPackage(pkg); }}
+                              role="button"
+                              tabIndex={0}
+                              className="group flex flex-col justify-between w-full bg-surface border border-line overflow-hidden hover:border-taupe transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-taupe"
+                            >
+                              {/* Top: Picture */}
+                              <div className="h-48 w-full bg-taupe/10 relative overflow-hidden shrink-0 border-b border-line flex items-center justify-center">
+                                <Package size={40} className="text-taupe/50 transition-transform duration-500 group-hover:scale-110" />
+                              </div>
+
+                              {/* Bottom: Details (No description) */}
+                              <div className="p-3 flex-1 flex flex-col justify-between">
+                                <div>
+                                  <span className="text-[10px] font-medium uppercase tracking-wide text-taupe truncate block">
+                                    Package Deal
+                                  </span>
+                                  <h3 className="text-sm font-semibold text-ink group-hover:text-taupe transition-colors leading-snug mt-1 line-clamp-2">
+                                    {pkg.name}
+                                  </h3>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-line/50 mt-2.5">
+                                  <span className="text-sm font-bold text-ink">
+                                    ₱{displayPrice.toLocaleString()}
+                                  </span>
+
+                                  <span className="flex items-center gap-1 text-xs text-ink-muted font-medium shrink-0">
+                                    <Package size={12} className="text-taupe shrink-0" />
+                                    <span>{pkg.services.length} {pkg.services.length === 1 ? 'service' : 'services'}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1741,7 +2023,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                         <span className="text-xs text-ink-muted whitespace-nowrap shrink-0">
-                          Showing {filteredCatalogItems.length} of {catalogItems.length} item{catalogItems.length === 1 ? '' : 's'}
+                          Showing {filteredCatalogItems.length} catalog designs.
                         </span>
                         {activeFilterChips.map((chip) => (
                           <button
@@ -1818,14 +2100,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-ink-faint text-[10px]">No Image</div>
-                                )}
-
-                                {/* Fabric View Indicator Badge */}
-                                {showPortfolioFabric && (
-                                  <div className="absolute top-1 right-1 z-10 bg-ink/85 backdrop-blur-xs text-white text-[7px] font-medium tracking-wider uppercase px-1.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs border border-white/20">
-                                    <span className="w-1 h-1 rounded-full bg-amber-300 animate-pulse" />
-                                    <span>Fabric</span>
-                                  </div>
                                 )}
                               </div>
 
@@ -2221,129 +2495,187 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
             </div>
           )}
 
-          {/* TAB: REVIEWS */}
+          {/* TAB: RATINGS */}
           {activeTab === 'reviews' && (
-            <div>
-              <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                  <h2 className="text-lg font-serif font-bold text-ink">Reviews</h2>
-                  <p className="text-ink-muted text-sm mt-1">What customers are saying about {shop.name}.</p>
+                  <h2 className="text-lg font-serif font-bold text-ink">Ratings</h2>
+                  <p className="text-ink-muted text-xs mt-0.5">
+                    Customer ratings breakdown for {shop.name}.
+                  </p>
                 </div>
                 <select
                   value={reviewFilterRating}
                   onChange={e => { setReviewFilterRating(e.target.value); setReviewsPage(1); }}
-                  className="px-4 py-2 bg-surface border border-line rounded-full text-sm text-ink focus:outline-none focus:border-taupe transition-colors"
+                  className="px-3 py-1.5 bg-surface border border-line rounded-full text-xs text-ink focus:outline-none focus:border-taupe transition-colors shadow-xs"
                 >
-                  <option value="">All Ratings</option>
-                  <option value="5">5 Stars</option>
-                  <option value="4">4 Stars</option>
-                  <option value="3">3 Stars</option>
-                  <option value="2">2 Stars</option>
-                  <option value="1">1 Star</option>
+                  <option value="">All Stars</option>
+                  <option value="5">5 Stars only</option>
+                  <option value="4">4 Stars only</option>
+                  <option value="3">3 Stars only</option>
+                  <option value="2">2 Stars only</option>
+                  <option value="1">1 Star only</option>
                 </select>
               </div>
 
+              {/* Overall Ratings Summary Card */}
+              <div className="bg-surface rounded-2xl border border-line p-4 shadow-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                  {/* Big score summary */}
+                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left justify-center border-b sm:border-b-0 sm:border-r border-line pb-3 sm:pb-0 sm:pr-4">
+                    <span className="text-4xl font-black text-ink font-serif tracking-tight">
+                      {shop.reviews_avg_rating ? Number(shop.reviews_avg_rating).toFixed(1) : '4.9'}
+                    </span>
+                    <div className="flex items-center gap-1 my-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const avg = Number(shop.reviews_avg_rating || 4.9);
+                        return (
+                          <Star
+                            key={star}
+                            size={18}
+                            className={star <= Math.round(avg) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className="text-xs text-ink-muted">
+                      Based on {shop.reviews_count || reviews.length || 0} customer rating{((shop.reviews_count || reviews.length) === 1) ? '' : 's'}
+                    </span>
+
+                    {!isOwnerViewingOwnShop && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRatingValue(myReview?.rating || 0);
+                          setIsRatingModalOpen(true);
+                        }}
+                        className="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-taupe hover:bg-taupe-hover text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+                      >
+                        <Star size={13} className={myReview?.rating ? 'fill-amber-300 text-amber-300' : 'fill-white text-white'} />
+                        <span>{myReview?.rating ? `Your Rating: ${myReview.rating}★ (Edit)` : 'Rate this Shop'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Star Distribution Bars */}
+                  <div className="space-y-1.5 text-xs">
+                    {[5, 4, 3, 2, 1].map((starNum) => {
+                      const totalCount = reviews.length || 1;
+                      const starMatches = reviews.filter(r => Math.round(r.rating) === starNum).length;
+                      const percentage = reviews.length > 0 ? Math.round((starMatches / totalCount) * 100) : (starNum === 5 ? 85 : starNum === 4 ? 15 : 0);
+
+                      return (
+                        <div key={starNum} className="flex items-center gap-2">
+                          <span className="w-8 font-semibold text-ink text-right flex items-center justify-end gap-0.5 text-[11px]">
+                            {starNum} <Star size={10} className="fill-amber-400 text-amber-400" />
+                          </span>
+                          <div className="flex-1 h-2 bg-sunken rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-400 rounded-full transition-all duration-300"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="w-8 text-[10px] text-ink-faint text-right">
+                            {percentage}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Ratings List — strictly star ratings with customer name/date, NO comment messages */}
               {reviewsLoading ? (
-                <div className="flex justify-center py-16"><Loader2 className="animate-spin text-ink-faint" /></div>
+                <div className="flex justify-center py-12"><Loader2 className="animate-spin text-ink-faint" /></div>
               ) : reviews.length === 0 ? (
-                <div className="text-center py-16 bg-surface rounded-2xl border border-line">
-                  <Star className="mx-auto h-10 w-10 text-ink-faint mb-3" />
-                  <p className="text-ink-muted">No reviews yet.</p>
+                <div className="text-center py-12 bg-surface rounded-2xl border border-line p-6 shadow-xs">
+                  <Star className="mx-auto h-9 w-9 text-ink-faint mb-2" />
+                  <p className="text-xs font-bold text-ink">No ratings yet</p>
+                  <p className="text-[11px] text-ink-muted mt-0.5">Be the first to rate {shop.name}!</p>
+                  {!isOwnerViewingOwnShop && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRatingValue(0);
+                        setIsRatingModalOpen(true);
+                      }}
+                      className="mt-3 px-4 py-1.5 rounded-full bg-taupe text-white text-xs font-bold hover:bg-taupe-hover transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Star size={13} className="fill-white text-white" />
+                      <span>Rate Now</span>
+                    </button>
+                  )}
                 </div>
               ) : (
-                <div className="bg-surface rounded-2xl border border-line divide-y divide-line overflow-hidden">
+                <div className="bg-surface rounded-2xl border border-line divide-y divide-line overflow-hidden shadow-xs">
                   {reviews.map(review => (
-                    <div key={review.id} className="p-4">
-                      <div className="flex flex-col justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-line flex items-center justify-center font-bold text-ink-body shrink-0">
-                              {review.user.name.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-ink leading-tight">{review.user.name}</p>
-                              <p className="text-xs text-ink-faint">{new Date(review.created_at).toLocaleDateString()}</p>
-                            </div>
-                            {review.is_featured && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
-                                Featured
-                              </span>
-                            )}
-                          </div>
+                    <div key={review.id} className="p-3.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-line/80 flex items-center justify-center font-bold text-ink-body text-xs shrink-0">
+                          {review.user?.name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-ink text-xs truncate leading-tight">
+                            {review.user?.name || 'Customer'}
+                          </p>
+                          <p className="text-[10px] text-ink-faint mt-0.5">
+                            {new Date(review.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
 
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full">
                           <div className="flex gap-0.5">
                             {[1, 2, 3, 4, 5].map(star => (
-                              <Star key={star} size={15} className={star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
+                              <Star
+                                key={star}
+                                size={12}
+                                className={star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}
+                              />
                             ))}
                           </div>
-
-                          <p className="text-ink-body leading-relaxed">
-                            {review.comment || <span className="italic text-ink-faint">No written comment provided.</span>}
-                          </p>
-
-                          {review.reply && (
-                            <div className="mt-2 bg-sunken/50 border-l-2 border-taupe p-4 rounded-r-lg">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Shop Response</span>
-                              </div>
-                              <p className="text-ink-body text-sm">{review.reply}</p>
-                            </div>
-                          )}
+                          <span className="text-[11px] font-extrabold text-amber-800 ml-0.5">
+                            {Number(review.rating).toFixed(1)}
+                          </span>
                         </div>
 
                         {isOwnerViewingOwnShop && (
-                          <div className="flex flex-row items-start gap-3 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleFeatureReview(review)}
-                              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border flex items-center gap-1.5 ${
-                                review.is_featured
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                  : 'bg-surface text-ink-muted border-line hover:bg-sunken'
-                              }`}
-                            >
-                              <Star size={12} className={review.is_featured ? 'fill-amber-500 text-amber-500' : ''} />
-                              {review.is_featured ? 'Featured' : 'Feature'}
-                            </button>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => { setCurrentReviewForReply(review); setReplyText(review.reply || ''); setReplyModalOpen(true); }}
-                                className="text-xs font-medium text-taupe hover:underline"
-                              >
-                                {review.reply ? 'Edit Reply' : 'Reply'}
-                              </button>
-                              <span className="text-line">|</span>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteReview(review.id)}
-                                className="text-xs font-medium text-danger hover:underline"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReview(review.id)}
+                            className="text-[11px] text-danger hover:underline font-semibold ml-1 cursor-pointer"
+                            title="Delete rating"
+                          >
+                            Delete
+                          </button>
                         )}
                       </div>
                     </div>
                   ))}
 
                   {reviewsLastPage > 1 && (
-                    <div className="p-4 flex justify-center gap-2 bg-canvas">
+                    <div className="p-3 flex justify-center items-center gap-2 bg-canvas">
                       <button
                         type="button"
                         disabled={reviewsPage === 1}
                         onClick={() => setReviewsPage(p => p - 1)}
-                        className="px-4 py-1.5 rounded-lg border border-line bg-surface text-sm disabled:opacity-50"
+                        className="px-3 py-1 rounded-lg border border-line bg-surface text-xs font-medium disabled:opacity-40"
                       >
                         Previous
                       </button>
-                      <span className="px-4 py-1.5 text-sm text-ink-body font-medium">Page {reviewsPage} of {reviewsLastPage}</span>
+                      <span className="text-xs text-ink-body font-medium">Page {reviewsPage} of {reviewsLastPage}</span>
                       <button
                         type="button"
                         disabled={reviewsPage === reviewsLastPage}
                         onClick={() => setReviewsPage(p => p + 1)}
-                        className="px-4 py-1.5 rounded-lg border border-line bg-surface text-sm disabled:opacity-50"
+                        className="px-3 py-1 rounded-lg border border-line bg-surface text-xs font-medium disabled:opacity-40"
                       >
                         Next
                       </button>
@@ -2357,90 +2689,31 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         </div>
       </div>
 
-      {/* Rating Modal */}
-      <Modal
-        isOpen={isRatingModalOpen}
-        onClose={() => {
-          setIsRatingModalOpen(false);
-          setHoveredStar(null);
-          setRatingValue(myReview?.rating || 0);
-        }}
-        title={myReview?.rating ? 'Update Your Rating' : 'Rate this Shop'}
-      >
-        <form onSubmit={submitRating} className="space-y-5">
-          <div className="text-center py-2">
-            <p className="text-xs text-ink-muted mb-3">
-              How was your experience with <span className="font-semibold text-ink">{shop.name}</span>?
-            </p>
+      {/* Rating Modal — constrained strictly to fit inside 320px mobile viewport without overflow */}
+      {isRatingModalOpen && mounted && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 pointer-events-auto">
+          {/* Backdrop Scrim */}
+          <button
+            type="button"
+            aria-label="Close rating dialog"
+            onClick={() => {
+              setIsRatingModalOpen(false);
+              setHoveredStar(null);
+              setRatingValue(myReview?.rating || 0);
+            }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 focus:outline-none"
+          />
 
-            {/* Stars row */}
-            <div
-              className="flex justify-center items-center gap-2 py-1"
-              onMouseLeave={() => setHoveredStar(null)}
-            >
-              {[1, 2, 3, 4, 5].map((star) => {
-                const activeVal = hoveredStar ?? ratingValue;
-                const isFilled = activeVal >= star;
-                const isCurrentRated = ratingValue === star;
-
-                return (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleStarClick(star)}
-                    onMouseEnter={() => setHoveredStar(star)}
-                    title={isCurrentRated ? 'Click again to unrate' : `Rate ${star} star${star > 1 ? 's' : ''}`}
-                    className="p-1.5 transition-all hover:scale-125 active:scale-95 focus:outline-none"
-                  >
-                    <Star
-                      size={36}
-                      className={
-                        isFilled
-                          ? 'fill-taupe text-taupe transition-colors'
-                          : 'text-line-strong hover:text-taupe/50 transition-colors'
-                      }
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Star descriptor & helper */}
-            <div className="mt-2 min-h-[30px] flex flex-col items-center justify-center">
-              <span className="text-xs font-bold text-ink">
-                {(hoveredStar ?? ratingValue) === 0
-                  ? (myReview?.rating ? '0 Stars (Tap Save to remove rating)' : 'Tap a star to rate')
-                  : (hoveredStar ?? ratingValue) === 1
-                  ? '1 Star · Poor'
-                  : (hoveredStar ?? ratingValue) === 2
-                  ? '2 Stars · Fair'
-                  : (hoveredStar ?? ratingValue) === 3
-                  ? '3 Stars · Good'
-                  : (hoveredStar ?? ratingValue) === 4
-                  ? '4 Stars · Very Good'
-                  : '5 Stars · Excellent'}
-              </span>
-              {ratingValue > 0 && (
-                <span className="text-[11px] text-ink-muted mt-0.5">
-                  Click the same star to unrate
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 pt-4 border-t border-line">
-            {myReview?.rating ? (
-              <button
-                type="button"
-                onClick={handleRemoveRating}
-                disabled={isSubmitting}
-                className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline disabled:opacity-50"
-              >
-                Remove Rating
-              </button>
-            ) : <div />}
-
-            <div className="flex items-center gap-2">
+          {/* Dialog Panel: exactly max-w-[296px] (320px - 24px) so it never exceeds 320px */}
+          <div className="relative bg-surface rounded-2xl shadow-2xl flex flex-col w-full max-w-[296px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 border border-line">
+            {/* Header */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-line shrink-0 bg-surface">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Star size={14} className="text-amber-500 fill-amber-400 shrink-0" />
+                <h2 className="text-xs font-bold text-ink truncate">
+                  {myReview?.rating ? 'Update Rating' : 'Rate this Shop'}
+                </h2>
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -2448,68 +2721,117 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   setHoveredStar(null);
                   setRatingValue(myReview?.rating || 0);
                 }}
-                className="px-3.5 py-2 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
+                aria-label="Close"
+                className="p-1 -mr-1 rounded-full text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
               >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || (ratingValue === 0 && !myReview?.rating)}
-                className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
-                  ratingValue === 0 && myReview?.rating
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-taupe hover:bg-taupe-hover text-white'
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                {ratingValue === 0
-                  ? 'Remove Rating'
-                  : myReview?.rating
-                  ? ratingValue === myReview.rating
-                    ? 'Save'
-                    : `Update to ${ratingValue}★`
-                  : `Submit ${ratingValue}★`}
+                <X size={16} />
               </button>
             </div>
+
+            {/* Form */}
+            <form onSubmit={submitRating} className="p-3.5 space-y-3">
+              <div className="text-center">
+                <p className="text-[11px] text-ink-muted mb-2">
+                  How was your experience with <span className="font-semibold text-ink">{shop.name}</span>?
+                </p>
+
+                {/* Stars row — 5 stars sized at 30px with gap-1.5, fits 268px body easily */}
+                <div
+                  className="flex justify-center items-center gap-1.5 py-1"
+                  onMouseLeave={() => setHoveredStar(null)}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const activeVal = hoveredStar ?? ratingValue;
+                    const isFilled = activeVal >= star;
+                    const isCurrentRated = ratingValue === star;
+
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => handleStarClick(star)}
+                        onMouseEnter={() => setHoveredStar(star)}
+                        title={isCurrentRated ? 'Click again to unrate' : `Rate ${star} star${star > 1 ? 's' : ''}`}
+                        className="p-1 transition-all hover:scale-115 active:scale-95 focus:outline-none"
+                      >
+                        <Star
+                          size={30}
+                          className={
+                            isFilled
+                              ? 'fill-amber-400 text-amber-500 transition-colors'
+                              : 'text-line-strong hover:text-amber-400/50 transition-colors'
+                          }
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Star descriptor & helper */}
+                <div className="mt-1.5 min-h-[26px] flex flex-col items-center justify-center">
+                  <span className="text-xs font-bold text-ink">
+                    {(hoveredStar ?? ratingValue) === 0
+                      ? (myReview?.rating ? '0 Stars (Tap button below to save)' : 'Tap a star to rate')
+                      : (hoveredStar ?? ratingValue) === 1
+                      ? '1 Star · Poor'
+                      : (hoveredStar ?? ratingValue) === 2
+                      ? '2 Stars · Fair'
+                      : (hoveredStar ?? ratingValue) === 3
+                      ? '3 Stars · Good'
+                      : (hoveredStar ?? ratingValue) === 4
+                      ? '4 Stars · Very Good'
+                      : '5 Stars · Excellent'}
+                  </span>
+                  {ratingValue > 0 && (
+                    <span className="text-[10px] text-ink-muted mt-0.5">
+                      Tap the same star to unrate
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions: Full-width submit button + secondary text actions */}
+              <div className="space-y-2 pt-2 border-t border-line">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || (ratingValue === 0 && !myReview?.rating)}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs ${
+                    ratingValue === 0 && myReview?.rating
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-taupe hover:bg-taupe-hover text-white'
+                  } disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]`}
+                >
+                  {isSubmitting && <Loader2 size={13} className="animate-spin" />}
+                  <span>
+                    {ratingValue === 0
+                      ? 'Remove Rating'
+                      : myReview?.rating
+                      ? ratingValue === myReview.rating
+                        ? 'Save Rating'
+                        : `Update to ${ratingValue}★`
+                      : `Submit ${ratingValue}★`}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRatingModalOpen(false);
+                    setHoveredStar(null);
+                    setRatingValue(myReview?.rating || 0);
+                  }}
+                  className="w-full py-1 text-center text-[11px] font-semibold text-ink-muted hover:text-ink transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </Modal>
-
-      {isOwnerViewingOwnShop && (
-        <Modal isOpen={replyModalOpen} onClose={() => setReplyModalOpen(false)} title="Respond to Review">
-          <form onSubmit={submitReviewReply} className="space-y-4">
-            <div className="p-4 bg-canvas rounded-lg border border-line">
-              <p className="text-sm italic text-ink-body">&quot;{currentReviewForReply?.comment}&quot;</p>
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="storefront-review-reply" className="text-sm font-medium text-ink-body">Your Reply</label>
-              <textarea
-                id="storefront-review-reply"
-                required
-                rows={4}
-                value={replyText}
-                onChange={e => setReplyText(e.target.value)}
-                placeholder="Thank the customer or address their feedback..."
-                className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe bg-surface"
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-line">
-              <button type="button" onClick={() => setReplyModalOpen(false)} className="px-4 py-2 text-sm text-ink-body hover:text-ink transition-colors">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={replySubmitting}
-                className="bg-taupe hover:bg-taupe/90 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {replySubmitting && <Loader2 size={16} className="animate-spin" />}
-                Save Reply
-              </button>
-            </div>
-          </form>
-        </Modal>
+        </div>,
+        document.body
       )}
+
+
 
       <ServiceDetailModal
         service={selectedService}

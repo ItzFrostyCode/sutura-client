@@ -109,6 +109,7 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
   const form = {
     name: item.name,
     price: item.price.toString(),
+    service_id: item.service_id != null ? String(item.service_id) : '',
     estimated_days: item.estimated_days != null ? String(item.estimated_days) : '',
     material: item.material ?? '',
     color: item.color ?? '',
@@ -221,6 +222,7 @@ export function buildSavePayload(
 
   return {
     ...formData,
+    service_id: formData.service_id ? Number(formData.service_id) : null,
     fabric_image_url: formData.fabric_image_url || null,
     sizes: formData.sizes,
     features: {

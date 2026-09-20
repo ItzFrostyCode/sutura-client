@@ -213,8 +213,8 @@ export default function CatalogItemReviewsPage() {
     <div className="space-y-6 text-ink animate-fade-in">
       <div>
         <span className="text-[11px] font-bold text-taupe uppercase tracking-wider block">Customer Feedback</span>
-        <h1 className="text-2xl font-black text-ink tracking-tight">Catalog Showcase</h1>
-        <p className="text-xs text-ink-muted mt-0.5">Your made-to-order Design Catalog, Walk-in Orders, and performance analytics in one place.</p>
+        <h1 className="text-2xl font-black text-ink tracking-tight">Design Portfolio</h1>
+        <p className="text-xs text-ink-muted mt-0.5">Your bespoke Design Portfolio, Walk-in Orders, and performance analytics in one place.</p>
       </div>
 
       <CatalogModuleTabs />

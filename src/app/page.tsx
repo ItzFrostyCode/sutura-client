@@ -9,7 +9,7 @@ import {
   Radar, ShieldCheck, LineChart,
   Store, Star,
   ScanSearch, CalendarCheck2, Activity, PackageCheck,
-  Scissors, Sparkles,
+  Scissors, Sparkles, LocateFixed, ChevronRight, X, Loader2,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import PublicNav from '@/components/shared/PublicNav';
@@ -19,6 +19,8 @@ import type { CatalogItemResult } from '@/types/publicCatalog';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { isShopOpen, type OperatingHours } from '@/lib/shopStatus';
+import ShopLogoAvatar from '@/components/ShopLogoAvatar';
+import { getSavedLocation, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
 
 interface ShopResult {
   id: number;
@@ -45,12 +47,12 @@ const ABOUT_PILLARS = [
   {
     Icon: Radar,
     title: 'Discover by Garment & Location',
-    desc: 'Search verified tailoring shops across Davao City by the exact garment you need — Barong, Filipiniana, uniforms, and more — and see them pinned on the map.',
+    desc: 'Search verified tailoring stores across Davao City by the exact garment you need — Barong, Filipiniana, uniforms, and more — and see them pinned on the map.',
   },
   {
     Icon: ShieldCheck,
-    title: 'Verified Shops Only',
-    desc: 'Every shop goes through admin review before it appears here — no unverified listings, no guessing which tailor is legitimate.',
+    title: 'Verified Stores Only',
+    desc: 'Every store goes through admin review before it appears here — no unverified listings, no guessing which tailor is legitimate.',
   },
   {
     Icon: LineChart,
@@ -117,14 +119,92 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [pendingQuery, setPendingQuery] = useState('');
+  const [locatingGps, setLocatingGps] = useState(false);
+  const [gpsError, setGpsError] = useState('');
+  const [savedLocation, setSavedLocation] = useState<SavedLocation | null>(null);
+
+  useEffect(() => {
+    setSavedLocation(getSavedLocation());
+
+    if (!showLocationModal) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const frame = document.getElementById('mobile-frame-container');
+    const prevFrameOverflow = frame ? frame.style.overflow : '';
+    if (frame) {
+      frame.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      if (frame) {
+        frame.style.overflow = prevFrameOverflow;
+      }
+    };
+  }, [showLocationModal]);
+
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = heroSearch.trim();
-    if (query) {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    } else {
-      router.push('/search');
+    setPendingQuery(query);
+    setShowLocationModal(true);
+  };
+
+  const handleUseCurrentGps = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setGpsError('Geolocation is not supported by your device.');
+      return;
     }
+    setLocatingGps(true);
+    setGpsError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          const district = data?.address?.suburb || data?.address?.neighbourhood || data?.address?.city_district || 'Davao City';
+          const address = data?.display_name ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          saveLocationWithHistory({ lat: latitude, lng: longitude, address, district });
+        } catch {
+          saveLocationWithHistory({ lat: latitude, lng: longitude, address: `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`, district: 'Davao City' });
+        } finally {
+          setLocatingGps(false);
+          setShowLocationModal(false);
+          const q = pendingQuery.trim();
+          router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+        }
+      },
+      (err) => {
+        console.warn('GPS error:', err);
+        setLocatingGps(false);
+        setGpsError('Unable to access GPS location. Check browser permission or choose on map.');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  const handleContinueWithSaved = () => {
+    setShowLocationModal(false);
+    const q = pendingQuery.trim();
+    router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+  };
+
+  const handleChooseOnMap = () => {
+    setShowLocationModal(false);
+    const q = pendingQuery.trim();
+    router.push(q ? `/map?q=${encodeURIComponent(q)}&select=1&returnTo=/&continueTo=/search` : '/map?select=1&returnTo=/&continueTo=/search');
+  };
+
+  const handleSearchEntireCity = () => {
+    setShowLocationModal(false);
+    const q = pendingQuery.trim();
+    router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
   };
 
 
@@ -153,7 +233,7 @@ export default function HomePage() {
             Find Your Tailor.<br />Track Every Stitch.
           </h1>
           <p className="text-xs text-white/85 mb-4 max-w-[280px]">
-            Search verified Davao City tailoring shops by garment, fabric, or repair service.
+            Search verified Davao City tailoring stores by garment, fabric, or repair service.
           </p>
 
           {/* Big Wide Search Bar replacing the 2 buttons */}
@@ -226,7 +306,7 @@ export default function HomePage() {
                 <MapPin size={16} />
               </div>
               <div>
-                <p className="text-xs font-bold text-ink">Find Local Shops</p>
+                <p className="text-xs font-bold text-ink">Find Local Stores</p>
                 <p className="text-[11px] text-ink-muted leading-tight mt-0.5">Davao districts map</p>
               </div>
             </Link>
@@ -254,7 +334,7 @@ export default function HomePage() {
         <section className="relative h-[230px] mt-5 overflow-hidden group">
           <Image
             src="/images/davao_map_banner.jpg"
-            alt="Davao City Tailoring Shops Map"
+            alt="Davao City Tailoring Stores Map"
             fill
             unoptimized
             className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
@@ -376,11 +456,11 @@ export default function HomePage() {
         </section>
 
 
-        {/* Shops */}
+        {/* Stores */}
         <div className="px-[10px] mt-8">
           {shopsLoading && (
             <>
-              <h2 className="text-display text-xl text-ink mb-4">Shops</h2>
+              <h2 className="text-display text-xl text-ink mb-4">Stores</h2>
               <div className="grid grid-cols-2 gap-[5px]">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-surface border border-line overflow-hidden animate-pulse">
@@ -399,7 +479,7 @@ export default function HomePage() {
           {!shopsLoading && shops.length > 0 && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-display text-xl text-ink">Shops</h2>
+                <h2 className="text-display text-xl text-ink">Stores</h2>
                 <Link href="/shops" className="text-sm font-medium text-taupe hover:text-taupe-hover">See all →</Link>
               </div>
               <div className="grid grid-cols-2 gap-[5px]">
@@ -417,23 +497,13 @@ export default function HomePage() {
                           <Store size={24} className="text-ink-faint" />
                         </div>
                       )}
-                      <div className="absolute -bottom-5 left-3 w-14 h-14 shrink-0">
-                        <div className="w-full h-full rounded-full border-2 border-surface bg-surface overflow-hidden relative">
-                          {shop.logo_path ? (
-                            <Image src={getMediaUrl(shop.logo_path)} alt="" fill unoptimized className="object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-sunken">
-                              <Store size={14} className="text-ink-faint" />
-                            </div>
-                          )}
-                        </div>
-                        {/* Online / Offline status dot */}
-                        <span
-                          aria-label={isShopOpen(shop.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
-                          title={isShopOpen(shop.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
-                          className={`absolute bottom-0 right-0 z-10 w-3.5 h-3.5 rounded-full border-2 border-white shadow-md ${
-                            isShopOpen(shop.operating_hours) ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
-                          }`}
+                      <div className="absolute -bottom-5 left-3">
+                        <ShopLogoAvatar
+                          src={shop.logo_path}
+                          name={shop.name}
+                          className="w-14 h-14 rounded-full border-2 border-surface bg-surface shadow-xs"
+                          textClassName="text-base font-bold text-taupe"
+                          isOpen={isShopOpen(shop.operating_hours)}
                         />
                       </div>
                     </div>
@@ -467,11 +537,11 @@ export default function HomePage() {
           <div className="text-center max-w-2xl mx-auto mb-10">
             <p className="text-xs font-semibold uppercase tracking-widest text-taupe mb-2">About Sutura</p>
             <h2 className="text-display text-2xl sm:text-3xl text-ink mb-4">
-              A Web-Based Tailoring Shop Tracker for Davao City
+              A Web-Based Tailoring Store Tracker for Davao City
             </h2>
             <p className="text-sm text-ink-muted">
-              SUTURA centralizes and digitizes the discoverability and service tracking of tailoring shops within Davao City —
-              connecting customers to verified shops by garment specialization and location, while giving them real-time
+              SUTURA centralizes and digitizes the discoverability and service tracking of tailoring stores within Davao City —
+              connecting customers to verified stores by garment specialization and location, while giving them real-time
               visibility into their order from placement to pickup.
             </p>
           </div>
@@ -500,14 +570,14 @@ export default function HomePage() {
           <div className="mb-5">
             <span className="font-serif font-bold text-lg text-ink">SUTURA</span>
             <p className="text-xs text-ink-muted mt-1.5 leading-relaxed mb-4">
-              A Web-Based Tailoring Shop Tracker System for Davao City.
+              A Web-Based Tailoring Store Tracker System for Davao City.
             </p>
 
             <div className="grid grid-cols-2 gap-[5px]">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-ink mb-2">Discover</p>
                 <ul className="space-y-1.5">
-                  <li><Link href="/search" className="text-xs text-ink-muted hover:text-taupe">Search Shops</Link></li>
+                  <li><Link href="/search" className="text-xs text-ink-muted hover:text-taupe">Search Stores</Link></li>
                   <li><Link href="/map" className="text-xs text-ink-muted hover:text-taupe">Browse Map</Link></li>
                   <li><Link href="/track" className="text-xs text-ink-muted hover:text-taupe">Track an Order</Link></li>
                 </ul>
@@ -516,7 +586,7 @@ export default function HomePage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-ink mb-2">Account</p>
                 <ul className="space-y-1.5">
                   <li><Link href="/login" className="text-xs text-ink-muted hover:text-taupe">Log In</Link></li>
-                  <li><Link href="/register" className="text-xs text-ink-muted hover:text-taupe">Register a Shop</Link></li>
+                  <li><Link href="/register" className="text-xs text-ink-muted hover:text-taupe">Register a Store</Link></li>
                 </ul>
               </div>
             </div>
@@ -536,6 +606,117 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      {/* Location Suggestion Modal before proceeding to search */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 pointer-events-auto touch-none overscroll-contain">
+          {/* Backdrop scrim */}
+          <button
+            type="button"
+            aria-label="Close location dialog"
+            onClick={() => setShowLocationModal(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 focus:outline-none touch-none"
+          />
+
+          {/* Modal Card */}
+          <div className="relative bg-surface rounded-2xl shadow-2xl flex flex-col w-[calc(100%-24px)] max-w-[280px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 border border-line p-3.5 space-y-3 touch-auto">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setShowLocationModal(false)}
+              className="absolute top-2.5 right-2.5 p-1 rounded-full text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
+              aria-label="Close"
+            >
+              <X size={17} />
+            </button>
+
+            {/* Header Icon & Title */}
+            <div className="text-center pt-0.5">
+              <div className="w-11 h-11 rounded-full bg-taupe/15 text-taupe flex items-center justify-center mx-auto mb-2">
+                <LocateFixed size={22} className={locatingGps ? 'animate-pulse' : ''} />
+              </div>
+              <h2 className="text-sm font-serif font-bold text-ink leading-tight">
+                Find Tailors Near You
+              </h2>
+              <p className="text-[11px] text-ink-muted mt-1 leading-relaxed">
+                Use your current location to discover the closest verified tailor stores in Davao City.
+              </p>
+
+              {savedLocation && (
+                <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full bg-sunken border border-line text-[10px] text-ink font-medium max-w-[230px] truncate">
+                  <MapPin size={10} className="text-taupe shrink-0" />
+                  <span className="truncate">Saved: {savedLocation.district || savedLocation.address}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Error banner if GPS fails */}
+            {gpsError && (
+              <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] text-center">
+                {gpsError}
+              </div>
+            )}
+
+            {/* Actions list */}
+            <div className="space-y-1.5 pt-0.5">
+              {/* GPS Button */}
+              <button
+                type="button"
+                onClick={handleUseCurrentGps}
+                disabled={locatingGps}
+                className="w-full py-2.5 px-3 bg-taupe hover:bg-taupe-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                {locatingGps ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    <span>Detecting GPS Location…</span>
+                  </>
+                ) : (
+                  <>
+                    <LocateFixed size={15} />
+                    <span>Use Current Location</span>
+                  </>
+                )}
+              </button>
+
+              {/* Continue with Saved Location (if exists) */}
+              {savedLocation && (
+                <button
+                  type="button"
+                  onClick={handleContinueWithSaved}
+                  className="w-full py-2 px-3 bg-surface hover:bg-sunken border border-line text-ink rounded-xl font-semibold text-xs flex items-center justify-between transition-colors shadow-xs cursor-pointer"
+                >
+                  <span className="truncate">Search in {savedLocation.district || 'Saved Location'}</span>
+                  <ChevronRight size={14} className="text-ink-faint shrink-0 ml-1" />
+                </button>
+              )}
+
+              {/* Choose on Map */}
+              <button
+                type="button"
+                onClick={handleChooseOnMap}
+                className="w-full py-2 px-3 bg-surface hover:bg-sunken border border-line text-ink rounded-xl font-semibold text-xs flex items-center justify-between transition-colors shadow-xs cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <MapPin size={13} className="text-taupe shrink-0" />
+                  <span className="truncate">Choose on Map</span>
+                </div>
+                <ChevronRight size={14} className="text-ink-faint shrink-0 ml-1" />
+              </button>
+            </div>
+
+            {/* Skip Option */}
+            <div className="pt-1 text-center border-t border-line/60">
+              <button
+                type="button"
+                onClick={handleSearchEntireCity}
+                className="text-[11px] text-ink-muted hover:text-ink font-medium transition-colors cursor-pointer"
+              >
+                Search all Davao City without location
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

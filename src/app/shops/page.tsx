@@ -76,8 +76,8 @@ function ShopCard({ shop }: { shop: ShopResult }) {
           </div>
           {/* Online / Offline status dot */}
           <span
-            aria-label={isShopOpen(shop.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
-            title={isShopOpen(shop.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
+            aria-label={isShopOpen(shop.operating_hours) ? 'Open now' : 'Closed now'}
+            title={isShopOpen(shop.operating_hours) ? 'Open now' : 'Closed now'}
             className={`absolute bottom-0 right-0 z-10 w-3.5 h-3.5 rounded-full border-2 border-white shadow-md ${
               isShopOpen(shop.operating_hours) ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
             }`}
@@ -202,7 +202,7 @@ function ShopsDirectoryContent() {
           </button>
 
           {/* Title — centered */}
-          <h1 className="flex-1 text-center text-sm font-bold text-ink tracking-wide">All Shops</h1>
+          <h1 className="flex-1 text-center text-sm font-bold text-ink tracking-wide">All Stores</h1>
 
           {/* Search + Filter icons */}
           <div className="flex items-center gap-1">
@@ -230,7 +230,7 @@ function ShopsDirectoryContent() {
         {/* Collapsible filter strip */}
         {filterOpen && (
           <div className="px-3 pb-3 border-t border-line/60 space-y-2">
-            <SearchInput id="shops-search-input" value={q} onChange={setQ} placeholder="Search shop name..." className="w-full" />
+            <SearchInput id="shops-search-input" value={q} onChange={setQ} placeholder="Search store name..." className="w-full" />
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
               <select
                 value={district}
@@ -299,17 +299,17 @@ function ShopsDirectoryContent() {
           <p className="text-xs text-ink-faint mb-4">Sorted by distance from your current location.</p>
         )}
 
-        {loading && <div className="text-center py-16 text-sm text-ink-muted">Loading shops…</div>}
+        {loading && <div className="text-center py-16 text-sm text-ink-muted">Loading stores…</div>}
 
         {!loading && shops.length === 0 && (
           <div className="bg-surface border border-line rounded-2xl p-10 text-center text-sm text-ink-muted">
-            No shops matched your search.
+            No stores matched your search.
           </div>
         )}
 
         {!loading && shops.length > 0 && (
           <>
-            <p className="text-xs text-ink-faint mb-3">{total} shop{total === 1 ? '' : 's'}</p>
+            <p className="text-xs text-ink-faint mb-3">{total} store{total === 1 ? '' : 's'}</p>
 
             {sortBy === 'name_asc' && !userLocation ? (
               // Real letter-sectioned directory — only letters that actually

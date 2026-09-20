@@ -339,7 +339,7 @@ export default function AppointmentCalendarView({
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-bold text-sm text-ink truncate">{apt.customer?.name || 'Walk-in Client'}</p>
                       <TypeBadge type={apt.appointment_type} />
-                      <StatusBadge status={apt.status} />
+                      <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
                     </div>
 
                     <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">

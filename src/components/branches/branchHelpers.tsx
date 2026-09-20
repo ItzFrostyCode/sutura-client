@@ -8,6 +8,7 @@ export interface ShopBranch {
   address: string;
   landmark?: string | null;
   city: string;
+  district?: string | null;
   contact_number: string | null;
   is_main: boolean;
   latitude?: string | null;
@@ -19,11 +20,18 @@ export interface ShopBranch {
   guide_image_url?: string | null;
 }
 
+// Same 8 real Davao City districts the customer-facing discovery filter
+// uses (ShopController::publicIndex) — a branch left on "" (no district
+// selected) just doesn't match any district filter, matching how the field
+// is nullable everywhere else in this system.
+export const DAVAO_DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
+
 export const EMPTY_FORM = {
   name: '',
   address: '',
   landmark: '',
   city: '',
+  district: '',
   contact_number: '',
   latitude: '',
   longitude: '',

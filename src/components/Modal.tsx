@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -31,6 +32,12 @@ interface ModalProps {
 export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -65,9 +72,9 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-stretch justify-center md:items-center md:p-4">
       {/* Backdrop — only ever seen on desktop; on mobile the panel covers it. */}
       <button
@@ -116,6 +123,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

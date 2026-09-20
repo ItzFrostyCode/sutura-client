@@ -43,7 +43,7 @@ export function MetricPill({ label, value }: { readonly label: string; readonly 
   return (
     <span className="inline-flex items-center gap-1 bg-sunken text-ink-body text-xs px-2.5 py-1 rounded-full font-medium border border-line">
       <span className="text-ink-faint">{label}</span>
-      <span className="font-semibold text-ink">{value}&Prime;</span>
+      <span className="font-semibold text-ink">{value} cm</span>
     </span>
   );
 }

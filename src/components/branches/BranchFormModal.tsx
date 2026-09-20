@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { Info, Loader2, X, Lock } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Info, Loader2, X, Lock, MapPinned } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
+import { DAVAO_DISTRICTS } from '@/components/branches/branchHelpers';
+import type { SavedLocation } from '@/lib/customerLocation';
+
+// Same map-based picker /search's "Your Location" uses — Leaflet touches
+// `window` at import time, so it stays client-only like every other Leaflet
+// consumer in this app.
+const LocationPicker = dynamic(() => import('@/components/discovery/LocationPicker'), { ssr: false });
 
 interface BranchFormModalProps {
   readonly isOpen: boolean;
@@ -17,6 +25,7 @@ interface BranchFormModalProps {
     address: string;
     landmark?: string;
     city: string;
+    district?: string;
     contact_number: string;
     latitude: string;
     longitude: string;
@@ -29,6 +38,7 @@ interface BranchFormModalProps {
     address: string;
     landmark: string;
     city: string;
+    district: string;
     contact_number: string;
     latitude: string;
     longitude: string;
@@ -50,7 +60,16 @@ export default function BranchFormModal({
   setFormData,
 }: BranchFormModalProps) {
   const [uploading, setUploading] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  const parsedLat = parseFloat(formData.latitude);
+  const parsedLng = parseFloat(formData.longitude);
+  const pickerInitial: SavedLocation | null = (!Number.isNaN(parsedLat) && !Number.isNaN(parsedLng))
+    ? { lat: parsedLat, lng: parsedLng, address: formData.address, district: formData.district ?? '' }
+    : null;
+
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Branch' : 'Add New Branch'}>
       <form onSubmit={onSubmit} className="space-y-4">
         {errorMsg && (
@@ -118,11 +137,11 @@ export default function BranchFormModal({
           />
         </div>
 
-        {/* City & Contact */}
+        {/* City & District */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="branch-city" className="block text-sm font-medium text-ink-body mb-1">
-              City / District <span className="text-red-400">*</span>
+              City <span className="text-red-400">*</span>
             </label>
             <input
               id="branch-city"
@@ -135,16 +154,34 @@ export default function BranchFormModal({
             />
           </div>
           <div>
-            <label htmlFor="branch-contact" className="block text-sm font-medium text-ink-body mb-1">Contact Number</label>
-            <input
-              id="branch-contact"
-              type="text"
-              placeholder="e.g. 09123456789"
-              value={formData.contact_number}
-              onChange={e => setFormData(prev => ({ ...prev, contact_number: e.target.value }))}
+            <label htmlFor="branch-district" className="block text-sm font-medium text-ink-body mb-1">
+              District <span className="text-ink-faint font-normal">(for customer search)</span>
+            </label>
+            <select
+              id="branch-district"
+              value={formData.district ?? ''}
+              onChange={e => setFormData(prev => ({ ...prev, district: e.target.value }))}
               className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-            />
+            >
+              <option value="">Not set</option>
+              {DAVAO_DISTRICTS.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        {/* Contact */}
+        <div>
+          <label htmlFor="branch-contact" className="block text-sm font-medium text-ink-body mb-1">Contact Number</label>
+          <input
+            id="branch-contact"
+            type="text"
+            placeholder="e.g. 09123456789"
+            value={formData.contact_number}
+            onChange={e => setFormData(prev => ({ ...prev, contact_number: e.target.value }))}
+            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+          />
         </div>
 
         {/* Operating Hours */}
@@ -183,9 +220,16 @@ export default function BranchFormModal({
               className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-taupe"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setShowLocationPicker(true)}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-taupe text-taupe text-sm font-semibold"
+          >
+            <MapPinned size={15} /> Pick on Map
+          </button>
           <p className="text-xs text-ink-faint mt-1.5 flex items-start gap-1.5">
             <Info size={13} className="mt-0.5 shrink-0" />
-            <span>Tip: Open Google Maps, right-click your shop location, and copy the coordinates.</span>
+            <span>Or type coordinates directly — copy them from Google Maps.</span>
           </p>
         </div>
 
@@ -280,5 +324,18 @@ export default function BranchFormModal({
         </div>
       </form>
     </Modal>
+
+    {showLocationPicker && (
+      <LocationPicker
+        initial={pickerInitial}
+        confirmLabel="Confirm Branch Location"
+        onClose={() => setShowLocationPicker(false)}
+        onConfirm={(loc) => {
+          setFormData(prev => ({ ...prev, latitude: String(loc.lat), longitude: String(loc.lng) }));
+          setShowLocationPicker(false);
+        }}
+      />
+    )}
+    </>
   );
 }

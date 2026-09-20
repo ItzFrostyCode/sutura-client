@@ -41,6 +41,7 @@ export default function CatalogPage() {
   const [filterColor, setFilterColor] = useState('');
   const [filterSize, setFilterSize] = useState('');
   const [sortOrder, setSortOrder] = useState<'' | 'price_desc' | 'price_asc'>('');
+  const [showFabric, setShowFabric] = useState(false);
 
   const fetchItems = useCallback(() => {
     if (shop?.id) {
@@ -115,7 +116,7 @@ export default function CatalogPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         eyebrow="Showroom"
-        title="Catalog Showcase"
+        title="Design Portfolio"
         description={<>Manage the garments showcased to your customers. <ShopWideNote /></>}
         actions={
           <>
@@ -149,7 +150,7 @@ export default function CatalogPage() {
         return (
           <StatBand
             items={[
-              { label: 'Catalog Size', value: items.length, icon: ImageIcon },
+              { label: 'Catalog Works', value: items.length, icon: ImageIcon },
               { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye },
               { label: 'Catalog Revenue', value: `₱${totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, icon: TrendingUp, tone: 'sage' },
               { label: 'Avg. Rating', value: avgRating !== null ? avgRating.toFixed(1) : '—', icon: Star },
@@ -209,6 +210,22 @@ export default function CatalogPage() {
               </button>
             )}
             <span className="text-xs text-ink-faint ml-auto">{filteredItems.length} of {items.length}</span>
+
+            {/* Model / Fabric toggle */}
+            <div className="flex items-center gap-1.5 shrink-0 ml-3">
+              <span className={`text-[11px] font-semibold ${!showFabric ? 'text-ink' : 'text-ink-faint'}`}>Model</span>
+              <button
+                type="button"
+                onClick={() => setShowFabric((v) => !v)}
+                aria-label="Toggle between model and fabric photos"
+                className={`relative w-8 h-[18px] rounded-full transition-colors ${showFabric ? 'bg-ink' : 'bg-line-strong'}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${showFabric ? 'translate-x-[14px]' : ''}`}
+                />
+              </button>
+              <span className={`text-[11px] font-semibold ${showFabric ? 'text-ink' : 'text-ink-faint'}`}>Fabric</span>
+            </div>
           </div>
 
           {filteredItems.length === 0 ? (
@@ -221,6 +238,7 @@ export default function CatalogPage() {
                 <CatalogItemCard
                   key={item.id}
                   item={item}
+                  showFabric={showFabric}
                   onView={handleView}
                   onOpenDelete={openDelete}
                 />

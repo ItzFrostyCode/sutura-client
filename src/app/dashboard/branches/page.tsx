@@ -73,6 +73,7 @@ export default function BranchesPage() {
       address: branch.address,
       landmark: branch.landmark || '',
       city: branch.city,
+      district: branch.district || '',
       contact_number: branch.contact_number || '',
       latitude: branch.latitude || '',
       longitude: branch.longitude || '',

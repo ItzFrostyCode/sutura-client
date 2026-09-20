@@ -30,7 +30,7 @@ export default function NewCatalogItemPage() {
   return (
     <CatalogForm
       title="Create Catalog Item"
-      description="Add a new premium design or rental product to your storefront catalog."
+      description="Add a new craftsmanship sample or bespoke design to your atelier catalog."
       submitLabel="Publish to Catalog"
       onSubmit={handleSave}
       submitting={saving}

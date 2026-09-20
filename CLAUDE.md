@@ -58,7 +58,7 @@ The approved thesis paper and the interview docs describe idealized 13–19-stag
 - `status` enum: `pending → design → pattern_making (or mass_cutting_printing) → cutting → sewing → ready_for_fitting → final_adjustments → qc_ironing → ready_for_pickup → completed`, with `cancelled`, `rejected`, and `on_hold` reachable from most points. `mass_cutting_printing` is the Bulk Order Override for jobs with a Team Roster/Size Sheet — see `jobHelpers.tsx`'s `columnsForJobs()`, which only shows whichever of the two is relevant. The Kanban board (`JobKanbanBoard.tsx`) renders all of these as columns.
 - `payment_status` enum: `unpaid → partial → paid`.
 - Staff-facing production stages (`JobOrder::STAFF_STAGES`): `design, pattern_making, cutting, sewing, qc_ironing` — assigned per-stage via a pivot table, so a staff member can have multiple open rows on the *same* job order. Any "how many active jobs" count must dedupe by job order id, not count pivot rows — this exact bug shipped (Staff List showed inflated counts) and is now fixed in the backend's `StaffController`.
-- `tracking_code` — a public, no-login order-status lookup by code (backend/DB only, no frontend page built yet, matches how a courier tracking number works). Don't build a page for it unless explicitly asked.
+- `tracking_code` — a public, no-login order-status lookup by code, matching how a courier tracking number works. Frontend built: `/track` (code entry, linked from the Package icon in `PublicNav.tsx`) → `/track/[code]` (live `OrderTrackingView` stepper).
 
 When asked to add/change tracking stages, check the model/migration in `sutura-server` first — don't copy a stage table straight out of the research docs without reconciling it against the real enum.
 
@@ -88,10 +88,11 @@ Watch for this shape in any new dashboard count/badge: a widget deriving its num
 - A `grid-cols-1 lg:grid-cols-3` list+detail split that stacks the detail/action panel *below* a tall list on mobile, making action buttons unreachable without scrolling past everything → use Tailwind `order-1`/`order-2` on the two panels plus `lg:order-none` to restore normal DOM order on desktop (fixed on Payments' Receipts tab).
 - A skeleton loading state using a fixed `grid-cols-3` (or similar) that doesn't collapse on mobile even though the real content below it does → always give skeleton grids the same responsive breakpoints as the real grid they stand in for (fixed on Branches).
 
-Three genuinely open tasks:
-1. **Renalyn** — customer-facing "My Orders" tracker page (backend already supports filtering by `customer_id` via `JobOrderController::index`) + cross-shop search/discovery by garment specialization (the thesis's own core discovery feature — no page exists for this yet at all).
-2. **Masudog** — a "My Assigned Jobs" filter tab for staff (backend already supports `?assigned_staff_id=X` on the jobs endpoint).
-3. **Bongo** — System Admin dashboard has zero frontend pages, though the backend API is already fully built (`/admin/shops`, `/admin/subscription-plans`, `/admin/tickets`).
+**Customer-facing "My Orders" tracker (`/account/orders`, `/account/orders/[id]`) and cross-shop discovery search (`/search`) are both built** — verified directly against the code on 2026-09-19, after this doc and `GroupTasks.md` were found to still describe them as missing well after they'd shipped. Don't trust either doc's "genuinely missing" framing without checking the real routes first — that's exactly the mistake that happened here.
+
+Two remaining open tasks (not re-verified as of 2026-09-19 — check the code before trusting these too):
+1. **Masudog** — a "My Assigned Jobs" filter tab for staff (backend already supports `?assigned_staff_id=X` on the jobs endpoint).
+2. **Bongo** — System Admin dashboard has zero frontend pages, though the backend API is already fully built (`/admin/shops`, `/admin/subscription-plans`, `/admin/tickets`).
 
 ## UX principles — what "right" looks like here
 

@@ -60,20 +60,21 @@ export default function MeasurementList({
                   acc[key].push(r);
                   return acc;
                 }, {} as Record<string, MeasurementRecord[]>)
-              ).map(([profileName, versions]) => {
+              ).map(([groupKey, versions]) => {
                 // Sort versions by ID ascending
                 versions.sort((a, b) => a.id - b.id);
-                
-                const rKey = `c_${firstRec.customer_id}_p_${profileName}`;
+                const profileName = versions[0].profile_name;
+
+                const rKey = `c_${firstRec.customer_id}_p_${groupKey}`;
                 const selectedId = selectedVersionIds[rKey];
                 const activeRec = versions.find(v => v.id === selectedId) || versions.at(-1)!;
                 const activeIndex = versions.indexOf(activeRec);
-                
+
                 const isExpanded = expandedIds.has(activeRec.id);
                 const filledCount = Object.values(activeRec.metrics || {}).filter(Boolean).length;
-                
+
                 return (
-                  <div key={profileName}>
+                  <div key={groupKey}>
                     {/* Profile Row */}
                     <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-canvas/70 transition-colors">
                       <button

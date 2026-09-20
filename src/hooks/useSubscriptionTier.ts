@@ -13,6 +13,7 @@ export type SubscriptionTier = 'basic' | 'pro' | 'premium';
  * PREMIUM: reports | featured_visibility | custom_branding | advanced_dashboard
  */
 export type GatedFeature =
+  | 'catalog'
   | 'portfolio'
   | 'staff'
   | 'analytics'
@@ -114,6 +115,7 @@ export function useSubscriptionTier(): UseSubscriptionTierReturn {
 
     // Features that require at least PRO
     const proFeatures = new Set<GatedFeature>([
+      'catalog',
       'portfolio',
       'staff',
       'analytics',

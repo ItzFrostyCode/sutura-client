@@ -102,7 +102,26 @@ export function TypeBadge({ type }: { readonly type: AppointmentType }) {
   );
 }
 
-export function StatusBadge({ status }: { readonly status: AppointmentStatus }) {
+/**
+ * `scheduledAt` is optional and additive: when given, a pending/confirmed
+ * appointment whose time has already passed renders as "Overdue" instead
+ * of its normal status — nothing here auto-transitions the real status
+ * (that's a business-rule decision — grace period, auto-no-show policy —
+ * this owner hasn't made), it just makes an appointment that's silently
+ * sitting unresolved actually visible in a scan of the list/calendar.
+ */
+export function StatusBadge({ status, scheduledAt }: { readonly status: AppointmentStatus; readonly scheduledAt?: string }) {
+  const isOverdue = (status === 'pending' || status === 'confirmed') && !!scheduledAt && new Date(scheduledAt) < new Date();
+
+  if (isOverdue) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 bg-rose-50 text-rose-700 border-rose-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+        <span>Overdue</span>
+      </span>
+    );
+  }
+
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${cfg.badge}`}>

@@ -40,8 +40,8 @@ const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badg
     icon: <Smartphone size={15} className="text-blue-600" />,
     badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
-  bank_transfer: {
-    label: 'Bank Transfer',
+  paymaya: {
+    label: 'PayMaya',
     icon: <CreditCard size={15} className="text-purple-600" />,
     badgeCls: 'bg-purple-50 text-purple-700 border-purple-200',
   },
@@ -457,9 +457,9 @@ export default function JobFinancialsCard({
                             >
                               <option value="cash">Cash</option>
                               <option value="gcash">GCash</option>
-                              <option value="bank_transfer">Bank Transfer</option>
+                              <option value="paymaya">PayMaya</option>
                             </select>
-                            {(editMethod === 'gcash' || editMethod === 'bank_transfer') && (
+                            {(editMethod === 'gcash' || editMethod === 'paymaya') && (
                               <input
                                 type="text"
                                 value={editReference}
@@ -657,7 +657,7 @@ export default function JobFinancialsCard({
                     {[
                       { key: 'cash', label: 'Cash', icon: Banknote },
                       { key: 'gcash', label: 'GCash', icon: Smartphone },
-                      { key: 'bank_transfer', label: 'Bank', icon: CreditCard },
+                      { key: 'paymaya', label: 'PayMaya', icon: CreditCard },
                     ].map(m => {
                       const isSelected = method === m.key;
                       const Icon = m.icon;
@@ -680,12 +680,12 @@ export default function JobFinancialsCard({
                   </div>
                 </div>
 
-                {/* GCash / Bank Reference & Receipt Screenshot */}
-                {(method === 'gcash' || method === 'bank_transfer') && (
+                {/* GCash / PayMaya Reference & Receipt Screenshot */}
+                {(method === 'gcash' || method === 'paymaya') && (
                   <div className="space-y-3 p-3 bg-canvas border border-line rounded-xl">
                     <div className="space-y-1">
                       <label htmlFor="ref-no" className="text-[11px] font-bold text-ink-muted uppercase">
-                        {method === 'gcash' ? 'GCash Reference Number' : 'Bank Reference Number'}
+                        {method === 'gcash' ? 'GCash Reference Number' : 'PayMaya Reference Number'}
                       </label>
                       <input
                         id="ref-no"
