@@ -1,19 +1,20 @@
-# Force LF line endings for all text files — prevents CRLF vs LF
-# merge conflicts between Windows and macOS teammates.
+# Auto detect text files and perform LF normalization on checkout
 * text=auto eol=lf
 
-# Explicitly LF
-*.tsx    text eol=lf
-*.ts     text eol=lf
-*.js     text eol=lf
-*.jsx    text eol=lf
-*.json   text eol=lf
-*.css    text eol=lf
-*.md     text eol=lf
-*.yml    text eol=lf
-*.yaml   text eol=lf
-*.env*   text eol=lf
-*.sh     text eol=lf
+# Explicitly declare text files you want to always be normalized and not converted to CRLF
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.svg text eol=lf
+*.env* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
 
 # Diffs
 *.tsx diff=typescript
@@ -21,13 +22,19 @@
 *.css diff=css
 *.md  diff=markdown
 
-# Binary — do not touch line endings
-*.png  binary
-*.jpg  binary
+# Windows scripts (must keep CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
 *.jpeg binary
-*.gif  binary
-*.ico  binary
+*.gif binary
 *.webp binary
-*.pdf  binary
+*.ico binary
+*.docx binary
+*.pdf binary
 *.woff binary
 *.woff2 binary
+*.avif binary

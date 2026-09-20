@@ -31,6 +31,7 @@ export function useJobs() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
+  const [designOriginFilter, setDesignOriginFilter] = useState<'all' | 'catalog' | 'custom' | 'alteration'>('all');
 
   // Review gate state
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -55,10 +56,13 @@ export function useJobs() {
       }
       api.get(`/shops/${shop.id}/jobs`, { params })
         .then(res => {
-          setJobs(res.data.data.data || res.data.data);
-          setWalkInCount(res.data.walk_in_count ?? 0);
-          setOnlineCount(res.data.online_count ?? 0);
-          setPendingReviewCount(res.data.pending_count ?? 0);
+          const list = Array.isArray(res.data?.data?.data)
+            ? res.data.data.data
+            : (Array.isArray(res.data?.data) ? res.data.data : []);
+          setJobs(list);
+          setWalkInCount(res.data?.walk_in_count ?? 0);
+          setOnlineCount(res.data?.online_count ?? 0);
+          setPendingReviewCount(res.data?.pending_count ?? 0);
           setLoading(false);
         })
         .catch(err => {
@@ -196,8 +200,20 @@ export function useJobs() {
       || j.customer?.name?.toLowerCase().includes(search.toLowerCase());
     const matchOverdue = !overdueOnly || getDueStatus(j.due_date, j.status)?.label === 'Overdue';
     const matchGarment = !garmentCategoryFilter || j.garment_category === garmentCategoryFilter;
-    return matchType && matchSearch && matchOverdue && matchGarment;
+    const matchOrigin =
+      designOriginFilter === 'all'
+        ? true
+        : designOriginFilter === 'catalog'
+        ? Boolean((j as unknown as { catalog_item_id?: number }).catalog_item_id || j.catalog_item)
+        : designOriginFilter === 'alteration'
+        ? j.garment_category === 'alteration_repair'
+        : (!((j as unknown as { catalog_item_id?: number }).catalog_item_id) && !j.catalog_item && j.garment_category !== 'alteration_repair');
+    return matchType && matchSearch && matchOverdue && matchGarment && matchOrigin;
   });
+
+  const catalogJobsCount = jobs.filter(j => Boolean((j as unknown as { catalog_item_id?: number }).catalog_item_id || j.catalog_item)).length;
+  const customBespokeCount = jobs.filter(j => !((j as unknown as { catalog_item_id?: number }).catalog_item_id) && !j.catalog_item && j.garment_category !== 'alteration_repair').length;
+  const alterationJobsCount = jobs.filter(j => j.garment_category === 'alteration_repair').length;
 
   // Only shows whichever of Pattern Making / Mass Cutting & Printing is
   // actually relevant to the jobs currently on the board (bulk vs. standard
@@ -249,5 +265,10 @@ export function useJobs() {
     fetchJobs,
     overdueOnly,
     garmentCategoryFilter,
+    designOriginFilter,
+    setDesignOriginFilter,
+    catalogJobsCount,
+    customBespokeCount,
+    alterationJobsCount,
   };
 }

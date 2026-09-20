@@ -6,220 +6,106 @@ import {
   Bell,
   Check,
   CheckCheck,
-  Scissors,
-  Calendar,
-  CreditCard,
-  Package,
-  Info,
   X,
+  List,
+  Settings,
   MoreVertical,
   Trash2,
-  UserCog,
-  XCircle,
-  AlertTriangle,
-  PackageOpen,
-  PauseCircle,
 } from 'lucide-react';
 import api from '@/lib/axios';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface NotifData {
-  type?: string;
-  title?: string;
-  message?: string;
-  action_url?: string;
-  [key: string]: unknown;
-}
-
-interface AppNotification {
-  id: string;
-  created_at: string;
-  read_at: string | null;
-  data: NotifData;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-const TYPE_CONFIG: Record<
-  string,
-  { icon: React.ElementType; bg: string; color: string; label: string }
-> = {
-  order_ready: {
-    icon: Package,
-    bg: 'bg-amber-50',
-    color: 'text-amber-600',
-    label: 'Order Ready',
-  },
-  new_job_order: {
-    icon: Scissors,
-    bg: 'bg-sunken',
-    color: 'text-taupe',
-    label: 'New Job',
-  },
-  appointment_booked: {
-    icon: Calendar,
-    bg: 'bg-blue-50',
-    color: 'text-blue-600',
-    label: 'Appointment',
-  },
-  payment_received: {
-    icon: CreditCard,
-    bg: 'bg-emerald-50',
-    color: 'text-emerald-600',
-    label: 'Payment',
-  },
-  new_catalog_order: {
-    icon: Package,
-    bg: 'bg-violet-50',
-    color: 'text-violet-600',
-    label: 'New Order',
-  },
-  staff_assigned: {
-    icon: UserCog,
-    bg: 'bg-sunken',
-    color: 'text-taupe',
-    label: 'Staff Assigned',
-  },
-  payment_rejected: {
-    icon: XCircle,
-    bg: 'bg-red-50',
-    color: 'text-red-600',
-    label: 'Payment Rejected',
-  },
-  overdue_jobs_digest: {
-    icon: AlertTriangle,
-    bg: 'bg-amber-50',
-    color: 'text-amber-600',
-    label: 'Overdue Jobs',
-  },
-  unclaimed_pickups_digest: {
-    icon: PackageOpen,
-    bg: 'bg-orange-50',
-    color: 'text-orange-600',
-    label: 'Unclaimed Pickups',
-  },
-  jobs_on_hold_digest: {
-    icon: PauseCircle,
-    bg: 'bg-amber-50',
-    color: 'text-amber-600',
-    label: 'Jobs On Hold',
-  },
-  subscription_expired: {
-    icon: CreditCard,
-    bg: 'bg-red-50',
-    color: 'text-red-600',
-    label: 'Subscription',
-  },
-  default: {
-    icon: Info,
-    bg: 'bg-sunken',
-    color: 'text-ink-muted',
-    label: 'Update',
-  },
-};
-
-// job_* (every production-stage transition, e.g. job_cutting, job_completed)
-// and appointment_* (every status change, e.g. appointment_confirmed,
-// appointment_cancelled) are generated dynamically from the underlying
-// status/stage string — enumerating every possible value here would drift
-// out of sync with JobOrder::STATUSES/Appointment::STATUSES the moment a
-// new one is added, so they're matched by prefix instead of by exact key.
-function getTypeConfig(type?: string) {
-  if (type && TYPE_CONFIG[type]) return TYPE_CONFIG[type];
-  if (type?.startsWith('job_')) return TYPE_CONFIG.new_job_order;
-  if (type?.startsWith('appointment_')) return TYPE_CONFIG.appointment_booked;
-  return TYPE_CONFIG.default;
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
+import {
+  AppNotification,
+  getSenderInfo,
+  formatDateTime,
+  relativeTime,
+} from '@/lib/notificationHelpers';
+import NotificationDetailModal from '@/components/notifications/NotificationDetailModal';
 
 export default function NotificationBell() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  // Backend-computed, unlimited-scope count — the list itself is capped to
-  // the 30 most recent notifications, so deriving "unread" by filtering
-  // that same capped array would silently undercount any owner sitting on
-  // more than 30 unread notifications at once.
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [dismissing, setDismissing] = useState<string | null>(null);
+  const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  // ── Fetch ────────────────────────────────────────────────────────────────
-  // Defined inside the effect so setState is called inside an async callback,
-  // not synchronously in the effect body — this is the correct React pattern.
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const res = await api.get('/notifications');
-        const raw = res.data.data;
-        const list: AppNotification[] = Array.isArray(raw) ? raw : raw?.data ?? [];
-        if (!cancelled) {
-          setNotifications(list);
-          setUnreadCount(typeof res.data.unread_count === 'number' ? res.data.unread_count : list.filter(n => !n.read_at).length);
-        }
-      } catch {
-        // Silently fail — bell shows 0 unread
+  // ── Fetch Notifications ──────────────────────────────────────────────────
+  const fetchList = async () => {
+    try {
+      const res = await api.get('/notifications?limit=30');
+      const raw = res.data.data;
+      let list: AppNotification[] = [];
+      if (Array.isArray(raw)) {
+        list = raw;
+      } else if (raw && Array.isArray(raw.data)) {
+        list = raw.data;
+      } else if (raw && typeof raw === 'object') {
+        list = Object.values(raw).filter(
+          (item): item is AppNotification =>
+            item !== null && typeof item === 'object' && 'id' in item
+        );
       }
-    };
+      setNotifications(list);
+      setUnreadCount(
+        typeof res.data.unread_count === 'number'
+          ? res.data.unread_count
+          : list.filter(n => !n.read_at).length
+      );
+    } catch {
+      // Silently fail
+    }
+  };
 
-    void load();
-    const interval = setInterval(() => { void load(); }, 30_000);
+  useEffect(() => {
+    void fetchList();
+    const interval = setInterval(() => {
+      void fetchList();
+    }, 30_000);
 
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []); // empty — load is defined inside, no external deps
+    return () => clearInterval(interval);
+  }, []);
+
+  // When opening dropdown, fetch immediately to guarantee fresh data
+  useEffect(() => {
+    if (open) {
+      void fetchList();
+    }
+  }, [open]);
 
   // ── Click-outside close ──────────────────────────────────────────────────
   useEffect(() => {
     function onOutside(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setMenuOpenFor(null);
       }
     }
     if (open) document.addEventListener('mousedown', onOutside);
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
 
-  // ── Click-outside close for the per-row "⋯" menu ─────────────────────────
+  // Click-outside close for per-row 3-dot menu
   useEffect(() => {
     function onOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-menu-container]')) {
         setMenuOpenFor(null);
       }
     }
-    if (menuOpenFor) document.addEventListener('mousedown', onOutside);
+    if (menuOpenFor) {
+      document.addEventListener('mousedown', onOutside);
+    }
     return () => document.removeEventListener('mousedown', onOutside);
   }, [menuOpenFor]);
 
   // ── Mark one read ────────────────────────────────────────────────────────
-  // Stays in the list (just visually muted, see the read_at check in the
-  // row render below) instead of disappearing — clicking to view/navigate
-  // shouldn't make a notification look deleted.
   const markAsRead = async (id: string) => {
     const target = notifications.find(n => n.id === id);
     if (!target || target.read_at) return;
 
-    setDismissing(id);
     setUnreadCount(c => Math.max(0, c - 1));
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
@@ -235,28 +121,11 @@ export default function NotificationBell() {
       setNotifications(prev =>
         prev.map(n => (n.id === id ? { ...n, read_at: null } : n))
       );
-    } finally {
-      setDismissing(null);
     }
   };
 
-  // ── Mark all read ────────────────────────────────────────────────────────
-  const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
-    setUnreadCount(0);
-    try {
-      const res = await api.post('/notifications/read-all');
-      if (typeof res.data?.unread_count === 'number') {
-        setUnreadCount(res.data.unread_count);
-      }
-    } catch {
-      /* ignore */
-    }
-  };
-
-  // ── Mark one unread — counterpart to markAsRead, for the "⋯" row menu ────
+  // ── Mark one unread ──────────────────────────────────────────────────────
   const markAsUnread = async (id: string) => {
-    setMenuOpenFor(null);
     const target = notifications.find(n => n.id === id);
     if (!target || !target.read_at) return;
 
@@ -278,10 +147,25 @@ export default function NotificationBell() {
     }
   };
 
-  // ── Remove one — the explicit "I don't need to see this again" action,
-  // distinct from markAsRead which keeps it visible just muted.
+  // ── Mark all read ────────────────────────────────────────────────────────
+  const markAllAsRead = async () => {
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() }))
+    );
+    setUnreadCount(0);
+    try {
+      const res = await api.post('/notifications/read-all');
+      if (typeof res.data?.unread_count === 'number') {
+        setUnreadCount(res.data.unread_count);
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // ── Remove one notification ──────────────────────────────────────────────
   const removeNotification = async (id: string) => {
-    setMenuOpenFor(null);
+    setDismissing(id);
     const target = notifications.find(n => n.id === id);
     if (!target) return;
 
@@ -299,14 +183,15 @@ export default function NotificationBell() {
     } catch {
       if (wasUnread) setUnreadCount(c => c + 1);
       setNotifications(prev => [...prev, target]);
+    } finally {
+      setDismissing(null);
     }
   };
 
-  // ── Navigate on click ────────────────────────────────────────────────────
-  const handleNotifClick = async (notif: AppNotification) => {
-    await markAsRead(notif.id);
-    const url = notif.data?.action_url;
-    if (url) router.push(url);
+  // ── Row Click: Open Modal (Screenshot 3 Reference) ────────────────────────
+  const handleItemClick = async (notif: AppNotification) => {
+    void markAsRead(notif.id);
+    setSelectedNotif(notif);
     setOpen(false);
   };
 
@@ -337,19 +222,18 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* ── Dropdown Panel ── */}
+      {/* ── Dropdown Panel (Screenshot 1 Reference) ── */}
       {open && (
         <div
           aria-label="Notifications panel"
           aria-modal="true"
-          className="absolute right-0 mt-2 w-[340px] bg-surface border border-line rounded-2xl overflow-hidden z-50
+          className="absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
             animate-in fade-in slide-in-from-top-2 duration-150"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-surface">
             <div className="flex items-center gap-2">
-              <Bell size={16} className="text-taupe" />
-              <span className="font-semibold text-ink text-sm">Notifications</span>
+              <span className="font-bold text-ink text-sm">Notifications</span>
               {count > 0 && (
                 <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#E41E3F] text-white rounded-full">
                   {count}
@@ -357,129 +241,194 @@ export default function NotificationBell() {
               )}
             </div>
             <div className="flex items-center gap-1">
-              {count > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  title="Mark all as read"
-                  className="flex items-center gap-1 text-xs text-taupe hover:text-ink px-2 py-1 rounded-lg hover:bg-sunken transition-colors"
-                >
-                  <CheckCheck size={13} />
-                  All read
-                </button>
-              )}
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 rounded-lg hover:bg-sunken text-ink-faint hover:text-ink-body transition-colors"
+                className="p-1.5 rounded-lg hover:bg-sunken text-ink-muted hover:text-ink transition-colors"
                 aria-label="Close notifications"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             </div>
           </div>
 
           {/* List */}
-          <div className="max-h-[380px] overflow-y-auto overscroll-contain">
+          <div className="max-h-[380px] overflow-y-auto overscroll-contain divide-y divide-line">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                 <div className="w-12 h-12 rounded-full bg-sunken flex items-center justify-center mb-3">
-                  <Bell size={20} className="text-[#C4B8AE]" />
+                  <Bell size={20} className="text-ink-muted" />
                 </div>
-                <p className="text-sm font-medium text-ink-body">All caught up!</p>
-                <p className="text-xs text-ink-faint mt-0.5">No new notifications</p>
+                <p className="text-sm font-semibold text-ink">All caught up!</p>
+                <p className="text-xs text-ink-muted mt-0.5">No new notifications</p>
               </div>
             ) : (
-              <div className="divide-y divide-[#F0EAE3]">
-                {notifications.map(notif => {
-                  const cfg = getTypeConfig(notif.data?.type);
-                  const Icon = cfg.icon;
-                  const isDismissing = dismissing === notif.id;
-                  const isRead = !!notif.read_at;
-                  const menuOpen = menuOpenFor === notif.id;
-                  return (
-                    <div
-                      key={notif.id}
-                      className={`relative w-full group flex items-start gap-3 px-4 py-3.5 hover:bg-canvas transition-colors ${isDismissing ? 'opacity-40' : ''}`}
-                    >
-                      {/* Main Clickable Area */}
+              notifications.map(notif => {
+                const sender = getSenderInfo(notif);
+                const isDismissing = dismissing === notif.id;
+                const isRead = !!notif.read_at;
+
+                return (
+                  <div
+                    key={notif.id}
+                    className={`relative w-full group flex items-start gap-3 px-4 py-3 hover:bg-[#FAF6F3] transition-colors cursor-pointer ${
+                      isDismissing ? 'opacity-40' : ''
+                    } ${!isRead ? 'bg-amber-50/25' : ''}`}
+                    onClick={() => handleItemClick(notif)}
+                  >
+                    {/* Sender Avatar — identical to SUTURA Client Profile style */}
+                    <div className="relative shrink-0 mt-0.5">
+                      <div className="w-10 h-10 rounded-xl bg-canvas border border-line flex items-center justify-center shadow-2xs">
+                        <span className="text-sm font-black text-taupe">{sender.initial}</span>
+                      </div>
+                      {!isRead && (
+                        <span
+                          className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#E41E3F] rounded-full border-2 border-white"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </div>
+
+                    {/* Content Column */}
+                    <div className="flex-1 min-w-0 pr-1">
+                      {/* Sender Name */}
+                      <p className="text-[13px] font-bold text-ink truncate leading-tight">
+                        {sender.name}
+                      </p>
+
+                      {/* Subject/Action line */}
+                      <p className="text-[12px] text-ink-body font-medium leading-snug mt-0.5 line-clamp-2">
+                        {notif.data?.title || notif.data?.message || 'New update'}
+                      </p>
+
+                      {/* Timestamp */}
+                      <p className="text-[11px] text-ink-muted mt-1 font-normal">
+                        {formatDateTime(notif.created_at)}
+                      </p>
+                    </div>
+
+                    {/* Actions on the right: 3-dot (to the left of ✕) and ✕ button */}
+                    <div className="flex items-center gap-0.5 shrink-0 relative" data-menu-container>
+                      {/* 3-dot small button on the left of ✕ */}
                       <button
                         type="button"
-                        className="flex-1 text-left flex items-start gap-3 min-w-0 focus:outline-none"
-                        onClick={() => handleNotifClick(notif)}
-                        aria-label={notif.data?.title ?? 'Notification'}
-                      >
-                        {/* Icon bubble */}
-                        <div className={`relative w-9 h-9 shrink-0 rounded-full ${cfg.bg} ${cfg.color} flex items-center justify-center mt-0.5`}>
-                          <Icon size={16} />
-                          {!isRead && (
-                            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#E41E3F] rounded-full border-2 border-white" aria-hidden="true" />
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-[13px] truncate ${isRead ? 'font-medium text-ink-body' : 'font-semibold text-ink'}`}>
-                            {notif.data?.title ?? cfg.label}
-                          </p>
-                          <p className="text-[12px] text-ink-muted leading-snug mt-0.5 line-clamp-2">
-                            {notif.data?.message ?? 'New notification'}
-                          </p>
-                          <p className="text-[11px] text-ink-faint mt-1">
-                            {relativeTime(notif.created_at)}
-                          </p>
-                        </div>
-                      </button>
-
-                      {/* "⋯" row menu — Mark as read/unread, Remove */}
-                      <button
-                        type="button"
-                        onClick={() => setMenuOpenFor(prev => prev === notif.id ? null : notif.id)}
-                        className={`shrink-0 p-1.5 rounded-lg hover:bg-line text-ink-faint hover:text-ink-body transition-all mt-0.5 focus:outline-none ${menuOpen ? 'opacity-100 bg-line' : 'opacity-0 group-hover:opacity-100'}`}
-                        title="More actions"
-                        aria-label="More actions"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setMenuOpenFor(prev => (prev === notif.id ? null : notif.id));
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          menuOpenFor === notif.id
+                            ? 'bg-sunken text-ink'
+                            : 'text-ink-muted hover:text-ink hover:bg-sunken'
+                        }`}
+                        title="More options"
+                        aria-label="More options"
                       >
                         <MoreVertical size={14} />
                       </button>
 
-                      {menuOpen && (
+                      {/* Quick Dismiss ✕ button (Screenshot 1 Reference) */}
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          void removeNotification(notif.id);
+                        }}
+                        className="p-1.5 rounded-lg text-ink-muted hover:text-danger hover:bg-sunken transition-colors"
+                        title="Dismiss notification"
+                        aria-label="Dismiss notification"
+                      >
+                        <X size={15} />
+                      </button>
+
+                      {/* 3-dot Dropdown Menu with icon on the left side of the text */}
+                      {menuOpenFor === notif.id && (
                         <div
-                          ref={menuRef}
-                          className="absolute right-4 top-11 z-10 w-44 bg-surface border border-line rounded-xl overflow-hidden py-1"
+                          className="absolute right-0 top-8 z-40 w-52 bg-surface border border-line rounded-xl shadow-xl py-1 divide-y divide-line animate-in fade-in zoom-in-95 duration-100"
+                          onClick={e => e.stopPropagation()}
                         >
                           <button
                             type="button"
-                            onClick={() => void (isRead ? markAsUnread(notif.id) : markAsRead(notif.id))}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink-body hover:bg-canvas transition-colors"
+                            onClick={() => {
+                              setMenuOpenFor(null);
+                              void (isRead ? markAsUnread(notif.id) : markAsRead(notif.id));
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-ink-body hover:text-ink hover:bg-[#FAF6F3] transition-colors text-left"
                           >
-                            <Check size={13} />
-                            {isRead ? 'Mark as unread' : 'Mark as read'}
+                            <Check size={14} className={isRead ? 'text-ink-muted' : 'text-sage stroke-[2.5]'} />
+                            <span>{isRead ? 'Mark as unread' : 'Mark as read'}</span>
                           </button>
+
                           <button
                             type="button"
-                            onClick={() => void removeNotification(notif.id)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/5 transition-colors"
+                            onClick={() => {
+                              setMenuOpenFor(null);
+                              void removeNotification(notif.id);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-danger hover:bg-danger/10 transition-colors text-left"
                           >
-                            <Trash2 size={13} />
-                            Remove
+                            <Trash2 size={14} className="text-danger stroke-[2]" />
+                            <span>Delete this notification</span>
                           </button>
                         </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })
             )}
           </div>
 
-          {/* Footer */}
-          {count > 0 && (
-            <div className="border-t border-line px-4 py-2.5 text-center">
-              <p className="text-[11px] text-ink-faint">
-                {count === 1 ? '1 unread notification' : `${count} unread notifications`}
-              </p>
-            </div>
-          )}
+          {/* Footer Toolbar (Screenshot 1 Reference: See all | Mark all read | Configure) */}
+          <div className="border-t border-[#D6CCC0] px-3 py-2.5 bg-[#EBE4DC] flex items-center justify-between text-xs">
+            {/* See All */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                router.push('/dashboard/notifications');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink hover:text-taupe hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            >
+              <List size={14} className="stroke-[2.5]" />
+              <span>See all</span>
+            </button>
+
+            {/* Mark all read */}
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            >
+              <CheckCheck size={14} className="text-sage stroke-[2.5]" />
+              <span>Mark all read</span>
+            </button>
+
+            {/* Configure */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                router.push('/dashboard/notifications?tab=configure');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            >
+              <Settings size={14} className="stroke-[2.5]" />
+              <span>Configure</span>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* ── Detail Modal (Screenshot 3 Reference) ── */}
+      <NotificationDetailModal
+        notif={selectedNotif}
+        isOpen={!!selectedNotif}
+        onClose={() => setSelectedNotif(null)}
+        onDelete={id => {
+          setNotifications(prev => prev.filter(n => n.id !== id));
+          setUnreadCount(c => Math.max(0, c - 1));
+        }}
+      />
     </div>
   );
 }

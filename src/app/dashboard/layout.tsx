@@ -6,8 +6,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Scissors, UserCog, Package, Users, Building2,
-  Calendar, ShoppingBag, Home, CreditCard,
-  Sparkles, ScrollText, Menu, X, HelpCircle, LayoutGrid, ChevronRight,
+  Calendar, Home, CreditCard,
+  Sparkles, ScrollText, X, HelpCircle, LayoutGrid,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
@@ -18,11 +18,12 @@ import WhatsNewTour, { hasSeenLatestWhatsNew } from '@/components/WhatsNewTour';
 import ShopSwitcher from '@/components/shell/ShopSwitcher';
 import SidebarControl, { type SidebarMode } from '@/components/shell/SidebarControl';
 import HelpPanel from '@/components/shell/HelpPanel';
+import HeaderBreadcrumbs from '@/components/shell/HeaderBreadcrumbs';
 
 const SIDEBAR_KEY = 'sutura.sidebar';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
-  const { user, isAuthenticated, logout, setAuth, token, hydrated } = useAuthStore();
+  const { user, isAuthenticated, logout, setAuth, token, staffProfile } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -50,12 +51,11 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   let railExpanded = sidebarMode === 'expanded';
   if (sidebarMode === 'hover') railExpanded = railHovered;
 
-  const [prevPathname, setPrevPathname] = useState(pathname);
-
-  if (pathname !== prevPathname) {
-    setDrawerOpen(false);
-    setPrevPathname(pathname);
-  }
+  // Close mobile drawer on route change (deferred to avoid synchronous setState in effect)
+  useEffect(() => {
+    const timer = setTimeout(() => setDrawerOpen(false), 0);
+    return () => clearTimeout(timer);
+  }, [pathname]);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -63,61 +63,50 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }, []);
 
   useEffect(() => {
-    // Wait for the store's post-mount localStorage read (see AuthHydrator)
-    // before deciding anything — acting on the momentary SSR-safe "logged
-    // out" default would redirect an actually-logged-in owner straight
-    // back to /login on every single dashboard load.
-    if (!hydrated) return;
-
-    if (!isAuthenticated) {
+    if (!token && !isAuthenticated) {
       router.push('/login');
-    } else if (!user && token) {
+      return;
+    }
+
+    // Always synchronize with /auth/me on load so the logged in account
+    // (name, role, branch, profile) accurately reflects the active session
+    if (token) {
       api.get('/auth/me')
         .then(res => {
-          if (res.data.success) {
-            const { user, shop, staff_profile } = res.data.data;
-            let activeShop = shop;
-            if ((user?.roles?.[0]?.name === 'staff' || user?.roles?.[0]?.name === 'branch_manager') && staff_profile?.shop) {
-              activeShop = staff_profile.shop;
-            }
-            setAuth(user, token, activeShop, staff_profile);
+          if (res.data?.success) {
+            const { user: freshUser, shop: freshShop, staff_profile } = res.data.data;
+            const activeShop = freshShop || staff_profile?.shop;
+            setAuth(freshUser, token, activeShop, staff_profile);
           }
         })
-        .catch((err) => {
-          // Only a genuine "this token is invalid" response (401) means the
-          // session is actually dead — a network hiccup or a transient
-          // server error isn't proof of that, and was logging real,
-          // still-valid owners out on nothing more than a flaky request.
-          // axios's own global 401 interceptor already handles the real-401
-          // case; this must not pile a second, over-eager logout on top.
-          if (err?.response?.status === 401) {
+        .catch(err => {
+          if (err.response?.status === 401) {
             logout();
             router.push('/login');
           }
         });
     }
-  }, [hydrated, isAuthenticated, user, token, router, setAuth, logout]);
+  }, [token, isAuthenticated, router, setAuth, logout]);
 
-  const roleName = user?.roles?.[0]?.name;
+  const roleNames = user?.roles?.map(r => r.name) || [];
+  const isShopOwner = roleNames.includes('shop_owner');
+  const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
+  const isStaff = roleNames.includes('staff') || Boolean(staffProfile);
+  const canViewAnalytics = isShopOwner || isBranchManager;
 
   // What's New tour — owner-only. See WhatsNewTour for the localStorage
   // dismissal contract; dismissedThisSession forces the one real state
   // transition needed to re-derive autoShowTour after a close.
   const [manualShowTour, setManualShowTour] = useState(false);
   const [dismissedThisSession, setDismissedThisSession] = useState(false);
-  const autoShowTour = !dismissedThisSession && mounted && isAuthenticated && roleName === 'shop_owner' && !hasSeenLatestWhatsNew();
+  const autoShowTour = !dismissedThisSession && mounted && isAuthenticated && isShopOwner && !hasSeenLatestWhatsNew();
   const showTour = manualShowTour || autoShowTour;
   const closeTour = () => {
     setDismissedThisSession(true);
     setManualShowTour(false);
   };
 
-  if (!mounted || !hydrated || !isAuthenticated) return null;
-
-  // Staff and branch managers share this dashboard — scoped by the API and
-  // role checks, not by separate routes.
-  const isShopOwner = roleName === 'shop_owner';
-  const canViewAnalytics = isShopOwner || roleName === 'branch_manager';
+  if (!mounted || !isAuthenticated) return null;
 
   const NAV_GROUPS = [
     {
@@ -131,40 +120,32 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     {
       title: 'Workroom',
       items: [
-        { name: 'Custom Jobs', path: '/dashboard/jobs', icon: Scissors },
+        { name: 'Orders', path: '/dashboard/jobs', icon: Scissors },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
       ],
     },
     {
-      // Catalog/Services are shop_owner-only on the backend — hidden to match.
       title: 'Showroom',
       items: [
-        ...(isShopOwner ? [{ name: 'Catalog', path: '/dashboard/catalog', icon: ShoppingBag }] : []),
-        ...(isShopOwner ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
+        ...((isShopOwner || isBranchManager) ? [{ name: 'Showroom', path: '/dashboard/catalog', icon: Sparkles }] : []),
+        ...((isShopOwner || isBranchManager || isStaff) ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
       ],
     },
     {
       title: 'Staff & Performance',
       items: [
-        ...(isShopOwner ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
+        ...((isShopOwner || isBranchManager || isStaff) ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
         ...(canViewAnalytics ? [{ name: 'Reports & Insights', path: '/dashboard/reports', icon: LayoutDashboard }] : []),
-        ...(isShopOwner ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
+        ...((isShopOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
         ...(isShopOwner ? [{ name: 'Audit Log', path: '/dashboard/audit-log', icon: ScrollText }] : []),
       ],
     },
   ];
 
   const isActivePath = (path: string) =>
-    pathname === path || (path !== '/dashboard' && pathname.startsWith(path));
-
-  // Header breadcrumb — same NAV_GROUPS labels the sidebar already uses, so
-  // "Home > Jobs" always names the current page the exact same way the rail
-  // does, instead of a second, independently-maintained label list drifting
-  // out of sync with it.
-  const currentNavItem = NAV_GROUPS
-    .flatMap(g => g.items)
-    .find(item => isActivePath(item.path));
-  const breadcrumbLabel = currentNavItem && currentNavItem.path !== '/dashboard' ? currentNavItem.name : null;
+    pathname === path ||
+    (path !== '/dashboard' && pathname.startsWith(path)) ||
+    (path === '/dashboard/customers' && pathname.startsWith('/dashboard/measurements'));
 
   /** One nav item, used by both the desktop rail and the mobile drawer.
    *  Collapsed mode drops the label and shows a tooltip instead — the
@@ -224,16 +205,12 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
 
   return (
     <div className="h-screen bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
-      {/* ── Header: split into the same two columns as the body below it —
-          a left segment whose width and right border track the sidebar
-          rail exactly (logo + shop switcher), and a right segment matching
-          the main content area (breadcrumb + grid/help/bell/profile) — so
-          the header's own vertical stroke lines up with the sidebar's
-          border-r instead of the header reading as one undivided bar. ── */}
-      <header className="print:hidden h-16 bg-surface border-b border-line flex items-stretch gap-0 sticky top-0 z-50">
+      {/* ── Header: Aligned 1:1 with desktop rail width (Cloudflare-style) ── */}
+      <header className="print:hidden h-16 bg-surface border-b border-line flex items-center sticky top-0 z-50">
+        {/* Left Box: 100% matched to rail width (w-60 / w-16) with vertical border-r */}
         <div
-          className={`flex items-center gap-3 min-w-0 shrink-0 border-r border-line px-4 lg:px-6 transition-[width] duration-200 ease-out ${
-            railExpanded ? 'w-60' : 'w-16'
+          className={`h-full flex items-center px-3.5 gap-2 shrink-0 transition-[width] duration-200 ease-out lg:border-r border-line ${
+            railExpanded ? 'w-auto lg:w-60' : 'w-auto lg:w-16 lg:justify-center'
           }`}
         >
           <Link
@@ -241,69 +218,58 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             aria-label="SUTURA home"
             className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
           >
-            <BrandLogo iconOnly={!railExpanded} />
+            <BrandLogo iconOnly={true} />
           </Link>
 
-          {railExpanded && (
-            <div className="flex items-center min-w-0">
-              <ShopSwitcher />
-            </div>
-          )}
+          <div className={`flex items-center min-w-0 flex-1 ${railExpanded ? 'block' : 'lg:hidden'}`}>
+            <ShopSwitcher />
+          </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-between gap-3 px-4 lg:px-6 min-w-0">
-          {/* Breadcrumb — "Home" always, current section named the same way
-              the sidebar names it, so the two never drift apart. */}
-          <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-sm min-w-0">
-            <Link href="/dashboard" className="text-ink-muted hover:text-ink font-medium transition-colors shrink-0">
-              Home
-            </Link>
-            {breadcrumbLabel && (
-              <>
-                <ChevronRight size={14} className="text-ink-faint shrink-0" />
-                <span className="text-ink font-semibold truncate">{breadcrumbLabel}</span>
-              </>
-            )}
-          </nav>
+        {/* Right Main Header Area: Breadcrumbs over main workspace, tools on right */}
+        <div className="flex-1 h-full flex items-center justify-between gap-3 px-4 lg:px-6 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <HeaderBreadcrumbs pathname={pathname} />
+          </div>
 
           <div className="flex items-center gap-2 shrink-0">
-          {/* 3x3 Grid Navigation Launcher (left of Help) */}
-          <button
-            type="button"
-            aria-label="Open navigation"
-            title="Navigation Menu"
-            onClick={() => setDrawerOpen(true)}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors cursor-pointer shrink-0"
-          >
-            <LayoutGrid size={18} />
-          </button>
-
-          {/* Help & Support Button with circular background */}
-          <button
-            type="button"
-            onClick={() => setHelpOpen(true)}
-            aria-label="Help and support"
-            title="Help & Support"
-            className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer shrink-0 ${
-              helpOpen
-                ? 'bg-sunken text-ink ring-2 ring-taupe/40'
-                : 'bg-line text-ink-body hover:bg-[#D1C7BD]'
-            }`}
-          >
-            <HelpCircle size={18} />
-          </button>
-
-          {isShopOwner && (
+            {/* 3x3 Grid Navigation Launcher (left of Help) */}
             <button
               type="button"
-              onClick={() => setManualShowTour(true)}
-              title="What's New"
-              className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors cursor-pointer shrink-0"
+              aria-label="Open navigation"
+              title="Navigation Menu"
+              onClick={() => setDrawerOpen(true)}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors cursor-pointer shrink-0"
             >
-              <Sparkles size={18} />
+              <LayoutGrid size={17} />
             </button>
-          )}
-          <AccountHeaderMenu />
+
+            {/* Help & Support Button with circular background */}
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="Help and support"
+              title="Help & Support"
+              className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors cursor-pointer shrink-0 ${
+                helpOpen
+                  ? 'bg-sunken text-ink ring-2 ring-taupe/40'
+                  : 'bg-line text-ink-body hover:bg-[#D1C7BD]'
+              }`}
+            >
+              <HelpCircle size={17} />
+            </button>
+
+            {isShopOwner && (
+              <button
+                type="button"
+                onClick={() => setManualShowTour(true)}
+                title="What's New"
+                className="hidden md:flex items-center justify-center w-9 h-9 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors cursor-pointer shrink-0"
+              >
+                <Sparkles size={17} />
+              </button>
+            )}
+            <AccountHeaderMenu />
           </div>
         </div>
       </header>

@@ -147,7 +147,6 @@ export default function AppointmentsPage() {
     <div className="space-y-6">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <PageHeader
-        eyebrow="Atelier Operations"
         title="Schedule & Appointments"
         description="Book and manage client fittings, measurement sessions, and bespoke consultations."
         actions={

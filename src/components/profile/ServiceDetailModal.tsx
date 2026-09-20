@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Clock, Tag, MessageCircle, Calendar, Image as ImageIcon, Wrench } from 'lucide-react';
 import Image from 'next/image';
+import { getMediaUrl } from '@/lib/media';
 
 export interface CustomField {
   name: string;
@@ -139,7 +140,7 @@ export default function ServiceDetailModal({
         <div className="h-60 sm:h-72 w-full bg-canvas relative shrink-0">
           {service.image_url ? (
             <Image
-              src={service.image_url}
+              src={getMediaUrl(service.image_url)}
               alt={service.name}
               fill
               className="object-cover"

@@ -23,10 +23,11 @@ import {
   X
 } from 'lucide-react';
 import Modal from '@/components/Modal';
-import ShopWideNote from '@/components/shared/ShopWideNote';
 import PageHeader from '@/components/shared/PageHeader';
 import { useCustomers } from '@/components/customers/useCustomers';
 import { SUKI_TAG_CONFIG, isWalkInCustomer } from '@/components/customers/customerHelpers';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import CustomersModuleTabs from '@/components/customers/CustomersModuleTabs';
 
 export default function CustomersPage() {
   const {
@@ -68,7 +69,7 @@ export default function CustomersPage() {
       <PageHeader
         eyebrow="Relationships"
         title="Client Book"
-        description={<>Manage your customer directory, loyalty suki tiers, and lifetime value. <ShopWideNote /></>}
+        description="Manage your customer directory, loyalty suki tiers, and lifetime value."
         actions={
           <>
             <Link
@@ -93,7 +94,9 @@ export default function CustomersPage() {
             </button>
           </>
         }
-      />
+      >
+        <CustomersModuleTabs activeTab="customers" />
+      </PageHeader>
 
       {/* Top CRM KPI Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -189,9 +192,8 @@ export default function CustomersPage() {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-ink-faint flex flex-col items-center justify-center gap-2">
-            <Loader2 size={24} className="animate-spin text-taupe" />
-            <span className="text-xs font-medium">Loading Client Book directory...</span>
+          <div className="p-4">
+            <TableSkeleton rows={8} cols={5} />
           </div>
         ) : (
           <>

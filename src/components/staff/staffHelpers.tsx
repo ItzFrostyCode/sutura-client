@@ -1,6 +1,7 @@
 export interface Staff {
   id: number;
-  user: { name: string; email: string; phone?: string; last_seen_at?: string | null; profile_picture?: string | null };
+  user_id?: number;
+  user: { id?: number; name: string; email: string; phone?: string; last_seen_at?: string | null; profile_picture?: string | null };
   role: string;
   additional_roles?: string[] | null;
   is_active: boolean;

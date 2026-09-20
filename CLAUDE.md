@@ -17,6 +17,9 @@ This is the Next.js frontend. The backend lives in the sibling `sutura-server` r
 | `feature/shop-owner-module` | Shop Owner Module | Arabejo, Joshua Wayman A. |
 | `feature/staff-module` | Tailoring Staff Module | Masudog, Clareynz June A. |
 
+> [!NOTE]
+> **Real task division vs. the formal table above:** the branch-per-module table reflects the formal/academic per-person accountability structure, not the actual hands-on development split. In practice, **Joshua Wayman A. Arabejo develops all three of Shop Owner, Customer Module, and Staff Module himself** (full-stack, AI-assisted) — Renalyn C. Bulotano's real role is documentation/wording for the thesis papers, and Clareynz June A. Masudog's real role is finance/logistics (Claude AI subscription costs, printing/bond-paper for defense materials), not module development. Jossua A. Bongo (leader) develops System Admin. When working across `customer-module` or `staff-module` content/code in this project, treat it as Joshua's own active scope — don't withhold edits on "this is a teammate's module" grounds.
+
 All four already exist on `origin` (both this repo and `sutura-server`), branched from `main` as of 2026-08-12. Workflow:
 1. `git checkout <your feature branch>` — never work directly on `main`.
 2. Commit normally as work progresses.

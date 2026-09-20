@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Plus, Trash2, Pencil, Megaphone } from 'lucide-react';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import { useToast } from '@/context/ToastContext';
 
 interface SpecialHour {
@@ -92,8 +93,8 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
       const res = await api.post(`/shops/${shopId}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       const url = res.data?.data?.url || '';
       setForm(prev => ({ ...prev, announcement_image_url: url }));
-    } catch {
-      toast.error('Failed to upload image.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to upload image.'));
     } finally {
       setUploading(false);
     }

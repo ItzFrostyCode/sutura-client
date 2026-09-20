@@ -2,7 +2,7 @@ import React from 'react';
 
 interface PageHeaderProps {
   /** Small uppercase category label above the title. */
-  readonly eyebrow: string;
+  readonly eyebrow?: string;
   readonly title: string;
   readonly description?: React.ReactNode;
   /** Buttons / controls, right-aligned on desktop, wrapped below on mobile. */
@@ -22,7 +22,7 @@ export default function PageHeader({ eyebrow, title, description, actions, child
     <header className={`border-b border-line ${children ? '' : 'pb-5'}`}>
       <div className={`flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 ${children ? 'pb-5' : ''}`}>
         <div className="min-w-0">
-          <p className="text-eyebrow-accent">{eyebrow}</p>
+          {eyebrow && <p className="text-eyebrow-accent">{eyebrow}</p>}
           <h1 className="text-display text-3xl font-semibold text-ink mt-2">{title}</h1>
           {/* div, not p: callers legitimately pass block-level content here
               (e.g. <ShopWideNote />, which renders its own <p>), and a <p>

@@ -92,10 +92,10 @@ export function useAppointments() {
 
   useEffect(() => {
     if (shop?.id) {
-      api.get(`/shops/${shop.id}/services`).then(r => setServices(r.data.data || [])).catch(() => {});
-      api.get(`/shops/${shop.id}/customers`).then(r => setCustomers(r.data.data || [])).catch(() => {});
-      api.get(`/shops/${shop.id}/branches`).then(r => setBranches(r.data.data || [])).catch(() => {});
-      api.get(`/shops/${shop.id}/staff`).then(r => setStaff(r.data.data || [])).catch(() => {});
+      api.get(`/shops/${shop.id}/services`).then(r => setServices(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      api.get(`/shops/${shop.id}/customers`).then(r => setCustomers(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      api.get(`/shops/${shop.id}/branches`).then(r => setBranches(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      api.get(`/shops/${shop.id}/staff`).then(r => setStaff(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
     } else if (user?.id && !shop?.id) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);

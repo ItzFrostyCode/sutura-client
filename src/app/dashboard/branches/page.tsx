@@ -10,6 +10,7 @@ import BranchFormModal from '@/components/branches/BranchFormModal';
 import BranchDeleteModal from '@/components/branches/BranchDeleteModal';
 import BranchListView from '@/components/branches/BranchListView';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import PageHeader from '@/components/shared/PageHeader';
 
 // Leaflet touches `window`, so load the map client-only.
@@ -24,6 +25,7 @@ const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
 
 export default function BranchesPage() {
   const { shop, user } = useAuthStore();
+  const { refreshBranches } = useBranch();
   const toast = useToast();
   const [branches, setBranches] = useState<ShopBranch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function BranchesPage() {
       api
         .get(`/shops/${shop.id}/branches`)
         .then(res => {
-          setBranches(res.data.data);
+          setBranches(Array.isArray(res.data?.data) ? res.data.data : []);
           setLoading(false);
         })
         .catch(err => {
@@ -80,6 +82,7 @@ export default function BranchesPage() {
       operating_hours: branch.operating_hours || '',
       status: branch.status || 'active',
       guide_image_url: branch.guide_image_url || '',
+      manager_id: branch.manager?.id || '',
     });
     setErrorMsg('');
     setIsModalOpen(true);
@@ -95,22 +98,45 @@ export default function BranchesPage() {
     try {
       if (editingId) {
         const res = await api.put(`/shops/${shop.id}/branches/${editingId}`, formData);
-        const updated = res.data.data;
-        setBranches(prev => prev.map(b => (b.id === editingId ? { ...b, ...updated } : b)));
+        const updated = res.data?.data;
+        if (updated) {
+          setBranches(prev => prev.map(b => (b.id === editingId ? { ...b, ...updated } : b)));
+        }
+        toast.success('Branch details updated successfully.');
       } else {
         const res = await api.post(`/shops/${shop.id}/branches`, formData);
-        const created = res.data.data;
-        setBranches(prev => [...prev, created]);
+        const created = res.data?.data;
+        if (created) {
+          setBranches(prev => [...prev, created]);
+        }
+        toast.success('New branch registered successfully.');
       }
       setIsModalOpen(false);
       setEditingId(null);
       setFormData(EMPTY_FORM);
+      fetchBranches();
+      refreshBranches();
     } catch (err: unknown) {
       console.error(err);
       const error = err as { response?: { data?: { message?: string } } };
       setErrorMsg(error.response?.data?.message || 'Failed to save branch.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSetMain = async (branch: ShopBranch) => {
+    if (!shop) return;
+    try {
+      const res = await api.put(`/shops/${shop.id}/branches/${branch.id}/set-main`);
+      if (res.data?.success) {
+        toast.success(`${branch.name} is now designated as the Primary Headquarters.`);
+        fetchBranches();
+        refreshBranches();
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to designate as main branch.');
     }
   };
 
@@ -127,6 +153,8 @@ export default function BranchesPage() {
       setBranches(prev => prev.filter(b => b.id !== deletingId));
       setIsDeleteModalOpen(false);
       setDeletingId(null);
+      toast.success('Branch removed from network.');
+      refreshBranches();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to delete branch');
@@ -229,6 +257,7 @@ export default function BranchesPage() {
           onAddClick={openAddModal}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
+          onSetMain={handleSetMain}
         />
       )}
 

@@ -86,9 +86,16 @@ export interface Shop {
 
 export interface StaffProfile {
   id: number;
+  user_id?: number;
   role: string;
-  shop?: Shop;
+  additional_roles?: string[];
+  specialization?: string[];
+  bio?: string | null;
+  shop_branch_id?: number | null;
+  is_branch_manager?: boolean;
+  is_active?: boolean;
   is_available?: boolean;
+  shop?: Shop;
 }
 
 interface AuthState {
@@ -104,13 +111,10 @@ interface AuthState {
 }
 
 // Initial state is ALWAYS the SSR-safe "logged out" shape, even on the
-// client — reading localStorage synchronously here (as this used to do)
-// made the client's very first paint diverge from the server-rendered HTML
-// whenever a token was already stored, which is exactly a React hydration
-// mismatch, not just a later state update. `hydrate()` is called once from
-// a client-only effect (see useAuthHydration.ts) so the *real* auth state
-// only ever lands via a normal post-mount re-render, never during the
-// hydration pass itself.
+// client — reading localStorage synchronously here made the client's very
+// first paint diverge from the server-rendered HTML whenever a token was already
+// stored, causing React hydration mismatches. `hydrate()` is called once from
+// a client-only effect (see AuthHydrator.tsx) so auth state updates safely post-mount.
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   shop: null,
@@ -127,6 +131,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       else sessionStorage.removeItem('sutura_shop');
       if (staffProfile) sessionStorage.setItem('sutura_staff', JSON.stringify(staffProfile));
       else sessionStorage.removeItem('sutura_staff');
+
+      localStorage.setItem('sutura_token', token);
+      localStorage.setItem('sutura_user', JSON.stringify(user));
+      if (shop) localStorage.setItem('sutura_shop', JSON.stringify(shop));
+      else localStorage.removeItem('sutura_shop');
+      if (staffProfile) localStorage.setItem('sutura_staff_profile', JSON.stringify(staffProfile));
+      else localStorage.removeItem('sutura_staff_profile');
     }
     set({ user, token, shop: shop || null, staffProfile: staffProfile || null, isAuthenticated: true, hydrated: true });
   },
@@ -137,16 +148,20 @@ export const useAuthStore = create<AuthState>((set) => ({
       sessionStorage.removeItem('sutura_user');
       sessionStorage.removeItem('sutura_shop');
       sessionStorage.removeItem('sutura_staff');
+      localStorage.removeItem('sutura_token');
+      localStorage.removeItem('sutura_user');
+      localStorage.removeItem('sutura_shop');
+      localStorage.removeItem('sutura_staff_profile');
     }
     set({ user: null, shop: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });
   },
 
   hydrate: () => {
     if (globalThis.window === undefined) return;
-    const token = sessionStorage.getItem('sutura_token');
-    const userStr = sessionStorage.getItem('sutura_user');
-    const shopStr = sessionStorage.getItem('sutura_shop');
-    const staffStr = sessionStorage.getItem('sutura_staff');
+    const token = sessionStorage.getItem('sutura_token') || localStorage.getItem('sutura_token');
+    const userStr = sessionStorage.getItem('sutura_user') || localStorage.getItem('sutura_user');
+    const shopStr = sessionStorage.getItem('sutura_shop') || localStorage.getItem('sutura_shop');
+    const staffStr = sessionStorage.getItem('sutura_staff') || localStorage.getItem('sutura_staff_profile');
     let user: User | null = null;
     let shop: Shop | null = null;
     let staffProfile: StaffProfile | null = null;

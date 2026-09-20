@@ -1,10 +1,12 @@
 import React from 'react';
 import {
-  ChevronLeft, ChevronRight, ArrowLeft, Eye, Plus, Building2, UserCheck, Phone
+  ChevronLeft, ChevronRight, ArrowLeft, Eye, Plus, Building2, UserCheck, Phone,
+  AlertCircle, Globe, Store, RefreshCw
 } from 'lucide-react';
 import {
   Appointment, TYPE_CONFIG,
-  StatusBadge, TypeBadge, getLocalDateString, formatScheduled, getCustomerInitials
+  StatusBadge, TypeBadge, getLocalDateString, formatScheduled, getCustomerInitials,
+  ChannelBadge, RescheduledBadge
 } from './appointmentHelpers';
 
 interface AppointmentCalendarViewProps {
@@ -135,9 +137,13 @@ export default function AppointmentCalendarView({
               const dateStr = `${y}-${m}-${d}`;
 
               const dayEvents = appointments.filter(a => {
-                const str = a.scheduled_at.includes('T') ? a.scheduled_at.split('T')[0] : a.scheduled_at.split(' ')[0];
+                const str = a.scheduled_at ? a.scheduled_at.split('T')[0].split(' ')[0] : '';
                 return str === dateStr;
               });
+
+              const hasPending = dayEvents.some(a => a.status === 'pending');
+              const hasConfirmed = dayEvents.some(a => a.status === 'confirmed');
+              const hasInProgress = dayEvents.some(a => a.status === 'in_progress');
 
               const todayLocal = getLocalDateString(new Date());
               const isToday = dateStr === todayLocal;
@@ -153,36 +159,95 @@ export default function AppointmentCalendarView({
                     setSelectedDay(new Date(y, month, day));
                     setCalSubMode('day');
                   }}
-                  className={`h-14 sm:h-16 lg:h-[72px] p-1.5 sm:p-2 group transition-colors text-left w-full relative flex flex-col justify-between border-b border-line ${
+                  className={`min-h-[64px] sm:min-h-[76px] lg:min-h-[84px] p-1.5 sm:p-2 group transition-colors text-left w-full relative flex flex-col justify-between border-b border-line ${
                     isLastColInRow ? '' : 'border-r'
                   } ${
-                    isToday
+                    hasPending
+                      ? 'bg-amber-50/40 hover:bg-amber-50/60 ring-1 ring-amber-300'
+                      : isToday
                       ? 'bg-amber-50/25 hover:bg-amber-50/45'
                       : isPast
                       ? 'bg-canvas/20 hover:bg-canvas/45'
                       : 'bg-surface hover:bg-canvas/50'
                   }`}
                 >
-                  {/* Top-Left: Day Number */}
-                  <div className="flex items-center justify-start w-full">
+                  {/* Top-Row: Day Number + Status Dots */}
+                  <div className="flex items-center justify-between w-full">
                     <span className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-[11px] sm:text-xs font-bold ${
                       isToday ? 'bg-taupe text-white shadow-2xs' : isPast ? 'text-ink-faint' : 'text-ink group-hover:text-taupe'
                     }`}>
                       {day}
                     </span>
+
+                    {/* Status Dots Indicator */}
+                    <div className="flex items-center gap-1">
+                      {hasPending && (
+                        <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-200 shrink-0" title="Has pending bookings awaiting approval" />
+                      )}
+                      {hasConfirmed && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" title="Has confirmed appointments" />
+                      )}
+                      {hasInProgress && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-taupe shrink-0" title="Has in-progress sessions" />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Center (Sa Gitna): Appointment Count Badge */}
-                  <div className="my-auto flex flex-col items-center justify-center">
+                  {/* Center / Body: Appointment Badges & Desktop Chips */}
+                  <div className="w-full my-auto">
                     {dayEvents.length > 0 && (
-                      <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-taupe/10 text-taupe border border-taupe/20 tabular-nums shadow-2xs group-hover:bg-taupe group-hover:text-white transition-colors">
-                        {dayEvents.length}
-                      </span>
+                      <div className="flex flex-col gap-0.5 w-full">
+                        {/* Mobile / Compact Badge */}
+                        <div className="flex items-center justify-center md:hidden">
+                          {hasPending ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                              <AlertCircle size={9} /> {dayEvents.length}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-taupe/10 text-taupe border border-taupe/20 tabular-nums shadow-2xs">
+                              {dayEvents.length}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Desktop Mini-Chips (Visible Proof of who booked and when) */}
+                        <div className="hidden md:flex flex-col gap-0.5 w-full overflow-hidden mt-0.5">
+                          {dayEvents.slice(0, 2).map(apt => {
+                            const cleanTime = apt.scheduled_at.includes('T')
+                              ? apt.scheduled_at.split('T')[1].substring(0, 5)
+                              : apt.scheduled_at.split(' ')[1]?.substring(0, 5) || '';
+                            const isOnline = apt.intake_channel === 'online';
+                            const isAptPending = apt.status === 'pending';
+
+                            return (
+                              <div
+                                key={apt.id}
+                                className={`text-[10px] px-1.5 py-0.5 rounded truncate border flex items-center justify-between gap-1 ${
+                                  isAptPending
+                                    ? 'bg-amber-100/80 text-amber-950 border-amber-300 font-semibold'
+                                    : 'bg-canvas text-ink border-line'
+                                }`}
+                                title={`${cleanTime} - ${apt.customer?.name || 'Client'} (${isOnline ? 'Online' : 'Walk-in'})`}
+                              >
+                                <span className="truncate">
+                                  {cleanTime} {apt.customer?.name?.split(' ')[0] || 'Client'}
+                                </span>
+                                {isOnline && <Globe size={9} className="text-sky-600 shrink-0" />}
+                              </div>
+                            );
+                          })}
+                          {dayEvents.length > 2 && (
+                            <span className="text-[9px] text-ink-faint font-bold pl-1">
+                              +{dayEvents.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
 
                   {/* Bottom spacing helper */}
-                  <div className="h-1" />
+                  <div className="h-0.5" />
                 </button>
               );
             })}
@@ -338,9 +403,20 @@ export default function AppointmentCalendarView({
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-bold text-sm text-ink truncate">{apt.customer?.name || 'Walk-in Client'}</p>
+                      <ChannelBadge channel={apt.intake_channel} />
+                      {(apt.outcome === 'rescheduled' || apt.notes?.includes('[Rescheduled from')) && (
+                        <RescheduledBadge />
+                      )}
                       <TypeBadge type={apt.appointment_type} />
                       <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
                     </div>
+
+                    {isPending && apt.intake_channel === 'online' && (
+                      <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/90 text-amber-900 text-xs px-2.5 py-1 rounded-md font-medium">
+                        <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                        <span>Online customer booking request — awaiting shop confirmation</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">
                       {apt.service && (
@@ -377,9 +453,9 @@ export default function AppointmentCalendarView({
                     <button
                       type="button"
                       onClick={() => onReviewClick(apt)}
-                      className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
                     >
-                      Review
+                      <Eye size={13} /> <span>Review & Approve</span>
                     </button>
                   )}
                   {isConfirmed && (

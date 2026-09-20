@@ -167,9 +167,11 @@ export default function ReportsPage() {
 
       try {
         const res = await api.get(url);
-        setBranchComparison(res.data.data);
+        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+        setBranchComparison(rows);
       } catch (err) {
         console.error('Failed to fetch branch comparison', err);
+        setBranchComparison([]);
       } finally {
         setBranchComparisonLoading(false);
       }
@@ -195,9 +197,11 @@ export default function ReportsPage() {
 
       try {
         const res = await api.get(url);
-        setStaffProductivity(res.data.data);
+        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+        setStaffProductivity(rows);
       } catch (err) {
         console.error('Failed to fetch staff productivity', err);
+        setStaffProductivity([]);
       } finally {
         setStaffProductivityLoading(false);
       }

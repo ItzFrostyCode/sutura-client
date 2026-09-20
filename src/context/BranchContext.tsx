@@ -8,12 +8,26 @@ export interface Branch {
   id: number;
   shop_id: number;
   name: string;
+  slug?: string;
   address: string;
   landmark?: string;
   city: string;
   contact_number?: string;
   is_main: boolean;
   status: string;
+  staff_profiles_count?: number;
+  job_orders_count?: number;
+  manager?: {
+    id: number;
+    role: string;
+    user?: {
+      id: number;
+      name: string;
+      email: string;
+      phone?: string | null;
+      profile_picture?: string | null;
+    } | null;
+  } | null;
 }
 
 interface BranchContextValue {
@@ -27,13 +41,15 @@ interface BranchContextValue {
 const BranchContext = createContext<BranchContextValue | undefined>(undefined);
 
 export function BranchProvider({ children }: { readonly children: React.ReactNode }) {
-  const { shop, user } = useAuthStore();
+  const { shop, user, staffProfile } = useAuthStore();
   const shopId = shop?.id;
-  // Branch management/switching is an owner-only concept (matches the
-  // shop_owner-only /shops/{shop}/branches route) — staff and branch managers
-  // share the same dashboard now, so this must not fire for them or every
-  // page load 403s and surfaces a console error/toast for no reason.
-  const isShopOwner = user?.roles?.[0]?.name === 'shop_owner';
+  
+  const roleNames = user?.roles?.map(r => r.name) || [];
+  const isShopOwner = roleNames.includes('shop_owner');
+  const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
+  const isStaff = roleNames.includes('staff') || Boolean(staffProfile);
+  const canAccessBranches = isShopOwner || isBranchManager || isStaff;
+
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -60,10 +76,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
     // the real fetch below ever got to read it. Bail out inert instead —
     // this effect re-fires on its own once shopId arrives, since
     // refreshBranches itself changes identity when shopId changes.
-    if (!shopId) {
-      return;
-    }
-    if (!isShopOwner) {
+    if (!shopId || !canAccessBranches) {
       setBranches([]);
       setSelectedBranchId(null);
       hasResolvedInitialRef.current = true;
@@ -72,9 +85,17 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
     setLoadingBranches(true);
     try {
       const res = await api.get(`/shops/${shopId}/branches`);
-      if (res.data.success) {
-        const list: Branch[] = res.data.data || [];
+      if (res.data?.success) {
+        const list: Branch[] = Array.isArray(res.data?.data) ? res.data.data : [];
         setBranches(list);
+
+        // For regular artisans assigned to a specific branch, default to their branch
+        if (!isShopOwner && !isBranchManager && staffProfile?.shop_branch_id) {
+          setSelectedBranchId(staffProfile.shop_branch_id);
+          setLoadingBranches(false);
+          hasResolvedInitialRef.current = true;
+          return;
+        }
 
         // Restore from localStorage or default to main branch
         const cached = localStorage.getItem(`sutura_branch_${shopId}`);
@@ -104,7 +125,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       setLoadingBranches(false);
       hasResolvedInitialRef.current = true;
     }
-  }, [shopId, isShopOwner]);
+  }, [shopId, canAccessBranches, isShopOwner, isBranchManager, staffProfile]);
 
   useEffect(() => {
     Promise.resolve().then(() => {

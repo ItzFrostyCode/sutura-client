@@ -3,13 +3,13 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 
-interface OperatingHours {
+export interface OperatingHours {
   is_open: boolean;
   open: string;
   close: string;
 }
 
-interface SpecialHour {
+export interface SpecialHour {
   id: number;
   title: string;
   start_date: string;
@@ -23,6 +23,7 @@ export interface AppointmentSlot {
   scheduled_at: string; // ISO string
   duration_minutes: number;
   shop_branch_id: number | null;
+  status?: string;
 }
 
 interface InteractiveCalendarProps {
@@ -35,6 +36,7 @@ interface InteractiveCalendarProps {
   readonly loadingAppts?: boolean;
   readonly selectedDate: string; // YYYY-MM-DD
   readonly selectedTime: string; // HH:mm
+  readonly mode?: 'public' | 'walk_in';
   readonly onDateChange: (date: string) => void;
   readonly onTimeChange: (time: string) => void;
 }
@@ -53,6 +55,7 @@ export default function InteractiveCalendar({
   loadingAppts = false,
   selectedDate,
   selectedTime,
+  mode = 'public',
   onDateChange,
   onTimeChange,
 }: InteractiveCalendarProps) {
@@ -140,39 +143,59 @@ export default function InteractiveCalendar({
     const [startH, startM] = openTime.split(':').map(Number);
     const [endH, endM] = closeTime.split(':').map(Number);
 
-    const slots: string[] = [];
+    const slots: { time: string; isBooked: boolean; hasPendingOnly: boolean }[] = [];
     let currentMins = startH * 60 + (startM || 0);
     const endMins = endH * 60 + (endM || 0);
+
+    const isToday = selectedDate === todayStr;
+    const now = new Date();
+    const currentDayMins = now.getHours() * 60 + now.getMinutes();
 
     while (currentMins + durationMinutes <= endMins) {
       const h = Math.floor(currentMins / 60);
       const m = currentMins % 60;
       const slotStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
-      // Check for overlap with existing confirmed/in-progress appointments
+      // Check for overlap with existing appointments
       const slotStartMins = currentMins;
       const slotEndMins = currentMins + durationMinutes;
 
-      const isOverlapping = appointments.some(appt => {
+      let isConfirmedOverlap = false;
+      let isPendingOverlap = false;
+
+      for (const appt of appointments) {
         if (selectedBranchId && appt.shop_branch_id && String(appt.shop_branch_id) !== selectedBranchId) {
-          return false;
+          continue;
         }
 
         const apptDatePart = appt.scheduled_at.includes('T') ? appt.scheduled_at.split('T')[0] : appt.scheduled_at.split(' ')[0];
-        if (apptDatePart !== selectedDate) return false;
+        if (apptDatePart !== selectedDate) continue;
 
         const timePart = appt.scheduled_at.includes('T') ? appt.scheduled_at.split('T')[1] : appt.scheduled_at.split(' ')[1];
-        if (!timePart) return false;
+        if (!timePart) continue;
 
         const [ah, am] = timePart.split(':').map(Number);
         const apptStartMins = ah * 60 + am;
         const apptEndMins = apptStartMins + (appt.duration_minutes || 60);
 
-        return slotStartMins < apptEndMins && slotEndMins > apptStartMins;
-      });
+        if (slotStartMins < apptEndMins && slotEndMins > apptStartMins) {
+          if (appt.status === 'pending') {
+            isPendingOverlap = true;
+          } else {
+            isConfirmedOverlap = true;
+          }
+        }
+      }
 
-      if (!isOverlapping) {
-        slots.push(slotStr);
+      const isPastSlot = isToday && currentMins <= currentDayMins;
+
+      // In walk_in mode, a walk-in is only blocked by confirmed/in_progress appointments!
+      // Slots with only pending appointments can be claimed by the walk-in ("kung sino ang makauna")
+      const isBooked = mode === 'walk_in' ? isConfirmedOverlap : (isConfirmedOverlap || isPendingOverlap);
+      const hasPendingOnly = mode === 'walk_in' && !isConfirmedOverlap && isPendingOverlap;
+
+      if (!isPastSlot) {
+        slots.push({ time: slotStr, isBooked, hasPendingOnly });
       }
 
       currentMins += 30; // 30-min slot intervals
@@ -180,7 +203,7 @@ export default function InteractiveCalendar({
 
     return slots;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, durationMinutes, operatingHours, specialHours, appointments, selectedBranchId, todayStr]);
+  }, [selectedDate, durationMinutes, operatingHours, specialHours, appointments, selectedBranchId, todayStr, mode]);
 
   // Unified Calendar Grid Generator (Standard Date-Grid Approach)
   const calendarGrid = useMemo(() => {
@@ -225,7 +248,7 @@ export default function InteractiveCalendar({
   const renderCalendarDays = () => {
     return calendarGrid.map(cell => {
       if (!cell.isCurrentMonth) {
-        return <div key={cell.dateStr} className="w-full aspect-square max-w-10" aria-hidden="true" />;
+        return <div key={cell.dateStr} className="p-2 border border-transparent" aria-hidden="true" />;
       }
 
       const { dateStr, dayNumber } = cell;
@@ -244,7 +267,7 @@ export default function InteractiveCalendar({
             onDateChange(dateStr);
             onTimeChange(''); // reset time when date changes
           }}
-          className={`relative w-full aspect-square max-w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
+          className={`relative h-10 w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
             ${isSelected ? 'bg-taupe text-white hover:bg-[#856D60]' : ''}
             ${!isSelected && !disabled && isToday ? 'border-2 border-taupe text-taupe' : ''}
             ${!isSelected && !disabled && !isToday ? 'text-ink hover:bg-line' : ''}
@@ -265,14 +288,6 @@ export default function InteractiveCalendar({
     const ampm = Number(h) >= 12 ? 'PM' : 'AM';
     const h12 = Number(h) % 12 || 12;
     return `${h12}:${m} ${ampm}`;
-  };
-
-  const formatSlotRange = (slot: string) => {
-    const [h, m] = slot.split(':').map(Number);
-    const endMins = h * 60 + m + durationMinutes;
-    const endH = String(Math.floor(endMins / 60) % 24).padStart(2, '0');
-    const endM = String(endMins % 60).padStart(2, '0');
-    return `${formatSlotLabel(slot)} - ${formatSlotLabel(`${endH}:${endM}`)}`;
   };
 
   const getClosedReason = () => {
@@ -334,25 +349,65 @@ export default function InteractiveCalendar({
       );
     }
 
+    const hasAnyOpen = availableSlots.some(s => !s.isBooked);
+
     return (
-      <div className="divide-y divide-line">
-        {availableSlots.map(slot => (
-          <button
-            key={slot}
-            type="button"
-            onClick={() => onTimeChange(slot)}
-            className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-all cursor-pointer ${
-              selectedTime === slot
-                ? 'bg-ink text-white'
-                : 'text-ink-body hover:bg-sunken hover:text-ink'
-            }`}
-          >
-            <span className="text-sm font-medium">{formatSlotRange(slot)}</span>
-            <span className={`text-xs font-bold uppercase tracking-wide ${selectedTime === slot ? 'text-white/70' : 'text-ink-faint'}`}>
-              {selectedTime === slot ? '✓ Selected' : 'Select'}
-            </span>
-          </button>
-        ))}
+      <div className="space-y-3">
+        {!hasAnyOpen && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-3 py-2 rounded-lg font-medium flex items-center gap-2">
+            <AlertCircle size={14} className="text-amber-600 shrink-0" />
+            <span>All slots for this day are currently booked. Please choose another date.</span>
+          </div>
+        )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {availableSlots.map(({ time: slot, isBooked, hasPendingOnly }) => {
+            let slotClass = 'border-line text-ink-body hover:border-taupe/50 hover:bg-canvas cursor-pointer';
+            if (isBooked) {
+              slotClass = 'bg-canvas/40 border-line/60 text-ink-faint cursor-not-allowed opacity-60';
+            } else if (selectedTime === slot) {
+              slotClass = 'border-taupe bg-taupe text-white cursor-pointer shadow-2xs';
+            } else if (hasPendingOnly) {
+              slotClass = 'border-amber-300/80 bg-amber-50/40 text-amber-900 hover:border-amber-400 hover:bg-amber-50/70 cursor-pointer';
+            }
+
+            return (
+              <button
+                key={slot}
+                type="button"
+                disabled={isBooked}
+                onClick={() => !isBooked && onTimeChange(slot)}
+                title={
+                  isBooked
+                    ? 'This slot is already confirmed'
+                    : hasPendingOnly
+                    ? 'Pending online inquiry — walk-in at counter takes priority'
+                    : undefined
+                }
+                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-between gap-1.5 ${slotClass}`}
+              >
+                <span className={isBooked ? 'line-through' : ''}>{formatSlotLabel(slot)}</span>
+                {isBooked && (
+                  <span className="text-[9px] font-bold uppercase no-underline tracking-wider bg-canvas border border-line px-1 rounded text-ink-faint">
+                    Booked
+                  </span>
+                )}
+                {hasPendingOnly && !isBooked && selectedTime !== slot && (
+                  <span className="text-[9px] font-bold uppercase no-underline tracking-wider bg-amber-100 border border-amber-300 px-1 rounded text-amber-800">
+                    Pending
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {mode === 'walk_in' && availableSlots.find(s => s.time === selectedTime)?.hasPendingOnly && (
+          <div className="bg-amber-50/90 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-900 flex items-start gap-2">
+            <AlertCircle size={14} className="text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold">Walk-in Priority Notice:</span> An online customer previously submitted an inquiry for this slot. Because this walk-in customer is physically at the counter, saving will confirm this walk-in and automatically notify the online client to pick another time.
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -360,16 +415,7 @@ export default function InteractiveCalendar({
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    // @container (not md:) — this widget renders both inside the customer
-    // storefront's fixed 320px MobileFrame column and the shop owner's much
-    // wider dashboard modal. A viewport breakpoint can't tell those apart
-    // (a desktop browser previewing the narrow customer frame still has a
-    // >768px real viewport), so it used to force the 2-column desktop
-    // layout — and the 3-column time-slot grid below it — onto a 320px-wide
-    // box, which is what was cramming/overlapping the day and slot grids.
-    // Container queries key off this element's own rendered width instead.
-    <div className="@container">
-    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {/* Date Picker Side */}
       <div className="space-y-4">
         <label className="text-sm font-medium text-ink-body flex items-center gap-2">
@@ -403,7 +449,7 @@ export default function InteractiveCalendar({
               <div key={d} className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-y-2 justify-items-center">
             {renderCalendarDays()}
           </div>
           {!!maxAppointmentsPerDay && (
@@ -415,26 +461,16 @@ export default function InteractiveCalendar({
         </div>
       </div>
 
-      {/* Time Picker Side — its own nested @container: this panel is full
-          width in 1-column mode but only half the outer container's width
-          in 2-column mode, so the slot grid needs to react to ITS OWN
-          rendered width, not the outer date/time layout's. */}
-      <div className="space-y-4 @container">
+      {/* Time Picker Side */}
+      <div className="space-y-4">
         <label className="text-sm font-medium text-ink-body flex items-center gap-2">
           <Clock size={16} /> Select Time <span className="text-danger">*</span>
         </label>
 
-        {/* No card frame, no bg fill, no own fixed-height scrollbox — the
-            list blends into the page instead of sitting in its own panel,
-            and flows with the page's own scroll instead of nesting a
-            second scroll inside a small box. min-h keeps the empty/loading
-            placeholder states centered instead of collapsing to zero
-            height without a card to size against. */}
-        <div className="min-h-[200px]">
+        <div className="bg-surface border border-line rounded-xl p-4 h-80 overflow-y-auto">
           {renderTimePickerContent()}
         </div>
       </div>
-    </div>
     </div>
   );
 }

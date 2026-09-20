@@ -36,20 +36,15 @@ function LoginFormContent() {
       const response = await api.post('/auth/login', { email, password });
       if (response.data.success) {
         const { user, token, shop, staff_profile } = response.data.data;
+        const activeShop = shop || staff_profile?.shop;
+        const roleNames = user?.roles?.map((r: { name: string }) => r.name) || [];
+        const isAuthorized = roleNames.some((name: string) => ['shop_owner', 'branch_manager', 'staff'].includes(name)) || !!staff_profile;
+        const isCustomer = roleNames.includes('customer');
 
-        let activeShop = shop;
-        if (user.roles[0]?.name === 'staff' || user.roles[0]?.name === 'branch_manager') {
-          if (staff_profile?.shop) {
-            activeShop = staff_profile.shop;
-          }
-        }
-
-        const roleName = user.roles[0]?.name;
-
-        if (roleName === 'staff' || roleName === 'branch_manager' || roleName === 'shop_owner') {
+        if (isAuthorized) {
           setAuth(user, token, activeShop, staff_profile);
           router.push(redirectPath || '/dashboard');
-        } else if (roleName === 'customer') {
+        } else if (isCustomer) {
           setAuth(user, token, activeShop, staff_profile);
           router.push(redirectPath || '/account');
         } else {

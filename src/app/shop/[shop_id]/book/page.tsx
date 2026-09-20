@@ -66,6 +66,9 @@ interface ShopSettings {
   gcash_number?: string | null;
   gcash_account_name?: string | null;
   gcash_qr_path?: string | null;
+  paymaya_number?: string | null;
+  paymaya_account_name?: string | null;
+  paymaya_qr_path?: string | null;
   bank_name?: string | null;
   bank_account_number?: string | null;
   bank_account_name?: string | null;
@@ -958,17 +961,18 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                       This shop charges a ₱{Number(shopSettings?.fitting_fee).toLocaleString()} fee to reserve this slot. Select how you&apos;d like to pay it.
                     </p>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[
-                        { value: 'cash', label: 'Cash at Shop' },
+                        { value: 'cash', label: 'Cash' },
                         { value: 'gcash', label: 'GCash' },
-                        { value: 'bank', label: 'Bank Transfer' },
+                        { value: 'paymaya', label: 'PayMaya' },
+                        { value: 'bank', label: 'Bank' },
                       ].map(m => (
                         <button
                           type="button"
                           key={m.value}
                           onClick={() => setPaymentMethod(m.value)}
-                          className={`p-2.5 text-center rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                          className={`p-2 text-center rounded-lg border text-xs font-medium transition-all cursor-pointer ${
                             paymentMethod === m.value
                               ? 'border-taupe bg-taupe/10 text-taupe'
                               : 'border-line bg-surface text-ink-muted hover:border-taupe/40'
@@ -994,6 +998,19 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                               </div>
                             )}
                           </div>
+                        ) : paymentMethod === 'paymaya' && (shopSettings?.paymaya_number || shopSettings?.paymaya_qr_path) ? (
+                          <div>
+                            <p className="text-ink-muted">
+                              Please send payment to {shopSettings.name}&apos;s PayMaya:
+                            </p>
+                            {shopSettings.paymaya_account_name && <p className="font-semibold text-ink mt-0.5">{shopSettings.paymaya_account_name}</p>}
+                            {shopSettings.paymaya_number && <p className="font-mono text-sm font-bold text-taupe mt-0.5">{shopSettings.paymaya_number}</p>}
+                            {shopSettings.paymaya_qr_path && (
+                              <div className="mt-2 w-32 h-32 relative border border-line rounded-lg overflow-hidden mx-auto bg-white">
+                                <Image src={getMediaUrl(shopSettings.paymaya_qr_path)} alt="PayMaya QR" fill unoptimized className="object-contain p-1" />
+                              </div>
+                            )}
+                          </div>
                         ) : paymentMethod === 'bank' && (shopSettings?.bank_account_number || shopSettings?.bank_qr_path) ? (
                           <div>
                             <p className="text-ink-muted">
@@ -1010,7 +1027,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
                           </div>
                         ) : (
                           <p className="text-ink-muted italic">
-                            This shop hasn&apos;t set up their {paymentMethod === 'gcash' ? 'GCash' : 'Bank'} details yet — please confirm where to send payment with the shop directly.
+                            This shop hasn&apos;t set up their {paymentMethod.toUpperCase()} details yet — please confirm where to send payment with the shop directly.
                           </p>
                         )}
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, use, useRef, Suspense, useMemo } from
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -867,8 +868,8 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         return res.data.data?.url || res.data.url;
       }));
       setPostImageUrls(prev => [...prev, ...uploaded.filter(Boolean)]);
-    } catch {
-      toast.error('Failed to upload one or more photos.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to upload one or more photos.'));
     } finally {
       setPostUploading(false);
       e.target.value = '';

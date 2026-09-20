@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { usePayments, Tab, ReceiptItem } from '@/components/payments/usePayments';
 import SearchInput from '@/components/shared/SearchInput';
 import PageHeader from '@/components/shared/PageHeader';
+import { DeckSkeleton, TableSkeleton } from '@/components/ui/Skeleton';
 
 const getMethodBadge = (method: string) => {
   const m = method.toLowerCase();
@@ -23,10 +24,17 @@ const getMethodBadge = (method: string) => {
       </span>
     );
   }
-  if (m === 'paymaya' || m === 'bank_transfer') {
+  if (m === 'paymaya' || m === 'maya') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200/60">
+        <CreditCard size={11} /> PayMaya
+      </span>
+    );
+  }
+  if (m === 'bank_transfer') {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200/60">
-        <CreditCard size={11} /> {m === 'paymaya' ? 'PayMaya' : 'Bank'}
+        <CreditCard size={11} /> Bank
       </span>
     );
   }
@@ -173,7 +181,6 @@ export default function PaymentQueuePage() {
     <div className="space-y-4">
       {/* ── Page Header ────────────────────────────────────────────────── */}
       <PageHeader
-        eyebrow="Money In"
         title="Collect Payments"
         description="Verify GCash and bank receipts, collect job balances, and manage catalog order payments."
       />
@@ -347,9 +354,11 @@ export default function PaymentQueuePage() {
         {activeTab === 'receipts' && (
           <div>
             {receiptsLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="animate-spin text-taupe" size={24} />
-              </div>
+              receiptViewMode === 'deck' ? (
+                <DeckSkeleton />
+              ) : (
+                <TableSkeleton rows={5} cols={5} />
+              )
             ) : activeReceipts.length === 0 ? (
               <div className="text-center py-16 px-4 space-y-2">
                 {receiptFilter === 'pending' ? (
@@ -706,8 +715,8 @@ export default function PaymentQueuePage() {
             </div>
 
             {balancesLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="animate-spin text-taupe" size={24} />
+              <div className="p-4">
+                <TableSkeleton rows={6} cols={6} />
               </div>
             ) : displayedBalances.length === 0 ? (
               <div className="text-center py-16 px-4">
@@ -818,8 +827,8 @@ export default function PaymentQueuePage() {
         {activeTab === 'catalog_orders' && (
           <div>
             {catalogLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="animate-spin text-taupe" size={24} />
+              <div className="p-4">
+                <TableSkeleton rows={6} cols={6} />
               </div>
             ) : catalogOrders.length === 0 ? (
               <div className="text-center py-16 px-4">
@@ -844,7 +853,7 @@ export default function PaymentQueuePage() {
                           {getMethodBadge(ord.payment_method)}
                           {getPaymentStatusBadge(ord.payment_status)}
                         </div>
-                        <Link href={`/dashboard/orders?order=${ord.id}`} className="font-bold text-taupe hover:underline flex items-center gap-0.5">
+                        <Link href={`/dashboard/jobs?tab=showroom_sales&order=${ord.id}`} className="font-bold text-taupe hover:underline flex items-center gap-0.5">
                           <span>Order #{ord.id}</span> <ArrowRight size={11} />
                         </Link>
                       </div>
@@ -885,7 +894,7 @@ export default function PaymentQueuePage() {
                           </td>
                           <td className="px-4 py-3 align-middle text-right">
                             <Link
-                              href={`/dashboard/orders?order=${ord.id}`}
+                              href={`/dashboard/jobs?tab=showroom_sales&order=${ord.id}`}
                               className="text-xs font-bold text-taupe hover:underline inline-flex items-center gap-1"
                             >
                               <span>#{ord.id}</span> <ArrowUpRight size={11} />

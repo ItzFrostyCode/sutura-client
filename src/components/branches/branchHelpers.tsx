@@ -1,6 +1,20 @@
 import React from 'react';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+export interface BranchManagerUser {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  profile_picture?: string | null;
+}
+
+export interface BranchManager {
+  id: number;
+  role: string;
+  user?: BranchManagerUser | null;
+}
+
 export interface ShopBranch {
   id: number;
   slug?: string;
@@ -18,15 +32,28 @@ export interface ShopBranch {
   staff_profiles_count?: number;
   job_orders_count?: number;
   guide_image_url?: string | null;
+  manager?: BranchManager | null;
+  manager_id?: number | null;
 }
 
-// Same 8 real Davao City districts the customer-facing discovery filter
-// uses (ShopController::publicIndex) — a branch left on "" (no district
-// selected) just doesn't match any district filter, matching how the field
-// is nullable everywhere else in this system.
 export const DAVAO_DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
 
-export const EMPTY_FORM = {
+export interface BranchFormData {
+  name: string;
+  address: string;
+  landmark: string;
+  city: string;
+  district: string;
+  contact_number: string;
+  latitude: string;
+  longitude: string;
+  operating_hours: string;
+  status: string;
+  guide_image_url: string;
+  manager_id: string | number;
+}
+
+export const EMPTY_FORM: BranchFormData = {
   name: '',
   address: '',
   landmark: '',
@@ -38,6 +65,7 @@ export const EMPTY_FORM = {
   operating_hours: '',
   status: 'active',
   guide_image_url: '',
+  manager_id: '',
 };
 
 export function StatusBadge({ status }: Readonly<{ status?: string }>) {

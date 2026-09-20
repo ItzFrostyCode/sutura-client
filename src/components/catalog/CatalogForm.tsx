@@ -18,6 +18,7 @@ import { BulletItem, ImageItem, CatalogFormData } from './catalogTypes';
 import { uploadSectionImage, uploadCatalogImage, buildSavePayload } from './catalogHelpers';
 import SizeChartEditor, { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
 import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
 
 // A gown/garment customer typically wants to see it from every real angle
 // before buying sight-unseen — front, back, both sides, plus a couple of
@@ -215,8 +216,8 @@ export default function CatalogForm({
       });
       const url = res.data?.data?.url || res.data?.url || '';
       setFormData(prev => ({ ...prev, fabric_image_url: url }));
-    } catch {
-      alert('Failed to upload fabric image.');
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload fabric image.'));
     } finally {
       setFabricImageUploading(false);
     }

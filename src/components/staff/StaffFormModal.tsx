@@ -102,9 +102,9 @@ export default function StaffFormModal({
         {/* Sticky Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-surface shrink-0">
           <div>
-            <span className="text-[10px] font-bold text-taupe uppercase tracking-wider block">Artisan Directory</span>
+            <span className="text-[10px] font-bold text-taupe uppercase tracking-wider block">Staff Directory</span>
             <h2 className="text-lg sm:text-xl font-black text-ink tracking-tight">
-              {editingId ? 'Edit Staff Profile' : 'Create Staff & Artisan Account'}
+              {editingId ? 'Edit Staff Profile' : 'Add Staff Member'}
             </h2>
           </div>
           <button 
@@ -169,7 +169,7 @@ export default function StaffFormModal({
             {showPortalSection && (
               <div className="p-4 space-y-3.5 border-t border-line bg-surface animate-fade-in">
                 <p className="text-xs text-ink-muted leading-relaxed">
-                  These credentials allow this artisan to log into the SUTURA Staff Portal to view their assigned jobs and workroom schedule.
+                  These credentials allow this staff member to log into the SUTURA Staff Portal to view their assigned jobs and workroom schedule.
                 </p>
                 <div>
                   <label htmlFor="staff_email" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
@@ -258,7 +258,7 @@ export default function StaffFormModal({
               )}
             </div>
             <p className="text-[11px] text-ink-muted leading-relaxed">
-              For artisans who cover multiple workroom stages (e.g. Head Tailor who also handles Sublimation & Finishing).
+              For staff who cover multiple workroom stages (e.g. Head Tailor who also handles Sublimation & Finishing).
             </p>
             {formData.additional_roles.length === 0 ? (
               <p className="text-xs text-ink-faint italic bg-canvas/30 px-3 py-2 rounded-xl border border-line">No additional cross-trained roles.</p>
@@ -311,7 +311,7 @@ export default function StaffFormModal({
 
           <div>
             <label htmlFor="staff_bio" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
-              Internal Artisan Notes / Bio
+              Internal Staff Notes / Bio
             </label>
             <textarea
               id="staff_bio"
@@ -338,7 +338,7 @@ export default function StaffFormModal({
                 onChange={handleInputChange}
                 className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs cursor-pointer"
               >
-                <option value="">Unassigned (Artisan works across all branches)</option>
+                <option value="">Unassigned (Works across all branches)</option>
                 {branches.map(b => (
                   <option key={b.id} value={b.id}>{b.name}{b.is_main ? ' (Main Branch)' : ''}</option>
                 ))}

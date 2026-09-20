@@ -16,12 +16,14 @@ function workloadBucket(jobs: number): Exclude<WorkloadFilter, 'all'> {
 interface StaffListViewProps {
   readonly staff: Staff[];
   readonly loading: boolean;
+  readonly canManage?: boolean;
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
 }
 
 interface StaffMemberRowProps {
   readonly member: Staff;
+  readonly canManage?: boolean;
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
   readonly onView: (id: number) => void;
@@ -61,41 +63,54 @@ function StatusBadges({ member }: { readonly member: Staff }) {
           Active
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-zinc-100 text-ink-muted border border-zinc-200 uppercase tracking-wider">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 uppercase tracking-wider">
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
           Inactive
         </span>
       )}
-      {member.is_active && member.is_available === false && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 uppercase tracking-wider">
-          On Leave
+
+      {member.is_available === false && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wider">
+          Busy
+        </span>
+      )}
+
+      {member.is_branch_manager && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-taupe/10 text-taupe border border-taupe/20 uppercase tracking-wider">
+          <Sparkles size={10} />
+          Branch Manager
+        </span>
+      )}
+
+      {Array.isArray(member.additional_roles) && member.additional_roles.length > 0 && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-canvas text-ink-muted border border-line">
+          +{member.additional_roles.length} {member.additional_roles.length === 1 ? 'role' : 'roles'}
         </span>
       )}
     </div>
   );
 }
 
-function StaffAvatar({ member, size }: { readonly member: Staff; readonly size: number }) {
-  const { isOnline } = formatLastSeen(member.user?.last_seen_at);
-  const initials = member.user?.name
-    ? member.user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-    : 'A';
+function StaffAvatar({ member, size = 40 }: { readonly member: Staff; readonly size?: number }) {
+  const isOnline = formatLastSeen(member.user?.last_seen_at).isOnline;
+  const initial = member.user?.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <div
-        className="w-full h-full rounded-full bg-linear-to-br from-[#B99A6B] to-[#8A7063] flex items-center justify-center text-white font-bold text-xs shadow-2xs overflow-hidden"
-      >
-        {member.user?.profile_picture ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={member.user.profile_picture} alt={member.user.name} className="w-full h-full object-cover" />
-        ) : (
-          <span>{initials}</span>
-        )}
-      </div>
+      {member.user?.profile_picture ? (
+        <img
+          src={member.user.profile_picture}
+          alt={member.user.name}
+          className="w-full h-full rounded-full object-cover border border-line"
+        />
+      ) : (
+        <div className="w-full h-full rounded-full bg-sunken border border-line flex items-center justify-center font-bold text-ink-muted text-sm select-none">
+          {initial}
+        </div>
+      )}
       <span
-        className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-          isOnline ? 'bg-emerald-500' : 'bg-[#C5BDBA]'
+        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-surface ${
+          isOnline ? 'bg-emerald-500' : 'bg-zinc-300'
         }`}
         title={isOnline ? 'Online now' : 'Offline'}
       />
@@ -103,7 +118,7 @@ function StaffAvatar({ member, size }: { readonly member: Staff; readonly size: 
   );
 }
 
-function StaffMemberRow({ member, onEdit, onDelete, onView }: StaffMemberRowProps) {
+function StaffMemberRow({ member, canManage = true, onEdit, onDelete, onView }: StaffMemberRowProps) {
   return (
     <tr
       onClick={() => onView(member.id)}
@@ -134,34 +149,38 @@ function StaffMemberRow({ member, onEdit, onDelete, onView }: StaffMemberRowProp
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onView(member.id); }}
-            title="View artisan profile"
+            title="View staff profile"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-line transition-colors cursor-pointer"
           >
             <Eye size={15} />
           </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onEdit(member); }}
-            title="Edit staff details"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-line transition-colors cursor-pointer"
-          >
-            <Pencil size={15} />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(member.id); }}
-            title="Remove staff member"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
-          >
-            <Trash2 size={15} />
-          </button>
+          {canManage && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onEdit(member); }}
+                title="Edit staff details"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-surface border border-transparent hover:border-line transition-colors cursor-pointer"
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(member.id); }}
+                title="Remove staff member"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+              >
+                <Trash2 size={15} />
+              </button>
+            </>
+          )}
         </div>
       </td>
     </tr>
   );
 }
 
-function StaffMemberCard({ member, onEdit, onDelete, onView }: StaffMemberRowProps) {
+function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }: StaffMemberRowProps) {
   return (
     <div onClick={() => onView(member.id)} className="p-4 space-y-3 cursor-pointer active:bg-canvas transition-colors bg-surface">
       <div className="flex items-start justify-between gap-2">
@@ -177,18 +196,30 @@ function StaffMemberCard({ member, onEdit, onDelete, onView }: StaffMemberRowPro
         <div className="flex items-center gap-1 shrink-0">
           <button 
             type="button"
-            onClick={(e) => { e.stopPropagation(); onEdit(member); }} 
+            onClick={(e) => { e.stopPropagation(); onView(member.id); }} 
+            title="View profile"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-canvas border border-line"
           >
-            <Pencil size={14} />
+            <Eye size={14} />
           </button>
-          <button 
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(member.id); }} 
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-700 hover:bg-rose-50 border border-rose-200"
-          >
-            <Trash2 size={14} />
-          </button>
+          {canManage && (
+            <>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onEdit(member); }} 
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-canvas border border-line"
+              >
+                <Pencil size={14} />
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(member.id); }} 
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-700 hover:bg-rose-50 border border-rose-200"
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -203,26 +234,30 @@ function StaffMemberCard({ member, onEdit, onDelete, onView }: StaffMemberRowPro
 export default function StaffListView({
   staff,
   loading,
+  canManage = true,
   onEdit,
   onDelete,
 }: StaffListViewProps) {
   const router = useRouter();
   const { branches } = useBranch();
+  const safeBranches = Array.isArray(branches) ? branches : [];
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [workloadFilter, setWorkloadFilter] = useState<WorkloadFilter>('all');
   const [branchFilter, setBranchFilter] = useState('all');
 
+  const safeStaff = Array.isArray(staff) ? staff : [];
+
   const onView = (id: number) => router.push(`/dashboard/staff/${id}`);
 
   const availableRoles = useMemo(() => {
     const set = new Set<string>();
-    staff.forEach(m => { if (m.role) set.add(m.role); });
+    safeStaff.forEach(m => { if (m.role) set.add(m.role); });
     return Array.from(set).sort();
-  }, [staff]);
+  }, [safeStaff]);
 
-  const filteredStaff = staff.filter(member => {
+  const filteredStaff = safeStaff.filter(member => {
     const name = member.user?.name || '';
     const email = member.user?.email || '';
     const role = member.role || '';
@@ -259,73 +294,83 @@ export default function StaffListView({
   return (
     <div className="bg-surface shadow-2xs border border-line rounded-2xl overflow-hidden">
       {/* Filter Toolbar */}
-      <div className="p-4 sm:p-5 border-b border-line flex flex-col sm:flex-row sm:items-center gap-3 sm:flex-wrap bg-canvas/30">
-        <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search staff by name, role, skill..." className="w-full sm:w-64" />
+      {loading ? (
+        <div className="p-4 sm:p-5 border-b border-line flex flex-col sm:flex-row sm:items-center gap-3 sm:flex-wrap bg-canvas/30 animate-pulse">
+          <div className="h-9 bg-line/60 rounded-xl w-full sm:w-64" />
+          <div className="h-9 bg-line/60 rounded-xl w-28 sm:w-32" />
+          <div className="h-9 bg-line/60 rounded-xl w-24 sm:w-28" />
+          <div className="h-9 bg-line/60 rounded-xl w-28 sm:w-32" />
+          <div className="h-4 bg-line/60 rounded w-24 sm:ml-auto" />
+        </div>
+      ) : (
+        <div className="p-4 sm:p-5 border-b border-line flex flex-col sm:flex-row sm:items-center gap-3 sm:flex-wrap bg-canvas/30">
+          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search staff by name, role, skill..." className="w-full sm:w-64" />
 
-        <select
-          value={roleFilter}
-          onChange={e => setRoleFilter(e.target.value)}
-          className={selectClass}
-          aria-label="Filter by role"
-        >
-          <option value="all">All Roles</option>
-          {availableRoles.map(r => (
-            <option key={r} value={r}>{roleLabel(r)}</option>
-          ))}
-        </select>
-
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-          className={selectClass}
-          aria-label="Filter by status"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-
-        <select
-          value={workloadFilter}
-          onChange={e => setWorkloadFilter(e.target.value as WorkloadFilter)}
-          className={selectClass}
-          aria-label="Filter by workload"
-        >
-          <option value="all">All Workloads</option>
-          <option value="light">Light Load</option>
-          <option value="moderate">Moderate</option>
-          <option value="heavy">High Load</option>
-        </select>
-
-        {branches.length > 1 && (
           <select
-            value={branchFilter}
-            onChange={e => setBranchFilter(e.target.value)}
+            value={roleFilter}
+            onChange={e => setRoleFilter(e.target.value)}
             className={selectClass}
-            aria-label="Filter by branch"
+            aria-label="Filter by role"
           >
-            <option value="all">All Branches</option>
-            {branches.map(b => (
-              <option key={b.id} value={b.id}>{b.name}{b.is_main ? ' (Main)' : ''}</option>
+            <option value="all">All Roles</option>
+            {availableRoles.map(r => (
+              <option key={r} value={r}>{roleLabel(r)}</option>
             ))}
-            <option value="unassigned">Unassigned</option>
           </select>
-        )}
 
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="flex items-center gap-1 text-xs font-bold text-taupe hover:text-taupe-hover px-2 py-1 cursor-pointer"
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+            className={selectClass}
+            aria-label="Filter by status"
           >
-            <X size={14} /> Clear filters
-          </button>
-        )}
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
 
-        <span className="text-xs text-ink-faint font-medium sm:ml-auto">
-          {filteredStaff.length} of {staff.length} staff
-        </span>
-      </div>
+          <select
+            value={workloadFilter}
+            onChange={e => setWorkloadFilter(e.target.value as WorkloadFilter)}
+            className={selectClass}
+            aria-label="Filter by workload"
+          >
+            <option value="all">All Workloads</option>
+            <option value="light">Light Load</option>
+            <option value="moderate">Moderate</option>
+            <option value="heavy">High Load</option>
+          </select>
+
+          {safeBranches.length > 1 && (
+            <select
+              value={branchFilter}
+              onChange={e => setBranchFilter(e.target.value)}
+              className={selectClass}
+              aria-label="Filter by branch"
+            >
+              <option value="all">All Branches</option>
+              {safeBranches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}{b.is_main ? ' (Main)' : ''}</option>
+              ))}
+              <option value="unassigned">Unassigned</option>
+            </select>
+          )}
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center gap-1 text-xs font-bold text-taupe hover:text-taupe-hover px-2 py-1 cursor-pointer"
+            >
+              <X size={14} /> Clear filters
+            </button>
+          )}
+
+          <span className="text-xs text-ink-faint font-medium sm:ml-auto">
+            {filteredStaff.length} of {staff.length} staff
+          </span>
+        </div>
+      )}
 
       {/* Mobile cards */}
       <div className="md:hidden divide-y divide-line">
@@ -355,7 +400,7 @@ export default function StaffListView({
         <table className="w-full text-left text-sm text-ink-body">
           <thead className="bg-canvas/50 text-[11px] font-bold uppercase tracking-wider text-ink-muted border-b border-line">
             <tr>
-              <th className="px-6 py-3.5">Artisan / Staff</th>
+              <th className="px-6 py-3.5">Staff Member</th>
               <th className="px-6 py-3.5">Workroom Load</th>
               <th className="px-6 py-3.5">Availability</th>
               <th className="px-6 py-3.5 text-right">Actions</th>

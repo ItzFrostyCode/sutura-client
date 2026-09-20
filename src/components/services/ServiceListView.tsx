@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Service, SERVICE_TYPES, SERVICE_TYPE_META } from './serviceHelpers';
 import { getActiveSale } from '@/lib/salePricing';
+import { getMediaUrl } from '@/lib/media';
 import SearchInput from '@/components/shared/SearchInput';
 
 interface ServiceListViewProps {
@@ -45,29 +46,23 @@ export default function ServiceListView({
           is deleted individually via its own card, which already confirms
           first. Stacks to a column on mobile instead of squeezing a search
           box + dropdown into one row. */}
-      <div className="bg-surface border border-line rounded-2xl p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <SearchInput value={search} onChange={onSearchChange} placeholder="Search services..." className="flex-1 min-w-0" />
+      {/* Search + Filter Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <SearchInput value={search} onChange={onSearchChange} placeholder="Search services..." className="flex-1 min-w-0" />
 
-          {/* Category filter — a dropdown, not a chip wall. Real shops
-              routinely have a distinct category string per service (13
-              categories across 9 services isn't unusual), and rendering
-              that as pill buttons wrapped across multiple rows read as
-              visual clutter, not a useful filter. Same dropdown pattern as
-              the Staff List's Role/Status/Workload/Branch filters. */}
-          {allCategories.length > 1 && (
-            <select
-              value={categoryFilter}
-              onChange={(e) => onCategoryFilterChange(e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 bg-canvas border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-taupe transition-colors"
-              aria-label="Filter by category"
-            >
-              {allCategories.map(cat => (
-                <option key={cat} value={cat}>{cat === 'All' ? 'All Categories' : cat}</option>
-              ))}
-            </select>
-          )}
-        </div>
+        {/* Category filter */}
+        {allCategories.length > 1 && (
+          <select
+            value={categoryFilter}
+            onChange={(e) => onCategoryFilterChange(e.target.value)}
+            className="w-full sm:w-auto px-3 py-2 bg-surface border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-taupe transition-colors shadow-2xs"
+            aria-label="Filter by category"
+          >
+            {allCategories.map(cat => (
+              <option key={cat} value={cat}>{cat === 'All' ? 'All Categories' : cat}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Loading State */}
@@ -131,23 +126,22 @@ export default function ServiceListView({
                     URL at all. */}
                 <div className="h-40 bg-canvas border-b border-line overflow-hidden relative">
                   {service.image_url ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={service.image_url}
-                        alt={service.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
-                      />
-                      <div className="w-full h-full absolute inset-0 hidden flex-col items-center justify-center gap-2 text-ink-faint bg-canvas">
-                        <ImageIcon size={28} />
-                        <span className="text-[11px]">No image</span>
-                      </div>
-                    </>
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={getMediaUrl(service.image_url)}
+                      alt={service.name}
+                      onError={e => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent && !parent.querySelector('.fallback-placeholder')) {
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint fallback-placeholder';
+                          placeholder.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span class="text-[11px]">No image</span>';
+                          parent.appendChild(placeholder);
+                        }
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint">
                       <ImageIcon size={28} />
