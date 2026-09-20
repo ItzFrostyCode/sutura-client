@@ -8,6 +8,7 @@ import JobProductionTimeline from '@/components/jobs/JobProductionTimeline';
 import JobFulfillmentCard from '@/components/jobs/JobFulfillmentCard';
 import JobStaffAssignmentCard from '@/components/jobs/JobStaffAssignmentCard';
 import JobFinancialsCard from '@/components/jobs/JobFinancialsCard';
+import MaterialsUsedCard from '@/components/jobs/MaterialsUsedCard';
 import SendCustomerMessageModal from '@/components/jobs/SendCustomerMessageModal';
 import { useJobDetail } from '@/components/jobs/useJobDetail';
 import { RosterItem } from '@/components/jobs/jobTypes';
@@ -377,6 +378,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                           </div>
 
                           <div className="space-y-1 border-t border-line/60 pt-3 sm:border-0 sm:pt-0">
+                            <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Branch</span>
+                            <p className="font-bold text-ink text-sm">{job.branch?.name || 'Unassigned'}</p>
+                            <p className="text-xs text-ink-muted">Where this job is being fulfilled</p>
+                          </div>
+
+                          <div className="space-y-1 border-t border-line/60 pt-3 sm:border-0 sm:pt-0">
                             <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Fabric & Material</span>
                             <p className="font-bold text-ink text-sm">
                               {job.material_source === 'customer_supplied' ? "Customer's Own Fabric" : (job.custom_order_data?.fabric_preference ? `${job.custom_order_data.fabric_preference} (Shop Supplied)` : 'Shop Supplied Material')}
@@ -396,12 +403,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                         </div>
 
                         {/* Custom Specifications Attributes (if available) */}
-                        {job.custom_order_data && Object.keys(job.custom_order_data).some(k => !['roster', 'team_roster', 'fabric_preference', 'team_name'].includes(k)) && (
+                        {job.custom_order_data && Object.keys(job.custom_order_data).some(k => !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config'].includes(k)) && (
                           <div className="pt-3 border-t border-line">
                             <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wider mb-2">Custom Design Specifications</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
                               {Object.entries(job.custom_order_data)
-                                .filter(([label]) => !['roster', 'team_roster', 'fabric_preference', 'team_name'].includes(label))
+                                .filter(([label]) => !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config'].includes(label))
                                 .map(([label, value]) => (
                                   <div key={label} className="text-xs">
                                     <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{label.replaceAll('_', ' ')}</span>
@@ -578,16 +585,55 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                   const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
                   if (!teamRoster || teamRoster.length === 0) return null;
                   const doneCount = teamRoster.filter(r => r.completed).length;
+                  const sizeCounts = teamRoster.reduce<Record<string, number>>((acc, r) => {
+                    if (r.size) acc[r.size] = (acc[r.size] || 0) + 1;
+                    return acc;
+                  }, {});
+                  // The customer's bulk-order roster table lets them add any
+                  // free-form column they want (e.g. "Jersey #") — those
+                  // land in custom_order_data alongside name/size but aren't
+                  // on the RosterItem type, so surface whatever extra keys
+                  // actually show up instead of silently dropping them.
+                  const knownRosterKeys = new Set(['name', 'print_name', 'number', 'size', 'completed']);
+                  const extraColumns = Array.from(teamRoster.reduce((set, row) => {
+                    Object.keys(row as unknown as Record<string, unknown>).forEach(k => {
+                      if (!knownRosterKeys.has(k)) set.add(k);
+                    });
+                    return set;
+                  }, new Set<string>()));
+                  // "team_name" defaults to the catalog item's own name on
+                  // the backend when the customer leaves Organization/Team
+                  // Name blank — only worth a dedicated line here when it's
+                  // actually a distinct org name the customer typed in.
+                  const teamName = job.custom_order_data?.team_name as string | undefined;
+                  const showTeamName = !!teamName && teamName !== job.catalog_item?.name;
                   return (
                     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
                       <div className="flex items-center justify-between border-b border-line pb-3">
-                        <h2 className="text-base font-bold text-ink flex items-center gap-2">
-                          <Shirt size={17} className="text-taupe" /> Team Roster & Size Sheet
-                        </h2>
-                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${doneCount === teamRoster.length ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-sunken text-ink-muted border border-line'}`}>
+                        <div>
+                          <h2 className="text-base font-bold text-ink flex items-center gap-2">
+                            <Shirt size={17} className="text-taupe" /> Team Roster & Size Sheet
+                          </h2>
+                          {showTeamName && (
+                            <p className="text-xs text-ink-muted mt-0.5">
+                              Organization: <span className="font-semibold text-ink-body">{teamName}</span>
+                            </p>
+                          )}
+                        </div>
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full shrink-0 ${doneCount === teamRoster.length ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-sunken text-ink-muted border border-line'}`}>
                           {doneCount}/{teamRoster.length} Completed
                         </span>
                       </div>
+
+                      {Object.keys(sizeCounts).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(sizeCounts).map(([size, qty]) => (
+                            <span key={size} className="text-xs font-bold px-2.5 py-1 rounded-lg bg-canvas border border-line text-ink">
+                              {size} <span className="text-ink-muted font-semibold">× {qty}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs divide-y divide-line">
@@ -599,6 +645,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                               <th className="pb-2.5">Print Name</th>
                               <th className="pb-2.5 w-20">Number</th>
                               <th className="pb-2.5 w-20">Size</th>
+                              {extraColumns.map(col => (
+                                <th key={col} className="pb-2.5">{col}</th>
+                              ))}
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-line/60">
@@ -620,10 +669,58 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                                 <td className="py-2.5">
                                   <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{row.size}</span>
                                 </td>
+                                {extraColumns.map(col => (
+                                  <td key={col} className="py-2.5 text-ink-muted">
+                                    {(row as unknown as Record<string, unknown>)[col] as string || '—'}
+                                  </td>
+                                ))}
                               </tr>
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Size Breakdown Table Card — the non-personalized bulk
+                    order shape (e.g. "30 pcs department shirts, no names").
+                    Only shown when there's no team_roster at all; a roster
+                    already carries its own per-size tally via the card
+                    above, so this and that card are mutually exclusive. */}
+                {(() => {
+                  const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
+                  if (teamRoster && teamRoster.length > 0) return null;
+                  const sizeBreakdown = job.custom_order_data?.size_breakdown as Record<string, number> | undefined;
+                  if (!sizeBreakdown || typeof sizeBreakdown !== 'object') return null;
+                  const entries = Object.entries(sizeBreakdown).filter(([, qty]) => Number(qty) > 0);
+                  if (entries.length === 0) return null;
+                  const total = entries.reduce((sum, [, qty]) => sum + Number(qty), 0);
+                  const garmentType = job.custom_order_data?.garment_type as string | undefined;
+                  const orderPurpose = job.custom_order_data?.order_purpose as string | undefined;
+                  return (
+                    <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+                      <div className="flex items-center justify-between border-b border-line pb-3">
+                        <div>
+                          <h2 className="text-base font-bold text-ink flex items-center gap-2">
+                            <Shirt size={17} className="text-taupe" /> Size Breakdown
+                          </h2>
+                          {(garmentType || orderPurpose) && (
+                            <p className="text-xs text-ink-muted mt-0.5">
+                              {[garmentType, orderPurpose].filter(Boolean).join(' — ')}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold px-3 py-1 rounded-full shrink-0 bg-sunken text-ink-muted border border-line">
+                          {total} pcs total
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {entries.map(([size, qty]) => (
+                          <span key={size} className="text-xs font-bold px-2.5 py-1 rounded-lg bg-canvas border border-line text-ink">
+                            {size} <span className="text-ink-muted font-semibold">× {qty}</span>
+                          </span>
+                        ))}
                       </div>
                     </div>
                   );
@@ -932,6 +1029,15 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
                   )}
                 </div>
               </div>
+
+              {shop && (
+                <MaterialsUsedCard
+                  shopId={shop.id}
+                  jobOrderId={job.id}
+                  materials={job.materials ?? []}
+                  onChange={refreshJob}
+                />
+              )}
             </div>
           </div>
         )}
@@ -1081,7 +1187,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             <h2 className="font-bold uppercase tracking-widest text-xs border-b border-black pb-1 mb-3">Custom Specifications</h2>
             <div className="grid grid-cols-2 gap-x-8 gap-y-3">
               {Object.entries(job.custom_order_data)
-                .filter(([k]) => !['roster', 'team_roster'].includes(k))
+                .filter(([k]) => !['roster', 'team_roster', 'size_breakdown', 'personalization_config'].includes(k))
                 .map(([k, v]) => (
                   <div key={k} className="flex flex-col">
                     <span className="text-[10px] text-gray-500 uppercase font-semibold">{k.replaceAll('_', ' ')}</span>

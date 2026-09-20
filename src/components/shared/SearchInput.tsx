@@ -8,6 +8,8 @@ interface SearchInputProps {
   readonly className?: string;
   readonly id?: string;
   readonly disabled?: boolean;
+  readonly onFocus?: () => void;
+  readonly onBlur?: () => void;
 }
 
 /**
@@ -18,7 +20,7 @@ interface SearchInputProps {
  * (Appointments, Payments, Jobs, Customers, Catalog, Packages, Staff,
  * Services) hand-rolled a slightly different version of this same input.
  */
-export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '', id, disabled }: SearchInputProps) {
+export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '', id, disabled, onFocus, onBlur }: SearchInputProps) {
   return (
     <div className={`relative ${className}`}>
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" size={16} />
@@ -28,6 +30,8 @@ export default function SearchInput({ value, onChange, placeholder = 'Search...'
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
         disabled={disabled}
         className="w-full pl-9 pr-4 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors disabled:opacity-50"
       />

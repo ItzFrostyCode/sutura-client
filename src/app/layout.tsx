@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Outfit, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import AuthHydrator from "@/components/AuthHydrator";
+import MobileFrame from "@/components/shared/MobileFrame";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -27,7 +29,10 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} ${playfair.variable} h-full antialiased bg-[#FAF6F3] text-[#2D2A26]`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <AuthHydrator />
+        <MobileFrame>{children}</MobileFrame>
+      </body>
     </html>
   );
 }

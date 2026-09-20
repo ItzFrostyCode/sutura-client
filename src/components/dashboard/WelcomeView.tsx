@@ -40,8 +40,8 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     step: 'Step 4',
-    title: 'Build Your Design Catalog',
-    desc: 'Add photos of past work customers can browse and order from directly — made-to-order, not off-the-shelf inventory. Each item can link straight into a Job Order so its reference photo carries over automatically when a customer orders it.',
+    title: 'Build Your Catalog',
+    desc: 'Add photos of past work and craftsmanship samples customers can browse and request fittings for — bespoke tailoring works, not off-the-shelf inventory. Each catalog item showcases your atelier craftsmanship.',
     icon: ShoppingBag,
     href: '/dashboard/catalog',
   },

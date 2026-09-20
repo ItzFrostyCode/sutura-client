@@ -1,20 +1,30 @@
 'use client';
 
-import { useState, SubmitEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, SubmitEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import BrandLogo from '@/components/BrandLogo';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { X } from 'lucide-react';
+import PublicNav from '@/components/shared/PublicNav';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-ink-muted">Loading…</div>}>
+      <LoginFormContent />
+    </Suspense>
+  );
+}
+
+function LoginFormContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect');
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
@@ -26,20 +36,18 @@ export default function LoginPage() {
       const response = await api.post('/auth/login', { email, password });
       if (response.data.success) {
         const { user, token, shop, staff_profile } = response.data.data;
-        
-        
         const activeShop = shop || staff_profile?.shop;
         const roleNames = user?.roles?.map((r: { name: string }) => r.name) || [];
         const isAuthorized = roleNames.some((name: string) => ['shop_owner', 'branch_manager', 'staff'].includes(name)) || !!staff_profile;
+        const isCustomer = roleNames.includes('customer');
 
         if (isAuthorized) {
-          // Staff, branch managers, and shop owners share the dashboard —
-          // permissions and views adapt dynamically based on the account.
           setAuth(user, token, activeShop, staff_profile);
-          window.location.href = '/dashboard';
+          router.push(redirectPath || '/dashboard');
+        } else if (isCustomer) {
+          setAuth(user, token, activeShop, staff_profile);
+          router.push(redirectPath || '/account');
         } else {
-          // admin / customer accounts don't have a web dashboard yet — avoid
-          // navigating to a route that doesn't exist and 404ing right after login.
           setError('This account type does not have a dashboard yet. Please contact support.');
           setLoading(false);
           return;
@@ -54,90 +62,90 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26] relative overflow-hidden">
-      {/* Background Decor (Soft gradient to simulate the soft warm vibe) */}
-      <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-[#F0EAE3] via-[#FAF6F3] to-[#EBE4DC] opacity-50 pointer-events-none" />
-      
-      <div className="w-full max-w-[480px] p-10 md:p-12 rounded-3xl bg-white border border-[#EBE6E0] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative z-10 mx-4">
-        <div className="text-center mb-10">
-          <BrandLogo className="mb-8" />
-          <h1 className="font-heading text-3xl text-[#2D2A26] mb-3">Welcome Back</h1>
-          <p className="text-[#827A73] text-[15px]">Please enter your details below.</p>
+    <div className="min-h-dvh flex flex-col bg-canvas">
+      {/* Reuses the site's own header instead of rebuilding the
+          reference's — the user's explicit call: "meron na tayung header
+          just use that." */}
+      <PublicNav />
+
+      <div className="flex-1 px-[10px] py-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-display text-2xl text-ink">Sign In</h1>
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            aria-label="Close"
+            className="p-1 text-ink"
+          >
+            <X size={22} />
+          </button>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-[#F8F3F2] border border-[#EFE3E1] text-[#9A5C4F] text-sm text-center">
+          <div className="mb-5 p-3.5 border border-danger/30 bg-danger/5 text-danger text-sm text-center">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="flex items-center gap-2 text-[15px] text-[#524A44] mb-2">
-              <Mail size={16} className="text-[#A8A19A]" /> Email Address
+            <label htmlFor="email" className="block text-sm text-ink mb-2">
+              Email<span className="text-danger">*</span>
             </label>
-            <div className="relative">
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-4 pr-4 py-3.5 rounded-xl bg-white border border-[#EBE6E0] text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073] transition-all placeholder:text-[#A8A19A]"
-                placeholder="Email address here"
-                required
-              />
-            </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+              required
+            />
           </div>
 
           <div>
-            <label htmlFor="password" className="flex items-center gap-2 text-[15px] text-[#524A44] mb-2">
-              <Lock size={16} className="text-[#A8A19A]" /> Password
-            </label>
             <div className="relative">
+              <label htmlFor="password" className="block text-sm text-ink mb-2">
+                Password<span className="text-danger">*</span>
+              </label>
               <input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-white border border-[#EBE6E0] text-[#2D2A26] focus:outline-none focus:border-[#9A8073] focus:ring-1 focus:ring-[#9A8073] transition-all placeholder:text-[#A8A19A]"
-                placeholder="Password"
+                className="w-full px-3.5 py-3 pr-16 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
                 required
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A8A19A] hover:text-[#9A8073] transition-colors"
+                className="absolute right-3.5 bottom-3 text-sm text-ink underline underline-offset-2"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-end pt-1">
-            <a href="/forgot-password" className="text-[15px] text-[#827A73] hover:text-[#9A8073] transition-colors">
-              Forgot password?
-            </a>
-          </div>
+          <a href="/forgot-password" className="block text-sm text-ink underline underline-offset-2">
+            Forgot Password?
+          </a>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 px-4 rounded-xl bg-[#9A8073] hover:bg-[#91756A] text-white text-[15px] font-medium transition-all disabled:opacity-50 mt-4 shadow-sm"
+            className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="mt-8 text-center text-[15px] text-[#827A73]">
-          Don&apos;t have an account?{' '}
-          <a href="/register" className="text-[#2D2A26] hover:text-[#9A8073] font-medium transition-colors">
-            Sign Up
-          </a>
-        </div>
-        
-        <div className="mt-12 pt-8 text-center text-sm text-[#A8A19A]">
-          <p>© 2026 Sutura. All rights reserved.</p>
-        </div>
+        <p className="mt-6 text-center text-sm text-ink">Don&apos;t have an Account?</p>
+
+        <a
+          href="/register"
+          className="block w-full mt-4 py-3.5 border border-ink text-ink text-sm font-bold uppercase tracking-widest text-center hover:bg-sunken transition-colors"
+        >
+          Create an Account
+        </a>
       </div>
     </div>
   );

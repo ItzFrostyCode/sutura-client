@@ -79,7 +79,7 @@ export default function EditCatalogItemPage({ params }: Readonly<{ params: Promi
   return (
     <CatalogForm
       title="Edit Catalog Item"
-      description="Modify premade designs or rental products in your storefront catalog."
+      description="Modify craftsmanship designs or bespoke samples in your atelier catalog."
       submitLabel="Save Changes"
       initialData={initialData}
       onSubmit={handleSave}

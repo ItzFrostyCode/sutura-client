@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Clock, Tag, MessageCircle, Calendar, Image as ImageIcon } from 'lucide-react';
+import { X, Clock, Tag, MessageCircle, Calendar, Image as ImageIcon, Wrench } from 'lucide-react';
 import Image from 'next/image';
 import { getMediaUrl } from '@/lib/media';
 
@@ -26,6 +26,7 @@ export interface ServiceDetailModalItem {
   estimated_days?: number;
   description?: string;
   categories?: string[];
+  service_types?: string[];
   image_url?: string | null;
   size_chart_image_url?: string | null;
   size_chart_columns?: string[] | null;
@@ -114,6 +115,8 @@ export default function ServiceDetailModal({
 
   const bookingParam = service.kind === 'package' ? 'package_id' : 'service_id';
   const bookingUrl = shopId ? `/shop/${shopId}/book?${bookingParam}=${service.id}` : '#';
+  const isRepairService = service.kind !== 'package' && (service.service_types ?? []).includes('alteration_repair');
+  const repairUrl = shopId ? `/shop/${shopId}/repair-request?service_id=${service.id}` : '#';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in">
@@ -349,7 +352,16 @@ export default function ServiceDetailModal({
             Inquire via Messenger
           </a>
           
-          {shopId && (
+          {shopId && isRepairService && (
+            <a
+              href={repairUrl}
+              className="flex-1 bg-white hover:bg-line text-ink border border-line py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"
+            >
+              <Wrench size={16} />
+              Request a Repair
+            </a>
+          )}
+          {shopId && !isRepairService && (
             <a
               href={bookingUrl}
               className="flex-1 bg-white hover:bg-line text-ink border border-line py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"

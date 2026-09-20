@@ -46,7 +46,7 @@ interface AppointmentActionModalsProps {
   readonly onRejectReview: (aptId: number) => Promise<boolean>;
   readonly onRescheduleSubmit: (aptId: number, date: string, time: string, notes: string) => Promise<void>;
   readonly onCompleteSubmit: (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => Promise<void>;
-  readonly onCancelConfirm: (aptId: number) => Promise<void>;
+  readonly onCancelConfirm: (aptId: number, reason: string, blockRebooking: boolean) => Promise<void>;
   readonly onCreateJob: (apt: Appointment) => void;
 }
 
@@ -72,6 +72,16 @@ export default function AppointmentActionModals({
   // Fitting/Pickup completion needs to link a job order
   const [completionJobOrders, setCompletionJobOrders] = useState<JobOrderData[]>([]);
   const [loadingCompletionJobs, setLoadingCompletionJobs] = useState(false);
+
+  const [cancelForm, setCancelForm] = useState({ reason: '', blockRebooking: false });
+
+  // Sync Cancel Form defaults when modal opens
+  useEffect(() => {
+    if (cancelApt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCancelForm({ reason: '', blockRebooking: false });
+    }
+  }, [cancelApt]);
 
   // Sync Reschedule Form defaults when modal opens
   useEffect(() => {
@@ -154,7 +164,7 @@ export default function AppointmentActionModals({
                 <h3 className="text-base font-bold text-ink">{reviewApt.customer?.name}</h3>
                 <p className="text-xs text-ink-faint">{reviewApt.customer?.email}</p>
               </div>
-              <StatusBadge status={reviewApt.status} />
+              <StatusBadge status={reviewApt.status} scheduledAt={reviewApt.scheduled_at} />
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -422,11 +432,40 @@ export default function AppointmentActionModals({
       <Modal isOpen={showCancelModal} onClose={() => { setShowCancelModal(false); setCancelApt(null); }} title="Cancel Appointment">
         <div className="space-y-4">
           <p className="text-sm text-ink-body">
-            Are you sure you want to cancel the appointment for <strong>{cancelApt?.customer?.name}</strong>? The customer will be notified.
+            You&apos;re cancelling the appointment for <strong>{cancelApt?.customer?.name}</strong>. The customer will see your reason and be notified.
           </p>
+          <div>
+            <label htmlFor="cancel-reason" className="block text-xs font-semibold text-ink-muted mb-1">Reason for cancelling <span className="text-danger">*</span></label>
+            <textarea
+              id="cancel-reason"
+              value={cancelForm.reason}
+              onChange={(e) => setCancelForm((f) => ({ ...f, reason: e.target.value }))}
+              rows={3}
+              required
+              placeholder="e.g. Branch fully booked for walk-in consultations that day."
+              className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe resize-none"
+            />
+          </div>
+          <label className="flex items-start gap-2 text-sm text-ink-body cursor-pointer">
+            <input
+              type="checkbox"
+              checked={cancelForm.blockRebooking}
+              onChange={(e) => setCancelForm((f) => ({ ...f, blockRebooking: e.target.checked }))}
+              className="mt-0.5"
+            />
+            <span>
+              Block this customer from booking again at this shop
+              <span className="block text-xs text-ink-muted">Default is off — the customer can still book a new appointment.</span>
+            </span>
+          </label>
           <div className="pt-2 flex justify-end gap-3">
             <button type="button" onClick={() => setShowCancelModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Keep Appointment</button>
-            <button type="button" onClick={() => cancelApt && onCancelConfirm(cancelApt.id)} disabled={isSubmitting} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
+            <button
+              type="button"
+              onClick={() => cancelApt && cancelForm.reason.trim() && onCancelConfirm(cancelApt.id, cancelForm.reason.trim(), cancelForm.blockRebooking)}
+              disabled={isSubmitting || !cancelForm.reason.trim()}
+              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
+            >
               {isSubmitting && <Loader2 size={15} className="animate-spin" />} Yes, Cancel It
             </button>
           </div>
@@ -444,7 +483,7 @@ export default function AppointmentActionModals({
               </div>
               <div className="flex flex-col gap-1 items-end">
                 <TypeBadge type={viewApt.appointment_type} />
-                <StatusBadge status={viewApt.status} />
+                <StatusBadge status={viewApt.status} scheduledAt={viewApt.scheduled_at} />
               </div>
             </div>
 

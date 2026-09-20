@@ -1,12 +1,44 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, Suspense, use } from 'react';
+import { useEffect, useState, useMemo, FormEvent, Suspense, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
-import { getErrorMessage } from '@/lib/apiError';
-import { ArrowLeft, ArrowRight, CheckCircle2, MessageSquare, Ruler, Shirt, Scissors, Package, AlertCircle, MapPin, Upload, X, Link as LinkIcon, Clock } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  MessageSquare,
+  Ruler,
+  Shirt,
+  Scissors,
+  Package,
+  AlertCircle,
+  MapPin,
+  Loader2,
+  ChevronRight,
+  Sparkles,
+  Edit2,
+  Phone,
+  Mail,
+  Calendar,
+  Clock,
+} from 'lucide-react';
 import Image from 'next/image';
-import InteractiveCalendar, { OperatingHours, SpecialHour } from '@/components/shared/InteractiveCalendar';
+import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
+import { getMediaUrl } from '@/lib/media';
+import { useAuthStore } from '@/store/useAuthStore';
+import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
+
+function BookingHeader({ onBack }: { readonly onBack: () => void }) {
+  return (
+    <div className="sticky top-0 z-50 bg-surface border-b border-line px-4 h-10 flex items-center justify-center relative">
+      <button type="button" onClick={onBack} aria-label="Back" className="absolute left-4 p-1 text-ink-muted cursor-pointer">
+        <ArrowLeft size={18} />
+      </button>
+      <h1 className="text-sm font-bold text-ink">Book an Appointment</h1>
+    </div>
+  );
+}
 
 interface Branch {
   id: number;
@@ -14,6 +46,8 @@ interface Branch {
   name: string;
   address?: string | null;
   city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface Service {
@@ -21,24 +55,41 @@ interface Service {
   name: string;
   base_price?: string | number;
   estimated_days?: number;
+  description?: string | null;
 }
 
 interface ShopSettings {
   name: string;
-  booking_policy?: string | null;
-  booking_questions?: string[] | null;
-  max_appointments_per_day?: number | null;
-  operating_hours?: Record<string, OperatingHours> | string | null;
-  branches?: Branch[];
-  services?: Service[];
-  special_hours?: SpecialHour[];
+  description?: string | null;
+  business_type?: string | null;
+  specializations?: string[] | null;
   gcash_number?: string | null;
   gcash_account_name?: string | null;
   gcash_qr_path?: string | null;
+  paymaya_number?: string | null;
+  paymaya_account_name?: string | null;
+  paymaya_qr_path?: string | null;
   bank_name?: string | null;
   bank_account_number?: string | null;
   bank_account_name?: string | null;
   bank_qr_path?: string | null;
+  fitting_fee?: number | string | null;
+  booking_policy?: string | null;
+  booking_questions?: string[] | null;
+  max_appointments_per_day?: number | null;
+  operating_hours?: Record<string, { is_open: boolean; open: string; close: string }> | string | null;
+  branches?: Branch[];
+  services?: Service[];
+  special_hours?: {
+    id: number;
+    title: string;
+    start_date: string;
+    end_date: string;
+    is_closed: boolean;
+    special_open_time: string | null;
+    special_close_time: string | null;
+    announcement_message: string | null;
+  }[];
 }
 
 interface PackageInfo {
@@ -48,24 +99,24 @@ interface PackageInfo {
   services: { id: number; name: string; base_price: string | null }[];
 }
 
-function getDurationMinutesNumber(type: string): number {
-  if (type === 'consultation') return 30;
-  if (type === 'pickup') return 15;
-  return 60;
-}
-
 function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
   const { shop_id: shopId } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Design Reference — a catalog item the customer is inquiring about, passed
-  // through as plain inspiration context (name/size), not something ordered
-  // directly. The shop owner creates the actual Job Order after consultation.
+
+  // URL context parameters
   const refName = searchParams.get('ref');
   const refSize = searchParams.get('ref_size');
+  const refImage = searchParams.get('ref_image');
+  const refPrice = searchParams.get('ref_price');
+  const refColor = searchParams.get('ref_color');
   const branchSlugParam = searchParams.get('branch');
   const serviceIdParam = searchParams.get('service_id');
   const packageIdParam = searchParams.get('package_id');
+  const refTypeParam = searchParams.get('ref_type');
+
+  const VALID_APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup'];
+  const { user } = useAuthStore();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -75,75 +126,203 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   const [success, setSuccess] = useState(false);
 
   // Form Data
-  const [appointmentType, setAppointmentType] = useState<string>('consultation');
+  const [appointmentType, setAppointmentType] = useState<string>(
+    refTypeParam && VALID_APPOINTMENT_TYPES.includes(refTypeParam) ? refTypeParam : 'consultation'
+  );
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('60');
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
+  const [isEditingCustomer] = useState(false); // kept for guest compat, unused for logged-in
   const [remarks, setRemarks] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  // Payment State
+  // Payment State (for shops with a fitting reservation fee)
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
-  // Bulk/Custom Order — reference photos + an optional link (Drive/YouTube)
-  // instead of native video upload, which would be far costlier to host.
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [referenceLink, setReferenceLink] = useState('');
-  const [uploadingReference, setUploadingReference] = useState(false);
-
-  // Anonymized existing appointment slots, for the availability calendar —
-  // fetched here (not inside InteractiveCalendar) since that's now a shared
-  // UI widget reused by the owner's dashboard too, which fetches its own
-  // (non-anonymized) appointment list instead.
+  // Anonymized calendar appointment slots
   const [calendarAppointments, setCalendarAppointments] = useState<{ scheduled_at: string; duration_minutes: number; shop_branch_id: number | null }[]>([]);
-  const [loadingAppts, setLoadingAppts] = useState(false);
-  const [bookedApt, setBookedApt] = useState<{ id?: number } | null>(null);
+
+  // Automatically pre-fill authenticated user data
+  useEffect(() => {
+    if (!user) return;
+    setCustomer(prev => ({
+      name: user.name || prev.name || '',
+      email: user.email || prev.email || '',
+      phone: prev.phone || user.phone || '',
+    }));
+  }, [user]);
+
+  // User Location (for Proximity-based Nearest Branch sorting)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    if (!shopId) return;
-    const load = async () => {
-      setLoadingAppts(true);
-      try {
-        const res = await api.get(`/catalog/${shopId}/appointments`);
-        setCalendarAppointments(res.data.data || []);
-      } catch (err) {
-        console.error('Failed to fetch appointments:', err);
-      } finally {
-        setLoadingAppts(false);
-      }
-    };
-    void load();
-  }, [shopId]);
+    const loc = getSavedLocation();
+    if (loc) {
+      setUserLocation({ lat: loc.lat, lng: loc.lng });
+    } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {}
+      );
+    }
+  }, []);
 
-  const rawOperatingHours = shopSettings?.operating_hours;
-  const parsedOperatingHours = useMemo((): Record<string, OperatingHours> | null => {
-    if (!rawOperatingHours) return null;
-    if (typeof rawOperatingHours === 'string') {
+  const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
+  const BOOKING_TYPES = [
+    { value: 'consultation', label: 'Consultation', duration: 30, icon: <MessageSquare size={18} />, hint: 'Discuss your garment idea, fabric options, and pricing with the shop.' },
+    { value: 'measurement', label: 'Measurement', duration: 45, icon: <Ruler size={18} />, hint: 'Get measured in-person so your garment is cut to fit you accurately.' },
+    { value: 'fitting', label: 'Fitting', duration: 45, icon: <Shirt size={18} />, hint: 'Try on your garment in progress so the shop can adjust the fit.' },
+    { value: 'alteration', label: 'Alteration', duration: 30, icon: <Scissors size={18} />, hint: 'Bring in an existing piece for resizing, repair, or adjustment.' },
+    { value: 'pickup', label: 'Pickup', duration: 15, icon: <Package size={18} />, hint: 'Collect your finished garment or order at the shop.' },
+  ];
+
+  const AVAILABLE_BOOKING_TYPES = refName
+    ? BOOKING_TYPES.filter(t => t.value !== 'pickup' && t.value !== 'alteration')
+    : BOOKING_TYPES;
+
+  const durationMinutes = BOOKING_TYPES.find(t => t.value === appointmentType)?.duration ?? 30;
+
+  const serviceAutoFilled = !!serviceIdParam && !!shopSettings?.services?.some(s => s.id.toString() === serviceIdParam);
+  const branchAutoFilled = !!branchSlugParam && !!shopSettings?.branches?.some(b => b.slug === branchSlugParam);
+  const autoFilledBranch = branchAutoFilled ? shopSettings?.branches?.find(b => b.slug === branchSlugParam) : null;
+
+  const needsServicePicker = !serviceAutoFilled && appointmentType !== 'pickup' && !!shopSettings?.services && shopSettings.services.length > 0;
+  const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
+
+  // Streamlined 3-step appointment wizard
+  const totalSteps = 3;
+  const displayStep = step;
+  const prevStep = step - 1;
+
+  // Proximity-sorted branches
+  const branchesWithDistance = useMemo(() => {
+    if (!shopSettings?.branches) return [];
+    return shopSettings.branches.map(b => {
+      let distanceKm: number | null = null;
+      if (userLocation && b.latitude != null && b.longitude != null) {
+        distanceKm = haversineKm(userLocation.lat, userLocation.lng, Number(b.latitude), Number(b.longitude));
+      }
+      return { ...b, distanceKm };
+    }).sort((a, b) => {
+      if (a.distanceKm !== null && b.distanceKm !== null) return a.distanceKm - b.distanceKm;
+      if (a.distanceKm !== null) return -1;
+      if (b.distanceKm !== null) return 1;
+      return 0;
+    });
+  }, [shopSettings?.branches, userLocation]);
+
+  // Pre-select nearest branch or branch from query param
+  useEffect(() => {
+    if (!selectedBranchId && branchesWithDistance.length > 0) {
+      const match = branchSlugParam && branchesWithDistance.find(b => b.slug === branchSlugParam);
+      if (match) {
+        setSelectedBranchId(String(match.id));
+      } else {
+        setSelectedBranchId(String(branchesWithDistance[0].id));
+      }
+    }
+  }, [branchesWithDistance, selectedBranchId, branchSlugParam]);
+
+  const selectedBranch = useMemo(() => {
+    if (!selectedBranchId || !shopSettings?.branches) return null;
+    return shopSettings.branches.find(b => String(b.id) === selectedBranchId) || null;
+  }, [selectedBranchId, shopSettings?.branches]);
+
+  const selectedService = useMemo(() => {
+    if (!shopSettings?.services) return null;
+    return shopSettings.services.find(s => s.id.toString() === selectedServiceId || s.id.toString() === serviceIdParam) || null;
+  }, [shopSettings?.services, selectedServiceId, serviceIdParam]);
+
+  const parsedOperatingHours = useMemo(() => {
+    if (!shopSettings?.operating_hours) return null;
+    if (typeof shopSettings.operating_hours === 'string') {
       try {
-        return JSON.parse(rawOperatingHours) as Record<string, OperatingHours>;
+        return JSON.parse(shopSettings.operating_hours);
       } catch {
         return null;
       }
     }
-    return rawOperatingHours;
-  }, [rawOperatingHours]);
+    return shopSettings.operating_hours as Record<string, { is_open: boolean; open: string; close: string }>;
+  }, [shopSettings?.operating_hours]);
 
-  const submitButtonLabel = useMemo(() => {
-    if (submitting) return 'Processing...';
-    if (uploadingReceipt) return 'Uploading receipt...';
-    return 'Confirm Booking';
-  }, [submitting, uploadingReceipt]);
+  // Helper date/time formatters for summary
+  const formatDatePreview = (dateStr: string) => {
+    if (!dateStr) return 'Date not selected';
+    try {
+      const d = new Date(`${dateStr}T12:00:00`);
+      return d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatTimePreview = (timeStr: string) => {
+    if (!timeStr) return 'Time not selected';
+    try {
+      const [h, m] = timeStr.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+    } catch {
+      return timeStr;
+    }
+  };
 
   const getSpecialHoursForDate = (dateStr: string) => {
     if (!shopSettings?.special_hours) return null;
     return shopSettings.special_hours.find(s => dateStr >= s.start_date && dateStr <= s.end_date) || null;
   };
+
+  const step2NextDisabled = !date
+    || !time
+    || !!getSpecialHoursForDate(date)?.is_closed
+    || (!!shopSettings?.branches && shopSettings.branches.length > 0 && !selectedBranchId)
+    || (TYPES_REQUIRING_SERVICE.includes(appointmentType) && needsServicePicker && !selectedServiceId);
+
+  useEffect(() => {
+    if (!shopId) return;
+
+    api.get(`/catalog/${shopId}/booking-settings`)
+      .then(res => {
+        const settings = res.data.data;
+        setShopSettings(settings);
+
+        const branchFromSlug = branchSlugParam && settings?.branches?.find((b: Branch) => b.slug === branchSlugParam);
+        if (branchFromSlug) {
+          setSelectedBranchId(branchFromSlug.id.toString());
+        } else if (settings?.branches && settings.branches.length === 1) {
+          setSelectedBranchId(settings.branches[0].id.toString());
+        }
+
+        if (serviceIdParam && settings?.services?.some((s: Service) => s.id.toString() === serviceIdParam)) {
+          setSelectedServiceId(serviceIdParam);
+        }
+
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load booking settings:', err);
+        setLoading(false);
+      });
+
+    if (packageIdParam) {
+      api.get(`/public/shops/${shopId}/service-packages`)
+        .then(res => {
+          const found = (res.data.data || []).find((p: PackageInfo) => p.id.toString() === packageIdParam);
+          if (found) setPackageInfo(found);
+        })
+        .catch(err => console.error('Failed to fetch package details:', err));
+    }
+
+    api.get(`/catalog/${shopId}/appointments`)
+      .then(res => setCalendarAppointments(res.data.data || []))
+      .catch(err => console.error('Failed to fetch appointments:', err));
+  }, [shopId, branchSlugParam, serviceIdParam, packageIdParam]);
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,239 +340,86 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
         setPaymentReceiptUrl(res.data.data.url);
       }
     } catch (err) {
-      console.error('Failed to upload receipt image:', err);
-      alert(getErrorMessage(err, 'Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).'));
-      // Reset so the input doesn't look "filled" from a failed upload —
-      // otherwise the browser still shows a selected filename even though
-      // paymentReceiptUrl was never actually set.
+      console.error('Failed to upload receipt:', err);
+      alert('Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).');
       e.target.value = '';
     } finally {
       setUploadingReceipt(false);
     }
   };
 
-  const handleReferenceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-
-    if (referenceImages.length >= 10) {
-      alert('Maximum of 10 reference images.');
-      return;
-    }
-
-    setUploadingReference(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await api.post(`/public/shops/${shopId}/upload-reference-image`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.data.success) {
-        setReferenceImages(prev => [...prev, res.data.data.url]);
-      }
-    } catch (err) {
-      console.error('Failed to upload reference image:', err);
-      alert(getErrorMessage(err, 'Failed to upload image. Please make sure it is a valid image (PNG/JPG/JPEG).'));
-    } finally {
-      setUploadingReference(false);
-    }
-  };
-
-  const removeReferenceImage = (url: string) => {
-    setReferenceImages(prev => prev.filter(u => u !== url));
-  };
-
-  const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
-  const BOOKING_TYPES = [
-    { value: 'consultation', label: 'Consultation', icon: <MessageSquare size={18} />, hint: 'Discuss your garment idea with the shop' },
-    { value: 'measurement', label: 'Measurement',  icon: <Ruler size={18} />,        hint: 'Get your body measurements taken' },
-    { value: 'fitting',     label: 'Fitting',       icon: <Shirt size={18} />,         hint: 'Try on your garment for fitting' },
-    { value: 'alteration',  label: 'Alteration',    icon: <Scissors size={18} />,      hint: 'Adjust an existing garment' },
-    { value: 'pickup',      label: 'Pickup',         icon: <Package size={18} />,       hint: 'Collect your finished order at the shop' },
-  ];
-
-  useEffect(() => {
-    // Fetch shop settings
-    api.get(`/catalog/${shopId}/booking-settings`)
-      .then(res => {
-        const settings = res.data.data;
-        setShopSettings(settings);
-
-        // Prefer an explicit branch (slug)/service_id from the URL (arrived via
-        // a branch's "Book Here" link or a service/package's "Book Appointment"
-        // link) — only fall back to auto-selecting the sole branch otherwise.
-        const branchFromSlug = branchSlugParam && settings?.branches?.find((b: Branch) => b.slug === branchSlugParam);
-        if (branchFromSlug) {
-          setSelectedBranchId(branchFromSlug.id.toString());
-        } else if (settings?.branches?.length === 1) {
-          setSelectedBranchId(settings.branches[0].id.toString());
-        }
-
-        if (serviceIdParam && settings?.services?.some((s: Service) => s.id.toString() === serviceIdParam)) {
-          setSelectedServiceId(serviceIdParam);
-        }
-
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-
-    // Fetch package details if provided in query params — packages aren't a
-    // single-service booking, so this just shows a summary card and tags the
-    // inquiry notes rather than trying to select a service_id from it.
-    if (packageIdParam) {
-      api.get(`/public/shops/${shopId}/service-packages`)
-        .then(res => {
-          const found = (res.data.data || []).find((p: PackageInfo) => p.id.toString() === packageIdParam);
-          if (found) setPackageInfo(found);
-        })
-        .catch(err => {
-          console.error('Failed to fetch package details:', err);
-        });
-    }
-  }, [shopId, branchSlugParam, serviceIdParam, packageIdParam]);
-
-  const handleSubmit = async (e: React.SyntheticEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
 
     const scheduled_at = `${date}T${time || '12:00'}:00`;
 
-    // Compile remarks and catalog reference / package context
+    // Compile design reference, package, and user notes
     let notesPayload = '';
     if (refName) {
-      const sizeNote = refSize ? ` — Size ${refSize}` : '';
-      notesPayload += `[Design Reference: ${refName}${sizeNote}]\n`;
+      notesPayload += `[Design Reference: ${refName}${refPrice ? ` (₱${Number(refPrice).toLocaleString()})` : ''}${refSize ? ` — Size ${refSize}` : ''}${refColor ? ` — ${refColor}` : ''}]\n`;
     }
     if (packageInfo) {
       notesPayload += `[Package Inquiry: ${packageInfo.name} — includes ${packageInfo.services.map(s => s.name).join(', ')}]\n`;
     }
     if (remarks.trim()) {
-      notesPayload += `Remarks: ${remarks}`;
+      notesPayload += `Notes: ${remarks.trim()}`;
     }
 
     try {
-      const res = await api.post(`/catalog/${shopId}/book`, {
-        name: customer.name,
-        email: customer.email,
+      await api.post(`/catalog/${shopId}/book`, {
+        name: user ? (user.name || customer.name) : customer.name,
+        email: user ? (user.email || customer.email) : customer.email,
         phone: customer.phone,
         appointment_type: appointmentType,
         scheduled_at,
-        notes: notesPayload || null,
-        reference_images: appointmentType === 'consultation' && referenceImages.length ? referenceImages : null,
-        reference_link: appointmentType === 'consultation' && referenceLink.trim() ? referenceLink.trim() : null,
-        answers,
+        notes: notesPayload.trim() || null,
         shop_branch_id: selectedBranchId ? Number(selectedBranchId) : null,
         service_id: selectedServiceId ? Number(selectedServiceId) : null,
-        duration_minutes: Number(durationMinutes),
+        duration_minutes: durationMinutes,
         payment_method: paymentMethod,
         payment_reference: paymentMethod !== 'cash' ? paymentReference : null,
         payment_receipt_path: paymentMethod !== 'cash' ? paymentReceiptUrl : null,
+        answers: Object.keys(answers).length > 0 ? answers : undefined,
       });
-      setBookedApt(res.data?.data || null);
       setSuccess(true);
-    } catch (err: unknown) {
-      console.error(err);
-      const e = err as { response?: { data?: { message?: string } } };
-      const errorMessage = e.response?.data?.message || 'Failed to book appointment. Please check all fields.';
-      alert(errorMessage);
-      // Re-fetch appointments so the calendar updates with newly booked/reserved slots
-      api.get(`/catalog/${shopId}/appointments`)
-        .then(res => setCalendarAppointments(res.data.data || []))
-        .catch(() => {});
+    } catch (err) {
+      console.error('Failed to book appointment:', err);
+      alert('Failed to book appointment. Please check all fields.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="min-h-dvh flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26]">Loading booking system...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-dvh flex flex-col bg-canvas text-ink">
+        <BookingHeader onBack={() => router.back()} />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 size={28} className="text-taupe animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
-    const selectedBranchObj = shopSettings?.branches?.find((b: Branch) => b.id.toString() === selectedBranchId);
-    const selectedServiceObj = shopSettings?.services?.find((s: Service) => s.id.toString() === selectedServiceId);
-
     return (
-      <div className="min-h-dvh bg-[#FAF6F3] text-[#2D2A26] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white shadow-sm p-6 sm:p-8 rounded-2xl border border-[#EBE6E0] space-y-5 text-center">
-          <div className="space-y-2">
-            <div className="w-14 h-14 bg-[#7A8B76]/20 text-[#7A8B76] rounded-full flex items-center justify-center mx-auto mb-2">
-              <CheckCircle2 size={30} />
+      <div className="min-h-dvh flex flex-col bg-canvas text-ink">
+        <BookingHeader onBack={() => router.push(`/shop/${shopId}?tab=catalog`)} />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-surface p-8 rounded-2xl text-center border border-line">
+            <div className="w-16 h-16 bg-sage/20 text-sage rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={32} />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-ink">Appointment Requested!</h2>
-            <p className="text-xs sm:text-sm text-ink-muted">
-              Your booking request has been submitted to <span className="font-semibold text-ink">{shopSettings?.name}</span>. The atelier will review and confirm your schedule shortly.
+            <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
+            <p className="text-ink-muted mb-8 text-sm">
+              Your appointment request has been sent to {shopSettings?.name}. They will review and confirm your slot shortly.
             </p>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 mt-1">
-              <Clock size={12} className="text-amber-600 shrink-0" />
-              <span>Status: Awaiting Shop Confirmation</span>
-            </div>
-          </div>
-
-          {/* Official Booking Summary Ticket */}
-          <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 text-left space-y-3">
-            <div className="flex items-center justify-between border-b border-[#EBE6E0] pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Booking Reference</span>
-              <span className="font-mono text-xs font-bold text-taupe">
-                #APT-{bookedApt?.id ?? 'PENDING'}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 text-xs">
-              <div>
-                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Date</span>
-                <p className="font-semibold text-ink mt-0.5">{date || 'Selected Date'}</p>
-              </div>
-              <div>
-                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Time</span>
-                <p className="font-semibold text-ink mt-0.5">{time || '12:00'} ({durationMinutes} mins)</p>
-              </div>
-              <div>
-                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Type</span>
-                <p className="font-semibold text-ink capitalize mt-0.5">{appointmentType}</p>
-              </div>
-              {selectedServiceObj && (
-                <div>
-                  <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Service</span>
-                  <p className="font-semibold text-ink mt-0.5 truncate">{selectedServiceObj.name}</p>
-                </div>
-              )}
-              {selectedBranchObj && (
-                <div className="col-span-2 border-t border-[#EBE6E0]/80 pt-2">
-                  <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Atelier Branch</span>
-                  <p className="font-semibold text-ink mt-0.5">{selectedBranchObj.name} {selectedBranchObj.city ? `— ${selectedBranchObj.city}` : ''}</p>
-                </div>
-              )}
-              <div className="col-span-2 border-t border-[#EBE6E0]/80 pt-2">
-                <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider">Customer</span>
-                <p className="font-medium text-ink mt-0.5">{customer.name} ({customer.email})</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-1">
-            <button 
-              type="button"
-              onClick={() => router.push(`/shop/${shopId}/catalog`)}
-              className="w-full bg-taupe hover:bg-taupe-hover text-white font-semibold py-3 rounded-xl transition-colors cursor-pointer text-sm shadow-2xs"
+            <button
+              onClick={() => router.push(`/shop/${shopId}?tab=catalog`)}
+              className="w-full bg-sunken hover:bg-line text-ink font-medium py-3 rounded-lg transition-colors cursor-pointer text-sm"
             >
               Back to Catalog
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSuccess(false);
-                setStep(1);
-                setDate('');
-                setTime('');
-                setBookedApt(null);
-              }}
-              className="w-full bg-white hover:bg-[#F0EAE3] text-ink font-medium py-2 rounded-xl border border-line transition-colors cursor-pointer text-xs"
-            >
-              Book Another Appointment
             </button>
           </div>
         </div>
@@ -402,560 +428,695 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ shop_id: 
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF6F3] text-[#2D2A26] py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <button 
-            onClick={() => step > 1 ? setStep(step - 1) : router.back()}
-            className="text-[#827A73] hover:text-[#2D2A26] flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={16} /> Back
-          </button>
-          <div className="text-sm font-medium text-[#A8A19A]">
-            Step {step} of 3
+    <div className="min-h-dvh flex flex-col bg-canvas text-ink">
+      <BookingHeader onBack={() => (step > 1 ? setStep(prevStep) : router.back())} />
+      <div className="flex-1 py-[10px] px-[10px] pb-24">
+        <div className="w-full max-w-xl mx-auto">
+          {/* Header Context & Step Progress */}
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-ink">{shopSettings?.name}</p>
+              {branchAutoFilled && autoFilledBranch && (
+                <p className="flex items-center gap-1 text-xs text-ink-faint mt-0.5">
+                  <MapPin size={11} className="text-taupe shrink-0" />
+                  {autoFilledBranch.name}
+                </p>
+              )}
+            </div>
+            <div className="text-xs font-semibold text-ink-faint bg-sunken border border-line px-2.5 py-1 rounded-full">
+              Step {displayStep} of {totalSteps}
+            </div>
           </div>
-        </div>
 
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Book an Appointment</h1>
-          <p className="text-[#827A73]">{shopSettings?.name}</p>
-        </div>
-
-        {/* Design Catalog Reference — the item is inspiration for the fitting,
-            not something being ordered/purchased directly. */}
-        {refName && (
-          <div className="mb-6 bg-white border border-[#EBE6E0] rounded-2xl p-4 shadow-xs">
-            <span className="text-[10px] font-bold text-[#9A8073] uppercase tracking-wider">Design Reference</span>
-            <h3 className="font-semibold text-sm text-[#2D2A26]">
-              {refName}{refSize && <span className="font-normal text-[#827A73]"> · Size {refSize}</span>}
-            </h3>
-          </div>
-        )}
-
-        {/* Selected Package Summary */}
-        {packageInfo && (
-          <div className="mb-6 bg-white border border-taupe/30 rounded-2xl p-4 shadow-xs">
-            <span className="text-[10px] font-bold text-[#9A8073] uppercase tracking-wider">Package Inquiry</span>
-            <h3 className="font-semibold text-sm text-[#2D2A26]">{packageInfo.name}</h3>
-            <p className="text-xs text-[#827A73] mt-0.5">
-              Includes: {packageInfo.services.map(s => s.name).join(', ')}
-            </p>
-            <p className="text-xs font-semibold text-[#9A8073] mt-1">
-              ₱{(packageInfo.bundle_price
-                ? Number(packageInfo.bundle_price)
-                : packageInfo.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0)
-              ).toLocaleString()}
-            </p>
-          </div>
-        )}
-
-        <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6 md:p-8 shadow-xl">
-          
-          {/* STEP 1: POLICY */}
-          {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-medium border-b border-[#EBE6E0] pb-4">Service Details & Policy</h2>
-              
-              <div className="prose prose-invert max-w-none text-[#524A44]">
-                {shopSettings?.booking_policy ? (
-                  <div className="whitespace-pre-wrap">{shopSettings.booking_policy}</div>
-                ) : (
-                  <p className="italic text-[#A8A19A]">No specific booking policy provided by this shop.</p>
-                )}
-              </div>
-
-              <div className="pt-6">
-                <button 
-                  onClick={() => setStep(2)}
-                  className="w-full bg-[#9A8073] hover:bg-[#91756A] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                >
-                  Agree & Continue <ArrowRight size={18} />
-                </button>
+          {/* Compact Design Reference Preview for Steps 1 & 2 */}
+          {refName && step < 3 && (
+            <div className="mb-5 bg-surface border border-line rounded-xl shadow-xs p-3 flex items-center gap-3">
+              {refImage && (
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-line shrink-0 bg-sunken">
+                  <Image src={getMediaUrl(refImage)} alt={refName} fill unoptimized className="object-cover object-top" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">Design Reference</span>
+                  {refPrice && (
+                    <span className="text-xs font-bold text-ink">₱{Number(refPrice).toLocaleString()}</span>
+                  )}
+                </div>
+                <h3 className="font-semibold text-xs text-ink truncate mt-0.5">{refName}</h3>
+                <div className="flex items-center gap-1.5 text-[11px] text-ink-muted mt-0.5">
+                  {refSize && <span className="text-ink-faint">Size {refSize}</span>}
+                  {refSize && refColor && <span>•</span>}
+                  {refColor && <span>{refColor}</span>}
+                </div>
               </div>
             </div>
           )}
 
-          {/* STEP 2: DATE & TIME */}
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-medium border-b border-[#EBE6E0] pb-4">Appointment Type & Schedule</h2>
+          {/* Compact Package Summary Preview for Steps 1 & 2 */}
+          {packageInfo && step < 3 && (
+            <div className="mb-5 bg-surface border border-taupe/30 rounded-xl p-3 shadow-xs">
+              <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">Package Inquiry</span>
+              <div className="flex items-center justify-between mt-0.5">
+                <h3 className="font-semibold text-xs text-ink">{packageInfo.name}</h3>
+                <span className="text-xs font-bold text-taupe">
+                  ₱{(packageInfo.bundle_price
+                    ? Number(packageInfo.bundle_price)
+                    : packageInfo.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0)
+                  ).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )}
 
-              {/* Appointment Type Selector */}
-              <div className="space-y-2">
-                  <span className="text-sm font-medium text-[#524A44] block">What are you coming in for? <span className="text-[#B26959]">*</span></span>
+          <div>
+            {/* STEP 1: SERVICE DETAILS & POLICY */}
+            {step === 1 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                <h2 className="text-sm font-bold text-ink">Service Details & Policy</h2>
+                
+                <div className="prose prose-invert max-w-none text-xs text-ink-body bg-surface border border-line p-4 rounded-xl leading-relaxed">
+                  {shopSettings?.booking_policy ? (
+                    <div className="whitespace-pre-wrap">{shopSettings.booking_policy}</div>
+                  ) : (
+                    <p className="italic text-ink-faint">No specific booking policy provided by this shop. Walk-in consultations and fittings are welcome during operating hours.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: APPOINTMENT TYPE, BRANCH & SCHEDULE */}
+            {step === 2 && (
+              <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
+                <h2 className="text-sm font-bold text-ink">Appointment Type & Schedule</h2>
+
+                {/* Appointment Type Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-ink-body block">
+                    What are you coming in for? <span className="text-danger">*</span>
+                  </label>
                   <div className="grid grid-cols-1 gap-2">
-                    {BOOKING_TYPES.map(t => (
+                    {AVAILABLE_BOOKING_TYPES.map(t => (
                       <button
-                        type="button" key={t.value}
-                        onClick={() => {
-                          setAppointmentType(t.value);
-                          // Pickup is a quick hand-off, not a sit-down session —
-                          // default it to a short slot instead of whatever
-                          // duration was left over from another type.
-                          if (t.value === 'pickup') setDurationMinutes('15');
-                          else if (durationMinutes === '15') setDurationMinutes('60');
-                        }}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                        type="button"
+                        key={t.value}
+                        onClick={() => setAppointmentType(t.value)}
+                        className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all cursor-pointer ${
                           appointmentType === t.value
-                            ? 'border-[#9A8073] bg-[#9A8073]/5 ring-2 ring-[#9A8073]/20'
-                            : 'border-[#EBE6E0] bg-white hover:border-[#9A8073]/40'
+                            ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20'
+                            : 'border-line bg-surface hover:border-taupe/40'
                         }`}
                       >
-                        <span className={`${appointmentType === t.value ? 'text-[#9A8073]' : 'text-[#A8A19A]'}`}>{t.icon}</span>
-                        <div>
-                          <p className={`text-sm font-semibold ${appointmentType === t.value ? 'text-[#2D2A26]' : 'text-[#524A44]'}`}>{t.label}</p>
-                          <p className="text-xs text-[#A8A19A]">{t.hint}</p>
+                        <span className={`${appointmentType === t.value ? 'text-taupe' : 'text-ink-faint'}`}>{t.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-semibold ${appointmentType === t.value ? 'text-ink' : 'text-ink-body'}`}>
+                            {t.label}
+                          </p>
+                          <p className="text-[11px] text-ink-faint mt-0.5">{t.hint}</p>
                         </div>
+                        <ChevronRight size={16} className={`shrink-0 ${appointmentType === t.value ? 'text-taupe' : 'text-ink-faint'}`} />
                       </button>
                     ))}
                   </div>
-                  {TYPES_REQUIRING_SERVICE.includes(appointmentType) && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-                      <AlertCircle size={12} /> Please select a service below — required for {appointmentType} appointments.
-                    </p>
-                  )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-1 md:col-span-2">
-                  <InteractiveCalendar
-                    selectedBranchId={selectedBranchId ? String(selectedBranchId) : null}
-                    durationMinutes={getDurationMinutesNumber(appointmentType)}
-                    operatingHours={parsedOperatingHours}
-                    specialHours={shopSettings?.special_hours ?? null}
-                    maxAppointmentsPerDay={shopSettings?.max_appointments_per_day ?? null}
-                    appointments={calendarAppointments}
-                    loadingAppts={loadingAppts}
-                    selectedDate={date}
-                    selectedTime={time}
-                    onDateChange={setDate}
-                    onTimeChange={setTime}
-                  />
                 </div>
-              </div>
 
-              {(() => {
-                if (!date) return null;
-                const special = getSpecialHoursForDate(date);
-                if (!special) return null;
-
-                if (special.is_closed) {
-                  return (
-                    <div className="bg-[#B26959]/10 border border-[#B26959]/20 rounded-xl p-4 flex gap-2.5 text-xs text-[#B26959] animate-in slide-in-from-top-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-bold">Temporarily Closed ({special.title})</p>
-                        <p className="mt-0.5">We are fully closed on this date. Please choose a different date for your appointment.</p>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-2.5 text-xs text-[#826A50] animate-in slide-in-from-top-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-bold">Special Holiday Hours ({special.title})</p>
-                        <p className="mt-0.5">Custom hours for this date: {special.special_open_time} - {special.special_close_time}.</p>
-                      </div>
-                    </div>
-                  );
-                }
-              })()}
-
-              {/* Branch Selector (if multi-branch) */}
-              {shopSettings?.branches && shopSettings.branches.length > 1 && (
-                <div className="space-y-2">
-                  <label htmlFor="booking-branch" className="text-sm font-medium text-[#524A44] block">
-                    Select Branch <span className="text-[#B26959]">*</span>
-                  </label>
-                  <select
-                    id="booking-branch"
-                    required
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                  >
-                    <option value="" disabled>Choose a branch...</option>
-                    {shopSettings.branches.map(b => (
-                      <option key={b.id} value={b.id}>{b.name} ({b.address || ''}, {b.city || ''})</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Branch Location & In-Person Warning Alerts */}
-              {(() => {
-                const currentBranch = shopSettings?.branches?.find(b => b.id.toString() === selectedBranchId) || 
-                                      (shopSettings?.branches?.length === 1 ? shopSettings.branches[0] : null);
-                
-                if (!currentBranch) return null;
-
-                return (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs">
-                    <p className="font-semibold text-amber-800 flex items-center gap-1.5">
-                      <MapPin size={14} className="shrink-0 text-amber-700" />
-                      Physical Store Visit Required
-                    </p>
-                    <p className="text-amber-700 leading-relaxed">
-                      This is an <strong>in-person session</strong>. You must physically visit the selected branch on the scheduled date:
-                    </p>
-                    <div className="bg-white/90 p-2.5 rounded-lg border border-amber-200/50 shadow-xs">
-                      <p className="font-bold text-zinc-800">{currentBranch.name}</p>
-                      {currentBranch.address && <p className="text-zinc-600 mt-0.5">{currentBranch.address}</p>}
-                      {currentBranch.city && <p className="text-zinc-700 font-medium mt-0.5">{currentBranch.city}</p>}
-                    </div>
-                    {appointmentType === 'consultation' ? (
-                      <p className="text-amber-800/80 mt-1.5 leading-normal">
-                        💡 <strong>Located far away?</strong> You can avoid traveling and message us directly using the <strong>&ldquo;💬 Chat Shop&rdquo;</strong> button on our homepage to start an online consultation!
-                      </p>
-                    ) : (
-                      <p className="text-amber-800/80 mt-1.5 leading-normal font-semibold">
-                        ⚠️ Warning: If you are located far from this branch (e.g. Luzon to Mindanao), please do not book this session as it cannot be done online.
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Service Selector — Required for measurement/alteration, Optional for consultation, Hidden for fitting/pickup */}
-              {appointmentType !== 'fitting' && appointmentType !== 'pickup' && shopSettings?.services && shopSettings.services.length > 0 && (
-                <div className="space-y-2">
-                  <label htmlFor="booking-service" className="text-sm font-medium text-[#524A44] block">
-                    Service {appointmentType === 'measurement' || appointmentType === 'alteration' ? <span className="text-[#B26959]">*</span> : '(Optional)'}
-                  </label>
-                  <select
-                    id="booking-service"
-                    value={selectedServiceId}
-                    required={appointmentType === 'measurement' || appointmentType === 'alteration'}
-                    onChange={(e) => setSelectedServiceId(e.target.value)}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                  >
-                    <option value="">{appointmentType === 'measurement' || appointmentType === 'alteration' ? 'Select a service...' : 'No specific service (General Consultation)'}</option>
-                    {shopSettings.services.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Order Reference Input — Required for Fittings and Pickups */}
-              {(appointmentType === 'fitting' || appointmentType === 'pickup') && (
-                <div className="space-y-2">
-                  <label htmlFor="booking-order-reference" className="text-sm font-medium text-[#524A44] block">
-                    Ongoing Order Number or Garment Description <span className="text-[#B26959]">*</span>
-                  </label>
-                  <input
-                    id="booking-order-reference"
-                    type="text"
-                    required
-                    placeholder="e.g., Order #1002 or Blue Wedding Gown"
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                  />
-                  <p className="text-[11px] text-[#827A73]">
-                    💡 {appointmentType === 'pickup'
-                      ? 'Tell the shop which finished order you’re coming to collect.'
-                      : 'Tell the designer which ongoing order you are coming in to fit.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Consultation — reference images + optional link. Was previously
-                  tied to the now-removed 'bulk_custom' type; Consultation is
-                  the natural moment for a customer to attach a design idea. */}
-              {appointmentType === 'consultation' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium text-[#524A44] block">
-                      Design Reference Images <span className="text-xs font-normal text-[#A8A19A]">(optional, up to 10)</span>
-                    </span>
-                    {referenceImages.length > 0 && (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                        {referenceImages.map(url => (
-                          <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-[#EBE6E0] bg-zinc-100">
-                            <Image src={url} alt="Reference" fill className="object-cover" unoptimized />
-                            <button
-                              type="button"
-                              onClick={() => removeReferenceImage(url)}
-                              aria-label="Remove image"
-                              className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-black/80 text-white rounded-full p-2"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <label htmlFor="reference-image-upload" className="flex items-center justify-center gap-2 border-2 border-dashed border-[#EBE6E0] rounded-xl py-3 text-sm text-[#827A73] hover:border-[#9A8073]/50 cursor-pointer transition-colors">
-                      <Upload size={16} />
-                      {uploadingReference ? 'Uploading...' : 'Upload a design photo, mockup, or existing uniform'}
-                      <input
-                        id="reference-image-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        disabled={uploadingReference}
-                        onChange={handleReferenceImageUpload}
-                      />
+                {/* Service Selector — Required for measurement/alteration, Optional for general consultation */}
+                {needsServicePicker && (
+                  <div className="space-y-1.5 pt-1">
+                    <label htmlFor="booking-service" className="text-xs font-semibold text-ink-body block">
+                      Service {TYPES_REQUIRING_SERVICE.includes(appointmentType) ? <span className="text-danger">*</span> : <span className="text-ink-faint">(Optional)</span>}
                     </label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="reference-link" className="text-sm font-medium text-[#524A44] flex items-center gap-1.5">
-                      <LinkIcon size={14} /> Reference Link <span className="text-xs font-normal text-[#A8A19A]">(optional — Drive, YouTube, Pinterest, etc.)</span>
-                    </label>
-                    <input
-                      id="reference-link"
-                      type="url"
-                      value={referenceLink}
-                      onChange={(e) => setReferenceLink(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                    />
-                    <p className="text-[11px] text-[#827A73]">
-                      💡 Got a video walkthrough of the design? Upload it to Drive or YouTube and paste the link here instead.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Duration Selector — Pickup is a fixed short hand-off, no need to ask */}
-              {appointmentType !== 'pickup' && (
-              <div className="space-y-2">
-                <label htmlFor="booking-duration" className="text-sm font-medium text-[#524A44] block">
-                  Estimated Duration
-                </label>
-                <select
-                  id="booking-duration"
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(e.target.value)}
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-3 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                >
-                  <option value="30">30 minutes (Quick Consultation)</option>
-                  <option value="60">60 minutes (Standard Fitting/Measurement)</option>
-                  <option value="90">90 minutes (Detailed Fitting/Consultation)</option>
-                  <option value="120">120 minutes (Comprehensive Session)</option>
-                </select>
-              </div>
-              )}
-
-              {/* Render Operating Hours */}
-              {parsedOperatingHours && (
-                <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-xl p-4 mt-4 space-y-2.5">
-                  <h4 className="text-xs font-bold text-[#827A73] uppercase tracking-wider">Shop Operating Hours</h4>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-[#524A44]">
-                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(d => {
-                      const h = parsedOperatingHours[d];
-                      return (
-                        <div key={d} className="flex justify-between border-b border-[#EBE6E0]/40 pb-1.5">
-                          <span className="capitalize font-medium text-[#2D2A26]">{d}</span>
-                          <span className="text-[#827A73]">
-                            {h?.is_open 
-                              ? `${h.open} - ${h.close}`
-                              : <span className="text-[#B26959] font-medium">Closed</span>
-                            }
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-6">
-                <button 
-                  onClick={() => setStep(3)}
-                  disabled={
-                    !date ||
-                    !time ||
-                    !!getSpecialHoursForDate(date)?.is_closed ||
-                    (!!shopSettings?.branches && shopSettings.branches.length > 1 && !selectedBranchId)
-                  }
-                  className="w-full bg-[#9A8073] hover:bg-[#91756A] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
-                >
-                  Next Step <ArrowRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: DETAILS & SUBMIT */}
-          {step === 3 && (
-            <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-medium border-b border-[#EBE6E0] pb-4">Your Details</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="customer-name" className="text-sm font-medium text-[#524A44] mb-1 block">Full Name *</label>
-                  <input 
-                    id="customer-name"
-                    type="text" required
-                    value={customer.name} onChange={(e) => setCustomer({...customer, name: e.target.value})}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="customer-email" className="text-sm font-medium text-[#524A44] mb-1 block">Email Address *</label>
-                  <input 
-                    id="customer-email"
-                    type="email" required
-                    value={customer.email} onChange={(e) => setCustomer({...customer, email: e.target.value})}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="customer-phone" className="text-sm font-medium text-[#524A44] mb-1 block">Phone Number</label>
-                  <input 
-                    id="customer-phone"
-                    type="tel" 
-                    value={customer.phone} onChange={(e) => setCustomer({...customer, phone: e.target.value})}
-                    className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                  />
-                </div>
-              </div>
-
-              {/* Inquiry Remarks Field */}
-              <div className="pt-4 border-t border-[#EBE6E0]">
-                <label htmlFor="customer-remarks" className="text-sm font-medium text-[#524A44] mb-1 block">Remarks / Special Instructions</label>
-                <textarea 
-                  id="customer-remarks"
-                  rows={4}
-                  value={remarks} 
-                  onChange={(e) => setRemarks(e.target.value)}
-                  placeholder="Specify sizing, alterations, or other details..."
-                  className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2.5 text-[#2D2A26] text-base sm:text-sm focus:outline-none focus:border-[#9A8073]"
-                />
-              </div>
-
-              {shopSettings?.booking_questions && shopSettings.booking_questions.length > 0 && (
-                <div className="pt-4 space-y-4 border-t border-[#EBE6E0]">
-                  <h3 className="text-lg font-medium">Additional Information</h3>
-                  {shopSettings.booking_questions.map((question: string, idx: number) => (
-                    <div key={question}>
-                      <label htmlFor={`question-${idx}`} className="text-sm font-medium text-[#524A44] mb-1 block">{question}</label>
-                      <input 
-                        id={`question-${idx}`}
-                        type="text"
-                        required
-                        value={answers[question] || ''} 
-                        onChange={(e) => setAnswers({...answers, [question]: e.target.value})}
-                        className="w-full bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg px-4 py-2 text-[#2D2A26] focus:outline-none focus:border-[#9A8073]"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Manual Payment Section */}
-              <div className="pt-4 border-t border-[#EBE6E0] space-y-4">
-                <h3 className="text-lg font-medium">Payment / Booking Deposit</h3>
-                <p className="text-xs text-[#827A73]">Select how you would like to handle your reservation/fitting deposit (if applicable).</p>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { value: 'cash', label: 'Cash on Shop' },
-                    { value: 'gcash', label: 'GCash' },
-                    { value: 'paymaya', label: 'PayMaya' }
-                  ].map(m => (
-                    <button
-                      type="button" key={m.value}
-                      onClick={() => setPaymentMethod(m.value)}
-                      className={`py-2.5 px-3 rounded-lg border text-center text-xs font-semibold transition-all cursor-pointer ${
-                        paymentMethod === m.value
-                          ? 'border-[#9A8073] bg-[#9A8073]/5 text-[#2D2A26]'
-                          : 'border-[#EBE6E0] bg-white text-[#524A44] hover:border-[#9A8073]/40'
-                      }`}
+                    <select
+                      id="booking-service"
+                      value={selectedServiceId}
+                      required={TYPES_REQUIRING_SERVICE.includes(appointmentType)}
+                      onChange={(e) => setSelectedServiceId(e.target.value)}
+                      className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe"
                     >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-
-                {paymentMethod !== 'cash' && (
-                  <div className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl space-y-3">
-                    <div className="text-xs text-zinc-700">
-                      <span>Please send payment to the shop&apos;s verified {paymentMethod === 'gcash' ? 'GCash' : 'PayMaya'} details:</span>
-                      <div className="mt-1.5 p-2.5 bg-white border border-zinc-200 rounded-lg space-y-1">
-                        {paymentMethod === 'gcash' && (
-                          <>
-                            <div className="font-bold text-zinc-950">
-                              GCash: {shopSettings?.gcash_number || '0950 5585 800'} {shopSettings?.gcash_account_name ? `(${shopSettings.gcash_account_name})` : `(${shopSettings?.name || 'Tailor Shop'})`}
-                            </div>
-                            {shopSettings?.gcash_qr_path && (
-                              <div className="pt-2">
-                                <span className="text-[10px] text-zinc-500 font-medium block mb-1">Scan Shop GCash QR Code:</span>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={shopSettings.gcash_qr_path} alt="Shop GCash QR" className="w-36 h-36 object-contain rounded-lg border border-zinc-200" />
-                              </div>
-                            )}
-                          </>
-                        )}
-                        {paymentMethod === 'paymaya' && (
-                          <div className="font-bold text-zinc-950">
-                            PayMaya: {shopSettings?.gcash_number || '0950 5585 800'} ({shopSettings?.gcash_account_name || shopSettings?.name || 'Tailor Shop'})
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="ref-code" className="text-xs font-medium text-[#524A44] block">
-                        Transaction Reference Code <span className="text-[#A8A19A] font-normal">(optional)</span>
-                      </label>
-                      <input
-                        id="ref-code"
-                        type="text"
-                        value={paymentReference}
-                        onChange={(e) => setPaymentReference(e.target.value)}
-                        placeholder={
-                          paymentMethod === 'gcash'
-                            ? 'Enter the 13-digit GCash reference number, if you have it'
-                            : paymentMethod === 'paymaya'
-                            ? 'Enter your PayMaya reference number, if you have it'
-                            : 'Enter your bank’s transaction/confirmation number, if you have it'
-                        }
-                        className="w-full bg-white border border-[#EBE6E0] rounded-lg px-3 py-2 text-[#2D2A26] text-base sm:text-xs focus:outline-none focus:border-[#9A8073]"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="receipt-file" className="text-xs font-medium text-[#524A44] block">Upload Receipt Image *</label>
-                      <input 
-                        id="receipt-file"
-                        type="file" required={!paymentReceiptUrl}
-                        accept="image/*"
-                        onChange={handleReceiptUpload}
-                        className="w-full text-xs text-[#827A73]"
-                      />
-                      {uploadingReceipt && <p className="text-[10px] text-[#9A8073] animate-pulse">Uploading proof of payment...</p>}
-                      {paymentReceiptUrl && <p className="text-[10px] text-green-600 font-medium">✓ Proof of payment uploaded successfully!</p>}
-                    </div>
+                      <option value="">
+                        {TYPES_REQUIRING_SERVICE.includes(appointmentType)
+                          ? 'Select a service...'
+                          : 'No specific service (General Consultation)'}
+                      </option>
+                      {shopSettings?.services?.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} {s.base_price ? `(₱${Number(s.base_price).toLocaleString()})` : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
-              </div>
 
-              <div className="pt-6">
-                <button
-                  type="submit"
-                  disabled={submitting || uploadingReceipt}
-                  className="w-full bg-[#9A8073] hover:bg-[#91756A] text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
-                >
-                  {submitButtonLabel}
-                </button>
+                {/* Order Reference Input — Only for generic Fittings and Pickups without an item reference */}
+                {needsOrderReference && (
+                  <div className="space-y-1.5 pt-1">
+                    <label htmlFor="booking-order-reference" className="text-xs font-semibold text-ink-body block">
+                      Ongoing Order Number or Garment Description <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      id="booking-order-reference"
+                      type="text"
+                      placeholder="e.g. Order #1002 or Blue Wedding Gown"
+                      value={remarks}
+                      onChange={(e) => setRemarks(e.target.value.slice(0, 120))}
+                      className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe"
+                    />
+                    <p className="text-[11px] text-ink-faint">
+                      {appointmentType === 'pickup'
+                        ? 'Tell the shop which finished order you’re coming to collect.'
+                        : 'Tell the designer which ongoing order you are coming in to fit.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Branch Selection or Confirmation */}
+                {shopSettings?.branches && shopSettings.branches.length > 1 && !(branchAutoFilled && autoFilledBranch) ? (
+                  <div className="space-y-2.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-ink-body block">
+                        Select Branch <span className="text-danger">*</span>
+                      </label>
+                      {userLocation && (
+                        <span className="text-[11px] text-ink-faint flex items-center gap-1">
+                          <MapPin size={11} className="text-taupe" /> Sorted by nearest
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {branchesWithDistance.map((b) => {
+                        const isSelected = selectedBranchId === String(b.id);
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => setSelectedBranchId(String(b.id))}
+                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex items-start gap-3 ${
+                              isSelected
+                                ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20'
+                                : 'border-line bg-surface hover:border-taupe/40'
+                            }`}
+                          >
+                            <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                              isSelected ? 'border-taupe bg-taupe' : 'border-line bg-surface'
+                            }`}>
+                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className={`text-xs font-semibold ${isSelected ? 'text-ink' : 'text-ink-body'}`}>
+                                  {b.name}
+                                </p>
+                                {b.distanceKm !== null && (
+                                  <span className="text-[10px] text-taupe font-medium shrink-0">
+                                    {b.distanceKm < 1 ? `${Math.round(b.distanceKm * 1000)}m away` : `${b.distanceKm.toFixed(1)} km away`}
+                                  </span>
+                                )}
+                              </div>
+                              {b.address && (
+                                <p className="text-[11px] text-ink-faint mt-0.5 line-clamp-1">{b.address}</p>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : shopSettings?.branches && shopSettings.branches.length === 1 ? (
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-xs font-semibold text-ink-body block">Branch Location</label>
+                    <div className="p-3 bg-surface border border-line rounded-xl flex items-center gap-2.5">
+                      <MapPin size={16} className="text-taupe shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-ink">{shopSettings.branches[0].name}</p>
+                        {shopSettings.branches[0].address && (
+                          <p className="text-[11px] text-ink-faint mt-0.5">{shopSettings.branches[0].address}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Interactive Date & Time Picker */}
+                <div className="space-y-2 pt-1">
+                  <label className="text-xs font-semibold text-ink-body block">
+                    Select Date & Time <span className="text-danger">*</span>
+                  </label>
+                  <div className="bg-surface border border-line rounded-2xl p-4 shadow-sm">
+                    <InteractiveCalendar
+                      selectedDate={date}
+                      selectedTime={time}
+                      operatingHours={parsedOperatingHours}
+                      specialHours={shopSettings?.special_hours || null}
+                      appointments={calendarAppointments}
+                      selectedBranchId={selectedBranchId || null}
+                      durationMinutes={durationMinutes}
+                      onDateChange={setDate}
+                      onTimeChange={setTime}
+                    />
+                  </div>
+                </div>
+
+                {(() => {
+                  if (!date) return null;
+                  const special = getSpecialHoursForDate(date);
+                  if (!special) return null;
+
+                  if (special.is_closed) {
+                    return (
+                      <div className="bg-danger/10 border border-danger/20 rounded-xl p-3.5 flex gap-2.5 text-xs text-danger animate-in slide-in-from-top-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold">Temporarily Closed ({special.title})</p>
+                          <p className="mt-0.5">We are fully closed on this date. Please choose a different date for your appointment.</p>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex gap-2.5 text-xs text-ink-body animate-in slide-in-from-top-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold">Special Holiday Hours ({special.title})</p>
+                          <p className="mt-0.5">Custom hours for this date: {special.special_open_time} - {special.special_close_time}.</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
+            )}
+
+            {/* STEP 3: REVIEW & CONFIRM (FINAL STEP) */}
+            {step === 3 && (
+              <form id="booking-form" onSubmit={handleSubmit} className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
+                
+                {/* 1. Design Reference OR Selected Service OR Package Summary Card */}
+                {refName ? (
+                  <div className="p-3.5 bg-surface border border-line rounded-xl space-y-2.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-taupe uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles size={12} className="text-taupe" /> Design Reference
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {refImage && (
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-line shrink-0 bg-sunken">
+                          <Image src={getMediaUrl(refImage)} alt={refName} fill unoptimized className="object-cover object-top" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-semibold text-xs text-ink truncate">{refName}</h3>
+                          {refPrice && (
+                            <span className="text-xs font-bold text-taupe shrink-0">₱{Number(refPrice).toLocaleString()}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-[11px] text-ink-muted">
+                          <span className="bg-sunken border border-line rounded px-1.5 py-0.5 text-[10px] font-medium text-ink">
+                            {refSize ? `Size ${refSize}` : 'No size'}
+                          </span>
+                          {refColor && <span>{refColor}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : selectedService ? (
+                  <div className="p-3.5 bg-surface border border-line rounded-xl space-y-1.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-taupe uppercase tracking-wider flex items-center gap-1.5">
+                        <Scissors size={12} className="text-taupe" /> Selected Service
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="text-xs font-semibold text-taupe hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 size={11} /> Change
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-ink">{selectedService.name}</h3>
+                      {selectedService.base_price && (
+                        <span className="text-xs font-bold text-taupe">₱{Number(selectedService.base_price).toLocaleString()}</span>
+                      )}
+                    </div>
+                    {selectedService.description && (
+                      <p className="text-[11px] text-ink-muted line-clamp-2">{selectedService.description}</p>
+                    )}
+                  </div>
+                ) : packageInfo ? (
+                  <div className="p-3.5 bg-surface border border-taupe/30 rounded-xl space-y-1.5 shadow-xs">
+                    <span className="text-[10px] font-bold text-taupe uppercase tracking-wider flex items-center gap-1.5">
+                      <Package size={12} className="text-taupe" /> Package Inquiry
+                    </span>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-ink">{packageInfo.name}</h3>
+                      <span className="text-xs font-bold text-taupe">
+                        ₱{(packageInfo.bundle_price
+                          ? Number(packageInfo.bundle_price)
+                          : packageInfo.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0)
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-ink-muted">
+                      Includes: {packageInfo.services.map(s => s.name).join(', ')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3.5 bg-surface border border-line rounded-xl space-y-1.5 shadow-xs">
+                    <span className="text-[10px] font-bold text-taupe uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquare size={12} className="text-taupe" /> Appointment Purpose
+                    </span>
+                    <h3 className="text-xs font-bold text-ink capitalize">{appointmentType} Consultation</h3>
+                    <p className="text-[11px] text-ink-muted">Shop consultation and fitting service.</p>
+                  </div>
+                )}
+
+                {/* 2. Appointment Schedule & Branch Summary Card */}
+                <div className="p-3.5 bg-surface border border-line rounded-xl space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-taupe uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar size={12} className="text-taupe" /> Appointment Schedule
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="text-xs font-semibold text-taupe hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit2 size={11} /> Edit Schedule
+                    </button>
+                  </div>
+                  <div className="text-xs space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Clock size={13} className="text-taupe shrink-0" />
+                      <span className="text-ink font-semibold">
+                        {formatDatePreview(date)} • {formatTimePreview(time)}
+                      </span>
+                    </div>
+                    {selectedBranch && (
+                      <div className="flex items-start gap-2 text-ink-muted">
+                        <MapPin size={13} className="text-taupe shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-medium text-ink">{selectedBranch.name}</span>
+                          {selectedBranch.address && <p className="text-[11px] text-ink-faint">{selectedBranch.address}</p>}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-ink-muted pt-0.5">
+                      <CheckCircle2 size={13} className="text-taupe shrink-0" />
+                      <span>Purpose: <span className="font-medium text-ink capitalize">{appointmentType}</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Customer Contact Information */}
+                <div className="space-y-3">
+                  <h2 className="text-sm font-bold text-ink">Contact Details</h2>
+
+                  {user ? (
+                    /* Logged-in user — name+email always locked, phone always editable */
+                    <div className="p-3.5 bg-surface border border-line rounded-xl space-y-3 shadow-xs">
+                      {/* Name — locked */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-taupe/15 border border-taupe/30 flex items-center justify-center text-taupe font-bold text-sm shrink-0">
+                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-bold text-ink truncate">{user.name}</p>
+                            <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-0.5">
+                              <CheckCircle2 size={10} /> Verified
+                            </span>
+                          </div>
+                          <p className="text-xs text-ink-muted truncate mt-0.5 flex items-center gap-1">
+                            <Mail size={11} className="text-ink-faint shrink-0" />
+                            <span>{user.email}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Phone — always editable */}
+                      <div className="pt-2.5 border-t border-line/60">
+                        <label htmlFor="customer-quick-phone" className="text-xs font-semibold text-ink-body flex items-center gap-1 mb-1.5">
+                          <Phone size={12} className="text-taupe" /> Contact Number
+                        </label>
+                        <input
+                          id="customer-quick-phone"
+                          type="tel"
+                          value={customer.phone}
+                          onChange={(e) => setCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="e.g. 0912 345 6789"
+                          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-taupe"
+                        />
+                        <p className="text-[10px] text-ink-faint mt-1">Para sa appointment updates at SMS notifications.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Guest form */
+                    <div className="space-y-3 p-3.5 bg-surface border border-line rounded-xl animate-in fade-in">
+                      <p className="text-xs text-ink-muted mb-1">
+                        Pakilagay ang inyong impormasyon upang makipag-ugnayan ang sastre para sa inyong appointment.
+                      </p>
+                      <div>
+                        <label htmlFor="customer-name" className="text-xs font-semibold text-ink-body mb-1 block">Full Name *</label>
+                        <input 
+                          id="customer-name"
+                          type="text" required
+                          value={customer.name} onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-taupe"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="customer-email" className="text-xs font-semibold text-ink-body mb-1 block">Email Address *</label>
+                        <input 
+                          id="customer-email"
+                          type="email" required
+                          value={customer.email} onChange={(e) => setCustomer({...customer, email: e.target.value})}
+                          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-taupe"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="customer-phone" className="text-xs font-semibold text-ink-body mb-1 block">Contact Number</label>
+                        <input 
+                          id="customer-phone"
+                          type="tel" 
+                          value={customer.phone} onChange={(e) => setCustomer({...customer, phone: e.target.value})}
+                          placeholder="e.g. 0912 345 6789"
+                          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-taupe"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Notes Field (120-character limit) */}
+                <div className="pt-3 border-t border-line">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="customer-notes" className="text-xs font-semibold text-ink-body block">
+                      Notes
+                    </label>
+                    <span className={`text-[11px] ${remarks.length >= 120 ? 'text-danger font-semibold' : 'text-ink-faint'}`}>
+                      {remarks.length} / 120
+                    </span>
+                  </div>
+                  <textarea 
+                    id="customer-notes"
+                    rows={3}
+                    maxLength={120}
+                    value={remarks} 
+                    onChange={(e) => setRemarks(e.target.value.slice(0, 120))}
+                    placeholder="Specify the details..."
+                    className="w-full bg-canvas border border-line rounded-lg px-3.5 py-2.5 text-ink text-xs focus:outline-none focus:border-taupe resize-none leading-relaxed"
+                  />
+                  <p className="text-[10px] text-ink-faint mt-1">
+                    Maglagay ng maikling paalala o detalye para sa iyong appointment visit.
+                  </p>
+                </div>
+
+                {/* 5. Additional Information (if configured) */}
+                {shopSettings?.booking_questions && shopSettings.booking_questions.length > 0 && (
+                  <div className="pt-3 space-y-3 border-t border-line">
+                    <h3 className="text-xs font-semibold text-ink">Additional Information</h3>
+                    {shopSettings.booking_questions.map((question: string, idx: number) => (
+                      <div key={question}>
+                        <label htmlFor={`question-${idx}`} className="text-xs font-semibold text-ink-body mb-1 block">{question}</label>
+                        <input 
+                          id={`question-${idx}`}
+                          type="text"
+                          required
+                          value={answers[question] || ''} 
+                          onChange={(e) => setAnswers({...answers, [question]: e.target.value})}
+                          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-taupe"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 6. Fitting Reservation Fee (if applicable) */}
+                {Number(shopSettings?.fitting_fee) > 0 && (
+                  <div className="pt-3 border-t border-line space-y-3">
+                    <h3 className="text-xs font-semibold text-ink">Fitting Reservation Fee</h3>
+                    <p className="text-[11px] text-ink-muted">
+                      This shop charges a ₱{Number(shopSettings?.fitting_fee).toLocaleString()} fee to reserve this slot. Select how you&apos;d like to pay it.
+                    </p>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { value: 'cash', label: 'Cash' },
+                        { value: 'gcash', label: 'GCash' },
+                        { value: 'paymaya', label: 'PayMaya' },
+                        { value: 'bank', label: 'Bank' },
+                      ].map(m => (
+                        <button
+                          type="button"
+                          key={m.value}
+                          onClick={() => setPaymentMethod(m.value)}
+                          className={`p-2 text-center rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                            paymentMethod === m.value
+                              ? 'border-taupe bg-taupe/10 text-taupe'
+                              : 'border-line bg-surface text-ink-muted hover:border-taupe/40'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {paymentMethod !== 'cash' && (
+                      <div className="space-y-3 p-3 bg-surface border border-line rounded-xl text-xs">
+                        {paymentMethod === 'gcash' && (shopSettings?.gcash_number || shopSettings?.gcash_qr_path) ? (
+                          <div>
+                            <p className="text-ink-muted">
+                              Please send payment to {shopSettings.name}&apos;s GCash:
+                            </p>
+                            {shopSettings.gcash_account_name && <p className="font-semibold text-ink mt-0.5">{shopSettings.gcash_account_name}</p>}
+                            {shopSettings.gcash_number && <p className="font-mono text-sm font-bold text-taupe mt-0.5">{shopSettings.gcash_number}</p>}
+                            {shopSettings.gcash_qr_path && (
+                              <div className="mt-2 w-32 h-32 relative border border-line rounded-lg overflow-hidden mx-auto bg-white">
+                                <Image src={getMediaUrl(shopSettings.gcash_qr_path)} alt="GCash QR" fill unoptimized className="object-contain p-1" />
+                              </div>
+                            )}
+                          </div>
+                        ) : paymentMethod === 'paymaya' && (shopSettings?.paymaya_number || shopSettings?.paymaya_qr_path) ? (
+                          <div>
+                            <p className="text-ink-muted">
+                              Please send payment to {shopSettings.name}&apos;s PayMaya:
+                            </p>
+                            {shopSettings.paymaya_account_name && <p className="font-semibold text-ink mt-0.5">{shopSettings.paymaya_account_name}</p>}
+                            {shopSettings.paymaya_number && <p className="font-mono text-sm font-bold text-taupe mt-0.5">{shopSettings.paymaya_number}</p>}
+                            {shopSettings.paymaya_qr_path && (
+                              <div className="mt-2 w-32 h-32 relative border border-line rounded-lg overflow-hidden mx-auto bg-white">
+                                <Image src={getMediaUrl(shopSettings.paymaya_qr_path)} alt="PayMaya QR" fill unoptimized className="object-contain p-1" />
+                              </div>
+                            )}
+                          </div>
+                        ) : paymentMethod === 'bank' && (shopSettings?.bank_account_number || shopSettings?.bank_qr_path) ? (
+                          <div>
+                            <p className="text-ink-muted">
+                              Please send payment to {shopSettings.name}&apos;s bank:
+                            </p>
+                            {shopSettings.bank_name && <p className="font-semibold text-ink mt-0.5">{shopSettings.bank_name}</p>}
+                            {shopSettings.bank_account_name && <p className="text-ink-muted mt-0.5">{shopSettings.bank_account_name}</p>}
+                            {shopSettings.bank_account_number && <p className="font-mono text-sm font-bold text-taupe mt-0.5">{shopSettings.bank_account_number}</p>}
+                            {shopSettings.bank_qr_path && (
+                              <div className="mt-2 w-32 h-32 relative border border-line rounded-lg overflow-hidden mx-auto bg-white">
+                                <Image src={getMediaUrl(shopSettings.bank_qr_path)} alt="Bank QR" fill unoptimized className="object-contain p-1" />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-ink-muted italic">
+                            This shop hasn&apos;t set up their {paymentMethod.toUpperCase()} details yet — please confirm where to send payment with the shop directly.
+                          </p>
+                        )}
+
+                        <div className="space-y-2 pt-2 border-t border-line/60">
+                          <div>
+                            <label htmlFor="payment-ref" className="text-xs font-semibold text-ink-body mb-1 block">Reference Number (Optional)</label>
+                            <input
+                              id="payment-ref"
+                              type="text"
+                              value={paymentReference}
+                              onChange={(e) => setPaymentReference(e.target.value)}
+                              placeholder="e.g. 100234812"
+                              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-taupe"
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="receipt-upload" className="text-xs font-semibold text-ink-body mb-1 block">Proof of Payment / Receipt (Optional)</label>
+                            <input
+                              id="receipt-upload"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleReceiptUpload}
+                              className="w-full text-xs text-ink file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-taupe file:text-white hover:file:bg-taupe-hover cursor-pointer"
+                            />
+                            {uploadingReceipt && <p className="text-[10px] text-taupe mt-1">Uploading receipt...</p>}
+                            {paymentReceiptUrl && <p className="text-[10px] text-emerald-600 mt-1 flex items-center gap-1"><CheckCircle2 size={10} /> Receipt attached</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </form>
           )}
-
         </div>
       </div>
     </div>
+
+    {/* Shared Anchored Bottom Action Bar */}
+    <div
+      className="sticky bottom-0 left-0 right-0 z-40 bg-surface border-t border-line p-3 mt-auto shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
+      style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
+    >
+      <div className="max-w-xl mx-auto">
+        {step === 1 && (
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="w-full bg-taupe hover:bg-taupe-hover text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
+          >
+            Agree & Continue <ArrowRight size={16} />
+          </button>
+        )}
+        {step === 2 && (
+          <button
+            type="button"
+            onClick={() => setStep(3)}
+            disabled={step2NextDisabled}
+            className="w-full bg-taupe hover:bg-taupe-hover text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-xs"
+          >
+            Review & Confirm <ArrowRight size={16} />
+          </button>
+        )}
+        {step === 3 && (
+          <button
+            type="submit"
+            form="booking-form"
+            disabled={submitting || uploadingReceipt}
+            className="w-full bg-taupe hover:bg-taupe-hover text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer text-xs"
+          >
+            {submitting ? 'Processing...' : uploadingReceipt ? 'Uploading receipt...' : 'Confirm Booking'}
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
   );
 }
 
 export default function BookingWizard({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
   return (
-    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26] animate-pulse">Loading booking system...</div>}>
+    <Suspense fallback={
+      <div className="min-h-dvh flex flex-col bg-canvas text-ink">
+        <BookingHeader onBack={() => window.history.back()} />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 size={28} className="text-taupe animate-spin" />
+        </div>
+      </div>
+    }>
       <BookingWizardContent params={params} />
     </Suspense>
   );

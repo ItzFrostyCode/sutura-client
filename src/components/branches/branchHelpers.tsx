@@ -22,6 +22,7 @@ export interface ShopBranch {
   address: string;
   landmark?: string | null;
   city: string;
+  district?: string | null;
   contact_number: string | null;
   is_main: boolean;
   latitude?: string | null;
@@ -35,11 +36,14 @@ export interface ShopBranch {
   manager_id?: number | null;
 }
 
+export const DAVAO_DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
+
 export interface BranchFormData {
   name: string;
   address: string;
   landmark: string;
   city: string;
+  district: string;
   contact_number: string;
   latitude: string;
   longitude: string;
@@ -54,6 +58,7 @@ export const EMPTY_FORM: BranchFormData = {
   address: '',
   landmark: '',
   city: '',
+  district: '',
   contact_number: '',
   latitude: '',
   longitude: '',

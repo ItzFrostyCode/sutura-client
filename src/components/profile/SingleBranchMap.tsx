@@ -21,13 +21,17 @@ interface SingleBranchMapProps {
   readonly city: string;
   readonly latitude: number;
   readonly longitude: number;
+  /** Overrides the default rounded/bordered wrapper — e.g. an edge-to-edge,
+      flush placement (no border/radius) instead of a card. */
+  readonly className?: string;
+  readonly height?: number;
 }
 
-export default function SingleBranchMap({ shopName, branchName, address, city, latitude, longitude }: Readonly<SingleBranchMapProps>) {
+export default function SingleBranchMap({ shopName, branchName, address, city, latitude, longitude, className, height = 360 }: Readonly<SingleBranchMapProps>) {
   const pos: [number, number] = [latitude, longitude];
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-line" style={{ height: 360 }}>
+    <div className={className ?? 'rounded-2xl overflow-hidden border border-line'} style={{ height }}>
       <MapContainer center={pos} zoom={15} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"

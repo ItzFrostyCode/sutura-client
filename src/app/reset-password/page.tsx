@@ -59,7 +59,7 @@ function ResetPasswordForm() {
     <div className="min-h-screen flex items-center justify-center bg-[#FAF6F3] text-[#2D2A26] relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-[#F0EAE3] via-[#FAF6F3] to-[#EBE4DC] opacity-50 pointer-events-none" />
 
-      <div className="w-full max-w-[480px] p-10 md:p-12 rounded-3xl bg-white border border-[#EBE6E0] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative z-10 mx-4">
+      <div className="w-full max-w-[480px] p-6 rounded-2xl bg-surface border border-line relative z-10 mx-[10px]">
         <div className="text-center mb-10">
           <BrandLogo className="mb-8" />
           <h1 className="font-heading text-3xl text-[#2D2A26] mb-3">Set a new password</h1>

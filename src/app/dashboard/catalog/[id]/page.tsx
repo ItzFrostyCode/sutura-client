@@ -287,7 +287,7 @@ export default function CatalogItemDetailPage({
           href="/dashboard/catalog"
           className="px-5 py-2.5 bg-taupe text-white text-xs font-bold rounded-xl hover:bg-[#8A7063] transition-colors inline-flex items-center gap-2"
         >
-          <ArrowLeft size={16} /> Back to Catalog Showcase
+          <ArrowLeft size={16} /> Back to Catalog
         </Link>
       </div>
     );

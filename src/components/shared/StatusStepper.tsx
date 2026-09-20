@@ -5,20 +5,87 @@ export interface StepperStage {
   key: string;
   label: string;
   Icon: LucideIcon;
+  /** Real timestamp for when this stage happened, when tracked — shown as
+   *  a date/time line under the label (vertical layout only). Null/absent
+   *  stages just show the label alone, never a guessed date. */
+  timestamp?: string | null;
+}
+
+function formatStageTimestamp(iso: string): string {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+  const time = d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  return `${date} at ${time}`;
 }
 
 interface StatusStepperProps {
   readonly stages: StepperStage[];
   readonly currentKey: string;
   readonly onStageClick?: (key: string) => void;
+  /** 'horizontal' (default) — the original scrollable row, used by
+   *  /track/[code]'s compact guest view. 'vertical' — stacked top-to-bottom,
+   *  used by /account/orders/[id]'s customer detail view so all 10 stages
+   *  are readable without horizontal scrolling/overflow on a phone. */
+  readonly layout?: 'horizontal' | 'vertical';
 }
 
 // Flat, no shadow/glow — the current stage is marked by fill + a thin ring
 // only, matching the "clean, simple, modern" direction. Reused by
 // JobProductionTimeline (staff-facing, clickable) and any future read-only
 // customer-facing tracker built on the same stage data.
-export default function StatusStepper({ stages, currentKey, onStageClick }: StatusStepperProps) {
+export default function StatusStepper({ stages, currentKey, onStageClick, layout = 'horizontal' }: StatusStepperProps) {
   const currentIdx = stages.findIndex(s => s.key === currentKey);
+
+  if (layout === 'vertical') {
+    return (
+      <div>
+        {stages.map((stage, idx) => {
+          const isCurrent = idx === currentIdx;
+          const isDone = idx < currentIdx || (isCurrent && idx === stages.length - 1);
+
+          let iconClass = 'bg-sunken border-line text-ink-faint';
+          if (isDone) {
+            iconClass = 'bg-sage border-sage text-white';
+          } else if (isCurrent) {
+            iconClass = 'bg-taupe border-taupe text-white ring-2 ring-taupe/25';
+          }
+
+          let labelColor = 'text-ink-faint';
+          if (isCurrent) {
+            labelColor = 'text-taupe font-bold';
+          } else if (isDone) {
+            labelColor = 'text-sage font-semibold';
+          }
+
+          const StageIcon = isDone ? Check : stage.Icon;
+          const clickable = !!onStageClick;
+          const isLast = idx === stages.length - 1;
+
+          return (
+            <div key={stage.key} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors border-2 shrink-0 ${iconClass}`}>
+                  <StageIcon size={15} strokeWidth={2.4} />
+                </div>
+                {!isLast && <div className={`w-0.5 flex-1 min-h-[20px] ${idx < currentIdx ? 'bg-sage' : 'bg-line'}`} />}
+              </div>
+              <button
+                type="button"
+                onClick={clickable ? () => onStageClick(stage.key) : undefined}
+                disabled={!clickable}
+                className={`pb-5 pt-1.5 text-left ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <span className={`block text-sm ${labelColor}`}>{stage.label}</span>
+                {stage.timestamp && (
+                  <span className="block text-xs text-ink-faint mt-0.5">{formatStageTimestamp(stage.timestamp)}</span>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto pb-2 -mb-2 hide-scrollbar touch-pan-x">

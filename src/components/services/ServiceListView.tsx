@@ -118,8 +118,13 @@ export default function ServiceListView({
                   </span>
                 </div>
 
-                {/* Image area */}
-                <div className="h-40 bg-canvas border-b border-line overflow-hidden">
+                {/* Image area — a stored image_url pointing at a file that no
+                    longer exists (moved/renamed/never uploaded) used to fall
+                    through to the browser's own broken-image glyph instead
+                    of this card's themed "No image" placeholder; onError
+                    swaps to the same fallback markup used when there's no
+                    URL at all. */}
+                <div className="h-40 bg-canvas border-b border-line overflow-hidden relative">
                   {service.image_url ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img

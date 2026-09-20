@@ -167,7 +167,7 @@ export default function MeasurementFormModal({
                 onChange={handleSizeChartChange}
                 shopId={shop?.id ?? 0}
                 title="Measurement Fields"
-                description="Add whatever fields you need for this customer — all values in inches (″)."
+                description="Add whatever fields you need for this customer — all values in centimeters (cm), matching the customer's own Size Profile."
                 columnPlaceholder="e.g. Sleeve to Wrist"
               />
             </div>
@@ -232,7 +232,9 @@ export default function MeasurementFormModal({
                     {sizeChart.columns.map((col, i) => (
                       <div key={col} className="flex items-center justify-between bg-surface border border-line rounded-lg px-3 py-2">
                         <span className="text-xs text-ink-muted">{col}</span>
-                        <span className="text-sm font-semibold text-ink">{sizeChart.rows[0]?.values[i] || '—'}</span>
+                        <span className="text-sm font-semibold text-ink">
+                          {sizeChart.rows[0]?.values[i] ? `${sizeChart.rows[0].values[i]} cm` : '—'}
+                        </span>
                       </div>
                     ))}
                   </div>

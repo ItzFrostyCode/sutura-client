@@ -17,12 +17,16 @@ export function getMediaUrl(path?: string | null): string {
     return encodeURI(trimmed);
   }
 
-  // Static assets residing in the Next.js client public folder (e.g. /catalog/..., /receipts/..., /images/...)
+  // Static assets residing in the Next.js client public folder (e.g. /catalog/..., /fabrics/..., /receipts/..., /images/...)
   if (
     trimmed.startsWith('/catalog/') ||
     trimmed.startsWith('catalog/') ||
+    trimmed.startsWith('/fabrics/') ||
+    trimmed.startsWith('fabrics/') ||
     trimmed.startsWith('/receipts/') ||
-    trimmed.startsWith('receipts/')
+    trimmed.startsWith('receipts/') ||
+    trimmed.startsWith('/images/') ||
+    trimmed.startsWith('images/')
   ) {
     const cleanClientPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     return encodeURI(cleanClientPath);

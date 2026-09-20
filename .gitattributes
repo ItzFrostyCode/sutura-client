@@ -11,10 +11,20 @@
 *.html text eol=lf
 *.md text eol=lf
 *.svg text eol=lf
+*.env* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
 
-# Windows scripts
-*.bat eol=crlf
-*.cmd eol=crlf
+# Diffs
+*.tsx diff=typescript
+*.ts  diff=typescript
+*.css diff=css
+*.md  diff=markdown
+
+# Windows scripts (must keep CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
 
 # Binary files
 *.png binary
@@ -25,3 +35,6 @@
 *.ico binary
 *.docx binary
 *.pdf binary
+*.woff binary
+*.woff2 binary
+*.avif binary

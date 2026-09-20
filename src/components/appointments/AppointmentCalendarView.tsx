@@ -408,7 +408,7 @@ export default function AppointmentCalendarView({
                         <RescheduledBadge />
                       )}
                       <TypeBadge type={apt.appointment_type} />
-                      <StatusBadge status={apt.status} />
+                      <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
                     </div>
 
                     {isPending && apt.intake_channel === 'online' && (

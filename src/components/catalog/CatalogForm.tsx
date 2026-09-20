@@ -20,6 +20,13 @@ import SizeChartEditor, { SizeChartValue, emptySizeChart } from '@/components/sh
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 
+// A gown/garment customer typically wants to see it from every real angle
+// before buying sight-unseen — front, back, both sides, plus a couple of
+// close-up/detail shots. 10 covers that comfortably without turning this
+// into an unbounded gallery.
+const MAX_CATALOG_IMAGES = 10;
+const QUICK_ANGLE_LABELS = ['Front', 'Left Side', 'Right Side', 'Back'];
+
 interface SectionImageUploadProps {
   readonly imageUrl: string;
   readonly uploading: boolean;
@@ -94,6 +101,7 @@ export default function CatalogForm({
   const [formData, setFormData] = useState<CatalogFormData>({
     name: '',
     price: '',
+    service_id: '',
     estimated_days: '',
     material: '',
     color: '',
@@ -105,6 +113,18 @@ export default function CatalogForm({
     external_gallery_url: '',
     is_active: true,
   });
+
+  // For the optional "Link to Service" dropdown — what actually makes the
+  // customer-facing Bulk Order flow (Size + Quantity, real quantity-based
+  // pricing) appear on this item at all: an unlinked item, or one linked to
+  // a non-bulk_sublimation service, simply has no Bulk Order entry point.
+  const [shopServices, setShopServices] = useState<{ id: number; name: string; service_types?: string[] }[]>([]);
+  useEffect(() => {
+    if (!shop?.id) return;
+    api.get(`/shops/${shop.id}/services`)
+      .then(res => setShopServices(res.data.data ?? []))
+      .catch(() => setShopServices([]));
+  }, [shop?.id]);
 
   const [fabricImageUploading, setFabricImageUploading] = useState(false);
   const fabricImageInputRef = useRef<HTMLInputElement>(null);
@@ -156,7 +176,7 @@ export default function CatalogForm({
     }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -365,6 +385,26 @@ export default function CatalogForm({
                     className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="catalog-service" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
+                  Link to Service <span className="text-ink-faint normal-case font-normal">— optional; a bulk_sublimation service enables the customer-facing Bulk Order flow on this item</span>
+                </label>
+                <select
+                  id="catalog-service"
+                  name="service_id"
+                  value={formData.service_id}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink focus:outline-none focus:border-taupe text-sm"
+                >
+                  <option value="">No linked service</option>
+                  {shopServices.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}{(s.service_types ?? []).includes('bulk_sublimation') ? ' (Bulk Sublimation)' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -614,11 +654,15 @@ export default function CatalogForm({
             {/* Images Upload Section */}
             <div className="bg-surface border border-line rounded-2xl p-6 sticky top-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-ink">Images</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-medium text-ink">Images</h2>
+                  <span className="text-xs font-medium text-ink-faint">{images.length}/{MAX_CATALOG_IMAGES}</span>
+                </div>
                 <button
                   type="button"
+                  disabled={images.length >= MAX_CATALOG_IMAGES}
                   onClick={() => setImages([...images, { id: Math.random().toString(), url: '', angle: 'Default', is_primary: false }])}
-                  className="text-taupe text-xs font-semibold hover:text-taupe-hover flex items-center gap-1"
+                  className="text-taupe text-xs font-semibold hover:text-taupe-hover disabled:text-ink-faint disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   <Plus size={14} /> Add Image Slot
                 </button>
@@ -692,6 +736,20 @@ export default function CatalogForm({
                         <label htmlFor={`img-angle-${img.id}`} className="block text-[11px] font-semibold text-ink-muted uppercase tracking-wider mb-1">
                           Photo Label <span className="text-ink-faint normal-case font-normal">— shown as a caption on this photo (e.g. Front, Back, Detail)</span>
                         </label>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {QUICK_ANGLE_LABELS.map(label => (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => setImages(prev => prev.map(im => (im.id === img.id ? { ...im, angle: label } : im)))}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                                img.angle === label ? 'bg-taupe text-white border-taupe' : 'bg-canvas text-ink-muted border-line hover:border-taupe/50'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                         <input
                           id={`img-angle-${img.id}`}
                           type="text"
