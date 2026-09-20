@@ -1,31 +1,117 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
-import { Star, Store, ChevronLeft, ChevronRight, SlidersHorizontal, Info } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Star, Store, Scissors, ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Search, X, RotateCcw,
+  TrendingUp, TrendingDown, Minus, MapPin,
+} from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
-import PublicNav from '@/components/shared/PublicNav';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
-import { GARMENT_CATEGORIES, applyCategoryFilter } from '@/lib/garmentCategories';
+import { applyCategoryFilter } from '@/lib/garmentCategories';
+import { CATEGORY_CHIP_SETS, findChipSetKey } from '@/lib/categoryChipSets';
+import {
+  getSavedLocation,
+  saveLocation,
+  getOldLocation,
+  swapLocations,
+  haversineKm,
+  type SavedLocation,
+} from '@/lib/customerLocation';
+import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import type { CatalogItemResult } from '@/types/publicCatalog';
+import { isShopOpen, type OperatingHours } from '@/lib/shopStatus';
+
+// Leaflet touches `window` at import time — must be client-only, same
+// pattern as every other Leaflet consumer in this app (BranchesMap,
+// SingleBranchMap, DiscoveryMap).
+const LocationPicker = dynamic(() => import('@/components/discovery/LocationPicker'), { ssr: false });
 
 interface RelatedShop {
   id: number;
   slug: string;
   name: string;
   logo_path: string | null;
+  banner_path?: string | null;
   reviews_count: number;
   reviews_avg_rating: number | null;
+  distance_km?: number | null;
+  subscription_plan?: string | null;
+  is_featured?: boolean;
+  operating_hours?: OperatingHours | null;
+  owner?: { id: number; name: string } | null;
+  branches?: {
+    id: number;
+    name: string;
+    district: string | null;
+    city: string | null;
+    latitude: string | null;
+    longitude: string | null;
+    address?: string;
+  }[];
+  catalog_items?: {
+    id: number;
+    name: string;
+    price: string | number;
+    material?: string | null;
+    garment_type?: string | null;
+    fabric_image_url?: string | null;
+    images?: { id: number; image_url: string; is_primary?: boolean }[];
+  }[];
 }
 
-const SORT_TABS: { value: string; label: string }[] = [
-  { value: '', label: 'Newest' },
-  { value: 'top_sales', label: 'Top Sales' },
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
+interface SearchServiceResult {
+  id: number;
+  name: string;
+  category?: string | null;
+  description?: string | null;
+  base_price: number | null;
+  sale_price?: number | null;
+  estimated_days?: number | null;
+  image_url?: string | null;
+  shop?: { id: number; name: string; slug: string; logo_path?: string | null } | null;
+}
+
+// Real seeded Davao City districts (shop_branches.district) — same list
+// already used on /shops and /map, kept in sync manually since it's a
+// fixed, small, real-world set rather than a fetched enum.
+const DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
+
+// Left-rail tabs of the mobile Filter panel — Category/Price/Rating/District
+// are SUTURA's own real filterable dimensions (garment_type, price, review
+// rating, branch district). Deliberately not a 1:1 port of the Shopee
+// reference's categories (Shipped From/Brand/Shipping Option don't apply —
+// there's no shipping or brand concept in this domain).
+// No "Category" tab here anymore — the hamburger menu's Men/Women/Wedding
+// leaves already deep-link straight into /search with `category` applied,
+// so a duplicate category picker inside this panel was redundant.
+const FILTER_TABS = [
+  { key: 'price', label: 'Price Range' },
+  { key: 'rating', label: 'Rating' },
+  { key: 'district', label: 'Location' },
+  { key: 'color', label: 'Color' },
+] as const;
+type FilterTabKey = typeof FILTER_TABS[number]['key'];
+
+// Common tailoring/garment colors — a real, functional filter
+// (catalog_items.color, matched by substring on the backend so "Blue"
+// still catches "Sky Blue"). Sparse today since most seeded items have no
+// color set yet, but the filter itself is real, not decorative.
+const COLOR_OPTIONS: { label: string; hex: string }[] = [
+  { label: 'Black', hex: '#1a1a1a' },
+  { label: 'White', hex: '#f5f5f0' },
+  { label: 'Navy', hex: '#1e2a4a' },
+  { label: 'Blue', hex: '#2244aa' },
+  { label: 'Gray', hex: '#8a8a8a' },
+  { label: 'Brown', hex: '#6b4a3a' },
+  { label: 'Beige', hex: '#d8c9a3' },
+  { label: 'Red', hex: '#a12626' },
+  { label: 'Green', hex: '#2f5d3a' },
+  { label: 'Gold', hex: '#c9a24b' },
 ];
 
 export default function SearchPage() {
@@ -37,37 +123,232 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
+  const router = useRouter();
+  const gate = useGuestGatedHref();
   const searchParams = useSearchParams();
-  const [q, setQ] = useState(searchParams.get('q') ?? '');
+  // `q` holds what's typed in the search box. Initialized from URL `q` or `search`
+  // so queries typed on the landing page hero search or links carry over visibly.
+  const [q, setQ] = useState(searchParams.get('q') ?? searchParams.get('search') ?? '');
+  const effectiveQ = q.trim();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const [category, setCategory] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [minRating, setMinRating] = useState('');
-  const [sortBy, setSortBy] = useState('');
+  // Sync q when searchParams change (e.g. back/forward navigation or external links)
+  useEffect(() => {
+    const nextQ = searchParams.get('q') ?? searchParams.get('search') ?? '';
+    setQ(nextQ);
+  }, [searchParams]);
+
+  // Arriving here drops straight into a ready-to-type state
+  useEffect(() => { searchInputRef.current?.focus(); }, []);
+
+  // Initialized from the URL, not just `q` — lets an external link (the
+  // hamburger menu's category/price/district drill-down) land here
+  // pre-filtered instead of just pre-filling the text box.
+  const [category, setCategory] = useState(searchParams.get('category') ?? '');
+  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') ?? '');
+  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') ?? '');
+  const [minRating, setMinRating] = useState(searchParams.get('minRating') ?? '');
+  const [district, setDistrict] = useState(searchParams.get('district') ?? '');
+  const [color, setColor] = useState(searchParams.get('color') ?? '');
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? '');
   const [page, setPage] = useState(1);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Measured so the filter dropdown can sit exactly below the header
+  // (back/location + search/filter rows) instead of covering it — the
+  // header must stay visible and usable while the panel is open.
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  useEffect(() => {
+    if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+  }, []);
+
+  // Location picker — full-screen map overlay (see LocationPicker.tsx), not
+  // an inline dropdown, so it doesn't need outside-click tracking like the
+  // price menu does. Defaults from whatever was saved on a previous visit
+  // (localStorage — no backend "home address" field exists, see
+  // customerLocation.ts); a fresh visitor sees just "Davao City" until they
+  // open the picker themselves.
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  const [savedLocation, setSavedLocation] = useState<SavedLocation | null>(null);
+  const [oldLocation, setOldLocation] = useState<SavedLocation | null>(null);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const initialTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'all' | 'store' | 'services' | 'showroom'>(
+    initialTab === 'services' || initialTab === 'service'
+      ? 'services'
+      : initialTab === 'showroom' || initialTab === 'catalog'
+        ? 'showroom'
+        : initialTab === 'store' || initialTab === 'shops'
+          ? 'store'
+          : 'all'
+  );
+  const [stores, setStores] = useState<RelatedShop[]>([]);
+  const [storesLoading, setStoresLoading] = useState(true);
+  const [services, setServices] = useState<SearchServiceResult[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesTotal, setServicesTotal] = useState(0);
+
+  useEffect(() => {
+    const loc = getSavedLocation();
+    setSavedLocation(loc);
+    setOldLocation(getOldLocation());
+    if (loc?.lat && loc?.lng) {
+      setUserCoords({ lat: loc.lat, lng: loc.lng });
+    }
+    // Don't clobber a district that arrived via URL (e.g. the hamburger
+    // menu's district drill-down) with whatever was saved from a previous
+    // visit — the explicit link should win.
+    if (loc?.district && !searchParams.get('district')) setDistrict(loc.district);
+  }, [searchParams]);
+
+  function handleToggleOldLocation() {
+    const result = swapLocations();
+    if (result?.current) {
+      setSavedLocation(result.current);
+      setUserCoords({ lat: result.current.lat, lng: result.current.lng });
+      setDistrict(result.current.district || '');
+      setOldLocation(result.old);
+    }
+  }
+
+  function handleSortNearest() {
+    if (sortBy === 'distance') {
+      setSortBy('');
+      return;
+    }
+    if (userCoords) {
+      setSortBy('distance');
+      return;
+    }
+    if (!navigator.geolocation) {
+      alert('Location is not supported by your browser.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserCoords(coords);
+        setSortBy('distance');
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+
+  // Filter dropdown — draft fields let Reset/Apply preview a change before
+  // it's committed. All 4 sections render stacked in one scrollable pane;
+  // the left rail highlights whichever section is currently in view
+  // (scrollspy) rather than gating content behind a click-to-switch tab.
+  const [activeFilterTab, setActiveFilterTab] = useState<FilterTabKey>('price');
+  const [draftMinPrice, setDraftMinPrice] = useState('');
+  const [draftMaxPrice, setDraftMaxPrice] = useState('');
+  const [draftMinRating, setDraftMinRating] = useState('');
+  const [draftDistrict, setDraftDistrict] = useState('');
+  const [draftColor, setDraftColor] = useState('');
+
+  const filterScrollRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = {
+    price: useRef<HTMLDivElement>(null),
+    rating: useRef<HTMLDivElement>(null),
+    district: useRef<HTMLDivElement>(null),
+    color: useRef<HTMLDivElement>(null),
+  };
+
+  // getBoundingClientRect()-based, not raw offsetTop — offsetTop is
+  // relative to the nearest *positioned* ancestor, which isn't guaranteed
+  // to be this scroll container, and was causing the rail's auto-scroll to
+  // overshoot past the section it was supposed to land on.
+  function sectionTopInContainer(el: HTMLDivElement, container: HTMLDivElement) {
+    return el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+  }
+
+  function handleFilterScroll() {
+    const container = filterScrollRef.current;
+    if (!container) return;
+    const scrollPos = container.scrollTop + 12;
+    let current: FilterTabKey = 'price';
+    for (const tab of FILTER_TABS) {
+      const el = sectionRefs[tab.key].current;
+      if (el && sectionTopInContainer(el, container) <= scrollPos) current = tab.key;
+    }
+    setActiveFilterTab(current);
+  }
+
+  function scrollToFilterSection(key: FilterTabKey) {
+    const container = filterScrollRef.current;
+    const el = sectionRefs[key].current;
+    if (container && el) {
+      container.scrollTo({ top: sectionTopInContainer(el, container) - 8, behavior: 'smooth' });
+    }
+    setActiveFilterTab(key);
+  }
+
+  function openFilterPanel() {
+    setDraftMinPrice(minPrice);
+    setDraftMaxPrice(maxPrice);
+    setDraftMinRating(minRating);
+    setDraftDistrict(district);
+    setDraftColor(color);
+    setActiveFilterTab('price');
+    setFilterPanelOpen(true);
+  }
+  function applyFilterPanel() {
+    setMinPrice(draftMinPrice);
+    setMaxPrice(draftMaxPrice);
+    setMinRating(draftMinRating);
+    setDistrict(draftDistrict);
+    setColor(draftColor);
+    setFilterPanelOpen(false);
+  }
+  function resetFilterPanel() {
+    // Also clears the real `category` state directly, not just the price/
+    // rating/district/color drafts — there's no picker for it in this
+    // panel anymore, but Reset should still mean "clear every active
+    // filter", including one that arrived via a hamburger-menu link.
+    setCategory('');
+    setDraftMinPrice('');
+    setDraftMaxPrice('');
+    setDraftMinRating('');
+    setDraftDistrict('');
+    setDraftColor('');
+  }
 
   const [items, setItems] = useState<CatalogItemResult[]>([]);
   const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  // Model/Fabric toggle — real data (catalog_items.fabric_image_url),
+  // falls back to the model photo per-card when an item has no fabric shot.
+  const [showFabric, setShowFabric] = useState(false);
 
   const [relatedShops, setRelatedShops] = useState<RelatedShop[]>([]);
 
   // Resets to page 1 whenever a filter changes — a stale page 4 selection
   // shouldn't survive a brand-new filter combination.
-  useEffect(() => { setPage(1); }, [q, category, minPrice, maxPrice, minRating, sortBy]);
+  useEffect(() => { setPage(1); }, [effectiveQ, category, minPrice, maxPrice, minRating, district, color, sortBy]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
       setLoading(true);
       const params: Record<string, string | number> = { per_page: 30, page };
-      if (q.trim()) params.q = q.trim();
+      if (effectiveQ.trim()) params.q = effectiveQ.trim();
       applyCategoryFilter(params, category);
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
       if (minRating) params.min_rating = minRating;
+      if (district) params.district = district;
+      if (color) params.color = color;
+      if (userCoords) {
+        params.lat = userCoords.lat;
+        params.lng = userCoords.lng;
+      }
       if (sortBy) params.sort_by = sortBy;
 
       api.get('/public/catalog-items', { params })
@@ -81,287 +362,855 @@ function SearchPageContent() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [q, category, minPrice, maxPrice, minRating, sortBy, page]);
+  }, [effectiveQ, category, minPrice, maxPrice, minRating, district, color, sortBy, page, userCoords]);
 
-  // Shops related to the query — only worth fetching once there's an actual
-  // search term; an empty query would just return the newest shops, which
-  // isn't "related to" anything.
+  // Load stores list sorted by distance if userCoords available
   useEffect(() => {
-    if (!q.trim()) { setRelatedShops([]); return; }
+    setStoresLoading(true);
     const handle = setTimeout(() => {
-      api.get('/public/shops', { params: { q: q.trim(), per_page: 6 } })
-        .then((res) => setRelatedShops(res.data.data ?? []))
-        .catch(() => setRelatedShops([]));
+      const params: Record<string, string | number> = { per_page: 30 };
+      if (effectiveQ.trim()) params.q = effectiveQ.trim();
+      if (district) params.district = district;
+      if (userCoords) {
+        params.lat = userCoords.lat;
+        params.lng = userCoords.lng;
+        params.sort_by = 'distance';
+      }
+
+      api.get('/public/shops', { params })
+        .then((res) => {
+          let list: RelatedShop[] = res.data.data ?? [];
+          if (userCoords) {
+            list = list.map((shop) => {
+              if (shop.distance_km != null) return shop;
+              let minKm: number | null = null;
+              if (shop.branches) {
+                for (const b of shop.branches) {
+                  if (b.latitude && b.longitude) {
+                    const d = haversineKm(userCoords.lat, userCoords.lng, Number(b.latitude), Number(b.longitude));
+                    if (minKm === null || d < minKm) minKm = d;
+                  }
+                }
+              }
+              return { ...shop, distance_km: minKm };
+            });
+            list.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
+          }
+          setStores(list);
+          setRelatedShops(list.slice(0, 6));
+        })
+        .catch(() => {
+          setStores([]);
+          setRelatedShops([]);
+        })
+        .finally(() => setStoresLoading(false));
     }, 300);
+
     return () => clearTimeout(handle);
-  }, [q]);
+  }, [effectiveQ, district, userCoords]);
 
-  function clearFilters() {
-    setCategory('');
-    setMinPrice('');
-    setMaxPrice('');
-    setMinRating('');
-    setSortBy('');
-  }
+  // Load tailoring services matching query
+  useEffect(() => {
+    setServicesLoading(true);
+    const handle = setTimeout(() => {
+      const params: Record<string, string | number> = { per_page: 30 };
+      if (effectiveQ.trim()) params.q = effectiveQ.trim();
+      if (sortBy) params.sort_by = sortBy;
 
-  const hasActiveFilters = category || minPrice || maxPrice || minRating;
+      api.get('/public/services', { params })
+        .then((res) => {
+          setServices(res.data.data ?? []);
+          setServicesTotal(res.data.meta?.total ?? res.data.data?.length ?? 0);
+        })
+        .catch(() => {
+          setServices([]);
+          setServicesTotal(0);
+        })
+        .finally(() => setServicesLoading(false));
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [effectiveQ, sortBy]);
+
+  const activeFilterCount = [category, minPrice || maxPrice, minRating, district, color].filter(Boolean).length;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
+    <div className="min-h-full flex flex-col bg-canvas animate-fade-page">
+      {/* Header: back button + location dropdown + old place shortcut + typeable search */}
+      <div ref={headerRef} className="sticky top-0 z-50 bg-taupe shadow-xs">
+        <div className="flex items-center gap-2 px-3.5 pt-2.5 pb-1">
+          <button
+            type="button"
+            onClick={() => { if (window.history.length > 1) router.back(); else router.push('/'); }}
+            aria-label="Back"
+            className="p-1.5 -ml-1 rounded-full text-canvas active:bg-white/10 transition-colors shrink-0"
+          >
+            <ChevronLeft size={22} />
+          </button>
 
-      {/* Quick category-shortcut chip row — the search input itself now
-          lives in the global PublicNav header (persistent on every page,
-          Shopee-style), so this page no longer needs its own duplicate
-          search bar underneath it. */}
-      <div className="bg-surface border-b border-line">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          {GARMENT_CATEGORIES.filter((c) => c.value).map(({ value, label }) => (
+          <button
+            type="button"
+            onClick={() => router.push(`/location${effectiveQ ? `?q=${encodeURIComponent(effectiveQ)}` : ''}`)}
+            className="flex-1 flex items-center justify-between min-w-0 py-0.5 group text-left"
+          >
+            <div className="min-w-0 flex flex-col items-start text-left">
+              <span className="text-[10px] font-semibold tracking-wider text-canvas/75 uppercase truncate max-w-full">
+                {effectiveQ ? `LOCATIONS FOR “${effectiveQ}”` : 'LOCATIONS'}
+              </span>
+              <span className="text-[16px] font-extrabold text-canvas leading-tight truncate max-w-full group-hover:text-white">
+                {district || (savedLocation?.address ? savedLocation.address.split(',')[0] : 'Stores near you')}
+              </span>
+            </div>
+            <ChevronDown size={18} className="text-canvas shrink-0 ml-2 group-hover:translate-y-0.5 transition-transform" />
+          </button>
+
+          {oldLocation ? (
             <button
-              key={value}
               type="button"
-              onClick={() => setCategory(category === value ? '' : value)}
-              className={`text-xs transition-colors ${
-                category === value ? 'text-taupe font-semibold' : 'text-ink-muted hover:text-ink'
-              }`}
+              onClick={handleToggleOldLocation}
+              title={`Switch back to old place: ${oldLocation.address}`}
+              className="p-1.5 rounded-full text-canvas hover:bg-white/15 active:scale-95 transition-all shrink-0 flex items-center justify-center"
+              aria-label="Switch back to old location"
             >
-              {label}
+              <RotateCcw size={18} />
             </button>
-          ))}
+          ) : null}
+        </div>
+
+        {/* Big wide search bar, filter button removed beside search */}
+        <div className="px-3 pb-2.5 pt-1">
+          <div className="w-full flex items-center gap-2 h-10 px-3.5 rounded-full bg-white shadow-xs">
+            <Search size={17} className="text-taupe shrink-0" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search Barong, Chiffon & tulle, Sublimation, Repair..."
+              className="flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ('');
+                  searchInputRef.current?.focus();
+                }}
+                aria-label="Clear"
+                className="shrink-0 text-ink-faint hover:text-ink"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Segmented Tabs: All, Stores, Services, Showroom */}
+        <div className="border-t border-white/10 bg-taupe/95 backdrop-blur-sm px-2">
+          <div className="flex items-center justify-around max-w-md mx-auto">
+            {(['all', 'store', 'services', 'showroom'] as const).map((tab) => {
+              const isSelected = activeTab === tab;
+              const label =
+                tab === 'store'
+                  ? 'Stores'
+                  : tab === 'services'
+                    ? 'Services'
+                    : tab === 'showroom'
+                      ? 'Showroom'
+                      : 'All';
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`py-2.5 text-xs sm:text-sm font-bold capitalize transition-all border-b-2 -mb-px px-2.5 sm:px-4 ${
+                    isSelected
+                      ? 'border-white text-white font-extrabold'
+                      : 'border-transparent text-white/70 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6">
-        {/* Shops related to the query */}
-        {relatedShops.length > 0 && (
+      <main className="flex-1 w-full px-3 py-3">
+        {/* TAB: STORE or ALL (Nearby Stores Row List) */}
+        {(activeTab === 'store' || activeTab === 'all') && (
           <div className="mb-6">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">
-              Shops related to &ldquo;{q.trim()}&rdquo;
-            </h2>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {relatedShops.map((shop) => (
-                <Link
-                  key={shop.id}
-                  href={`/shop/${shop.slug}`}
-                  className="shrink-0 w-40 bg-surface border border-line rounded-xl p-3 flex flex-col items-center text-center hover:border-line-strong transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-full bg-sunken overflow-hidden relative mb-2">
-                    {shop.logo_path ? (
-                      <Image src={getMediaUrl(shop.logo_path)} alt="" fill unoptimized className="object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Store size={16} className="text-ink-faint" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs font-semibold text-ink truncate w-full">{shop.name}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star size={10} className="text-taupe fill-taupe" />
-                    <span className="text-[11px] text-ink-muted">
-                      {shop.reviews_avg_rating ? Number(shop.reviews_avg_rating).toFixed(1) : 'New'}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-base font-bold text-ink">Nearby Stores</h2>
+              <span className="text-xs text-ink-muted">
+                {stores.length} {stores.length === 1 ? 'result' : 'results'} · nearest first
+              </span>
             </div>
+
+            {storesLoading ? (
+              <div className="divide-y divide-line border-t border-line">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 flex items-center gap-3.5 animate-pulse">
+                    <div className="w-16 h-16 rounded-xl bg-sunken shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-1/3 bg-sunken rounded" />
+                      <div className="h-4 w-2/3 bg-sunken rounded" />
+                      <div className="h-3 w-1/2 bg-sunken rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : stores.length === 0 ? (
+              <div className="bg-transparent border-y border-line border-x-0 rounded-none px-0 py-8 text-center text-sm text-ink-muted">
+                No tailoring stores matched your search. Try another query or location.
+              </div>
+            ) : (
+              <div className="divide-y divide-line border-t border-line">
+                {(activeTab === 'all' ? stores.slice(0, 4) : stores).map((store, index) => {
+                  const distKm = store.distance_km != null ? store.distance_km : null;
+                  const branch = store.branches?.[0];
+                  const districtText = branch?.district || branch?.city || 'Davao City';
+                  const imageSrc = store.banner_path || store.logo_path;
+
+                  // Store carousel items: derived from store.catalog_items (eager loaded & query-matched)
+                  // or fallback to items matching this shop
+                  const storeCarouselItems = (store.catalog_items && store.catalog_items.length > 0)
+                    ? store.catalog_items
+                    : items.filter((i) => i.shop?.id === store.id || (i as any).shop_id === store.id);
+
+                  return (
+                    <div
+                      key={store.id}
+                      className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-2.5"
+                    >
+                      {/* Top Row: [LogoStore] [nearest,name,ownername,location][>] */}
+                      <Link
+                        href={gate(`/shop/${store.slug}?tab=catalog${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`)}
+                        className="flex items-center justify-between gap-3 group active:opacity-80"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                          <div className="relative w-14 h-14 shrink-0">
+                            <div className="w-full h-full rounded-xl overflow-hidden bg-sunken relative border border-line">
+                              {imageSrc ? (
+                                <Image
+                                  src={getMediaUrl(imageSrc)}
+                                  alt={store.name}
+                                  fill
+                                  unoptimized
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Store size={22} className="text-ink-faint" />
+                                </div>
+                              )}
+                            </div>
+                            {/* Online / Offline status dot */}
+                            <span
+                              aria-label={isShopOpen(store.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
+                              title={isShopOpen(store.operating_hours) ? 'Online · Open' : 'Offline · Closed'}
+                              className={`absolute -bottom-0.5 -right-0.5 z-10 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${
+                                isShopOpen(store.operating_hours) ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
+                              }`}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {distKm != null ? (
+                                <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                  {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
+                                </span>
+                              ) : store.subscription_plan === 'premium' || store.is_featured ? (
+                                <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                  ★ FEATURED STORE
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                  DAVAO CITY
+                                </span>
+                              )}
+                              {store.reviews_avg_rating ? (
+                                <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
+                                  <Star size={10} className="fill-current text-taupe" />
+                                  {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
+                                </span>
+                              ) : null}
+                            </div>
+                            <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
+                              {store.name}
+                            </h3>
+                            <p className="text-[11px] text-ink-muted truncate">
+                              {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
+                            </p>
+                            <p className="text-[11px] text-ink-faint truncate">
+                              {districtText} · Davao City
+                            </p>
+                          </div>
+                        </div>
+                        <ChevronRight size={18} className="text-ink-faint group-hover:text-ink transition-colors shrink-0" />
+                      </Link>
+
+                      {/* Carousel: [All list of base sa search na naca caroucel] */}
+                      {storeCarouselItems.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                          {storeCarouselItems.map((item) => {
+                            const itemImg = item.images?.[0]?.image_url || (item as any).primary_image_url || item.fabric_image_url;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => router.push(gate(`/shop/${store.slug}?tab=catalog&item=${item.id}${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`))}
+                                className="w-[28%] min-w-[92px] max-w-[115px] sm:w-[110px] shrink-0 text-left group/item rounded-none border-0 bg-transparent transition-all active:scale-[0.98]"
+                              >
+                                <div className="aspect-square bg-sunken relative overflow-hidden rounded-none">
+                                  {itemImg ? (
+                                    <Image
+                                      src={getMediaUrl(itemImg)}
+                                      alt={item.name}
+                                      fill
+                                      unoptimized
+                                      className="object-cover group-hover/item:scale-105 transition-transform duration-300"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-ink-faint">
+                                      No photo
+                                    </div>
+                                  )}
+                                  {item.price && (
+                                    <div className="absolute bottom-1 right-1 bg-ink/90 backdrop-blur-xs text-white text-[9px] font-bold px-1 py-0.5 rounded-none">
+                                      ₱{Number(item.price).toLocaleString()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="pt-1.5 px-0 pb-0">
+                                  <p className="text-[11px] font-bold text-ink truncate leading-tight group-hover/item:text-taupe">
+                                    {item.name}
+                                  </p>
+                                  <p className="text-[10px] text-ink-faint truncate mt-0.5">
+                                    {item.garment_type || item.material || 'Custom Tailored'}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === 'store' && (
+              <div className="mt-3 py-2.5 px-0 flex items-center gap-2.5 text-ink-muted text-xs border-b border-line/60">
+                <MapPin size={14} className="text-taupe shrink-0" />
+                <span>Distances are ordered from your current location in Davao City.</span>
+              </div>
+            )}
+
+            {/* In the Store tab: See all showroom results button */}
+            {activeTab === 'store' && (total > 0 || items.length > 0) && (
+              <p className="text-center mt-6 mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('showroom');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 py-2.5 px-6 rounded-full border border-line bg-surface hover:bg-sunken text-xs font-bold text-ink hover:text-taupe transition-all active:scale-95 shadow-xs"
+                >
+                  <span>See all {effectiveQ ? `“${effectiveQ}” ` : ''}results ({total || items.length})</span>
+                  <ChevronRight size={14} />
+                </button>
+              </p>
+            )}
+
+            {activeTab === 'all' && stores.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('store')}
+                className="w-full mt-3 py-2.5 rounded-xl border border-line bg-surface text-xs font-bold text-taupe hover:bg-sunken transition-colors"
+              >
+                View all {stores.length} stores →
+              </button>
+            )}
           </div>
         )}
 
-        {q.trim() && (
-          <p className="flex items-center gap-1.5 text-xs text-ink-muted mb-3">
-            <Info size={13} className="text-ink-faint" />
-            Search result for &lsquo;<span className="text-taupe">{q.trim()}</span>&rsquo;
-          </p>
+        {/* TAB: SERVICES or ALL (Tailoring Services Section) */}
+        {(activeTab === 'services' || (activeTab === 'all' && (servicesLoading || services.length > 0))) && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3 px-1 pt-2 border-t border-line">
+              <div className="flex items-center gap-2">
+                <Scissors size={17} className="text-taupe shrink-0" />
+                <h2 className="text-base font-bold text-ink">Tailoring Services</h2>
+              </div>
+              <span className="text-xs text-ink-muted">
+                {servicesTotal} {servicesTotal === 1 ? 'service' : 'services'}
+              </span>
+            </div>
+
+            {servicesLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="p-3.5 rounded-xl border border-line bg-surface space-y-2 animate-pulse">
+                    <div className="h-4 w-1/2 bg-sunken rounded" />
+                    <div className="h-3 w-3/4 bg-sunken rounded" />
+                    <div className="h-4 w-1/4 bg-sunken rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : services.length === 0 ? (
+              <div className="bg-transparent border-y border-line px-0 py-8 text-center text-sm text-ink-muted">
+                No tailoring services matched your search.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(activeTab === 'all' ? services.slice(0, 4) : services).map((service) => (
+                  <Link
+                    key={service.id}
+                    href={gate(`/shop/${service.shop?.slug || service.shop?.id}?tab=services&service_id=${service.id}`)}
+                    className="p-3.5 rounded-xl border border-line bg-surface hover:border-taupe/60 hover:shadow-xs transition-all flex flex-col justify-between group active:scale-[0.99]"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <h3 className="text-sm font-bold text-ink group-hover:text-taupe transition-colors leading-snug">
+                          {service.name}
+                        </h3>
+                        {service.category && (
+                          <span className="text-[10px] font-semibold text-taupe bg-taupe/10 px-2 py-0.5 rounded-full shrink-0">
+                            {service.category}
+                          </span>
+                        )}
+                      </div>
+
+                      {service.shop && (
+                        <p className="text-[11px] font-medium text-ink-muted flex items-center gap-1 mb-1.5">
+                          <span>by</span>
+                          <span className="text-ink font-semibold group-hover:underline">
+                            {service.shop.name}
+                          </span>
+                        </p>
+                      )}
+
+                      {service.description && (
+                        <p className="text-xs text-ink-faint line-clamp-2 leading-relaxed mb-3">
+                          {service.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-line/50 flex items-center justify-between text-xs mt-auto">
+                      <div>
+                        <span className="text-[10px] text-ink-faint uppercase font-bold tracking-wider block">Starts at</span>
+                        <span className="text-sm font-black text-ink">
+                          {service.base_price !== null && service.base_price !== undefined
+                            ? `₱${Number(service.sale_price ?? service.base_price).toLocaleString()}`
+                            : 'Price upon request'}
+                        </span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-taupe group-hover:translate-x-0.5 transition-transform">
+                        <span>View Service</span>
+                        <ChevronRight size={13} />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'all' && services.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('services')}
+                className="w-full mt-3 py-2.5 rounded-xl border border-line bg-surface text-xs font-bold text-taupe hover:bg-sunken transition-colors"
+              >
+                View all {servicesTotal} services →
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Sort bar — sort tabs on the left, result count + pagination on
-            the right, one row, matching the reference layout. */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-surface border border-line rounded-lg px-3 py-2">
-          <div className="flex items-center gap-1 flex-wrap">
+        {/* TAB: SHOWROOM or ALL (Showroom Section) */}
+        {(activeTab === 'showroom' || activeTab === 'all') && (
+          <div>
+            {activeTab === 'all' && (
+              <div className="flex items-center justify-between mb-3 px-1 pt-2 border-t border-line">
+                <h2 className="text-base font-bold text-ink">Showroom Catalog</h2>
+                <span className="text-xs text-ink-muted">
+                  {total} {total === 1 ? 'item' : 'items'}
+                </span>
+              </div>
+            )}
+
+        {/* Quick Sort & View on Map Bar */}
+        <div className="flex items-center justify-between gap-1.5 mb-2.5">
+          <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar py-0.5 min-w-0">
             <button
               type="button"
-              onClick={() => setFiltersOpen((v) => !v)}
-              className="lg:hidden px-3 py-1.5 rounded-lg text-xs font-semibold border border-line text-ink-muted hover:bg-sunken transition-colors flex items-center gap-1.5 mr-1"
+              onClick={() => setSortBy('')}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
+                !sortBy ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+              }`}
             >
-              <SlidersHorizontal size={12} /> Filters
+              Default
             </button>
-            <span className="text-xs text-ink-faint mr-1 hidden sm:inline">Sort by</span>
-            {SORT_TABS.map((tab) => (
-              <button
-                key={tab.value || 'default'}
-                type="button"
-                onClick={() => setSortBy(tab.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  sortBy === tab.value ? 'bg-taupe text-white' : 'text-ink-muted hover:bg-sunken'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={handleSortNearest}
+              disabled={locating}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap flex items-center gap-1 ${
+                sortBy === 'distance'
+                  ? 'bg-taupe text-white border-taupe font-semibold shadow-xs'
+                  : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+              }`}
+            >
+              <MapPin size={10} className={sortBy === 'distance' ? 'text-white' : 'text-taupe'} />
+              <span>{locating ? 'Locating…' : 'Nearest'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy(sortBy === 'top_sales' ? '' : 'top_sales')}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
+                sortBy === 'top_sales' ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+              }`}
+            >
+              Top Sales
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy(sortBy === 'price_asc' ? 'price_desc' : 'price_asc')}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap flex items-center gap-0.5 ${
+                sortBy.startsWith('price') ? 'bg-ink text-white border-ink font-semibold' : 'bg-surface border-line text-ink-muted hover:border-line-strong'
+              }`}
+            >
+              <span>Price</span>
+              {sortBy === 'price_asc' && <TrendingUp size={11} className="text-white" />}
+              {sortBy === 'price_desc' && <TrendingDown size={11} className="text-white" />}
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <p className="text-xs text-ink-faint">{loading ? 'Searching…' : `${total} result${total === 1 ? '' : 's'}`}</p>
+          <Link
+            href={`/map?q=${encodeURIComponent(effectiveQ.trim())}`}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface border border-line-strong hover:border-ink text-[11px] font-semibold text-ink transition-colors shrink-0 shadow-xs"
+            title="View matching shops on map"
+          >
+            <MapPin size={11} className="text-taupe shrink-0" />
+            <span>Map</span>
+          </Link>
+        </div>
+
+        <div className="flex items-center justify-between mb-2 px-0.5">
+          <p className="text-[11px] text-ink-faint">
+            {loading ? 'Searching…' : `${total} result${total === 1 ? '' : 's'}`}
+          </p>
+
+          {/* Real toggle, not decorative — catalog_items.fabric_image_url
+              is a real column CatalogItemCard now reads; falls back to the
+              model photo per-card when an item has none. */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`text-[11px] font-semibold ${!showFabric ? 'text-ink' : 'text-ink-faint'}`}>Model</span>
+            <button
+              type="button"
+              onClick={() => setShowFabric((v) => !v)}
+              aria-label="Toggle between model and fabric photos"
+              className={`relative w-8 h-[18px] rounded-full transition-colors ${showFabric ? 'bg-ink' : 'bg-line-strong'}`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${showFabric ? 'translate-x-[14px]' : ''}`}
+              />
+            </button>
+            <span className={`text-[11px] font-semibold ${showFabric ? 'text-ink' : 'text-ink-faint'}`}>Fabric</span>
+          </div>
+        </div>
+
+        {/* Skeleton loading state — same grid breakpoints as the real
+            results grid below it, so it doesn't stay a fixed column count
+            while the real content collapses under it (established pattern,
+            see CLAUDE.md's mobile-responsive notes re: Branches). */}
+        {loading && (
+          <div className="grid grid-cols-2 gap-[5px]">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border border-line bg-surface">
+                <div className="aspect-square bg-sunken animate-pulse" />
+                <div className="p-2 space-y-1.5">
+                  <div className="h-2.5 w-full bg-sunken rounded animate-pulse" />
+                  <div className="h-2.5 w-2/3 bg-sunken rounded animate-pulse" />
+                  <div className="h-3 w-1/2 bg-sunken rounded animate-pulse mt-1" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && items.length === 0 && (
+          <div className="bg-surface border border-line rounded-2xl p-8 text-center text-sm text-ink-muted">
+            No items matched your search. Try a broader term or clear a filter.
+          </div>
+        )}
+
+        {!loading && items.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 gap-[5px]">
+              {items.map((item) => (
+                <CatalogItemCard key={item.id} item={item} showFabric={showFabric} userCoords={userCoords} />
+              ))}
+            </div>
+
             {lastPage > 1 && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-ink-muted">{page}/{lastPage}</span>
+              <div className="flex items-center justify-center gap-2 mt-6">
                 <button
                   type="button"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="p-1 rounded border border-line text-ink-muted hover:bg-sunken disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-lg border border-line text-ink-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <ChevronLeft size={13} />
+                  <ChevronLeft size={14} />
                 </button>
+                <span className="text-xs text-ink-muted px-2">Page {page} of {lastPage}</span>
                 <button
                   type="button"
                   disabled={page >= lastPage}
                   onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-                  className="p-1 rounded border border-line text-ink-muted hover:bg-sunken disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-lg border border-line text-ink-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <ChevronRight size={13} />
+                  <ChevronRight size={14} />
                 </button>
               </div>
             )}
+          </>
+        )}
           </div>
-        </div>
+        )}
+      </main>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-          {/* Sidebar filters */}
-          <aside className={`${filtersOpen ? 'block' : 'hidden'} lg:block`}>
-            <div className="bg-surface border border-line rounded-xl p-4 space-y-6 lg:sticky lg:top-20">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">By Category</p>
-                <div className="space-y-2.5">
-                  {GARMENT_CATEGORIES.filter((c) => c.value).map(({ value, label }) => (
-                    <label key={value} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={category === value}
-                        // Visually a checkbox list (matches the reference),
-                        // but the backend/results model only supports one
-                        // active garment_type/name filter at a time -- so
-                        // checking one clears any other, same as a radio
-                        // group would, rather than combining categories.
-                        onChange={() => setCategory(category === value ? '' : value)}
-                        className="w-3.5 h-3.5 rounded border-line-strong text-taupe focus:ring-taupe focus:ring-offset-0 accent-taupe"
-                      />
-                      <span className={`text-xs transition-colors ${
-                        category === value ? 'text-taupe font-semibold' : 'text-ink-muted group-hover:text-ink'
-                      }`}>
-                        {label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+      {/* Filter dropdown — drops down from below the header (which stays
+          visible/usable, not covered) rather than taking over as a full
+          "next page". A dark scrim fills the rest of the frame down to the
+          real bottom edge so it's clear this is a layer on top of the
+          page, not a separate screen. */}
+      {filterPanelOpen && (
+        <div
+          className="fixed left-0 right-0 z-[60] flex flex-col"
+          style={{ top: headerHeight, bottom: 0 }}
+        >
+          <button
+            type="button"
+            aria-label="Close filter"
+            onClick={() => setFilterPanelOpen(false)}
+            className="absolute inset-0 bg-black/50"
+          />
 
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Price Range</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={0}
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="Min"
-                    className="w-full px-2 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-                  />
-                  <span className="text-ink-faint text-xs">–</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="Max"
-                    className="w-full px-2 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-                  />
-                </div>
-              </div>
+          <div className="relative bg-canvas rounded-b-2xl shadow-xl flex flex-col max-h-[80%] overflow-hidden">
+            <div className="flex items-center justify-between px-3 h-12 border-b border-line shrink-0">
+              <span className="text-sm font-bold text-ink">Filter</span>
+              <button type="button" onClick={() => setFilterPanelOpen(false)} aria-label="Close" className="p-1.5 text-ink-muted">
+                <X size={18} />
+              </button>
+            </div>
 
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Rating</p>
-                <div className="space-y-2">
-                  {['5', '4', '3', '2', '1'].map((value) => (
+            <div className="flex flex-1 min-h-0">
+              <nav className="w-[96px] shrink-0 bg-sunken overflow-y-auto">
+                {FILTER_TABS.map((tab) => {
+                  const isActive = activeFilterTab === tab.key;
+                  const hasValue =
+                    (tab.key === 'price' && !!(draftMinPrice || draftMaxPrice)) ||
+                    (tab.key === 'rating' && !!draftMinRating) ||
+                    (tab.key === 'district' && !!draftDistrict) ||
+                    (tab.key === 'color' && !!draftColor);
+                  return (
                     <button
-                      key={value}
+                      key={tab.key}
                       type="button"
-                      onClick={() => setMinRating(minRating === value ? '' : value)}
-                      className={`w-full flex items-center gap-0.5 px-1 py-1 rounded-lg transition-colors ${
-                        minRating === value ? 'bg-sunken' : 'hover:bg-sunken'
+                      onClick={() => scrollToFilterSection(tab.key)}
+                      className={`w-full text-left px-3 py-3 text-xs font-medium border-l-2 transition-colors ${
+                        isActive
+                          ? 'bg-canvas border-taupe text-ink font-semibold'
+                          : 'border-transparent text-ink-muted'
                       }`}
                     >
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          size={13}
-                          className={star <= Number(value) ? 'text-taupe fill-taupe' : 'text-line-strong'}
-                        />
-                      ))}
-                      {value !== '5' && <span className="text-[11px] text-ink-muted ml-1">&amp; Up</span>}
+                      {tab.label}
+                      {hasValue && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-taupe align-middle" />}
                     </button>
-                  ))}
-                </div>
-              </div>
+                  );
+                })}
+              </nav>
 
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="w-full px-3 py-2 border border-line rounded-lg text-xs font-semibold text-ink-muted hover:bg-sunken transition-colors"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          </aside>
+              {/* Single scrollable pane — every section stacked, the left
+                  rail's active tab tracks scroll position instead of gating
+                  content behind a click. */}
+              <div ref={filterScrollRef} onScroll={handleFilterScroll} className="flex-1 overflow-y-auto p-4">
+                <div ref={sectionRefs.price}>
+                  <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Price Range</p>
 
-          {/* Results */}
-          <div>
-            {loading && (
-              <div className="text-center py-16 text-sm text-ink-muted">Searching…</div>
-            )}
-
-            {!loading && items.length === 0 && (
-              <div className="bg-surface border border-line rounded-2xl p-10 text-center text-sm text-ink-muted">
-                No items matched your search. Try a broader term or clear a filter.
-              </div>
-            )}
-
-            {!loading && items.length > 0 && (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-                  {items.map((item) => (
-                    <CatalogItemCard key={item.id} item={item} />
-                  ))}
-                </div>
-
-                {lastPage > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-8">
-                    <button
-                      type="button"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className="p-2 rounded-lg border border-line text-ink-muted hover:bg-sunken disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <span className="text-xs text-ink-muted px-2">Page {page} of {lastPage}</span>
-                    <button
-                      type="button"
-                      disabled={page >= lastPage}
-                      onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-                      className="p-2 rounded-lg border border-line text-ink-muted hover:bg-sunken disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
+                  {/* Default/Low to High/High to Low map straight to the
+                      real backend sort_by values (price_asc/price_desc) —
+                      applied immediately on tap, not gated behind Apply,
+                      since a sort isn't a draft the way min/max is. */}
+                  <div className="flex items-center gap-2.5 mb-4">
+                    {([
+                      { key: '', label: 'Default', Icon: Minus },
+                      { key: 'price_asc', label: 'Low to High', Icon: TrendingUp },
+                      { key: 'price_desc', label: 'High to Low', Icon: TrendingDown },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setSortBy(opt.key)}
+                        className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[11px] font-semibold transition-colors ${
+                          sortBy === opt.key ? 'text-ink' : 'text-ink-faint'
+                        }`}
+                      >
+                        <opt.Icon size={18} />
+                        <span className="whitespace-nowrap">{opt.label}</span>
+                      </button>
+                    ))}
                   </div>
-                )}
-              </>
-            )}
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={draftMinPrice}
+                      onChange={(e) => setDraftMinPrice(e.target.value)}
+                      placeholder="Min"
+                      className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe"
+                    />
+                    <span className="text-ink-faint text-sm">–</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={draftMaxPrice}
+                      onChange={(e) => setDraftMaxPrice(e.target.value)}
+                      placeholder="Max"
+                      className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe"
+                    />
+                  </div>
+                </div>
+
+                <div ref={sectionRefs.rating} className="mt-7">
+                  <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Rating</p>
+                  <div className="space-y-1">
+                    {['5', '4', '3', '2', '1'].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setDraftMinRating(draftMinRating === value ? '' : value)}
+                        className={`w-full flex items-center gap-0.5 px-2 py-2 rounded-lg transition-colors ${
+                          draftMinRating === value ? 'bg-sunken' : ''
+                        }`}
+                      >
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={16}
+                            className={star <= Number(value) ? 'text-taupe fill-taupe' : 'text-line-strong'}
+                          />
+                        ))}
+                        {value !== '5' && <span className="text-xs text-ink-muted ml-1.5">&amp; Up</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div ref={sectionRefs.district} className="mt-7">
+                  <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Location</p>
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2.5 cursor-pointer py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={!draftDistrict}
+                        onChange={() => setDraftDistrict('')}
+                        className="w-4 h-4 rounded border-line-strong accent-taupe"
+                      />
+                      <span className={`text-sm ${!draftDistrict ? 'text-taupe font-semibold' : 'text-ink-body'}`}>All Davao City</span>
+                    </label>
+                    {DISTRICTS.map((d) => (
+                      <label key={d} className="flex items-center gap-2.5 cursor-pointer py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={draftDistrict === d}
+                          onChange={() => setDraftDistrict(draftDistrict === d ? '' : d)}
+                          className="w-4 h-4 rounded border-line-strong accent-taupe"
+                        />
+                        <span className={`text-sm ${draftDistrict === d ? 'text-taupe font-semibold' : 'text-ink-body'}`}>{d}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div ref={sectionRefs.color} className="mt-7">
+                  <p className="text-xs font-bold uppercase tracking-widest text-ink-faint mb-3">Color</p>
+                  {/* Real filter (catalog_items.color, substring-matched on
+                      the backend) — most seeded items have no color set
+                      yet, so this will look sparse until shop owners tag
+                      more items, but it's genuinely wired, not decorative. */}
+                  <div className="flex flex-wrap gap-3">
+                    {COLOR_OPTIONS.map((c) => {
+                      const isActive = draftColor === c.label;
+                      return (
+                        <button
+                          key={c.label}
+                          type="button"
+                          onClick={() => setDraftColor(isActive ? '' : c.label)}
+                          className="flex flex-col items-center gap-1"
+                        >
+                          <span
+                            className={`w-8 h-8 rounded-full border-2 transition-colors ${isActive ? 'border-taupe' : 'border-line-strong'}`}
+                            style={{ backgroundColor: c.hex }}
+                          />
+                          <span className={`text-[10px] ${isActive ? 'text-taupe font-semibold' : 'text-ink-muted'}`}>{c.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Without this, the last section (District) can't scroll
+                    high enough to align with the rail — the container
+                    clamps at maxScrollTop once there's nothing left below
+                    it to scroll into, so tapping "Location" looked broken
+                    even with the getBoundingClientRect() math fixed. */}
+                <div className="h-40" aria-hidden="true" />
+              </div>
+            </div>
+
+            {/* Right after the content — not pinned to the frame's true
+                bottom edge, so it doesn't leave a huge empty gap when a
+                section (e.g. Category alone) is shorter than the screen. */}
+            <div className="flex items-center gap-2.5 px-3 py-3 border-t border-line shrink-0">
+              <button
+                type="button"
+                onClick={resetFilterPanel}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-line-strong text-sm font-semibold text-ink-muted"
+              >
+                <RotateCcw size={13} /> Reset
+              </button>
+              <button
+                type="button"
+                onClick={applyFilterPanel}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-taupe text-white text-sm font-semibold"
+              >
+                Apply
+              </button>
+            </div>
           </div>
         </div>
-      </main>
+      )}
+
+      {locationPickerOpen && (
+        <LocationPicker
+          initial={savedLocation}
+          onClose={() => setLocationPickerOpen(false)}
+          onConfirm={(loc) => {
+            saveLocation(loc);
+            setSavedLocation(loc);
+            setDistrict(loc.district);
+            setLocationPickerOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

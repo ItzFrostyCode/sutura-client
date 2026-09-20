@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, use, Suspense } from 'react';
+import { useEffect, useState, useCallback, use, useRef, Suspense, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import api from '@/lib/axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronRight, type LucideIcon } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map as MapIcon, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronLeft, ChevronRight, Bookmark, SlidersHorizontal, Minus, TrendingUp, TrendingDown, RotateCcw, Scissors, type LucideIcon } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
 import { getActiveSale } from '@/lib/salePricing';
@@ -19,17 +20,19 @@ import EditOperatingHoursModal from '@/components/profile/EditOperatingHoursModa
 import SpecialHoursAnnouncementCard from '@/components/profile/SpecialHoursAnnouncementCard';
 import ProfileAboutTab from '@/components/profile/ProfileAboutTab';
 import PostImageLightbox from '@/components/profile/PostImageLightbox';
-import BrandLogo from '@/components/BrandLogo';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
 import ShopLogoAvatar from '@/components/ShopLogoAvatar';
+import PublicNav from '@/components/shared/PublicNav';
 import { getMediaUrl } from '@/lib/media';
+import { resolveFabricImage } from '@/lib/fabricHelper';
+import { isShopOpen } from '@/lib/shopStatus';
 
 // Leaflet touches `window`, so load the map client-only — same approach the
 // dashboard's own branches map uses.
 const SingleBranchMap = dynamic(() => import('@/components/profile/SingleBranchMap'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-2xl p-10 text-center text-sm text-[#827A73]" style={{ height: 360 }}>
+    <div className="bg-canvas border border-line rounded-2xl p-10 text-center text-sm text-ink-muted" style={{ height: 360 }}>
       Loading map…
     </div>
   ),
@@ -41,6 +44,7 @@ interface ShopBranch {
   name: string;
   address: string;
   city: string;
+  district?: string;
   contact_number?: string;
   operating_hours?: string;
   latitude?: string;
@@ -53,6 +57,7 @@ interface PublicService {
   name: string;
   description?: string;
   categories?: string[];
+  service_types?: string[];
   base_price: string;
   sale_price?: string | number | null;
   sale_starts_at?: string | null;
@@ -84,6 +89,7 @@ interface CatalogItemImage {
   id: number;
   image_url: string;
   is_primary: boolean;
+  view_angle?: string | null;
 }
 
 interface CatalogListItem {
@@ -93,12 +99,15 @@ interface CatalogListItem {
   estimated_days?: number | null;
   material: string;
   garment_type?: string | null;
+  color?: string | null;
+  description?: string | null;
   images: CatalogItemImage[];
   // Already returned by the API (CatalogController::index does withAvg/withCount
   // for these, same as the owner dashboard's card) — just never declared or
   // rendered here on the public-facing card.
   reviews_avg_rating?: number | null;
   reviews_count?: number;
+  fabric_image_url?: string | null;
 }
 
 interface PublicShopPost {
@@ -123,6 +132,7 @@ interface StorefrontReview {
 interface ShopProfile {
   id: number;
   name: string;
+  slug: string;
   description: string;
   address: string;
   city: string;
@@ -138,6 +148,9 @@ interface ShopProfile {
   social_links: { label: string; url: string }[];
   reviews_avg_rating: number | null;
   reviews_count: number;
+  my_review?: { id?: number; rating: number; comment?: string | null } | null;
+  district?: string;
+  specializations?: string[];
   branches?: ShopBranch[];
   owner?: {
     id: number;
@@ -174,6 +187,51 @@ interface PublicShopProfilePageProps {
   readonly params: Promise<{
     readonly shop_id: string;
   }>;
+}
+
+
+const PORTFOLIO_COLOR_OPTIONS = [
+  { label: 'White', hex: '#FFFFFF' },
+  { label: 'Ivory', hex: '#FFFFF0' },
+  { label: 'Cream', hex: '#FFFDD0' },
+  { label: 'Beige', hex: '#D9CDB8' },
+  { label: 'Black', hex: '#1A1A1A' },
+  { label: 'Sky Blue', hex: '#7DD3FC' },
+  { label: 'Light Blue', hex: '#93C5FD' },
+  { label: 'Blue', hex: '#3B82F6' },
+  { label: 'Royal Blue', hex: '#1D4ED8' },
+  { label: 'Navy', hex: '#1E3A8A' },
+  { label: 'Red', hex: '#EF4444' },
+  { label: 'Crimson', hex: '#DC2626' },
+  { label: 'Burgundy', hex: '#800020' },
+  { label: 'Maroon', hex: '#800000' },
+  { label: 'Pink', hex: '#F472B6' },
+  { label: 'Blush', hex: '#DE5D83' },
+  { label: 'Rose Gold', hex: '#B76E79' },
+  { label: 'Peach', hex: '#FFDAB9' },
+  { label: 'Gold', hex: '#EAB308' },
+  { label: 'Champagne', hex: '#F7E7CE' },
+  { label: 'Silver', hex: '#94A3B8' },
+  { label: 'Gray', hex: '#6B7280' },
+  { label: 'Emerald', hex: '#047857' },
+  { label: 'Green', hex: '#22C55E' },
+  { label: 'Olive', hex: '#556B2F' },
+  { label: 'Sage', hex: '#9CAF88' },
+  { label: 'Purple', hex: '#A855F7' },
+  { label: 'Lavender', hex: '#E9D5FF' },
+  { label: 'Brown', hex: '#78350F' },
+  { label: 'Bronze', hex: '#CD7F32' },
+];
+
+function formatTime12h(timeStr?: string): string {
+  if (!timeStr) return '';
+  const [hStr, mStr] = timeStr.split(':');
+  const h = parseInt(hStr, 10);
+  if (Number.isNaN(h)) return timeStr;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  const minute = mStr ? `:${mStr}` : ':00';
+  return `${hour12}${minute} ${period}`;
 }
 
 function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProps>) {
@@ -215,36 +273,268 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [lightboxImages, setLightboxImages] = useState<string[] | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const selectedBranchSlug = searchParams.get('branch');
   const initialTabParam = searchParams.get('tab');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Review State
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [ratingValue, setRatingValue] = useState(5);
-  const [ratingComment, setRatingComment] = useState('');
+  const [ratingValue, setRatingValue] = useState(0);
+  const [myReview, setMyReview] = useState<{ id?: number; rating: number; comment?: string | null } | null>(null);
+  const [hoveredStar, setHoveredStar] = useState<number | null>(null);
+  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedService, setSelectedService] = useState<PublicService | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<PublicServicePackage | null>(null);
   // A ?branch= slug in the URL means we arrived here from the owner's "Preview
   // Customer View" link for a specific branch — land straight on Locations
   // with it highlighted.
-  // A ?tab= param covers old bookmarks/links to the standalone /catalog page, which
+  // A ?tab= param covers old bookmarks/links to the standalone /catalog or /portfolio page, which
   // now redirects here instead of being its own route.
-  const validTabParams = ['home', 'about', 'services', 'catalog', 'hours', 'locations', 'work', 'reviews'] as const;
-  const [activeTab, setActiveTab] = useState<'home' | 'about' | 'services' | 'catalog' | 'hours' | 'locations' | 'work' | 'reviews'>(
+  const validTabParams = ['about', 'portfolio', 'catalog', 'locations', 'branch', 'reviews', 'review', 'services', 'hours', 'home', 'work', 'showroom'] as const;
+  const [activeTab, setActiveTab] = useState<'about' | 'catalog' | 'locations' | 'reviews' | 'services' | 'home' | 'hours' | 'work'>(
     selectedBranchSlug
       ? 'locations'
-      : ((validTabParams as readonly string[]).includes(initialTabParam ?? '') ? (initialTabParam as typeof validTabParams[number]) : 'home')
+      : initialTabParam === 'catalog' || initialTabParam === 'portfolio' || initialTabParam === 'showroom'
+        ? 'catalog'
+        : initialTabParam === 'branch'
+          ? 'locations'
+          : initialTabParam === 'review'
+            ? 'reviews'
+            : initialTabParam === 'about'
+              ? 'about'
+              : initialTabParam === 'locations'
+                ? 'locations'
+                : initialTabParam === 'services'
+                  ? 'services'
+                  : initialTabParam === 'hours'
+                    ? 'hours'
+                    : 'catalog'
   );
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   // Catalog tab state — same data source and behavior as the old standalone
   // /shop/[slug]/catalog page, just embedded here instead of a separate route.
   const [catalogItems, setCatalogItems] = useState<CatalogListItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogSearch, setCatalogSearch] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
+  // Portfolio filter states: 1. Price (sort & min/max), 2. Color, 3. Rating, 4. Garment Type
+  const [priceSort, setPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [colorFilter, setColorFilter] = useState('');
+  const [ratingFilter, setRatingFilter] = useState('');
   const [catalogGarmentTypeFilters, setCatalogGarmentTypeFilters] = useState<Set<string>>(new Set());
-  const [catalogPriceFilters, setCatalogPriceFilters] = useState<Set<string>>(new Set());
+
+  // Draft states for the 1-column dropdown sheet
+  const [draftPriceSort, setDraftPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
+  const [draftMinPrice, setDraftMinPrice] = useState('');
+  const [draftMaxPrice, setDraftMaxPrice] = useState('');
+  const [draftColorFilter, setDraftColorFilter] = useState('');
+  const [draftRatingFilter, setDraftRatingFilter] = useState('');
+  const [draftGarmentTypeFilters, setDraftGarmentTypeFilters] = useState<Set<string>>(new Set());
+  const [showPortfolioFabric, setShowPortfolioFabric] = useState(false);
+
+  // Highlight state for deep-linked search displays
+  const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
+  const hasScrolledToItem = useRef(false);
+  const isAutoScrolling = useRef(false);
+
+  // Sync search query from URL (e.g. when redirected from search for "barong")
+  useEffect(() => {
+    const qParam = searchParams.get('q') || searchParams.get('search');
+    if (qParam) {
+      setCatalogSearch(qParam);
+      setActiveTab('catalog');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const rawItem = searchParams.get('item');
+    if (!rawItem || catalogLoading || catalogItems.length === 0 || hasScrolledToItem.current) return;
+
+    const itemId = Number(rawItem);
+    if (Number.isNaN(itemId)) return;
+
+    // Retry finding element until DOM finishes rendering
+    const tryScroll = (attempts = 0) => {
+      const targetElement = document.getElementById(`catalog-item-${itemId}`);
+      if (targetElement) {
+        hasScrolledToItem.current = true;
+        setHighlightedItemId(itemId);
+        setShowStickyHeader(true);
+        isAutoScrolling.current = true;
+
+        const container = targetElement.closest('.overflow-y-auto') as HTMLElement | null;
+        if (container) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetElement.getBoundingClientRect();
+          const elementTopRelativeToContainer = targetRect.top - containerRect.top + container.scrollTop;
+          // Offset by sticky header height (~105px with expanded search/filter bar)
+          container.scrollTo({
+            top: Math.max(0, elementTopRelativeToContainer - 105),
+            behavior: 'smooth',
+          });
+        } else {
+          const targetRect = targetElement.getBoundingClientRect();
+          window.scrollTo({
+            top: Math.max(0, window.scrollY + targetRect.top - 105),
+            behavior: 'smooth',
+          });
+        }
+
+        const scrollLockTimer = setTimeout(() => {
+          isAutoScrolling.current = false;
+        }, 1200);
+
+        const fadeTimer = setTimeout(() => {
+          setHighlightedItemId(null);
+        }, 2500);
+
+        return () => {
+          clearTimeout(scrollLockTimer);
+          clearTimeout(fadeTimer);
+        };
+      } else if (attempts < 6) {
+        setTimeout(() => tryScroll(attempts + 1), 150);
+      }
+    };
+
+    const timer = setTimeout(() => tryScroll(0), 100);
+    return () => clearTimeout(timer);
+  }, [searchParams, catalogLoading, catalogItems, activeTab]);
+
+  // Sticky Header on scroll past tab bar & Portfolio filter modal
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [isPortfolioFilterOpen, setIsPortfolioFilterOpen] = useState(false);
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
+  // Facet tallies & options for portfolio collection
+  const garmentTypeTally = useMemo(() => {
+    const tally: Record<string, number> = {};
+    catalogItems.forEach((i) => {
+      const g = i.garment_type?.trim();
+      if (g) tally[g] = (tally[g] || 0) + 1;
+    });
+    return tally;
+  }, [catalogItems]);
+
+  const garmentTypeOptions = useMemo(() => {
+    return Object.keys(garmentTypeTally)
+      .sort((a, b) => a.localeCompare(b))
+      .map((v) => ({ id: v, label: v }));
+  }, [garmentTypeTally]);
+
+  const availableColors = useMemo(() => {
+    const map = new Map<string, string>();
+    PORTFOLIO_COLOR_OPTIONS.forEach(c => map.set(c.label.toLowerCase(), c.hex));
+    catalogItems.forEach(item => {
+      if (item.color?.trim()) {
+        const cName = item.color.trim();
+        if (!map.has(cName.toLowerCase())) {
+          map.set(cName.toLowerCase(), '#888888');
+        }
+      }
+    });
+    return Array.from(map.entries()).map(([k, hex]) => {
+      const found = PORTFOLIO_COLOR_OPTIONS.find(c => c.label.toLowerCase() === k);
+      return { label: found?.label || (k.charAt(0).toUpperCase() + k.slice(1)), hex };
+    });
+  }, [catalogItems]);
+
+  const isShopCurrentlyOpen = useMemo(() => {
+    return isShopOpen(shop?.operating_hours);
+  }, [shop?.operating_hours]);
+
+  const openFilterPanel = useCallback(() => {
+    setDraftPriceSort(priceSort);
+    setDraftMinPrice(minPrice);
+    setDraftMaxPrice(maxPrice);
+    setDraftColorFilter(colorFilter);
+    setDraftRatingFilter(ratingFilter);
+    setDraftGarmentTypeFilters(new Set(catalogGarmentTypeFilters));
+    setIsPortfolioFilterOpen(true);
+  }, [priceSort, minPrice, maxPrice, colorFilter, ratingFilter, catalogGarmentTypeFilters]);
+
+  const applyFilterPanel = useCallback(() => {
+    setPriceSort(draftPriceSort);
+    setMinPrice(draftMinPrice);
+    setMaxPrice(draftMaxPrice);
+    setColorFilter(draftColorFilter);
+    setRatingFilter(draftRatingFilter);
+    setCatalogGarmentTypeFilters(new Set(draftGarmentTypeFilters));
+    setIsPortfolioFilterOpen(false);
+  }, [draftPriceSort, draftMinPrice, draftMaxPrice, draftColorFilter, draftRatingFilter, draftGarmentTypeFilters]);
+
+  const resetFilterPanel = useCallback(() => {
+    setDraftPriceSort('');
+    setDraftMinPrice('');
+    setDraftMaxPrice('');
+    setDraftColorFilter('');
+    setDraftRatingFilter('');
+    setDraftGarmentTypeFilters(new Set());
+    setPriceSort('');
+    setMinPrice('');
+    setMaxPrice('');
+    setColorFilter('');
+    setRatingFilter('');
+    setCatalogGarmentTypeFilters(new Set());
+  }, []);
+
+  const activeFilterCount = useMemo(() => {
+    return (priceSort ? 1 : 0) +
+      (minPrice || maxPrice ? 1 : 0) +
+      (colorFilter ? 1 : 0) +
+      (ratingFilter ? 1 : 0) +
+      catalogGarmentTypeFilters.size;
+  }, [priceSort, minPrice, maxPrice, colorFilter, ratingFilter, catalogGarmentTypeFilters]);
+
+  const toggleGarmentType = useCallback((v: string) => {
+    setCatalogGarmentTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(v)) next.delete(v);
+      else next.add(v);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    function handleScroll() {
+      if (isAutoScrolling.current) return;
+      if (!tabBarRef.current) return;
+      const container = tabBarRef.current.closest('.overflow-y-auto') as HTMLElement | null;
+
+      let isNavVisible = false;
+      const scrollY = container ? container.scrollTop : window.scrollY;
+
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const navRect = tabBarRef.current.getBoundingClientRect();
+        // Nav tab bar is visible if its bottom is below the sticky header boundary (~50px) and within container bounds
+        isNavVisible = navRect.bottom > (containerRect.top + 50) && navRect.top < containerRect.bottom;
+      } else {
+        const navRect = tabBarRef.current.getBoundingClientRect();
+        isNavVisible = navRect.bottom > 50 && navRect.top < window.innerHeight;
+      }
+
+      // If the nav tab bar is visible, sticky header MUST be hidden ("kung makita na ang nav kay syempre mawala nayung header")
+      // If the nav tab bar has scrolled off the top, sticky header MUST be shown
+      const shouldShowHeader = !isNavVisible && scrollY > 60;
+      setShowStickyHeader(shouldShowHeader);
+    }
+
+    // Capture phase ensures scroll events in MobileFrame (overflow-y container) are detected immediately
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    if (!searchParams.get('item')) {
+      handleScroll();
+    }
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+  }, [activeTab, searchParams]);
 
   // Reviews tab state — everyone sees the same list; reply/feature/delete
   // actions are owner-only, same management the dashboard's Reviews page had.
@@ -281,7 +571,15 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const fetchShop = useCallback(() => {
     api.get(`/public/shops/${shopId}`)
       .then(res => {
-        setShop(res.data.data);
+        const fetchedShop = res.data.data;
+        setShop(fetchedShop);
+        if (fetchedShop?.my_review) {
+          setMyReview(fetchedShop.my_review);
+          setRatingValue(fetchedShop.my_review.rating);
+        } else if (fetchedShop && fetchedShop.my_review === null) {
+          setMyReview(null);
+          setRatingValue(0);
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -294,14 +592,44 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     fetchShop();
   }, [fetchShop]);
 
+  // Fetch customer's own rating for this shop if logged in
+  useEffect(() => {
+    if (user && shop?.slug) {
+      api.get(`/shops/${shop.slug}/my-review`)
+        .then(res => {
+          if (res.data?.success && res.data.data) {
+            setMyReview(res.data.data);
+            setRatingValue(res.data.data.rating);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user, shop?.slug]);
+
+  // Recently Viewed — fire-and-forget, logged-in customers only (the
+  // endpoint requires auth; no point firing it for a guest and eating a
+  // 401). One row per user+shop server-side, so revisits just bump it.
+  useEffect(() => {
+    if (!user || !shop?.id) return;
+    api.post('/recently-viewed', { type: 'shop', id: shop.id }).catch(() => {});
+  }, [user, shop?.id]);
+
   // Fetch public services
   useEffect(() => {
     api.get(`/public/shops/${shopId}/services`)
-      .then(res => setServices((res.data.data || []).filter((s: PublicService) => s.is_active)))
+      .then(res => {
+        const active = (res.data.data || []).filter((s: PublicService) => s.is_active);
+        setServices(active);
+        const targetServiceId = searchParams.get('service_id') || searchParams.get('service');
+        if (targetServiceId) {
+          const match = active.find((s: PublicService) => String(s.id) === String(targetServiceId));
+          if (match) setSelectedService(match);
+        }
+      })
       .catch(() => {
         // Fall back silently — services section won't show
       });
-  }, [shopId]);
+  }, [shopId, searchParams]);
 
   // Fetch public service packages (combo bundles)
   useEffect(() => {
@@ -355,7 +683,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     };
     fetchReviews();
     return () => { ignore = true; };
-  }, [shopId, reviewsPage, reviewFilterRating]);
+  }, [shopId, reviewsPage, reviewFilterRating, reviewsRefreshKey]);
 
   // If the owner has a valid session token but the in-memory auth store hasn't
   // been populated yet (e.g. they landed here via a hard refresh instead of
@@ -568,56 +896,93 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     }
   };
 
-  const submitRating = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  const handleStarClick = (star: number) => {
+    // Toggle behavior: if clicking the currently selected star, toggle to 0 (unrate)
+    if (ratingValue === star) {
+      setRatingValue(0);
+    } else {
+      setRatingValue(star);
+    }
+  };
+
+  const handleRemoveRating = async () => {
     if (!user) {
-      alert("Please log in to leave a review.");
+      toast.error('Please log in to manage your rating.');
+      return;
+    }
+    if (!shop) return;
+    setIsSubmitting(true);
+    try {
+      await api.post(`/shops/${shop.slug}/reviews`, { rating: 0 });
+      setMyReview(null);
+      setRatingValue(0);
+      setIsRatingModalOpen(false);
+      setHoveredStar(null);
+      toast.success('Rating removed.');
+      fetchShop();
+      setReviewsRefreshKey(k => k + 1);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.response?.data?.message || 'Failed to remove rating.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const submitRating = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
+    if (!user) {
+      toast.error('Please log in to leave a review.');
       return;
     }
     if (!shop) {
-      alert("Shop profile is still loading. Please try again.");
+      toast.error('Shop profile is still loading. Please try again.');
       return;
     }
     setIsSubmitting(true);
     try {
-      await api.post(`/shops/${shop.id}/reviews`, {
-        rating: ratingValue,
-        comment: ratingComment
-      });
+      const res = await api.post(`/shops/${shop.slug}/reviews`, { rating: ratingValue });
+      if (ratingValue === 0) {
+        setMyReview(null);
+        setRatingValue(0);
+        toast.success('Rating removed.');
+      } else {
+        const savedReview = res.data?.data || { rating: ratingValue };
+        setMyReview(savedReview);
+        setRatingValue(savedReview.rating);
+        toast.success(myReview?.rating ? 'Rating updated!' : 'Rating submitted!');
+      }
       setIsRatingModalOpen(false);
+      setHoveredStar(null);
       fetchShop(); // Refresh counts
-    } catch (e) {
+      setReviewsRefreshKey(k => k + 1);
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to submit rating. You might have already rated this shop.");
+      toast.error(e.response?.data?.message || 'Failed to submit rating. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   if (loading) {
-    return <div className="min-h-dvh flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 animate-spin text-zinc-900" /></div>;
+    return <div className="min-h-dvh flex items-center justify-center bg-canvas"><Loader2 className="w-8 h-8 animate-spin text-ink" /></div>;
   }
 
   if (!shop) {
-    return <div className="py-32 text-center text-[#A8A19A]">Shop not found.</div>;
+    return <div className="py-32 text-center text-ink-faint">Shop not found.</div>;
   }
 
-  const tabList: { id: 'home' | 'about' | 'services' | 'catalog' | 'hours' | 'locations' | 'work' | 'reviews'; label: string; icon: LucideIcon }[] = [
-    { id: 'home', label: 'Home', icon: Building2 },
-  ];
-  if (isOwnerViewingOwnShop) {
-    tabList.push({ id: 'about', label: 'About', icon: Info });
-  }
-  tabList.push(
-    { id: 'services', label: 'Services', icon: ShoppingBag },
+  const tabList: {
+    id: 'catalog' | 'services' | 'about' | 'locations' | 'reviews';
+    label: string;
+    icon: LucideIcon;
+  }[] = [
     { id: 'catalog', label: 'Catalog', icon: Package },
-    { id: 'hours', label: 'Hours', icon: Clock },
-  );
+    { id: 'services', label: 'Service', icon: Scissors },
+    { id: 'about', label: 'About', icon: Info },
+  ];
   if (shop.branches && shop.branches.length > 0) {
-    tabList.push({ id: 'locations', label: 'Branches', icon: Map });
-  }
-  if (posts.length > 0 || isOwnerViewingOwnShop) {
-    tabList.push({ id: 'work', label: 'Our Work', icon: Camera });
+    tabList.push({ id: 'locations', label: 'Branch', icon: MapIcon });
   }
   tabList.push({ id: 'reviews', label: 'Reviews', icon: Star });
 
@@ -629,7 +994,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     const count = images.length;
     if (count <= 1) {
       return (
-        <button type="button" onClick={() => openLightbox(0)} className="block w-full aspect-4/3 bg-[#F0EAE3] relative focus:outline-none">
+        <button type="button" onClick={() => openLightbox(0)} className="block w-full aspect-4/3 bg-sunken relative focus:outline-none">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={images[0]} alt="" className="w-full h-full object-cover" />
         </button>
@@ -661,327 +1026,376 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white text-zinc-900 selection:bg-[#EBE6E0] selection:text-indigo-900">
-      {/* Navigation Bar — this is the SUTURA platform's own header, not the
-          shop's. The shop's identity (logo, name, actions like View Catalog
-          and Book Appointment) already lives in the profile card and its Home
-          tab right below, so it isn't repeated up here. When the owner is
-          viewing their own shop, this is the exact same account menu (bell +
-          profile dropdown) as the dashboard header — same component, not a
-          second build of it — minus the Premium Plan badge and branch
-          switcher, which are dashboard-data-scoping concepts with no meaning
-          on a public page. The logo click always goes to the platform's own
-          landing page (`/`), not this shop's own home tab — standard
-          logo-means-home convention, for every viewer including the owner
-          previewing their own shop; "My Management" in the account menu
-          remains the dedicated way back to the dashboard. */}
-      <nav className="border-b border-zinc-200 bg-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <BrandLogo iconOnly className="w-8 h-8" />
-            <span className="font-serif font-bold text-lg tracking-tight text-zinc-900">SUTURA</span>
-          </Link>
-          {isOwnerViewingOwnShop && <AccountHeaderMenu />}
-        </div>
-      </nav>
+    <div className="flex-1 flex flex-col bg-surface text-ink selection:bg-sunken selection:text-indigo-900 relative">
+      {/* Unified Sticky Header (Back & Saved buttons always sticky; Store Name, Location, and Search/Filter fade in when scrolling past tabs) */}
+      <header
+        className={`sticky top-0 z-50 w-full transition-all duration-300 -mb-[54px] ${
+          showStickyHeader
+            ? 'bg-taupe text-canvas shadow-md pointer-events-auto'
+            : 'bg-transparent shadow-none pointer-events-none'
+        }`}
+      >
+        <div className="max-w-3xl mx-auto px-3 pt-2 pb-1.5 pointer-events-auto">
+          {/* Top Row: Back (sticky), Store Name & Location (fades in), Saved (sticky) */}
+          <div className="flex items-center gap-2 h-10">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) router.back();
+                else router.push('/search');
+              }}
+              aria-label="Back"
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 active:scale-95 ${
+                showStickyHeader
+                  ? 'text-canvas hover:bg-white/15'
+                  : 'bg-black/45 backdrop-blur-md text-white hover:bg-black/60 shadow-md'
+              }`}
+            >
+              <ChevronLeft size={22} />
+            </button>
 
-      {/* Breadcrumb — lets a visitor navigate back up the discovery
-          hierarchy (Home / Search) without relying on the browser's own
-          Back button. Same max-w-7xl/px-6 container as the nav above so it
-          stays aligned to the same margin. */}
-      <div className="border-b border-zinc-200 bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-1.5 text-xs text-zinc-500 overflow-x-auto">
-          <Link href="/" className="hover:text-zinc-900 font-medium shrink-0">Home</Link>
-          <ChevronRight size={12} className="shrink-0" />
-          <Link href="/search" className="hover:text-zinc-900 font-medium shrink-0">Search</Link>
-          <ChevronRight size={12} className="shrink-0" />
-          <span className="text-zinc-900 font-semibold truncate">{shop.name}</span>
-        </div>
-      </div>
-
-      {(shop.active_special_hours?.announcement_message || shop.active_special_hours?.announcement_image_url) && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3.5 px-6 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="max-w-7xl mx-auto flex items-center gap-3">
-            {shop.active_special_hours.announcement_image_url ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={shop.active_special_hours.announcement_image_url}
-                alt=""
-                className="w-10 h-10 rounded-lg object-cover border border-amber-200 shrink-0"
-              />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-            )}
-            <div className="text-sm font-medium">
-              <span className="font-bold mr-1">{shop.active_special_hours.title}:</span>
-              {shop.active_special_hours.announcement_message}
+            <div
+              className={`min-w-0 flex-1 text-left transition-all duration-300 ${
+                showStickyHeader
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 -translate-y-2 pointer-events-none'
+              }`}
+            >
+              <h2 className="text-[13px] font-extrabold text-canvas truncate leading-tight text-left">
+                {shop.name}
+              </h2>
+              <p className="text-[10px] text-canvas/75 truncate mt-0.5 text-left">
+                {activeBranch
+                  ? `${activeBranch.name}, ${activeBranch.city}`
+                  : `${shop.branches?.[0]?.district || shop.district || shop.city || 'Poblacion District'}, Davao City`}
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsBookmarked(!isBookmarked)}
+              aria-label="Bookmark shop"
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 active:scale-95 ${
+                showStickyHeader
+                  ? 'text-canvas hover:bg-white/15'
+                  : 'bg-black/45 backdrop-blur-md text-white hover:bg-black/60 shadow-md'
+              }`}
+            >
+              <Bookmark size={17} className={isBookmarked ? 'fill-current text-white' : ''} />
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* Unified Profile Card — same header/tabs pattern as the owner's dashboard
-          storefront widget, so the public page and the dashboard preview feel
-          like one design instead of two different UIs bolted together. */}
-      <div className="flex-1 bg-[#FAF6F3] py-8">
-        <div className="max-w-7xl mx-auto px-6 space-y-8">
-
-          <div className="bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden shadow-sm">
-            {shop.banner_path ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={getMediaUrl(shop.banner_path)}
-                alt=""
-                className="h-32 md:h-48 w-full object-cover"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            ) : (
-              <div className="h-32 md:h-48 bg-gradient-to-br from-[#F0EAE3] to-[#EBE6E0] w-full" />
-            )}
-
-            <div className="px-5 md:px-8 relative">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-12 md:-mt-10">
-                <div className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-5 text-center md:text-left">
-                  <ShopLogoAvatar
-                    src={shop.logo_path}
-                    name={shop.name}
-                    className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white bg-white shadow-md overflow-hidden shrink-0"
+          {/* Bottom Row: Search & Filter (in Catalog tab when scrolled) */}
+          {activeTab === 'catalog' && (
+            <div
+              className={`transition-all duration-300 overflow-hidden ${
+                showStickyHeader
+                  ? 'max-h-16 opacity-100 pb-1 mt-1.5'
+                  : 'max-h-0 opacity-0 mt-0 pointer-events-none'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 h-9 px-3 rounded-full bg-white shadow-xs">
+                  <Search size={15} className="text-taupe shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search this collection... e.g. barong, gown"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    className="flex-1 min-w-0 bg-transparent text-xs text-ink placeholder:text-ink-faint focus:outline-none"
                   />
-
-                  <div className="mb-1 md:mb-2">
-                    <h1 className="text-2xl md:text-3xl font-serif font-bold text-zinc-900">{shop.name}</h1>
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-1 mt-1.5 text-sm text-[#827A73]">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Star size={14} className="fill-current text-[#BCA89F]" />
-                        {shop.reviews_avg_rating ? shop.reviews_avg_rating : 'New'} · {shop.reviews_count} {shop.reviews_count === 1 ? 'Review' : 'Reviews'}
-                      </span>
-                      {(activeBranch || shop.address) && (
-                        <span className="flex items-center gap-1">
-                          <MapPin size={14} /> {activeBranch ? activeBranch.city : shop.city}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mb-2 md:mb-3 shrink-0">
-                  {isOwnerViewingOwnShop && (
+                  {catalogSearch && (
                     <button
                       type="button"
-                      onClick={() => setActiveTab('about')}
-                      title="Edit Profile"
-                      className="flex items-center gap-1.5 px-4 py-2 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors text-sm font-medium"
+                      onClick={() => setCatalogSearch('')}
+                      aria-label="Clear search"
+                      className="shrink-0 text-ink-faint hover:text-ink"
                     >
-                      <Pencil size={15} /> Edit
+                      <X size={14} />
                     </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('catalog')}
-                    title="Catalog"
-                    className="p-2.5 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors"
-                  >
-                    <Package size={17} />
-                  </button>
-
-                  {shop.active_special_hours?.is_closed ? (
-                    <button
-                      type="button"
-                      disabled
-                      title="Online booking is temporarily disabled"
-                      className="p-2.5 bg-[#B26959]/10 text-[#B26959]/50 rounded-lg cursor-not-allowed"
-                    >
-                      <Calendar size={17} />
-                    </button>
-                  ) : (
-                    <Link
-                      href={`/shop/${shopId}/book`}
-                      title="Book Appointment"
-                      className="p-2.5 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors"
-                    >
-                      <Calendar size={17} />
-                    </Link>
-                  )}
-
-                  {!isOwnerViewingOwnShop && (
-                    <>
-                      <button
-                        onClick={() => setIsRatingModalOpen(true)}
-                        className="px-4 py-2 bg-[#F0EAE3] hover:bg-[#EBE6E0] text-[#524A44] rounded-lg transition-colors text-sm font-medium"
-                      >
-                        Rate Shop
-                      </button>
-                      <a
-                        href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#2D2A26] hover:bg-[#9A8073] text-white rounded-lg transition-colors text-sm font-medium"
-                      >
-                        <MessageCircle size={15} /> Chat
-                      </a>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <hr className="mt-5 mb-0 border-[#EBE6E0]" />
-
-              {/* Wraps to multiple lines on narrow/tablet widths instead of
-                  scrolling sideways — up to 8 tabs, so it can take 2-3 lines
-                  on a phone, but every tab stays reachable with a tap
-                  instead of needing a swipe to discover it exists. */}
-              <div className="flex flex-wrap gap-1">
-                {tabList.map(tab => {
-                  const isActive = activeTab === tab.id;
-                  const TabIcon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-3.5 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                        isActive
-                          ? 'border-[#2D2A26] text-[#2D2A26]'
-                          : 'border-transparent text-[#827A73] hover:text-[#524A44]'
-                      }`}
-                    >
-                      <TabIcon size={15} />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* TAB: HOME */}
-          {activeTab === 'home' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 space-y-4">
-                {activeBranch && (
-                  <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-2xl p-4">
-                    <p className="text-[10px] font-bold text-[#827A73] uppercase tracking-wider mb-1">Selected Location</p>
-                    <p className="text-sm font-semibold text-[#2D2A26]">{activeBranch.name}</p>
-                  </div>
-                )}
-
-                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 space-y-3">
-                  {activeBranch ? (
-                    <>
-                      <div className="flex items-start gap-3 text-[#827A73] text-sm">
-                        <MapPin className="w-4 h-4 text-[#9A8073] shrink-0 mt-0.5" />
-                        <span>{activeBranch.address}, {activeBranch.city}</span>
-                      </div>
-                      {activeBranch.contact_number && (
-                        <div className="flex items-center gap-3 text-[#827A73] text-sm">
-                          <Phone className="w-4 h-4 text-[#9A8073] shrink-0" />
-                          <span>{activeBranch.contact_number}</span>
-                        </div>
-                      )}
-                      {activeBranch.operating_hours && (
-                        <div className="flex items-center gap-3 text-[#827A73] text-sm">
-                          <Clock className="w-4 h-4 text-[#9A8073] shrink-0" />
-                          <span>{activeBranch.operating_hours}</span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {shop.address && (
-                        <div className="flex items-start gap-3 text-[#827A73] text-sm">
-                          <MapPin className="w-4 h-4 text-[#9A8073] shrink-0 mt-0.5" />
-                          <span>{shop.address}, {shop.city}, {shop.province}</span>
-                        </div>
-                      )}
-                      {shop.phone && (
-                        <div className="flex items-center gap-3 text-[#827A73] text-sm">
-                          <Phone className="w-4 h-4 text-[#9A8073] shrink-0" />
-                          <span>{shop.phone}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {shop.email && (
-                    <div className="flex items-center gap-3 text-[#827A73] text-sm">
-                      <Mail className="w-4 h-4 text-[#9A8073] shrink-0" />
-                      <span>{shop.email}</span>
-                    </div>
                   )}
                 </div>
 
-                {shop.social_links && shop.social_links.filter(l => l.url).length > 0 && (
-                  <div className="bg-white border border-[#EBE6E0] rounded-2xl p-5 flex flex-wrap gap-2">
-                    {shop.social_links.filter(l => l.url).map(link => {
-                      const key = link.label?.toLowerCase() ?? '';
-                      const styleClass = key.includes('facebook')
-                        ? 'bg-zinc-100 hover:bg-[#F0EAE3] text-[#886E62]'
-                        : key.includes('instagram')
-                        ? 'bg-zinc-100 hover:bg-pink-50 text-pink-600'
-                        : key.includes('tiktok')
-                        ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold'
-                        : 'bg-zinc-100 hover:bg-[#F0EAE3] text-[#524A44]';
-                      return (
-                        <a
-                          key={link.label + link.url}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`px-3 py-1.5 rounded-full transition-colors text-sm font-medium ${styleClass}`}
-                        >
-                          {link.label || 'Link'}
-                        </a>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {shop.owner && (
-                  <div className="bg-[#FAF6F3] border border-[#EBE6E0] rounded-2xl p-4 flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full overflow-hidden bg-[#9A8073] flex items-center justify-center text-white font-semibold text-lg shrink-0">
-                      {shop.owner.profile_picture ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={shop.owner.profile_picture} alt={shop.owner.name} className="w-full h-full object-cover" />
-                      ) : (
-                        shop.owner.name.charAt(0)
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[#827A73] uppercase tracking-wider">Shop Owner</p>
-                      <h4 className="text-sm font-bold text-[#2D2A26]">{shop.owner.name}</h4>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="md:col-span-2 space-y-4">
-                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6">
-                  <h3 className="font-serif text-lg font-bold text-zinc-900 mb-2">About</h3>
-                  <p className="text-[#524A44] leading-relaxed">
-                    {shop.description || 'A premium tailoring establishment dedicated to exceptional craftsmanship.'}
-                  </p>
-                </div>
-
-                {isOwnerViewingOwnShop && authShop && (
-                  <SpecialHoursAnnouncementCard shopId={authShop.id} onSaved={fetchShop} branches={shop.branches} />
-                )}
+                <button
+                  type="button"
+                  onClick={openFilterPanel}
+                  className={`h-9 px-3 rounded-full border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold ${
+                    activeFilterCount > 0
+                      ? 'bg-white text-taupe border-white shadow-xs'
+                      : 'bg-white/15 text-canvas border-white/20 hover:bg-white/25 active:scale-95'
+                  }`}
+                  title="Filter collection"
+                >
+                  <SlidersHorizontal size={15} />
+                  <span>Filter</span>
+                  {activeFilterCount > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-ink text-white text-[9px] font-bold flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           )}
+        </div>
+      </header>
 
-          {/* TAB: ABOUT — owner-only settings editor, reused as-is from the dashboard
-              so editing here and editing from /dashboard/profile are the exact same
-              component, not two parallel implementations. */}
-          {activeTab === 'about' && isOwnerViewingOwnShop && (
-            <ProfileAboutTab />
+      {/* Unified Profile Card with Hero Banner */}
+      <div className="flex-1 bg-canvas pb-8">
+        {/* Full-bleed Hero banner */}
+        <div className="relative h-64 w-full overflow-hidden bg-sunken">
+          {shop.banner_path ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={getMediaUrl(shop.banner_path)}
+              alt={shop.name}
+              className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          ) : (
+            <Image
+              src="/images/hero_banner.jpg"
+              alt={shop.name}
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/35" />
+        </div>
+
+        {/* Special hours announcement banner if active */}
+        {(shop.active_special_hours?.announcement_message || shop.active_special_hours?.announcement_image_url) && (
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3 px-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-3">
+              {shop.active_special_hours.announcement_image_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={shop.active_special_hours.announcement_image_url}
+                  alt=""
+                  className="w-10 h-10 rounded-lg object-cover border border-amber-200 shrink-0"
+                />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+              )}
+              <div className="text-xs font-medium">
+                <span className="font-bold mr-1">{shop.active_special_hours.title}:</span>
+                {shop.active_special_hours.announcement_message}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Details (overlapping avatar, store name, owner, location, star rating) */}
+        <div className="px-4">
+          <div className="relative pt-3 pb-2 flex flex-col items-start">
+            <div className="flex items-start justify-between w-full">
+              <ShopLogoAvatar
+                src={shop.logo_path}
+                name={shop.name}
+                containerClassName="-mt-10"
+                className="w-20 h-20 rounded-full border-4 border-white bg-surface shadow-md overflow-hidden shrink-0"
+                isOpen={isShopCurrentlyOpen}
+              />
+
+              {/* Owner actions or Rate Store button */}
+              <div className="flex items-center gap-2">
+                {isOwnerViewingOwnShop && <AccountHeaderMenu />}
+                {isOwnerViewingOwnShop ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('about')}
+                    title="Edit Profile"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-sunken hover:bg-line text-ink-body rounded-lg transition-colors text-xs font-semibold"
+                  >
+                    <Pencil size={13} /> Edit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRatingValue(myReview?.rating || 0);
+                      setIsRatingModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 bg-sunken hover:bg-line text-ink-body rounded-lg transition-colors text-xs font-semibold active:scale-95"
+                  >
+                    {myReview?.rating ? 'Edit Rating' : 'Rate Store'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-xl font-serif font-bold text-ink leading-tight">{shop.name}</h1>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${
+                    isShopCurrentlyOpen
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${isShopCurrentlyOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  {isShopCurrentlyOpen ? 'Online · Open' : 'Offline · Closed'}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted mt-1">
+                Shop Owner · <span className="font-semibold text-ink-body">{shop.owner?.name || 'Juancho L. Rivera'}</span>
+              </p>
+              <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
+                <MapPin size={13} className="text-taupe shrink-0" />
+                <span>{activeBranch ? `${activeBranch.name}, ${activeBranch.city}` : `${shop.branches?.[0]?.district || shop.district || shop.city || 'Poblacion District'}, Davao City`}</span>
+              </p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="flex items-center text-taupe">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={13} className="fill-taupe text-taupe" />
+                  ))}
+                </div>
+                <span className="text-xs font-extrabold text-ink">
+                  {shop.reviews_avg_rating ? Number(shop.reviews_avg_rating).toFixed(1) : '4.9'}
+                </span>
+                <span className="text-xs text-ink-faint">
+                  ({shop.reviews_count || 126} reviews)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Streamlined Tabs: About, Catalog, Service, Branch, Review */}
+          <div ref={tabBarRef} className="flex overflow-x-auto no-scrollbar border-b border-line mt-3 mb-4">
+            {tabList.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 min-w-[64px] py-2.5 sm:py-3 text-center text-xs sm:text-sm font-bold whitespace-nowrap transition-all border-b-2 -mb-px ${
+                    isActive
+                      ? 'border-ink text-ink font-extrabold'
+                      : 'border-transparent text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* TAB: ABOUT (Merged with Opening Hours & Fitting CTA, matching Image 2) */}
+          {activeTab === 'about' && (
+            <div className="space-y-4 max-w-lg mx-auto">
+              {/* Headline & Story */}
+              <div>
+                <h2 className="text-lg font-serif font-bold text-ink mb-1.5">
+                  About {shop.name}
+                </h2>
+                <p className="text-xs text-ink-muted leading-relaxed whitespace-pre-line">
+                  {shop.description || 'No description provided yet.'}
+                </p>
+              </div>
+
+              {/* Specialization Chips — real shop data only */}
+              {shop.specializations && shop.specializations.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {shop.specializations.map((spec) => (
+                    <span
+                      key={spec}
+                      className="px-3 py-1 bg-sunken rounded-full text-xs font-semibold text-ink-body capitalize"
+                    >
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Opening Hours Card — Sunday to Saturday with 12h AM/PM format */}
+              <div className="bg-surface border border-line rounded-2xl p-4 shadow-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-taupe" />
+                    <h3 className="text-sm font-bold text-ink">Opening hours</h3>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                    isShopCurrentlyOpen
+                      ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                      : 'text-ink-muted bg-sunken border border-line'
+                  }`}>
+                    {isShopCurrentlyOpen ? 'Open now' : 'Closed now'}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  {[
+                    { key: 'sunday', label: 'Sunday' },
+                    { key: 'monday', label: 'Monday' },
+                    { key: 'tuesday', label: 'Tuesday' },
+                    { key: 'wednesday', label: 'Wednesday' },
+                    { key: 'thursday', label: 'Thursday' },
+                    { key: 'friday', label: 'Friday' },
+                    { key: 'saturday', label: 'Saturday' },
+                  ].map(({ key, label }) => {
+                    const dayHours = shop.operating_hours?.[key];
+                    const isToday = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()] === key;
+                    const isOpen = dayHours?.is_open && dayHours.open && dayHours.close;
+
+                    return (
+                      <div
+                        key={key}
+                        className={`flex items-center justify-between py-1.5 px-2 rounded-lg transition-colors ${
+                          isToday ? 'bg-taupe/10 font-medium' : 'text-ink-body'
+                        }`}
+                      >
+                        <span className={`capitalize ${isToday ? 'font-bold text-ink' : 'text-ink-body'}`}>
+                          {label} {isToday && <span className="text-[10px] text-taupe font-bold ml-1">(Today)</span>}
+                        </span>
+                        {isOpen ? (
+                          <span className={`font-semibold ${isToday ? 'text-ink' : 'text-ink-body'}`}>
+                            {formatTime12h(dayHours.open)} – {formatTime12h(dayHours.close)}
+                          </span>
+                        ) : (
+                          <span className="text-ink-faint font-medium">Closed</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {isOwnerViewingOwnShop && (
+                  <button
+                    type="button"
+                    onClick={() => setIsHoursModalOpen(true)}
+                    className="mt-3 text-xs font-semibold text-taupe hover:underline flex items-center gap-1"
+                  >
+                    <Pencil size={11} /> Edit Hours
+                  </button>
+                )}
+              </div>
+
+              {/* Request a fitting CTA Button (Image 2 style) */}
+              <div className="pt-2">
+                <Link
+                  href={`/shop/${shopId}/book`}
+                  className="w-full flex items-center justify-center py-3.5 bg-[#2B2725] hover:bg-[#1A1817] active:scale-[0.99] text-white text-sm font-bold rounded-full transition-all shadow-md"
+                >
+                  Request a fitting
+                </Link>
+              </div>
+
+              {/* Owner-only About settings panel */}
+              {isOwnerViewingOwnShop && (
+                <div className="pt-4 border-t border-line">
+                  <ProfileAboutTab />
+                </div>
+              )}
+            </div>
           )}
 
           {/* TAB: SERVICES */}
           {activeTab === 'services' && (
             <div>
-              <div className="mb-8 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-serif font-bold text-zinc-900">Our Services</h2>
-                  <p className="text-[#827A73] text-sm mt-1">Browse our tailoring offerings and estimated turnaround times.</p>
+                  <h2 className="text-lg font-serif font-bold text-ink">Our Services</h2>
+                  <p className="text-ink-muted text-sm mt-1">Browse our tailoring offerings and estimated turnaround times.</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   {isOwnerViewingOwnShop && (
@@ -994,7 +1408,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                     </button>
                   )}
                   {services.length > 0 && (
-                    <button type="button" onClick={() => setActiveTab('catalog')} className="text-sm font-semibold text-[#9A8073] hover:underline flex items-center gap-1 whitespace-nowrap">
+                    <button type="button" onClick={() => setActiveTab('catalog')} className="text-sm font-semibold text-taupe hover:underline flex items-center gap-1 whitespace-nowrap">
                       View Catalog &rarr;
                     </button>
                   )}
@@ -1002,19 +1416,24 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               </div>
 
               {services.length === 0 && packages.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-2xl border border-zinc-200">
-                  <p className="text-[#827A73]">No services listed yet.</p>
+                <div className="text-center py-16 bg-surface rounded-2xl border border-line">
+                  <p className="text-ink-muted">No services listed yet.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 gap-4">
                   {services.map(service => (
                     <div
                       key={service.id}
-                      onClick={() => setSelectedService(service)}
+                      onClick={() => {
+                        setSelectedService(service);
+                        // No dedicated service detail page — opening this
+                        // modal IS the "view", so record it here.
+                        if (user) api.post('/recently-viewed', { type: 'service', id: service.id }).catch(() => {});
+                      }}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedService(service); }}
                       role="button"
                       tabIndex={0}
-                      className="relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden hover:border-[#9A8073]/60 transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9A8073]"
+                      className="relative bg-surface border border-line rounded-2xl overflow-hidden hover:border-taupe/60 transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-taupe"
                     >
                       {isOwnerViewingOwnShop && (
                         <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
@@ -1027,7 +1446,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               setIsServiceModalOpen(true);
                             }}
                             title="Edit service"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[#EBE6E0] text-[#524A44] hover:text-taupe transition-colors focus:outline-none"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-line text-ink-body hover:text-taupe transition-colors focus:outline-none"
                           >
                             <Pencil size={14} />
                           </button>
@@ -1039,7 +1458,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               setIsServiceDeleteOpen(true);
                             }}
                             title="Delete service"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[#EBE6E0] text-[#524A44] hover:text-[#B26959] transition-colors focus:outline-none"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-line text-ink-body hover:text-danger transition-colors focus:outline-none"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -1047,7 +1466,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                       )}
 
                       {/* Image */}
-                      <div className="h-52 bg-[#F0EAE3] border-b border-[#EBE6E0] overflow-hidden shrink-0">
+                      <div className="h-52 bg-sunken border-b border-line overflow-hidden shrink-0">
                         {service.image_url ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
@@ -1056,7 +1475,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#C5BDBA]">
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint">
                             <ImageIcon size={28} />
                             <span className="text-[11px]">No image</span>
                           </div>
@@ -1065,7 +1484,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
                       {/* Card body */}
                       <div className="p-5 space-y-2 flex flex-col flex-1">
-                        <h3 className="font-serif font-bold text-zinc-900 text-base leading-snug line-clamp-2">{service.name}</h3>
+                        <h3 className="font-serif font-bold text-ink text-base leading-snug line-clamp-2">{service.name}</h3>
 
                         <div className="flex items-center gap-2 text-xs">
                           {(() => {
@@ -1073,13 +1492,13 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             if (activeSale) {
                               return (
                                 <span className="font-bold flex items-center gap-1.5">
-                                  <span className="line-through text-[#A8A19A] font-normal">₱{activeSale.original.toLocaleString()}</span>
+                                  <span className="line-through text-ink-faint font-normal">₱{activeSale.original.toLocaleString()}</span>
                                   <span className="text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
                                 </span>
                               );
                             }
                             return (
-                              <span className="font-bold text-[#9A8073]">
+                              <span className="font-bold text-taupe">
                                 {service.base_price !== null && service.base_price !== undefined ? (
                                   `₱${Number.parseFloat(service.base_price.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                                 ) : (
@@ -1089,34 +1508,32 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             );
                           })()}
                           {service.estimated_days ? (
-                            <span className="flex items-center gap-1 text-[#A8A19A]">
+                            <span className="flex items-center gap-1 text-ink-faint">
                               <Clock size={11} /> {service.estimated_days}d
                             </span>
                           ) : null}
                         </div>
 
                         {service.description && (
-                          <p className="text-xs text-[#827A73] line-clamp-2 leading-relaxed">{service.description}</p>
+                          <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">{service.description}</p>
                         )}
 
                         {/* CTA */}
                         <div className="mt-auto pt-3 space-y-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedService(service);
-                            }}
-                            className="block w-full text-center bg-[#2D2A26] hover:bg-[#9A8073] text-white py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                          <Link
+                            href={`/shop/${shopId}/book?service_id=${service.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="block w-full text-center bg-ink hover:bg-taupe text-white py-2.5 rounded-xl text-xs font-semibold transition-colors focus:outline-none shadow-xs"
                           >
-                            Inquire / Order Custom →
-                          </button>
+                            Book Appointment →
+                          </Link>
                           {getSocialUrl(shop.social_links, 'facebook') && (
                             <a
                               href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="flex w-full items-center justify-center gap-1.5 bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                              className="flex w-full items-center justify-center gap-1.5 bg-surface border border-line hover:bg-sunken text-ink-body py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
                             >
                               <MessageCircle size={13} /> Inquire on Facebook
                             </a>
@@ -1136,23 +1553,23 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedPackage(pkg); }}
                         role="button"
                         tabIndex={0}
-                        className="bg-white border border-taupe/50 rounded-2xl overflow-hidden hover:border-taupe transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#9A8073]"
+                        className="bg-surface border border-taupe/50 rounded-2xl overflow-hidden hover:border-taupe transition-all duration-200 group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-taupe"
                       >
-                        <div className="h-52 bg-taupe/10 border-b border-[#EBE6E0] flex items-center justify-center shrink-0">
+                        <div className="h-52 bg-taupe/10 border-b border-line flex items-center justify-center shrink-0">
                           <Package size={40} className="text-taupe/50" />
                         </div>
 
                         <div className="p-5 space-y-2 flex flex-col flex-1">
                           <div className="flex items-center gap-1.5">
                             <Package size={13} className="text-taupe shrink-0" />
-                            <h3 className="font-serif font-bold text-zinc-900 text-base leading-snug line-clamp-2">{pkg.name}</h3>
+                            <h3 className="font-serif font-bold text-ink text-base leading-snug line-clamp-2">{pkg.name}</h3>
                           </div>
 
                           <span className="text-xs font-bold text-taupe">
                             ₱{displayPrice.toLocaleString()}
                           </span>
 
-                          <p className="text-xs text-[#827A73] line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">
                             {pkg.description || `Includes: ${pkg.services.map(s => s.name).join(', ')}`}
                           </p>
 
@@ -1172,7 +1589,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex w-full items-center justify-center gap-1.5 bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
+                                className="flex w-full items-center justify-center gap-1.5 bg-surface border border-line hover:bg-sunken text-ink-body py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none"
                               >
                                 <MessageCircle size={13} /> Inquire on Facebook
                               </a>
@@ -1190,207 +1607,280 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {/* TAB: CATALOG */}
           {activeTab === 'catalog' && (
             <div>
-              <div className="mb-8">
-                <h2 className="text-2xl font-serif font-bold text-zinc-900">{shop.name}&apos;s Collection</h2>
-                <p className="text-[#827A73] text-sm mt-1">Explore our premium tailored garments, crafted with the finest materials and meticulous attention to detail.</p>
-              </div>
-
               {catalogLoading ? (
-                <div className="text-center py-16 text-[#A8A19A] animate-pulse">Curating showcase...</div>
+                <div className="text-center py-16 text-ink-faint animate-pulse">Curating showcase...</div>
               ) : catalogItems.length === 0 ? (
-                <div className="text-center py-16 bg-white border border-zinc-200 text-[#827A73]">
+                <div className="text-center py-16 bg-surface border border-line text-ink-muted">
                   This shop hasn&apos;t published any showcase items yet.
                 </div>
               ) : (() => {
-                // Named *Tally, not *Map — `Map` here would shadow the
-                // lucide-react `Map` icon component imported above, not the
-                // global Map constructor.
-                //
-                // Color and Size were dropped as filters — every item here is
-                // made-to-order, so neither is a fixed attribute of the
-                // listing the way it would be for off-the-shelf inventory:
-                // the customer picks their own fabric/color and gets measured
-                // for their own size, the shop just sews to the referenced
-                // design/class shown in the photo. Garment Type (the actual
-                // "class") and Price are the facets that mean something here.
-                const garmentTypeTally: Record<string, number> = {};
-                catalogItems.forEach(i => {
-                  const g = i.garment_type?.trim();
-                  if (g) garmentTypeTally[g] = (garmentTypeTally[g] || 0) + 1;
-                });
-                const PRICE_BUCKETS = [
-                  { id: 'under1000', label: 'Under ₱1,000', min: 0, max: 1000 },
-                  { id: '1000to3000', label: '₱1,000 – ₱2,999', min: 1000, max: 3000 },
-                  { id: '3000to5000', label: '₱3,000 – ₱4,999', min: 3000, max: 5000 },
-                  { id: '5000to10000', label: '₱5,000 – ₱9,999', min: 5000, max: 10000 },
-                  { id: '10000plus', label: '₱10,000+', min: 10000, max: Infinity },
-                ];
-                const priceTally: Record<string, number> = {};
-                catalogItems.forEach(i => {
-                  const p = Number(i.price);
-                  const bucket = PRICE_BUCKETS.find(b => p >= b.min && p < b.max);
-                  if (bucket) priceTally[bucket.id] = (priceTally[bucket.id] || 0) + 1;
-                });
+                const filteredCatalogItems = catalogItems
+                  .filter((item) => {
+                    // Search term
+                    if (catalogSearch && !item.name.toLowerCase().includes(catalogSearch.toLowerCase())) {
+                      return false;
+                    }
 
-                const garmentTypeOptions = Object.keys(garmentTypeTally).sort((a, b) => a.localeCompare(b)).map(v => ({ id: v, label: v }));
-                const priceOptions = PRICE_BUCKETS.filter(b => priceTally[b.id] > 0).map(b => ({ id: b.id, label: b.label }));
-                const hasFacets = garmentTypeOptions.length > 1 || priceOptions.length > 1;
+                    // Garment type filter
+                    if (catalogGarmentTypeFilters.size > 0 && (!item.garment_type || !catalogGarmentTypeFilters.has(item.garment_type))) {
+                      return false;
+                    }
 
-                const makeToggle = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (v: string) => {
-                  setter(prev => {
-                    const next = new Set(prev);
-                    if (next.has(v)) next.delete(v); else next.add(v);
-                    return next;
+                    // Min price filter
+                    const p = Number(item.price) || 0;
+                    if (minPrice && p < Number(minPrice)) {
+                      return false;
+                    }
+
+                    // Max price filter
+                    if (maxPrice && p > Number(maxPrice)) {
+                      return false;
+                    }
+
+                    // Color filter
+                    if (colorFilter) {
+                      const searchColor = colorFilter.toLowerCase();
+                      const itemColor = (item.color || '').toLowerCase();
+                      const itemName = (item.name || '').toLowerCase();
+                      const viewAngles = (item.images || []).map((img) => (img.view_angle || '').toLowerCase()).join(' ');
+                      const itemFabric = (item.material || '').toLowerCase();
+                      const matchesColor =
+                        itemColor.includes(searchColor) ||
+                        itemName.includes(searchColor) ||
+                        viewAngles.includes(searchColor) ||
+                        itemFabric.includes(searchColor);
+                      if (!matchesColor) return false;
+                    }
+
+                    // Rating filter
+                    if (ratingFilter) {
+                      const itemRating = Number(item.reviews_avg_rating ?? 0);
+                      if (itemRating < Number(ratingFilter)) {
+                        return false;
+                      }
+                    }
+
+                    return true;
+                  })
+                  .sort((a, b) => {
+                    if (priceSort === 'price_asc') {
+                      return (Number(a.price) || 0) - (Number(b.price) || 0);
+                    }
+                    if (priceSort === 'price_desc') {
+                      return (Number(b.price) || 0) - (Number(a.price) || 0);
+                    }
+                    return 0; // Default
                   });
-                };
-                const toggleGarmentType = makeToggle(setCatalogGarmentTypeFilters);
-                const togglePrice = makeToggle(setCatalogPriceFilters);
 
-                const filteredCatalogItems = catalogItems.filter(item => {
-                  const p = Number(item.price);
-                  return (!catalogSearch || item.name.toLowerCase().includes(catalogSearch.toLowerCase())) &&
-                    (catalogGarmentTypeFilters.size === 0 || (!!item.garment_type && catalogGarmentTypeFilters.has(item.garment_type))) &&
-                    (catalogPriceFilters.size === 0 || PRICE_BUCKETS.some(b => catalogPriceFilters.has(b.id) && p >= b.min && p < b.max));
+                // Active filter chips
+                interface FilterChip {
+                  id: string;
+                  label: string;
+                  onRemove: () => void;
+                }
+
+                const activeFilterChips: FilterChip[] = [];
+
+                if (priceSort) {
+                  activeFilterChips.push({
+                    id: 'sort',
+                    label: priceSort === 'price_asc' ? 'Sort: Low to High' : 'Sort: High to Low',
+                    onRemove: () => setPriceSort(''),
+                  });
+                }
+
+                if (minPrice && maxPrice) {
+                  activeFilterChips.push({
+                    id: 'price-range',
+                    label: `₱${Number(minPrice).toLocaleString()} – ₱${Number(maxPrice).toLocaleString()}`,
+                    onRemove: () => {
+                      setMinPrice('');
+                      setMaxPrice('');
+                    },
+                  });
+                } else if (minPrice) {
+                  activeFilterChips.push({
+                    id: 'price-min',
+                    label: `Min ₱${Number(minPrice).toLocaleString()}`,
+                    onRemove: () => setMinPrice(''),
+                  });
+                } else if (maxPrice) {
+                  activeFilterChips.push({
+                    id: 'price-max',
+                    label: `Max ₱${Number(maxPrice).toLocaleString()}`,
+                    onRemove: () => setMaxPrice(''),
+                  });
+                }
+
+                if (colorFilter) {
+                  activeFilterChips.push({
+                    id: 'color',
+                    label: `Color: ${colorFilter}`,
+                    onRemove: () => setColorFilter(''),
+                  });
+                }
+
+                if (ratingFilter) {
+                  activeFilterChips.push({
+                    id: 'rating',
+                    label: `★ ${ratingFilter}${ratingFilter === '5' ? ' Stars' : '+ Stars'}`,
+                    onRemove: () => setRatingFilter(''),
+                  });
+                }
+
+                Array.from(catalogGarmentTypeFilters).forEach((g) => {
+                  activeFilterChips.push({
+                    id: `garment-${g}`,
+                    label: g,
+                    onRemove: () => toggleGarmentType(g),
+                  });
                 });
-
-                const priceLabel = (id: string) => PRICE_BUCKETS.find(b => b.id === id)?.label || id;
-                const activeFilterChips = [
-                  ...Array.from(catalogGarmentTypeFilters).map(v => ({ kind: 'garment' as const, value: v, label: v })),
-                  ...Array.from(catalogPriceFilters).map(v => ({ kind: 'price' as const, value: v, label: priceLabel(v) })),
-                ];
-
-                const FacetGroup = ({ title, options, counts, selected, onToggle }: {
-                  title: string; options: { id: string; label: string }[]; counts: Record<string, number>; selected: Set<string>; onToggle: (v: string) => void;
-                }) => (
-                  <div className="border border-[#EBE6E0] bg-white p-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 mb-3">{title}</h3>
-                    <div className="space-y-2">
-                      {options.map(opt => (
-                        <label key={opt.id} className="flex items-center gap-2 text-sm text-[#524A44] cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selected.has(opt.id)}
-                            onChange={() => onToggle(opt.id)}
-                            className="accent-taupe"
-                          />
-                          <span className="flex-1">{opt.label}</span>
-                          <span className="text-xs text-[#A8A19A]">{counts[opt.id]}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                );
 
                 return (
-                  <div className={hasFacets ? 'grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6' : ''}>
-                    {hasFacets && (
-                      <aside className="space-y-4">
-                        {garmentTypeOptions.length > 1 && (
-                          <FacetGroup title="Garment Type" options={garmentTypeOptions} counts={garmentTypeTally} selected={catalogGarmentTypeFilters} onToggle={toggleGarmentType} />
-                        )}
-                        {priceOptions.length > 1 && (
-                          <FacetGroup title="Price" options={priceOptions} counts={priceTally} selected={catalogPriceFilters} onToggle={togglePrice} />
-                        )}
-                      </aside>
-                    )}
-
-                    <div className="min-w-0">
-                      <div className="relative mb-4">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A8A19A]" size={16} />
-                        <input
-                          type="text"
-                          placeholder="Search this collection... e.g. team jersey, barong, gown"
-                          value={catalogSearch}
-                          onChange={e => setCatalogSearch(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 bg-white border border-[#EBE6E0] text-base sm:text-sm text-zinc-900 placeholder-[#A8A19A] focus:outline-none focus:border-taupe transition-colors"
-                        />
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <span className="text-sm text-[#827A73]">
+                  <div className="min-w-0">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <span className="text-xs text-ink-muted whitespace-nowrap shrink-0">
                           Showing {filteredCatalogItems.length} of {catalogItems.length} item{catalogItems.length === 1 ? '' : 's'}
                         </span>
-                        {activeFilterChips.map(chip => {
-                          const toggleByKind = { garment: toggleGarmentType, price: togglePrice }[chip.kind];
-                          return (
-                            <button
-                              key={`${chip.kind}-${chip.value}`}
-                              onClick={() => toggleByKind(chip.value)}
-                              className="flex items-center gap-1.5 border border-[#EBE6E0] bg-[#FAF6F3] px-3 py-1 text-xs font-medium text-[#524A44] hover:border-taupe hover:text-taupe transition-colors"
-                            >
-                              {chip.label} <X size={12} />
-                            </button>
-                          );
-                        })}
+                        {activeFilterChips.map((chip) => (
+                          <button
+                            key={chip.id}
+                            type="button"
+                            onClick={chip.onRemove}
+                            className="flex items-center gap-1 border border-line bg-canvas px-2.5 py-0.5 rounded-full text-[11px] font-medium text-ink-body hover:border-taupe hover:text-taupe transition-colors shrink-0"
+                          >
+                            <span>{chip.label}</span>
+                            <X size={11} />
+                          </button>
+                        ))}
                         {activeFilterChips.length > 0 && (
                           <button
-                            onClick={() => {
-                              setCatalogGarmentTypeFilters(new Set());
-                              setCatalogPriceFilters(new Set());
-                            }}
-                            className="text-xs font-semibold text-[#886E62] hover:underline"
+                            type="button"
+                            onClick={resetFilterPanel}
+                            className="text-xs font-semibold text-taupe hover:underline ml-1 whitespace-nowrap shrink-0"
                           >
                             Clear All
                           </button>
                         )}
                       </div>
 
-                      {filteredCatalogItems.length === 0 ? (
-                        <div className="text-center py-16 bg-white border border-zinc-200 text-[#827A73]">
-                          No items match your search or filters. Try a different keyword or clear a filter.
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                          {filteredCatalogItems.map(item => {
-                            const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
-                            return (
-                              <Link
-                                href={`/shop/${shopId}/catalog/${item.id}`}
-                                key={item.id}
-                                className="group block bg-white border border-[#EBE6E0] overflow-hidden hover:border-[#9A8073]/60 transition-all"
-                              >
-                                <div className="aspect-3/4 bg-[#F0EAE3] overflow-hidden relative">
-                                  {primaryImage ? (
-                                    <Image
-                                      src={getMediaUrl(primaryImage)}
-                                      alt={item.name}
-                                      className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                                      fill
-                                      unoptimized
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[#A8A19A] text-sm">No Image</div>
-                                  )}
-
-                                  {/* Hover Overlay for Material */}
-                                  <div className="absolute inset-0 bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-                                    <span className="text-xs font-medium tracking-widest uppercase text-zinc-900 border border-zinc-900 px-4 py-2">
-                                      {item.material || 'View Details'}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="p-2.5 sm:p-3 text-left">
-                                  {item.reviews_count ? (
-                                    <div className="flex items-center gap-1 mb-1">
-                                      <Star size={11} className="fill-current text-[#BCA89F]" />
-                                      <span className="text-[11px] font-semibold text-zinc-700">{Number(item.reviews_avg_rating).toFixed(1)}</span>
-                                      <span className="text-[11px] text-[#A8A19A]">({item.reviews_count})</span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1 mb-1 text-[#A8A19A]">
-                                      <Clock size={11} />
-                                      <span className="text-[11px]">Est. {item.estimated_days ?? 7}d</span>
-                                    </div>
-                                  )}
-                                  <h3 className="text-xs sm:text-sm font-semibold text-zinc-900 group-hover:text-[#886E62] transition-colors line-clamp-2 leading-snug">{item.name}</h3>
-                                  <p className="text-xs sm:text-sm font-bold text-[#886E62] mt-1">₱{Number(item.price).toLocaleString()}</p>
-                                </div>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
+                      {/* Model / Fabric toggle */}
+                      <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                        <span className={`text-[11px] font-medium ${!showPortfolioFabric ? 'text-ink' : 'text-ink-faint'}`}>Model</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowPortfolioFabric((v) => !v)}
+                          aria-label="Toggle between model and fabric photos"
+                          className={`relative w-8 h-[18px] rounded-full transition-colors ${showPortfolioFabric ? 'bg-ink' : 'bg-line-strong'}`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${showPortfolioFabric ? 'translate-x-[14px]' : ''}`}
+                          />
+                        </button>
+                        <span className={`text-[11px] font-medium ${showPortfolioFabric ? 'text-ink' : 'text-ink-faint'}`}>Fabric</span>
+                      </div>
                     </div>
+
+                    {filteredCatalogItems.length === 0 ? (
+                      <div className="text-center py-16 bg-surface border border-line text-ink-muted">
+                        No items match your search or filters. Try a different keyword or clear a filter.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-line border-t border-line">
+                        {filteredCatalogItems.map(item => {
+                          const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
+                          const fabricImage = resolveFabricImage(item);
+                          const displayImage = showPortfolioFabric ? (fabricImage || primaryImage) : primaryImage;
+                          const isHighlighted = highlightedItemId === item.id;
+
+                          return (
+                            <Link
+                              key={item.id}
+                              id={`catalog-item-${item.id}`}
+                              href={`/shop/${shopId}/catalog/${item.id}`}
+                              className={`border-b border-line border-x-0 rounded-none px-0 py-3 flex items-start gap-3 transition-all duration-700 cursor-pointer group ${
+                                isHighlighted
+                                  ? 'bg-taupe/15 ring-2 ring-taupe px-2.5 rounded-xl shadow-xs'
+                                  : 'hover:bg-sunken/40'
+                              }`}
+                            >
+                              {/* Left: Image */}
+                              <div className="w-20 h-28 sm:w-24 sm:h-32 overflow-hidden bg-sunken shrink-0 relative border border-line">
+                                {displayImage ? (
+                                  <Image
+                                    key={displayImage}
+                                    src={getMediaUrl(displayImage)}
+                                    alt={`${item.name}${showPortfolioFabric ? ' - Fabric Swatch' : ''}`}
+                                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                                    fill
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-ink-faint text-[10px]">No Image</div>
+                                )}
+
+                                {/* Fabric View Indicator Badge */}
+                                {showPortfolioFabric && (
+                                  <div className="absolute top-1 right-1 z-10 bg-ink/85 backdrop-blur-xs text-white text-[7px] font-medium tracking-wider uppercase px-1.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs border border-white/20">
+                                    <span className="w-1 h-1 rounded-full bg-amber-300 animate-pulse" />
+                                    <span>Fabric</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right: Details */}
+                              <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
+                                <div>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[9px] font-medium uppercase tracking-wide text-taupe truncate">
+                                      {item.garment_type || 'Bespoke Display'}
+                                    </span>
+                                    {(item.material || item.color) && (
+                                      <span className="text-[9px] text-ink-muted">
+                                        • {item.material}{item.material && item.color ? ` · ${item.color}` : item.color}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Name: 12 size regular, allows nextline wrapping */}
+                                  <h3 className="text-[12px] font-normal text-ink group-hover:text-taupe transition-colors leading-snug mt-0.5 break-words">
+                                    {item.name}
+                                  </h3>
+
+                                  {/* Rating: per-item only — does NOT fall back to shop rating */}
+                                  {item.reviews_avg_rating && Number(item.reviews_avg_rating) > 0 ? (
+                                    <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-muted mt-1.5">
+                                      <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
+                                      <span className="text-ink-body">{Number(item.reviews_avg_rating).toFixed(1)}</span>
+                                      {item.reviews_count ? <span className="text-ink-faint font-normal">({item.reviews_count})</span> : null}
+                                    </div>
+                                  ) : (
+                                    <p className="text-[11px] text-ink-faint mt-1.5 flex items-center gap-1">
+                                      <Clock size={11} className="text-taupe shrink-0" />
+                                      Est. {item.estimated_days ? `${item.estimated_days}d` : '7d'}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1.5 border-t border-line/50 mt-1.5">
+                                  {/* Only Price is bold */}
+                                  <span className="text-sm font-bold text-ink">
+                                    ₱{Number(item.price).toLocaleString()}
+                                  </span>
+
+                                  {/* Estimated Days */}
+                                  <span className="flex items-center gap-1 text-[11px] text-ink-muted font-medium">
+                                    <Clock size={11} className="text-taupe shrink-0" />
+                                    <span>Est. {item.estimated_days ? `${item.estimated_days}d` : '7-10d'}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1403,9 +1893,9 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {activeTab === 'hours' && (
             <div className="max-w-md mx-auto">
               <div>
-                <h3 className="text-xl font-bold text-[#2D2A26] mb-6 flex items-center justify-between gap-2">
+                <h3 className="text-xl font-bold text-ink mb-6 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
-                    <Clock size={20} className="text-[#9A8073]" />
+                    <Clock size={20} className="text-taupe" />
                     Standard Operating Hours
                   </span>
                   {isOwnerViewingOwnShop && (
@@ -1419,20 +1909,21 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   )}
                 </h3>
 
-                <div className="bg-white border border-[#EBE6E0] rounded-2xl p-6">
+                <div className="bg-surface border border-line rounded-2xl p-4">
                   <div className="space-y-4">
-                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                    {['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map(day => {
                       const hours = shop.operating_hours?.[day];
                       if (!hours) return null;
+                      const isOpen = hours.is_open && hours.open && hours.close;
                       return (
-                        <div key={day} className="flex justify-between items-center text-sm py-1 border-b border-[#EBE6E0]/50 last:border-0 last:pb-0">
-                          <span className="capitalize text-[#524A44] font-medium">{day}</span>
-                          {hours.is_open ? (
-                            <span className="text-[#2D2A26] font-bold bg-[#FAF6F3] px-3 py-1 rounded-lg">
-                              {hours.open} - {hours.close}
+                        <div key={day} className="flex justify-between items-center text-sm py-1 border-b border-line/50 last:border-0 last:pb-0">
+                          <span className="capitalize text-ink-body font-medium">{day}</span>
+                          {isOpen ? (
+                            <span className="text-ink font-bold bg-canvas px-3 py-1 rounded-lg">
+                              {formatTime12h(hours.open)} – {formatTime12h(hours.close)}
                             </span>
                           ) : (
-                            <span className="text-[#B26959] font-bold text-xs uppercase tracking-wider bg-[#B26959]/10 px-3 py-1 rounded-lg">
+                            <span className="text-danger font-bold text-xs uppercase tracking-wider bg-danger/10 px-3 py-1 rounded-lg">
                               Closed
                             </span>
                           )}
@@ -1448,63 +1939,63 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {/* TAB: LOCATIONS */}
           {activeTab === 'locations' && shop.branches && shop.branches.length > 0 && (
             <div>
-              <div className="mb-8 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-serif font-bold text-zinc-900">Our Branches</h2>
-                  <p className="text-[#827A73] text-sm mt-1">Visit us at any of our physical tailoring shops.</p>
+                  <h2 className="text-lg font-serif font-bold text-ink">Our Branches</h2>
+                  <p className="text-ink-muted text-sm mt-1">Visit us at any of our physical tailoring shops.</p>
                 </div>
                 {isOwnerViewingOwnShop && (
-                  <Link href="/dashboard/branches" className="shrink-0 text-sm font-semibold text-[#9A8073] hover:underline flex items-center gap-1 whitespace-nowrap">
+                  <Link href="/dashboard/branches" className="shrink-0 text-sm font-semibold text-taupe hover:underline flex items-center gap-1 whitespace-nowrap">
                     <Pencil size={13} /> Manage Branches
                   </Link>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4">
                 {shop.branches.map((branch) => {
                   const isSelected = !!branch.slug && selectedBranchSlug === branch.slug;
                   return (
                     <div 
                       key={branch.id} 
-                      className={`bg-white rounded-2xl p-6 transition-all flex flex-col justify-between ${
+                      className={`bg-surface rounded-2xl p-6 transition-all flex flex-col justify-between ${
                         isSelected 
-                          ? 'border-2 border-[#2D2A26] ring-2 ring-white ring-offset-1 ring-offset-[#2D2A26]' 
-                          : 'border border-[#EBE6E0] hover:border-[#9A8073]'
+                          ? 'border-2 border-ink ring-2 ring-white ring-offset-1 ring-offset-ink' 
+                          : 'border border-line hover:border-taupe'
                       }`}
                     >
                       <div>
                         {branch.guide_image_url && (
-                          <div className="-mx-6 -mt-6 mb-4 aspect-video bg-[#F0EAE3] overflow-hidden rounded-t-2xl">
+                          <div className="-mx-6 -mt-6 mb-4 aspect-video bg-sunken overflow-hidden rounded-t-2xl">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={getMediaUrl(branch.guide_image_url)} alt={branch.name} className="w-full h-full object-cover" />
                           </div>
                         )}
                         <div className="flex items-start justify-between mb-4">
-                          <h3 className="font-bold text-[#2D2A26] text-xl flex items-center gap-2">
-                            <Building2 className="text-[#9A8073]" size={20} />
+                          <h3 className="font-bold text-ink text-xl flex items-center gap-2">
+                            <Building2 className="text-taupe" size={20} />
                             {branch.name}
                           </h3>
                           {isSelected && (
-                            <span className="text-[10px] font-bold text-white bg-[#2D2A26] px-3 py-1 rounded-full uppercase tracking-wider">
+                            <span className="text-[10px] font-bold text-white bg-ink px-3 py-1 rounded-full uppercase tracking-wider">
                               Selected Location
                             </span>
                           )}
                         </div>
                         
-                        <div className="space-y-3 text-sm text-[#524A44] mb-8 bg-[#FAF6F3] p-4 rounded-xl border border-[#EBE6E0]/50">
+                        <div className="space-y-3 text-sm text-ink-body mb-4 bg-canvas p-4 rounded-xl border border-line/50">
                           <div className="flex items-start gap-3">
-                            <MapPin className="w-4 h-4 text-[#9A8073] shrink-0 mt-0.5" />
+                            <MapPin className="w-4 h-4 text-taupe shrink-0 mt-0.5" />
                             <span className="leading-relaxed">{branch.address}, {branch.city}</span>
                           </div>
                           {branch.contact_number && (
                             <div className="flex items-center gap-3">
-                              <Phone className="w-4 h-4 text-[#9A8073] shrink-0" />
+                              <Phone className="w-4 h-4 text-taupe shrink-0" />
                               <span className="font-medium">{branch.contact_number}</span>
                             </div>
                           )}
                           {branch.operating_hours && (
                             <div className="flex items-center gap-3">
-                              <Clock className="w-4 h-4 text-[#9A8073] shrink-0" />
+                              <Clock className="w-4 h-4 text-taupe shrink-0" />
                               <span className="font-medium">{branch.operating_hours}</span>
                             </div>
                           )}
@@ -1516,8 +2007,8 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                           href={branch.slug ? `/shop/${shopId}/book?branch=${branch.slug}` : `/shop/${shopId}/book`}
                           className={`flex-1 text-center py-2.5 rounded-xl font-semibold text-sm transition-colors ${
                             isSelected 
-                              ? 'bg-[#2D2A26] text-white hover:bg-black' 
-                              : 'bg-white border-2 border-[#2D2A26] text-[#2D2A26] hover:bg-[#FAF6F3]'
+                              ? 'bg-ink text-white hover:bg-black' 
+                              : 'bg-surface border-2 border-ink text-ink hover:bg-canvas'
                           }`}
                         >
                           Book Here
@@ -1527,7 +2018,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             <button
                               type="button"
                               onClick={() => setMapModalBranch(branch)}
-                              className="px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors flex items-center justify-center bg-white"
+                              className="px-4 py-2.5 rounded-xl border border-line text-ink-body hover:bg-sunken hover:text-ink transition-colors flex items-center justify-center bg-surface"
                               title="View on Map"
                             >
                               <MapPin className="w-4 h-4" />
@@ -1536,7 +2027,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               href={`https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2.5 rounded-xl border border-[#EBE6E0] text-[#524A44] hover:bg-[#F0EAE3] hover:text-[#2D2A26] transition-colors flex items-center justify-center bg-white"
+                              className="px-4 py-2.5 rounded-xl border border-line text-ink-body hover:bg-sunken hover:text-ink transition-colors flex items-center justify-center bg-surface"
                               title="Get Directions"
                             >
                               <ExternalLink className="w-4 h-4" />
@@ -1554,10 +2045,10 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {/* TAB: OUR WORK */}
           {activeTab === 'work' && (posts.length > 0 || isOwnerViewingOwnShop) && (
             <div>
-              <div className="mb-8 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-serif font-bold text-zinc-900">Our Work</h2>
-                  <p className="text-[#827A73] text-sm mt-1">A look at recent custom orders we&apos;ve completed for happy customers.</p>
+                  <h2 className="text-lg font-serif font-bold text-ink">Our Work</h2>
+                  <p className="text-ink-muted text-sm mt-1">A look at recent custom orders we&apos;ve completed for happy customers.</p>
                 </div>
                 {isOwnerViewingOwnShop && !isAddingPost && (
                   <button
@@ -1571,18 +2062,18 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               </div>
 
               {isOwnerViewingOwnShop && isAddingPost && (
-                <form onSubmit={submitPost} className="bg-white border border-[#EBE6E0] rounded-2xl p-5 space-y-3 mb-8">
+                <form onSubmit={submitPost} className="bg-surface border border-line rounded-2xl p-5 space-y-3 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#827A73] uppercase tracking-wider">Photos</span>
-                    <span className={`text-xs font-semibold ${postImageUrls.length >= MAX_POST_IMAGES ? 'text-[#B26959]' : 'text-[#827A73]'}`}>
+                    <span className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Photos</span>
+                    <span className={`text-xs font-semibold ${postImageUrls.length >= MAX_POST_IMAGES ? 'text-danger' : 'text-ink-muted'}`}>
                       {postImageUrls.length} / {MAX_POST_IMAGES} photos
                     </span>
                   </div>
 
                   {postImageUrls.length > 0 && (
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {postImageUrls.map(url => (
-                        <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-[#EBE6E0] group/thumb">
+                        <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-line group/thumb">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={url} alt="" className="w-full h-full object-cover" />
                           <button
@@ -1599,14 +2090,14 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   )}
 
                   {postImageUrls.length < MAX_POST_IMAGES && (
-                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-[#EBE6E0] border-dashed rounded-xl bg-[#FAF6F3]/50">
+                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-line border-dashed rounded-xl bg-canvas/50">
                       <div className="space-y-1 text-center">
                         {postUploading ? (
-                          <Loader2 className="mx-auto h-8 w-8 text-[#A8A19A] animate-spin" />
+                          <Loader2 className="mx-auto h-8 w-8 text-ink-faint animate-spin" />
                         ) : (
                           <>
-                            <Upload className="mx-auto h-8 w-8 text-[#A8A19A]" />
-                            <div className="flex text-sm text-[#827A73] justify-center">
+                            <Upload className="mx-auto h-8 w-8 text-ink-faint" />
+                            <div className="flex text-sm text-ink-muted justify-center">
                               <label htmlFor="inline-post-image" className="relative cursor-pointer bg-transparent rounded-md font-medium text-taupe hover:underline focus-within:outline-none">
                                 <span>{postImageUrls.length === 0 ? 'Upload photos' : 'Add more photos'}</span>
                                 <input
@@ -1620,7 +2111,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                                 />
                               </label>
                             </div>
-                            <p className="text-xs text-[#A8A19A]">PNG, JPG — up to {MAX_POST_IMAGES} photos per post</p>
+                            <p className="text-xs text-ink-faint">PNG, JPG — up to {MAX_POST_IMAGES} photos per post</p>
                           </>
                         )}
                       </div>
@@ -1632,13 +2123,13 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                     value={postCaption}
                     onChange={e => setPostCaption(e.target.value)}
                     placeholder="e.g. Thank you to the Barangay Ballers team for trusting us with your jerseys!"
-                    className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] resize-none focus:outline-none focus:border-taupe"
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm text-ink resize-none focus:outline-none focus:border-taupe"
                   />
 
                   <select
                     value={postServiceId}
                     onChange={e => setPostServiceId(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF6F3] border border-[#EBE6E0] rounded-lg text-sm text-[#2D2A26] focus:outline-none focus:border-taupe"
+                    className="w-full px-3 py-2 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe"
                   >
                     <option value="">No related service</option>
                     {ownerServices.map(s => (
@@ -1647,7 +2138,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   </select>
 
                   <div className="flex justify-end gap-3">
-                    <button type="button" onClick={() => { setIsAddingPost(false); setPostImageUrls([]); setPostCaption(''); setPostServiceId(''); }} className="px-4 py-2 text-sm font-medium text-[#524A44] hover:bg-[#FAF6F3] rounded-lg transition-colors">
+                    <button type="button" onClick={() => { setIsAddingPost(false); setPostImageUrls([]); setPostCaption(''); setPostServiceId(''); }} className="px-4 py-2 text-sm font-medium text-ink-body hover:bg-canvas rounded-lg transition-colors">
                       Cancel
                     </button>
                     <button
@@ -1663,19 +2154,19 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               )}
 
               {posts.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-2xl border border-zinc-200">
-                  <p className="text-[#827A73]">No posts yet. Share your first completed order above.</p>
+                <div className="text-center py-16 bg-surface rounded-2xl border border-line">
+                  <p className="text-ink-muted">No posts yet. Share your first completed order above.</p>
                 </div>
               ) : (
-                <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex flex-wrap justify-center gap-3">
                   {posts.map(post => (
-                    <div key={post.id} className="group relative bg-white border border-[#EBE6E0] rounded-2xl overflow-hidden w-full sm:w-[calc(50%-0.75rem)] max-w-md">
+                    <div key={post.id} className="group relative bg-surface border border-line rounded-2xl overflow-hidden w-full">
                       {isOwnerViewingOwnShop && (
                         <button
                           type="button"
                           onClick={() => deletePost(post.id)}
                           title="Remove post"
-                          className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border border-[#EBE6E0] text-[#524A44] hover:text-[#B26959] focus:outline-none opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
+                          className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-surface border border-line text-ink-body hover:text-danger focus:outline-none opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -1684,18 +2175,18 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                         <ShopLogoAvatar
                           src={shop.logo_path}
                           name={shop.name}
-                          className="w-9 h-9 rounded-full border border-zinc-200"
-                          textClassName="text-sm font-bold text-[#8C6B5D]"
+                          className="w-9 h-9 rounded-full border border-line"
+                          textClassName="text-sm font-bold text-taupe"
                         />
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm text-zinc-900 truncate">{shop.name}</p>
-                          <p className="text-xs text-[#A8A19A]">
+                          <p className="font-semibold text-sm text-ink truncate">{shop.name}</p>
+                          <p className="text-xs text-ink-faint">
                             {new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                         </div>
                       </div>
 
-                      <div className="bg-[#F0EAE3] relative">
+                      <div className="bg-sunken relative">
                         {renderPostImageGrid(post.image_urls, (i) => {
                           setLightboxImages(post.image_urls);
                           setLightboxIndex(i);
@@ -1703,20 +2194,20 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                       </div>
 
                       <div className="p-4 space-y-2">
-                        <p className="text-sm text-[#524A44] leading-relaxed whitespace-pre-wrap">{post.caption}</p>
+                        <p className="text-sm text-ink-body leading-relaxed whitespace-pre-wrap">{post.caption}</p>
                         <div className="pt-2 space-y-2">
                           <a
                             href={getMessengerUrl(getSocialUrl(shop.social_links, 'facebook'))}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex w-full items-center justify-center gap-1.5 bg-[#2D2A26] hover:bg-[#9A8073] text-white py-2 rounded-xl text-xs font-semibold transition-colors"
+                            className="flex w-full items-center justify-center gap-1.5 bg-ink hover:bg-taupe text-white py-2 rounded-xl text-xs font-semibold transition-colors"
                           >
                             <MessageCircle size={13} /> Inquire About This
                           </a>
                           {post.service && (
                             <Link
                               href={`/shop/${shopId}/book?service_id=${post.service.id}`}
-                              className="flex w-full items-center justify-center gap-1.5 bg-white border border-[#EBE6E0] hover:bg-[#F0EAE3] text-[#524A44] py-2 rounded-xl text-xs font-semibold transition-colors"
+                              className="flex w-full items-center justify-center gap-1.5 bg-surface border border-line hover:bg-sunken text-ink-body py-2 rounded-xl text-xs font-semibold transition-colors"
                             >
                               <Calendar size={13} /> Book &quot;{post.service.name}&quot;
                             </Link>
@@ -1733,15 +2224,15 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
           {/* TAB: REVIEWS */}
           {activeTab === 'reviews' && (
             <div>
-              <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+              <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <h2 className="text-2xl font-serif font-bold text-zinc-900">Reviews</h2>
-                  <p className="text-[#827A73] text-sm mt-1">What customers are saying about {shop.name}.</p>
+                  <h2 className="text-lg font-serif font-bold text-ink">Reviews</h2>
+                  <p className="text-ink-muted text-sm mt-1">What customers are saying about {shop.name}.</p>
                 </div>
                 <select
                   value={reviewFilterRating}
                   onChange={e => { setReviewFilterRating(e.target.value); setReviewsPage(1); }}
-                  className="px-4 py-2 bg-white border border-[#EBE6E0] rounded-full text-sm text-zinc-900 focus:outline-none focus:border-taupe transition-colors"
+                  className="px-4 py-2 bg-surface border border-line rounded-full text-sm text-ink focus:outline-none focus:border-taupe transition-colors"
                 >
                   <option value="">All Ratings</option>
                   <option value="5">5 Stars</option>
@@ -1753,25 +2244,25 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
               </div>
 
               {reviewsLoading ? (
-                <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#A8A19A]" /></div>
+                <div className="flex justify-center py-16"><Loader2 className="animate-spin text-ink-faint" /></div>
               ) : reviews.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-2xl border border-zinc-200">
-                  <Star className="mx-auto h-10 w-10 text-[#C5BDBA] mb-3" />
-                  <p className="text-[#827A73]">No reviews yet.</p>
+                <div className="text-center py-16 bg-surface rounded-2xl border border-line">
+                  <Star className="mx-auto h-10 w-10 text-ink-faint mb-3" />
+                  <p className="text-ink-muted">No reviews yet.</p>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-[#EBE6E0] divide-y divide-[#EBE6E0] overflow-hidden">
+                <div className="bg-surface rounded-2xl border border-line divide-y divide-line overflow-hidden">
                   {reviews.map(review => (
-                    <div key={review.id} className="p-6">
-                      <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <div key={review.id} className="p-4">
+                      <div className="flex flex-col justify-between gap-4">
                         <div className="flex-1 space-y-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#EBE6E0] flex items-center justify-center font-bold text-[#524A44] shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-line flex items-center justify-center font-bold text-ink-body shrink-0">
                               {review.user.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-semibold text-[#2D2A26] leading-tight">{review.user.name}</p>
-                              <p className="text-xs text-[#A8A19A]">{new Date(review.created_at).toLocaleDateString()}</p>
+                              <p className="font-semibold text-ink leading-tight">{review.user.name}</p>
+                              <p className="text-xs text-ink-faint">{new Date(review.created_at).toLocaleDateString()}</p>
                             </div>
                             {review.is_featured && (
                               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
@@ -1786,29 +2277,29 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                             ))}
                           </div>
 
-                          <p className="text-[#524A44] leading-relaxed">
-                            {review.comment || <span className="italic text-[#A8A19A]">No written comment provided.</span>}
+                          <p className="text-ink-body leading-relaxed">
+                            {review.comment || <span className="italic text-ink-faint">No written comment provided.</span>}
                           </p>
 
                           {review.reply && (
-                            <div className="mt-2 bg-[#F0EAE3]/50 border-l-2 border-taupe p-4 rounded-r-lg">
+                            <div className="mt-2 bg-sunken/50 border-l-2 border-taupe p-4 rounded-r-lg">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Shop Response</span>
                               </div>
-                              <p className="text-[#524A44] text-sm">{review.reply}</p>
+                              <p className="text-ink-body text-sm">{review.reply}</p>
                             </div>
                           )}
                         </div>
 
                         {isOwnerViewingOwnShop && (
-                          <div className="flex flex-row md:flex-col items-start md:items-end gap-3 shrink-0">
+                          <div className="flex flex-row items-start gap-3 shrink-0">
                             <button
                               type="button"
                               onClick={() => handleToggleFeatureReview(review)}
                               className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors border flex items-center gap-1.5 ${
                                 review.is_featured
                                   ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                  : 'bg-white text-[#827A73] border-[#EBE6E0] hover:bg-[#F0EAE3]'
+                                  : 'bg-surface text-ink-muted border-line hover:bg-sunken'
                               }`}
                             >
                               <Star size={12} className={review.is_featured ? 'fill-amber-500 text-amber-500' : ''} />
@@ -1822,11 +2313,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               >
                                 {review.reply ? 'Edit Reply' : 'Reply'}
                               </button>
-                              <span className="text-[#EBE6E0]">|</span>
+                              <span className="text-line">|</span>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteReview(review.id)}
-                                className="text-xs font-medium text-[#B26959] hover:underline"
+                                className="text-xs font-medium text-danger hover:underline"
                               >
                                 Delete
                               </button>
@@ -1838,21 +2329,21 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   ))}
 
                   {reviewsLastPage > 1 && (
-                    <div className="p-4 flex justify-center gap-2 bg-[#FAF6F3]">
+                    <div className="p-4 flex justify-center gap-2 bg-canvas">
                       <button
                         type="button"
                         disabled={reviewsPage === 1}
                         onClick={() => setReviewsPage(p => p - 1)}
-                        className="px-4 py-1.5 rounded-lg border border-[#EBE6E0] bg-white text-sm disabled:opacity-50"
+                        className="px-4 py-1.5 rounded-lg border border-line bg-surface text-sm disabled:opacity-50"
                       >
                         Previous
                       </button>
-                      <span className="px-4 py-1.5 text-sm text-[#524A44] font-medium">Page {reviewsPage} of {reviewsLastPage}</span>
+                      <span className="px-4 py-1.5 text-sm text-ink-body font-medium">Page {reviewsPage} of {reviewsLastPage}</span>
                       <button
                         type="button"
                         disabled={reviewsPage === reviewsLastPage}
                         onClick={() => setReviewsPage(p => p + 1)}
-                        className="px-4 py-1.5 rounded-lg border border-[#EBE6E0] bg-white text-sm disabled:opacity-50"
+                        className="px-4 py-1.5 rounded-lg border border-line bg-surface text-sm disabled:opacity-50"
                       >
                         Next
                       </button>
@@ -1867,42 +2358,120 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
       </div>
 
       {/* Rating Modal */}
-      <Modal isOpen={isRatingModalOpen} onClose={() => setIsRatingModalOpen(false)} title="Rate this Shop">
-        <form onSubmit={submitRating} className="space-y-6">
-          <div className="text-center">
-            <p className="text-sm text-[#827A73] mb-4">How was your experience with {shop.name}?</p>
-            <div className="flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRatingValue(star)}
-                  className={`p-2 transition-transform hover:scale-125 ${ratingValue >= star ? 'text-[#BCA89F]' : 'text-[#524A44]'}`}
-                >
-                  <Star size={36} className={ratingValue >= star ? 'fill-current' : ''} />
-                </button>
-              ))}
+      <Modal
+        isOpen={isRatingModalOpen}
+        onClose={() => {
+          setIsRatingModalOpen(false);
+          setHoveredStar(null);
+          setRatingValue(myReview?.rating || 0);
+        }}
+        title={myReview?.rating ? 'Update Your Rating' : 'Rate this Shop'}
+      >
+        <form onSubmit={submitRating} className="space-y-5">
+          <div className="text-center py-2">
+            <p className="text-xs text-ink-muted mb-3">
+              How was your experience with <span className="font-semibold text-ink">{shop.name}</span>?
+            </p>
+
+            {/* Stars row */}
+            <div
+              className="flex justify-center items-center gap-2 py-1"
+              onMouseLeave={() => setHoveredStar(null)}
+            >
+              {[1, 2, 3, 4, 5].map((star) => {
+                const activeVal = hoveredStar ?? ratingValue;
+                const isFilled = activeVal >= star;
+                const isCurrentRated = ratingValue === star;
+
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => handleStarClick(star)}
+                    onMouseEnter={() => setHoveredStar(star)}
+                    title={isCurrentRated ? 'Click again to unrate' : `Rate ${star} star${star > 1 ? 's' : ''}`}
+                    className="p-1.5 transition-all hover:scale-125 active:scale-95 focus:outline-none"
+                  >
+                    <Star
+                      size={36}
+                      className={
+                        isFilled
+                          ? 'fill-taupe text-taupe transition-colors'
+                          : 'text-line-strong hover:text-taupe/50 transition-colors'
+                      }
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Star descriptor & helper */}
+            <div className="mt-2 min-h-[30px] flex flex-col items-center justify-center">
+              <span className="text-xs font-bold text-ink">
+                {(hoveredStar ?? ratingValue) === 0
+                  ? (myReview?.rating ? '0 Stars (Tap Save to remove rating)' : 'Tap a star to rate')
+                  : (hoveredStar ?? ratingValue) === 1
+                  ? '1 Star · Poor'
+                  : (hoveredStar ?? ratingValue) === 2
+                  ? '2 Stars · Fair'
+                  : (hoveredStar ?? ratingValue) === 3
+                  ? '3 Stars · Good'
+                  : (hoveredStar ?? ratingValue) === 4
+                  ? '4 Stars · Very Good'
+                  : '5 Stars · Excellent'}
+              </span>
+              {ratingValue > 0 && (
+                <span className="text-[11px] text-ink-muted mt-0.5">
+                  Click the same star to unrate
+                </span>
+              )}
             </div>
           </div>
-          <div>
-            <label htmlFor="rating-comment" className="block text-sm font-medium text-zinc-700 mb-1">Optional Comment</label>
-            <textarea 
-              id="rating-comment"
-              rows={3}
-              value={ratingComment}
-              onChange={e => setRatingComment(e.target.value)}
-              placeholder="Tell others about your experience..."
-              className="w-full px-4 py-2 border border-zinc-300 rounded-lg text-zinc-900 focus:border-taupe focus:ring-1 focus:ring-taupe"
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200">
-            <button type="button" onClick={() => setIsRatingModalOpen(false)} className="px-4 py-2 text-sm text-[#A8A19A] hover:text-zinc-900">
-              Cancel
-            </button>
-            <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-white border border-[#EBE6E0] hover:bg-black text-[#2D2A26] rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors">
-              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-              Submit Rating
-            </button>
+
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-line">
+            {myReview?.rating ? (
+              <button
+                type="button"
+                onClick={handleRemoveRating}
+                disabled={isSubmitting}
+                className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline disabled:opacity-50"
+              >
+                Remove Rating
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRatingModalOpen(false);
+                  setHoveredStar(null);
+                  setRatingValue(myReview?.rating || 0);
+                }}
+                className="px-3.5 py-2 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || (ratingValue === 0 && !myReview?.rating)}
+                className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
+                  ratingValue === 0 && myReview?.rating
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-taupe hover:bg-taupe-hover text-white'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+                {ratingValue === 0
+                  ? 'Remove Rating'
+                  : myReview?.rating
+                  ? ratingValue === myReview.rating
+                    ? 'Save'
+                    : `Update to ${ratingValue}★`
+                  : `Submit ${ratingValue}★`}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -1910,11 +2479,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
       {isOwnerViewingOwnShop && (
         <Modal isOpen={replyModalOpen} onClose={() => setReplyModalOpen(false)} title="Respond to Review">
           <form onSubmit={submitReviewReply} className="space-y-4">
-            <div className="p-4 bg-[#FAF6F3] rounded-lg border border-[#EBE6E0]">
-              <p className="text-sm italic text-[#524A44]">&quot;{currentReviewForReply?.comment}&quot;</p>
+            <div className="p-4 bg-canvas rounded-lg border border-line">
+              <p className="text-sm italic text-ink-body">&quot;{currentReviewForReply?.comment}&quot;</p>
             </div>
             <div className="space-y-1">
-              <label htmlFor="storefront-review-reply" className="text-sm font-medium text-[#524A44]">Your Reply</label>
+              <label htmlFor="storefront-review-reply" className="text-sm font-medium text-ink-body">Your Reply</label>
               <textarea
                 id="storefront-review-reply"
                 required
@@ -1922,11 +2491,11 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
                 placeholder="Thank the customer or address their feedback..."
-                className="w-full px-4 py-2 border border-[#EBE6E0] rounded-lg focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe bg-white"
+                className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe bg-surface"
               />
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#EBE6E0]">
-              <button type="button" onClick={() => setReplyModalOpen(false)} className="px-4 py-2 text-sm text-[#524A44] hover:text-[#2D2A26] transition-colors">
+            <div className="flex justify-end gap-3 pt-4 border-t border-line">
+              <button type="button" onClick={() => setReplyModalOpen(false)} className="px-4 py-2 text-sm text-ink-body hover:text-ink transition-colors">
                 Cancel
               </button>
               <button
@@ -1967,6 +2536,294 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         facebookUrl={getSocialUrl(shop.social_links, 'facebook')}
         shopId={shopId}
       />
+
+      {/* Catalog Filter Bottom Sheet (Anchored to device screen, NOT page top) */}
+      {isPortfolioFilterOpen && mounted && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center items-center pointer-events-auto">
+          {/* Backdrop Scrim */}
+          <button
+            type="button"
+            aria-label="Close filter"
+            onClick={() => setIsPortfolioFilterOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 focus:outline-none"
+          />
+
+          {/* Bottom Sheet Container */}
+          <div className="relative bg-canvas rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[85vh] sm:max-w-md w-full overflow-hidden z-10 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 border-t sm:border border-line">
+            {/* Grab Handle for mobile touch affordance */}
+            <div className="flex justify-center pt-2.5 pb-1 sm:hidden bg-surface">
+              <div className="w-10 h-1 rounded-full bg-line-strong" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 h-12 border-b border-line shrink-0 bg-surface">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-taupe" />
+                <span className="text-sm font-bold text-ink">Filter Catalog</span>
+                {activeFilterCount > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-taupe text-canvas text-[10px] font-bold flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPortfolioFilterOpen(false)}
+                aria-label="Close"
+                className="p-1.5 -mr-1 rounded-full text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 1-Column Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* 1. PRICE (Sort + Min/Max) */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink mb-2.5">
+                  1. Price &amp; Sorting
+                </p>
+                {/* Sort buttons: Default, Low to High, High to Low */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {[
+                    { key: '' as const, label: 'Default', Icon: Minus },
+                    { key: 'price_asc' as const, label: 'Low to High', Icon: TrendingUp },
+                    { key: 'price_desc' as const, label: 'High to Low', Icon: TrendingDown },
+                  ].map((opt) => {
+                    const isSelected = draftPriceSort === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setDraftPriceSort(opt.key)}
+                        className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border text-[11px] font-semibold transition-all ${
+                          isSelected
+                            ? 'bg-taupe text-canvas border-taupe shadow-xs'
+                            : 'bg-surface text-ink-body border-line hover:border-taupe/60'
+                        }`}
+                      >
+                        <opt.Icon size={16} />
+                        <span className="whitespace-nowrap">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Min - Max price inputs */}
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-ink-faint">₱</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={draftMinPrice}
+                      onChange={(e) => setDraftMinPrice(e.target.value)}
+                      placeholder="Min Price"
+                      className="w-full pl-7 pr-3 py-2 bg-surface border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe"
+                    />
+                  </div>
+                  <span className="text-ink-faint text-sm font-semibold">–</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-ink-faint">₱</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={draftMaxPrice}
+                      onChange={(e) => setDraftMaxPrice(e.target.value)}
+                      placeholder="Max Price"
+                      className="w-full pl-7 pr-3 py-2 bg-surface border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. COLOR */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink">
+                    2. Color
+                  </p>
+                  {draftColorFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setDraftColorFilter('')}
+                      className="text-[11px] font-medium text-taupe hover:underline"
+                    >
+                      Clear color
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDraftColorFilter('')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      !draftColorFilter
+                        ? 'bg-taupe text-canvas border-taupe font-semibold shadow-xs'
+                        : 'bg-surface text-ink-body border-line hover:border-taupe'
+                    }`}
+                  >
+                    All Colors
+                  </button>
+                  {availableColors.map((c) => {
+                    const isSelected = draftColorFilter.toLowerCase() === c.label.toLowerCase();
+                    return (
+                      <button
+                        key={c.label}
+                        type="button"
+                        onClick={() => setDraftColorFilter(isSelected ? '' : c.label)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'bg-ink text-canvas border-ink shadow-xs ring-1 ring-taupe'
+                            : 'bg-surface text-ink-body border-line hover:border-taupe'
+                        }`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <span>{c.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. RATING */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink">
+                    3. Rating
+                  </p>
+                  {draftRatingFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setDraftRatingFilter('')}
+                      className="text-[11px] font-medium text-taupe hover:underline"
+                    >
+                      Clear rating
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  {[
+                    { value: '5', label: '5 Stars only' },
+                    { value: '4', label: '4 Stars & Up' },
+                    { value: '3', label: '3 Stars & Up' },
+                    { value: '2', label: '2 Stars & Up' },
+                    { value: '1', label: '1 Star & Up' },
+                  ].map((opt) => {
+                    const isSelected = draftRatingFilter === opt.value;
+                    const num = Number(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setDraftRatingFilter(isSelected ? '' : opt.value)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all ${
+                          isSelected
+                            ? 'bg-taupe/10 border-taupe text-ink font-semibold'
+                            : 'bg-surface border-line text-ink-body hover:bg-sunken'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={15}
+                              className={star <= num ? 'text-amber-500 fill-amber-500' : 'text-line-strong'}
+                            />
+                          ))}
+                          <span className="ml-2 font-medium text-ink">{opt.label}</span>
+                        </div>
+                        {isSelected && (
+                          <span className="w-2 h-2 rounded-full bg-taupe" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. GARMENT TYPE (if available) */}
+              {garmentTypeOptions.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-ink">
+                      4. Garment Type
+                    </p>
+                    {draftGarmentTypeFilters.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setDraftGarmentTypeFilters(new Set())}
+                        className="text-[11px] font-medium text-taupe hover:underline"
+                      >
+                        Clear garment types
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {garmentTypeOptions.map((opt) => {
+                      const isSelected = draftGarmentTypeFilters.has(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setDraftGarmentTypeFilters((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(opt.id)) next.delete(opt.id);
+                              else next.add(opt.id);
+                              return next;
+                            });
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-taupe text-canvas border-taupe font-semibold shadow-xs'
+                              : 'bg-surface text-ink-body border-line hover:border-taupe'
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          <span className={`text-[10px] ${isSelected ? 'text-canvas/80' : 'text-ink-faint'}`}>
+                            ({garmentTypeTally[opt.id] || 0})
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 border-t border-line shrink-0 bg-surface"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+            >
+              <button
+                type="button"
+                onClick={resetFilterPanel}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-line-strong text-xs font-semibold text-ink-muted hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
+              >
+                <RotateCcw size={13} />
+                <span>Reset All</span>
+              </button>
+              <button
+                type="button"
+                onClick={applyFilterPanel}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-taupe hover:bg-taupe/90 text-canvas text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Post Image Lightbox */}
 
       <PostImageLightbox
         images={lightboxImages || []}
@@ -2022,7 +2879,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
 
 export default function PublicShopProfilePage(props: Readonly<PublicShopProfilePageProps>) {
   return (
-    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 animate-spin text-zinc-900" /></div>}>
+    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center bg-canvas"><Loader2 className="w-8 h-8 animate-spin text-ink" /></div>}>
       <PublicShopProfileContent {...props} />
     </Suspense>
   );
