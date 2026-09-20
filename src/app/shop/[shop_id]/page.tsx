@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, use, useRef, Suspense, useMemo } from 'react';
+import { useEffect, useState, useCallback, use, useRef, Suspense, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import api from '@/lib/axios';
@@ -8,7 +8,7 @@ import { getErrorMessage } from '@/lib/apiError';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MapPin, Star, Phone, Mail, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, ShoppingBag, Map as MapIcon, Building2, Package, Camera, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, Bookmark, SlidersHorizontal, Minus, TrendingUp, TrendingDown, RotateCcw, Scissors, Globe, type LucideIcon } from 'lucide-react';
+import { MapPin, Star, Phone, Loader2, Clock, ExternalLink, Image as ImageIcon, AlertCircle, Map as MapIcon, Building2, Package, Pencil, Plus, Trash2, Upload, Info, Search, Calendar, MessageCircle, X, ChevronLeft, ChevronDown, ArrowLeft, Bookmark, SlidersHorizontal, Minus, TrendingUp, TrendingDown, RotateCcw, Scissors, Globe, type LucideIcon } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
@@ -18,12 +18,10 @@ import { Service } from '@/components/services/serviceHelpers';
 import ServiceFormModal from '@/components/services/ServiceFormModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import EditOperatingHoursModal from '@/components/profile/EditOperatingHoursModal';
-import SpecialHoursAnnouncementCard from '@/components/profile/SpecialHoursAnnouncementCard';
 import ProfileAboutTab from '@/components/profile/ProfileAboutTab';
 import PostImageLightbox from '@/components/profile/PostImageLightbox';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
 import ShopLogoAvatar from '@/components/ShopLogoAvatar';
-import PublicNav from '@/components/shared/PublicNav';
 import { getMediaUrl } from '@/lib/media';
 import { resolveFabricImage } from '@/lib/fabricHelper';
 import { isShopOpen } from '@/lib/shopStatus';
@@ -57,6 +55,8 @@ interface PublicService {
   id: number;
   name: string;
   description?: string;
+  category?: string;
+  service_type?: string;
   categories?: string[];
   service_types?: string[];
   base_price: string;
@@ -227,13 +227,15 @@ const PORTFOLIO_COLOR_OPTIONS = [
 function formatTime12h(timeStr?: string): string {
   if (!timeStr) return '';
   const [hStr, mStr] = timeStr.split(':');
-  const h = parseInt(hStr, 10);
+  const h = Number.parseInt(hStr, 10);
   if (Number.isNaN(h)) return timeStr;
   const period = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
   const minute = mStr ? `:${mStr}` : ':00';
   return `${hour12}${minute} ${period}`;
 }
+
+const emptySubscribe = () => () => {};
 
 function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProps>) {
   const { shop_id: shopId } = use(params);
@@ -278,10 +280,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const searchParams = useSearchParams();
   const selectedBranchSlug = searchParams.get('branch');
   const initialTabParam = searchParams.get('tab');
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   // Review State
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
@@ -302,7 +301,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   // with it highlighted.
   // A ?tab= param covers old bookmarks/links to the standalone /catalog or /portfolio page, which
   // now redirects here instead of being its own route.
-  const validTabParams = ['about', 'portfolio', 'catalog', 'locations', 'branch', 'reviews', 'review', 'services', 'hours', 'home', 'work', 'showroom'] as const;
   const [activeTab, setActiveTab] = useState<'about' | 'catalog' | 'locations' | 'reviews' | 'services' | 'home' | 'hours' | 'work'>(
     selectedBranchSlug
       ? 'locations'
@@ -347,19 +345,27 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [draftGarmentTypeFilters, setDraftGarmentTypeFilters] = useState<Set<string>>(new Set());
   const [showPortfolioFabric, setShowPortfolioFabric] = useState(false);
 
+  // Sticky Header on scroll past tab bar & Portfolio filter modal
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [headerOpacity, setHeaderOpacity] = useState(0);
+  const [isPortfolioFilterOpen, setIsPortfolioFilterOpen] = useState(false);
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
   // Highlight state for deep-linked search displays
   const [highlightedItemId, setHighlightedItemId] = useState<number | null>(null);
   const hasScrolledToItem = useRef(false);
   const isAutoScrolling = useRef(false);
 
   // Sync search query from URL (e.g. when redirected from search for "barong")
-  useEffect(() => {
-    const qParam = searchParams.get('q') || searchParams.get('search');
-    if (qParam) {
-      setCatalogSearch(qParam);
+  const currentQParam = searchParams.get('q') || searchParams.get('search') || '';
+  const [prevQParam, setPrevQParam] = useState(currentQParam);
+  if (currentQParam !== prevQParam) {
+    setPrevQParam(currentQParam);
+    if (currentQParam) {
+      setCatalogSearch(currentQParam);
       setActiveTab('catalog');
     }
-  }, [searchParams]);
+  }
 
   useEffect(() => {
     const rawItem = searchParams.get('item');
@@ -415,12 +421,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     const timer = setTimeout(() => tryScroll(0), 100);
     return () => clearTimeout(timer);
   }, [searchParams, catalogLoading, catalogItems, activeTab]);
-
-  // Sticky Header on scroll past tab bar & Portfolio filter modal
-  const [showStickyHeader, setShowStickyHeader] = useState(false);
-  const [headerOpacity, setHeaderOpacity] = useState(0);
-  const [isPortfolioFilterOpen, setIsPortfolioFilterOpen] = useState(false);
-  const tabBarRef = useRef<HTMLDivElement>(null);
 
   // Facet tallies & options for portfolio collection
   const garmentTypeTally = useMemo(() => {
@@ -555,10 +555,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsLastPage, setReviewsLastPage] = useState(1);
   const [reviewFilterRating, setReviewFilterRating] = useState('');
-  const [replyModalOpen, setReplyModalOpen] = useState(false);
-  const [currentReviewForReply, setCurrentReviewForReply] = useState<StorefrontReview | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [replySubmitting, setReplySubmitting] = useState(false);
   const [mapModalBranch, setMapModalBranch] = useState<ShopBranch | null>(null);
 
   const getSocialUrl = (links: { label: string; url: string }[] | undefined, keyword: string): string | undefined =>
@@ -588,7 +584,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
         if (fetchedShop?.my_review) {
           setMyReview(fetchedShop.my_review);
           setRatingValue(fetchedShop.my_review.rating);
-        } else if (fetchedShop && fetchedShop.my_review === null) {
+        } else if (fetchedShop?.my_review === null) {
           setMyReview(null);
           setRatingValue(0);
         }
@@ -914,45 +910,6 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
     }
   };
 
-  const refreshOwnerReviews = () => {
-    if (!authShop) return;
-    const params = new URLSearchParams({ page: String(reviewsPage) });
-    if (reviewFilterRating) params.append('rating', reviewFilterRating);
-    api.get(`/shops/${authShop.id}/reviews?${params.toString()}`)
-      .then(res => {
-        setReviews(res.data.data.data || []);
-        setReviewsLastPage(res.data.data.last_page || 1);
-      })
-      .catch(() => {
-        // Fall back silently
-      });
-  };
-
-  const handleToggleFeatureReview = async (review: StorefrontReview) => {
-    if (!authShop) return;
-    try {
-      await api.put(`/shops/${authShop.id}/reviews/${review.id}`, { is_featured: !review.is_featured });
-      refreshOwnerReviews();
-    } catch {
-      toast.error('Failed to update featured status.');
-    }
-  };
-
-  const submitReviewReply = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!authShop || !currentReviewForReply) return;
-    setReplySubmitting(true);
-    try {
-      await api.put(`/shops/${authShop.id}/reviews/${currentReviewForReply.id}`, { reply: replyText });
-      setReplyModalOpen(false);
-      refreshOwnerReviews();
-      toast.success('Reply saved.');
-    } catch {
-      toast.error('Failed to submit reply.');
-    } finally {
-      setReplySubmitting(false);
-    }
-  };
 
   const handleDeleteReview = async (reviewId: number) => {
     if (!authShop) return;
@@ -1002,9 +959,9 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
       setHoveredStar(null);
       fetchShop(); // Refresh counts
       setReviewsRefreshKey(k => k + 1);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.message || 'Failed to submit rating. Please try again.');
+      toast.error(getErrorMessage(e, 'Failed to submit rating. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1682,9 +1639,9 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   const q = serviceSearch.toLowerCase().trim();
                   return (
                     service.name.toLowerCase().includes(q) ||
-                    ((service as any).category && (service as any).category.toLowerCase().includes(q)) ||
-                    ((service as any).service_type && (service as any).service_type.toLowerCase().includes(q)) ||
-                    (service.description && service.description.toLowerCase().includes(q))
+                    service.category?.toLowerCase().includes(q) ||
+                    service.service_type?.toLowerCase().includes(q) ||
+                    service.description?.toLowerCase().includes(q)
                   );
                 });
 
@@ -1693,7 +1650,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                   const q = serviceSearch.toLowerCase().trim();
                   return (
                     pkg.name.toLowerCase().includes(q) ||
-                    (pkg.description && pkg.description.toLowerCase().includes(q)) ||
+                    pkg.description?.toLowerCase().includes(q) ||
                     pkg.services.some((s) => s.name.toLowerCase().includes(q))
                   );
                 });
@@ -1801,7 +1758,7 @@ function PublicShopProfileContent({ params }: Readonly<PublicShopProfilePageProp
                               <div className="p-3 flex-1 flex flex-col justify-between">
                                 <div>
                                   <span className="text-[10px] font-medium uppercase tracking-wide text-taupe truncate block">
-                                    {(service as any).category || (service as any).service_type || 'Tailoring Service'}
+                                    {service.category || service.service_type || 'Tailoring Service'}
                                   </span>
                                   <h3 className="text-sm font-semibold text-ink group-hover:text-taupe transition-colors leading-snug mt-1 line-clamp-2">
                                     {service.name}
