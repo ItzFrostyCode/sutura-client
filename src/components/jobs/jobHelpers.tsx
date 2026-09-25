@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, ShoppingBag, Scissors, Pause } from 'lucide-react';
+import { Store, ShoppingBag, Scissors, Pause, Hourglass, Wrench, ShieldCheck } from 'lucide-react';
 
 // Unified with the Multi-Stage Staff Assignment stages (design/pattern_making/
 // cutting/sewing/qc_ironing) so the customer-facing timeline and the internal
@@ -14,6 +14,13 @@ import { Store, ShoppingBag, Scissors, Pause } from 'lucide-react';
 // actually relevant to the jobs on the board.
 export const ALL_COLUMNS = [
   { id: 'pending',                title: 'Pending',                color: 'bg-line/50',   border: 'border-line-strong' },
+  // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the
+  // backend; a job whose garment_category/service is alteration_repair runs
+  // through these three instead of Design..QC & Ironing below. Hidden by
+  // columnsForJobs() unless a repair job is actually on the board.
+  { id: 'queued',                 title: 'Queued for Repair',      color: 'bg-slate-50/50',     border: 'border-slate-200/50' },
+  { id: 'in_repair',              title: 'In Repair',              color: 'bg-yellow-50/50',    border: 'border-yellow-200/50' },
+  { id: 'qc_check',               title: 'QC Check',               color: 'bg-lime-50/50',      border: 'border-lime-200/50' },
   { id: 'design',                 title: 'Design',                 color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
   { id: 'pattern_making',         title: 'Pattern Making',         color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
   { id: 'mass_cutting_printing',  title: 'Mass Cutting & Printing', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
@@ -51,6 +58,9 @@ export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-ambe
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
   'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
   'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup',
+  // Repair Override pipeline — same rule, once repair work actually starts
+  // (not at 'pending'/'queued'). Mirrors JobOrder::STAGES_REQUIRING_DOWNPAYMENT.
+  'in_repair', 'qc_check',
 ]);
 
 /**
@@ -81,18 +91,36 @@ function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
   return job.service?.service_type === 'bulk_sublimation';
 }
 
+// Mirrors JobOrder::isRepairOnly() on the backend exactly: a job whose
+// garment_category is 'alteration_repair', or whose linked service carries
+// that type, is a candidate for the short repair pipeline (queued ->
+// in_repair -> qc_check) instead of the full custom-tailoring one.
+export function isRepairOnly(job: Pick<Job, 'garment_category' | 'service'>): boolean {
+  if (job.garment_category === 'alteration_repair') return true;
+  return job.service?.service_type === 'alteration_repair';
+}
+
 /**
  * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting &
- * Printing isn't relevant to the jobs actually on the board, instead of
- * always showing both (most shops only ever use one of the two paths).
+ * Printing isn't relevant to the jobs actually on the board (most stores
+ * only ever use one of the two paths), and hides the Repair Override lane
+ * (Queued for Repair / In Repair / QC Check) unless a repair job is
+ * actually on the board — same reasoning, applied to a second alternate
+ * pipeline instead of a single swapped column.
  */
 export function columnsForJobs(jobs: Job[] = []) {
   const hasBulkOrders = jobs.some(isBulkOrder);
   const hasStandardOrders = jobs.some(j => !isBulkOrder(j));
+  const hasRepairOrders = jobs.some(isRepairOnly);
+  const hasNonRepairOrders = jobs.some(j => !isRepairOnly(j));
 
   return ALL_COLUMNS.filter(c => {
     if (c.id === 'mass_cutting_printing') return hasBulkOrders;
     if (c.id === 'pattern_making') return hasStandardOrders || !hasBulkOrders;
+    if (['queued', 'in_repair', 'qc_check'].includes(c.id)) return hasRepairOrders;
+    if (['design', 'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing'].includes(c.id)) {
+      return hasNonRepairOrders || !hasRepairOrders;
+    }
     return true;
   });
 }
@@ -133,7 +161,7 @@ export type Tab = 'all' | 'walk_in' | 'online';
 
 export const CANCELLATION_REASON_LABELS: Record<string, string> = {
   customer_request: 'Customer requested cancellation',
-  shop_unable_to_fulfill: 'Shop unable to fulfill',
+  store_unable_to_fulfill: 'Store unable to fulfill',
   forfeited_deposit_abandoned: 'Forfeited deposit — customer went uncontactable',
   other: 'Other',
 };
@@ -200,6 +228,12 @@ export function ColumnIcon({ id }: { readonly id: string }) {
       return <Scissors size={14} className="text-taupe" />;
     case 'on_hold':
       return <Pause size={14} className="text-amber-600" />;
+    case 'queued':
+      return <Hourglass size={14} className="text-slate-500" />;
+    case 'in_repair':
+      return <Wrench size={14} className="text-yellow-600" />;
+    case 'qc_check':
+      return <ShieldCheck size={14} className="text-lime-600" />;
     default:
       return null;
   }

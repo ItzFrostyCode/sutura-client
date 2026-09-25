@@ -9,7 +9,7 @@ import { useToast } from '@/context/ToastContext';
 interface SpecialHour {
   id: number;
   title: string;
-  shop_branch_id: number | null;
+  store_branch_id: number | null;
   branch: { id: number; name: string } | null;
   start_date: string;
   end_date: string;
@@ -21,14 +21,14 @@ interface SpecialHour {
 }
 
 interface SpecialHoursAnnouncementCardProps {
-  readonly shopId: number;
+  readonly storeId: number;
   readonly onSaved: () => void;
   readonly branches?: { id: number; name: string }[];
 }
 
 const emptyForm = {
   title: '',
-  shop_branch_id: '' as number | '',
+  store_branch_id: '' as number | '',
   start_date: '',
   end_date: '',
   is_closed: false,
@@ -38,7 +38,7 @@ const emptyForm = {
   announcement_image_url: '',
 };
 
-export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches = [] }: SpecialHoursAnnouncementCardProps) {
+export default function SpecialHoursAnnouncementCard({ storeId, onSaved, branches = [] }: SpecialHoursAnnouncementCardProps) {
   const toast = useToast();
   const [items, setItems] = useState<SpecialHour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
 
   const fetchItems = () => {
     setLoading(true);
-    api.get(`/shops/${shopId}/special-hours`, { params: { include_past: 1 } })
+    api.get(`/stores/${storeId}/special-hours`, { params: { include_past: 1 } })
       .then(res => setItems(res.data.data || []))
       .catch(() => toast.error('Failed to load special hours.'))
       .finally(() => setLoading(false));
@@ -60,7 +60,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
     const load = () => fetchItems();
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shopId]);
+  }, [storeId]);
 
   const startCreate = () => {
     setForm(emptyForm);
@@ -71,7 +71,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
   const startEdit = (item: SpecialHour) => {
     setForm({
       title: item.title,
-      shop_branch_id: item.shop_branch_id ?? '',
+      store_branch_id: item.store_branch_id ?? '',
       start_date: item.start_date,
       end_date: item.end_date,
       is_closed: item.is_closed,
@@ -90,7 +90,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await api.post(`/shops/${shopId}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post(`/stores/${storeId}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       const url = res.data?.data?.url || '';
       setForm(prev => ({ ...prev, announcement_image_url: url }));
     } catch (err) {
@@ -109,7 +109,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
     setSaving(true);
     const payload = {
       title: form.title.trim(),
-      shop_branch_id: form.shop_branch_id === '' ? null : form.shop_branch_id,
+      store_branch_id: form.store_branch_id === '' ? null : form.store_branch_id,
       start_date: form.start_date,
       end_date: form.end_date,
       is_closed: form.is_closed,
@@ -120,10 +120,10 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
     };
     try {
       if (editingId) {
-        await api.put(`/shops/${shopId}/special-hours/${editingId}`, payload);
+        await api.put(`/stores/${storeId}/special-hours/${editingId}`, payload);
         toast.success('Special schedule updated.');
       } else {
-        await api.post(`/shops/${shopId}/special-hours`, payload);
+        await api.post(`/stores/${storeId}/special-hours`, payload);
         toast.success('Special schedule added.');
       }
       setShowForm(false);
@@ -140,7 +140,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
   const handleDelete = async (id: number) => {
     if (!window.confirm('Remove this special schedule/announcement?')) return;
     try {
-      await api.delete(`/shops/${shopId}/special-hours/${id}`);
+      await api.delete(`/stores/${storeId}/special-hours/${id}`);
       toast.success('Removed.');
       fetchItems();
       onSaved();
@@ -192,8 +192,8 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
                 <label htmlFor="sh_branch" className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider">Applies To</label>
                 <select
                   id="sh_branch"
-                  value={form.shop_branch_id}
-                  onChange={e => setForm(prev => ({ ...prev, shop_branch_id: e.target.value === '' ? '' : Number(e.target.value) }))}
+                  value={form.store_branch_id}
+                  onChange={e => setForm(prev => ({ ...prev, store_branch_id: e.target.value === '' ? '' : Number(e.target.value) }))}
                   className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe"
                 >
                   <option value="">All Branches</option>
@@ -236,7 +236,7 @@ export default function SpecialHoursAnnouncementCard({ shopId, onSaved, branches
                 onChange={e => setForm(prev => ({ ...prev, is_closed: e.target.checked }))}
                 className="rounded border-line text-taupe focus:ring-taupe"
               />
-              <span className="text-sm font-medium text-ink-body">Shop is closed during this period</span>
+              <span className="text-sm font-medium text-ink-body">Store is closed during this period</span>
             </label>
 
             {!form.is_closed && (

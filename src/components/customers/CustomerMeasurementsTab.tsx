@@ -13,7 +13,7 @@ import { emptyForm } from '@/components/measurements/measurementHelpers';
 interface CustomerMeasurementsTabProps {
   readonly customerId: number;
   readonly customerName: string;
-  readonly shopId: number;
+  readonly storeId: number;
   readonly measurements: MeasurementProfile[];
   readonly onReload: () => Promise<void>;
 }
@@ -26,7 +26,7 @@ interface CustomerMeasurementsTabProps {
 export default function CustomerMeasurementsTab({
   customerId,
   customerName,
-  shopId,
+  storeId,
   measurements,
   onReload,
 }: CustomerMeasurementsTabProps) {
@@ -62,7 +62,7 @@ export default function CustomerMeasurementsTab({
     setEditingId(rec.id);
     setForm({
       customer_id: customerId.toString(),
-      source: rec.source ?? 'shop_owner',
+      source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: rec.metrics,
       notes: rec.notes || '',
@@ -75,7 +75,7 @@ export default function CustomerMeasurementsTab({
     setEditingId(null);
     setForm({
       customer_id: customerId.toString(),
-      source: rec.source ?? 'shop_owner',
+      source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: rec.metrics,
       notes: rec.notes || '',
@@ -110,9 +110,9 @@ export default function CustomerMeasurementsTab({
 
     try {
       if (editingId) {
-        await api.put(`/shops/${shopId}/measurements/${editingId}`, payload);
+        await api.put(`/stores/${storeId}/measurements/${editingId}`, payload);
       } else {
-        await api.post(`/shops/${shopId}/measurements`, payload);
+        await api.post(`/stores/${storeId}/measurements`, payload);
       }
       await onReload();
       closeModal();
@@ -128,7 +128,7 @@ export default function CustomerMeasurementsTab({
     if (!deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shopId}/measurements/${deletingId}`);
+      await api.delete(`/stores/${storeId}/measurements/${deletingId}`);
       await onReload();
       setIsDeleteOpen(false);
       setDeletingId(null);

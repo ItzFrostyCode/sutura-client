@@ -2,7 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
+import PublicNav from '@/components/shared/PublicNav';
 
 export default function TrackLandingPage() {
   const router = useRouter();
@@ -17,25 +18,15 @@ export default function TrackLandingPage() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      <div className="sticky top-0 z-50 bg-surface border-b border-line px-4 h-[50px] flex items-center justify-center relative">
-        <button
-          type="button"
-          onClick={() => router.push('/')}
-          aria-label="Back"
-          className="absolute left-4 p-1 text-ink-muted"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-sm font-bold text-ink">Track Order</h1>
-      </div>
-      <main className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-sm text-center">
-          <div className="w-14 h-14 rounded-full bg-sunken flex items-center justify-center mx-auto mb-5">
+      <PublicNav />
+      <main className="flex-1 flex items-center justify-center mobile-screen-margins py-10 sm:py-16">
+        <div className="w-full max-w-sm sm:max-w-md text-center">
+          <div className="w-14 h-14 border border-line flex items-center justify-center mx-auto mb-4">
             <Package size={24} className="text-taupe" />
           </div>
-          <h1 className="text-display text-2xl text-ink mb-2">Track Your Order</h1>
-          <p className="text-sm text-ink-muted mb-8">
-            Enter the tracking code given to you at the shop counter to check your garment&apos;s progress.
+          <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">Track Your Order</h1>
+          <p className="mobile-body-md sm:tablet-body-md text-ink-muted mb-8 space-headline-para">
+            Enter the tracking code given to you at the store counter to check your garment&apos;s progress.
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
@@ -43,13 +34,13 @@ export default function TrackLandingPage() {
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="e.g. TNED8K2P"
-              className="w-full px-4 py-3 bg-surface border border-line rounded-lg text-sm text-ink text-center tracking-widest font-medium uppercase focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors"
+              className="w-full form-input-mobile bg-surface border border-line text-base text-ink placeholder:text-ink-faint placeholder:text-base placeholder:font-normal text-center tracking-widest font-normal uppercase focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors shadow-none"
               maxLength={12}
             />
             <button
               type="submit"
               disabled={!code.trim()}
-              className="w-full px-4 py-3 bg-taupe hover:bg-taupe-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+              className="btn-primary-mobile w-full bg-taupe hover:bg-taupe-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-semibold shadow-none"
             >
               Track Order
             </button>
@@ -59,3 +50,4 @@ export default function TrackLandingPage() {
     </div>
   );
 }
+

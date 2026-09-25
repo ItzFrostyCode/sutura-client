@@ -9,14 +9,14 @@ import { Loader2 } from 'lucide-react';
 // tab, so it's the same list and the same actions whether a customer or the
 // owner is looking at it — this route just forwards there now.
 export default function DashboardReviewsRedirect() {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (shop?.slug) {
-      router.replace(`/shop/${shop.slug}?tab=reviews`);
+    if (store?.slug) {
+      router.replace(`/store/${store.slug}?tab=reviews`);
     }
-  }, [shop, router]);
+  }, [store, router]);
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

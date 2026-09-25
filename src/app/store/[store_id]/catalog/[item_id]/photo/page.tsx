@@ -11,8 +11,8 @@ import { getMediaUrl } from '@/lib/media';
 // aspect ratio and is scaled down only if it wouldn't otherwise fit the
 // device, with the leftover space (top/bottom or left/right, whichever
 // dimension has slack) letterboxed in black rather than cropping anything
-// out of the shop owner's actual photo.
-export default function CatalogPhotoViewerPage({ params }: Readonly<{ params: Promise<{ shop_id: string; item_id: string }> }>) {
+// out of the store owner's actual photo.
+export default function CatalogPhotoViewerPage({ params }: Readonly<{ params: Promise<{ store_id: string; item_id: string }> }>) {
   return (
     <Suspense fallback={<div className="min-h-dvh bg-black" />}>
       <CatalogPhotoViewerContent params={params} />
@@ -20,8 +20,8 @@ export default function CatalogPhotoViewerPage({ params }: Readonly<{ params: Pr
   );
 }
 
-function CatalogPhotoViewerContent({ params }: Readonly<{ params: Promise<{ shop_id: string; item_id: string }> }>) {
-  const { shop_id: shopId, item_id: itemId } = use(params);
+function CatalogPhotoViewerContent({ params }: Readonly<{ params: Promise<{ store_id: string; item_id: string }> }>) {
+  const { store_id: storeId, item_id: itemId } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const src = searchParams.get('src');
@@ -30,7 +30,7 @@ function CatalogPhotoViewerContent({ params }: Readonly<{ params: Promise<{ shop
     <div className="min-h-dvh flex flex-col bg-black">
       <button
         type="button"
-        onClick={() => router.push(`/shop/${shopId}/catalog/${itemId}`)}
+        onClick={() => router.push(`/store/${storeId}/catalog/${itemId}`)}
         aria-label="Back"
         className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm text-white flex items-center justify-center"
       >
@@ -43,7 +43,6 @@ function CatalogPhotoViewerContent({ params }: Readonly<{ params: Promise<{ shop
             src={getMediaUrl(src)}
             alt=""
             fill
-            unoptimized
             className="object-contain"
           />
         ) : (

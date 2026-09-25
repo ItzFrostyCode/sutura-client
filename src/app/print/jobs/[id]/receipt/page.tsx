@@ -48,16 +48,16 @@ function PaymentReceiptContent() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const paymentId = searchParams.get('payment');
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!shop?.id || !id) return;
-    api.get(`/shops/${shop.id}/jobs/${id}`)
+    if (!store?.id || !id) return;
+    api.get(`/stores/${store.id}/jobs/${id}`)
       .then(res => { setJob(res.data.data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [shop?.id, id]);
+  }, [store?.id, id]);
 
   useEffect(() => {
     if (!loading && job) {
@@ -120,15 +120,15 @@ function PaymentReceiptContent() {
   // Only worth printing when there's actually a remaining balance to collect
   // and the owner has actually filled in at least one collection method —
   // an empty "Send Payment To" box would just be confusing on a fully-paid
-  // receipt or a shop that hasn't configured this yet.
+  // receipt or a store that hasn't configured this yet.
   const remainingAfterThis = singlePayment ? Math.max(0, total - discount - runningPaidAtSingle) : currentBalance;
-  const hasPaymentDetails = !!(shop?.gcash_number || shop?.bank_account_number || shop?.gcash_qr_path || shop?.bank_qr_path);
+  const hasPaymentDetails = !!(store?.gcash_number || store?.bank_account_number || store?.gcash_qr_path || store?.bank_qr_path);
   const showPaymentDetails = hasPaymentDetails && remainingAfterThis > 0;
 
   return (
     <>
       {/* Intentionally no fill colors anywhere on this page — a receipt
-          gets printed on every payment, routinely on a shop's everyday
+          gets printed on every payment, routinely on a store's everyday
           inkjet, so it's built for black ink only: sharp corners, borders
           instead of background fills, bold/underline/strikethrough for
           emphasis instead of color. */}
@@ -154,7 +154,7 @@ function PaymentReceiptContent() {
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-black">{shop?.name ?? 'SUTURA'}</h1>
+            <h1 className="text-2xl font-black tracking-tight text-black">{store?.name ?? 'SUTURA'}</h1>
             <p className="text-xs text-gray-600 mt-0.5">
               {singlePayment ? 'Official Receipt' : 'Payment Statement'}
             </p>
@@ -312,19 +312,19 @@ function PaymentReceiptContent() {
             <div className="flex justify-between items-start gap-6">
               <table className="w-full text-sm">
                 <tbody>
-                  {shop?.gcash_number && (
+                  {store?.gcash_number && (
                     <tr>
                       <td className="text-gray-600 pr-3 pb-1 font-medium w-32">GCash</td>
                       <td className="pb-1 font-bold">
-                        {shop.gcash_number}{shop.gcash_account_name ? ` — ${shop.gcash_account_name}` : ''}
+                        {store.gcash_number}{store.gcash_account_name ? ` — ${store.gcash_account_name}` : ''}
                       </td>
                     </tr>
                   )}
-                  {shop?.bank_account_number && (
+                  {store?.bank_account_number && (
                     <tr>
                       <td className="text-gray-600 pr-3 pb-1 font-medium">Bank Transfer</td>
                       <td className="pb-1 font-bold">
-                        {shop.bank_name ? `${shop.bank_name} — ` : ''}{shop.bank_account_number}{shop.bank_account_name ? ` — ${shop.bank_account_name}` : ''}
+                        {store.bank_name ? `${store.bank_name} — ` : ''}{store.bank_account_number}{store.bank_account_name ? ` — ${store.bank_account_name}` : ''}
                       </td>
                     </tr>
                   )}
@@ -334,17 +334,17 @@ function PaymentReceiptContent() {
                   graphics, not a color-fill violation of this page's
                   ink-economy house style. */}
               <div className="flex gap-3 shrink-0">
-                {shop?.gcash_qr_path && (
+                {store?.gcash_qr_path && (
                   <div className="text-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={shop.gcash_qr_path} alt="GCash QR code" className="w-20 h-20 object-contain border border-black" />
+                    <img src={store.gcash_qr_path} alt="GCash QR code" className="w-20 h-20 object-contain border border-black" />
                     <p className="text-[8px] text-gray-600 mt-1">Scan to pay (GCash)</p>
                   </div>
                 )}
-                {shop?.bank_qr_path && (
+                {store?.bank_qr_path && (
                   <div className="text-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={shop.bank_qr_path} alt="Bank QR code" className="w-20 h-20 object-contain border border-black" />
+                    <img src={store.bank_qr_path} alt="Bank QR code" className="w-20 h-20 object-contain border border-black" />
                     <p className="text-[8px] text-gray-600 mt-1">Scan to pay (Bank)</p>
                   </div>
                 )}
@@ -354,7 +354,7 @@ function PaymentReceiptContent() {
         )}
 
         <p className="text-center text-[9px] text-gray-400 mt-8">
-          Printed by SUTURA Shop Management System · {new Date().toLocaleString('en-PH')}
+          Printed by SUTURA Store Management System · {new Date().toLocaleString('en-PH')}
         </p>
       </div>
     </>

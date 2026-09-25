@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import {
   Calendar as CalendarIcon, Clock, Loader2, Eye, Play, Scissors,
   CheckSquare, RefreshCw, Pencil, Trash2, UserX, Mail, Phone,
-  Building2, UserCheck, Sparkles, MoreHorizontal, FileText, Ruler
+  Building2, UserCheck, Sparkles, MoreHorizontal, FileText, Ruler, LogIn
 } from 'lucide-react';
 import {
   Appointment, formatScheduled, StatusBadge, TypeBadge, getCustomerInitials,
-  ChannelBadge, RescheduledBadge, WalkInPriorityBadge
+  ChannelBadge, RescheduledBadge, WalkInPriorityBadge, CheckInBadge
 } from './appointmentHelpers';
 
 interface AppointmentListViewProps {
@@ -27,13 +27,14 @@ interface AppointmentListViewProps {
   readonly onCancelClick: (apt: Appointment) => void;
   readonly onNoShowClick: (apt: Appointment) => void;
   readonly onNewAppointmentClick?: () => void;
+  readonly onCheckInClick?: (aptId: number) => void;
 }
 
 export default function AppointmentListView({
   filtered, loading, viewMode = 'table', actionLoadingId, isOwnerOrManager,
   onReviewClick, onStartClick, onCreateJobClick, onCompleteClick,
   onRescheduleClick, onDetailsClick, onEditClick, onCancelClick,
-  onNoShowClick, onNewAppointmentClick
+  onNoShowClick, onNewAppointmentClick, onCheckInClick
 }: AppointmentListViewProps) {
 
   // Active dropdown row ID for table more-menu
@@ -67,6 +68,16 @@ export default function AppointmentListView({
             className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
           >
             <Eye size={13} /> <span>Review</span>
+          </button>
+        )}
+
+        {isConfirmed && !apt.checked_in_at && onCheckInClick && (
+          <button
+            type="button"
+            onClick={() => onCheckInClick(apt.id)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
+          >
+            <LogIn size={12} /> <span>Check In</span>
           </button>
         )}
 
@@ -366,7 +377,10 @@ export default function AppointmentListView({
 
           {/* Status */}
           <td className="px-5 py-3.5 align-middle whitespace-nowrap">
-            <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+            <div className="flex items-center gap-1.5">
+              <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+              <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
+            </div>
           </td>
 
           {/* Actions (Single neat row) */}
@@ -452,7 +466,10 @@ export default function AppointmentListView({
                       </div>
                     </div>
                   </div>
-                  <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+                    <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
+                  </div>
                 </div>
 
                 {/* Service Details Box */}
@@ -505,6 +522,15 @@ export default function AppointmentListView({
                       className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white transition-colors"
                     >
                       Review
+                    </button>
+                  )}
+                  {isConfirmed && !apt.checked_in_at && onCheckInClick && (
+                    <button
+                      type="button"
+                      onClick={() => onCheckInClick(apt.id)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe transition-colors"
+                    >
+                      Check In
                     </button>
                   )}
                   {isConfirmed && (

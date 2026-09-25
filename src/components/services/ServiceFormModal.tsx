@@ -45,7 +45,7 @@ export default function ServiceFormModal({
 
   const [sizeChart, setSizeChart] = useState<SizeChartValue>(emptySizeChart);
 
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
 
   const toggleServiceType = (type: ServiceType) => {
     setSelectedServiceTypes(prev => (prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]));
@@ -103,13 +103,13 @@ export default function ServiceFormModal({
   }, [editingService, editingId, isOpen]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0] || !shop) return;
+    if (!e.target.files?.[0] || !store) return;
     const file = e.target.files[0];
     const fd = new FormData();
     fd.append('file', file);
     setUploadingImage(true);
     try {
-      const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+      const res = await api.post(`/stores/${store.id}/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setImageUrl(res.data.data?.url || res.data.url || null);
@@ -459,7 +459,7 @@ export default function ServiceFormModal({
           </div>
         </div>
 
-        <SizeChartEditor key={editingId ?? 'new'} mode="table" value={sizeChart} onChange={setSizeChart} shopId={shop?.id ?? 0} />
+        <SizeChartEditor key={editingId ?? 'new'} mode="table" value={sizeChart} onChange={setSizeChart} storeId={store?.id ?? 0} />
 
         <div className="flex justify-end gap-3 pt-4 border-t border-line">
           <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 text-sm font-medium text-ink-body hover:bg-canvas border border-line rounded-lg transition-colors focus:outline-none">

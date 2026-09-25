@@ -40,7 +40,7 @@ export default function ProductionFulfillmentSection({
               className="rounded border-line text-taupe focus:ring-taupe"
             />
             <span className="text-sm font-semibold text-ink-body">
-              Outsource this production (Sent to external shop/tailor)
+              Outsource this production (Sent to external store/tailor)
             </span>
           </label>
           <button
@@ -55,7 +55,7 @@ export default function ProductionFulfillmentSection({
 
         {showOutsourcingHelp && (
           <div className="mt-2 max-w-md p-3 bg-canvas border border-line rounded-lg text-xs text-ink-body leading-relaxed">
-            Turn this on when you&apos;re subcontracting this job — or part of it, like beadwork or embroidery — to another shop or freelance artisan, usually because you&apos;re overbooked or don&apos;t have that skill or machine in-house. The customer still pays your full Total Amount either way — enter what <strong>you</strong> pay the partner below so you can see your real profit on this job, not just what the customer paid.
+            Turn this on when you&apos;re subcontracting this job — or part of it, like beadwork or embroidery — to another store or freelance artisan, usually because you&apos;re overbooked or don&apos;t have that skill or machine in-house. The customer still pays your full Total Amount either way — enter what <strong>you</strong> pay the partner below so you can see your real profit on this job, not just what the customer paid.
           </div>
         )}
 
@@ -63,20 +63,20 @@ export default function ProductionFulfillmentSection({
           <div className="mt-3 max-w-md space-y-3">
             <div>
               <label
-                htmlFor="partner_shop_name"
+                htmlFor="partner_store_name"
                 className="block text-xs font-semibold text-ink-muted mb-1"
               >
-                Partner Shop / Sewer Name <span className="text-danger">*</span>
+                Partner Store / Sewer Name <span className="text-danger">*</span>
               </label>
               <input
-                id="partner_shop_name"
+                id="partner_store_name"
                 type="text"
                 required
-                value={formData.partner_shop_name}
+                value={formData.partner_store_name}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, partner_shop_name: e.target.value }))
+                  setFormData((prev) => ({ ...prev, partner_store_name: e.target.value }))
                 }
-                placeholder="e.g. Maria's Dressmaking Shop"
+                placeholder="e.g. Maria's Dressmaking Store"
                 className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
               />
             </div>
@@ -136,7 +136,7 @@ export default function ProductionFulfillmentSection({
         <div className="bg-canvas/60 border border-line/60 rounded-lg p-3 text-xs text-ink-muted flex items-center gap-2">
           <Store size={16} className="shrink-0" />
           <span>
-            Customer will pick up the garments in-store. (Shop address will be used)
+            Customer will pick up the garments in-store. (Store address will be used)
           </span>
         </div>
       </div>

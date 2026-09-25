@@ -65,16 +65,16 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
 
   return (
     <div className="space-y-6">
-      {/* 
+      {/*
         Standard SUTURA PageHeader:
         - Eyebrow: "Collections"
-        - Title: "Showroom"
+        - Title: "Catalog Designs"
         - Actions on the right
         - Tabs as children, sitting flush directly on the header bottom border rule
       */}
       <PageHeader
         eyebrow="Collections"
-        title="Showroom"
+        title="Catalog Designs"
         description="Curated garment designs, collection performance metrics, and client reviews."
         actions={headerActions}
       >

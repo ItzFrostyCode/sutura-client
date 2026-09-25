@@ -168,7 +168,7 @@ export default function CustomerServiceSection({
           <span className="text-[10px] font-normal opacity-70 ml-1">
             {appointmentId
               ? `From linked Appointment #${appointmentId}`
-              : 'Created directly at the shop counter'}
+              : 'Created directly at the store counter'}
           </span>
         </div>
       </div>

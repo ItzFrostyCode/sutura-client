@@ -6,18 +6,18 @@ import AccountHeader from '@/components/account/AccountHeader';
 const STEPS = [
   {
     Icon: Search,
-    title: 'Find a shop',
-    body: 'Search by garment type — Barong Tagalog, Filipiniana, school uniforms, team jerseys — or browse shops near you on the map.',
+    title: 'Find a store',
+    body: 'Search by garment type — Barong Tagalog, Filipiniana, school uniforms, team jerseys — or browse stores near you on the map.',
   },
   {
     Icon: CalendarClock,
     title: 'Book an appointment',
-    body: 'Pick a consultation, measurement, or fitting slot with the shop. You can hold one active appointment per shop at a time.',
+    body: 'Pick a consultation, measurement, or fitting slot with the store. You can hold one active appointment per store at a time.',
   },
   {
     Icon: Ruler,
     title: 'Save your measurements',
-    body: 'Once a shop records your measurements, they stay on your account under My Measurements for your next order.',
+    body: 'Once a store records your measurements, they stay on your account under My Measurements for your next order.',
   },
   {
     Icon: Package,
@@ -33,7 +33,7 @@ export default function WelcomeGuidePage() {
 
       <div className="space-y-3">
         {STEPS.map((step, i) => (
-          <div key={step.title} className="bg-surface border border-line rounded-2xl p-4 flex gap-3">
+          <div key={step.title} className="bg-surface border border-line p-4 flex gap-3">
             <div className="w-10 h-10 rounded-full bg-sunken flex items-center justify-center shrink-0">
               <step.Icon size={18} className="text-taupe" />
             </div>

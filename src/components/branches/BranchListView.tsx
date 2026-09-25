@@ -1,14 +1,14 @@
 import React from 'react';
 import { Building2, CheckCircle, MapPin, Plus, Star, Compass } from 'lucide-react';
-import { ShopBranch } from './branchHelpers';
+import { StoreBranch } from './branchHelpers';
 import BranchCard from './BranchCard';
 
 interface BranchListViewProps {
-  readonly branches: ShopBranch[];
+  readonly branches: StoreBranch[];
   readonly onAddClick: () => void;
-  readonly onEdit: (branch: ShopBranch) => void;
+  readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete: (id: number) => void;
-  readonly onSetMain?: (branch: ShopBranch) => void;
+  readonly onSetMain?: (branch: StoreBranch) => void;
 }
 
 export default function BranchListView({
@@ -123,7 +123,7 @@ export default function BranchListView({
                   {satelliteBranches.length} {satelliteBranches.length === 1 ? 'Location' : 'Locations'}
                 </span>
               </div>
-              <p className="text-xs text-ink-muted">Branch locations sharing the shop workspace with designated managers and staff.</p>
+              <p className="text-xs text-ink-muted">Branch locations sharing the store workspace with designated managers and staff.</p>
             </div>
           </div>
 

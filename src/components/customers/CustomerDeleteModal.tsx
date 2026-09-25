@@ -16,25 +16,26 @@ export default function CustomerDeleteModal({
   isSubmitting,
 }: CustomerDeleteModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Remove Customer">
-      <div className="space-y-4 text-ink">
-        <p className="text-ink-body text-sm">
-          Are you sure you want to remove this customer? This will not delete their historical job orders.
+    <Modal isOpen={isOpen} onClose={onClose} title="Remove Customer Record">
+      <div className="space-y-4">
+        <p className="text-ink text-xs leading-relaxed">
+          Are you sure you want to remove this customer from your active Client Book? Historical job orders and measurements will remain archived for accounting.
         </p>
-        <div className="pt-4 flex justify-end gap-3">
-          <button 
+        <div className="pt-3 flex justify-end gap-2 border-t border-line">
+          <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:text-ink transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer"
           >
             Cancel
           </button>
-          <button 
+          <button
+            type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="bg-danger hover:bg-danger/90 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
           >
-            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+            {isSubmitting && <Loader2 size={14} className="animate-spin" />}
             Yes, Remove
           </button>
         </div>

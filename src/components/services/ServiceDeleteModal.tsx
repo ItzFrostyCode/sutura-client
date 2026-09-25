@@ -28,7 +28,7 @@ export default function ServiceDeleteModal({
         <p className="text-ink-body text-sm">
           Are you sure you want to delete {subject}? {/* Accurate, not scarier than it needs to be — this is a soft
           delete (see ServiceController::destroy/restore), it stays
-          recoverable from Trash, it just won't show up on the shop's
+          recoverable from Trash, it just won't show up on the store's
           storefront or in job/order forms until restored. */}
           It will be hidden from your storefront and won&apos;t be selectable for new orders, but you can restore {count ? 'them' : 'it'} later from Trash.
         </p>

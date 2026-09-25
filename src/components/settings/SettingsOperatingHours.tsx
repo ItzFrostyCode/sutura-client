@@ -23,7 +23,7 @@ export default function SettingsOperatingHours({
             Weekly Operating Hours
           </h2>
           <p className="text-sm text-ink-muted mt-1">
-            Set the regular hours your shop is open for business. Customers will use this to book appointments.
+            Set the regular hours your store is open for business. Customers will use this to book appointments.
           </p>
         </div>
         <div className="flex items-center justify-between mb-4">

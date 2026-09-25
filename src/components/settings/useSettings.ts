@@ -4,7 +4,7 @@ import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 
-export interface ShopSettingsData {
+export interface StoreSettingsData {
   name: string;
   description: string;
   logo_path: string;
@@ -62,7 +62,7 @@ const DEFAULT_HOURS = {
 export type SettingsTab = 'business_type' | 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates';
 
 export function useSettings() {
-  const { shop, setAuth, user, token, staffProfile } = useAuthStore();
+  const { store, setAuth, user, token, staffProfile } = useAuthStore();
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -99,9 +99,9 @@ export function useSettings() {
     }
   }, []);
 
-  const savedDataRef = useRef<ShopSettingsData | null>(null);
+  const savedDataRef = useRef<StoreSettingsData | null>(null);
 
-  const [formData, setFormData] = useState<ShopSettingsData>({
+  const [formData, setFormData] = useState<StoreSettingsData>({
     name: '',
     description: '',
     logo_path: '',
@@ -119,7 +119,7 @@ export function useSettings() {
     longitude: '',
     social_links: [] as { label: string; url: string }[],
     gallery_images: [] as string[],
-    business_type: 'tailoring_shop',
+    business_type: 'tailoring_store',
     operating_hours: DEFAULT_HOURS as Record<string, { is_open: boolean; open: string; close: string }>,
     fitting_fee: 0,
     fitting_limit: 3,
@@ -135,7 +135,7 @@ export function useSettings() {
     bank_qr_path: '',
   });
 
-  const setFormDataWithDirty = (valueOrUpdater: ShopSettingsData | ((prev: ShopSettingsData) => ShopSettingsData)) => {
+  const setFormDataWithDirty = (valueOrUpdater: StoreSettingsData | ((prev: StoreSettingsData) => StoreSettingsData)) => {
     if (typeof valueOrUpdater === 'function') {
       setFormData(prev => {
         const next = valueOrUpdater(prev);
@@ -149,12 +149,12 @@ export function useSettings() {
   };
 
   useEffect(() => {
-    if (shop) {
+    if (store) {
       api
-        .get(`/shops/${shop.id}`)
+        .get(`/stores/${store.id}`)
         .then(res => {
           const s = res.data.data;
-          const loaded: ShopSettingsData = {
+          const loaded: StoreSettingsData = {
             name: s.name || '',
             description: s.description || '',
             logo_path: s.logo_path || '',
@@ -176,7 +176,7 @@ export function useSettings() {
                 ? Object.entries(s.social_links).map(([k, v]) => ({ label: k.charAt(0).toUpperCase() + k.slice(1), url: v as string }))
                 : []),
             gallery_images: Array.isArray(s.gallery_images) ? s.gallery_images : [],
-            business_type: s.business_type || 'tailoring_shop',
+            business_type: s.business_type || 'tailoring_store',
             operating_hours: s.operating_hours || DEFAULT_HOURS,
             fitting_fee: s.fitting_fee ?? 0,
             fitting_limit: s.fitting_limit ?? 3,
@@ -197,14 +197,14 @@ export function useSettings() {
         })
         .catch(err => {
           console.error(err);
-          toast.error('Failed to load shop settings.');
+          toast.error('Failed to load store settings.');
           setLoading(false);
         });
-    } else if (user && !shop) {
+    } else if (user && !store) {
       setTimeout(() => setLoading(false), 0);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shop, user]);
+  }, [store, user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormDataWithDirty(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -230,15 +230,15 @@ export function useSettings() {
 
   // Single-image uploads (replace, not append — unlike gallery_images).
   // Genuinely new: there was previously no owner-facing way to set either
-  // of these at all, `logo_path` wasn't even in UpdateShopRequest's
+  // of these at all, `logo_path` wasn't even in UpdateStoreRequest's
   // validation rules, so any attempt would have silently no-op'd.
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0] && shop) {
+    if (e.target.files?.[0] && store) {
       const file = e.target.files[0];
       const fd = new FormData();
       fd.append('file', file);
       try {
-        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        const res = await api.post(`/stores/${store.id}/upload`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({ ...prev, logo_path: res.data.data.url }));
@@ -250,12 +250,12 @@ export function useSettings() {
   };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0] && shop) {
+    if (e.target.files?.[0] && store) {
       const file = e.target.files[0];
       const fd = new FormData();
       fd.append('file', file);
       try {
-        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        const res = await api.post(`/stores/${store.id}/upload`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({ ...prev, banner_path: res.data.data.url }));
@@ -267,12 +267,12 @@ export function useSettings() {
   };
 
   const handleGcashQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0] && shop) {
+    if (e.target.files?.[0] && store) {
       const file = e.target.files[0];
       const fd = new FormData();
       fd.append('file', file);
       try {
-        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        const res = await api.post(`/stores/${store.id}/upload`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({ ...prev, gcash_qr_path: res.data.data.url }));
@@ -284,12 +284,12 @@ export function useSettings() {
   };
 
   const handleBankQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0] && shop) {
+    if (e.target.files?.[0] && store) {
       const file = e.target.files[0];
       const fd = new FormData();
       fd.append('file', file);
       try {
-        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        const res = await api.post(`/stores/${store.id}/upload`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({ ...prev, bank_qr_path: res.data.data.url }));
@@ -301,12 +301,12 @@ export function useSettings() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0] && shop) {
+    if (e.target.files?.[0] && store) {
       const file = e.target.files[0];
       const fd = new FormData();
       fd.append('file', file);
       try {
-        const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+        const res = await api.post(`/stores/${store.id}/upload`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({
@@ -328,13 +328,13 @@ export function useSettings() {
   };
 
   const handleSave = async () => {
-    if (!shop) return;
+    if (!store) return;
     setSaving(true);
     try {
-      const res = await api.put(`/shops/${shop.id}`, formData);
+      const res = await api.put(`/stores/${store.id}`, formData);
       savedDataRef.current = formData;
       setIsDirty(false);
-      toast.success('Shop settings saved successfully.');
+      toast.success('Store settings saved successfully.');
       if (user && token) {
         setAuth(user, token, res.data.data, staffProfile || undefined);
       }
@@ -353,7 +353,7 @@ export function useSettings() {
   };
 
   return {
-    shop,
+    store,
     loading,
     saving,
     isDirty,

@@ -36,17 +36,17 @@ interface StaffDetail {
  * (dashboard/customers/[id]) at the user's request: header card with
  * avatar/contact, stat cards, and tabs — instead of cramming everything
  * into the list table. Owner-only, same as the rest of Staff Management
- * (see dashboard/layout.tsx's isShopOwner nav gate and the backend's
- * role:shop_owner route group) — never reachable by a customer.
+ * (see dashboard/layout.tsx's isStoreOwner nav gate and the backend's
+ * role:store_owner route group) — never reachable by a customer.
  */
 export default function StaffProfilePage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { shop, user, staffProfile } = useAuthStore();
+  const { store, user, staffProfile } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
 
   const roleNames = user?.roles?.map(r => r.name) || [];
-  const isShopOwner = roleNames.includes('shop_owner');
+  const isStoreOwner = roleNames.includes('store_owner');
   const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
 
   const [detail, setDetail] = useState<StaffDetail | null>(null);
@@ -58,28 +58,28 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
     name: '', email: '', password: '', phone: '', role: 'tailor',
     additional_roles: [] as string[], specialization: '',
     hired_at: new Date().toISOString().split('T')[0],
-    is_active: true, shop_branch_id: '', is_branch_manager: false,
+    is_active: true, store_branch_id: '', is_branch_manager: false,
     bio: '', is_available: true,
   });
 
   const loadData = useCallback(async () => {
-    if (!shop || !id) return;
+    if (!store || !id) return;
     try {
-      const res = await api.get(`/shops/${shop.id}/staff/${id}`);
+      const res = await api.get(`/stores/${store.id}/staff/${id}`);
       setDetail(res.data.data);
     } catch (err) {
       console.error('Failed to load staff profile', err);
     } finally {
       setLoading(false);
     }
-  }, [shop, id]);
+  }, [store, id]);
 
   useEffect(() => {
     setTimeout(() => { void loadData(); }, 0);
   }, [loadData]);
 
   const member = detail?.staff;
-  const canEdit = isShopOwner || isBranchManager || (user?.id !== undefined && user.id === member?.user_id);
+  const canEdit = isStoreOwner || isBranchManager || (user?.id !== undefined && user.id === member?.user_id);
 
   const openEdit = () => {
     if (!member) return;
@@ -95,7 +95,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
         : (member.specialization || ''),
       hired_at: member.hired_at || new Date().toISOString().split('T')[0],
       is_active: member.is_active,
-      shop_branch_id: member.shop_branch_id ? String(member.shop_branch_id) : '',
+      store_branch_id: member.store_branch_id ? String(member.store_branch_id) : '',
       is_branch_manager: member.is_branch_manager || false,
       bio: member.bio || '',
       is_available: member.is_available !== false,
@@ -105,7 +105,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!shop || !member) return;
+    if (!store || !member) return;
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {
@@ -118,7 +118,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
           ? formData.specialization.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         hired_at: formData.hired_at,
-        shop_branch_id: formData.shop_branch_id ? Number.parseInt(formData.shop_branch_id, 10) : null,
+        store_branch_id: formData.store_branch_id ? Number.parseInt(formData.store_branch_id, 10) : null,
         is_branch_manager: formData.is_branch_manager,
         bio: formData.bio,
         is_active: formData.is_active,
@@ -126,7 +126,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
       };
       if (formData.password) payload.password = formData.password;
 
-      await api.put(`/shops/${shop.id}/staff/${member.id}`, payload);
+      await api.put(`/stores/${store.id}/staff/${member.id}`, payload);
       setShowEditModal(false);
       toast.success('Staff profile updated.');
       void loadData();

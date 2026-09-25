@@ -9,16 +9,16 @@ import { buildSavePayload } from '@/components/catalog/catalogHelpers';
 import { useToast } from '@/context/ToastContext';
 
 export default function NewCatalogItemPage() {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
 
   const handleSave = async (payload: ReturnType<typeof buildSavePayload>) => {
-    if (!shop?.id) return;
+    if (!store?.id) return;
     setSaving(true);
     try {
-      await api.post(`/shops/${shop.id}/catalog`, payload);
+      await api.post(`/stores/${store.id}/catalog`, payload);
       router.push('/dashboard/catalog');
     } catch (err: unknown) {
       console.error(err);

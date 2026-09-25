@@ -98,16 +98,16 @@ const formatPayload = (action: string, rawPayload: Record<string, unknown> | str
 };
 
 export default function AuditLogPage() {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
 
   useEffect(() => {
-    if (!shop) return;
+    if (!store) return;
     setLoading(true);
-    api.get(`/shops/${shop.id}/audit-logs`, { params: { page } })
+    api.get(`/stores/${store.id}/audit-logs`, { params: { page } })
       .then(res => {
         const data = res.data.data;
         setLogs(data.data || []);
@@ -115,7 +115,7 @@ export default function AuditLogPage() {
       })
       .catch(() => setLogs([]))
       .finally(() => setLoading(false));
-  }, [shop, page]);
+  }, [store, page]);
 
   return (
     <div className="space-y-5">

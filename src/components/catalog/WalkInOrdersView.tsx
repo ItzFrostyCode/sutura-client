@@ -42,7 +42,7 @@ export default function WalkInOrdersView({
   onCloseNewOrderModal,
   onOrdersLoaded,
 }: WalkInOrdersViewProps) {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -62,10 +62,10 @@ export default function WalkInOrdersView({
   const [applyingDiscount, setApplyingDiscount] = useState(false);
 
   const fetchOrders = useCallback(() => {
-    if (!shop) return;
+    if (!store) return;
     const timer = setTimeout(() => setLoading(true), 0);
     const params = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
-    api.get(`/shops/${shop.id}/catalog-orders`, { params })
+    api.get(`/stores/${store.id}/catalog-orders`, { params })
       .then(res => {
         const list = res.data.data || [];
         setOrders(list);
@@ -76,10 +76,10 @@ export default function WalkInOrdersView({
       .catch(console.error)
       .finally(() => setLoading(false));
     return () => clearTimeout(timer);
-  }, [shop, selectedBranchId, onOrdersLoaded]);
+  }, [store, selectedBranchId, onOrdersLoaded]);
 
   useEffect(() => {
-    if (shop) {
+    if (store) {
       const cleanup = fetchOrders();
       return () => {
         if (cleanup) cleanup();
@@ -88,7 +88,7 @@ export default function WalkInOrdersView({
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
     }
-  }, [shop, user, fetchOrders]);
+  }, [store, user, fetchOrders]);
 
   // Jump to highlighted order from query param
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function WalkInOrdersView({
     try {
       const payload: { status: string; payment_status?: string } = { status: nextStatus };
       if (nextPaymentStatus) payload.payment_status = nextPaymentStatus;
-      await api.patch(`/shops/${shop?.id}/catalog-orders/${orderId}/status`, payload);
+      await api.patch(`/stores/${store?.id}/catalog-orders/${orderId}/status`, payload);
       const statusLabel = nextStatus === 'ready' 
         ? 'Ready for Pickup' 
         : nextStatus === 'completed' 
@@ -135,10 +135,10 @@ export default function WalkInOrdersView({
   };
 
   const applyDiscount = async (orderId: number, amount: number, reason: string) => {
-    if (!shop) return;
+    if (!store) return;
     setApplyingDiscount(true);
     try {
-      await api.post(`/shops/${shop.id}/catalog-orders/${orderId}/apply-discount`, { amount, reason });
+      await api.post(`/stores/${store.id}/catalog-orders/${orderId}/apply-discount`, { amount, reason });
       toast.success('Discount applied successfully.');
       fetchOrders();
       setDiscountModalOrder(null);

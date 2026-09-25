@@ -214,7 +214,7 @@ export default function CustomSpecsSection({
             Pre-Existing Damage / Condition Notes <span className="text-danger">*</span>
           </label>
           <p className="text-[11px] text-amber-700 mb-1">
-            Log any existing stains, tears, or missing parts before starting work — protects the shop from false damage claims later. Consider also attaching a photo in the Damage / Condition Photo section above.
+            Log any existing stains, tears, or missing parts before starting work — protects the store from false damage claims later. Consider also attaching a photo in the Damage / Condition Photo section above.
           </p>
           <textarea
             id="pre_existing_damage_notes"

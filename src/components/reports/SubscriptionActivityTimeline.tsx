@@ -55,7 +55,7 @@ function eventDescription(event: SubscriptionEventRow): string {
     case 'downgraded':
       return `Downgraded from ${event.previous_plan?.name ?? 'a higher plan'} to ${planName}.`;
     case 'expired':
-      return `${planName} subscription expired — shop hidden until renewed.`;
+      return `${planName} subscription expired — store hidden until renewed.`;
     default:
       return planName;
   }

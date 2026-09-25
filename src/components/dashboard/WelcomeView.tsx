@@ -13,14 +13,14 @@ interface OnboardingStep {
 // Used to be 3 shallow steps that also referenced "rental deposits" — a
 // feature that doesn't exist in this app (rental lifecycle management was
 // explicitly excluded from SUTURA's approved thesis scope). Covers the
-// real setup order a new shop owner actually needs, matching what's
+// real setup order a new store owner actually needs, matching what's
 // genuinely built: storefront → branches → catalog/services → staff →
 // day-to-day ops → money tracking.
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     step: 'Step 1',
     title: 'Set Up Your Storefront',
-    desc: 'Open your Shop Profile to add your logo, banner, description, and social links, set your map location and operating hours, and configure your GCash/bank details so they print on receipts. This is what customers see when they find you.',
+    desc: 'Open your Store Profile to add your logo, banner, description, and social links, set your map location and operating hours, and configure your GCash/bank details so they print on receipts. This is what customers see when they find you.',
     icon: Store,
     href: '/dashboard/profile',
   },
@@ -83,7 +83,7 @@ export default function WelcomeView() {
           <BookOpen size={28} />
         </div>
         <h2 className="text-2xl font-heading font-semibold text-ink">Welcome to SUTURA Tailoring Tracker</h2>
-        <p className="text-ink-muted text-sm max-w-lg mx-auto">A complete guide to setting up and running your shop on SUTURA, from your first storefront edit to tracking a finished order.</p>
+        <p className="text-ink-muted text-sm max-w-lg mx-auto">A complete guide to setting up and running your store on SUTURA, from your first storefront edit to tracking a finished order.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

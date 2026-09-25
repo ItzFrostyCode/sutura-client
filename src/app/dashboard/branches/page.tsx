@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Plus, Map as MapIcon, LayoutGrid } from 'lucide-react';
-import { ShopBranch, EMPTY_FORM } from '@/components/branches/branchHelpers';
+import { StoreBranch, EMPTY_FORM } from '@/components/branches/branchHelpers';
 import BranchFormModal from '@/components/branches/BranchFormModal';
 import BranchDeleteModal from '@/components/branches/BranchDeleteModal';
 import BranchListView from '@/components/branches/BranchListView';
@@ -24,10 +24,10 @@ const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
 });
 
 export default function BranchesPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const { refreshBranches } = useBranch();
   const toast = useToast();
-  const [branches, setBranches] = useState<ShopBranch[]>([]);
+  const [branches, setBranches] = useState<StoreBranch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,9 +41,9 @@ export default function BranchesPage() {
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
 
   const fetchBranches = useCallback(() => {
-    if (shop?.id) {
+    if (store?.id) {
       api
-        .get(`/shops/${shop.id}/branches`)
+        .get(`/stores/${store.id}/branches`)
         .then(res => {
           setBranches(Array.isArray(res.data?.data) ? res.data.data : []);
           setLoading(false);
@@ -52,10 +52,10 @@ export default function BranchesPage() {
           console.error(err);
           setLoading(false);
         });
-    } else if (user?.id && !shop?.id) {
+    } else if (user?.id && !store?.id) {
       setTimeout(() => setLoading(false), 0);
     }
-  }, [shop, user]);
+  }, [store, user]);
 
   useEffect(() => {
     fetchBranches();
@@ -68,7 +68,7 @@ export default function BranchesPage() {
     setIsModalOpen(true);
   };
 
-  const handleEditClick = (branch: ShopBranch) => {
+  const handleEditClick = (branch: StoreBranch) => {
     setEditingId(branch.id);
     setFormData({
       name: branch.name,
@@ -90,21 +90,21 @@ export default function BranchesPage() {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!shop) return;
+    if (!store) return;
 
     setIsSubmitting(true);
     setErrorMsg('');
 
     try {
       if (editingId) {
-        const res = await api.put(`/shops/${shop.id}/branches/${editingId}`, formData);
+        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, formData);
         const updated = res.data?.data;
         if (updated) {
           setBranches(prev => prev.map(b => (b.id === editingId ? { ...b, ...updated } : b)));
         }
         toast.success('Branch details updated successfully.');
       } else {
-        const res = await api.post(`/shops/${shop.id}/branches`, formData);
+        const res = await api.post(`/stores/${store.id}/branches`, formData);
         const created = res.data?.data;
         if (created) {
           setBranches(prev => [...prev, created]);
@@ -125,10 +125,10 @@ export default function BranchesPage() {
     }
   };
 
-  const handleSetMain = async (branch: ShopBranch) => {
-    if (!shop) return;
+  const handleSetMain = async (branch: StoreBranch) => {
+    if (!store) return;
     try {
-      const res = await api.put(`/shops/${shop.id}/branches/${branch.id}/set-main`);
+      const res = await api.put(`/stores/${store.id}/branches/${branch.id}/set-main`);
       if (res.data?.success) {
         toast.success(`${branch.name} is now designated as the Primary Headquarters.`);
         fetchBranches();
@@ -146,10 +146,10 @@ export default function BranchesPage() {
   };
 
   const confirmDelete = async () => {
-    if (!shop || !deletingId) return;
+    if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/branches/${deletingId}`);
+      await api.delete(`/stores/${store.id}/branches/${deletingId}`);
       setBranches(prev => prev.filter(b => b.id !== deletingId));
       setIsDeleteModalOpen(false);
       setDeletingId(null);
@@ -217,8 +217,8 @@ export default function BranchesPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Locations"
-        title="Shop Branches"
-        description="Manage every physical location of your shop. Each branch appears on the customer discovery map."
+        title="Store Branches"
+        description="Manage every physical location of your store. Each branch appears on the customer discovery map."
         actions={
           <>
             <div className="flex items-center bg-sunken rounded-lg p-1">
@@ -269,7 +269,7 @@ export default function BranchesPage() {
         editingId={editingId}
         isSubmitting={isSubmitting}
         errorMsg={errorMsg}
-        shopId={shop?.id}
+        storeId={store?.id}
         formData={formData}
         setFormData={setFormData}
       />

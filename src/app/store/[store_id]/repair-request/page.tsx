@@ -18,7 +18,7 @@ interface RepairService {
   pricing?: PricingOption[];
 }
 
-export default function RepairRequestPage({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
+export default function RepairRequestPage({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   return (
     <Suspense fallback={<div className="min-h-dvh bg-canvas" />}>
       <RepairRequestPageContent params={params} />
@@ -26,8 +26,8 @@ export default function RepairRequestPage({ params }: Readonly<{ params: Promise
   );
 }
 
-function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_id: string }> }>) {
-  const { shop_id: shopId } = use(params);
+function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
+  const { store_id: storeId } = use(params);
   const searchParams = useSearchParams();
   const serviceId = searchParams.get('service_id');
   const router = useRouter();
@@ -51,7 +51,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
       setLoading(false);
       return;
     }
-    api.get(`/public/shops/${shopId}/services`)
+    api.get(`/public/stores/${storeId}/services`)
       .then((res) => {
         const match = (res.data.data ?? []).find((s: RepairService) => String(s.id) === serviceId);
         if (!match || !(match.service_types ?? []).includes('alteration_repair')) {
@@ -62,7 +62,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
-  }, [shopId, serviceId]);
+  }, [storeId, serviceId]);
 
   const togglePricing = (id: number) => {
     setSelectedPricingIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
@@ -78,7 +78,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await api.post(`/public/shops/${shopId}/upload-reference-image`, formData, {
+      const res = await api.post(`/public/stores/${storeId}/upload-reference-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setImages((prev) => [...prev, res.data.data.url]);
@@ -96,7 +96,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
     setSubmitting(true);
     setError('');
     try {
-      const res = await api.post(`/shops/${shopId}/repair-requests`, {
+      const res = await api.post(`/stores/${storeId}/repair-requests`, {
         service_id: service.id,
         garment_description: garmentDescription.trim(),
         pre_existing_damage_notes: damageNotes.trim(),
@@ -125,12 +125,16 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
         <h1 className="text-sm font-bold text-ink">Request a Repair</h1>
       </div>
 
-      {loading && <div className="text-center py-16 text-sm text-ink-muted">Loading…</div>}
+      {loading && (
+        <div className="flex-1 flex items-center justify-center bg-white">
+          <Loader2 size={28} className="animate-spin text-ink-faint" />
+        </div>
+      )}
 
       {!loading && notFound && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <p className="text-sm font-semibold text-ink mb-1">Service not found</p>
-          <p className="text-xs text-ink-muted">This shop has no matching repair/alteration service.</p>
+          <p className="text-xs text-ink-muted">This store has no matching repair/alteration service.</p>
         </div>
       )}
 
@@ -144,7 +148,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
             Order {submitted.order_number} · Tracking code {submitted.tracking_code}
           </p>
           <p className="text-xs text-ink-muted leading-relaxed max-w-[260px] mb-6">
-            The shop will review your request and confirm pricing before starting the repair.
+            The store will review your request and confirm pricing before starting the repair.
           </p>
           <button
             type="button"
@@ -215,7 +219,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ shop_
               Pre-existing damage / condition
             </label>
             <p className="text-[11px] text-ink-muted mb-2">
-              Note any existing wear, stains, or damage before drop-off — this protects both you and the shop.
+              Note any existing wear, stains, or damage before drop-off — this protects both you and the store.
             </p>
             <textarea
               id="damage-notes"

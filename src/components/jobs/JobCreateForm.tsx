@@ -13,7 +13,7 @@ import PricingScheduleSection from './form/PricingScheduleSection';
 
 export default function JobCreateForm() {
   const {
-    shop,
+    store,
     loading,
     submitting,
     error,
@@ -137,7 +137,7 @@ export default function JobCreateForm() {
             setReferenceLink={setReferenceLink}
             uploadingReference={uploadingReference}
             setUploadingReference={setUploadingReference}
-            shopId={shop?.id}
+            storeId={store?.id}
           />
 
           {/* Section 2: Customer & Service Details */}

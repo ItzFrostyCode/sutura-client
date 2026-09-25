@@ -25,7 +25,7 @@ export default function PageHeader({ eyebrow, title, description, actions, child
           {eyebrow && <p className="text-eyebrow-accent">{eyebrow}</p>}
           <h1 className="text-display text-3xl font-semibold text-ink mt-2">{title}</h1>
           {/* div, not p: callers legitimately pass block-level content here
-              (e.g. <ShopWideNote />, which renders its own <p>), and a <p>
+              (e.g. <StoreWideNote />, which renders its own <p>), and a <p>
               inside a <p> is invalid HTML that React reports as a hydration
               error. Caught live in the console on Customers and Catalog. */}
           {description && (

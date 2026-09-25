@@ -23,7 +23,7 @@ interface BulkRosterEditorProps {
 // Same add-row / add-column / double-click-to-rename interaction pattern as
 // SizeChartEditor, but shaped for a bulk-order roster: each row is a PERSON
 // (Name, required Size picked from the item's real sizes), not a size-chart
-// measurement row — a fixed "Size" column keeps the shop owner's cutting
+// measurement row — a fixed "Size" column keeps the store owner's cutting
 // list accurate even as customers add free-form extra columns of their own
 // (jersey number, nickname, etc.) on top.
 export default function BulkRosterEditor({ sizes, value, onChange }: BulkRosterEditorProps) {

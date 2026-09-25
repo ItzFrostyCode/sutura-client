@@ -16,7 +16,7 @@ import { useToast } from '@/context/ToastContext';
 import { CardGridSkeleton } from '@/components/ui/Skeleton';
 
 export default function CatalogGridView() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,9 +36,9 @@ export default function CatalogGridView() {
   const [showFilters, setShowFilters] = useState(false);
 
   const fetchItems = useCallback(() => {
-    if (shop?.id) {
+    if (store?.id) {
       setTimeout(() => setLoading(true), 0);
-      api.get(`/shops/${shop.id}/catalog`)
+      api.get(`/stores/${store.id}/catalog`)
         .then(res => {
           setItems(res.data.data);
           setLoading(false);
@@ -50,7 +50,7 @@ export default function CatalogGridView() {
     } else if (user?.id) {
       setTimeout(() => setLoading(false), 0);
     }
-  }, [shop, user]);
+  }, [store, user]);
 
   useEffect(() => {
     fetchItems();
@@ -67,10 +67,10 @@ export default function CatalogGridView() {
   };
 
   const confirmDelete = async () => {
-    if (!shop?.id || !deletingId) return;
+    if (!store?.id || !deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/catalog/${deletingId}`);
+      await api.delete(`/stores/${store.id}/catalog/${deletingId}`);
       toast.success('Catalog item deleted successfully.');
       setIsDeleteModalOpen(false);
       setDeletingId(null);

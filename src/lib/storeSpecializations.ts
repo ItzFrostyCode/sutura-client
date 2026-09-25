@@ -1,10 +1,10 @@
-// Real shop-level specialization enum — matches UpdateShopRequest's
+// Real store-level specialization enum — matches UpdateStoreRequest's
 // validation list exactly (`in:barong,gown,suit,filipiniana,uniform,
 // lab_gown,scrub_suit,corporate_wear,alteration_repair`), same labels the
 // owner-side specialization picker (SettingsBusinessType.tsx) already uses.
 // Distinct from garmentCategories.tsx, which filters catalog *items* by
-// garment_type — this filters *shops* by what they specialize in.
-export const SHOP_SPECIALIZATIONS = [
+// garment_type — this filters *stores* by what they specialize in.
+export const STORE_SPECIALIZATIONS = [
   { value: 'barong', label: 'Barong Tagalog' },
   { value: 'gown', label: 'Gowns' },
   { value: 'suit', label: 'Suits' },

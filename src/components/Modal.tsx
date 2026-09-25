@@ -90,8 +90,8 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={`modal-panel relative bg-surface w-full flex flex-col focus:outline-none overflow-hidden
-                   h-[100dvh] max-h-[100dvh] rounded-none border-0
+        className={`modal-panel relative bg-surface w-full max-w-[599px] mx-auto flex flex-col focus:outline-none overflow-hidden
+                   h-[100dvh] max-h-[100dvh] rounded-none border-x border-line
                    md:h-auto md:max-h-[85vh] md:rounded-2xl md:border md:border-line md:shadow-2xl
                    md:animate-rise ${maxWidth}`}
       >
@@ -101,7 +101,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-ink-muted hover:text-ink transition-colors p-2 -m-2 hover:bg-sunken rounded-md shrink-0"
+            className="text-ink-muted hover:text-ink transition-colors p-2 -m-2 hover:bg-sunken rounded-md shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
           >
             <X size={20} />
           </button>

@@ -17,7 +17,7 @@ interface BranchFormModalProps {
   readonly editingId: number | null;
   readonly isSubmitting: boolean;
   readonly errorMsg: string;
-  readonly shopId?: number;
+  readonly storeId?: number;
   readonly formData: BranchFormData;
   readonly setFormData: React.Dispatch<React.SetStateAction<BranchFormData>>;
 }
@@ -29,7 +29,7 @@ export default function BranchFormModal({
   editingId,
   isSubmitting,
   errorMsg,
-  shopId,
+  storeId,
   formData,
   setFormData,
 }: BranchFormModalProps) {
@@ -44,14 +44,14 @@ export default function BranchFormModal({
     : null;
 
   React.useEffect(() => {
-    if (isOpen && shopId) {
-      api.get(`/shops/${shopId}/staff`)
+    if (isOpen && storeId) {
+      api.get(`/stores/${storeId}/staff`)
         .then(res => {
           setStaffList(Array.isArray(res.data?.data) ? res.data.data : []);
         })
         .catch(err => console.error('Failed to load staff for manager selection:', err));
     }
-  }, [isOpen, shopId]);
+  }, [isOpen, storeId]);
   return (
     <>
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Branch' : 'Add New Branch'}>
@@ -288,12 +288,12 @@ export default function BranchFormModal({
                   accept="image/*"
                   onChange={async e => {
                     const file = e.target.files?.[0];
-                    if (file && shopId) {
+                    if (file && storeId) {
                       setUploading(true);
                       const fd = new FormData();
                       fd.append('file', file);
                       try {
-                        const res = await api.post(`/shops/${shopId}/upload`, fd, {
+                        const res = await api.post(`/stores/${storeId}/upload`, fd, {
                           headers: { 'Content-Type': 'multipart/form-data' },
                         });
                         setFormData(prev => ({ ...prev, guide_image_url: res.data.data.url }));

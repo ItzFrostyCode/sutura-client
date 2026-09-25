@@ -9,13 +9,13 @@ import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CatalogTopPerformersChart from '@/components/catalog/CatalogTopPerformersChart';
 
 export default function CatalogAnalyticsView() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchItems = useCallback(() => {
-    if (shop?.id) {
-      api.get(`/shops/${shop.id}/catalog`)
+    if (store?.id) {
+      api.get(`/stores/${store.id}/catalog`)
         .then(res => {
           setItems(res.data.data);
           setLoading(false);
@@ -27,7 +27,7 @@ export default function CatalogAnalyticsView() {
     } else if (user?.id) {
       setTimeout(() => setLoading(false), 0);
     }
-  }, [shop, user]);
+  }, [store, user]);
 
   useEffect(() => {
     fetchItems();
@@ -52,7 +52,7 @@ export default function CatalogAnalyticsView() {
   if (items.length === 0) {
     return (
       <div className="text-center py-16 bg-surface rounded-2xl border border-line shadow-2xs">
-        <p className="text-xs text-ink-muted">No catalog items yet. Add some to your Design Catalog to see performance analytics here.</p>
+        <p className="text-xs text-ink-muted">No catalog designs yet. Add some to your Design Catalog to see performance analytics here.</p>
       </div>
     );
   }

@@ -15,20 +15,20 @@ import { roleLabel } from '@/components/staff/staffHelpers';
 // own Premium Plan badge and branch switcher are deliberately left out here —
 // both are dashboard-data-scoping concepts with no meaning on a public page.
 export default function AccountHeaderMenu() {
-  const { user, shop, staffProfile, logout } = useAuthStore();
+  const { user, store, staffProfile, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-  const isShopOwner = user?.roles?.some(r => r.name === 'shop_owner');
+  const isStoreOwner = user?.roles?.some(r => r.name === 'store_owner');
   const roleDisplay = staffProfile?.role
     ? roleLabel(staffProfile.role)
-    : (user?.roles?.[0]?.name ? roleLabel(user.roles[0].name) : 'Shop Owner');
+    : (user?.roles?.[0]?.name ? roleLabel(user.roles[0].name) : 'Store Owner');
 
   // This menu renders both in the dashboard header and (reused, per the
   // comment above) on the owner's own public storefront page. "My
   // Storefront" linking to the storefront is pointless when you're already
   // standing on it — flip it to "My Management" pointing back at the
-  // dashboard instead, whenever we're currently on a /shop/ route.
-  const isOnStorefront = pathname?.startsWith('/shop/') ?? false;
+  // dashboard instead, whenever we're currently on a /store/ route.
+  const isOnStorefront = pathname?.startsWith('/store/') ?? false;
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -82,12 +82,12 @@ export default function AccountHeaderMenu() {
                 <LayoutDashboard size={16} /> My Management
               </Link>
             ) : (
-              <Link href={shop?.slug ? `/shop/${shop.slug}` : '/dashboard/profile'} className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
+              <Link href={store?.slug ? `/store/${store.slug}` : '/dashboard/profile'} className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
                 <Eye size={16} /> My Storefront
               </Link>
             )}
 
-            {isShopOwner && (
+            {isStoreOwner && (
               <Link href="/dashboard/billing" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
                 <Receipt size={16} /> Billing & Plans
               </Link>

@@ -24,7 +24,7 @@ export default function EditCatalogItemPage({ params }: Readonly<{ params: Promi
   const unwrappedParams = React.use(params);
   const id = unwrappedParams.id;
 
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
@@ -32,9 +32,9 @@ export default function EditCatalogItemPage({ params }: Readonly<{ params: Promi
   const [initialData, setInitialData] = useState<CatalogState | undefined>(undefined);
 
   useEffect(() => {
-    if (shop?.id && id) {
+    if (store?.id && id) {
       api
-        .get(`/shops/${shop.id}/catalog`)
+        .get(`/stores/${store.id}/catalog`)
         .then(res => {
           const item = res.data.data.find((i: { id: number }) => i.id.toString() === id);
           if (item) {
@@ -47,16 +47,16 @@ export default function EditCatalogItemPage({ params }: Readonly<{ params: Promi
           console.error(err);
           setLoading(false);
         });
-    } else if (user?.id && !shop?.id) {
+    } else if (user?.id && !store?.id) {
       setTimeout(() => setLoading(false), 0);
     }
-  }, [shop?.id, user?.id, id]);
+  }, [store?.id, user?.id, id]);
 
   const handleSave = async (payload: ReturnType<typeof buildSavePayload>) => {
-    if (!shop?.id) return;
+    if (!store?.id) return;
     setSaving(true);
     try {
-      await api.put(`/shops/${shop.id}/catalog/${id}`, payload);
+      await api.put(`/stores/${store.id}/catalog/${id}`, payload);
       router.push('/dashboard/catalog');
     } catch (err: unknown) {
       console.error(err);

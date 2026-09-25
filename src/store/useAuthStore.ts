@@ -33,11 +33,11 @@ export interface User {
   creations_gallery?: string[];
 }
 
-export interface Shop {
+export interface Store {
   id: number;
   name: string;
   slug: string;
-  shop_code?: string;
+  store_code?: string;
   status: string;
   business_type?: string;
   description?: string;
@@ -91,21 +91,21 @@ export interface StaffProfile {
   additional_roles?: string[];
   specialization?: string[];
   bio?: string | null;
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   is_branch_manager?: boolean;
   is_active?: boolean;
   is_available?: boolean;
-  shop?: Shop;
+  store?: Store;
 }
 
 interface AuthState {
   user: User | null;
-  shop: Shop | null;
+  store: Store | null;
   staffProfile: StaffProfile | null;
   token: string | null;
   isAuthenticated: boolean;
   hydrated: boolean;
-  setAuth: (user: User, token: string, shop?: Shop, staffProfile?: StaffProfile) => void;
+  setAuth: (user: User, token: string, store?: Store, staffProfile?: StaffProfile) => void;
   logout: () => void;
   hydrate: () => void;
 }
@@ -117,61 +117,61 @@ interface AuthState {
 // a client-only effect (see AuthHydrator.tsx) so auth state updates safely post-mount.
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  shop: null,
+  store: null,
   staffProfile: null,
   token: null,
   isAuthenticated: false,
   hydrated: false,
 
-  setAuth: (user, token, shop, staffProfile) => {
+  setAuth: (user, token, store, staffProfile) => {
     if (globalThis.window !== undefined) {
       sessionStorage.setItem('sutura_token', token);
       sessionStorage.setItem('sutura_user', JSON.stringify(user));
-      if (shop) sessionStorage.setItem('sutura_shop', JSON.stringify(shop));
-      else sessionStorage.removeItem('sutura_shop');
+      if (store) sessionStorage.setItem('sutura_store', JSON.stringify(store));
+      else sessionStorage.removeItem('sutura_store');
       if (staffProfile) sessionStorage.setItem('sutura_staff', JSON.stringify(staffProfile));
       else sessionStorage.removeItem('sutura_staff');
 
       localStorage.setItem('sutura_token', token);
       localStorage.setItem('sutura_user', JSON.stringify(user));
-      if (shop) localStorage.setItem('sutura_shop', JSON.stringify(shop));
-      else localStorage.removeItem('sutura_shop');
+      if (store) localStorage.setItem('sutura_store', JSON.stringify(store));
+      else localStorage.removeItem('sutura_store');
       if (staffProfile) localStorage.setItem('sutura_staff_profile', JSON.stringify(staffProfile));
       else localStorage.removeItem('sutura_staff_profile');
     }
-    set({ user, token, shop: shop || null, staffProfile: staffProfile || null, isAuthenticated: true, hydrated: true });
+    set({ user, token, store: store || null, staffProfile: staffProfile || null, isAuthenticated: true, hydrated: true });
   },
 
   logout: () => {
     if (globalThis.window !== undefined) {
       sessionStorage.removeItem('sutura_token');
       sessionStorage.removeItem('sutura_user');
-      sessionStorage.removeItem('sutura_shop');
+      sessionStorage.removeItem('sutura_store');
       sessionStorage.removeItem('sutura_staff');
       localStorage.removeItem('sutura_token');
       localStorage.removeItem('sutura_user');
-      localStorage.removeItem('sutura_shop');
+      localStorage.removeItem('sutura_store');
       localStorage.removeItem('sutura_staff_profile');
     }
-    set({ user: null, shop: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });
+    set({ user: null, store: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });
   },
 
   hydrate: () => {
     if (globalThis.window === undefined) return;
     const token = sessionStorage.getItem('sutura_token') || localStorage.getItem('sutura_token');
     const userStr = sessionStorage.getItem('sutura_user') || localStorage.getItem('sutura_user');
-    const shopStr = sessionStorage.getItem('sutura_shop') || localStorage.getItem('sutura_shop');
+    const storeStr = sessionStorage.getItem('sutura_store') || localStorage.getItem('sutura_store');
     const staffStr = sessionStorage.getItem('sutura_staff') || localStorage.getItem('sutura_staff_profile');
     let user: User | null = null;
-    let shop: Shop | null = null;
+    let store: Store | null = null;
     let staffProfile: StaffProfile | null = null;
     try { if (userStr) user = JSON.parse(userStr); } catch {}
-    try { if (shopStr) shop = JSON.parse(shopStr); } catch {}
+    try { if (storeStr) store = JSON.parse(storeStr); } catch {}
     try { if (staffStr) staffProfile = JSON.parse(staffStr); } catch {}
     set({
       token,
       user,
-      shop,
+      store,
       staffProfile,
       isAuthenticated: token !== null,
       hydrated: true,

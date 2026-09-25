@@ -9,13 +9,13 @@ import { Loader2 } from 'lucide-react';
   */
 export default function LegacyPortfolioItemRedirect({
   params,
-}: Readonly<{ params: Promise<{ shop_id: string; item_id: string }> }>) {
-  const { shop_id: shopId, item_id: itemId } = use(params);
+}: Readonly<{ params: Promise<{ store_id: string; item_id: string }> }>) {
+  const { store_id: storeId, item_id: itemId } = use(params);
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(`/shop/${shopId}/catalog/${itemId}`);
-  }, [shopId, itemId, router]);
+    router.replace(`/store/${storeId}/catalog/${itemId}`);
+  }, [storeId, itemId, router]);
 
   return (
     <div className="min-h-dvh flex items-center justify-center bg-zinc-50">

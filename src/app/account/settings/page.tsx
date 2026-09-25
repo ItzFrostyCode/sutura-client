@@ -63,7 +63,7 @@ export default function AccountSettingsMenuPage() {
         {SECTIONS.map((section) => (
           <div key={section.title}>
             <p className="text-[11px] font-semibold tracking-wide uppercase text-ink-faint mb-2 ml-1">{section.title}</p>
-            <div className="bg-surface border border-line rounded-2xl overflow-hidden divide-y divide-line">
+            <div className="bg-surface border border-line overflow-hidden divide-y divide-line">
               {section.rows.map((row) => (
                 <Link key={row.label} href={row.href} className="flex items-center gap-3 px-4 py-3.5">
                   <row.Icon size={17} className="text-ink-muted shrink-0" />
@@ -78,7 +78,7 @@ export default function AccountSettingsMenuPage() {
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-surface border border-line rounded-2xl text-sm font-semibold text-danger"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-surface border border-line text-sm font-semibold text-danger"
         >
           <LogOut size={16} /> Switch Account / Logout
         </button>

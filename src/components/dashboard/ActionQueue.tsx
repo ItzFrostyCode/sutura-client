@@ -50,7 +50,7 @@ const peso = (v?: number | string | null) => {
  * One prioritized queue of everything wanting attention, replacing three
  * separate systems that used to compete on the same screen (a six-card pastel
  * grid + two full-width amber accordions). Ordered by urgency, single surface,
- * hairline-divided — a shop owner works top-down instead of triaging colors.
+ * hairline-divided — a store owner works top-down instead of triaging colors.
  *
  * Now also absorbs the Deadlines section (Due Today / Due This Week) as queue
  * rows, eliminating a redundant standalone section.
@@ -92,14 +92,14 @@ export default function ActionQueue({ data, unpaidJobs, pendingDpJobs, dueToday,
     },
     {
       // The old "Pending Deposits" card duplicated this exact fact from a
-      // looser backend query (pending_deposit_jobs) — same shop state, two
+      // looser backend query (pending_deposit_jobs) — same store state, two
       // places, two styles. This list-backed one is the stricter, actionable
       // version, so the card is gone and only this remains.
       id: 'deposits',
       severity: 'money',
       count: pendingDpJobs.length,
       label: 'Awaiting downpayment',
-      sub: 'Shop policy: 50% DP before cutting starts',
+      sub: 'Store policy: 50% DP before cutting starts',
       icon: CreditCard,
       detail: pendingDpJobs,
       detailKind: 'deposit',

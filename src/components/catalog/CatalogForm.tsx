@@ -1,92 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { useAuthStore } from '@/store/useAuthStore';
-import {
-  ArrowLeft,
-  Loader2,
-  Save,
-  Plus,
-  X,
-  ChevronDown,
-  ChevronUp,
-  UploadCloud,
-  ImageOff,
-} from 'lucide-react';
-import { BulletItem, ImageItem, CatalogFormData } from './catalogTypes';
-import { uploadSectionImage, uploadCatalogImage, buildSavePayload } from './catalogHelpers';
-import SizeChartEditor, { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
-import api from '@/lib/axios';
-import { getErrorMessage } from '@/lib/apiError';
-
-// A gown/garment customer typically wants to see it from every real angle
-// before buying sight-unseen — front, back, both sides, plus a couple of
-// close-up/detail shots. 10 covers that comfortably without turning this
-// into an unbounded gallery.
-const MAX_CATALOG_IMAGES = 10;
-const QUICK_ANGLE_LABELS = ['Front', 'Left Side', 'Right Side', 'Back'];
-
-interface SectionImageUploadProps {
-  readonly imageUrl: string;
-  readonly uploading: boolean;
-  readonly uploadId: string;
-  readonly alt: string;
-  readonly onRemove: () => void;
-  readonly onChange: (file: File | undefined) => void;
-}
-
-function SectionImageUpload({ imageUrl, uploading, uploadId, alt, onRemove, onChange }: SectionImageUploadProps) {
-  if (imageUrl) {
-    return (
-      <div className="relative max-w-md aspect-video bg-surface border border-line rounded-lg overflow-hidden group">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt={alt} className="w-full h-full object-cover" />
-        <button
-          type="button"
-          onClick={onRemove}
-          className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[#FAF6F3] text-xs font-medium"
-        >
-          Remove Image
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div className="border-2 border-dashed border-line rounded-lg p-4 text-center max-w-md bg-white">
-      {uploading ? (
-        <div className="flex items-center justify-center gap-2 text-xs text-ink-muted">
-          <Loader2 className="w-4 h-4 animate-spin text-taupe" />
-          <span>Uploading visual guide...</span>
-        </div>
-      ) : (
-        <input
-          id={uploadId}
-          type="file"
-          accept="image/*"
-          onChange={e => onChange(e.target.files?.[0])}
-          className="text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sunken file:text-taupe hover:file:bg-line cursor-pointer"
-        />
-      )}
-    </div>
-  );
-}
-
-interface CatalogFormProps {
-  title: string;
-  description: string;
-  submitLabel: string;
-  initialData?: {
-    features: BulletItem[];
-    featuresImage: string;
-    sizeChart: SizeChartValue;
-    careImage: string;
-    formData: CatalogFormData;
-    images: ImageItem[];
-  };
-  onSubmit: (payload: ReturnType<typeof buildSavePayload>) => Promise<void>;
-  submitting: boolean;
-}
+import React from 'react';
+import SizeChartEditor from '@/components/shared/SizeChartEditor';
+import { CatalogFormProps } from './form/formTypes';
+import { useCatalogForm } from './form/useCatalogForm';
+import { CatalogFormHeader } from './form/CatalogFormHeader';
+import { BasicInfoSection } from './form/BasicInfoSection';
+import { SpecificationsAccordion } from './form/SpecificationsAccordion';
+import { CareAccordion } from './form/CareAccordion';
+import { ImagesSidebar } from './form/ImagesSidebar';
 
 export default function CatalogForm({
   title,
@@ -96,700 +18,115 @@ export default function CatalogForm({
   onSubmit,
   submitting,
 }: Readonly<CatalogFormProps>) {
-  const { shop } = useAuthStore();
-
-  const [formData, setFormData] = useState<CatalogFormData>({
-    name: '',
-    price: '',
-    service_id: '',
-    estimated_days: '',
-    material: '',
-    color: '',
-    fabric_image_url: '',
-    description: '',
-    care_instructions: '',
-    garment_type: '',
-    sizes: [],
-    external_gallery_url: '',
-    is_active: true,
-  });
-
-  // For the optional "Link to Service" dropdown — what actually makes the
-  // customer-facing Bulk Order flow (Size + Quantity, real quantity-based
-  // pricing) appear on this item at all: an unlinked item, or one linked to
-  // a non-bulk_sublimation service, simply has no Bulk Order entry point.
-  const [shopServices, setShopServices] = useState<{ id: number; name: string; service_types?: string[] }[]>([]);
-  useEffect(() => {
-    if (!shop?.id) return;
-    api.get(`/shops/${shop.id}/services`)
-      .then(res => setShopServices(res.data.data ?? []))
-      .catch(() => setShopServices([]));
-  }, [shop?.id]);
-
-  const [fabricImageUploading, setFabricImageUploading] = useState(false);
-  const fabricImageInputRef = useRef<HTMLInputElement>(null);
-  const [sizeInput, setSizeInput] = useState('');
-
-  const addSize = () => {
-    const size = sizeInput.trim();
-    if (!size || formData.sizes.includes(size)) return;
-    setFormData(prev => ({ ...prev, sizes: [...prev.sizes, size] }));
-    setSizeInput('');
-  };
-  const removeSize = (size: string) => {
-    setFormData(prev => ({ ...prev, sizes: prev.sizes.filter(s => s !== size) }));
-  };
-
-  const [features, setFeatures] = useState<BulletItem[]>([{ id: 'init', text: '' }]);
-  const [sizeChart, setSizeChart] = useState<SizeChartValue>(emptySizeChart);
-  const [images, setImages] = useState<ImageItem[]>([
-    { id: 'init', url: '', angle: 'Default', is_primary: true },
-  ]);
-
-  const [featuresImage, setFeaturesImage] = useState<string>('');
-  const [careImage, setCareImage] = useState<string>('');
-  const [uploadingSection, setUploadingSection] = useState<'specs' | 'care' | null>(null);
-
-  const [accordionOpen, setAccordionOpen] = useState({
-    specs: false,
-    care: false,
-  });
-
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
-
-  useEffect(() => {
-    if (!initialData) return;
-    setTimeout(() => {
-      setFormData(initialData.formData);
-      setFeatures(initialData.features);
-      setSizeChart(initialData.sizeChart);
-      setImages(initialData.images);
-      setFeaturesImage(initialData.featuresImage);
-      setCareImage(initialData.careImage);
-    }, 0);
-  }, [initialData]);
-
-  const toggleAccordion = (section: 'specs' | 'care') => {
-    setAccordionOpen(prev => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSectionUpload = (file: File | undefined, section: 'specs' | 'care') => {
-    if (!file || !shop?.id) return;
-    uploadSectionImage({
-      file,
-      shopId: shop.id,
-      section,
-      setUploadingSection,
-      setFeaturesImage,
-      setCareImage,
-    });
-  };
-
-  const handleFormSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const payload = buildSavePayload(
-      formData,
-      features,
-      featuresImage,
-      sizeChart,
-      careImage,
-      images
-    );
-    await onSubmit(payload);
-  };
-
-  const handleFabricImageUpload = async (file: File | undefined) => {
-    if (!file || !shop?.id) return;
-    setFabricImageUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      const res = await api.post(`/shops/${shop.id}/upload`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const url = res.data?.data?.url || res.data?.url || '';
-      setFormData(prev => ({ ...prev, fabric_image_url: url }));
-    } catch (err) {
-      alert(getErrorMessage(err, 'Failed to upload fabric image.'));
-    } finally {
-      setFabricImageUploading(false);
-    }
-  };
-
-  // Blocks Save while any image slot is still mid-upload — otherwise
-  // buildSavePayload's url.trim() !== '' filter silently drops that slot
-  // entirely (its url is still '' until the upload resolves), losing the
-  // image with no warning.
-  const saveDisabled = submitting || !formData.name || !formData.price || images.every(i => !i.url) || images.some(i => i.uploading);
+  const {
+    store,
+    formData,
+    setFormData,
+    storeServices,
+    fabricImageUploading,
+    fabricImageInputRef,
+    sizeInput,
+    setSizeInput,
+    addSize,
+    removeSize,
+    features,
+    setFeatures,
+    sizeChart,
+    setSizeChart,
+    images,
+    setImages,
+    featuresImage,
+    setFeaturesImage,
+    careImage,
+    setCareImage,
+    uploadingSection,
+    accordionOpen,
+    toggleAccordion,
+    showMoreDetails,
+    setShowMoreDetails,
+    handleChange,
+    handleSectionUpload,
+    handleFabricImageUpload,
+    saveDisabled,
+    handleFormSubmit,
+  } = useCatalogForm({ initialData, onSubmit, submitting });
 
   return (
     <form onSubmit={handleFormSubmit} className="bg-canvas min-h-screen text-ink pb-16 font-sans selection:bg-line">
-      {/* Top Header Panel */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-line pb-6">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard/catalog"
-              className="p-2.5 bg-surface border border-line rounded-xl text-ink-muted hover:text-ink hover:border-line-strong transition-all shrink-0"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-serif font-bold text-ink tracking-tight">{title}</h1>
-              <p className="text-ink-muted text-sm mt-0.5">{description}</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href="/dashboard/catalog"
-              className="px-5 py-2.5 bg-surface border border-line rounded-xl text-sm font-semibold text-ink-body hover:bg-canvas transition-colors flex items-center justify-center animate-fade-in"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={saveDisabled}
-              className="px-5 py-2.5 bg-taupe hover:bg-taupe/90 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer animate-fade-in"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={16} />}
-              {submitLabel}
-            </button>
-          </div>
-        </div>
-      </div>
+      <CatalogFormHeader
+        title={title}
+        description={description}
+        submitLabel={submitLabel}
+        submitting={submitting}
+        saveDisabled={saveDisabled}
+      />
 
-      {/* Main Form Fields */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
-              <h2 className="text-lg font-medium text-ink border-b border-[#FAF6F3] pb-3">Basic Information</h2>
+            <BasicInfoSection
+              formData={formData}
+              onChange={handleChange}
+              setFormData={setFormData}
+              storeServices={storeServices}
+              fabricImageUploading={fabricImageUploading}
+              fabricImageInputRef={fabricImageInputRef}
+              onFabricUpload={handleFabricImageUpload}
+              showMoreDetails={showMoreDetails}
+              setShowMoreDetails={setShowMoreDetails}
+              sizeInput={sizeInput}
+              setSizeInput={setSizeInput}
+              onAddSize={addSize}
+              onRemoveSize={removeSize}
+            />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="catalog-name" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-                    Product / Design Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="catalog-name"
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="e.g. Traditional Jusi Barong"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="catalog-price" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-                    Price (PHP) <span className="text-rose-500">*</span>
-                    <span className="text-ink-faint normal-case font-normal"> — base/single-piece price; bulk pricing is arranged per job order</span>
-                  </label>
-                  <input
-                    id="catalog-price"
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    placeholder="e.g. 24999"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="catalog-material" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Fabric / Material</label>
-                  <input
-                    id="catalog-material"
-                    type="text"
-                    name="material"
-                    value={formData.material}
-                    onChange={handleChange}
-                    placeholder="e.g. Cocoon Silk, Piña"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                  {/* Fabric Texture Image Upload — a real button, styled distinctly
-                      from the main Images panel on the right, so it isn't mistaken
-                      for that gallery's own upload slots. */}
-                  <div className="mt-2">
-                    {formData.fabric_image_url ? (
-                      <div className="relative inline-flex items-center gap-2 bg-canvas border border-line rounded-lg px-3 py-2 text-xs">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={formData.fabric_image_url} alt="Fabric texture" className="w-10 h-10 object-cover rounded border border-line" />
-                        <span className="text-ink-body font-medium">Fabric texture uploaded</span>
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, fabric_image_url: '' }))}
-                          className="ml-1 text-danger hover:text-danger/80 transition-colors"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={fabricImageUploading}
-                        onClick={() => fabricImageInputRef.current?.click()}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#D5CEC8] bg-canvas text-xs font-semibold text-ink-body hover:bg-sunken hover:border-taupe transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {fabricImageUploading ? (
-                          <Loader2 size={14} className="animate-spin text-taupe" />
-                        ) : (
-                          <UploadCloud size={14} />
-                        )}
-                        <span>{fabricImageUploading ? 'Uploading texture...' : 'Upload fabric texture image (optional)'}</span>
-                        <input
-                          ref={fabricImageInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={fabricImageUploading}
-                          onChange={e => handleFabricImageUpload(e.target.files?.[0])}
-                        />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="catalog-color" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Color</label>
-                  <input
-                    id="catalog-color"
-                    type="text"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleChange}
-                    placeholder="e.g. Ivory, Navy Blue"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="catalog-garment" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Garment Type</label>
-                  <input
-                    id="catalog-garment"
-                    type="text"
-                    name="garment_type"
-                    value={formData.garment_type}
-                    onChange={handleChange}
-                    placeholder="e.g. Barong, Gown, Suit"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="catalog-service" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-                  Link to Service <span className="text-ink-faint normal-case font-normal">— optional; a bulk_sublimation service enables the customer-facing Bulk Order flow on this item</span>
-                </label>
-                <select
-                  id="catalog-service"
-                  name="service_id"
-                  value={formData.service_id}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink focus:outline-none focus:border-taupe text-sm"
-                >
-                  <option value="">No linked service</option>
-                  {shopServices.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}{(s.service_types ?? []).includes('bulk_sublimation') ? ' (Bulk Sublimation)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="catalog-estimated-days" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-                    Estimated Days to Complete
-                  </label>
-                  <input
-                    id="catalog-estimated-days"
-                    type="number"
-                    min="1"
-                    name="estimated_days"
-                    value={formData.estimated_days}
-                    onChange={handleChange}
-                    placeholder="e.g. 7"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="catalog-gallery" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">External Gallery Link (Optional)</label>
-                  <input
-                    id="catalog-gallery"
-                    type="url"
-                    name="external_gallery_url"
-                    value={formData.external_gallery_url}
-                    onChange={handleChange}
-                    placeholder="e.g. Pinterest board, Google Drive link"
-                    className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Active / Paused toggle */}
-              <div className="flex items-center gap-3 pt-1">
-                <input
-                  id="catalog-is-active"
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={e => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-                  className="w-4 h-4 rounded border-line text-taupe focus:ring-taupe"
-                />
-                <label htmlFor="catalog-is-active" className="text-sm font-medium text-ink-body">
-                  Active &amp; Visible to Customers{' '}
-                  <span className="block text-xs font-normal text-ink-faint">
-                    Uncheck to pause this item (e.g. out of stock) without deleting it — it&apos;s hidden from your public storefront but stays in your own catalog list.
-                  </span>
-                </label>
-              </div>
-
-              {/* ── More Details Toggle ────────────────────────────────── */}
-              <div className="border-t border-line pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowMoreDetails(v => !v)}
-                  className="flex items-center gap-2 text-xs font-semibold text-taupe hover:text-ink transition-colors"
-                >
-                  <span className={`w-5 h-5 rounded-full border border-line bg-canvas flex items-center justify-center transition-transform ${showMoreDetails ? 'rotate-180' : ''}`}>
-                    <ChevronDown size={12} />
-                  </span>
-                  {showMoreDetails ? 'Hide optional details' : 'Add available sizes →'}
-                </button>
-
-                {showMoreDetails && (
-                  <div className="mt-5 grid grid-cols-1 gap-5">
-                    <div>
-                      <label htmlFor="catalog-sizes" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-                        Available Sizes <span className="text-ink-faint normal-case">— reference range for this design; leave blank if fully custom-measured</span>
-                      </label>
-                      {formData.sizes.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {formData.sizes.map(size => (
-                            <span key={size} className="flex items-center gap-1 px-3 py-1 bg-taupe text-white text-sm rounded-full">
-                              {size}
-                              <button type="button" onClick={() => removeSize(size)} className="hover:text-white/70 focus:outline-none">
-                                <X size={14} />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <input
-                          id="catalog-sizes"
-                          type="text"
-                          value={sizeInput}
-                          onChange={(e) => setSizeInput(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSize(); } }}
-                          placeholder="e.g. S, then press Enter"
-                          className="flex-1 px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                        />
-                        <button
-                          type="button"
-                          onClick={addSize}
-                          className="shrink-0 px-4 rounded-xl bg-taupe/10 text-taupe hover:bg-taupe/20 transition-colors text-sm font-semibold"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="catalog-desc" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Description</label>
-                <textarea
-                  id="catalog-desc"
-                  rows={4}
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Tell clients about the design, silhouette details, and styling recommendations..."
-                  className="w-full px-4 py-3 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Accordion Sections for Specifications, Fit Guide, Care */}
             <div className="space-y-4">
-              {/* Accordion 1: Specifications */}
-              <div className="bg-surface border border-line rounded-2xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion('specs')}
-                  className="w-full flex items-center justify-between p-5 text-left font-medium text-ink hover:bg-canvas/50 transition-colors"
-                >
-                  <div>
-                    <span className="font-semibold text-sm">Product Specifications</span>
-                    <p className="text-xs text-ink-muted mt-0.5">Collar designs, cuffs, embroidery details, linings</p>
-                  </div>
-                  {accordionOpen.specs ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
-                {accordionOpen.specs && (
-                  <div className="p-5 border-t border-line bg-canvas/20 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">Dynamic details that list out product specifications.</span>
-                      <button
-                        type="button"
-                        onClick={() => setFeatures([...features, { id: Math.random().toString(), text: '' }])}
-                        className="text-taupe text-xs font-semibold hover:text-taupe-hover flex items-center gap-1"
-                      >
-                        <Plus size={14} /> Add Bullet
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {features.map((feat, idx) => (
-                        <div key={feat.id} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={feat.text}
-                            onChange={e => {
-                              const newF = [...features];
-                              newF[idx] = { ...newF[idx], text: e.target.value };
-                              setFeatures(newF);
-                            }}
-                            placeholder="e.g. Hand-stitched lapel, horn buttons"
-                            className="flex-1 px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
-                            className="p-2 text-ink-faint hover:text-danger transition-colors"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+              <SpecificationsAccordion
+                isOpen={accordionOpen.specs}
+                onToggle={() => toggleAccordion('specs')}
+                features={features}
+                setFeatures={setFeatures}
+                featuresImage={featuresImage}
+                setFeaturesImage={setFeaturesImage}
+                uploading={uploadingSection === 'specs'}
+                onUpload={file => handleSectionUpload(file, 'specs')}
+              />
 
-                    <div className="border-t border-line pt-4 mt-4">
-                      <label htmlFor="features-upload" className="block text-xs font-semibold text-ink-body mb-2">
-                        Section Visual Guide / Image (Optional)
-                      </label>
-                      <SectionImageUpload
-                        imageUrl={featuresImage}
-                        uploading={uploadingSection === 'specs'}
-                        uploadId="features-upload"
-                        alt="Features Spec Guide"
-                        onRemove={() => setFeaturesImage('')}
-                        onChange={file => handleSectionUpload(file, 'specs')}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Fit & Sizing Guidelines — the same Size Chart builder used on Services */}
               <div className="bg-surface border border-line rounded-2xl p-5">
                 <SizeChartEditor
                   mode="table"
                   value={sizeChart}
                   onChange={setSizeChart}
-                  shopId={shop?.id ?? 0}
+                  storeId={store?.id ?? 0}
                   title="Fit & Sizing Guidelines"
                   description="Show customers exactly how you measure — upload your own reference chart image and/or build a size & measurement table."
                 />
               </div>
 
-              {/* Accordion 3: Garment Care & Alteration FAQ */}
-              <div className="bg-surface border border-line rounded-2xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion('care')}
-                  className="w-full flex items-center justify-between p-5 text-left font-medium text-ink hover:bg-canvas/50 transition-colors"
-                >
-                  <div>
-                    <span className="font-semibold text-sm">Garment Care & Alterations FAQ</span>
-                    <p className="text-xs text-ink-muted mt-0.5">Dry-cleaning rules, laundry instructions, alteration limits</p>
-                  </div>
-                  {accordionOpen.care ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
-                {accordionOpen.care && (
-                  <div className="p-5 border-t border-line bg-canvas/20 space-y-4">
-                    <div>
-                      <span className="block text-xs text-ink-muted mb-1">Detailed text description for garment upkeep and store policies:</span>
-                      <textarea
-                        rows={4}
-                        name="care_instructions"
-                        value={formData.care_instructions}
-                        onChange={handleChange}
-                        placeholder="Dry clean only. Minor alterations (hem, sleeves) are free within 30 days of purchase..."
-                        className="w-full px-4 py-2 bg-surface border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-                      />
-                    </div>
-
-                    <div className="border-t border-line pt-4 mt-2">
-                      <label htmlFor="care-upload" className="block text-xs font-semibold text-ink-body mb-2">
-                        Section Visual Guide / Image (Optional)
-                      </label>
-                      <SectionImageUpload
-                        imageUrl={careImage}
-                        uploading={uploadingSection === 'care'}
-                        uploadId="care-upload"
-                        alt="Garment Care Guide"
-                        onRemove={() => setCareImage('')}
-                        onChange={file => handleSectionUpload(file, 'care')}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+              <CareAccordion
+                isOpen={accordionOpen.care}
+                onToggle={() => toggleAccordion('care')}
+                careInstructions={formData.care_instructions}
+                onChange={handleChange}
+                careImage={careImage}
+                setCareImage={setCareImage}
+                uploading={uploadingSection === 'care'}
+                onUpload={file => handleSectionUpload(file, 'care')}
+              />
             </div>
           </div>
 
+          {/* Right Images Sidebar */}
           <div className="space-y-6">
-            {/* Images Upload Section */}
-            <div className="bg-surface border border-line rounded-2xl p-6 sticky top-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-medium text-ink">Images</h2>
-                  <span className="text-xs font-medium text-ink-faint">{images.length}/{MAX_CATALOG_IMAGES}</span>
-                </div>
-                <button
-                  type="button"
-                  disabled={images.length >= MAX_CATALOG_IMAGES}
-                  onClick={() => setImages([...images, { id: Math.random().toString(), url: '', angle: 'Default', is_primary: false }])}
-                  className="text-taupe text-xs font-semibold hover:text-taupe-hover disabled:text-ink-faint disabled:cursor-not-allowed flex items-center gap-1"
-                >
-                  <Plus size={14} /> Add Image Slot
-                </button>
-              </div>
-              <div className="space-y-4">
-                {images.map((img, idx) => (
-                  <div
-                    key={img.id}
-                    className="space-y-3 p-4 bg-surface border border-line rounded-xl relative group hover:border-taupe/50 transition-colors"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                      className="absolute -top-2 -right-2 bg-surface border border-line text-ink-muted hover:text-rose-500 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                    >
-                      <X size={14} />
-                    </button>
-
-                    {img.url ? (
-                      <div className="relative aspect-3/4 bg-canvas border border-line rounded-lg overflow-hidden group/img">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.url} alt="Uploaded" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImages(prev => prev.map(im => (im.id === img.id ? { ...im, url: '' } : im)));
-                          }}
-                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-white text-sm font-medium gap-2"
-                        >
-                          <ImageOff size={16} /> Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="relative flex flex-col items-center justify-center aspect-3/4 border-2 border-dashed border-[#D5CEC8] rounded-lg bg-canvas hover:bg-sunken hover:border-taupe transition-colors cursor-pointer group/upload">
-                        {img.uploading ? (
-                          <div className="flex flex-col items-center gap-2 text-taupe">
-                            <Loader2 className="w-6 h-6 animate-spin" />
-                            <span className="text-xs font-medium">Uploading...</span>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="p-3 bg-surface border border-line rounded-full text-taupe mb-2 group-hover/upload:scale-110 transition-transform">
-                              <UploadCloud size={20} />
-                            </div>
-                            <span className="text-sm font-semibold text-ink-body">Click to upload image</span>
-                            <span className="text-xs text-ink-muted mt-1">JPEG, PNG up to 5MB</span>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={img.uploading}
-                          onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (file && shop?.id) {
-                              uploadCatalogImage({
-                                file,
-                                shopId: shop.id,
-                                imageId: img.id,
-                                setImages,
-                              });
-                            }
-                          }}
-                        />
-                      </label>
-                    )}
-
-                    <div className="flex items-end gap-3 mt-3">
-                      <div className="flex-1">
-                        <label htmlFor={`img-angle-${img.id}`} className="block text-[11px] font-semibold text-ink-muted uppercase tracking-wider mb-1">
-                          Photo Label <span className="text-ink-faint normal-case font-normal">— shown as a caption on this photo (e.g. Front, Back, Detail)</span>
-                        </label>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {QUICK_ANGLE_LABELS.map(label => (
-                            <button
-                              key={label}
-                              type="button"
-                              onClick={() => setImages(prev => prev.map(im => (im.id === img.id ? { ...im, angle: label } : im)))}
-                              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
-                                img.angle === label ? 'bg-taupe text-white border-taupe' : 'bg-canvas text-ink-muted border-line hover:border-taupe/50'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                        <input
-                          id={`img-angle-${img.id}`}
-                          type="text"
-                          value={img.angle}
-                          onChange={e => {
-                            const newAngle = e.target.value;
-                            setImages(prev => prev.map(im => (im.id === img.id ? { ...im, angle: newAngle } : im)));
-                          }}
-                          placeholder="e.g. Front, Back, Detail"
-                          className="w-full px-3 py-2 bg-canvas border border-line rounded-md text-ink text-sm focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-shadow"
-                        />
-                      </div>
-                      <label className={`flex items-center gap-2 text-sm px-3 py-2 rounded-md border cursor-pointer transition-colors shrink-0 ${img.is_primary ? 'bg-taupe/10 border-taupe text-taupe font-medium' : 'bg-white border-line text-ink-muted hover:bg-canvas'}`}>
-                        <input
-                          type="radio"
-                          name="is_primary"
-                          checked={img.is_primary}
-                          onChange={() => {
-                            setImages(prev => prev.map(im => ({ ...im, is_primary: im.id === img.id })));
-                          }}
-                          className="accent-[#9A8073] w-4 h-4"
-                        />
-                        <span>Primary</span>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 border-t border-line pt-6">
-                <button
-                  type="submit"
-                  disabled={saveDisabled}
-                  className="w-full bg-taupe hover:bg-taupe/90 text-white px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm cursor-pointer"
-                >
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={18} />}
-                  {submitLabel}
-                </button>
-              </div>
-            </div>
+            <ImagesSidebar
+              images={images}
+              setImages={setImages}
+              storeId={store?.id}
+              saveDisabled={saveDisabled}
+              submitting={submitting}
+              submitLabel={submitLabel}
+            />
           </div>
         </div>
       </div>

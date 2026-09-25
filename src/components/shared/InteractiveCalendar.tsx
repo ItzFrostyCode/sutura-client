@@ -22,7 +22,7 @@ export interface SpecialHour {
 export interface AppointmentSlot {
   scheduled_at: string; // ISO string
   duration_minutes: number;
-  shop_branch_id: number | null;
+  store_branch_id: number | null;
   status?: string;
 }
 
@@ -43,7 +43,7 @@ interface InteractiveCalendarProps {
 
 /**
  * Shared date/time picker widget used by both the public storefront booking
- * page and the shop owner's Schedule Appointment modal.
+ * page and the store owner's Schedule Appointment modal.
  */
 export default function InteractiveCalendar({
   selectedBranchId,
@@ -164,7 +164,7 @@ export default function InteractiveCalendar({
       let isPendingOverlap = false;
 
       for (const appt of appointments) {
-        if (selectedBranchId && appt.shop_branch_id && String(appt.shop_branch_id) !== selectedBranchId) {
+        if (selectedBranchId && appt.store_branch_id && String(appt.store_branch_id) !== selectedBranchId) {
           continue;
         }
 
@@ -295,14 +295,14 @@ export default function InteractiveCalendar({
     if (special?.is_closed) {
       return {
         title: `Closed: ${special.title || 'Holiday'}`,
-        description: 'The shop is closed for this date. Please pick another day.',
+        description: 'The store is closed for this date. Please pick another day.',
       };
     }
     const opHours = getOperatingHoursForDate(selectedDate);
     if (opHours && !opHours.is_open) {
       return {
         title: 'Closed on this day',
-        description: "This day is closed according to the shop's Standard Operating Hours.",
+        description: "This day is closed according to the store's Standard Operating Hours.",
       };
     }
     if (isDateFullyBooked(selectedDate)) {

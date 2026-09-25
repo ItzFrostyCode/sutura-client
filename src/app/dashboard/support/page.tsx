@@ -29,7 +29,7 @@ const updateUploadStatus = (
 };
 
 export default function SupportPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -52,13 +52,13 @@ export default function SupportPage() {
   const [replyUploads, setReplyUploads] = useState<UploadItem[]>([]);
 
   const fetchTickets = useCallback(async () => {
-    if (!shop) {
+    if (!store) {
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const res = await api.get(`/shops/${shop.id}/tickets`);
+      const res = await api.get(`/stores/${store.id}/tickets`);
       const sorted = (res.data.data as Ticket[]).sort(
         (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
       );
@@ -68,7 +68,7 @@ export default function SupportPage() {
     } finally {
       setLoading(false);
     }
-  }, [shop]);
+  }, [store]);
 
   useEffect(() => { 
     const t = setTimeout(() => fetchTickets(), 0);
@@ -76,9 +76,9 @@ export default function SupportPage() {
   }, [fetchTickets, user]);
 
   const openDetail = async (ticket: Ticket) => {
-    if (!shop) return;
+    if (!store) return;
     try {
-      const res = await api.get(`/shops/${shop.id}/tickets/${ticket.id}`);
+      const res = await api.get(`/stores/${store.id}/tickets/${ticket.id}`);
       setSelected(res.data.data);
     } catch {
       setSelected(ticket);
@@ -87,7 +87,7 @@ export default function SupportPage() {
   };
 
   const handleUpload = async (files: File[], isReply: boolean) => {
-    if (!shop) return;
+    if (!store) return;
     const setUploads = isReply ? setReplyUploads : setNewTicketUploads;
     const maxSize = 50 * 1024 * 1024; // 50MB
 
@@ -120,7 +120,7 @@ export default function SupportPage() {
       formData.append('file', item.file);
 
       try {
-        const res = await api.post(`/shops/${shop.id}/support/upload`, formData, {
+        const res = await api.post(`/stores/${store.id}/support/upload`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
             const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
@@ -142,7 +142,7 @@ export default function SupportPage() {
 
   const submitTicket = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!shop) return;
+    if (!store) return;
     if (!form.subject.trim() || !form.message.trim()) {
       setFormError('Please fill in all required fields.');
       return;
@@ -154,7 +154,7 @@ export default function SupportPage() {
     setSubmitting(true);
     setFormError('');
     try {
-      await api.post(`/shops/${shop.id}/tickets`, {
+      await api.post(`/stores/${store.id}/tickets`, {
         ...form,
         attachments: attachmentUrls
       });
@@ -171,11 +171,11 @@ export default function SupportPage() {
 
   const sendReply = async () => {
     const successUploads = replyUploads.filter(u => u.status === 'success');
-    if (!shop || !selected || (!replyText.trim() && successUploads.length === 0)) return;
+    if (!store || !selected || (!replyText.trim() && successUploads.length === 0)) return;
     setSendingReply(true);
     const attachmentUrls = successUploads.map(u => u.url);
     try {
-      const res = await api.post(`/shops/${shop.id}/tickets/${selected.id}/reply`, {
+      const res = await api.post(`/stores/${store.id}/tickets/${selected.id}/reply`, {
         message: replyText,
         attachments: attachmentUrls
       });
@@ -193,10 +193,10 @@ export default function SupportPage() {
   };
 
   const closeTicket = async () => {
-    if (!shop || !selected) return;
+    if (!store || !selected) return;
     setClosing(true);
     try {
-      await api.post(`/shops/${shop.id}/tickets/${selected.id}/close`);
+      await api.post(`/stores/${store.id}/tickets/${selected.id}/close`);
       setSelected(prev => prev ? { ...prev, status: 'closed' } : prev);
       setTickets(prev => prev.map(t => t.id === selected?.id ? { ...t, status: 'closed' } : t));
     } catch (e) {

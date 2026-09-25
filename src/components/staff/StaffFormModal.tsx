@@ -18,7 +18,7 @@ interface StaffFormModalProps {
     specialization: string;
     hired_at: string;
     is_active: boolean;
-    shop_branch_id: string;
+    store_branch_id: string;
     is_branch_manager: boolean;
     bio: string;
     is_available: boolean;
@@ -33,7 +33,7 @@ interface StaffFormModalProps {
     specialization: string;
     hired_at: string;
     is_active: boolean;
-    shop_branch_id: string;
+    store_branch_id: string;
     is_branch_manager: boolean;
     bio: string;
     is_available: boolean;
@@ -50,7 +50,7 @@ const ROLE_OPTIONS = [
   { value: 'assistant', label: 'Assistant' },
   { value: 'receptionist', label: 'Receptionist' },
   { value: 'quality_control', label: 'Quality Control' },
-  { value: 'subcontractor', label: 'Subcontractor (Partner Shop)' },
+  { value: 'subcontractor', label: 'Subcontractor (Partner Store)' },
   { value: 'sublimation_specialist', label: 'Sublimation Specialist' },
   { value: 'senior_designer', label: 'Senior Designer' },
   { value: 'cutter_sewer', label: 'Cutter/Sewer' },
@@ -323,7 +323,7 @@ export default function StaffFormModal({
               maxLength={1000}
               className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs resize-none"
             />
-            <p className="text-[11px] text-ink-muted mt-1">Visible only to shop owner and management.</p>
+            <p className="text-[11px] text-ink-muted mt-1">Visible only to store owner and management.</p>
           </div>
 
           {branches.length > 0 && (
@@ -333,8 +333,8 @@ export default function StaffFormModal({
               </label>
               <select
                 id="staff_branch"
-                name="shop_branch_id"
-                value={formData.shop_branch_id}
+                name="store_branch_id"
+                value={formData.store_branch_id}
                 onChange={handleInputChange}
                 className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs cursor-pointer"
               >

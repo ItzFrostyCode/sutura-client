@@ -12,13 +12,13 @@ import { useAuthStore } from '@/store/useAuthStore';
  * and its satellite companions ("mga kasama niya") without having to hover or open hidden dropdowns.
  */
 export default function BranchQuickBar() {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
 
   const safeBranches = Array.isArray(branches) ? branches : [];
 
-  // Only render if a shop is loaded and has branches
-  if (!shop?.id || safeBranches.length === 0) {
+  // Only render if a store is loaded and has branches
+  if (!store?.id || safeBranches.length === 0) {
     return null;
   }
 
@@ -99,7 +99,7 @@ export default function BranchQuickBar() {
         <button
           type="button"
           onClick={() => setSelectedBranchId(null)}
-          title="Consolidated view across all shop locations"
+          title="Consolidated view across all store locations"
           className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium whitespace-nowrap min-h-[28px] cursor-pointer ${
             selectedBranchId === null
               ? 'bg-taupe text-white shadow-xs font-semibold'

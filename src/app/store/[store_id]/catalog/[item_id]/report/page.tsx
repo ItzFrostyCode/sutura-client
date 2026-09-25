@@ -21,8 +21,8 @@ const REASON_LABEL: Record<Reason, string> = {
 // Two-step flow inside one page/route: "next page" in the main panel, not a
 // new URL — back on step 2 returns to reason selection (step 1) before it
 // ever leaves this route, back on step 1 is a real back to the product.
-export default function ReportProductPage({ params }: Readonly<{ params: Promise<{ shop_id: string; item_id: string }> }>) {
-  const { shop_id: shopId, item_id: itemId } = use(params);
+export default function ReportProductPage({ params }: Readonly<{ params: Promise<{ store_id: string; item_id: string }> }>) {
+  const { store_id: storeId, item_id: itemId } = use(params);
   const router = useRouter();
   const [reason, setReason] = useState<Reason | null>(null);
   const [description, setDescription] = useState('');
@@ -45,7 +45,7 @@ export default function ReportProductPage({ params }: Readonly<{ params: Promise
     setSubmitting(true);
     setError('');
     try {
-      await api.post(`/shops/${shopId}/catalog/${itemId}/report`, {
+      await api.post(`/stores/${storeId}/catalog/${itemId}/report`, {
         reason,
         description: description.trim() || undefined,
       });
@@ -77,7 +77,7 @@ export default function ReportProductPage({ params }: Readonly<{ params: Promise
           </p>
           <button
             type="button"
-            onClick={() => router.push(`/shop/${shopId}/catalog/${itemId}`)}
+            onClick={() => router.push(`/store/${storeId}/catalog/${itemId}`)}
             className="px-5 py-2.5 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold rounded-lg transition-colors"
           >
             Back to Catalog

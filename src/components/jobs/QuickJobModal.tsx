@@ -24,7 +24,7 @@ const DP_PRESETS = [
 ];
 
 export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobModalProps) {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const toast = useToast();
   const router = useRouter();
@@ -41,13 +41,13 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
   const [dueDate,     setDueDate]     = useState('');
 
   useEffect(() => {
-    if (!shop || !isOpen) return;
+    if (!store || !isOpen) return;
     const load = async () => {
       setLoading(true);
       try {
         const [rc, rs] = await Promise.all([
-          api.get(`/shops/${shop.id}/customers`),
-          api.get(`/shops/${shop.id}/services`),
+          api.get(`/stores/${store.id}/customers`),
+          api.get(`/stores/${store.id}/services`),
         ]);
         setCustomers(rc.data.data || []);
         setServices(rs.data.data  || []);
@@ -56,7 +56,7 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
       }
     };
     void load();
-  }, [shop, isOpen]);
+  }, [store, isOpen]);
 
   useEffect(() => {
     const applyServicePrice = () => {
@@ -85,20 +85,20 @@ export default function QuickJobModal({ isOpen, onClose, onCreated }: QuickJobMo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shop || !customerId || !serviceId) return;
+    if (!store || !customerId || !serviceId) return;
     setSaving(true);
     try {
-      const res = await api.post(`/shops/${shop.id}/jobs`, {
+      const res = await api.post(`/stores/${store.id}/jobs`, {
         intake_channel: 'walk_in',
         fulfillment_type: 'pickup',
         customer_id: customerId,
         service_id:  serviceId,
         // Quick Job never assigns staff at creation, so JobOrderController@store's
         // own branch-fallback chain (assigned staff → creator's own branch →
-        // shop's main branch) has nothing to derive from and always lands on the
+        // store's main branch) has nothing to derive from and always lands on the
         // main branch — silently dropping the job out of whichever non-main
         // branch the owner had selected in the header when they created it.
-        shop_branch_id: selectedBranchId ?? undefined,
+        store_branch_id: selectedBranchId ?? undefined,
         total_amount: totalNum,
         downpayment:  dpNum,
         balance:      balance,

@@ -7,10 +7,10 @@ import { useToast } from '@/context/ToastContext';
 interface SendCustomerMessageModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
-  readonly shopId: number;
+  readonly storeId: number;
   readonly jobId: number;
   readonly orderNumber: string;
-  readonly shopName: string;
+  readonly storeName: string;
   readonly customerName: string;
   readonly customerEmail: string | null | undefined;
 }
@@ -18,10 +18,10 @@ interface SendCustomerMessageModalProps {
 export default function SendCustomerMessageModal({
   isOpen,
   onClose,
-  shopId,
+  storeId,
   jobId,
   orderNumber,
-  shopName,
+  storeName,
   customerName,
   customerEmail,
 }: SendCustomerMessageModalProps) {
@@ -43,7 +43,7 @@ export default function SendCustomerMessageModal({
   const handleSend = async () => {
     setSending(true);
     try {
-      const res = await api.post(`/shops/${shopId}/jobs/${jobId}/notify-customer`, { subject, message });
+      const res = await api.post(`/stores/${storeId}/jobs/${jobId}/notify-customer`, { subject, message });
       toast.success(res.data.message || 'Message sent.');
       handleClose();
     } catch (err: unknown) {
@@ -114,7 +114,7 @@ export default function SendCustomerMessageModal({
                 <span className="truncate">To: {customerEmail}</span>
               </div>
               <div className="p-5 bg-white space-y-3">
-                <p className="text-sm font-semibold text-ink">{subject} — {shopName}</p>
+                <p className="text-sm font-semibold text-ink">{subject} — {storeName}</p>
                 <p className="text-sm text-ink-body">Hello {customerName},</p>
                 <div className="space-y-2">
                   {message.split(/\r?\n/).filter(line => line !== '').map((line, i) => (
@@ -123,7 +123,7 @@ export default function SendCustomerMessageModal({
                 </div>
                 <div className="pt-2">
                   <span className="inline-block bg-taupe text-white text-xs font-semibold px-4 py-2 rounded-lg">
-                    Visit {shopName}
+                    Visit {storeName}
                   </span>
                 </div>
               </div>

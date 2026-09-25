@@ -1,13 +1,13 @@
 /**
- * Shared helper to determine if a shop is currently open based on its
+ * Shared helper to determine if a store is currently open based on its
  * operating_hours object (Record<string, { is_open: boolean; open: string; close: string }>).
  *
- * Used by the landing page, search results, and shop profile to render the
- * green (open) / red (closed) status dot on the shop logo.
+ * Used by the landing page, search results, and store profile to render the
+ * green (open) / red (closed) status dot on the store logo.
  */
 export type OperatingHours = Record<string, { is_open: boolean; open: string; close: string }>;
 
-export function isShopOpen(operating_hours?: OperatingHours | string | null): boolean {
+export function isStoreOpen(operating_hours?: OperatingHours | string | null): boolean {
   if (!operating_hours) return false;
 
   let parsed: OperatingHours;
@@ -33,13 +33,13 @@ export function isShopOpen(operating_hours?: OperatingHours | string | null): bo
   return nowMin >= openH * 60 + openM && nowMin <= closeH * 60 + closeM;
 }
 
-export function getShopStatus(operating_hours?: OperatingHours | string | null): {
+export function getStoreStatus(operating_hours?: OperatingHours | string | null): {
   isOpen: boolean;
   label: string;
   dotClass: string;
   badgeClass: string;
 } {
-  const open = isShopOpen(operating_hours);
+  const open = isStoreOpen(operating_hours);
   return {
     isOpen: open,
     label: open ? 'Open now' : 'Closed now',

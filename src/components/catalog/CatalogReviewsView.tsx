@@ -18,8 +18,8 @@ interface CatalogItemReview {
 }
 
 export default function CatalogReviewsView() {
-  const { shop } = useAuthStore();
-  const shopId = shop?.id;
+  const { store } = useAuthStore();
+  const storeId = store?.id;
   const toast = useToast();
   const [reviews, setReviews] = useState<CatalogItemReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,24 +33,24 @@ export default function CatalogReviewsView() {
   const [replySubmitting, setReplySubmitting] = useState(false);
 
   const reloadReviews = useCallback(() => {
-    if (!shopId) return;
+    if (!storeId) return;
     const params = new URLSearchParams({ page: String(page) });
     if (filterRating) params.set('rating', filterRating);
-    api.get(`/shops/${shopId}/catalog-item-reviews?${params.toString()}`)
+    api.get(`/stores/${storeId}/catalog-item-reviews?${params.toString()}`)
       .then(res => {
         setReviews(res.data.data.data || []);
         setLastPage(res.data.data.last_page || 1);
       })
       .catch(err => console.error(err));
-  }, [shopId, page, filterRating]);
+  }, [storeId, page, filterRating]);
 
   useEffect(() => {
     let isMounted = true;
-    if (!shopId) return;
+    if (!storeId) return;
 
     const params = new URLSearchParams({ page: String(page) });
     if (filterRating) params.set('rating', filterRating);
-    api.get(`/shops/${shopId}/catalog-item-reviews?${params.toString()}`)
+    api.get(`/stores/${storeId}/catalog-item-reviews?${params.toString()}`)
       .then(res => {
         if (!isMounted) return;
         setReviews(res.data.data.data || []);
@@ -64,7 +64,7 @@ export default function CatalogReviewsView() {
     return () => {
       isMounted = false;
     };
-  }, [shopId, page, filterRating]);
+  }, [storeId, page, filterRating]);
 
   const openReplyModal = (review: CatalogItemReview) => {
     setCurrentReview(review);
@@ -74,10 +74,10 @@ export default function CatalogReviewsView() {
 
   const submitReply = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!shopId || !currentReview) return;
+    if (!storeId || !currentReview) return;
     setReplySubmitting(true);
     try {
-      await api.put(`/shops/${shopId}/catalog-item-reviews/${currentReview.id}`, { reply: replyText });
+      await api.put(`/stores/${storeId}/catalog-item-reviews/${currentReview.id}`, { reply: replyText });
       toast.success('Reply saved.');
       setReplyModalOpen(false);
       reloadReviews();
@@ -89,10 +89,10 @@ export default function CatalogReviewsView() {
   };
 
   const handleDelete = async (reviewId: number) => {
-    if (!shopId) return;
+    if (!storeId) return;
     if (!confirm('Delete this review? This cannot be undone.')) return;
     try {
-      await api.delete(`/shops/${shopId}/catalog-item-reviews/${reviewId}`);
+      await api.delete(`/stores/${storeId}/catalog-item-reviews/${reviewId}`);
       setReviews(prev => prev.filter(r => r.id !== reviewId));
       toast.success('Review deleted.');
     } catch {
@@ -152,7 +152,7 @@ export default function CatalogReviewsView() {
                 {review.reply && (
                   <div className="mt-2 bg-sunken/50 border-l-2 border-taupe p-4 rounded-r-lg">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Shop Response</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Store Response</span>
                     </div>
                     <p className="text-ink-body text-sm">{review.reply}</p>
                   </div>
@@ -210,7 +210,7 @@ export default function CatalogReviewsView() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold text-ink">Item Reviews</h2>
-          <p className="text-ink-muted text-sm mt-0.5">Ratings and comments left on your individual catalog items.</p>
+          <p className="text-ink-muted text-sm mt-0.5">Ratings and comments left on your individual catalog designs.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function CatalogReviewsView() {
       <Modal
         isOpen={replyModalOpen}
         onClose={() => setReplyModalOpen(false)}
-        title={currentReview?.reply ? 'Edit Shop Reply' : 'Reply to Review'}
+        title={currentReview?.reply ? 'Edit Store Reply' : 'Reply to Review'}
       >
         <form onSubmit={submitReply} className="space-y-4">
           <div>

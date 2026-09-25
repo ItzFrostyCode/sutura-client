@@ -44,7 +44,7 @@ interface BranchOption {
 }
 
 export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewWalkInOrderModalProps) {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const toast = useToast();
 
@@ -68,14 +68,14 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
   const [quickAddCustomerOpen, setQuickAddCustomerOpen] = useState(false);
 
   useEffect(() => {
-    if (!shop || !isOpen) return;
+    if (!store || !isOpen) return;
     const load = async () => {
       setLoading(true);
       try {
         const [rc, ri, rb] = await Promise.all([
-          api.get(`/shops/${shop.id}/customers`),
-          api.get(`/shops/${shop.id}/catalog`),
-          api.get(`/shops/${shop.id}/branches`),
+          api.get(`/stores/${store.id}/customers`),
+          api.get(`/stores/${store.id}/catalog`),
+          api.get(`/stores/${store.id}/branches`),
         ]);
         setCustomers(rc.data.data || []);
         setItems((ri.data.data || []).filter((i: { is_active?: boolean }) => i.is_active !== false));
@@ -85,9 +85,11 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
       }
     };
     void load();
-    // Default to whichever branch is selected in the header
+    // Default to whichever branch is selected in the header — syncing from
+    // that external selection, not a value this effect itself computes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBranchId(selectedBranchId !== null ? String(selectedBranchId) : '');
-  }, [shop, isOpen, selectedBranchId]);
+  }, [store, isOpen, selectedBranchId]);
 
   useEffect(() => {
     const applyItemPrice = () => {
@@ -185,12 +187,12 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
   };
 
   const handleReceiptUpload = async (file: File | undefined) => {
-    if (!file || !shop) return;
+    if (!file || !store) return;
     setUploadingReceipt(true);
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+      const res = await api.post(`/stores/${store.id}/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setReceiptUrl(res.data?.data?.url || res.data?.url || '');
@@ -203,12 +205,12 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shop || !catalogItemId || !totalAmount) return;
+    if (!store || !catalogItemId || !totalAmount) return;
     setSaving(true);
     try {
-      const res = await api.post(`/shops/${shop.id}/catalog-orders`, {
+      const res = await api.post(`/stores/${store.id}/catalog-orders`, {
         catalog_item_id: Number(catalogItemId),
-        shop_branch_id: branchId || null,
+        store_branch_id: branchId || null,
         customer_id: customerId || null,
         selected_size: selectedSize || null,
         total_amount: Number.parseFloat(totalAmount),
@@ -282,9 +284,9 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
                   items={catalogItemOptions}
                   value={catalogItemId}
                   onChange={val => setCatalogItemId(String(val))}
-                  placeholder="Search or select catalog item..."
+                  placeholder="Search or select catalog design..."
                   searchPlaceholder="Search design by name or price..."
-                  emptyMessage="No catalog items found"
+                  emptyMessage="No catalog designs found"
                   required
                 />
               </div>
@@ -393,7 +395,7 @@ export default function NewWalkInOrderModal({ isOpen, onClose, onCreated }: NewW
                 </div>
               )}
 
-              {/* Branch Selector (If shop has multiple branches) */}
+              {/* Branch Selector (If store has multiple branches) */}
               {branches.length > 1 && (
                 <div>
                   <label className="flex items-center gap-1.5 text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">

@@ -55,7 +55,7 @@ export default function DashboardMetrics({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-widest text-taupe">Shop at a Glance</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-taupe">Store at a Glance</p>
       {/* Flush, divider-separated band — matches Financial Snapshot's own
           visual language directly above it, instead of a second, visually
           unrelated grid of individually-boxed cards stacked underneath. */}

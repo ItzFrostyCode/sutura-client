@@ -147,14 +147,14 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
 
 export async function uploadSectionImage({
   file,
-  shopId,
+  storeId,
   section,
   setUploadingSection,
   setFeaturesImage,
   setCareImage,
 }: {
   file: File;
-  shopId: number;
+  storeId: number;
   section: 'specs' | 'care';
   setUploadingSection: (sec: 'specs' | 'care' | null) => void;
   setFeaturesImage: (url: string) => void;
@@ -164,7 +164,7 @@ export async function uploadSectionImage({
   const fd = new FormData();
   fd.append('file', file);
   try {
-    const res = await api.post(`/shops/${shopId}/upload`, fd, {
+    const res = await api.post(`/stores/${storeId}/upload`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     const url = res.data.data.url;
@@ -180,12 +180,12 @@ export async function uploadSectionImage({
 
 export async function uploadCatalogImage({
   file,
-  shopId,
+  storeId,
   imageId,
   setImages,
 }: {
   file: File;
-  shopId: number;
+  storeId: number;
   imageId: string;
   setImages: React.Dispatch<React.SetStateAction<ImageItem[]>>;
 }) {
@@ -199,7 +199,7 @@ export async function uploadCatalogImage({
   setImages(prev => prev.map(img => (img.id === imageId ? { ...img, uploading: true } : img)));
 
   try {
-    const res = await api.post(`/shops/${shopId}/upload`, fd, {
+    const res = await api.post(`/stores/${storeId}/upload`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     const url = res.data.data.url;

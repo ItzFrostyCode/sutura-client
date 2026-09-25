@@ -41,7 +41,7 @@ interface GarmentDesignSectionProps {
   readonly setReferenceLink: (link: string) => void;
   readonly uploadingReference: boolean;
   readonly setUploadingReference: (loading: boolean) => void;
-  readonly shopId?: number;
+  readonly storeId?: number;
 }
 
 export default function GarmentDesignSection({
@@ -61,7 +61,7 @@ export default function GarmentDesignSection({
   setReferenceLink,
   uploadingReference,
   setUploadingReference,
-  shopId,
+  storeId,
 }: GarmentDesignSectionProps) {
   // Stateful design mode so clicking Showroom Lookbook immediately activates catalog mode
   const [selectedMode, setSelectedMode] = React.useState<'catalog' | 'custom' | 'alteration'>(() => {
@@ -486,7 +486,7 @@ export default function GarmentDesignSection({
           Garment Category <span className="text-xs font-normal text-ink-faint">(optional)</span>
         </label>
         <p className="text-[11px] text-ink-faint">
-          Matches this job to your shop&apos;s garment specializations — helps staff assign the right cutters and tailors.
+          Matches this job to your store&apos;s garment specializations — helps staff assign the right cutters and tailors.
         </p>
         <select
           id="garment_category"
@@ -516,19 +516,19 @@ export default function GarmentDesignSection({
       <div className="mb-6 space-y-1.5">
         <span className="text-sm font-medium text-ink-body">Fabric / Material Source</span>
         <p className="text-[11px] text-ink-faint">
-          Some walk-ins bring their own fabric or an existing garment instead of using shop stock — flagging it here keeps it from getting mixed up with other jobs during cutting.
+          Some walk-ins bring their own fabric or an existing garment instead of using store stock — flagging it here keeps it from getting mixed up with other jobs during cutting.
         </p>
         <div className="flex gap-2 mt-1">
           <button
             type="button"
-            onClick={() => setFormData((prev) => ({ ...prev, material_source: 'shop_supplied' }))}
+            onClick={() => setFormData((prev) => ({ ...prev, material_source: 'store_supplied' }))}
             className={`flex-1 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-              formData.material_source === 'shop_supplied'
+              formData.material_source === 'store_supplied'
                 ? 'border-taupe bg-taupe/10 text-taupe'
                 : 'border-line text-ink-muted hover:bg-canvas'
             }`}
           >
-            Shop-Supplied
+            Store-Supplied
           </button>
           <button
             type="button"
@@ -546,7 +546,7 @@ export default function GarmentDesignSection({
           <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1.5 flex items-start gap-2">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             <span>
-              Add a photo of the fabric/garment they brought in the <strong>Design Reference / Notes Photo</strong> section below — it will print on the Work Ticket so whoever cuts and sews this doesn&apos;t reach for shop stock.
+              Add a photo of the fabric/garment they brought in the <strong>Design Reference / Notes Photo</strong> section below — it will print on the Work Ticket so whoever cuts and sews this doesn&apos;t reach for store stock.
             </span>
           </p>
         )}
@@ -600,12 +600,12 @@ export default function GarmentDesignSection({
             disabled={uploadingReference || referenceImages.length >= 10}
             onChange={async (e) => {
               const file = e.target.files?.[0];
-              if (!file || !shopId) return;
+              if (!file || !storeId) return;
               setUploadingReference(true);
               const fd = new FormData();
               fd.append('file', file);
               try {
-                const res = await api.post(`/shops/${shopId}/upload`, fd, {
+                const res = await api.post(`/stores/${storeId}/upload`, fd, {
                   headers: { 'Content-Type': 'multipart/form-data' },
                 });
                 const url = res.data?.data?.url || res.data?.url;

@@ -118,7 +118,7 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
     },
     {
       // How many bookings actually turn into paying work — the core
-      // "discover a shop, book, order" funnel this thesis is built around,
+      // "discover a store, book, order" funnel this thesis is built around,
       // and previously had zero visibility (outcome only got set through a
       // separate manual modal nobody consistently used).
       label: 'Booking Conversion',

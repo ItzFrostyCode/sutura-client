@@ -13,7 +13,7 @@ import StaffDeleteModal from '@/components/staff/StaffDeleteModal';
 import StaffListView from '@/components/staff/StaffListView';
 
 export default function StaffPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,16 +34,16 @@ export default function StaffPage() {
     specialization: '',
     hired_at: new Date().toISOString().split('T')[0],
     is_active: true,
-    shop_branch_id: '',
+    store_branch_id: '',
     is_branch_manager: false,
     bio: '',
     is_available: true,
   });
 
   const fetchStaff = useCallback(() => {
-    if (shop?.id) {
+    if (store?.id) {
       api
-        .get(`/shops/${shop.id}/staff`)
+        .get(`/stores/${store.id}/staff`)
         .then(res => {
           const rawStaff = Array.isArray(res.data?.data)
             ? res.data.data
@@ -56,11 +56,11 @@ export default function StaffPage() {
           setStaff([]);
           setLoading(false);
         });
-    } else if (user?.id && !shop?.id) {
+    } else if (user?.id && !store?.id) {
       setStaff([]);
       setTimeout(() => setLoading(false), 0);
     }
-  }, [shop, user]);
+  }, [store, user]);
 
   // Initial load + live refresh every 30 s so statuses stay current
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function StaffPage() {
 
   const handleAddStaff = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!shop) return;
+    if (!store) return;
     setSaving(true);
 
     try {
@@ -86,7 +86,7 @@ export default function StaffPage() {
         password?: string;
         is_active?: boolean;
         is_available?: boolean;
-        shop_branch_id: number | null;
+        store_branch_id: number | null;
         is_branch_manager: boolean;
         bio: string;
       } = {
@@ -102,7 +102,7 @@ export default function StaffPage() {
           ? formData.specialization.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         hired_at: formData.hired_at,
-        shop_branch_id: formData.shop_branch_id ? Number.parseInt(formData.shop_branch_id, 10) : null,
+        store_branch_id: formData.store_branch_id ? Number.parseInt(formData.store_branch_id, 10) : null,
         is_branch_manager: formData.is_branch_manager,
         bio: formData.bio,
       };
@@ -118,9 +118,9 @@ export default function StaffPage() {
       }
 
       if (editingId) {
-        await api.put(`/shops/${shop.id}/staff/${editingId}`, payload);
+        await api.put(`/stores/${store.id}/staff/${editingId}`, payload);
       } else {
-        await api.post(`/shops/${shop.id}/staff`, payload);
+        await api.post(`/stores/${store.id}/staff`, payload);
       }
 
       setShowModal(false);
@@ -135,7 +135,7 @@ export default function StaffPage() {
         specialization: '',
         hired_at: new Date().toISOString().split('T')[0],
         is_active: true,
-        shop_branch_id: '',
+        store_branch_id: '',
         is_branch_manager: false,
         bio: '',
         is_available: true,
@@ -163,7 +163,7 @@ export default function StaffPage() {
         : (member.specialization || ''),
       hired_at: member.hired_at || new Date().toISOString().split('T')[0],
       is_active: member.is_active,
-      shop_branch_id: member.shop_branch_id ? String(member.shop_branch_id) : '',
+      store_branch_id: member.store_branch_id ? String(member.store_branch_id) : '',
       is_branch_manager: member.is_branch_manager || false,
       bio: member.bio || '',
       is_available: member.is_available !== false,
@@ -177,10 +177,10 @@ export default function StaffPage() {
   };
 
   const confirmDelete = async () => {
-    if (!shop || !deletingId) return;
+    if (!store || !deletingId) return;
     setSaving(true);
     try {
-      await api.delete(`/shops/${shop.id}/staff/${deletingId}`);
+      await api.delete(`/stores/${store.id}/staff/${deletingId}`);
       setIsDeleteModalOpen(false);
       setDeletingId(null);
       fetchStaff();
@@ -193,9 +193,9 @@ export default function StaffPage() {
   };
 
   const roleNames = user?.roles?.map(r => r.name) || [];
-  const isShopOwner = roleNames.includes('shop_owner');
+  const isStoreOwner = roleNames.includes('store_owner');
   const isBranchManager = roleNames.includes('branch_manager') || (user as { staff_profile?: { is_branch_manager?: boolean } })?.staff_profile?.is_branch_manager;
-  const canManageStaff = isShopOwner || isBranchManager;
+  const canManageStaff = isStoreOwner || isBranchManager;
 
   const visibleStaff = Array.isArray(staff) ? staff : [];
 
@@ -226,7 +226,7 @@ export default function StaffPage() {
                   specialization: '',
                   hired_at: new Date().toISOString().split('T')[0],
                   is_active: true,
-                  shop_branch_id: '',
+                  store_branch_id: '',
                   is_branch_manager: false,
                   bio: '',
                   is_available: true,

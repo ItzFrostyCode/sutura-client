@@ -12,7 +12,7 @@ interface CustomerJobsTabProps {
 
 export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
   // A customer's history can genuinely span branches — Jobs/Appointments are
-  // the two places that carry a real shop_branch_id, but neither surfaced it
+  // the two places that carry a real store_branch_id, but neither surfaced it
   // here, so there was no way to tell which branch a given order happened at
   // without opening it individually. Cross-referencing against the same
   // branches list the header switcher already uses, no new fetch needed.
@@ -39,9 +39,9 @@ export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
                   ) : (
                     <span className="inline-flex items-center text-[9px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded border border-line uppercase">Walk-in</span>
                   )}
-                  {branchName(job.shop_branch_id) && (
+                  {branchName(job.store_branch_id) && (
                     <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded border border-line">
-                      <MapPin size={9} /> {branchName(job.shop_branch_id)}
+                      <MapPin size={9} /> {branchName(job.store_branch_id)}
                     </span>
                   )}
                 </p>
@@ -97,10 +97,10 @@ export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
                     <span className="ml-2 inline-flex items-center text-[9px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded border border-line uppercase">Walk-in</span>
                   )}
                   <span className="ml-1.5 inline-flex items-center text-[9px] font-semibold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Pickup</span>
-                  {branchName(job.shop_branch_id) && (
+                  {branchName(job.store_branch_id) && (
                     <span className="ml-1.5 inline-flex items-center gap-0.5 text-[9px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded border border-line">
                       <MapPin size={9} />
-                      {branchName(job.shop_branch_id)}
+                      {branchName(job.store_branch_id)}
                     </span>
                   )}
                 </td>

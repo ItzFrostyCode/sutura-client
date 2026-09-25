@@ -35,10 +35,10 @@ const PASSWORD_RULES = [
 function RegisterPageContent() {
   const searchParams = useSearchParams();
   // No visible account-type picker — the entry point decides it instead:
-  // the header's "Start a Shop" link sends ?as=shop_owner, plain "Sign Up"
+  // the header's "Start a Store" link sends ?as=store_owner, plain "Sign Up"
   // (from the account menu) registers as a customer, matching how a real
-  // shopper vs. a shop owner actually arrive at this form.
-  const role = searchParams.get('as') === 'shop_owner' ? 'shop_owner' : 'customer';
+  // shopper vs. a store owner actually arrive at this form.
+  const role = searchParams.get('as') === 'store_owner' ? 'store_owner' : 'customer';
 
   // First/Last Name only — no Middle Initial field, per explicit direction.
   // Joined into the single `name` string the backend actually expects
@@ -111,7 +111,7 @@ function RegisterPageContent() {
           <X size={22} />
         </button>
         <p className="absolute inset-x-0 bottom-0 px-[10px] pb-3 text-lg font-bold text-white leading-snug">
-          Create an account to <span className="font-black">track your orders and book appointments</span> with verified shops.
+          Create an account to <span className="font-black">track your orders and book appointments</span> with verified stores.
         </p>
       </section>
 

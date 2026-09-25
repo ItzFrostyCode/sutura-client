@@ -52,7 +52,7 @@ export default function MeasurementFormModal({
   isSubmitting,
   onSubmit,
 }: MeasurementFormModalProps) {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const [view, setView] = useState<'edit' | 'preview'>('edit');
   const [sizeChart, setSizeChart] = useState<SizeChartValue>(emptySizeChart);
 
@@ -150,7 +150,7 @@ export default function MeasurementFormModal({
                 onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
                 className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30"
               >
-                <option value="shop_owner">Shop Owner (tailor&apos;s own format)</option>
+                <option value="store_owner">Store Owner (tailor&apos;s own format)</option>
                 <option value="customer">Customer-Side (encoded from the customer)</option>
               </select>
             </div>
@@ -165,7 +165,7 @@ export default function MeasurementFormModal({
                 mode="single-row"
                 value={sizeChart}
                 onChange={handleSizeChartChange}
-                shopId={shop?.id ?? 0}
+                storeId={store?.id ?? 0}
                 title="Measurement Fields"
                 description="Add whatever fields you need for this customer — all values in centimeters (cm), matching the customer's own Size Profile."
                 columnPlaceholder="e.g. Sleeve to Wrist"

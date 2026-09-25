@@ -42,7 +42,7 @@ export default function CustomerAppointmentsTab({
                 </span>
               </div>
               <p className="text-ink-body text-sm font-medium">{appt.service?.name || 'Fitting Session / General'}</p>
-              <p className="text-xs text-ink-muted">{branchName(appt.shop_branch_id)}</p>
+              <p className="text-xs text-ink-muted">{branchName(appt.store_branch_id)}</p>
               {appt.notes && <p className="text-xs text-ink-muted italic">&quot;{appt.notes}&quot;</p>}
             </div>
           );
@@ -68,7 +68,7 @@ export default function CustomerAppointmentsTab({
                   <span className="block text-xs font-normal text-ink-muted">{new Date(appt.scheduled_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                 </td>
                 <td className="p-4 text-ink-body font-medium">{appt.service?.name || 'Fitting Session / General'}</td>
-                <td className="p-4 text-xs text-ink-muted">{branchName(appt.shop_branch_id)}</td>
+                <td className="p-4 text-xs text-ink-muted">{branchName(appt.store_branch_id)}</td>
                 <td className="p-4">
                   {(() => {
                     let statusClass = 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse';

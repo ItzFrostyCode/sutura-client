@@ -18,7 +18,7 @@ export default function ComingSoon({ title, Icon, message }: ComingSoonProps) {
     <div>
       <AccountHeader title={title} backHref="/account/settings" />
 
-      <div className="bg-surface border border-line rounded-2xl p-10 flex flex-col items-center text-center">
+      <div className="bg-surface border border-line p-8 flex flex-col items-center text-center">
         <div className="w-14 h-14 rounded-full bg-sunken flex items-center justify-center mb-4">
           <Icon size={24} className="text-ink-faint" />
         </div>

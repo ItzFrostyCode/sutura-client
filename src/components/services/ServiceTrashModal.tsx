@@ -7,11 +7,11 @@ import { Service } from './serviceHelpers';
 interface ServiceTrashModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
-  readonly shopId: number;
+  readonly storeId: number;
   readonly onRestored: (service: Service) => void;
 }
 
-export default function ServiceTrashModal({ isOpen, onClose, shopId, onRestored }: ServiceTrashModalProps) {
+export default function ServiceTrashModal({ isOpen, onClose, storeId, onRestored }: ServiceTrashModalProps) {
   const [trashed, setTrashed] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<number | null>(null);
@@ -19,14 +19,14 @@ export default function ServiceTrashModal({ isOpen, onClose, shopId, onRestored 
   const loadTrashed = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/shops/${shopId}/services`, { params: { trashed: 1 } });
+      const res = await api.get(`/stores/${storeId}/services`, { params: { trashed: 1 } });
       setTrashed(res.data.data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [shopId]);
+  }, [storeId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,7 +37,7 @@ export default function ServiceTrashModal({ isOpen, onClose, shopId, onRestored 
   const handleRestore = async (service: Service) => {
     setRestoringId(service.id);
     try {
-      const res = await api.post(`/shops/${shopId}/services/${service.id}/restore`);
+      const res = await api.post(`/stores/${storeId}/services/${service.id}/restore`);
       setTrashed(prev => prev.filter(s => s.id !== service.id));
       onRestored(res.data.data);
     } catch (err) {

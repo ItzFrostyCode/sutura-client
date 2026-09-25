@@ -8,13 +8,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 
 /**
- * Header identity control: shop name + plan tier + branch switcher in one
- * unit. The trigger explicitly displays BOTH the shop name and the active
+ * Header identity control: store name + plan tier + branch switcher in one
+ * unit. The trigger explicitly displays BOTH the store name and the active
  * branch (with Main Branch / Satellite distinction) so users and panels
  * see the current location immediately without hovering.
  */
-export default function ShopSwitcher() {
-  const { shop } = useAuthStore();
+export default function StoreSwitcher() {
+  const { store } = useAuthStore();
   const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
   const { tier, loading: tierLoading } = useSubscriptionTier();
 
@@ -38,7 +38,7 @@ export default function ShopSwitcher() {
     };
   }, [open]);
 
-  if (!shop?.id) return null;
+  if (!store?.id) return null;
 
   const activeBranch = selectedBranchId === null
     ? null
@@ -59,14 +59,14 @@ export default function ShopSwitcher() {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Switch branch location"
-        title={`${shop.name} • ${activeBranch ? activeBranch.name : 'All Locations'}`}
+        title={`${store.name} • ${activeBranch ? activeBranch.name : 'All Locations'}`}
         className={`flex items-center justify-between gap-2 min-w-0 flex-1 px-2.5 py-1.5 rounded-lg transition-colors text-left cursor-pointer ${
           open ? 'bg-sunken text-ink' : 'hover:bg-sunken text-ink'
         }`}
       >
         <div className="flex flex-col min-w-0 flex-1 leading-tight">
           <span className="text-xs font-bold truncate text-ink">
-            {shop.name}
+            {store.name}
           </span>
           <div className="flex items-center gap-1 text-[11px] font-medium text-ink-muted mt-0.5 truncate">
             {activeBranch ? (
@@ -97,11 +97,11 @@ export default function ShopSwitcher() {
           role="menu"
           className="absolute left-0 top-full mt-2 w-[280px] sm:w-[320px] bg-surface border border-line rounded-xl shadow-xl z-50 animate-rise overflow-hidden"
         >
-          {/* Shop Name & Plan Tier Header */}
+          {/* Store Name & Plan Tier Header */}
           <div className="px-3.5 py-2.5 bg-canvas/70 border-b border-line flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-ink truncate">{shop.name}</p>
-              <p className="text-[10px] text-ink-muted">Shop Locations & Branch Network</p>
+              <p className="text-xs font-bold text-ink truncate">{store.name}</p>
+              <p className="text-[10px] text-ink-muted">Store Locations & Branch Network</p>
             </div>
             {!tierLoading && (
               <span className="text-[10px] font-bold uppercase tracking-wider text-taupe bg-taupe/10 border border-taupe/20 rounded-md px-2 py-0.5 shrink-0">

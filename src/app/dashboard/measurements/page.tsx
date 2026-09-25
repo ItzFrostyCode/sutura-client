@@ -16,7 +16,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import { useToast } from '@/context/ToastContext';
 
 function MeasurementsContent() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
   const searchParams = useSearchParams();
   const [records, setRecords] = useState<MeasurementRecord[]>([]);
@@ -51,14 +51,14 @@ function MeasurementsContent() {
 
   // Data Fetching
   useEffect(() => {
-    if (!shop) {
+    if (!store) {
       if (!user) return;
       setTimeout(() => setLoading(false), 0);
       return;
     }
     Promise.all([
-      api.get(`/shops/${shop.id}/measurements`),
-      api.get(`/shops/${shop.id}/customers`),
+      api.get(`/stores/${store.id}/measurements`),
+      api.get(`/stores/${store.id}/customers`),
     ])
       .then(([mRes, cRes]) => {
         setRecords(mRes.data.data);
@@ -66,12 +66,12 @@ function MeasurementsContent() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [shop, user]);
+  }, [store, user]);
 
   // CRUD
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     setError('');
     
@@ -94,13 +94,13 @@ function MeasurementsContent() {
         // one, so it has to be added alongside the old row (not replace it),
         // or the version history this page already knows how to display
         // would never actually accumulate.
-        const res = await api.put(`/shops/${shop.id}/measurements/${editingId}`, payload);
+        const res = await api.put(`/stores/${store.id}/measurements/${editingId}`, payload);
         setRecords(prev => [
           res.data.data,
           ...prev.map(r => (r.id === editingId ? { ...r, superseded_at: new Date().toISOString() } : r)),
         ]);
       } else {
-        const res = await api.post(`/shops/${shop.id}/measurements`, payload);
+        const res = await api.post(`/stores/${store.id}/measurements`, payload);
         setRecords(prev => [res.data.data, ...prev]);
       }
       closeModal();
@@ -113,10 +113,10 @@ function MeasurementsContent() {
   };
 
   const confirmDelete = async () => {
-    if (!shop || !deletingId) return;
+    if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/measurements/${deletingId}`);
+      await api.delete(`/stores/${store.id}/measurements/${deletingId}`);
       setRecords(prev => prev.filter(r => r.id !== deletingId));
       setIsDeleteOpen(false);
       setDeletingId(null);
@@ -139,7 +139,7 @@ function MeasurementsContent() {
     setEditingId(rec.id);
     setForm({
       customer_id: rec.customer_id.toString(),
-      source: rec.source ?? 'shop_owner',
+      source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: { ...emptyMetrics(), ...rec.metrics },
       notes: rec.notes || '',
@@ -152,7 +152,7 @@ function MeasurementsContent() {
     setEditingId(null);
     setForm({
       customer_id: rec.customer_id.toString(),
-      source: rec.source ?? 'shop_owner',
+      source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: { ...emptyMetrics(), ...rec.metrics },
       notes: rec.notes || '',

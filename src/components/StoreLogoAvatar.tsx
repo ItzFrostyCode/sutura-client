@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getMediaUrl } from '@/lib/media';
 import { Store } from 'lucide-react';
 
-interface ShopLogoAvatarProps {
+interface StoreLogoAvatarProps {
   readonly src?: string | null;
   readonly name: string;
   readonly className?: string;
@@ -12,20 +12,20 @@ interface ShopLogoAvatarProps {
   readonly textClassName?: string;
   /**
    * When provided, renders a green (true) or red (false) dot on the
-   * bottom-right corner of the avatar — the shop's open/closed status.
+   * bottom-right corner of the avatar — the store's open/closed status.
    * Pass `undefined` to hide the dot entirely.
    */
   readonly isOpen?: boolean;
 }
 
-export default function ShopLogoAvatar({
+export default function StoreLogoAvatar({
   src,
   name,
   className = 'w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white bg-[#FAF6F3] shadow-md',
   containerClassName = '',
   textClassName = 'text-3xl md:text-4xl font-serif font-bold text-[#8C6B5D]',
   isOpen,
-}: ShopLogoAvatarProps) {
+}: StoreLogoAvatarProps) {
   const [imgError, setImgError] = useState(false);
   const fullUrl = getMediaUrl(src);
 

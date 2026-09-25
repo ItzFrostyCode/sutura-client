@@ -10,8 +10,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (globalThis.window !== undefined) {
-    // sessionStorage — per-tab, see useAuthStore.ts's setAuth() for why.
-    const token = sessionStorage.getItem('sutura_token');
+    const token = sessionStorage.getItem('sutura_token') || localStorage.getItem('sutura_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,9 +25,15 @@ api.interceptors.response.use(
     console.error(`[AxiosError] ${status} on ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
     if (error.response?.status === 401) {
       // Don't trigger auto-logout redirect if the user is actively trying to log in
-      if (globalThis.window !== undefined && globalThis.window.location.pathname !== '/login' && !error.config.url.includes('/auth/login')) {
+      if (globalThis.window !== undefined && globalThis.window.location.pathname !== '/login' && !error.config?.url?.includes('/auth/login')) {
         sessionStorage.removeItem('sutura_token');
-        sessionStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('sutura_user');
+        sessionStorage.removeItem('sutura_store');
+        sessionStorage.removeItem('sutura_staff');
+        localStorage.removeItem('sutura_token');
+        localStorage.removeItem('sutura_user');
+        localStorage.removeItem('sutura_store');
+        localStorage.removeItem('sutura_staff_profile');
         globalThis.location.href = '/login';
       }
     }

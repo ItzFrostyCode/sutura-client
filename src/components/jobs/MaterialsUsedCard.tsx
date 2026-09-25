@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import type { Job } from '@/components/jobs/jobTypes';
 
 interface MaterialsUsedCardProps {
-  readonly shopId: number;
+  readonly storeId: number;
   readonly jobOrderId: number;
   readonly materials: NonNullable<Job['materials']>;
   readonly onChange: () => void;
@@ -14,9 +14,9 @@ interface MaterialsUsedCardProps {
 
 // Per-order fabric/trim attribution — what was used on THIS job, logged
 // typically by the cutter during cutting. Deliberately NOT a stock ledger:
-// no shop-wide running balance is ever shown or computed anywhere from
+// no store-wide running balance is ever shown or computed anywhere from
 // these rows (thesis Scope & Limitations excludes inventory entirely).
-export default function MaterialsUsedCard({ shopId, jobOrderId, materials, onChange }: MaterialsUsedCardProps) {
+export default function MaterialsUsedCard({ storeId, jobOrderId, materials, onChange }: MaterialsUsedCardProps) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -32,7 +32,7 @@ export default function MaterialsUsedCard({ shopId, jobOrderId, materials, onCha
     if (!name.trim() || !quantity) return;
     setSaving(true);
     try {
-      await api.post(`/shops/${shopId}/jobs/${jobOrderId}/materials`, {
+      await api.post(`/stores/${storeId}/jobs/${jobOrderId}/materials`, {
         material_name: name.trim(),
         quantity_used: Number(quantity),
         unit,
@@ -54,7 +54,7 @@ export default function MaterialsUsedCard({ shopId, jobOrderId, materials, onCha
   const handleDelete = async (materialId: number) => {
     setDeletingId(materialId);
     try {
-      await api.delete(`/shops/${shopId}/jobs/${jobOrderId}/materials/${materialId}`);
+      await api.delete(`/stores/${storeId}/jobs/${jobOrderId}/materials/${materialId}`);
       onChange();
     } finally {
       setDeletingId(null);

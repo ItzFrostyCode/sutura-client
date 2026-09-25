@@ -23,7 +23,7 @@ interface SizeChartEditorProps {
   readonly mode: 'table' | 'single-row';
   readonly value: SizeChartValue;
   readonly onChange: (value: SizeChartValue) => void;
-  readonly shopId: number;
+  readonly storeId: number;
   readonly title?: string;
   readonly description?: string;
   readonly columnPlaceholder?: string;
@@ -33,7 +33,7 @@ export default function SizeChartEditor({
   mode,
   value,
   onChange,
-  shopId,
+  storeId,
   title = 'Size Chart',
   description = 'Show customers exactly how you measure — upload your own reference chart image and/or build a size & measurement table.',
   columnPlaceholder = 'e.g. Chest (in)',
@@ -72,7 +72,7 @@ export default function SizeChartEditor({
     fd.append('file', file);
     setUploading(true);
     try {
-      const res = await api.post(`/shops/${shopId}/upload`, fd, {
+      const res = await api.post(`/stores/${storeId}/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       onChange({ ...value, image_url: res.data.data?.url || res.data.url || null });

@@ -85,7 +85,7 @@ interface RawJobData {
 const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders'];
 
 export function usePayments() {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -121,13 +121,13 @@ export function usePayments() {
 
   // Fetch receipts queue
   const fetchReceipts = useCallback(async () => {
-    if (!shop) return;
+    if (!store) return;
     setReceiptsLoading(true);
     try {
       const branchParams = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
       const [aptRes, ordRes] = await Promise.all([
-        api.get(`/shops/${shop.id}/appointments`, { params: branchParams }),
-        api.get(`/shops/${shop.id}/catalog-orders`, { params: branchParams }),
+        api.get(`/stores/${store.id}/appointments`, { params: branchParams }),
+        api.get(`/stores/${store.id}/catalog-orders`, { params: branchParams }),
       ]);
       const items: ReceiptItem[] = [];
       if (aptRes.data.success) {
@@ -174,22 +174,22 @@ export function usePayments() {
     } finally {
       setReceiptsLoading(false);
     }
-  }, [shop, selectedBranchId]);
+  }, [store, selectedBranchId]);
 
   // Fetch job balances — filtered server-side (unpaid_only) rather than
-  // fetching the shop's entire job history and filtering client-side. The
+  // fetching the store's entire job history and filtering client-side. The
   // old approach was capped at per_page=500 including every already-paid
-  // job, so a shop with more than 500 total historical jobs could have an
+  // job, so a store with more than 500 total historical jobs could have an
   // older still-unpaid one silently drop out — same undercounting shape as
   // the other capped-array bugs fixed this session. Filtering server-side
   // also means the response only ever contains genuinely-relevant rows.
   const fetchJobBalances = useCallback(async () => {
-    if (!shop) return;
+    if (!store) return;
     setBalancesLoading(true);
     try {
       const params: Record<string, number> = { per_page: 500, unpaid_only: 1 };
       if (selectedBranchId !== null) params.branch_id = selectedBranchId;
-      const res = await api.get(`/shops/${shop.id}/jobs`, { params });
+      const res = await api.get(`/stores/${store.id}/jobs`, { params });
       const raw = res.data.data;
       const jobs: RawJobData[] = Array.isArray(raw) ? raw : (raw?.data || []);
       const withBalance = jobs
@@ -209,44 +209,44 @@ export function usePayments() {
     } finally {
       setBalancesLoading(false);
     }
-  }, [shop, selectedBranchId]);
+  }, [store, selectedBranchId]);
 
   // Fetch catalog orders
   const fetchCatalogOrders = useCallback(async () => {
-    if (!shop) return;
+    if (!store) return;
     setCatalogLoading(true);
     try {
       const params = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
-      const res = await api.get(`/shops/${shop.id}/catalog-orders`, { params });
+      const res = await api.get(`/stores/${store.id}/catalog-orders`, { params });
       setCatalogOrders(res.data.data || []);
     } catch (err) {
       console.error(err);
     } finally {
       setCatalogLoading(false);
     }
-  }, [shop, selectedBranchId]);
+  }, [store, selectedBranchId]);
 
   // All three fetch on mount regardless of which tab is active — the tab
   // pills show live counts (e.g. "Outstanding Balances 2"), so the counts
   // have to be right immediately, not just after the owner clicks over.
   useEffect(() => {
-    if (!shop) return;
+    if (!store) return;
     const timer = setTimeout(() => {
       fetchReceipts();
       fetchJobBalances();
       fetchCatalogOrders();
     }, 0);
     return () => clearTimeout(timer);
-  }, [shop, fetchReceipts, fetchJobBalances, fetchCatalogOrders]);
+  }, [store, fetchReceipts, fetchJobBalances, fetchCatalogOrders]);
 
   // Verify receipt
   const handleVerify = async (item: ReceiptItem, status: 'paid' | 'pending' | 'rejected') => {
-    if (!shop) return;
+    if (!store) return;
     setProcessingId(item.id);
     try {
       const endpoint = item.type === 'appointment'
-        ? `/shops/${shop.id}/appointments/${item.id}/verify-payment`
-        : `/shops/${shop.id}/catalog-orders/${item.id}/verify-payment`;
+        ? `/stores/${store.id}/appointments/${item.id}/verify-payment`
+        : `/stores/${store.id}/catalog-orders/${item.id}/verify-payment`;
       await api.put(endpoint, { payment_status: status });
       toast.success(status === 'rejected' ? 'Receipt rejected.' : 'Payment verified successfully!');
       setSelectedReceipt(null);
@@ -260,12 +260,12 @@ export function usePayments() {
 
   // Log job payment
   const handlePayReceiptUpload = async (file: File) => {
-    if (!shop) return;
+    if (!store) return;
     setPayReceiptUploading(true);
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await api.post(`/shops/${shop.id}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post(`/stores/${store.id}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setPayReceiptPath(res.data.data?.url || res.data.url || '');
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to upload receipt screenshot.'));
@@ -275,12 +275,12 @@ export function usePayments() {
   };
 
   const handleLogPayment = async () => {
-    if (!shop || !logPaymentJob) return;
+    if (!store || !logPaymentJob) return;
     const amt = Number.parseFloat(payAmount);
     if (!amt || amt <= 0) return;
     setPaySubmitting(true);
     try {
-      await api.post(`/shops/${shop.id}/jobs/${logPaymentJob.id}/pay`, {
+      await api.post(`/stores/${store.id}/jobs/${logPaymentJob.id}/pay`, {
         amount: amt,
         payment_method: payMethod,
         reference: payReference || undefined,
@@ -319,7 +319,7 @@ export function usePayments() {
   });
 
   return {
-    shop,
+    store,
     activeTab,
     setActiveTab,
     receipts,

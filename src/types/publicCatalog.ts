@@ -22,7 +22,7 @@ export interface CatalogItemResult {
   // already present on every response; just never typed until now.
   fabric_image_url: string | null;
   distance_km?: number | null;
-  shop: {
+  store: {
     id?: number;
     name: string;
     slug: string;

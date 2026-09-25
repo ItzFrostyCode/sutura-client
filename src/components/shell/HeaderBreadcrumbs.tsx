@@ -71,7 +71,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
       segments.push({ label: 'Customer Profile' });
     }
   } else if (pathname.startsWith('/dashboard/catalog')) {
-    segments.push({ label: 'Showroom', href: '/dashboard/catalog', icon: Sparkles });
+    segments.push({ label: 'Catalog Designs', href: '/dashboard/catalog', icon: Sparkles });
     if (pathname === '/dashboard/catalog') {
       segments.push({ label: 'Designs' });
     } else if (pathname === '/dashboard/catalog/new') {
@@ -98,7 +98,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
   } else if (pathname.startsWith('/dashboard/reports')) {
     segments.push({ label: 'Reports & Insights', href: '/dashboard/reports', icon: LayoutDashboard });
   } else if (pathname.startsWith('/dashboard/branches')) {
-    segments.push({ label: 'Shop Branches', href: '/dashboard/branches', icon: Building2 });
+    segments.push({ label: 'Store Branches', href: '/dashboard/branches', icon: Building2 });
   } else if (pathname.startsWith('/dashboard/audit-log')) {
     segments.push({ label: 'Audit Log', href: '/dashboard/audit-log', icon: ScrollText });
   } else if (pathname.startsWith('/dashboard/account-settings') || pathname.startsWith('/dashboard/profile')) {

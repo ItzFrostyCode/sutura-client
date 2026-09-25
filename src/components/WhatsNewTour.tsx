@@ -6,7 +6,7 @@ import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 
 // Bump this whenever a new batch of features ships and should re-surface the
-// tour for shop owners who already dismissed an older version. Stored in
+// tour for store owners who already dismissed an older version. Stored in
 // localStorage so it only auto-shows once per browser per version.
 export const WHATS_NEW_VERSION = '2026-07-25-owner-ux-batch';
 const STORAGE_KEY = 'sutura_whats_new_dismissed_version';
@@ -26,7 +26,7 @@ interface TourStep {
   title: string;
   description: string;
   ctaLabel: string;
-  href: (shopSlug: string | undefined) => string;
+  href: (storeSlug: string | undefined) => string;
 }
 
 const STEPS: TourStep[] = [
@@ -60,24 +60,24 @@ const STEPS: TourStep[] = [
   },
   {
     emoji: '⭐',
-    title: 'Featured Shop Placement',
-    description: 'Premium shops can pin themselves at the top of customer search results. Find the toggle under Business Type in your shop settings.',
-    ctaLabel: 'Go to Shop Settings',
-    href: (slug) => (slug ? `/shop/${slug}?tab=about` : '/dashboard/profile'),
+    title: 'Featured Store Placement',
+    description: 'Premium stores can pin themselves at the top of customer search results. Find the toggle under Business Type in your store settings.',
+    ctaLabel: 'Go to Store Settings',
+    href: (slug) => (slug ? `/store/${slug}?tab=about` : '/dashboard/profile'),
   },
   {
     emoji: '🎯',
     title: 'Garment Specializations',
     description: "Tell customers what you actually specialize in — this is how they find you when searching the map. Same Business Type tab as Featured Placement, right below it.",
-    ctaLabel: 'Go to Shop Settings',
-    href: (slug) => (slug ? `/shop/${slug}?tab=about` : '/dashboard/profile'),
+    ctaLabel: 'Go to Store Settings',
+    href: (slug) => (slug ? `/store/${slug}?tab=about` : '/dashboard/profile'),
   },
 ];
 
 export default function WhatsNewTour({ onClose }: { readonly onClose: () => void }) {
   const [index, setIndex] = useState(0);
   const router = useRouter();
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const step = STEPS[index];
   const isLast = index === STEPS.length - 1;
 
@@ -89,7 +89,7 @@ export default function WhatsNewTour({ onClose }: { readonly onClose: () => void
   const handleGoThere = () => {
     dismissWhatsNew();
     onClose();
-    router.push(step.href(shop?.slug));
+    router.push(step.href(store?.slug));
   };
 
   return (

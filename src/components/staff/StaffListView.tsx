@@ -276,7 +276,7 @@ export default function StaffListView({
     const matchesWorkload = workloadFilter === 'all' || workloadBucket(member.active_jobs || 0) === workloadFilter;
     const matchesBranch =
       branchFilter === 'all' ||
-      (branchFilter === 'unassigned' ? !member.shop_branch_id : member.shop_branch_id === Number(branchFilter));
+      (branchFilter === 'unassigned' ? !member.store_branch_id : member.store_branch_id === Number(branchFilter));
     return matchesSearch && matchesRole && matchesStatus && matchesWorkload && matchesBranch;
   });
 
