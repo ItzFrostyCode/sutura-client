@@ -3,7 +3,7 @@ import Modal from '@/components/Modal';
 import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler } from 'lucide-react';
 import {
   Appointment, JobOrderData,
-  TypeBadge, StatusBadge, getLocalDateString
+  TypeBadge, StatusBadge, CheckInBadge, getLocalDateString
 } from './appointmentHelpers';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -61,7 +61,7 @@ export default function AppointmentActionModals({
   onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob
 }: AppointmentActionModalsProps) {
 
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
 
   // Local Form States
   const [rescheduleForm, setRescheduleForm] = useState({ scheduled_date: '', scheduled_time: '', notes: '' });
@@ -112,13 +112,13 @@ export default function AppointmentActionModals({
     const load = async () => {
       const customerId = completeApt?.customer?.id;
       const needsJobOrder = completeApt?.appointment_type === 'fitting' || completeApt?.appointment_type === 'pickup';
-      if (!shop || !customerId || !needsJobOrder) {
+      if (!store || !customerId || !needsJobOrder) {
         setCompletionJobOrders([]);
         return;
       }
       setLoadingCompletionJobs(true);
       try {
-        const res = await api.get(`/shops/${shop.id}/jobs`, { params: { customer_id: customerId, per_page: 100 } });
+        const res = await api.get(`/stores/${store.id}/jobs`, { params: { customer_id: customerId, per_page: 100 } });
         setCompletionJobOrders(res.data?.data?.data || res.data?.data || []);
       } catch {
         setCompletionJobOrders([]);
@@ -127,7 +127,7 @@ export default function AppointmentActionModals({
       }
     };
     void load();
-  }, [completeApt, shop]);
+  }, [completeApt, store]);
 
   const handleReschedule = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -454,7 +454,7 @@ export default function AppointmentActionModals({
               className="mt-0.5"
             />
             <span>
-              Block this customer from booking again at this shop
+              Block this customer from booking again at this store
               <span className="block text-xs text-ink-muted">Default is off — the customer can still book a new appointment.</span>
             </span>
           </label>
@@ -483,7 +483,10 @@ export default function AppointmentActionModals({
               </div>
               <div className="flex flex-col gap-1 items-end">
                 <TypeBadge type={viewApt.appointment_type} />
-                <StatusBadge status={viewApt.status} scheduledAt={viewApt.scheduled_at} />
+                <div className="flex items-center gap-1.5">
+                  <StatusBadge status={viewApt.status} scheduledAt={viewApt.scheduled_at} />
+                  <CheckInBadge checkedInAt={viewApt.checked_in_at} scheduledAt={viewApt.scheduled_at} />
+                </div>
               </div>
             </div>
 
@@ -500,6 +503,14 @@ export default function AppointmentActionModals({
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Duration</p>
                 <p className="text-ink font-medium mt-0.5">{viewApt.duration_minutes ?? 60} minutes</p>
               </div>
+              {viewApt.checked_in_at && (
+                <div>
+                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Checked In</p>
+                  <p className="text-ink font-medium mt-0.5">
+                    {new Date(viewApt.checked_in_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Service</p>
                 <p className="text-ink font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-ink-faint">Consultation</span>}</p>

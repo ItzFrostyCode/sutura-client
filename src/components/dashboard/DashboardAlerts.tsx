@@ -76,7 +76,7 @@ export default function DashboardAlerts({
                 {pendingDpJobs.length} active job{pendingDpJobs.length === 1 ? '' : 's'} with no downpayment collected
               </p>
               <p className="text-xs text-amber-600 mt-0.5">
-                Per shop policy: 50% DP required before cutting starts. Tap to collect.
+                Per store policy: 50% DP required before cutting starts. Tap to collect.
               </p>
             </div>
             {dpExpanded ? <ChevronUp size={16} className="text-amber-600 shrink-0" /> : <ChevronDown size={16} className="text-amber-600 shrink-0" />}

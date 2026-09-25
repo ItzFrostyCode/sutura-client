@@ -7,7 +7,7 @@ import { useBranch } from '@/context/BranchContext';
 import { Job, Tab, columnsForJobs, getDueStatus } from './jobHelpers';
 
 export function useJobs() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -22,7 +22,7 @@ export function useJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   // From the backend's dedicated, unbounded counts — used to be re-derived
   // by filtering the (per_page=200-capped) `jobs` array itself, which would
-  // silently undercount on any shop with more than 200 total historical
+  // silently undercount on any store with more than 200 total historical
   // job orders (old completed/cancelled ones included, nothing prunes
   // them). Same undercounting shape already fixed on the Home dashboard.
   const [walkInCount, setWalkInCount] = useState(0);
@@ -39,7 +39,7 @@ export function useJobs() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   const fetchJobs = () => {
-    if (shop) {
+    if (store) {
       const timer = setTimeout(() => setLoading(true), 0);
       const params: Record<string, string | number> = { per_page: 200 };
       if (selectedBranchId !== null) {
@@ -54,7 +54,7 @@ export function useJobs() {
       if (search.trim()) {
         params.search = search.trim();
       }
-      api.get(`/shops/${shop.id}/jobs`, { params })
+      api.get(`/stores/${store.id}/jobs`, { params })
         .then(res => {
           const list = Array.isArray(res.data?.data?.data)
             ? res.data.data.data
@@ -82,10 +82,10 @@ export function useJobs() {
       if (cleanup) cleanup();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shop, user, selectedBranchId]);
+  }, [store, user, selectedBranchId]);
 
   // Debounced re-fetch when the search term changes, so typing doesn't fire
-  // a request per keystroke — the branch/shop effect above still runs
+  // a request per keystroke — the branch/store effect above still runs
   // immediately since those change far less often (a dropdown pick, not
   // continuous typing).
   useEffect(() => {
@@ -95,13 +95,13 @@ export function useJobs() {
   }, [search]);
 
   const updateJobStatus = async (jobId: number, newStatus: string, reason?: string) => {
-    if (!shop) return;
+    if (!store) return;
     const oldJobs = [...jobs];
     setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
     try {
       const jobToUpdate = jobs.find(j => j.id === jobId);
       if (!jobToUpdate) return;
-      await api.put(`/shops/${shop.id}/jobs/${jobId}`, {
+      await api.put(`/stores/${store.id}/jobs/${jobId}`, {
         status: newStatus,
         payment_status: jobToUpdate.payment_status,
         balance: jobToUpdate.balance,
@@ -130,7 +130,7 @@ export function useJobs() {
   };
 
   const handleApproveJob = async (jobId: number) => {
-    if (!shop) return;
+    if (!store) return;
     setActionLoadingId(jobId);
     const old = [...jobs];
     // Moves a pending job into 'design' — the first stage of the 3-Phase
@@ -142,7 +142,7 @@ export function useJobs() {
     try {
       const job = jobs.find(j => j.id === jobId);
       if (!job) return;
-      await api.put(`/shops/${shop.id}/jobs/${jobId}`, { status: 'design', payment_status: job.payment_status, balance: job.balance });
+      await api.put(`/stores/${store.id}/jobs/${jobId}`, { status: 'design', payment_status: job.payment_status, balance: job.balance });
       toast.success('Job order approved into production.');
       fetchJobs();
     } catch (err: unknown) {
@@ -163,7 +163,7 @@ export function useJobs() {
   };
 
   const handleConfirmReject = async (reason: string) => {
-    if (!shop || !rejectingJobId) return;
+    if (!store || !rejectingJobId) return;
     setActionLoadingId(rejectingJobId);
     const old = [...jobs];
     setJobs(jobs.map(j => j.id === rejectingJobId ? { ...j, status: 'rejected' } : j));
@@ -177,7 +177,7 @@ export function useJobs() {
       // 'rejection_reason' this was sending. Confirmed live: every click
       // 422'd, so Reject never actually worked. POST .../reject is the real
       // endpoint — pending-only, free-text reason, sets status:'rejected'.
-      await api.post(`/shops/${shop.id}/jobs/${rejectingJobId}/reject`, {
+      await api.post(`/stores/${store.id}/jobs/${rejectingJobId}/reject`, {
         reason: reason || 'No reason provided.',
       });
       setRejectModalOpen(false);

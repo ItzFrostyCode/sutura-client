@@ -8,7 +8,7 @@ export default function MyLocationPage() {
     <ComingSoon
       title="My Location"
       Icon={MapPin}
-      message="Saving a home address so shops can estimate delivery/pickup distance isn't built yet — check back soon."
+      message="Saving a home address so stores can estimate delivery/pickup distance isn't built yet — check back soon."
     />
   );
 }

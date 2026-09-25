@@ -312,7 +312,7 @@ export default function ReportCharts({
         </div>
       </div>
 
-      {/* Orders by Garment Category — what the shop is actually being asked
+      {/* Orders by Garment Category — what the store is actually being asked
           to make; previously the only breakdowns here were revenue/status/
           branch/staff, nothing tied to the garment itself. Bars are
           clickable — same deep-link pattern as the Overdue Orders KPI card,

@@ -13,19 +13,19 @@ interface Review {
 }
 
 export default function RecentReviews() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  // Reviews management is owner-only (matches the shop_owner-only
-  // /shops/{shop}/reviews route) — staff/branch managers share this
+  // Reviews management is owner-only (matches the store_owner-only
+  // /stores/{store}/reviews route) — staff/branch managers share this
   // dashboard now, and shouldn't 403 on a widget they can't act on anyway.
-  const isShopOwner = user?.roles?.[0]?.name === 'shop_owner';
+  const isStoreOwner = user?.roles?.[0]?.name === 'store_owner';
 
   useEffect(() => {
     const load = async () => {
-      if (!shop || !isShopOwner) { setLoading(false); return; }
+      if (!store || !isStoreOwner) { setLoading(false); return; }
       try {
-        const res = await api.get(`/shops/${shop.id}/reviews?per_page=3`);
+        const res = await api.get(`/stores/${store.id}/reviews?per_page=3`);
         setReviews(res.data.data.data);
       } catch (err) {
         console.error(err);
@@ -34,7 +34,7 @@ export default function RecentReviews() {
       }
     };
     void load();
-  }, [shop, isShopOwner]);
+  }, [store, isStoreOwner]);
 
   if (loading) {
     return (
@@ -52,7 +52,7 @@ export default function RecentReviews() {
           Recent Reviews
         </h3>
         <Link
-          href={shop?.slug ? `/shop/${shop.slug}?tab=reviews` : '/dashboard/reviews'}
+          href={store?.slug ? `/store/${store.slug}?tab=reviews` : '/dashboard/reviews'}
           className="text-xs font-medium text-taupe hover:text-ink-body transition-colors"
         >
           View All
@@ -65,7 +65,7 @@ export default function RecentReviews() {
             <Star size={32} className="text-[#EBE6E0] mb-2" />
             <p className="text-sm font-medium text-ink-muted">No reviews yet.</p>
             <p className="text-xs text-ink-faint mt-1 max-w-[200px]">
-              When customers rate your shop, their feedback will appear here.
+              When customers rate your store, their feedback will appear here.
             </p>
           </div>
         ) : (

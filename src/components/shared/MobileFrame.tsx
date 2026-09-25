@@ -3,30 +3,24 @@
 import { usePathname } from 'next/navigation';
 
 /**
- * Dev-time mobile preview frame — forces every non-dashboard page into a
- * real 320px column, centered, on any screen (desktop included), so the
- * mobile-first redesign can be reviewed without opening DevTools' device
- * toolbar every time.
+ * Breakpoint-aware layout frame:
  *
- * There is no bottom tab bar anymore — Home/Map/Notification/Me all moved
- * into PublicNav's header + hamburger menu (per explicit direction), so
- * this frame is just a scroll region now, no flex-shell split needed.
+ * < 640px (Tailwind `sm`) — Mobile column: 599px max-width, centered,
+ *            scrolls inside this div (same as before — the "phone preview"
+ *            experience).
  *
- * Full-screen overlays elsewhere in the app (the /search filter panel, the
- * location picker, PublicNav's own menu panel) use plain `fixed inset-0`
- * (or `fixed` with a partial offset, like the menu panel) — WITHOUT a
- * `transform` on some ancestor to redirect their containing block, `fixed`
- * binds to the real browser viewport, not this 320px column, and stretches
- * edge-to-edge on a real desktop/tablet window. `transform: translateZ(0)`
- * here creates that containing block for exactly those descendants.
+ * ≥ 640px — Tablet/desktop web layout: full viewport width, mx-auto. Body
+ *           scroll instead of div scroll so sticky headers, browser
+ *           address-bar auto-hide, and scroll anchoring all work correctly.
  *
- * Skips /dashboard entirely — that shell is deliberately desktop-first
- * (the shop floor, not a phone in a customer's hand) and would just break
- * inside a 320px column.
+ * Deliberately matches `sm:` (640px), not the visually-close 600px this
+ * comment used to claim — every other breakpoint on the site (PublicNav's
+ * own header padding, `.mobile-screen-margins`) is keyed off Tailwind's
+ * real `sm`/`lg` breakpoints, so a custom 600px cutover here would reopen
+ * the exact 600–639px "half mobile, half tablet" mismatch this comment's
+ * old wording caused.
  *
- * Remove this component (and its one usage in layout.tsx) once the mobile
- * redesign is done and the site should go back to responding to the
- * visitor's real viewport instead of a forced preview width.
+ * Skips /dashboard entirely — that shell is deliberately desktop-first.
  */
 export default function MobileFrame({ children }: { readonly children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,11 +28,23 @@ export default function MobileFrame({ children }: { readonly children: React.Rea
 
   if (isDashboard) return <>{children}</>;
 
+  if (pathname === '/map') {
+    return (
+      <div
+        id="mobile-frame-container"
+        data-mobile-frame="true"
+        className="w-full h-dvh overflow-hidden bg-canvas relative flex flex-col"
+      >
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
       id="mobile-frame-container"
       data-mobile-frame="true"
-      className="mx-auto h-dvh w-full max-w-[320px] overflow-x-hidden overflow-y-auto bg-canvas shadow-2xl border-x border-line relative"
+      className="w-full min-h-dvh bg-canvas relative"
     >
       {children}
     </div>

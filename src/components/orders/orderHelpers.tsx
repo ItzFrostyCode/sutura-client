@@ -20,7 +20,7 @@ export interface CatalogOrder {
     name: string;
     email?: string | null;
   } | null;
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   branch?: { id: number; name: string } | null;
   payment_receipt_path?: string | null;
   payment_method?: string | null;

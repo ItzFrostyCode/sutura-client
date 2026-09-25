@@ -11,9 +11,11 @@
   --background: #FAF6F3;      /* app canvas (warm cream) */
   --card-bg: #FFFFFF;         /* raised surface */
   --surface-sunken: #F0EAE3;  /* hover fill, wells, subtle chips */
+  --surface-sunken-hover: #F4EFEA; /* row/list-item hover feedback — distinct from the resting sunken fill above */
 
   /* lines */
   --brand-border: #EBE6E0;    /* hairline border / divider */
+  --border-hover: #D8CDC2;    /* card/tab hover outline — one step past brand-border, one step before border-strong */
   --border-strong: #D1C7BD;   /* hover border, emphasized rules */
 
   /* ink */
@@ -25,9 +27,11 @@
   /* accents */
   --brand-taupe: #9A8073;
   --brand-taupe-hover: #91756A;
+  --brand-taupe-dark: #6B4E3E;  /* dark brown — section headings that need to stand apart from body ink */
   --accent-danger: #B26959;   /* destructive / overdue only */
   --accent-sage: #7A8B76;     /* success / paid */
   --accent-alert: #E41E3F;    /* unread notification dot only */
+  --accent-slate: #62666D;    /* neutral/technical chips — measurement specs, non-semantic tags */
 }
 
 @theme inline {
@@ -36,7 +40,9 @@
   --color-canvas: var(--background);
   --color-surface: var(--card-bg);
   --color-sunken: var(--surface-sunken);
+  --color-sunken-hover: var(--surface-sunken-hover);
   --color-line: var(--brand-border);
+  --color-line-hover: var(--border-hover);
   --color-line-strong: var(--border-strong);
   --color-ink: var(--foreground);
   --color-ink-body: var(--ink-body);
@@ -44,9 +50,11 @@
   --color-ink-faint: var(--ink-faint);
   --color-taupe: var(--brand-taupe);
   --color-taupe-hover: var(--brand-taupe-hover);
+  --color-taupe-dark: var(--brand-taupe-dark);
   --color-danger: var(--accent-danger);
   --color-sage: var(--accent-sage);
   --color-alert: var(--accent-alert);
+  --color-slate: var(--accent-slate);
   --color-border-soft: var(--brand-border);
   --font-sans: var(--font-outfit);
   --font-serif: var(--font-playfair);
@@ -57,6 +65,20 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ── Hero search glow ────────────────────────────────────────────────────
+   A slow, cycling brown glow ring around the landing hero's search bar —
+   taupe → gold → cognac-brown → back — one full loop every 2s. Layered as
+   a box-shadow so it sits outside the bar's own border/focus-within
+   states instead of fighting them. */
+@keyframes hero-search-glow {
+  0%, 100% { box-shadow: 0 0 0 2px #9A8073, 0 0 18px 3px rgba(154, 128, 115, 0.55); }
+  33%      { box-shadow: 0 0 0 2px #C5A059, 0 0 20px 3px rgba(197, 160, 89, 0.6); }
+  66%      { box-shadow: 0 0 0 2px #7D5B46, 0 0 18px 3px rgba(125, 91, 70, 0.55); }
+}
+.hero-search-glow {
+  animation: hero-search-glow 2s ease-in-out infinite;
 }
 
 /* ── Typographic hierarchy ──────────────────────────────────────────────────
@@ -191,4 +213,387 @@ textarea:-webkit-autofill:focus {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   📱 MOBILE UI DESIGN SYSTEM SPECS (320px – 599px)
+   Baseline Design Canvas: 320px width | Grid System: 8px Linear Grid
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* 1. Typography Hierarchy & Weights (The "Anti-AI Bold" Scale) */
+.mobile-hero-title {
+  font-size: clamp(32px, 9vw, 40px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.mobile-h1 {
+  font-size: clamp(26px, 7vw, 32px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.mobile-h2 {
+  font-size: clamp(22px, 6vw, 24px);
+  font-weight: 600; /* Strictly Semi-Bold (600) — Do not use Bold (700) */
+  line-height: 1.3;
+}
+
+.mobile-h3 {
+  font-size: clamp(18px, 5vw, 20px);
+  font-weight: 500; /* Medium (500) or Semi-Bold (600) */
+  line-height: 1.4;
+}
+
+.mobile-h4 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Body Content & Meta (Strictly Unbolded / Regular 400) */
+.mobile-body-lg {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.mobile-body-md {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.mobile-body-sm {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.mobile-caption {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.mobile-overline {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+/* 2. Interactive & Clickable Components (Touch Targets 44px-48px+) */
+.touch-target-48 {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.touch-target-44 {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon-Only Buttons: 24px icon inside 48px x 48px bounding box (12px padding) */
+.btn-icon-mobile {
+  min-width: 48px;
+  min-height: 48px;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+/* Primary Action Button: Height: 48px-56px (52px Fluent sweet spot), font: 16px font-semibold, radius: 8px (rounded-lg) or full */
+.btn-primary-mobile {
+  min-height: 48px;
+  height: 52px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+/* Secondary / Outline Button: Height: 48px-56px, font: 16px font-medium, radius: 8px */
+.btn-secondary-mobile {
+  min-height: 48px;
+  height: 52px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+/* Text / Link Button: Figma bounding box min-height 44px or 48px, font 14px or 16px font-medium */
+.btn-text-mobile {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+/* Form Input Fields: Height 48px-56px, text >= 16px regular, radius: 8px */
+.form-input-mobile {
+  min-height: 48px;
+  height: 52px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 16px !important;
+  font-weight: 400;
+  border-radius: 8px;
+}
+
+/* List Items / Menu Navigation Rows: Height: 56px to 72px per row */
+.mobile-nav-row {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+}
+
+/* 3. Spacing, Layout Margins & Padding — matches PublicNav's own header
+   padding exactly (px-4 sm:px-6 lg:px-8) so every page's content aligns
+   flush with the header's logo/icons at every breakpoint instead of
+   drifting per-section. */
+.mobile-screen-margins {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Headline to Paragraph: 8px or 12px */
+.space-headline-para {
+  margin-top: 8px;
+}
+
+/* Paragraph to Paragraph: 16px */
+.space-para-para {
+  margin-top: 16px;
+}
+
+/* Content Block to CTA Button: 24px to 32px */
+.space-block-cta {
+  margin-top: 24px;
+}
+
+/* Horizontal Button-to-Button Gap: 12px minimum */
+.gap-btn-mobile {
+  gap: 12px;
+}
+
+/* 4. iOS Web Auto-zoom prevention: Input font-size must be at least 16px on mobile */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+
+/* ────────────────────────────────────────────────────────────────────────────
+   🖥️ TABLET UI DESIGN SYSTEM SPECS (600px – 1023px)
+   Baseline: Web-based layout. Switches from single-column mobile scroll to
+   fluid grid with sidebar patterns, wider content max-width, expanded nav.
+   Grid System: 8px Linear Grid (same base, larger increments).
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* 1. Tablet Typography Scale */
+.tablet-hero-title {
+  font-size: clamp(40px, 5.5vw, 64px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+.tablet-h1 {
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.tablet-h2 {
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.tablet-h3 {
+  font-size: clamp(20px, 2.5vw, 26px);
+  font-weight: 500;
+  line-height: 1.35;
+}
+.tablet-h4 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+/* Body — always Regular (400), never bolded for reading text */
+.tablet-body-lg {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.tablet-body-md {
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+.tablet-body-sm {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.tablet-caption {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.tablet-overline {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+/* 2. Tablet Interactive Components */
+.btn-primary-tablet {
+  min-height: 52px;
+  height: 56px;
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+.btn-secondary-tablet {
+  min-height: 52px;
+  height: 56px;
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+  font-size: 17px;
+  font-weight: 500;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+.tablet-nav-row {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+}
+.form-input-tablet {
+  min-height: 52px;
+  height: 56px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  font-size: 16px;
+  font-weight: 400;
+  border-radius: 10px;
+}
+
+/* 3. Tablet Spacing & Layout */
+.tablet-screen-margins {
+  padding-left: 32px;
+  padding-right: 32px;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tablet-screen-margins {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+/* sm+ (640px) and lg+ (1024px) — matches Tailwind's own breakpoints, same
+   as PublicNav's px-4 sm:px-6 lg:px-8. */
+@media (min-width: 640px) {
+  .mobile-screen-margins {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+@media (min-width: 1024px) {
+  .mobile-screen-margins {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+/* Content max-width: centers content on wider tablet viewports */
+.tablet-content-max {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Sidebar layout: left filter panel (260px) + right results */
+.tablet-sidebar-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.tablet-sidebar-panel {
+  width: 260px;
+  flex-shrink: 0;
+}
+.tablet-sidebar-results {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 4. Inline nav link (shown at 600px+) */
+.tablet-nav-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+.tablet-nav-link:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.12);
+}
+.tablet-nav-link.active {
+  color: #ffffff;
+  font-weight: 600;
+  background: rgba(255,255,255,0.15);
 }

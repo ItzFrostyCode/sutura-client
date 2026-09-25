@@ -84,7 +84,7 @@ function matchServiceForCatalogItem(
 export function useJobCreateForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -128,11 +128,11 @@ export function useJobCreateForm() {
     notes: '',
     po_number: '',
     is_outsourced: false,
-    partner_shop_name: '',
+    partner_store_name: '',
     outsourcing_cost: '',
     is_rush: false,
     rush_fee: '',
-    material_source: 'shop_supplied',
+    material_source: 'store_supplied',
     garment_category: '',
     discount_amount: '0',
     discount_reason: '',
@@ -165,12 +165,12 @@ export function useJobCreateForm() {
   };
 
   useEffect(() => {
-    if (shop) {
+    if (store) {
       Promise.all([
-        api.get(`/shops/${shop.id}/customers`),
-        api.get(`/shops/${shop.id}/services`),
-        api.get(`/shops/${shop.id}/staff`),
-        api.get(`/shops/${shop.id}/catalog`),
+        api.get(`/stores/${store.id}/customers`),
+        api.get(`/stores/${store.id}/services`),
+        api.get(`/stores/${store.id}/staff`),
+        api.get(`/stores/${store.id}/catalog`),
       ])
         .then(([resCustomers, resServices, resStaff, resCatalog]) => {
           const custs = Array.isArray(resCustomers.data?.data) ? resCustomers.data.data : [];
@@ -240,8 +240,8 @@ export function useJobCreateForm() {
             }
           }
 
-          if (qAptId && shop) {
-            api.get(`/shops/${shop.id}/appointments`)
+          if (qAptId && store) {
+            api.get(`/stores/${store.id}/appointments`)
               .then(res => {
                 const apt = (res.data.data || []).find((a: { id: number }) => a.id === Number(qAptId));
                 if (apt?.reference_images?.length) setReferenceImages(apt.reference_images);
@@ -280,16 +280,16 @@ export function useJobCreateForm() {
           setError('Failed to load data.');
           setLoading(false);
         });
-    } else if (user && !shop) {
+    } else if (user && !store) {
       setTimeout(() => setLoading(false), 0);
     }
-  }, [shop, user, searchParams]);
+  }, [store, user, searchParams]);
 
   // Load customer measurements when customer is selected
   useEffect(() => {
-    if (shop && formData.customer_id) {
+    if (store && formData.customer_id) {
       api
-        .get(`/shops/${shop.id}/measurements?customer_id=${formData.customer_id}`)
+        .get(`/stores/${store.id}/measurements?customer_id=${formData.customer_id}`)
         .then((res) => {
           const measurements = (res.data.data || []).filter(
             (m: CustomerMeasurement) => !m.superseded_at
@@ -317,7 +317,7 @@ export function useJobCreateForm() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [shop, formData.customer_id, searchParams]);
+  }, [store, formData.customer_id, searchParams]);
 
   // Auto-calculate suggested total price based on service base price and rush fee
   useEffect(() => {
@@ -404,7 +404,7 @@ export function useJobCreateForm() {
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!shop) return;
+    if (!store) return;
 
     setSubmitting(true);
     setError('');
@@ -439,12 +439,12 @@ export function useJobCreateForm() {
 
     try {
       const assignedStages = Object.entries(staffStageAssignments).filter(([, userId]) => userId);
-      await api.post(`/shops/${shop.id}/jobs`, {
+      await api.post(`/stores/${store.id}/jobs`, {
         intake_channel: effectiveIntakeChannel,
         fulfillment_type: 'pickup',
         customer_id: formData.customer_id,
         service_id: formData.service_id,
-        shop_branch_id: assignedStages.length === 0 ? (selectedBranchId ?? undefined) : undefined,
+        store_branch_id: assignedStages.length === 0 ? (selectedBranchId ?? undefined) : undefined,
         staff_stages: assignedStages.map(([stage, userId]) => ({ stage, user_id: Number(userId) })),
         measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
         total_amount: formData.total_amount,
@@ -466,7 +466,7 @@ export function useJobCreateForm() {
             : null,
         },
         is_outsourced: formData.is_outsourced,
-        partner_shop_name: formData.is_outsourced ? formData.partner_shop_name : null,
+        partner_store_name: formData.is_outsourced ? formData.partner_store_name : null,
         outsourcing_cost: formData.is_outsourced && formData.outsourcing_cost ? Number.parseFloat(formData.outsourcing_cost) : null,
         appointment_id: appointmentId ? Number(appointmentId) : null,
         catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
@@ -495,7 +495,7 @@ export function useJobCreateForm() {
     : { icon: FileText, bg: 'bg-sunken', border: 'border-line', text: 'text-ink-faint' };
 
   return {
-    shop,
+    store,
     user,
     loading,
     submitting,

@@ -1,4 +1,4 @@
-import { Shirt, Crown, UserRound, GraduationCap, Sparkles, Drama, Layers, Grid3x3, type LucideIcon } from 'lucide-react';
+import { Shirt, Crown, UserRound, GraduationCap, Sparkles, Drama, Layers, Grid3x3, Watch, type LucideIcon } from 'lucide-react';
 
 export interface GarmentCategory {
   value: string;
@@ -27,6 +27,12 @@ export const GARMENT_CATEGORIES: GarmentCategory[] = [
   { value: 'suit', label: 'Suit', Icon: UserRound, filterBy: 'garment_type' },
   { value: 'gown', label: 'Gown', Icon: Crown, filterBy: 'garment_type' },
   { value: 'costume', label: 'Costumes', Icon: Drama, filterBy: 'q' },
+  // Same shape as jersey/costume above — no catalog_items.garment_type
+  // value for this either (ties/cufflinks/scarves get tagged under
+  // whatever base garment they came with), matches the header mega-menu's
+  // own Accessories chip set, which has always been a name/description
+  // search (q=), never a garment_type filter.
+  { value: 'accessories', label: 'Accessories', Icon: Watch, filterBy: 'q' },
   { value: 'other', label: 'More Styles', Icon: Layers, filterBy: 'garment_type' },
 ];
 
@@ -35,9 +41,13 @@ export const GARMENT_CATEGORIES: GarmentCategory[] = [
 export function applyCategoryFilter(params: Record<string, string | number>, categoryValue: string): void {
   if (!categoryValue) return;
   const category = GARMENT_CATEGORIES.find((c) => c.value === categoryValue);
-  if (!category) return;
+  if (!category) {
+    const fallbackQ = categoryValue.replace(/_/g, ' ');
+    params.q = params.q ? `${params.q} ${fallbackQ}` : fallbackQ;
+    return;
+  }
   if (category.filterBy === 'q') {
-    params.q = category.value;
+    params.q = params.q ? `${params.q} ${category.value}` : category.value;
   } else {
     params.garment_type = category.value;
   }

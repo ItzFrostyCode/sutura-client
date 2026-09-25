@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Store, Send } from 'lucide-react';
+import { Store, Send, Loader2 } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
 import { getMediaUrl } from '@/lib/media';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -22,7 +22,7 @@ interface TicketDetail {
   message: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   created_at: string;
-  shop: { id: number; name: string; slug: string; logo_path: string | null } | null;
+  store: { id: number; name: string; slug: string; logo_path: string | null } | null;
   replies: TicketReply[];
 }
 
@@ -75,24 +75,28 @@ export default function SupportTicketDetailPage({ params }: Readonly<{ params: P
     <div className="flex flex-col min-h-full">
       <AccountHeader title="Ticket Details" backHref="/account/settings/support" />
 
-      {!ticket && !notFound && <div className="text-center py-16 text-sm text-ink-muted">Loading…</div>}
+      {!ticket && !notFound && (
+        <div className="min-h-[50vh] flex items-center justify-center bg-white">
+          <Loader2 size={28} className="animate-spin text-ink-faint" />
+        </div>
+      )}
       {notFound && <div className="text-center py-16 text-sm text-ink-muted">Ticket not found.</div>}
 
       {ticket && (
         <>
           <div className="flex-1">
-            <div className="bg-surface border border-line rounded-2xl p-4 mb-2.5">
+            <div className="bg-surface border border-line p-4 mb-2.5">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden bg-sunken">
-                  {ticket.shop?.logo_path ? (
-                    <Image src={getMediaUrl(ticket.shop.logo_path)} alt="" fill unoptimized className="object-cover" />
+                  {ticket.store?.logo_path ? (
+                    <Image src={getMediaUrl(ticket.store.logo_path)} alt="" fill className="object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Store size={13} className="text-ink-faint" />
                     </div>
                   )}
                 </div>
-                <span className="text-xs font-semibold text-ink-muted truncate">{ticket.shop?.name ?? 'SUTURA'}</span>
+                <span className="text-xs font-semibold text-ink-muted truncate">{ticket.store?.name ?? 'SUTURA'}</span>
                 <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${STATUS_META[ticket.status].tone}`}>
                   {STATUS_META[ticket.status].label}
                 </span>
@@ -106,7 +110,7 @@ export default function SupportTicketDetailPage({ params }: Readonly<{ params: P
               const isMine = !r.is_admin_reply && r.user?.id === user?.id;
               return (
                 <div key={r.id} className={`flex mb-2.5 ${isMine ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${isMine ? 'bg-taupe text-white' : 'bg-surface border border-line text-ink-body'}`}>
+                  <div className={`max-w-[85%] px-4 py-3 ${isMine ? 'bg-taupe text-white' : 'bg-surface border border-line text-ink-body'}`}>
                     <p className={`text-[11px] font-semibold mb-1 ${isMine ? 'text-white/80' : 'text-ink-muted'}`}>
                       {r.is_admin_reply ? 'SUTURA Support' : isMine ? 'You' : r.user?.name ?? 'User'}
                     </p>
@@ -126,7 +130,7 @@ export default function SupportTicketDetailPage({ params }: Readonly<{ params: P
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Type a reply…"
                 rows={1}
-                className="flex-1 resize-none px-3.5 py-2.5 rounded-xl bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors max-h-24"
+                className="flex-1 resize-none px-3.5 py-2.5 bg-canvas border border-line text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors max-h-24"
               />
               <button
                 type="button"

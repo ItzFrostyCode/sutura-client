@@ -46,20 +46,27 @@ export interface Job {
     estimated_days?: number | null;
   };
   assigned_staff?: { name: string; id: number };
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   branch?: { id: number; name: string } | null;
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
   custom_order_data?: Record<string, unknown> | null;
   payments?: Payment[];
   is_outsourced?: boolean;
-  partner_shop_name?: string | null;
+  partner_store_name?: string | null;
   outsourcing_cost?: number | string | null;
   is_rush?: boolean;
   rush_fee?: number | string;
   completion_photo_url?: string | null;
   reference_images?: string[] | null;
   reference_link?: string | null;
-  material_source?: 'shop_supplied' | 'customer_supplied' | null;
+  material_source?: 'store_supplied' | 'customer_supplied' | null;
+  // Customer-facing tracker fields — surfaced on /account/orders/[id] and
+  // /track/[code]. Meaningful only while the job is in progress; see
+  // docs/CUSTOMER-WORKFLOW.md §7.4/§22.
+  estimated_ready_at?: string | null;
+  // Only meaningful when material_source === 'customer_supplied' — tracks
+  // the fabric/material the customer physically dropped off at the shop.
+  customer_material_status?: 'safe' | 'damaged' | 'lost' | 'returned' | null;
   rejection_reason?: string | null;
   cancellation_reason?: string | null;
   hold_reason?: string | null;
@@ -101,7 +108,7 @@ export interface Staff {
   role: string;
   additional_roles?: string[] | null;
   specialization?: string | string[];
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   branch?: { id: number; name: string } | null;
   // Already computed by StaffController@index (same "≥5 = overloaded"
   // threshold as the Staff dashboard page) but never surfaced at the one

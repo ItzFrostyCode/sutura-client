@@ -5,20 +5,20 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ToastProvider } from '@/context/ToastContext';
 import api from '@/lib/axios';
+import PublicNav from '@/components/shared/PublicNav';
+import AccountWebSidebar from '@/components/account/hub/AccountWebSidebar';
 
 // A thin auth-guard shell — one hydration-guard/redirect/refetch bootstrap
-// shared by every /account/* page. No persistent sidebar nav anymore (that
-// was a desktop pattern); `/account` itself is now the real "Me" hub page
-// (profile header + Job Orders/Appointments/Measurements cards, Shopee-Me-
-// tab shaped but built on SUTURA's real concepts), and every other
-// /account/* page is a drill-down reached from a card there, with its own
-// local back button — standard mobile-app hub-and-drill-down navigation,
-// not a permanent side nav.
+// shared by every /account/* page. PublicNav sits above all of it, same as
+// /search, store profile, and /track.
 //
-// No PublicNav here — a search bar makes no sense above a profile/settings
-// screen. The hub's own profile card (avatar/name/email + settings icon)
-// is the real header for this whole section; every sub-page brings its own
-// back-arrow title bar.
+// Desktop/tablet (md+): a persistent left sidebar (Shopee "My Account"
+// pattern — profile summary + grouped nav) lives HERE in the layout so it
+// stays put across every /account/* route instead of each page rebuilding
+// it; only the content pane on the right swaps. Below md: no sidebar —
+// `/account` itself is the real "Me" hub (profile header + quick cards),
+// and every other /account/* page is a drill-down with its own local back
+// button (AccountHeader) — standard mobile hub-and-drill-down nav.
 export default function AccountLayout({ children }: { readonly children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,8 +39,8 @@ export default function AccountLayout({ children }: { readonly children: React.R
       api.get('/auth/me')
         .then(res => {
           if (res.data.success) {
-            const { user: freshUser, shop, staff_profile } = res.data.data;
-            setAuth(freshUser, token, shop, staff_profile);
+            const { user: freshUser, store, staff_profile } = res.data.data;
+            setAuth(freshUser, token, store, staff_profile);
           }
         })
         .catch((err) => {
@@ -55,7 +55,7 @@ export default function AccountLayout({ children }: { readonly children: React.R
   // This hub is customer turf — Job Orders/Appointments/Measurements are
   // customer concepts, and every non-customer role already has its own real
   // home (/dashboard, plus dashboard/account-settings for profile). Without
-  // this, a shop_owner/staff/branch_manager/admin account landing here sees
+  // this, a store_owner/staff/branch_manager/admin account landing here sees
   // an empty customer shell and their OWN real notifications — which
   // correctly deep-link into /dashboard, not a bug, just the wrong page to
   // be looking at as that role.
@@ -78,11 +78,23 @@ export default function AccountLayout({ children }: { readonly children: React.R
     if (!(user.roles?.some((r) => r.name === 'customer') ?? false)) return null;
   }
 
+  const showSidebar = hydrated && isAuthenticated && !!user;
+
   return (
     <ToastProvider>
       <div className="min-h-dvh flex flex-col bg-canvas">
-        <main className="flex-1 flex flex-col w-full mx-auto px-[10px] py-[10px]">
-          {children}
+        <PublicNav />
+        <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-4 md:py-6">
+          {showSidebar ? (
+            <div className="flex flex-col md:flex-row md:items-start md:gap-8">
+              <div className="hidden md:block">
+                <AccountWebSidebar user={user} />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col">{children}</div>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </ToastProvider>

@@ -3,23 +3,23 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
-import L from 'leaflet';
+import L from '@/lib/leafletSafe';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 
-// Generic fallback pin — same inline store SVG used when a shop has no
+// Generic fallback pin — same inline store SVG used when a store has no
 // logo on file, kept visually close to BranchesMap.tsx's own pin so it
 // doesn't look like a different, broken marker type.
 const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A8073" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20l-2 7H4L2 3Z"/><path d="M4 10v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9"/><path d="M9 13v4"/><path d="M15 13v4"/></svg>';
 
-// One pin per branch, but the pin itself IS the shop's logo (a circular
-// avatar with a pointer tail), not a generic teardrop — at multiple shops
+// One pin per branch, but the pin itself IS the store's logo (a circular
+// avatar with a pointer tail), not a generic teardrop — at multiple stores
 // clustered close together on a real street grid, identical plain pins were
-// unreadable; a recognizable logo lets a visitor tell shops apart at a
+// unreadable; a recognizable logo lets a visitor tell stores apart at a
 // glance the way real map apps (Google/Waze business pins) do. A gold ring
-// + "MAIN" badge marks a shop's main branch versus a satellite branch.
+// + "MAIN" badge marks a store's main branch versus a satellite branch.
 export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean): L.DivIcon {
   const ringColor = isMain ? '#9A8073' : '#EBE6E0';
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
@@ -50,10 +50,8 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
   });
 }
 
-export const buildShopPinIcon = buildStorePinIcon;
-
 // Distinct "you are here" marker — a solid pulsing dot, not another pin, so
-// it never reads as just another shop branch on the map.
+// it never reads as just another store branch on the map.
 const userLocationIcon = L.divIcon({
   className: '',
   html: '<span style="position:relative;display:block;width:16px;height:16px;"><span style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;opacity:0.35;animation:sutura-pulse 1.8s ease-out infinite;"></span><span style="position:absolute;inset:3px;border-radius:9999px;background:#3B82F6;border:2px solid white;"></span></span><style>@keyframes sutura-pulse{0%{transform:scale(0.6);opacity:0.6;}100%{transform:scale(2.2);opacity:0;}}</style>',
@@ -65,6 +63,16 @@ function FitBounds({ points, disable }: { readonly points: [number, number][]; r
   const map = useMap();
   const prevKeyRef = useRef<string>('');
   const pointsKey = points.map((p) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join('|');
+
+  useEffect(() => {
+    return () => {
+      try {
+        map.stop();
+      } catch {
+        // Safe fallback
+      }
+    };
+  }, [map]);
 
   useEffect(() => {
     if (disable || !pointsKey) return;
@@ -110,14 +118,15 @@ function MapEventsHandler({
 }
 
 export interface DiscoveryMapBranch {
-  shopSlug: string;
-  shopName: string;
-  shopLogoPath: string | null;
+  storeSlug: string;
+  storeName: string;
+  storeLogoPath: string | null;
   branchId: number;
   branchName: string;
   isMain: boolean;
   address: string | null;
   city: string | null;
+  district?: string | null;
   landmark: string | null;
   latitude: number;
   longitude: number;
@@ -179,17 +188,17 @@ export default function DiscoveryMap({
           </Marker>
         )}
         {branches.map((b) => {
-          const key = `${b.shopSlug}-${b.branchId}`;
+          const key = `${b.storeSlug}-${b.branchId}`;
           return (
             <Marker
               key={key}
               position={[b.latitude, b.longitude]}
-              icon={buildStorePinIcon(b.shopLogoPath, b.isMain, b.isOpen)}
+              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
               eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b) } : undefined}
             >
               {!onSelectBranch && (
                 <Popup>
-                  <strong>{b.shopName}</strong>
+                  <strong>{b.storeName}</strong>
                   {' '}
                   <span style={{ fontSize: '11px', color: '#886E62', fontWeight: 700 }}>
                     {b.isMain ? '(Main Branch)' : `(${b.branchName})`}
@@ -206,7 +215,7 @@ export default function DiscoveryMap({
                     </>
                   ) : null}
                   <br />
-                  <Link href={gate(`/shop/${b.shopSlug}`)} className="text-[#9A8073] font-semibold">
+                  <Link href={gate(`/store/${b.storeSlug}`)} className="text-[#9A8073] font-semibold">
                     View store →
                   </Link>
                 </Popup>

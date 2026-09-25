@@ -21,7 +21,7 @@ export interface NotifData {
   customer_name?: string;
   staff_name?: string;
   sender_name?: string;
-  shop_name?: string;
+  store_name?: string;
   order_number?: string;
   amount?: number;
   [key: string]: unknown;
@@ -47,7 +47,7 @@ export function getSenderInfo(notif: AppNotification): NotificationSender {
     data.customer_name ||
     data.staff_name ||
     data.sender_name ||
-    data.shop_name;
+    data.store_name;
 
   if (!rawName) {
     const type = data.type || '';

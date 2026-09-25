@@ -174,7 +174,7 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
 export function getItemDistanceInfo(
   item: {
     distance_km?: number | null;
-    shop?: {
+    store?: {
       branches?: {
         name: string;
         district?: string | null;
@@ -186,7 +186,7 @@ export function getItemDistanceInfo(
   userCoords?: { lat: number; lng: number } | null
 ): { distanceKm: number; label: string } | null {
   if (item.distance_km != null) {
-    const firstBranch = item.shop?.branches?.[0];
+    const firstBranch = item.store?.branches?.[0];
     const locName = firstBranch?.district || firstBranch?.name || '';
     return {
       distanceKm: item.distance_km,
@@ -194,12 +194,12 @@ export function getItemDistanceInfo(
     };
   }
 
-  if (!userCoords || !item.shop?.branches?.length) return null;
+  if (!userCoords || !item.store?.branches?.length) return null;
 
   let minKm: number | null = null;
   let nearestBranchName = '';
 
-  for (const b of item.shop.branches) {
+  for (const b of item.store.branches) {
     if (b.latitude == null || b.longitude == null) continue;
     const bLat = Number(b.latitude);
     const bLng = Number(b.longitude);

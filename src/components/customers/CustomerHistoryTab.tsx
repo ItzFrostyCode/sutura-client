@@ -34,7 +34,7 @@ export default function CustomerHistoryTab({
         id: `cust-${customer.id}`,
         type: 'customer',
         title: 'Client Profile Created',
-        description: `Customer profile for ${customer.name} was added to the shop database.`,
+        description: `Customer profile for ${customer.name} was added to the store database.`,
         date: new Date(customer.created_at),
         icon: User,
         color: 'bg-taupe text-white border-taupe',

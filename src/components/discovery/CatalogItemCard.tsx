@@ -11,11 +11,11 @@ import { resolveFabricImage } from '@/lib/fabricHelper';
 /**
  * The one catalog-item card style every customer-facing browse surface
  * (landing page's Catalog Showroom, /search's results grid) should use —
- * matches shop/[shop_id]'s own catalog tab card exactly (aspect-3/4,
+ * matches store/[store_id]'s own catalog tab card exactly (aspect-3/4,
  * bordered uppercase material badge on hover, rating-or-est.-days row,
  * name + price) so a visitor doesn't land somewhere that looks like a
  * different product. Clicking navigates straight to that item's real page
- * (shop/[shop_id]/catalog/[item_id]) — same destination the storefront's
+ * (store/[store_id]/catalog/[item_id]) — same destination the storefront's
  * own catalog tab uses.
  */
 export default function CatalogItemCard({
@@ -37,7 +37,7 @@ export default function CatalogItemCard({
 
   return (
     <Link
-      href={gate(item.shop ? `/shop/${item.shop.slug}/catalog/${item.id}` : '/search')}
+      href={gate(item.store ? `/store/${item.store.slug}/catalog/${item.id}` : '/search')}
       className="group flex flex-col justify-between w-full h-full bg-surface border border-line overflow-hidden hover:border-line-strong transition-colors"
     >
       <div className="aspect-3/4 bg-sunken relative overflow-hidden shrink-0">
@@ -47,7 +47,6 @@ export default function CatalogItemCard({
             src={getMediaUrl(displayImage)}
             alt={`${item.name}${showFabric ? ' - Fabric Swatch' : ''}`}
             fill
-            unoptimized
             className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
@@ -61,14 +60,6 @@ export default function CatalogItemCard({
           <div className="absolute top-1.5 left-1.5 z-10 bg-ink/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
             <MapPin size={9} className="text-white/80 shrink-0" />
             <span className="truncate max-w-[110px]">{distInfo.label}</span>
-          </div>
-        )}
-
-        {/* Fabric View Indicator Badge */}
-        {showFabric && (
-          <div className="absolute top-1.5 right-1.5 z-10 bg-ink/85 backdrop-blur-xs text-white text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs border border-white/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-            <span>Fabric</span>
           </div>
         )}
 

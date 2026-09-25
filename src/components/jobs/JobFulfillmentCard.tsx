@@ -3,7 +3,7 @@ import { Store, Truck } from 'lucide-react';
 
 interface JobFulfillmentCardProps {
   readonly isOutsourced?: boolean;
-  readonly partnerShopName?: string | null;
+  readonly partnerStoreName?: string | null;
   readonly outsourcingCost?: number | string | null;
 }
 
@@ -13,13 +13,13 @@ interface JobFulfillmentCardProps {
  * notice rather than an editable fulfillment-method selector.
  *
  * Outsourcing is a separate concern from delivery — is_outsourced/
- * partner_shop_name/outsourcing_cost are set at Job creation but, before
+ * partner_store_name/outsourcing_cost are set at Job creation but, before
  * this, were never shown again anywhere afterward. A job actually sitting
- * at a partner shop (e.g. sent out for embroidery the shop can't do
+ * at a partner store (e.g. sent out for embroidery the store can't do
  * in-house) needs that visible here, or staff checking on it later have no
  * way to know it isn't physically on the premises.
  */
-export default function JobFulfillmentCard({ isOutsourced, partnerShopName, outsourcingCost }: JobFulfillmentCardProps) {
+export default function JobFulfillmentCard({ isOutsourced, partnerStoreName, outsourcingCost }: JobFulfillmentCardProps) {
   return (
     <div className="bg-canvas/50 border border-line/60 rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2">
@@ -28,15 +28,15 @@ export default function JobFulfillmentCard({ isOutsourced, partnerShopName, outs
       </div>
       <div className="bg-canvas/60 border border-line/60 rounded-lg p-3 text-xs text-ink-muted flex items-center gap-2">
         <Store size={14} className="shrink-0" />
-        <span>Customer will pick up garments in-store. (Shop address will be used)</span>
+        <span>Customer will pick up garments in-store. (Store address will be used)</span>
       </div>
       {isOutsourced && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex items-start gap-2">
           <Truck size={14} className="shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">Outsourced to a partner shop</p>
+            <p className="font-semibold">Outsourced to a partner store</p>
             <p className="mt-0.5">
-              {partnerShopName || 'Partner shop not specified'}
+              {partnerStoreName || 'Partner store not specified'}
               {outsourcingCost != null && Number(outsourcingCost) > 0 && (
                 <> — ₱{Number(outsourcingCost).toLocaleString('en-PH', { minimumFractionDigits: 2 })} cost</>
               )}

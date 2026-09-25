@@ -20,19 +20,19 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const roleName = user?.roles?.[0]?.name;
-  const isShopOwner = roleName === 'shop_owner';
-  // Matches the backend's role:shop_owner,branch_manager gate on GET /analytics
-  const canViewAnalytics = isShopOwner || roleName === 'branch_manager';
+  const isStoreOwner = roleName === 'store_owner';
+  // Matches the backend's role:store_owner,branch_manager gate on GET /analytics
+  const canViewAnalytics = isStoreOwner || roleName === 'branch_manager';
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState('this_month');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'news' | 'welcome'>('dashboard');
 
   // Visibility toggle
-  const [shopVisible, setShopVisible] = useState<boolean | null>(null);
+  const [storeVisible, setStoreVisible] = useState<boolean | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
 
   // Completed-but-unpaid jobs, from a dedicated uncapped backend query
@@ -41,13 +41,13 @@ export default function DashboardPage() {
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
 
-  const shopId = shop?.id;
+  const storeId = store?.id;
 
   const fetchOnlineStaff = useCallback(() => {
-    // Staff list/management is owner-only (matches GET /shops/{shop}/staff) —
+    // Staff list/management is owner-only (matches GET /stores/{store}/staff) —
     // staff/branch managers share this dashboard and shouldn't 403 on it.
-    if (!shopId || !isShopOwner) return;
-    api.get(`/shops/${shopId}/staff`)
+    if (!storeId || !isStoreOwner) return;
+    api.get(`/stores/${storeId}/staff`)
       .then(res => {
         const raw: StaffPresence[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const FIVE_MIN = 5 * 60 * 1000;
@@ -57,7 +57,7 @@ export default function DashboardPage() {
           // jobs/appointments/analytics), so this widget filters client-side —
           // otherwise selecting a branch left "Online Staff" silently showing
           // every branch's staff.
-          .filter(s => selectedBranchId === null || s.shop_branch_id === selectedBranchId)
+          .filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId)
           .filter(s => {
             if (!s.user?.last_seen_at) return false;
             return now - new Date(s.user.last_seen_at).getTime() < FIVE_MIN;
@@ -67,11 +67,11 @@ export default function DashboardPage() {
         setOnlineStaff(online);
       })
       .catch(() => {});
-  }, [shopId, isShopOwner, selectedBranchId]);
+  }, [storeId, isStoreOwner, selectedBranchId]);
 
-  // Main analytics & shop settings fetch
+  // Main analytics & store settings fetch
   useEffect(() => {
-    if (!shopId) return;
+    if (!storeId) return;
     setLoading(true);
 
     // Home respects the header's branch selector — matches
@@ -86,7 +86,7 @@ export default function DashboardPage() {
     let isMounted = true;
 
     if (canViewAnalytics) {
-      api.get(`/shops/${shopId}/analytics`, { params })
+      api.get(`/stores/${storeId}/analytics`, { params })
         .then(res => {
           if (!isMounted) return;
           setData(res.data.data);
@@ -100,12 +100,12 @@ export default function DashboardPage() {
       setLoading(false);
     }
 
-    // Shop visibility toggle is owner-only (matches PUT /shops/{shop}).
+    // Store visibility toggle is owner-only (matches PUT /stores/{store}).
     // Reads/writes `is_hidden` (inverted).
-    if (isShopOwner) {
-      api.get(`/shops/${shopId}`)
+    if (isStoreOwner) {
+      api.get(`/stores/${storeId}`)
         .then(res => {
-          if (isMounted) setShopVisible(!res.data.data?.is_hidden);
+          if (isMounted) setStoreVisible(!res.data.data?.is_hidden);
         })
         .catch(() => {});
     }
@@ -113,15 +113,15 @@ export default function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [shopId, canViewAnalytics, isShopOwner, selectedBranchId]);
+  }, [storeId, canViewAnalytics, isStoreOwner, selectedBranchId]);
 
   // Periodic online staff poll (every 30s)
   useEffect(() => {
-    if (!shopId || !isShopOwner) return;
+    if (!storeId || !isStoreOwner) return;
     fetchOnlineStaff();
     const interval = setInterval(fetchOnlineStaff, 30_000);
     return () => clearInterval(interval);
-  }, [shopId, isShopOwner, fetchOnlineStaff]);
+  }, [storeId, isStoreOwner, fetchOnlineStaff]);
 
   // The backend reads start_date/end_date, not a 'period' string — converting
   // client-side (same pattern as the Reports page) so the period buttons
@@ -152,7 +152,7 @@ export default function DashboardPage() {
 
   const handleChartPeriod = (period: string) => {
     setChartPeriod(period);
-    if (!shop?.id || !canViewAnalytics) return;
+    if (!store?.id || !canViewAnalytics) return;
     const { start_date, end_date } = getDateRangeForChartPeriod(period);
     const params: Record<string, string | number> = {};
     if (start_date && end_date) {
@@ -162,20 +162,20 @@ export default function DashboardPage() {
     if (selectedBranchId !== null) {
       params.branch_id = selectedBranchId;
     }
-    api.get(`/shops/${shop.id}/analytics`, { params })
+    api.get(`/stores/${store.id}/analytics`, { params })
       .then(res => setData(res.data.data))
       .catch(() => {});
   };
 
   const toggleVisibility = async () => {
-    if (!shop) return;
+    if (!store) return;
     setVisibilityLoading(true);
-    const next = !shopVisible;
-    setShopVisible(next);
+    const next = !storeVisible;
+    setStoreVisible(next);
     try {
-      await api.put(`/shops/${shop.id}`, { is_hidden: !next });
+      await api.put(`/stores/${store.id}`, { is_hidden: !next });
     } catch {
-      setShopVisible(!next);
+      setStoreVisible(!next);
     } finally {
       setVisibilityLoading(false);
     }
@@ -196,7 +196,7 @@ export default function DashboardPage() {
   const todayAppointments = asArray<NonNullable<AnalyticsData['today_appointments']>[number]>(data?.today_appointments);
   const pendingDpJobs = asArray<JobItem>(data?.pending_dp_jobs_list);
 
-  if (loading || !shop?.id) {
+  if (loading || !store?.id) {
     return <DashboardSkeleton />;
   }
 
@@ -221,7 +221,7 @@ export default function DashboardPage() {
         userName={user?.name || ''}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        shopVisible={shopVisible}
+        storeVisible={storeVisible}
         toggleVisibility={toggleVisibility}
         visibilityLoading={visibilityLoading}
       />

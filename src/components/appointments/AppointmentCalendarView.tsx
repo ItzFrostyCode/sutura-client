@@ -6,7 +6,7 @@ import {
 import {
   Appointment, TYPE_CONFIG,
   StatusBadge, TypeBadge, getLocalDateString, formatScheduled, getCustomerInitials,
-  ChannelBadge, RescheduledBadge
+  ChannelBadge, RescheduledBadge, CheckInBadge
 } from './appointmentHelpers';
 
 interface AppointmentCalendarViewProps {
@@ -30,13 +30,14 @@ interface AppointmentCalendarViewProps {
   readonly onDetailsClick: (apt: Appointment) => void;
   readonly onNoShowClick: (apt: Appointment) => void;
   readonly onAddClick: (dayStr: string, defaultTime: string) => void;
+  readonly onCheckInClick?: (aptId: number) => void;
 }
 
 export default function AppointmentCalendarView({
   appointments, currentDate, setCurrentDate, selectedDay, setSelectedDay,
   calSubMode, setCalSubMode, hoveredAptId, setHoveredAptId, actionLoadingId,
   isOwnerOrManager,
-  onReviewClick, onStartClick, onCompleteClick, onCreateJobClick, onDetailsClick, onNoShowClick, onAddClick
+  onReviewClick, onStartClick, onCompleteClick, onCreateJobClick, onDetailsClick, onNoShowClick, onAddClick, onCheckInClick
 }: AppointmentCalendarViewProps) {
 
   const year = currentDate.getFullYear();
@@ -409,12 +410,13 @@ export default function AppointmentCalendarView({
                       )}
                       <TypeBadge type={apt.appointment_type} />
                       <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+                      <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
                     </div>
 
                     {isPending && apt.intake_channel === 'online' && (
                       <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/90 text-amber-900 text-xs px-2.5 py-1 rounded-md font-medium">
                         <AlertCircle size={13} className="text-amber-600 shrink-0" />
-                        <span>Online customer booking request — awaiting shop confirmation</span>
+                        <span>Online customer booking request — awaiting store confirmation</span>
                       </div>
                     )}
 
@@ -456,6 +458,15 @@ export default function AppointmentCalendarView({
                       className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
                     >
                       <Eye size={13} /> <span>Review & Approve</span>
+                    </button>
+                  )}
+                  {isConfirmed && !apt.checked_in_at && onCheckInClick && (
+                    <button
+                      type="button"
+                      onClick={() => onCheckInClick(apt.id)}
+                      className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
+                    >
+                      Check In
                     </button>
                   )}
                   {isConfirmed && (

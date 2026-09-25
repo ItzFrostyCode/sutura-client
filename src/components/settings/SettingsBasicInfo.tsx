@@ -1,15 +1,15 @@
 import React from 'react';
 
 import { Trash2, Plus, Upload, Loader2 } from 'lucide-react';
-import { ShopSettingsData } from './useSettings';
-import ShopLogoAvatar from '@/components/ShopLogoAvatar';
+import { StoreSettingsData } from './useSettings';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { getMediaUrl } from '@/lib/media';
 
 interface SettingsBasicInfoProps {
-  readonly formData: ShopSettingsData;
+  readonly formData: StoreSettingsData;
   readonly onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   readonly handleSocialChange: (newLinks: { label: string; url: string }[]) => void;
-  readonly setFormData: React.Dispatch<React.SetStateAction<ShopSettingsData>>;
+  readonly setFormData: React.Dispatch<React.SetStateAction<StoreSettingsData>>;
   readonly activeTab: 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates' | 'business_type';
   readonly onLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   readonly onBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -45,10 +45,10 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
   };
   return (
     <div className="space-y-6">
-      {/* Shop Branding — logo and banner */}
+      {/* Store Branding — logo and banner */}
       {activeTab === 'basic_info' && (
       <div className="bg-surface border border-line rounded-2xl p-6">
-        <h2 className="text-lg font-medium text-ink mb-1">Shop Branding</h2>
+        <h2 className="text-lg font-medium text-ink mb-1">Store Branding</h2>
         <p className="text-sm text-ink-muted mb-6">
           Your logo and banner are the first thing customers see on your storefront and in search results.
         </p>
@@ -56,9 +56,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
           <div className="space-y-2">
             <span className="text-sm font-medium text-ink-body">Logo</span>
             <div className="flex items-center gap-4">
-              <ShopLogoAvatar
+              <StoreLogoAvatar
                 src={formData.logo_path}
-                name={formData.name || 'Shop'}
+                name={formData.name || 'Store'}
                 className="w-20 h-20 rounded-full border border-line bg-canvas overflow-hidden shrink-0"
                 textClassName="text-2xl font-serif font-bold text-[#8C6B5D]"
               />
@@ -126,9 +126,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label htmlFor="shop-name" className="text-sm font-medium text-ink-body">Shop Name</label>
+              <label htmlFor="store-name" className="text-sm font-medium text-ink-body">Store Name</label>
               <input
-                id="shop-name"
+                id="store-name"
                 type="text"
                 name="name"
                 value={formData.name}
@@ -137,9 +137,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-email" className="text-sm font-medium text-ink-body">Contact Email</label>
+              <label htmlFor="store-email" className="text-sm font-medium text-ink-body">Contact Email</label>
               <input
-                id="shop-email"
+                id="store-email"
                 type="email"
                 name="email"
                 value={formData.email}
@@ -150,9 +150,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="shop-description" className="text-sm font-medium text-ink-body">Description</label>
+            <label htmlFor="store-description" className="text-sm font-medium text-ink-body">Description</label>
             <textarea
-              id="shop-description"
+              id="store-description"
               name="description"
               value={formData.description}
               onChange={onChange}
@@ -163,9 +163,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label htmlFor="shop-address" className="text-sm font-medium text-ink-body">Address</label>
+              <label htmlFor="store-address" className="text-sm font-medium text-ink-body">Address</label>
               <input
-                id="shop-address"
+                id="store-address"
                 type="text"
                 name="address"
                 value={formData.address}
@@ -174,9 +174,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-landmark" className="text-sm font-medium text-ink-body">Landmark</label>
+              <label htmlFor="store-landmark" className="text-sm font-medium text-ink-body">Landmark</label>
               <input
-                id="shop-landmark"
+                id="store-landmark"
                 type="text"
                 name="landmark"
                 value={formData.landmark ?? ''}
@@ -186,9 +186,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-city" className="text-sm font-medium text-ink-body">City</label>
+              <label htmlFor="store-city" className="text-sm font-medium text-ink-body">City</label>
               <input
-                id="shop-city"
+                id="store-city"
                 type="text"
                 name="city"
                 value={formData.city}
@@ -197,9 +197,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-province" className="text-sm font-medium text-ink-body">Province</label>
+              <label htmlFor="store-province" className="text-sm font-medium text-ink-body">Province</label>
               <input
-                id="shop-province"
+                id="store-province"
                 type="text"
                 name="province"
                 value={formData.province}
@@ -208,9 +208,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="shop-phone" className="text-sm font-medium text-ink-body">Phone Number</label>
+              <label htmlFor="store-phone" className="text-sm font-medium text-ink-body">Phone Number</label>
               <input
-                id="shop-phone"
+                id="store-phone"
                 type="tel"
                 name="phone"
                 value={formData.phone}
@@ -232,9 +232,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1">
-            <label htmlFor="shop-gcash-number" className="text-sm font-medium text-ink-body">GCash Number</label>
+            <label htmlFor="store-gcash-number" className="text-sm font-medium text-ink-body">GCash Number</label>
             <input
-              id="shop-gcash-number"
+              id="store-gcash-number"
               type="text"
               name="gcash_number"
               value={formData.gcash_number}
@@ -244,9 +244,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-gcash-name" className="text-sm font-medium text-ink-body">GCash Account Name</label>
+            <label htmlFor="store-gcash-name" className="text-sm font-medium text-ink-body">GCash Account Name</label>
             <input
-              id="shop-gcash-name"
+              id="store-gcash-name"
               type="text"
               name="gcash_account_name"
               value={formData.gcash_account_name}
@@ -286,9 +286,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             </div>
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-bank-name" className="text-sm font-medium text-ink-body">Bank Name</label>
+            <label htmlFor="store-bank-name" className="text-sm font-medium text-ink-body">Bank Name</label>
             <input
-              id="shop-bank-name"
+              id="store-bank-name"
               type="text"
               name="bank_name"
               value={formData.bank_name}
@@ -298,9 +298,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-bank-account-number" className="text-sm font-medium text-ink-body">Bank Account Number</label>
+            <label htmlFor="store-bank-account-number" className="text-sm font-medium text-ink-body">Bank Account Number</label>
             <input
-              id="shop-bank-account-number"
+              id="store-bank-account-number"
               type="text"
               name="bank_account_number"
               value={formData.bank_account_number}
@@ -309,9 +309,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-bank-account-name" className="text-sm font-medium text-ink-body">Bank Account Name</label>
+            <label htmlFor="store-bank-account-name" className="text-sm font-medium text-ink-body">Bank Account Name</label>
             <input
-              id="shop-bank-account-name"
+              id="store-bank-account-name"
               type="text"
               name="bank_account_name"
               value={formData.bank_account_name}
@@ -359,7 +359,7 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
       <div className="bg-surface border border-line rounded-2xl p-6">
         <h2 className="text-lg font-medium text-ink mb-6">Social Media Links</h2>
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-ink-muted">These links will be displayed on your public shop profile.</p>
+          <p className="text-sm text-ink-muted">These links will be displayed on your public store profile.</p>
           <button
             type="button"
             onClick={() => handleSocialChange([...(formData.social_links || []), { label: '', url: '' }])}
@@ -501,15 +501,15 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
         <div className="mb-6">
           <h2 className="text-lg font-medium text-ink">Map Coordinates</h2>
           <p className="text-sm text-ink-muted mt-1">
-            Required for your shop to appear on the customer map discovery interface. Right-click your location on
+            Required for your store to appear on the customer map discovery interface. Right-click your location on
             Google Maps to copy the Latitude and Longitude.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1">
-            <label htmlFor="shop-latitude" className="text-sm font-medium text-ink-body">Latitude (e.g. 7.1907)</label>
+            <label htmlFor="store-latitude" className="text-sm font-medium text-ink-body">Latitude (e.g. 7.1907)</label>
             <input
-              id="shop-latitude"
+              id="store-latitude"
               type="text"
               name="latitude"
               value={formData.latitude}
@@ -519,9 +519,9 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="shop-longitude" className="text-sm font-medium text-ink-body">Longitude (e.g. 125.4553)</label>
+            <label htmlFor="store-longitude" className="text-sm font-medium text-ink-body">Longitude (e.g. 125.4553)</label>
             <input
-              id="shop-longitude"
+              id="store-longitude"
               type="text"
               name="longitude"
               value={formData.longitude}

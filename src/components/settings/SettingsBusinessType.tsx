@@ -62,8 +62,8 @@ export default function SettingsBusinessType({
 
   const options = [
     {
-      value: 'tailoring_shop',
-      label: 'Tailoring Shop',
+      value: 'tailoring_store',
+      label: 'Tailoring Store',
       desc: 'Custom measurements, job orders & production tracking',
       Icon: Scissors,
     },
@@ -118,7 +118,7 @@ export default function SettingsBusinessType({
       <div className="bg-surface border border-line rounded-2xl p-6">
         <h2 className="text-lg font-medium text-ink mb-2">Garment Specializations</h2>
         <p className="text-sm text-ink-muted mb-5">
-          Select the garment types your shop specializes in. Customers discover shops by specialization when
+          Select the garment types your store specializes in. Customers discover stores by specialization when
           searching the map, so this directly affects how often you show up in results.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -155,7 +155,7 @@ export default function SettingsBusinessType({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-medium text-ink mb-1 flex items-center gap-2">
-              Shop Visibility
+              Store Visibility
               {isHidden && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sunken text-ink-muted border border-line">
                   <EyeOff size={10} /> Hidden
@@ -164,8 +164,8 @@ export default function SettingsBusinessType({
             </h2>
             <p className="text-sm text-ink-muted max-w-md">
               {isHidden
-                ? "Your shop is hidden — customers can't find or view it right now. You can still edit everything here while hidden."
-                : 'Your shop is visible to customers. Turn this off to temporarily take your storefront down without deleting anything.'}
+                ? "Your store is hidden — customers can't find or view it right now. You can still edit everything here while hidden."
+                : 'Your store is visible to customers. Turn this off to temporarily take your storefront down without deleting anything.'}
             </p>
           </div>
           <button
@@ -173,7 +173,7 @@ export default function SettingsBusinessType({
             onClick={() => onHiddenChange(!isHidden)}
             className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${!isHidden ? 'bg-taupe' : 'bg-line'}`}
             aria-pressed={!isHidden}
-            aria-label="Toggle shop visibility"
+            aria-label="Toggle store visibility"
           >
             <span
               className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition-transform ${!isHidden ? 'translate-x-5' : ''}`}
@@ -186,7 +186,7 @@ export default function SettingsBusinessType({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-medium text-ink mb-1 flex items-center gap-2">
-              Featured Shop Placement
+              Featured Store Placement
               {featuredGated && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
                   <Zap size={10} /> Premium
@@ -195,8 +195,8 @@ export default function SettingsBusinessType({
             </h2>
             <p className="text-sm text-ink-muted max-w-md">
               {featuredGated
-                ? 'Get pinned as a "Featured Shop" at the top of relevant search results. Upgrade to Premium to unlock this.'
-                : 'Pin your shop as a "Featured Shop" at the top of relevant customer search results.'}
+                ? 'Get pinned as a "Featured Store" at the top of relevant search results. Upgrade to Premium to unlock this.'
+                : 'Pin your store as a "Featured Store" at the top of relevant customer search results.'}
             </p>
           </div>
           {featuredGated ? (
@@ -212,7 +212,7 @@ export default function SettingsBusinessType({
               onClick={() => onFeaturedChange(!isFeatured)}
               className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${isFeatured ? 'bg-taupe' : 'bg-line'}`}
               aria-pressed={isFeatured}
-              aria-label="Toggle featured shop placement"
+              aria-label="Toggle featured store placement"
             >
               <span
                 className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition-transform ${isFeatured ? 'translate-x-5' : ''}`}

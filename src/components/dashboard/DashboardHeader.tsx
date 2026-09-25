@@ -1,18 +1,18 @@
 import React from 'react';
 import { TABS } from './dashboardHelpers';
-import ShopVisibilityPill from './ShopVisibilityPill';
+import StoreVisibilityPill from './StoreVisibilityPill';
 
 interface DashboardHeaderProps {
   readonly userName: string;
   readonly activeTab: 'dashboard' | 'news' | 'welcome';
   readonly setActiveTab: (tab: 'dashboard' | 'news' | 'welcome') => void;
-  readonly shopVisible: boolean | null;
+  readonly storeVisible: boolean | null;
   readonly toggleVisibility: () => Promise<void>;
   readonly visibilityLoading: boolean;
 }
 
 // Clock-driven greeting — the dashboard gets opened at all hours of a real
-// shop day, and a fixed "Welcome back" reads as decoration rather than
+// store day, and a fixed "Welcome back" reads as decoration rather than
 // something that actually looked at the time.
 function timeGreeting(): string {
   const hour = new Date().getHours();
@@ -25,7 +25,7 @@ export default function DashboardHeader({
   userName,
   activeTab,
   setActiveTab,
-  shopVisible,
+  storeVisible,
   toggleVisibility,
   visibilityLoading,
 }: Readonly<DashboardHeaderProps>) {
@@ -40,8 +40,8 @@ export default function DashboardHeader({
           </h1>
           <p className="text-eyebrow mt-1">{today}</p>
         </div>
-        <ShopVisibilityPill
-          shopVisible={shopVisible}
+        <StoreVisibilityPill
+          storeVisible={storeVisible}
           toggleVisibility={toggleVisibility}
           visibilityLoading={visibilityLoading}
         />

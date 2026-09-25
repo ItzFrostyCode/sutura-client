@@ -87,7 +87,7 @@ export default function MeasurementList({
                             {activeRec.source === 'customer' ? (
                               <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">Customer-Side</span>
                             ) : (
-                              <span className="text-[10px] bg-sage/10 text-sage border border-sage/20 px-2 py-0.5 rounded-full font-medium">Shop Owner</span>
+                              <span className="text-[10px] bg-sage/10 text-sage border border-sage/20 px-2 py-0.5 rounded-full font-medium">Store Owner</span>
                             )}
                             <span className="text-[10px] bg-taupe/10 text-taupe border border-taupe/20 px-2 py-0.5 rounded-full font-medium">
                               {filledCount} field{filledCount === 1 ? '' : 's'}

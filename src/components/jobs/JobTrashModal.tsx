@@ -15,11 +15,11 @@ interface TrashedJob {
 interface JobTrashModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
-  readonly shopId: number;
+  readonly storeId: number;
   readonly onRestored: () => void;
 }
 
-export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: JobTrashModalProps) {
+export default function JobTrashModal({ isOpen, onClose, storeId, onRestored }: JobTrashModalProps) {
   const [trashed, setTrashed] = useState<TrashedJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<number | null>(null);
@@ -27,7 +27,7 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
   const loadTrashed = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/shops/${shopId}/jobs`, { params: { trashed: 1, per_page: 100 } });
+      const res = await api.get(`/stores/${storeId}/jobs`, { params: { trashed: 1, per_page: 100 } });
       const raw = res.data.data;
       setTrashed(Array.isArray(raw) ? raw : (raw?.data || []));
     } catch (err) {
@@ -35,7 +35,7 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
     } finally {
       setLoading(false);
     }
-  }, [shopId]);
+  }, [storeId]);
 
   useEffect(() => {
     const maybeLoad = () => {
@@ -47,7 +47,7 @@ export default function JobTrashModal({ isOpen, onClose, shopId, onRestored }: J
   const handleRestore = async (job: TrashedJob) => {
     setRestoringId(job.id);
     try {
-      await api.post(`/shops/${shopId}/jobs/${job.id}/restore`);
+      await api.post(`/stores/${storeId}/jobs/${job.id}/restore`);
       setTrashed(prev => prev.filter(j => j.id !== job.id));
       onRestored();
     } catch (err) {

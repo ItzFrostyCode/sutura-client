@@ -16,10 +16,13 @@ import {
   Shirt,
   Sparkles,
   Wrench,
+  Hourglass,
+  ShieldCheck,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import { Job } from './jobTypes';
+import { isRepairOnly } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
@@ -54,7 +57,7 @@ export default function JobProductionTimeline({
   collectedAmount,
   onProgressPhotoAdded,
 }: JobProductionTimelineProps) {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState(false);
   const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
@@ -62,12 +65,12 @@ export default function JobProductionTimeline({
   const [showHoldModal, setShowHoldModal] = useState(false);
 
   const handlePhotoUpload = async (file: File | undefined) => {
-    if (!file || !shop) return;
+    if (!file || !store) return;
     setUploadingPhoto(true);
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await api.post(`/shops/${shop.id}/upload`, fd, {
+      const res = await api.post(`/stores/${store.id}/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setCompletionPhotoUrl(res.data?.data?.url || res.data?.url || '');
@@ -79,17 +82,17 @@ export default function JobProductionTimeline({
   };
 
   const handleProgressPhotoUpload = async (file: File | undefined) => {
-    if (!file || !shop) return;
+    if (!file || !store) return;
     setUploadingProgressPhoto(true);
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const uploadRes = await api.post(`/shops/${shop.id}/upload`, fd, {
+      const uploadRes = await api.post(`/stores/${store.id}/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const url = uploadRes.data?.data?.url || uploadRes.data?.url;
       if (!url) throw new Error('No URL returned from upload');
-      await api.post(`/shops/${shop.id}/jobs/${job.id}/progress-photos`, { url });
+      await api.post(`/stores/${store.id}/jobs/${job.id}/progress-photos`, { url });
       onProgressPhotoAdded();
     } catch (err) {
       alert(getErrorMessage(err, 'Failed to upload progress photo.'));
@@ -99,10 +102,10 @@ export default function JobProductionTimeline({
   };
 
   const handleDeleteProgressPhoto = async (url: string) => {
-    if (!shop || deletingPhotoUrl) return;
+    if (!store || deletingPhotoUrl) return;
     setDeletingPhotoUrl(url);
     try {
-      await api.delete(`/shops/${shop.id}/jobs/${job.id}/progress-photos`, {
+      await api.delete(`/stores/${store.id}/jobs/${job.id}/progress-photos`, {
         data: { url },
       });
       onProgressPhotoAdded();
@@ -118,8 +121,19 @@ export default function JobProductionTimeline({
   const isBulkOrder = (Array.isArray(roster) && roster.length > 0) ||
     (customData?.size_breakdown && typeof customData.size_breakdown === 'object' && Object.keys(customData.size_breakdown).length > 0) ||
     job.service?.service_type === 'bulk_sublimation';
+  const isRepair = isRepairOnly(job);
 
-  const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = [
+  // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the
+  // backend (docs/REPAIR-WORKFLOW.md §5): a repair job skips the full
+  // custom-tailoring pipeline entirely instead of running through it.
+  const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = isRepair ? [
+    { key: 'pending',              label: 'Pending',               Icon: Clock },
+    { key: 'queued',               label: 'Queued for Repair',     Icon: Hourglass },
+    { key: 'in_repair',            label: 'In Repair',             Icon: Wrench },
+    { key: 'qc_check',             label: 'QC Check',              Icon: ShieldCheck },
+    { key: 'ready_for_pickup',     label: 'Ready',                 Icon: Package },
+    { key: 'completed',            label: 'Completed',             Icon: Flag },
+  ] : [
     { key: 'pending',              label: 'Pending',               Icon: Clock },
     { key: 'design',               label: 'Design',                Icon: Palette },
     isBulkOrder
@@ -204,17 +218,27 @@ export default function JobProductionTimeline({
               className="flex-1 h-10 px-4 bg-canvas border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             >
               <option value="pending">Pending</option>
-              <option value="design">Design</option>
-              {isBulkOrder ? (
-                <option value="mass_cutting_printing">Mass Cutting & Printing</option>
+              {isRepair ? (
+                <>
+                  <option value="queued">Queued for Repair</option>
+                  <option value="in_repair">In Repair</option>
+                  <option value="qc_check">QC Check</option>
+                </>
               ) : (
-                <option value="pattern_making">Pattern Making</option>
+                <>
+                  <option value="design">Design</option>
+                  {isBulkOrder ? (
+                    <option value="mass_cutting_printing">Mass Cutting & Printing</option>
+                  ) : (
+                    <option value="pattern_making">Pattern Making</option>
+                  )}
+                  <option value="cutting">Cutting</option>
+                  <option value="sewing">Sewing / Assembly</option>
+                  <option value="ready_for_fitting">Ready for Fitting</option>
+                  <option value="final_adjustments">Final Adjustments</option>
+                  <option value="qc_ironing">QC & Ironing</option>
+                </>
               )}
-              <option value="cutting">Cutting</option>
-              <option value="sewing">Sewing / Assembly</option>
-              <option value="ready_for_fitting">Ready for Fitting</option>
-              <option value="final_adjustments">Final Adjustments</option>
-              <option value="qc_ironing">QC & Ironing</option>
               <option value="ready_for_pickup">Ready for Pickup</option>
               <option value="completed">Completed</option>
               <option value="on_hold">On Hold</option>
@@ -227,7 +251,7 @@ export default function JobProductionTimeline({
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-amber-900">
             <AlertTriangle size={16} className="text-amber-700 shrink-0" />
             <p className="text-xs font-bold uppercase tracking-wide">
-              Customer-supplied fabric/garment — do not cut from shop stock
+              Customer-supplied fabric/garment — do not cut from store stock
             </p>
           </div>
         )}
@@ -239,7 +263,7 @@ export default function JobProductionTimeline({
               Design Reference
             </span>
             <p className="text-[11px] text-ink-faint">
-              What the customer wants — attached at booking, or by the shop for a walk-in custom order.
+              What the customer wants — attached at booking, or by the store for a walk-in custom order.
             </p>
             {job.reference_images && job.reference_images.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-1">

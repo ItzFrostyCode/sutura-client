@@ -13,18 +13,18 @@ import {
   Eye,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { ShopBranch, StatusBadge, getMapUrl } from './branchHelpers';
+import { StoreBranch, StatusBadge, getMapUrl } from './branchHelpers';
 
 interface BranchCardProps {
-  readonly branch: ShopBranch;
-  readonly onEdit: (branch: ShopBranch) => void;
+  readonly branch: StoreBranch;
+  readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete: (id: number) => void;
-  readonly onSetMain?: (branch: ShopBranch) => void;
+  readonly onSetMain?: (branch: StoreBranch) => void;
 }
 
 export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Readonly<BranchCardProps>) {
-  const { shop } = useAuthStore();
-  const publicProfileUrl = shop?.slug && branch.slug ? `/shop/${shop.slug}?branch=${branch.slug}` : '#';
+  const { store } = useAuthStore();
+  const publicProfileUrl = store?.slug && branch.slug ? `/store/${store.slug}?branch=${branch.slug}` : '#';
 
   return (
     <div className={`bg-surface border rounded-2xl overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col ${

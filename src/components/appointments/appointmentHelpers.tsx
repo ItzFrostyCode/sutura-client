@@ -33,10 +33,13 @@ export interface Appointment {
   assigned_staff_id?: number | null;
   assigned_staff?: { id?: number; name: string; user?: { name: string } } | null;
   status: AppointmentStatus;
+  // Staff Check-In action — On Time/Late is DERIVED from this vs
+  // scheduled_at, never its own stored status. See OnTimeLateBadge below.
+  checked_in_at?: string | null;
   notes: string;
   reference_images?: string[] | null;
   reference_link?: string | null;
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   job_order_id?: number | null;
   job_order?: { id: number; order_number: string } | null;
   answers?: Record<string, string | number | boolean> | null;
@@ -131,6 +134,29 @@ export function StatusBadge({ status, scheduledAt }: { readonly status: Appointm
   );
 }
 
+/**
+ * On Time / Late is DERIVED by comparing `checked_in_at` against
+ * `scheduled_at` at render time — there is no stored on_time/late status,
+ * matching the Overdue badge's derivation pattern above. Renders nothing
+ * until Staff has actually checked the client in.
+ */
+export function CheckInBadge({ checkedInAt, scheduledAt }: { readonly checkedInAt?: string | null; readonly scheduledAt?: string }) {
+  if (!checkedInAt) return null;
+  const isLate = !!scheduledAt && new Date(checkedInAt) > new Date(scheduledAt);
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border ${
+        isLate
+          ? 'bg-amber-50 text-amber-800 border-amber-200'
+          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      }`}
+      title={`Checked in at ${new Date(checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+    >
+      {isLate ? 'Late' : 'On Time'}
+    </span>
+  );
+}
+
 export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'online' }) {
   const isOnline = channel === 'online';
   return (
@@ -180,6 +206,20 @@ export function getLocalDateString(d: Date = new Date()): string {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Earliest bookable time for a given date: no floor for a future date, or
+ * the next quarter-hour from now if the date is today. Shared by every
+ * appointment-scheduling surface (dashboard booking, reschedule, follow-up)
+ * so "today" always means the actual current time, not midnight.
+ */
+export function minTimeForDate(dateStr: string, todayStr: string): string {
+  if (dateStr !== todayStr) return '00:00';
+  const now   = new Date();
+  const mins  = now.getHours() * 60 + now.getMinutes();
+  const round = Math.ceil(mins / 15) * 15;
+  return `${String(Math.floor(round / 60) % 24).padStart(2, '0')}:${String(round % 60).padStart(2, '0')}`;
 }
 
 export function formatScheduled(iso: string) {

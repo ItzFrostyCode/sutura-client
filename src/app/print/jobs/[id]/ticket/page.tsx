@@ -39,10 +39,10 @@ interface Job {
   completion_photo_url?: string | null;
   reference_images?: string[] | null;
   reference_link?: string | null;
-  material_source?: 'shop_supplied' | 'customer_supplied' | null;
+  material_source?: 'store_supplied' | 'customer_supplied' | null;
   garment_category?: string | null;
   is_outsourced?: boolean;
-  partner_shop_name?: string | null;
+  partner_store_name?: string | null;
 }
 
 const GARMENT_CATEGORY_LABELS: Record<string, string> = {
@@ -60,16 +60,16 @@ const GARMENT_CATEGORY_LABELS: Record<string, string> = {
 export default function PrintWorkTicketPage() {
   usePrintAuthGuard();
   const { id } = useParams<{ id: string }>();
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!shop?.id || !id) return;
-    api.get(`/shops/${shop.id}/jobs/${id}`)
+    if (!store?.id || !id) return;
+    api.get(`/stores/${store.id}/jobs/${id}`)
       .then(res => { setJob(res.data.data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [shop?.id, id]);
+  }, [store?.id, id]);
 
   useEffect(() => {
     if (!loading && job) {
@@ -120,15 +120,15 @@ export default function PrintWorkTicketPage() {
   const measEntries = Object.entries(meas?.metrics || {});
 
   const materialSourceLabel = job.material_source === 'customer_supplied'
-    ? 'Customer-Supplied — do not cut from shop stock'
-    : 'Shop-Supplied';
+    ? 'Customer-Supplied — do not cut from store stock'
+    : 'Store-Supplied';
 
   return (
     <>
       {/* Print-specific global styles injected inline. No fill colors, no
           boxed/bordered sections, no icons/emoji anywhere on this page —
           this ticket gets printed once per job order, routinely on a
-          shop's everyday inkjet, so every mark on the page is either plain
+          store's everyday inkjet, so every mark on the page is either plain
           black text or a single hairline rule. */}
       <style>{`
         @page { size: A4; margin: 18mm 16mm; }
@@ -156,7 +156,7 @@ export default function PrintWorkTicketPage() {
         <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-black">
-              {shop?.name ?? 'SUTURA'}
+              {store?.name ?? 'SUTURA'}
             </h1>
             <p className="text-xs text-gray-600 mt-0.5">Production Work Ticket</p>
           </div>
@@ -245,7 +245,7 @@ export default function PrintWorkTicketPage() {
                 <tr>
                   <td className="text-gray-600 pr-3 pb-1 font-medium align-top">Outsourced To</td>
                   <td className="pb-1 font-black underline align-top">
-                    Partner Shop{job.partner_shop_name ? ` — ${job.partner_shop_name}` : ''}
+                    Partner Store{job.partner_store_name ? ` — ${job.partner_store_name}` : ''}
                   </td>
                 </tr>
               )}
@@ -367,7 +367,7 @@ export default function PrintWorkTicketPage() {
         </div>
 
         <p className="text-center text-[9px] text-gray-400 mt-6">
-          Printed by SUTURA Shop Management System · {new Date().toLocaleString('en-PH')}
+          Printed by SUTURA Store Management System · {new Date().toLocaleString('en-PH')}
         </p>
       </div>
     </>

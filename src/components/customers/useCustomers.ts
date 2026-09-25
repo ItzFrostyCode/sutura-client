@@ -10,7 +10,7 @@ export { type CustomerData };
 
 export function useCustomers() {
   const router = useRouter();
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,13 +27,13 @@ export function useCustomers() {
   const [filterType, setFilterType] = useState<'all' | 'online' | 'walkin' | 'b2b_suki' | 'reseller' | 'walk_in_retail'>('all');
 
   useEffect(() => {
-    if (!shop) {
+    if (!store) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
     }
 
     let active = true;
-    api.get(`/shops/${shop.id}/customers`)
+    api.get(`/stores/${store.id}/customers`)
       .then(res => {
         if (active) {
           setCustomers(res.data.data);
@@ -50,11 +50,11 @@ export function useCustomers() {
     return () => {
       active = false;
     };
-  }, [shop, user]);
+  }, [store, user]);
 
   const handleAddCustomer = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!shop) return;
+    if (!store) return;
     
     setIsSubmitting(true);
     setError('');
@@ -67,11 +67,11 @@ export function useCustomers() {
     
     try {
       if (editingId) {
-        const res = await api.put(`/shops/${shop.id}/customers/${editingId}`, payload);
+        const res = await api.put(`/stores/${store.id}/customers/${editingId}`, payload);
         setCustomers(prev => prev.map(c => c.id === editingId ? { ...c, ...res.data.data } : c));
         toast.success('Customer updated successfully.');
       } else {
-        const res = await api.post(`/shops/${shop.id}/customers`, payload);
+        const res = await api.post(`/stores/${store.id}/customers`, payload);
         const returnedId = res.data.data.id;
         const alreadyListed = customers.some(c => c.id === returnedId);
         setCustomers(prev => {
@@ -111,10 +111,10 @@ export function useCustomers() {
   };
 
   const confirmDelete = async () => {
-    if (!shop || !deletingId) return;
+    if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/customers/${deletingId}`);
+      await api.delete(`/stores/${store.id}/customers/${deletingId}`);
       setCustomers(prev => prev.filter(c => c.id !== deletingId));
       setIsDeleteModalOpen(false);
       setDeletingId(null);

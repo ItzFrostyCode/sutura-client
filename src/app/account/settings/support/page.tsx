@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LifeBuoy, ChevronRight, Store } from 'lucide-react';
+import { LifeBuoy, ChevronRight, Store, Loader2 } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
 import { getMediaUrl } from '@/lib/media';
 import api from '@/lib/axios';
@@ -15,7 +15,7 @@ interface MyTicket {
   type: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   created_at: string;
-  shop: { id: number; name: string; slug: string; logo_path: string | null } | null;
+  store: { id: number; name: string; slug: string; logo_path: string | null } | null;
   replies: unknown[];
 }
 
@@ -57,11 +57,13 @@ export default function SupportTicketListPage() {
       <AccountHeader title="Support Ticket" backHref="/account/settings" />
 
       {tickets === null && (
-        <div className="text-center py-16 text-sm text-ink-muted">Loading…</div>
+        <div className="min-h-[50vh] flex items-center justify-center bg-white">
+          <Loader2 size={28} className="animate-spin text-ink-faint" />
+        </div>
       )}
 
       {tickets !== null && tickets.length === 0 && (
-        <div className="bg-surface border border-line rounded-2xl p-10 flex flex-col items-center text-center">
+        <div className="bg-surface border border-line p-8 flex flex-col items-center text-center">
           <div className="w-14 h-14 rounded-full bg-sunken flex items-center justify-center mb-4">
             <LifeBuoy size={24} className="text-ink-faint" />
           </div>
@@ -80,11 +82,11 @@ export default function SupportTicketListPage() {
               <Link
                 key={t.id}
                 href={`/account/settings/support/${t.id}`}
-                className="flex items-start gap-3 bg-surface border border-line rounded-2xl px-4 py-3.5 hover:border-line-strong transition-colors"
+                className="flex items-start gap-3 bg-surface border border-line px-4 py-3.5 hover:border-line-strong transition-colors"
               >
                 <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden bg-sunken mt-0.5">
-                  {t.shop?.logo_path ? (
-                    <Image src={getMediaUrl(t.shop.logo_path)} alt="" fill unoptimized className="object-cover" />
+                  {t.store?.logo_path ? (
+                    <Image src={getMediaUrl(t.store.logo_path)} alt="" fill className="object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Store size={15} className="text-ink-faint" />
@@ -100,7 +102,7 @@ export default function SupportTicketListPage() {
                   </div>
                   <p className="text-xs text-ink-muted leading-snug mt-1 line-clamp-2">{t.message}</p>
                   <p className="text-[11px] text-ink-faint mt-1.5">
-                    {t.shop?.name ?? 'SUTURA'} · {relativeTime(t.created_at)}
+                    {t.store?.name ?? 'SUTURA'} · {relativeTime(t.created_at)}
                     {t.replies.length > 0 && ` · ${t.replies.length} repl${t.replies.length === 1 ? 'y' : 'ies'}`}
                   </p>
                 </div>

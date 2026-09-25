@@ -65,11 +65,11 @@ export interface JobCreateFormData {
   notes: string;
   po_number: string;
   is_outsourced: boolean;
-  partner_shop_name: string;
+  partner_store_name: string;
   outsourcing_cost: string;
   is_rush: boolean;
   rush_fee: string;
-  material_source: 'shop_supplied' | 'customer_supplied';
+  material_source: 'store_supplied' | 'customer_supplied';
   garment_category: '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair';
   discount_amount?: string;
   discount_reason?: string;

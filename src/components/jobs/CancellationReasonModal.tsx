@@ -16,14 +16,14 @@ const REASONS: { value: string; title: string; description: string; flagged?: bo
     description: 'No production started, or customer changed their mind early — refund/waive at your discretion, outside the system.',
   },
   {
-    value: 'shop_unable_to_fulfill',
-    title: 'Shop unable to fulfill',
-    description: 'Material shortage, scheduling conflict, or similar shop-side reason.',
+    value: 'store_unable_to_fulfill',
+    title: 'Store unable to fulfill',
+    description: 'Material shortage, scheduling conflict, or similar store-side reason.',
   },
   {
     value: 'forfeited_deposit_abandoned',
     title: 'Forfeited deposit — customer went uncontactable',
-    description: 'Fabric was already cut, customer never returned. Per shop policy, the deposit already collected is kept, not refunded. This shows up separately in cross-branch loss reporting.',
+    description: 'Fabric was already cut, customer never returned. Per store policy, the deposit already collected is kept, not refunded. This shows up separately in cross-branch loss reporting.',
     flagged: true,
   },
   {

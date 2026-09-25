@@ -20,7 +20,7 @@ export function getActiveSale(item: SaleAwareItem): { original: number; sale: nu
 
   // sale_starts_at/sale_ends_at only ever carry a bare date (e.g.
   // "2026-08-10") from the date-picker forms. Parsed plain, JS treats that
-  // as UTC midnight — for a Philippines shop (UTC+8) that makes a sale
+  // as UTC midnight — for a Philippines store (UTC+8) that makes a sale
   // advertised as "through Aug 10" actually expire at 8am Manila time that
   // same day, and a sale "starting Aug 5" not kick in until 8am Manila time
   // instead of the start of that day. Anchor explicitly to Manila's day

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   List, LayoutGrid, Calendar as CalendarIcon, AlertCircle,
   Plus, Clock, CheckCircle2, Scissors, Building2, SlidersHorizontal,
-  RotateCcw
+  RotateCcw, CalendarPlus
 } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import PageHeader from '@/components/shared/PageHeader';
@@ -13,6 +13,7 @@ import AppointmentCreateModal from '@/components/appointments/AppointmentCreateM
 import AppointmentActionModals from '@/components/appointments/AppointmentActionModals';
 import AppointmentCalendarView from '@/components/appointments/AppointmentCalendarView';
 import AppointmentListView from '@/components/appointments/AppointmentListView';
+import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
 import { APPOINTMENT_TYPES, TYPE_CONFIG, STATUS_CONFIG, AppointmentType } from '@/components/appointments/appointmentHelpers';
 import { useBranch } from '@/context/BranchContext';
 
@@ -47,6 +48,8 @@ export default function AppointmentsPage() {
     setShowCancelModal,
     showViewModal,
     setShowViewModal,
+    showFollowUpModal,
+    setShowFollowUpModal,
     editingApt,
     setEditingApt,
     reviewApt,
@@ -63,6 +66,8 @@ export default function AppointmentsPage() {
     actionLoadingId,
     error,
     setError,
+    followUpError,
+    setFollowUpError,
     customers,
     handleCreateCustomer,
     branches,
@@ -74,6 +79,8 @@ export default function AppointmentsPage() {
     handleConfirmReview,
     handleRejectReview,
     updateStatus,
+    handleCheckIn,
+    handleCreateFollowUp,
     handleCreateSubmit,
     handleRescheduleSubmit,
     handleCompleteSubmit,
@@ -150,19 +157,37 @@ export default function AppointmentsPage() {
         title="Schedule & Appointments"
         description="Book and manage client fittings, measurement sessions, and bespoke consultations."
         actions={
-          isOwnerOrManager ? (
+          <div className="flex items-center gap-2">
+            {/* Staff's narrow booking authority — a follow-up visit only,
+                not the full owner/manager form. See docs/STAFF-WORKFLOW.md §17. */}
             <button
               type="button"
               onClick={() => {
-                setEditingApt(null);
-                setError('');
-                setShowCreateModal(true);
+                setFollowUpError('');
+                setShowFollowUpModal(true);
               }}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px] ${
+                isOwnerOrManager
+                  ? 'bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe'
+                  : 'bg-taupe hover:bg-taupe-hover text-white'
+              }`}
             >
-              <Plus size={16} /> New Appointment
+              <CalendarPlus size={16} /> Schedule Follow-Up
             </button>
-          ) : null
+            {isOwnerOrManager && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingApt(null);
+                  setError('');
+                  setShowCreateModal(true);
+                }}
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
+              >
+                <Plus size={16} /> New Appointment
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -398,6 +423,7 @@ export default function AppointmentsPage() {
             isOwnerOrManager={isOwnerOrManager}
             onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
             onStartClick={(id) => updateStatus(id, 'in_progress')}
+            onCheckInClick={handleCheckIn}
             onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
             onCreateJobClick={handleCreateJob}
             onNoShowClick={(apt) => {
@@ -421,6 +447,7 @@ export default function AppointmentsPage() {
             isOwnerOrManager={isOwnerOrManager}
             onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
             onStartClick={(id) => updateStatus(id, 'in_progress')}
+            onCheckInClick={handleCheckIn}
             onCreateJobClick={handleCreateJob}
             onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
             onRescheduleClick={(apt) => { setRescheduleApt(apt); setShowRescheduleModal(true); }}
@@ -487,6 +514,18 @@ export default function AppointmentsPage() {
         onCompleteSubmit={handleCompleteSubmit}
         onCancelConfirm={handleCancelConfirm}
         onCreateJob={handleCreateJob}
+      />
+
+      <FollowUpAppointmentModal
+        isOpen={showFollowUpModal}
+        onClose={() => { setShowFollowUpModal(false); setFollowUpError(''); }}
+        customers={customers}
+        branches={branches}
+        todayStr={todayStr}
+        minTimeFor={minTimeFor}
+        onSubmit={handleCreateFollowUp}
+        isSubmitting={isSubmitting}
+        error={followUpError}
       />
     </div>
   );

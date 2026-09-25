@@ -15,7 +15,7 @@ export interface BranchManager {
   user?: BranchManagerUser | null;
 }
 
-export interface ShopBranch {
+export interface StoreBranch {
   id: number;
   slug?: string;
   name: string;
@@ -23,8 +23,8 @@ export interface ShopBranch {
   landmark?: string | null;
   city: string;
   district?: string | null;
-  contact_number: string | null;
-  is_main: boolean;
+  contact_number?: string | null;
+  is_main?: boolean | number;
   latitude?: string | null;
   longitude?: string | null;
   operating_hours?: string | null;
@@ -90,7 +90,7 @@ export function StatusBadge({ status }: Readonly<{ status?: string }>) {
   );
 }
 
-export const getMapUrl = (branch: ShopBranch) => {
+export const getMapUrl = (branch: StoreBranch) => {
   if (branch.latitude && branch.longitude) {
     return `https://www.google.com/maps?q=${branch.latitude},${branch.longitude}`;
   }

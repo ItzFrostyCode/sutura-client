@@ -19,7 +19,7 @@ import StatBand from '@/components/shared/StatBand';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 
 export default function ServicesPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +55,11 @@ export default function ServicesPage() {
   const [packageError, setPackageError] = useState('');
 
   const fetchServices = useCallback(() => {
-    if (!shop?.id) {
+    if (!store?.id) {
       if (user?.id) setTimeout(() => setLoading(false), 0);
       return;
     }
-    api.get(`/shops/${shop.id}/services`)
+    api.get(`/stores/${store.id}/services`)
       .then(res => {
         setServices(res.data.data);
         setLoading(false);
@@ -68,18 +68,18 @@ export default function ServicesPage() {
         console.error(err);
         setLoading(false);
       });
-  }, [shop, user]);
+  }, [store, user]);
 
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
 
   const fetchPackages = useCallback(() => {
-    if (!shop?.id) {
+    if (!store?.id) {
       if (user?.id) setTimeout(() => setPackagesLoading(false), 0);
       return;
     }
-    api.get(`/shops/${shop.id}/service-packages`)
+    api.get(`/stores/${store.id}/service-packages`)
       .then(res => {
         setPackages(res.data.data);
         setPackagesLoading(false);
@@ -88,23 +88,23 @@ export default function ServicesPage() {
         console.error(err);
         setPackagesLoading(false);
       });
-  }, [shop, user]);
+  }, [store, user]);
 
   useEffect(() => {
     fetchPackages();
   }, [fetchPackages]);
 
   const handlePackageFormSubmit = async (payload: Record<string, unknown>) => {
-    if (!shop) return;
+    if (!store) return;
     setPackageSubmitting(true);
     setPackageError('');
     try {
       if (editingPackageId) {
-        const res = await api.put(`/shops/${shop.id}/service-packages/${editingPackageId}`, payload);
+        const res = await api.put(`/stores/${store.id}/service-packages/${editingPackageId}`, payload);
         setPackages(prev => prev.map(p => p.id === editingPackageId ? res.data.data : p));
         toast.success('Package updated successfully.');
       } else {
-        const res = await api.post(`/shops/${shop.id}/service-packages`, payload);
+        const res = await api.post(`/stores/${store.id}/service-packages`, payload);
         setPackages(prev => [res.data.data, ...prev]);
         toast.success('Package created successfully.');
       }
@@ -119,10 +119,10 @@ export default function ServicesPage() {
   };
 
   const confirmDeletePackage = async () => {
-    if (!shop || !deletingPackageId) return;
+    if (!store || !deletingPackageId) return;
     setPackageSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/service-packages/${deletingPackageId}`);
+      await api.delete(`/stores/${store.id}/service-packages/${deletingPackageId}`);
       setPackages(prev => prev.filter(p => p.id !== deletingPackageId));
       setIsPackageDeleteModalOpen(false);
       setDeletingPackageId(null);
@@ -146,7 +146,7 @@ export default function ServicesPage() {
   };
 
   const handleDuplicateClick = async (service: Service) => {
-    if (!shop) return;
+    if (!store) return;
     setActionLoadingId(service.id);
     try {
       const payload = {
@@ -165,7 +165,7 @@ export default function ServicesPage() {
         })),
         image_url: service.image_url || null,
       };
-      const res = await api.post(`/shops/${shop.id}/services`, payload);
+      const res = await api.post(`/stores/${store.id}/services`, payload);
       setServices(prev => [res.data.data, ...prev]);
       toast.success('Service duplicated successfully.');
     } catch (err) {
@@ -177,17 +177,17 @@ export default function ServicesPage() {
   };
 
   const handleFormSubmit = async (payload: Record<string, unknown>) => {
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     setError('');
 
     try {
       if (editingId) {
-        const res = await api.put(`/shops/${shop.id}/services/${editingId}`, payload);
+        const res = await api.put(`/stores/${store.id}/services/${editingId}`, payload);
         setServices(prev => prev.map(s => s.id === editingId ? res.data.data : s));
         toast.success('Service updated successfully.');
       } else {
-        const res = await api.post(`/shops/${shop.id}/services`, payload);
+        const res = await api.post(`/stores/${store.id}/services`, payload);
         setServices(prev => [res.data.data, ...prev]);
         toast.success('Service created successfully.');
       }
@@ -202,10 +202,10 @@ export default function ServicesPage() {
   };
 
   const confirmDelete = async () => {
-    if (!shop || !deletingId) return;
+    if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/services/${deletingId}`);
+      await api.delete(`/stores/${store.id}/services/${deletingId}`);
       setServices(prev => prev.filter(s => s.id !== deletingId));
       setIsDeleteModalOpen(false);
       setDeletingId(null);
@@ -235,11 +235,11 @@ export default function ServicesPage() {
   };
 
   const submitSale = async (payload: Record<string, unknown>) => {
-    if (!shop || !saleServiceItem) return;
+    if (!store || !saleServiceItem) return;
     setSaleSubmitting(true);
     setSaleError('');
     try {
-      const res = await api.put(`/shops/${shop.id}/services/${saleServiceItem.id}/sale`, payload);
+      const res = await api.put(`/stores/${store.id}/services/${saleServiceItem.id}/sale`, payload);
       setServices(prev => prev.map(s => s.id === saleServiceItem.id ? res.data.data : s));
       toast.success(payload.sale_price ? 'Sale price updated.' : 'Sale removed.');
       setIsSaleModalOpen(false);
@@ -381,11 +381,11 @@ export default function ServicesPage() {
       />
 
 
-      {shop && (
+      {store && (
         <ServiceTrashModal
           isOpen={showTrash}
           onClose={() => setShowTrash(false)}
-          shopId={shop.id}
+          storeId={store.id}
           onRestored={(restored) => {
             setServices(prev => [restored, ...prev]);
             toast.success(`"${restored.name}" restored to your active catalog.`);

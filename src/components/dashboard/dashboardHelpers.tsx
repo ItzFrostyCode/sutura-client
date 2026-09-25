@@ -67,7 +67,7 @@ export interface JobItem {
 export interface StaffPresence {
   id: number;
   role: string;
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   user: { name: string; last_seen_at?: string | null };
   _onlineSince: number; // epoch ms when last_seen_at was first within 5 min
 }

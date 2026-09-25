@@ -6,11 +6,11 @@ import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import {
   Appointment, ServiceData, CustomerData, BranchData, StaffData,
-  AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString
+  AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString, minTimeForDate
 } from './appointmentHelpers';
 
 export function useAppointments() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
   const { selectedBranchId } = useBranch();
@@ -33,6 +33,7 @@ export function useAppointments() {
   const [showCompleteModal,  setShowCompleteModal]  = useState(false);
   const [showCancelModal,    setShowCancelModal]    = useState(false);
   const [showViewModal,      setShowViewModal]      = useState(false);
+  const [showFollowUpModal,  setShowFollowUpModal]  = useState(false);
 
   // Active appointment contexts
   const [editingApt,    setEditingApt]    = useState<Appointment | null>(null);
@@ -46,6 +47,7 @@ export function useAppointments() {
   const [isSubmitting,    setIsSubmitting]    = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [error, setError]                     = useState('');
+  const [followUpError, setFollowUpError]     = useState('');
 
   // Reference data
   const [services,  setServices]  = useState<ServiceData[]>([]);
@@ -56,22 +58,16 @@ export function useAppointments() {
   // Timezone-safe local date string
   const todayStr = getLocalDateString(new Date());
 
-  const minTimeFor = (dateStr: string): string => {
-    if (dateStr !== todayStr) return '00:00';
-    const now   = new Date();
-    const mins  = now.getHours() * 60 + now.getMinutes();
-    const round = Math.ceil(mins / 15) * 15;
-    return `${String(Math.floor(round / 60) % 24).padStart(2, '0')}:${String(round % 60).padStart(2, '0')}`;
-  };
+  const minTimeFor = (dateStr: string): string => minTimeForDate(dateStr, todayStr);
 
   const fetchAppointments = useCallback(() => {
-    if (!shop?.id) return;
+    if (!store?.id) return;
     const timer = setTimeout(() => setLoading(true), 0);
     const params: Record<string, string | number> = {};
     if (selectedBranchId !== null) {
       params.branch_id = selectedBranchId;
     }
-    api.get(`/shops/${shop.id}/appointments`, { params })
+    api.get(`/stores/${store.id}/appointments`, { params })
       .then(res => {
         setAppointments(res.data.data || []);
         setLoading(false);
@@ -81,7 +77,7 @@ export function useAppointments() {
         toast.error(getErrorMessage(err, 'Failed to load appointments.'));
       });
     return () => clearTimeout(timer);
-  }, [shop, selectedBranchId, toast]);
+  }, [store, selectedBranchId, toast]);
 
   useEffect(() => {
     const cleanup = fetchAppointments();
@@ -91,26 +87,26 @@ export function useAppointments() {
   }, [fetchAppointments]);
 
   useEffect(() => {
-    if (shop?.id) {
-      api.get(`/shops/${shop.id}/services`).then(r => setServices(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-      api.get(`/shops/${shop.id}/customers`).then(r => setCustomers(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-      api.get(`/shops/${shop.id}/branches`).then(r => setBranches(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-      api.get(`/shops/${shop.id}/staff`).then(r => setStaff(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-    } else if (user?.id && !shop?.id) {
+    if (store?.id) {
+      api.get(`/stores/${store.id}/services`).then(r => setServices(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      api.get(`/stores/${store.id}/customers`).then(r => setCustomers(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      api.get(`/stores/${store.id}/branches`).then(r => setBranches(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      api.get(`/stores/${store.id}/staff`).then(r => setStaff(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+    } else if (user?.id && !store?.id) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
     }
-  }, [shop?.id, user?.id]);
+  }, [store?.id, user?.id]);
 
   const userRoles: string[] = user?.roles?.map(r => r.name) ?? [];
-  const isOwnerOrManager = userRoles.some(r => ['shop_owner', 'branch_manager', 'super_admin'].includes(r));
+  const isOwnerOrManager = userRoles.some(r => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
 
   // Confirm / Reject Review
   const handleConfirmReview = async (id: number): Promise<boolean> => {
-    if (!shop) return false;
+    if (!store) return false;
     setActionLoadingId(id);
     try {
-      await api.put(`/shops/${shop.id}/appointments/${id}`, { status: 'confirmed' });
+      await api.put(`/stores/${store.id}/appointments/${id}`, { status: 'confirmed' });
       toast.success('Appointment confirmed successfully!');
       fetchAppointments();
       return true;
@@ -123,10 +119,10 @@ export function useAppointments() {
   };
 
   const handleRejectReview = async (id: number): Promise<boolean> => {
-    if (!shop) return false;
+    if (!store) return false;
     setActionLoadingId(id);
     try {
-      await api.put(`/shops/${shop.id}/appointments/${id}`, { status: 'cancelled' });
+      await api.put(`/stores/${store.id}/appointments/${id}`, { status: 'cancelled' });
       toast.success('Appointment rejected.');
       fetchAppointments();
       return true;
@@ -139,10 +135,10 @@ export function useAppointments() {
   };
 
   const updateStatus = async (id: number, newStatus: string) => {
-    if (!shop) return;
+    if (!store) return;
     setActionLoadingId(id);
     try {
-      await api.put(`/shops/${shop.id}/appointments/${id}`, { status: newStatus });
+      await api.put(`/stores/${store.id}/appointments/${id}`, { status: newStatus });
       toast.success(`Status updated to ${newStatus.replaceAll('_', ' ')}`);
       fetchAppointments();
     } catch (err: unknown) {
@@ -152,10 +148,46 @@ export function useAppointments() {
     }
   };
 
+  // Staff Check-In — records arrival time only. Does not touch `status`;
+  // On Time/Late is derived on render from checked_in_at vs scheduled_at.
+  const handleCheckIn = async (id: number) => {
+    if (!store) return;
+    setActionLoadingId(id);
+    try {
+      await api.put(`/stores/${store.id}/appointments/${id}`, { checked_in_at: new Date().toISOString() });
+      toast.success('Client checked in.');
+      fetchAppointments();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to check in client.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Staff's narrow follow-up booking — see FollowUpAppointmentModal and
+  // AppointmentController::createFollowUp. Deliberately its own endpoint,
+  // not handleCreateSubmit, so Staff can never reach the full owner/manager
+  // store() form's fields.
+  const handleCreateFollowUp = async (payload: Record<string, unknown>) => {
+    if (!store) return;
+    setIsSubmitting(true);
+    setFollowUpError('');
+    try {
+      await api.post(`/stores/${store.id}/appointments/follow-up`, payload);
+      toast.success('Follow-up visit scheduled — the customer has been notified.');
+      setShowFollowUpModal(false);
+      fetchAppointments();
+    } catch (err: unknown) {
+      setFollowUpError(getErrorMessage(err, 'Failed to schedule follow-up visit.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Quick "Add New Customer" from inside the Schedule Appointment modal
   const handleCreateCustomer = async (payload: Record<string, string | null>): Promise<CustomerData> => {
-    if (!shop) throw new Error('No shop selected.');
-    const res = await api.post(`/shops/${shop.id}/customers`, payload);
+    if (!store) throw new Error('No store selected.');
+    const res = await api.post(`/stores/${store.id}/customers`, payload);
     const newCustomer = res.data.data as CustomerData;
     setCustomers(prev => [...prev, newCustomer]);
     return newCustomer;
@@ -163,15 +195,15 @@ export function useAppointments() {
 
   // Submit appointment creation or edit
   const handleCreateSubmit = async (payload: Record<string, unknown>) => {
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     setError('');
     try {
       if (editingApt) {
-        await api.put(`/shops/${shop.id}/appointments/${editingApt.id}`, payload);
+        await api.put(`/stores/${store.id}/appointments/${editingApt.id}`, payload);
         toast.success('Appointment updated successfully!');
       } else {
-        await api.post(`/shops/${shop.id}/appointments`, payload);
+        await api.post(`/stores/${store.id}/appointments`, payload);
         toast.success('Appointment booked successfully!');
       }
       fetchAppointments();
@@ -186,11 +218,11 @@ export function useAppointments() {
   };
 
   const handleRescheduleSubmit = async (aptId: number, date: string, time: string, notes: string) => {
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     try {
       const scheduled_at = `${date} ${time}:00`;
-      await api.put(`/shops/${shop.id}/appointments/${aptId}`, {
+      await api.put(`/stores/${store.id}/appointments/${aptId}`, {
         scheduled_at,
         notes: notes || undefined,
       });
@@ -206,10 +238,10 @@ export function useAppointments() {
   };
 
   const handleCompleteSubmit = async (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => {
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     try {
-      await api.post(`/shops/${shop.id}/appointments/${aptId}/complete`, {
+      await api.post(`/stores/${store.id}/appointments/${aptId}/complete`, {
         notes:          notes || undefined,
         job_order_id:   jobOrderId || undefined,
         outcome:        outcome,
@@ -233,10 +265,10 @@ export function useAppointments() {
   };
 
   const handleCancelConfirm = async (aptId: number, reason: string, blockRebooking: boolean) => {
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/appointments/${aptId}`, {
+      await api.delete(`/stores/${store.id}/appointments/${aptId}`, {
         data: { reason, block_rebooking: blockRebooking },
       });
       setShowCancelModal(false);
@@ -350,6 +382,8 @@ export function useAppointments() {
     setShowCancelModal,
     showViewModal,
     setShowViewModal,
+    showFollowUpModal,
+    setShowFollowUpModal,
     editingApt,
     setEditingApt,
     reviewApt,
@@ -366,6 +400,8 @@ export function useAppointments() {
     actionLoadingId,
     error,
     setError,
+    followUpError,
+    setFollowUpError,
     services,
     customers,
     branches,
@@ -377,6 +413,8 @@ export function useAppointments() {
     handleRejectReview,
     handleCreateCustomer,
     updateStatus,
+    handleCheckIn,
+    handleCreateFollowUp,
     handleCreateSubmit,
     handleRescheduleSubmit,
     handleCompleteSubmit,

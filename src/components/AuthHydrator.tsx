@@ -19,8 +19,8 @@ export default function AuthHydrator() {
         api.get('/auth/me')
           .then((res) => {
             if (res.data?.success && res.data?.data?.user) {
-              const { user, shop, staff_profile } = res.data.data;
-              useAuthStore.getState().setAuth(user, token, shop, staff_profile);
+              const { user, store, staff_profile } = res.data.data;
+              useAuthStore.getState().setAuth(user, token, store, staff_profile);
             }
           })
           .catch((err) => {

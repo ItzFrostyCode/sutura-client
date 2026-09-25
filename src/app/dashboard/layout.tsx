@@ -15,7 +15,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { ToastProvider } from '@/context/ToastContext';
 import { BranchProvider } from '@/context/BranchContext';
 import WhatsNewTour, { hasSeenLatestWhatsNew } from '@/components/WhatsNewTour';
-import ShopSwitcher from '@/components/shell/ShopSwitcher';
+import StoreSwitcher from '@/components/shell/StoreSwitcher';
 import SidebarControl, { type SidebarMode } from '@/components/shell/SidebarControl';
 import HelpPanel from '@/components/shell/HelpPanel';
 import HeaderBreadcrumbs from '@/components/shell/HeaderBreadcrumbs';
@@ -74,9 +74,9 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       api.get('/auth/me')
         .then(res => {
           if (res.data?.success) {
-            const { user: freshUser, shop: freshShop, staff_profile } = res.data.data;
-            const activeShop = freshShop || staff_profile?.shop;
-            setAuth(freshUser, token, activeShop, staff_profile);
+            const { user: freshUser, store: freshStore, staff_profile } = res.data.data;
+            const activeStore = freshStore || staff_profile?.store;
+            setAuth(freshUser, token, activeStore, staff_profile);
           }
         })
         .catch(err => {
@@ -89,17 +89,17 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }, [token, isAuthenticated, router, setAuth, logout]);
 
   const roleNames = user?.roles?.map(r => r.name) || [];
-  const isShopOwner = roleNames.includes('shop_owner');
+  const isStoreOwner = roleNames.includes('store_owner');
   const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
   const isStaff = roleNames.includes('staff') || Boolean(staffProfile);
-  const canViewAnalytics = isShopOwner || isBranchManager;
+  const canViewAnalytics = isStoreOwner || isBranchManager;
 
   // What's New tour — owner-only. See WhatsNewTour for the localStorage
   // dismissal contract; dismissedThisSession forces the one real state
   // transition needed to re-derive autoShowTour after a close.
   const [manualShowTour, setManualShowTour] = useState(false);
   const [dismissedThisSession, setDismissedThisSession] = useState(false);
-  const autoShowTour = !dismissedThisSession && mounted && isAuthenticated && isShopOwner && !hasSeenLatestWhatsNew();
+  const autoShowTour = !dismissedThisSession && mounted && isAuthenticated && isStoreOwner && !hasSeenLatestWhatsNew();
   const showTour = manualShowTour || autoShowTour;
   const closeTour = () => {
     setDismissedThisSession(true);
@@ -114,7 +114,11 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       items: [
         { name: 'Home', path: '/dashboard', icon: Home },
         { name: 'Appointments', path: '/dashboard/appointments', icon: Calendar },
-        { name: 'Collect Payments', path: '/dashboard/payments', icon: CreditCard },
+        // Payment capture/verification is Owner/Branch-Manager-exclusive
+        // under the finalized target (PAYMENT-WORKFLOW.md Part B) — Staff's
+        // role narrows to reading payment_status/balance elsewhere (job
+        // detail, appointment detail), never acting on it here.
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Collect Payments', path: '/dashboard/payments', icon: CreditCard }] : []),
       ],
     },
     {
@@ -127,17 +131,17 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     {
       title: 'Showroom',
       items: [
-        ...((isShopOwner || isBranchManager) ? [{ name: 'Showroom', path: '/dashboard/catalog', icon: Sparkles }] : []),
-        ...((isShopOwner || isBranchManager || isStaff) ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Catalog Designs', path: '/dashboard/catalog', icon: Sparkles }] : []),
+        ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
       ],
     },
     {
       title: 'Staff & Performance',
       items: [
-        ...((isShopOwner || isBranchManager || isStaff) ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
+        ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
         ...(canViewAnalytics ? [{ name: 'Reports & Insights', path: '/dashboard/reports', icon: LayoutDashboard }] : []),
-        ...((isShopOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
-        ...(isShopOwner ? [{ name: 'Audit Log', path: '/dashboard/audit-log', icon: ScrollText }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
+        ...(isStoreOwner ? [{ name: 'Audit Log', path: '/dashboard/audit-log', icon: ScrollText }] : []),
       ],
     },
   ];
@@ -222,7 +226,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           </Link>
 
           <div className={`flex items-center min-w-0 flex-1 ${railExpanded ? 'block' : 'lg:hidden'}`}>
-            <ShopSwitcher />
+            <StoreSwitcher />
           </div>
         </div>
 
@@ -259,7 +263,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
               <HelpCircle size={17} />
             </button>
 
-            {isShopOwner && (
+            {isStoreOwner && (
               <button
                 type="button"
                 onClick={() => setManualShowTour(true)}

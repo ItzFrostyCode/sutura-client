@@ -24,7 +24,7 @@ export default function QuickAddCustomerModal({
   onClose,
   onCustomerCreated,
 }: QuickAddCustomerModalProps) {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const toast = useToast();
 
   const [name, setName] = useState('');
@@ -37,11 +37,11 @@ export default function QuickAddCustomerModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shop || !name.trim() || !phone.trim()) return;
+    if (!store || !name.trim() || !phone.trim()) return;
 
     setSaving(true);
     try {
-      const res = await api.post(`/shops/${shop.id}/customers`, {
+      const res = await api.post(`/stores/${store.id}/customers`, {
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim() || null,

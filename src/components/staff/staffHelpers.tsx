@@ -11,7 +11,7 @@ export interface Staff {
   bio?: string | null;
   active_jobs?: number;
   completed_jobs?: number;
-  shop_branch_id?: number | null;
+  store_branch_id?: number | null;
   is_branch_manager?: boolean;
   branch?: { id: number; name: string } | null;
 }

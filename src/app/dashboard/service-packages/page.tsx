@@ -17,7 +17,7 @@ import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 const BASIC_PACKAGE_LIMIT = 3;
 
 export default function ServicePackagesPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const toast = useToast();
   const { tier, loading: tierLoading } = useSubscriptionTier();
 
@@ -36,7 +36,7 @@ export default function ServicePackagesPage() {
   const [formError, setFormError] = useState('');
 
   // Derived: loading while packages haven't been fetched yet
-  const loading = shop?.id ? packages === null : false;
+  const loading = store?.id ? packages === null : false;
 
   // Whether the current tier allows creating more packages
   const atBasicLimit =
@@ -44,20 +44,20 @@ export default function ServicePackagesPage() {
   const canAdd = services.length >= 2 && !atBasicLimit;
 
   useEffect(() => {
-    if (!shop?.id) return;
+    if (!store?.id) return;
     api
-      .get(`/shops/${shop.id}/services`)
+      .get(`/stores/${store.id}/services`)
       .then((res) => setServices(res.data.data ?? []))
       .catch((err) => console.error('[ServicePackagesPage] services fetch:', err));
-  }, [shop]);
+  }, [store]);
 
   useEffect(() => {
-    if (!shop?.id) return;
+    if (!store?.id) return;
     api
-      .get(`/shops/${shop.id}/service-packages`)
+      .get(`/stores/${store.id}/service-packages`)
       .then((res) => setPackages(res.data.data ?? []))
       .catch((err) => console.error('[ServicePackagesPage] packages fetch:', err));
-  }, [shop]);
+  }, [store]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -80,13 +80,13 @@ export default function ServicePackagesPage() {
   };
 
   const handleFormSubmit = async (payload: Record<string, unknown>) => {
-    if (!shop) return;
+    if (!store) return;
     setIsSubmitting(true);
     setFormError('');
     try {
       if (editingPackageId) {
         const res = await api.put(
-          `/shops/${shop.id}/service-packages/${editingPackageId}`,
+          `/stores/${store.id}/service-packages/${editingPackageId}`,
           payload,
         );
         setPackages((prev) =>
@@ -94,7 +94,7 @@ export default function ServicePackagesPage() {
         );
         toast.success('Package updated successfully.');
       } else {
-        const res = await api.post(`/shops/${shop.id}/service-packages`, payload);
+        const res = await api.post(`/stores/${store.id}/service-packages`, payload);
         setPackages((prev) => [res.data.data, ...(prev ?? [])]);
         toast.success('Package created successfully.');
       }
@@ -113,10 +113,10 @@ export default function ServicePackagesPage() {
   };
 
   const confirmDelete = async () => {
-    if (!shop || !deletingId) return;
+    if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
-      await api.delete(`/shops/${shop.id}/service-packages/${deletingId}`);
+      await api.delete(`/stores/${store.id}/service-packages/${deletingId}`);
       setPackages((prev) => (prev ?? []).filter((p) => p.id !== deletingId));
       setIsDeleteOpen(false);
       setDeletingId(null);
@@ -130,14 +130,14 @@ export default function ServicePackagesPage() {
   };
 
   const handleToggleActive = async (pkg: ServicePackage) => {
-    if (!shop) return;
+    if (!store) return;
     const next = !pkg.is_active;
     // Optimistic update
     setPackages((prev) =>
       (prev ?? []).map((p) => (p.id === pkg.id ? { ...p, is_active: next } : p)),
     );
     try {
-      const res = await api.put(`/shops/${shop.id}/service-packages/${pkg.id}`, {
+      const res = await api.put(`/stores/${store.id}/service-packages/${pkg.id}`, {
         name: pkg.name,
         description: pkg.description,
         service_ids: pkg.services.map((s) => s.id),

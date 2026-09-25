@@ -32,7 +32,7 @@ export function getMediaUrl(path?: string | null): string {
     return encodeURI(cleanClientPath);
   }
 
-  // Backend Laravel storage uploads (e.g. /storage/..., /shops/..., /uploads/...)
+  // Backend Laravel storage uploads (e.g. /storage/..., /stores/..., /uploads/...)
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
   const serverOrigin = apiBase.replace(/\/api\/v1\/?$/, '');
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;

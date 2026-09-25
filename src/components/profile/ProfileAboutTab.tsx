@@ -39,9 +39,9 @@ export default function ProfileAboutTab() {
       {/* Top Action Header Bar — Cancel & Save are at the TOP for quick review and action */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-ink tracking-tight">Shop Settings & Profile</h2>
+          <h2 className="text-xl font-bold text-ink tracking-tight">Store Settings & Profile</h2>
           <p className="text-xs text-ink-muted mt-0.5">
-            Configure your shop branding, contact information, social links, and booking flow.
+            Configure your store branding, contact information, social links, and booking flow.
           </p>
         </div>
 
@@ -107,7 +107,7 @@ export default function ProfileAboutTab() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm text-ink-muted">
               <Loader2 size={28} className="animate-spin text-taupe mb-2" />
-              <span className="text-xs font-medium">Loading shop settings...</span>
+              <span className="text-xs font-medium">Loading store settings...</span>
             </div>
           ) : (
             <div className="space-y-6">

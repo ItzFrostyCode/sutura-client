@@ -17,9 +17,9 @@ import JobsOnHoldList from '@/components/reports/JobsOnHoldList';
 import { useBranch } from '@/context/BranchContext';
 
 export default function ReportsPage() {
-  const { shop, user } = useAuthStore();
+  const { store, user } = useAuthStore();
   const { selectedBranchId, branches } = useBranch();
-  const isShopOwner = user?.roles?.[0]?.name === 'shop_owner';
+  const isStoreOwner = user?.roles?.[0]?.name === 'store_owner';
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('all_time');
@@ -119,9 +119,9 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
-    // Matches the backend's role:shop_owner,branch_manager gate on GET /analytics
+    // Matches the backend's role:store_owner,branch_manager gate on GET /analytics
     // — plain staff can't hit this endpoint, so skip the fetch rather than 403.
-    if (!shop?.id || !(isShopOwner || user?.roles?.[0]?.name === 'branch_manager')) {
+    if (!store?.id || !(isStoreOwner || user?.roles?.[0]?.name === 'branch_manager')) {
       if (user?.id) {
         setTimeout(() => setLoading(false), 0);
       }
@@ -132,7 +132,7 @@ export default function ReportsPage() {
       setLoading(true);
       const { startDate, endDate } = getDateRangeForPeriod(period);
 
-      let url = `/shops/${shop?.id}/analytics`;
+      let url = `/stores/${store?.id}/analytics`;
       const queryParams: string[] = [];
       if (startDate && endDate) queryParams.push(`start_date=${startDate}`, `end_date=${endDate}`);
       if (selectedBranchId !== null) queryParams.push(`branch_id=${selectedBranchId}`);
@@ -151,18 +151,18 @@ export default function ReportsPage() {
 
     fetchAnalytics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shop?.id, period, user?.id, selectedBranchId, isShopOwner]);
+  }, [store?.id, period, user?.id, selectedBranchId, isStoreOwner]);
 
   // Branch performance comparison — owner-only strategic view, only worth
   // fetching once there's actually more than one branch to compare.
   useEffect(() => {
-    if (!shop?.id || !isShopOwner || branches.length < 2) return;
+    if (!store?.id || !isStoreOwner || branches.length < 2) return;
 
     async function fetchBranchComparison() {
       setBranchComparisonLoading(true);
       const { startDate, endDate } = getDateRangeForPeriod(period);
 
-      let url = `/shops/${shop?.id}/analytics/branches`;
+      let url = `/stores/${store?.id}/analytics/branches`;
       if (startDate && endDate) url += `?start_date=${startDate}&end_date=${endDate}`;
 
       try {
@@ -179,17 +179,17 @@ export default function ReportsPage() {
 
     fetchBranchComparison();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shop?.id, period, isShopOwner, branches.length]);
+  }, [store?.id, period, isStoreOwner, branches.length]);
 
   // Individual staff productivity — owner-only strategic view.
   useEffect(() => {
-    if (!shop?.id || !isShopOwner) return;
+    if (!store?.id || !isStoreOwner) return;
 
     async function fetchStaffProductivity() {
       setStaffProductivityLoading(true);
       const { startDate, endDate } = getDateRangeForPeriod(period);
 
-      let url = `/shops/${shop?.id}/analytics/staff`;
+      let url = `/stores/${store?.id}/analytics/staff`;
       const queryParams: string[] = [];
       if (startDate && endDate) queryParams.push(`start_date=${startDate}`, `end_date=${endDate}`);
       if (selectedBranchId !== null) queryParams.push(`branch_id=${selectedBranchId}`);
@@ -208,17 +208,17 @@ export default function ReportsPage() {
     }
 
     fetchStaffProductivity();
-  }, [shop?.id, period, isShopOwner, selectedBranchId]);
+  }, [store?.id, period, isStoreOwner, selectedBranchId]);
 
   // Subscription activity (Objective 7) — owner-only strategic view, same
   // gate as staff productivity above.
   useEffect(() => {
-    if (!shop?.id || !isShopOwner) return;
+    if (!store?.id || !isStoreOwner) return;
 
     async function fetchSubscriptionActivity() {
       setSubscriptionActivityLoading(true);
       try {
-        const res = await api.get(`/shops/${shop?.id}/analytics/subscription`);
+        const res = await api.get(`/stores/${store?.id}/analytics/subscription`);
         setSubscriptionActivity(res.data.data);
       } catch (err) {
         console.error('Failed to fetch subscription activity', err);
@@ -229,7 +229,7 @@ export default function ReportsPage() {
     }
 
     fetchSubscriptionActivity();
-  }, [shop?.id, isShopOwner]);
+  }, [store?.id, isStoreOwner]);
 
   // ─── Derived chart data ──────────────────────────────────────────────────
 
@@ -377,15 +377,15 @@ export default function ReportsPage() {
             balancePieData={balancePieData}
           />
 
-          {isShopOwner && branches.length > 1 && (
+          {isStoreOwner && branches.length > 1 && (
             <BranchComparisonTable data={branchComparison} loading={branchComparisonLoading} />
           )}
 
-          {isShopOwner && (
+          {isStoreOwner && (
             <StaffProductivityTable data={staffProductivity} loading={staffProductivityLoading} />
           )}
 
-          {isShopOwner && (
+          {isStoreOwner && (
             <SubscriptionActivityTimeline data={subscriptionActivity} loading={subscriptionActivityLoading} />
           )}
 

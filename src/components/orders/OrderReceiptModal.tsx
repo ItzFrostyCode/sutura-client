@@ -21,7 +21,7 @@ export default function OrderReceiptModal({
   readonly order: CatalogOrder;
   readonly onClose: () => void;
 }) {
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
   const total = Number(order.total_amount ?? 0);
 
   return (
@@ -29,10 +29,10 @@ export default function OrderReceiptModal({
       <div className="bg-surface rounded-2xl border border-line w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div id="receipt-print-area" className="p-6 text-black">
           <div className="text-center border-b border-dashed border-gray-400 pb-4 mb-4">
-            <h2 className="text-xl font-bold tracking-tight">{shop?.name ?? 'Sutura Shop'}</h2>
-            {shop?.address && (
+            <h2 className="text-xl font-bold tracking-tight">{store?.name ?? 'Sutura Store'}</h2>
+            {store?.address && (
               <p className="text-xs text-gray-600 mt-0.5">
-                {shop.address}{shop.city ? `, ${shop.city}` : ''}
+                {store.address}{store.city ? `, ${store.city}` : ''}
               </p>
             )}
             <p className="mt-2 text-sm font-semibold uppercase tracking-widest">Official Receipt</p>

@@ -42,7 +42,7 @@ interface ServiceDetailModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly facebookUrl?: string;
-  readonly shopId?: string | number;
+  readonly storeId?: string | number;
 }
 
 const getMessengerUrl = (facebookUrl?: string, textSnippet?: string) => {
@@ -66,7 +66,7 @@ export default function ServiceDetailModal({
   isOpen,
   onClose,
   facebookUrl,
-  shopId,
+  storeId,
 }: ServiceDetailModalProps) {
   const [formData, setFormData] = useState<Record<string, string | string[]>>({});
 
@@ -114,9 +114,9 @@ export default function ServiceDetailModal({
   };
 
   const bookingParam = service.kind === 'package' ? 'package_id' : 'service_id';
-  const bookingUrl = shopId ? `/shop/${shopId}/book?${bookingParam}=${service.id}` : '#';
+  const bookingUrl = storeId ? `/store/${storeId}/book?${bookingParam}=${service.id}` : '#';
   const isRepairService = service.kind !== 'package' && (service.service_types ?? []).includes('alteration_repair');
-  const repairUrl = shopId ? `/shop/${shopId}/repair-request?service_id=${service.id}` : '#';
+  const repairUrl = storeId ? `/store/${storeId}/repair-request?service_id=${service.id}` : '#';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in">
@@ -126,7 +126,7 @@ export default function ServiceDetailModal({
         aria-hidden="true"
       />
       
-      <div className="relative bg-white rounded-3xl border border-line overflow-hidden max-w-2xl w-full flex flex-col max-h-[90vh] animate-scale-in z-10">
+      <div className="relative bg-white rounded-3xl border border-line overflow-hidden max-w-[599px] w-full flex flex-col max-h-[90vh] animate-scale-in z-10">
         {/* Floating Close Button */}
         <button
           onClick={onClose}
@@ -144,7 +144,6 @@ export default function ServiceDetailModal({
               alt={service.name}
               fill
               className="object-cover"
-              unoptimized
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-ink-faint">
@@ -248,7 +247,7 @@ export default function ServiceDetailModal({
                   </table>
                 </div>
               )}
-              <p className="text-[11px] text-ink-faint">Follow this shop&apos;s own size chart when submitting measurements — sizing can vary between shops.</p>
+              <p className="text-[11px] text-ink-faint">Follow this store&apos;s own size chart when submitting measurements — sizing can vary between stores.</p>
             </div>
           )}
 
@@ -352,7 +351,7 @@ export default function ServiceDetailModal({
             Inquire via Messenger
           </a>
           
-          {shopId && isRepairService && (
+          {storeId && isRepairService && (
             <a
               href={repairUrl}
               className="flex-1 bg-white hover:bg-line text-ink border border-line py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"
@@ -361,7 +360,7 @@ export default function ServiceDetailModal({
               Request a Repair
             </a>
           )}
-          {shopId && !isRepairService && (
+          {storeId && !isRepairService && (
             <a
               href={bookingUrl}
               className="flex-1 bg-white hover:bg-line text-ink border border-line py-3 px-6 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2.5 transition-all"

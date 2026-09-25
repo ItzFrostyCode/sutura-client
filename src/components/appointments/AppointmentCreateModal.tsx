@@ -31,7 +31,7 @@ const OCCUPYING_STATUSES = new Set(['pending', 'confirmed', 'in_progress']);
 
 const defaultForm = {
   customer_id: '', appointment_type: 'consultation' as AppointmentType,
-  shop_branch_id: '', scheduled_date: '', scheduled_time: '',
+  store_branch_id: '', scheduled_date: '', scheduled_time: '',
   duration_minutes: String(TYPE_DEFAULT_DURATIONS.consultation), assigned_staff_id: '', notes: '',
 };
 
@@ -40,7 +40,7 @@ export default function AppointmentCreateModal({
 }: AppointmentCreateModalProps) {
   const [formData, setFormData] = useState(defaultForm);
   const { selectedBranchId } = useBranch();
-  const { shop } = useAuthStore();
+  const { store } = useAuthStore();
 
   // 3-step wizard — same shape as the public customer booking page, minus
   // the Payment step (the owner isn't paying themselves for a walk-in).
@@ -53,7 +53,7 @@ export default function AppointmentCreateModal({
     .map(a => ({
       scheduled_at: a.scheduled_at,
       duration_minutes: a.duration_minutes,
-      shop_branch_id: a.shop_branch_id ?? null,
+      store_branch_id: a.store_branch_id ?? null,
       status: a.status,
     }));
 
@@ -89,7 +89,7 @@ export default function AppointmentCreateModal({
       setFormData({
         customer_id: custId,
         appointment_type: editingApt.appointment_type,
-        shop_branch_id: editingApt.shop_branch_id?.toString() || '',
+        store_branch_id: editingApt.store_branch_id?.toString() || '',
         scheduled_date: localDate < today ? today : localDate,
         scheduled_time: d.toTimeString().substring(0, 5),
         duration_minutes: (editingApt.duration_minutes || TYPE_DEFAULT_DURATIONS[editingApt.appointment_type]).toString(),
@@ -102,7 +102,7 @@ export default function AppointmentCreateModal({
       setFormData({
         ...defaultForm,
         scheduled_date: today,
-        shop_branch_id: defaultBranchId || (branches.length === 1 ? branches[0].id.toString() : '')
+        store_branch_id: defaultBranchId || (branches.length === 1 ? branches[0].id.toString() : '')
       });
     }
   }, [editingApt, isOpen, customers, branches, selectedBranchId]);
@@ -114,7 +114,7 @@ export default function AppointmentCreateModal({
   const step1Valid = !!formData.customer_id && !!formData.appointment_type;
 
   const step2Valid = !!formData.scheduled_date && !!formData.scheduled_time
-    && (branches.length <= 1 || !!formData.shop_branch_id);
+    && (branches.length <= 1 || !!formData.store_branch_id);
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -124,7 +124,7 @@ export default function AppointmentCreateModal({
       scheduled_at: `${formData.scheduled_date} ${formData.scheduled_time}:00`,
       duration_minutes: Number.parseInt(formData.duration_minutes, 10) || TYPE_DEFAULT_DURATIONS[formData.appointment_type],
       notes: formData.notes || null,
-      shop_branch_id: formData.shop_branch_id || null,
+      store_branch_id: formData.store_branch_id || null,
       assigned_staff_id: formData.assigned_staff_id || null,
     };
     onSubmit(payload);
@@ -222,8 +222,8 @@ export default function AppointmentCreateModal({
             already filtered to this branch's own existing bookings. */}
         {branches.length > 1 && (
           <div>
-            <label htmlFor="shop_branch_id" className="block text-sm font-medium text-ink-body mb-1">Branch <span className="text-rose-500">*</span></label>
-            <select id="shop_branch_id" required value={formData.shop_branch_id} onChange={e => setFormData({ ...formData, shop_branch_id: e.target.value })}
+            <label htmlFor="store_branch_id" className="block text-sm font-medium text-ink-body mb-1">Branch <span className="text-rose-500">*</span></label>
+            <select id="store_branch_id" required value={formData.store_branch_id} onChange={e => setFormData({ ...formData, store_branch_id: e.target.value })}
               className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
               <option value="" disabled>Select branch...</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -232,14 +232,14 @@ export default function AppointmentCreateModal({
         )}
 
         {/* Date & Time — same interactive calendar the customer-facing
-            booking page uses, so the owner sees the shop's own existing
+            booking page uses, so the owner sees the store's own existing
             appointments/operating hours instead of guessing at a blank date/time input. */}
         <div>
           <InteractiveCalendar
-            selectedBranchId={formData.shop_branch_id || null}
+            selectedBranchId={formData.store_branch_id || null}
             durationMinutes={Number.parseInt(formData.duration_minutes, 10) || 60}
-            operatingHours={shop?.operating_hours ?? null}
-            specialHours={shop?.special_hours ?? null}
+            operatingHours={store?.operating_hours ?? null}
+            specialHours={store?.special_hours ?? null}
             appointments={calendarAppointments}
             loadingAppts={false}
             selectedDate={formData.scheduled_date}
@@ -255,7 +255,7 @@ export default function AppointmentCreateModal({
         {/* STEP 3: Details & Confirmation — no payment step here; the owner
             isn't paying themselves for a walk-in, unlike the public booking
             page's own Step 3. Priority is no longer set at booking time —
-            only the Shop Owner sets it later, during Job Order approval. */}
+            only the Store Owner sets it later, during Job Order approval. */}
         {step === 3 && (
         <div className="space-y-4">
         {/* Assign Staff */}

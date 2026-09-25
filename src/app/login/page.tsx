@@ -4,12 +4,18 @@ import { useState, SubmitEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-dvh flex items-center justify-center text-sm text-ink-muted">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-dvh flex items-center justify-center bg-white">
+          <Loader2 size={28} className="animate-spin text-ink-faint" />
+        </div>
+      }
+    >
       <LoginFormContent />
     </Suspense>
   );
@@ -35,17 +41,17 @@ function LoginFormContent() {
     try {
       const response = await api.post('/auth/login', { email, password });
       if (response.data.success) {
-        const { user, token, shop, staff_profile } = response.data.data;
-        const activeShop = shop || staff_profile?.shop;
+        const { user, token, store, staff_profile } = response.data.data;
+        const activeStore = store || staff_profile?.store;
         const roleNames = user?.roles?.map((r: { name: string }) => r.name) || [];
-        const isAuthorized = roleNames.some((name: string) => ['shop_owner', 'branch_manager', 'staff'].includes(name)) || !!staff_profile;
+        const isAuthorized = roleNames.some((name: string) => ['store_owner', 'branch_manager', 'staff'].includes(name)) || !!staff_profile;
         const isCustomer = roleNames.includes('customer');
 
         if (isAuthorized) {
-          setAuth(user, token, activeShop, staff_profile);
+          setAuth(user, token, activeStore, staff_profile);
           router.push(redirectPath || '/dashboard');
         } else if (isCustomer) {
-          setAuth(user, token, activeShop, staff_profile);
+          setAuth(user, token, activeStore, staff_profile);
           router.push(redirectPath || '/account');
         } else {
           setError('This account type does not have a dashboard yet. Please contact support.');
@@ -63,12 +69,19 @@ function LoginFormContent() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      {/* Reuses the site's own header instead of rebuilding the
-          reference's — the user's explicit call: "meron na tayung header
-          just use that." */}
-      <PublicNav />
+      {/* PublicNav only on tablet/desktop — on mobile the form's own
+          Sign In/X header is the only chrome this page needs, and having
+          both stacked read as redundant. */}
+      <div className="hidden md:block">
+        <PublicNav />
+      </div>
 
-      <div className="flex-1 px-[10px] py-6">
+      {/* Mobile (below md): full page, edge-to-edge, same as before.
+          Tablet/desktop: the form no longer stretches full-bleed — it sits
+          centered in a modal-like card instead, since a wide flat form
+          with edge-to-edge inputs looked broken at those widths. */}
+      <div className="flex-1 px-[10px] py-6 md:flex md:items-start md:justify-center md:px-4 md:py-16">
+        <div className="md:w-full md:max-w-md md:bg-surface md:border md:border-line md:shadow-sm md:p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-display text-2xl text-ink">Sign In</h1>
           <button
@@ -146,6 +159,7 @@ function LoginFormContent() {
         >
           Create an Account
         </a>
+        </div>
       </div>
     </div>
   );
