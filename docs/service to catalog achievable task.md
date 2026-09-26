@@ -103,6 +103,17 @@ The following matrix documents the exact technical state of the SUTURA codebase:
 
 ---
 
+### 3.4 Local Dev & Cross-Platform Execution (Windows XAMPP & macOS)
+
+| Configuration / Flow | Target Files | Implementation Status | Technical Details |
+| :--- | :--- | :---: | :--- |
+| **Execution Order** | `HowToOpen.md` | **Active / Verified** | 1. **MySQL** (XAMPP Control Panel on Windows / Homebrew on Mac)<br>2. **Laravel Backend** (`php artisan serve`)<br>3. **Next.js Frontend** (`npm run dev` at `http://localhost:3000`). |
+| **Dual Port & Conflict Fallback** | `next.config.ts`, `sanctum.php`, `.env.example` | **Active / Verified** | Backend defaults to port `8000`. If port 8000 is occupied on Windows (PID conflict), fallback to `php artisan serve --port=8080` with `NEXT_PUBLIC_API_URL=http://127.0.0.1:8080/api/v1`. `sanctum.php` and `next.config.ts` support both 8000 and 8080. |
+| **Storage Asset Resolution** | `next.config.ts`, `media.ts` | **Active / Verified** | Backend uploads (`/storage/**` for logos, banners, receipts) linked via `php artisan storage:link`. `next.config.ts` remotePatterns allow `127.0.0.1` and `localhost` on both ports 8000 and 8080. |
+| **Database Reflection** | Migrations / phpMyAdmin | **Active / Verified** | Running `php artisan migrate` applies canonical `service_id` mappings into MySQL, immediately reflecting in phpMyAdmin (`sutura` database). |
+
+---
+
 ## 4. Canonical 50 Catalog Designs Mapping (Store 1)
 
 All 50 catalog designs in Store 1 (`Thread & Needle Tailoring`) are systematically organized under the 4 primary production services:

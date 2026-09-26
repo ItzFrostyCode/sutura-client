@@ -32,6 +32,7 @@ git clone https://github.com/ItzFrostyCode/sutura-client.git
    setup-windows.bat
    php artisan serve
    ```
+   *(Note: If port 8000 has a conflict, run `php artisan serve --port=8080` and set `NEXT_PUBLIC_API_URL=http://127.0.0.1:8080/api/v1` in `sutura-client/.env.local`).*
 
 ### macOS:
 
