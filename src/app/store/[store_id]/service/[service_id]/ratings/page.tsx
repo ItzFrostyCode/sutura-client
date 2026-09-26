@@ -13,13 +13,13 @@ type ServiceReview = NonNullable<PublicService['reviews']>[number];
 
 const STAR_FILTERS = [5, 4, 3, 2, 1] as const;
 
-// The service detail page only ever shows a compact "4.7 (12) → View All"
-// summary — this is that "View All", mirroring the Catalog item's own
+// The service detail page shows a compact "4.7 (12) → View All" summary
+// (ServiceRatingsSection) — this is that "View All", mirroring the Catalog item's
 // ratings page (/store/[store_id]/catalog/[item_id]/ratings) exactly:
 // the real average up top, a star filter, the full list, and a "leave your
 // own rating" form. Service reviews are star-only (no comment column on
 // service_reviews — see ServiceReview's backend docblock), so review cards
-// here skip the comment paragraph the catalog version has.
+// here display the verified rating, date, and reviewer profile.
 export default function ServiceRatingsPage({
   params,
 }: Readonly<{ params: Promise<{ store_id: string; service_id: string }> }>) {
@@ -37,9 +37,6 @@ export default function ServiceRatingsPage({
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    // No single-service-by-id public endpoint exists — same pattern the
-    // service detail page itself already uses (fetch the store's whole
-    // service list, find by id).
     api.get(`/public/stores/${storeId}/services`)
       .then((res) => {
         const list: PublicService[] = res.data.data ?? [];
@@ -48,6 +45,15 @@ export default function ServiceRatingsPage({
       .catch(() => setService(null))
       .finally(() => setLoading(false));
   }, [storeId, serviceId]);
+
+  useEffect(() => {
+    if (user && service?.reviews) {
+      const existing = service.reviews.find((r) => r.user?.id === user.id);
+      if (existing) {
+        setMyRating(existing.rating);
+      }
+    }
+  }, [user, service?.reviews]);
 
   const reviews = useMemo(() => service?.reviews ?? [], [service]);
   const filteredReviews = useMemo(
@@ -59,6 +65,14 @@ export default function ServiceRatingsPage({
     reviews.forEach((r) => { map[r.rating] = (map[r.rating] ?? 0) + 1; });
     return map;
   }, [reviews]);
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(`/store/${storeId}/service/${serviceId}`);
+    }
+  };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,15 +88,17 @@ export default function ServiceRatingsPage({
     setMessage(null);
     try {
       const res = await api.post(`/stores/${storeId}/services/${serviceId}/reviews`, { rating: myRating });
-      setService((prev) => prev ? {
+      setService((prev) => (prev ? {
         ...prev,
         reviews_count: res.data.reviews_count,
         reviews_avg_rating: res.data.reviews_avg_rating,
-        reviews: [
-          { ...res.data.review, user: { id: user.id, name: user.name, profile_picture: null } },
-          ...(prev.reviews || []).filter((r) => r.id !== res.data.review.id),
-        ],
-      } : prev);
+        reviews: res.data.review
+          ? [
+              { ...res.data.review, user: { id: user.id, name: user.name, profile_picture: null } },
+              ...(prev.reviews || []).filter((r) => r.id !== res.data.review.id),
+            ]
+          : (prev.reviews || []).filter((r) => r.user?.id !== user.id),
+      } : prev));
       setMessage({ type: 'success', text: 'Thanks for your rating!' });
     } catch {
       setMessage({ type: 'error', text: 'Failed to submit your rating. Please try again.' });
@@ -97,9 +113,9 @@ export default function ServiceRatingsPage({
         <div className="relative max-w-7xl mx-auto h-10 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={handleBack}
             aria-label="Back"
-            className="absolute left-2 sm:left-4 w-9 h-9 flex items-center justify-center text-ink-muted hover:bg-sunken transition-colors"
+            className="absolute left-2 sm:left-4 w-9 h-9 rounded-full flex items-center justify-center text-ink-muted hover:bg-sunken transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
@@ -111,7 +127,7 @@ export default function ServiceRatingsPage({
 
       {!loading && service && (
         <main className="flex-1 w-full max-w-7xl mx-auto px-[10px] sm:px-6 lg:px-8 py-[14px] sm:py-6">
-          <div className="bg-surface border border-line p-4 mb-4">
+          <div className="bg-surface border border-line rounded-none p-4 mb-4">
             <div className="flex items-center gap-4">
               <div className="text-center shrink-0">
                 <p className="text-3xl font-bold text-ink">
@@ -134,8 +150,8 @@ export default function ServiceRatingsPage({
                     <div key={n} className="flex items-center gap-2 text-[11px]">
                       <span className="text-ink-faint w-2 shrink-0">{n}</span>
                       <Star size={9} className="text-amber-500 shrink-0" fill="currentColor" />
-                      <div className="flex-1 h-1.5 bg-sunken overflow-hidden">
-                        <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
+                      <div className="flex-1 h-1.5 bg-sunken rounded-none overflow-hidden">
+                        <div className="h-full bg-amber-500 rounded-none" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-ink-faint w-4 shrink-0 text-right">{count}</span>
                     </div>
@@ -149,7 +165,7 @@ export default function ServiceRatingsPage({
             <button
               type="button"
               onClick={() => setStarFilter(null)}
-              className={`shrink-0 px-3 py-1.5 text-xs font-semibold border transition-colors ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                 starFilter === null ? 'bg-ink text-white border-ink' : 'border-line text-ink-muted'
               }`}
             >
@@ -160,7 +176,7 @@ export default function ServiceRatingsPage({
                 key={n}
                 type="button"
                 onClick={() => setStarFilter((prev) => (prev === n ? null : n))}
-                className={`shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border transition-colors ${
+                className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                   starFilter === n ? 'bg-ink text-white border-ink' : 'border-line text-ink-muted'
                 }`}
               >
@@ -169,7 +185,7 @@ export default function ServiceRatingsPage({
             ))}
           </div>
 
-          <form onSubmit={handleSubmitReview} className="bg-surface border border-line p-3 mb-4">
+          <form onSubmit={handleSubmitReview} className="bg-surface border border-line rounded-none p-3 mb-4">
             <h3 className="text-xs font-semibold text-ink-muted mb-2">Rate this Service</h3>
             <div className="flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
               {[1, 2, 3, 4, 5].map((n) => (
@@ -190,14 +206,14 @@ export default function ServiceRatingsPage({
               ))}
               <button
                 type="submit"
-                disabled={submitting}
-                className="ml-auto px-3 py-1.5 bg-ink hover:bg-taupe text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                disabled={submitting || myRating < 1}
+                className="ml-auto px-3 py-1.5 bg-ink hover:bg-taupe text-white text-xs font-semibold rounded-none transition-colors disabled:opacity-50"
               >
                 {submitting ? 'Submitting…' : 'Submit'}
               </button>
             </div>
             {message && (
-              <div className={`flex items-center gap-2 mt-2 text-xs px-3 py-2 ${message.type === 'success' ? 'bg-sage/10 text-sage' : 'bg-danger/10 text-danger'}`}>
+              <div className={`flex items-center gap-2 mt-2 text-xs px-3 py-2 rounded-none ${message.type === 'success' ? 'bg-sage/10 text-sage' : 'bg-danger/10 text-danger'}`}>
                 {message.type === 'success' ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
                 {message.text}
               </div>
@@ -216,7 +232,7 @@ export default function ServiceRatingsPage({
                 : null;
 
               return (
-                <div key={review.id} className="bg-surface border border-line p-4">
+                <div key={review.id} className="bg-surface border border-line rounded-none p-4">
                   <div className="flex items-center justify-between mb-1.5">
                     {reviewerHref ? (
                       <Link href={reviewerHref} className="flex items-center gap-2 min-w-0">

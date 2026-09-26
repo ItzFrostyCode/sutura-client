@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { PublicService, StoreProfile } from '@/components/store-storefront/types';
 import { getSocialUrl, getMessengerUrl } from '@/components/store-storefront/storeStorefrontHelpers';
+import ServiceRatingsSection from '@/components/store-service-detail/ServiceRatingsSection';
 
 // Dedicated page for a single service — was an in-place swap inside the
 // Store Profile's Service tab (the old ServiceDetailView.tsx component,
@@ -138,8 +139,19 @@ export default function ServiceDetailPage({
     setSubmittingReview(true);
     setReviewMessage(null);
     try {
-      await api.post(`/stores/${store.slug}/services/${service.id}/reviews`, { rating: myRating });
+      const res = await api.post(`/stores/${store.slug}/services/${service.id}/reviews`, { rating: myRating });
       setReviewMessage({ type: 'success', text: 'Thanks for your rating!' });
+      setService((prev) => (prev ? {
+        ...prev,
+        reviews_count: res.data.reviews_count,
+        reviews_avg_rating: res.data.reviews_avg_rating,
+        reviews: res.data.review
+          ? [
+              { ...res.data.review, user: { id: user.id, name: user.name, profile_picture: null } },
+              ...(prev.reviews || []).filter((r) => r.id !== res.data.review.id),
+            ]
+          : (prev.reviews || []).filter((r) => r.user?.id !== user.id),
+      } : prev));
     } catch {
       setReviewMessage({ type: 'error', text: 'Failed to submit your rating. Please try again.' });
     } finally {
@@ -431,73 +443,18 @@ export default function ServiceDetailPage({
               )}
             </div>
 
-            {(service.reviews_count ?? 0) > 0 && (
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-serif font-semibold text-taupe-dark">Service Ratings</h2>
-                  <Link
-                    href={`/store/${storeId}/service/${service.id}/ratings`}
-                    className="flex items-center gap-0.5 text-xs font-semibold text-taupe"
-                  >
-                    View All <ChevronRight size={13} />
-                  </Link>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 text-amber-500">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        size={16}
-                        fill={n <= Math.round(service.reviews_avg_rating || 0) ? 'currentColor' : 'none'}
-                      />
-                    ))}
-                  </div>
-                  <span className="font-semibold text-ink text-sm">
-                    {service.reviews_avg_rating ? Number(service.reviews_avg_rating).toFixed(1) : '0.0'}
-                  </span>
-                  <span className="text-ink-faint text-xs">
-                    out of 5 · {service.reviews_count} review{service.reviews_count === 1 ? '' : 's'}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {!isOwnerViewingOwnStore && (
-              <form onSubmit={handleSubmitReview} className="bg-surface border border-line rounded-none p-3 mt-3">
-                <h3 className="text-xs font-semibold text-ink-muted mb-2">Rate this Service</h3>
-                <div className="flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setMyRating((prev) => (prev === n ? 0 : n))}
-                      onMouseEnter={() => setHoverRating(n)}
-                      aria-label={`${n} star${n === 1 ? '' : 's'}`}
-                      className="p-0.5"
-                    >
-                      <Star
-                        size={20}
-                        className={n <= (hoverRating || myRating) ? 'text-amber-500' : 'text-line-strong'}
-                        fill={n <= (hoverRating || myRating) ? 'currentColor' : 'none'}
-                      />
-                    </button>
-                  ))}
-                  <button
-                    type="submit"
-                    disabled={submittingReview || myRating < 1}
-                    className="ml-auto px-3 py-1.5 bg-ink hover:bg-taupe text-white text-xs font-semibold rounded-none transition-colors disabled:opacity-50"
-                  >
-                    {submittingReview ? 'Submitting…' : 'Submit'}
-                  </button>
-                </div>
-                {reviewMessage && (
-                  <div className={`flex items-center gap-2 mt-2 text-xs px-3 py-2 rounded-none ${reviewMessage.type === 'success' ? 'bg-sage/10 text-sage' : 'bg-danger/10 text-danger'}`}>
-                    {reviewMessage.type === 'success' ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
-                    {reviewMessage.text}
-                  </div>
-                )}
-              </form>
-            )}
+            <ServiceRatingsSection
+              service={service}
+              storeId={storeId}
+              myRating={myRating}
+              setMyRating={setMyRating}
+              hoverRating={hoverRating}
+              setHoverRating={setHoverRating}
+              submittingReview={submittingReview}
+              reviewMessage={reviewMessage}
+              onSubmitReview={handleSubmitReview}
+              isOwnerViewingOwnStore={isOwnerViewingOwnStore}
+            />
           </div>
         </div>
       </main>
