@@ -109,7 +109,8 @@ export default function StoreHeroHeader({
               alt={activeBranch?.name ? `${store.name} - ${activeBranch.name}` : store.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/images/hero_banner.jpg';
               }}
             />
           ) : (

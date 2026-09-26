@@ -9,13 +9,15 @@ const nextConfig: NextConfig = {
     dangerouslyAllowLocalIP: true,
     remotePatterns: [
       // Laravel backend serves store logos, gallery photos, catalog images, etc.
-      // Supports both standard port 8000 and Windows fallback port 8080.
-      { protocol: 'http', hostname: '127.0.0.1', port: '8000', pathname: '/storage/**' },
-      { protocol: 'http', hostname: '127.0.0.1', port: '8080', pathname: '/storage/**' },
-      { protocol: 'http', hostname: '127.0.0.1', port: '', pathname: '/storage/**' },
-      { protocol: 'http', hostname: 'localhost', port: '8000', pathname: '/storage/**' },
-      { protocol: 'http', hostname: 'localhost', port: '8080', pathname: '/storage/**' },
-      { protocol: 'http', hostname: 'localhost', port: '', pathname: '/storage/**' },
+      // Supports both standard port 8000, Windows fallback port 8080, and other common local ports.
+      { protocol: 'http', hostname: '127.0.0.1', port: '8000', pathname: '/**' },
+      { protocol: 'http', hostname: '127.0.0.1', port: '8080', pathname: '/**' },
+      { protocol: 'http', hostname: '127.0.0.1', port: '8001', pathname: '/**' },
+      { protocol: 'http', hostname: '127.0.0.1', port: '', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', port: '8000', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', port: '8080', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', port: '8001', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', port: '', pathname: '/**' },
       // Seeded demo services/catalog items reference stock photos from Unsplash.
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],

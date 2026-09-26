@@ -129,6 +129,10 @@ export default function StoreLocationsTab({
                     src={getMediaUrl(coverImage)}
                     alt={`${store.name} - ${branch.name}`}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/images/shop_storefront.jpg';
+                    }}
                   />
                   <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/20" />
 

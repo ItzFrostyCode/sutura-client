@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Store, Star, Clock, MapPin } from 'lucide-react';
@@ -29,11 +30,16 @@ export default function CatalogItemCard({
   readonly showFabric?: boolean;
   readonly userCoords?: { lat: number; lng: number } | null;
 }) {
+  const [imgError, setImgError] = useState(false);
   const primaryImage = item.images.find((img) => img.is_primary)?.image_url ?? item.images[0]?.image_url;
   const fabricImage = resolveFabricImage(item);
-  const displayImage = showFabric ? (fabricImage || primaryImage) : primaryImage;
+  const displayImage = imgError ? (fabricImage || primaryImage) : (showFabric ? (fabricImage || primaryImage) : primaryImage);
   const gate = useGuestGatedHref();
   const distInfo = getItemDistanceInfo(item, userCoords);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [item.id, showFabric]);
 
   return (
     <Link
@@ -47,6 +53,7 @@ export default function CatalogItemCard({
             src={getMediaUrl(displayImage)}
             alt={`${item.name}${showFabric ? ' - Fabric Swatch' : ''}`}
             fill
+            onError={() => setImgError(true)}
             className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
           />
         ) : (

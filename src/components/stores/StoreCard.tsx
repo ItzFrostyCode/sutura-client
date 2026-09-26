@@ -4,6 +4,7 @@ import { Star, MapPin, Store } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { isStoreOpen } from '@/lib/storeStatus';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { type StoreResult } from './storesTypes';
 
 export default function StoreCard({ store }: Readonly<{ store: StoreResult }>) {
@@ -17,39 +18,28 @@ export default function StoreCard({ store }: Readonly<{ store: StoreResult }>) {
     >
       <div className="h-28 bg-sunken relative shrink-0">
         {store.banner_path ? (
-          <Image
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
             src={getMediaUrl(store.banner_path)}
             alt={store.name}
-            fill
-            className="object-cover"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = '/images/hero_banner.jpg';
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Store size={24} className="text-ink-faint" />
           </div>
         )}
-        <div className="absolute -bottom-5 left-3 w-12 h-12 shrink-0">
-          <div className="w-full h-full rounded-full border-2 border-surface bg-surface overflow-hidden relative">
-            {store.logo_path ? (
-              <Image
-                src={getMediaUrl(store.logo_path)}
-                alt=""
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-sunken">
-                <Store size={14} className="text-ink-faint" />
-              </div>
-            )}
-          </div>
-          {/* Online / Offline status dot */}
-          <span
-            aria-label={isOpen ? 'Open now' : 'Closed now'}
-            title={isOpen ? 'Open now' : 'Closed now'}
-            className={`absolute bottom-0 right-0 z-10 w-3 h-3 rounded-full border-2 border-white shadow-xs ${
-              isOpen ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
-            }`}
+        <div className="absolute -bottom-5 left-3">
+          <StoreLogoAvatar
+            src={store.logo_path}
+            name={store.name}
+            className="w-12 h-12 rounded-full border-2 border-surface bg-surface shadow-xs"
+            textClassName="text-sm font-bold text-taupe"
+            isOpen={isOpen}
           />
         </div>
       </div>

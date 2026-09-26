@@ -48,12 +48,21 @@ export default function ServiceCardItem({
             src={getMediaUrl(service.image_url)}
             alt={service.name}
             className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                const placeholder = parent.querySelector('.service-card-fallback');
+                if (placeholder) (placeholder as HTMLElement).style.display = 'flex';
+              }
+            }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-ink-faint">
-            <Scissors size={24} className="text-taupe/40" />
-          </div>
-        )}
+        ) : null}
+        <div
+          className={`service-card-fallback w-full h-full items-center justify-center text-ink-faint ${service.image_url ? 'hidden' : 'flex'}`}
+        >
+          <Scissors size={24} className="text-taupe/40" />
+        </div>
       </div>
 
       <div className="p-2.5 flex-1 flex flex-col justify-between">
