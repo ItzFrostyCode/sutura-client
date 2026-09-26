@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   // from 127.0.0.1 too, not just localhost, so either URL works.
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   images: {
+    dangerouslyAllowLocalIP: true,
     remotePatterns: [
       // Laravel backend serves store logos, gallery photos, catalog images, etc.
       // from its own storage disk — both hostnames are used interchangeably in local dev.
