@@ -16,7 +16,6 @@ interface StoreServicesTabProps {
   readonly setServiceSearch: (s: string) => void;
   readonly isOwnerViewingOwnStore: boolean;
   readonly onAddService: () => void;
-  readonly onSelectPackage: (pkg: PublicServicePackage) => void;
   readonly user: { id: number } | null;
 }
 
@@ -30,7 +29,6 @@ export default function StoreServicesTab({
   setServiceSearch,
   isOwnerViewingOwnStore,
   onAddService,
-  onSelectPackage,
   user,
 }: StoreServicesTabProps) {
   const router = useRouter();
@@ -132,7 +130,7 @@ export default function StoreServicesTab({
           ))}
 
           {filteredPackages.map((pkg) => (
-            <PackageCardItem key={`package-${pkg.id}`} pkg={pkg} onSelect={onSelectPackage} />
+            <PackageCardItem key={`package-${pkg.id}`} pkg={pkg} storeId={storeId} />
           ))}
         </div>
       )}
