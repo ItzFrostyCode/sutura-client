@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Scissors, Store, Star, ChevronRight } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { SearchServiceResult, RelatedStore, SearchActiveTab } from './types';
 import ServiceCarouselRow from './ServiceCarouselRow';
 import SearchServiceCard from './SearchServiceCard';
@@ -133,29 +134,13 @@ export default function SearchServicesTab({
                   {/* Store row */}
                   <Link href={storeHref} className="flex items-center justify-between gap-3 group active:opacity-80">
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                      <div className="relative w-14 h-14 shrink-0">
-                        <div className="w-full h-full rounded-full overflow-hidden bg-sunken relative border border-line">
-                          {logoSrc ? (
-                            <Image
-                              src={getMediaUrl(logoSrc)}
-                              alt={storeName}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Store size={22} className="text-ink-faint" />
-                            </div>
-                          )}
-                        </div>
-                        <span
-                          aria-label={isStoreOpen(operatingHours) ? 'Open now' : 'Closed now'}
-                          title={isStoreOpen(operatingHours) ? 'Open now' : 'Closed now'}
-                          className={`absolute -bottom-0.5 -right-0.5 z-10 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${
-                            isStoreOpen(operatingHours) ? 'bg-[#22c55e]' : 'bg-[#ef4444]'
-                          }`}
-                        />
-                      </div>
+                      <StoreLogoAvatar
+                        src={logoSrc}
+                        name={storeName}
+                        isOpen={isStoreOpen(operatingHours)}
+                        className="w-14 h-14 rounded-full border border-line bg-sunken"
+                        textClassName="text-base font-bold text-taupe"
+                      />
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {distKm != null ? (

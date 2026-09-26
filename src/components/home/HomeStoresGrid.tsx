@@ -63,11 +63,15 @@ export default function HomeStoresGrid({
               >
                 <div className="h-28 bg-sunken relative">
                   {store.banner_path ? (
-                    <Image
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
                       src={getMediaUrl(store.banner_path)}
                       alt={store.name}
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/images/hero_banner.jpg';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

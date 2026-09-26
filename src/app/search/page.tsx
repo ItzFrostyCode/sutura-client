@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { X, SlidersHorizontal, MapPin, ChevronDown, RotateCcw, Search, Loader2 } from 'lucide-react';
+import { X, SlidersHorizontal, MapPin, RotateCcw, Search, Loader2 } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 import SearchStoresTab from '@/components/search/SearchStoresTab';
 import SearchServicesTab from '@/components/search/SearchServicesTab';
@@ -34,14 +34,15 @@ function SearchPageContent() {
         {/* Sticky Controls Bar: Location + Search + Tabs (Stores, Services, Catalog) */}
         <div className="w-full bg-canvas/95 backdrop-blur-md border-b border-line shadow-xs">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-2.5 pb-0">
-            {/* Location row — Exact address on top, District on bottom */}
-            <div className="flex items-center gap-2 mb-1.5">
+            {/* Location row — Exact address on top, District on bottom + Box [Change] */}
+            <div className="flex items-center justify-between gap-2 mb-2 min-h-[38px]">
               <button
                 type="button"
                 onClick={() => s.router.push(`/location${s.effectiveQ ? `?q=${encodeURIComponent(s.effectiveQ)}` : ''}`)}
-                className="flex-1 min-w-0 flex items-center gap-1.5 text-left cursor-pointer group"
+                className="flex-1 min-w-0 flex items-center gap-1.5 text-left cursor-pointer group py-1"
+                aria-label="Current location, tap to change"
               >
-                <MapPin size={12} className="text-taupe shrink-0" />
+                <MapPin size={13} className="text-taupe shrink-0" />
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="text-xs font-semibold text-ink truncate group-hover:text-taupe transition-colors">
                     {s.savedLocation?.address || s.savedLocation?.district || s.district || 'Davao City'}
@@ -52,19 +53,37 @@ function SearchPageContent() {
                     </span>
                   )}
                 </div>
-                <ChevronDown size={13} className="text-ink-faint shrink-0 group-hover:translate-y-0.5 transition-transform" />
               </button>
-              {s.oldLocation && (
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {s.oldLocation && (
+                  <button
+                    type="button"
+                    onClick={s.handleToggleOldLocation}
+                    title={`Switch back to old place: ${s.oldLocation.address}`}
+                    aria-label="Switch back to old location"
+                    className="p-1.5 text-ink-muted hover:text-ink shrink-0 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xs hover:bg-sunken transition-colors"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
+
+                {/* Box [Change] button — sleek visual box (+2px up/down), 44px thumb touch target */}
                 <button
                   type="button"
-                  onClick={s.handleToggleOldLocation}
-                  title={`Switch back to old place: ${s.oldLocation.address}`}
-                  aria-label="Switch back to old location"
-                  className="text-ink-muted hover:text-ink shrink-0 cursor-pointer"
+                  onClick={() => s.router.push(`/location${s.effectiveQ ? `?q=${encodeURIComponent(s.effectiveQ)}` : ''}`)}
+                  aria-label="Change location"
+                  className="relative inline-flex items-center justify-center shrink-0 cursor-pointer touch-manipulation group/change focus:outline-hidden"
                 >
-                  <RotateCcw size={14} />
+                  {/* Invisible thumb-friendly hit area: guarantees 44px touch target physics */}
+                  <span className="absolute -inset-y-2 -inset-x-1.5" aria-hidden="true" />
+
+                  {/* Visual Box: +2px up/down padding, smaller than 44px filter button, crisp borders */}
+                  <span className="relative z-10 px-2.5 py-[5px] border border-line bg-surface group-hover/change:bg-sunken group-hover/change:border-ink/50 group-active/change:scale-95 text-[11px] sm:text-xs font-semibold tracking-wide text-ink transition-all flex items-center gap-1 shadow-2xs">
+                    Change
+                  </span>
                 </button>
-              )}
+              </div>
             </div>
 
           {/* Search + Filter row */}

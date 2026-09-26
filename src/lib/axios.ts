@@ -24,8 +24,8 @@ api.interceptors.response.use(
     const status = error.response?.status ?? error.code ?? 'NETWORK_ERROR';
     console.error(`[AxiosError] ${status} on ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
     if (error.response?.status === 401) {
-      // Don't trigger auto-logout redirect if the user is actively trying to log in
-      if (globalThis.window !== undefined && globalThis.window.location.pathname !== '/login' && !error.config?.url?.includes('/auth/login')) {
+      if (globalThis.window !== undefined) {
+        // Clear invalid auth credentials from storage
         sessionStorage.removeItem('sutura_token');
         sessionStorage.removeItem('sutura_user');
         sessionStorage.removeItem('sutura_store');
@@ -34,7 +34,18 @@ api.interceptors.response.use(
         localStorage.removeItem('sutura_user');
         localStorage.removeItem('sutura_store');
         localStorage.removeItem('sutura_staff_profile');
-        globalThis.location.href = '/login';
+
+        const pathname = globalThis.window.location.pathname;
+        const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+        
+        // Only redirect to /login if user is currently inside a protected workspace (e.g. dashboard).
+        // Public browsing surfaces (landing page /, /search, /stores, /store/*, /map) must remain accessible to guests!
+        const isProtectedRoute = pathname.startsWith('/dashboard') ||
+          (pathname.startsWith('/account/') && pathname !== '/account');
+
+        if (isProtectedRoute && pathname !== '/login' && !isAuthEndpoint) {
+          globalThis.location.href = `/login?redirect=${encodeURIComponent(pathname)}`;
+        }
       }
     }
     return Promise.reject(error);

@@ -84,11 +84,15 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
           <div className="relative flex-1 h-[280px] sm:h-[340px] bg-sunken border border-line overflow-hidden group">
             <Link href={gate(`/store/${store.slug}`)} className="absolute inset-0">
               {store.banner_path ? (
-                <Image
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
                   src={getMediaUrl(store.banner_path)}
                   alt={store.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/images/hero_banner.jpg';
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -152,7 +156,16 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   >
                     <div className="relative w-11 h-11 shrink-0 bg-sunken border border-line overflow-hidden">
                       {primaryImage ? (
-                        <Image src={getMediaUrl(primaryImage)} alt="" fill className="object-cover" />
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={getMediaUrl(primaryImage)}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/images/shop_storefront.jpg';
+                          }}
+                        />
                       ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
