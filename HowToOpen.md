@@ -57,3 +57,5 @@ If this is a fresh clone, complete the one-time setup in the `sutura-server` and
 - Shop Owner: `owner@sutura.com` / `password`
 - Staff: `staff@sutura.com` / `password`
 - Admin: `admin@sutura.com` / `password`
+- Customer: `jose.rizal@gmail.com` / `password` (or `customer@sutura.com` / `password`)
+

@@ -193,6 +193,7 @@ Go to → **http://localhost:3000** 🎉
 | Staff | `staff@sutura.com` | `password` |
 | Admin | `admin@sutura.com` | `password` |
 | Customer | `customer@sutura.com` | `password` |
+| Customer | `jose.rizal@gmail.com` | `password` |
 
 ---
 
