@@ -4,8 +4,6 @@ import { Branch, StoreSettings } from '../../types';
 
 interface BookingBranchSelectorProps {
   readonly storeSettings: StoreSettings | null;
-  readonly branchAutoFilled: boolean;
-  readonly autoFilledBranch: Branch | null;
   readonly branchesWithDistance: Branch[];
   readonly selectedBranchId: string;
   readonly setSelectedBranchId: (val: string) => void;
@@ -14,19 +12,24 @@ interface BookingBranchSelectorProps {
 
 export default function BookingBranchSelector({
   storeSettings,
-  branchAutoFilled,
-  autoFilledBranch,
   branchesWithDistance,
   selectedBranchId,
   setSelectedBranchId,
   userLocation,
 }: BookingBranchSelectorProps) {
-  if (storeSettings?.branches && storeSettings.branches.length > 1 && !(branchAutoFilled && autoFilledBranch)) {
+  // Always defaults to the nearest branch (branchesWithDistance is already
+  // distance-sorted, and useBookingWizard seeds selectedBranchId from it) —
+  // a compact dropdown to change it, never the old one-card-per-branch list,
+  // which turned into a long scroll on any store with more than a few
+  // branches. Multi-branch only; a single-branch store still gets the plain
+  // static display below.
+  if (storeSettings?.branches && storeSettings.branches.length > 1) {
+    const selected = branchesWithDistance.find((b) => String(b.id) === selectedBranchId) || branchesWithDistance[0] || null;
     return (
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="mobile-h4 text-ink block">
-            Select Branch <span className="text-danger">*</span>
+          <label htmlFor="booking-branch" className="mobile-h4 text-ink block">
+            Branch <span className="text-danger">*</span>
           </label>
           {userLocation && (
             <span className="mobile-caption text-ink-faint flex items-center gap-1 font-normal">
@@ -34,48 +37,24 @@ export default function BookingBranchSelector({
             </span>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-2.5">
-          {branchesWithDistance.map((b) => {
-            const isSelected = selectedBranchId === String(b.id);
-            return (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => setSelectedBranchId(String(b.id))}
-                className={`min-h-[56px] p-3.5 rounded-xl border text-left transition-all cursor-pointer relative flex items-start gap-3.5 ${
-                  isSelected
-                    ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20'
-                    : 'border-line bg-surface hover:border-taupe/40'
-                }`}
-              >
-                <div
-                  className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                    isSelected ? 'border-taupe bg-taupe' : 'border-line bg-surface'
-                  }`}
-                >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-sm font-semibold ${isSelected ? 'text-ink' : 'text-ink-body'}`}>
-                      {b.name}
-                    </p>
-                    {b.distanceKm !== null && b.distanceKm !== undefined && (
-                      <span className="text-xs text-taupe font-semibold shrink-0">
-                        {b.distanceKm < 1
-                          ? `${Math.round(b.distanceKm * 1000)}m away`
-                          : `${b.distanceKm.toFixed(1)} km away`}
-                      </span>
-                    )}
-                  </div>
-                  {b.address && (
-                    <p className="mobile-caption text-ink-faint mt-0.5 line-clamp-1 font-normal">{b.address}</p>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <select
+          id="booking-branch"
+          value={selectedBranchId}
+          onChange={(e) => setSelectedBranchId(e.target.value)}
+          className="w-full h-[52px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe"
+        >
+          {branchesWithDistance.map((b) => (
+            <option key={b.id} value={String(b.id)}>
+              {b.name}
+              {b.distanceKm !== null && b.distanceKm !== undefined
+                ? ` — ${b.distanceKm < 1 ? `${Math.round(b.distanceKm * 1000)}m` : `${b.distanceKm.toFixed(1)}km`} away`
+                : ''}
+            </option>
+          ))}
+        </select>
+        {selected?.address && (
+          <p className="mobile-caption text-ink-faint">{selected.address}</p>
+        )}
       </div>
     );
   }
@@ -84,7 +63,7 @@ export default function BookingBranchSelector({
     return (
       <div className="space-y-1.5">
         <label className="mobile-h4 text-ink block">Branch Location</label>
-        <div className="p-3.5 bg-surface border border-line rounded-xl flex items-center gap-3 min-h-[56px]">
+        <div className="p-3.5 bg-surface border border-line rounded-none flex items-center gap-3 min-h-[56px]">
           <MapPin size={18} className="text-taupe shrink-0" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink">{storeSettings.branches[0].name}</p>

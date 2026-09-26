@@ -58,7 +58,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 </p>
               )}
             </div>
-            <div className="text-xs font-semibold text-ink-faint bg-sunken border border-line px-2.5 py-1 rounded-full">
+            <div className="text-xs font-semibold text-ink-faint bg-sunken border border-line px-2.5 py-1 rounded-none">
               Step {b.displayStep} of {b.totalSteps}
             </div>
           </div>
@@ -92,6 +92,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             {b.step === 2 && (
               <BookingStep2Schedule
                 appointmentType={b.appointmentType}
+                refName={b.refName}
                 materialSource={b.materialSource}
                 setMaterialSource={b.setMaterialSource}
                 materialDescription={b.materialDescription}
@@ -106,8 +107,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 setOrderReference={b.setOrderReference}
                 remarks={b.remarks}
                 setRemarks={b.setRemarks}
-                branchAutoFilled={b.branchAutoFilled}
-                autoFilledBranch={b.autoFilledBranch}
                 branchesWithDistance={b.branchesWithDistance}
                 selectedBranchId={b.selectedBranchId}
                 setSelectedBranchId={b.setSelectedBranchId}

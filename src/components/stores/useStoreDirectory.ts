@@ -20,7 +20,6 @@ export function useStoreDirectory() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
-  const [filterOpen, setFilterOpen] = useState(false);
 
   function handleNearMe() {
     if (userLocation) {
@@ -103,7 +102,5 @@ export function useStoreDirectory() {
     locationError,
     setLocationError,
     handleNearMe,
-    filterOpen,
-    setFilterOpen,
   };
 }

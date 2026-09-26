@@ -38,7 +38,7 @@ export default function BookingMaterialSelector({
               key={opt.value}
               type="button"
               onClick={() => setMaterialSource(opt.value)}
-              className={`min-h-[52px] p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+              className={`min-h-[52px] p-3.5 rounded-none border text-left transition-all cursor-pointer flex items-center gap-3 ${
                 isSelected ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20' : 'border-line bg-surface hover:border-taupe/40'
               }`}
             >
@@ -67,7 +67,7 @@ export default function BookingMaterialSelector({
             placeholder="e.g. Cotton fabric"
             value={materialDescription}
             onChange={(e) => setMaterialDescription(e.target.value)}
-            className="w-full h-[48px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
+            className="w-full h-[48px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
           />
         </div>
       )}

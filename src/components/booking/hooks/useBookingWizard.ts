@@ -199,11 +199,15 @@ export function useBookingWizard(storeId: string) {
   // detail page whenever item.service exists) already answers "what
   // service is this" — trust that context and never re-ask, even if this
   // particular service happens to be filtered out of the general public
-  // services list (e.g. deactivated after the catalog page loaded). The
-  // picker only reappears when the entry point genuinely carried no service
-  // context at all (serviceIdParam empty), which also covers every non-
-  // catalog entry point exactly as before.
-  const hasServiceContext = !!serviceIdParam;
+  // services list (e.g. deactivated after the catalog page loaded). A design
+  // reference (refName, set for every catalog-item booking regardless of
+  // whether that item has a linked service_id) counts the same way — the
+  // catalog design itself already fully specifies what's being made, so a
+  // "Service (Optional)" dropdown underneath it is redundant, not optional.
+  // The picker only reappears when the entry point genuinely carried neither
+  // (a plain "Book Appointment" from the store profile, not tied to any
+  // design or service).
+  const hasServiceContext = !!serviceIdParam || !!refName;
   const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
   const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
 

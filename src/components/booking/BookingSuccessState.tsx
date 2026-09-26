@@ -41,7 +41,7 @@ export default function BookingSuccessState({
     <div className="min-h-dvh flex flex-col bg-canvas text-ink">
       <BookingHeader onBack={() => router.push(`/store/${storeId}?tab=catalog`)} />
       <div className="flex-1 flex items-center justify-center p-4 py-8">
-        <div className="max-w-md w-full bg-surface p-6 sm:p-8 rounded-2xl border border-line">
+        <div className="max-w-md w-full bg-surface p-6 sm:p-8 rounded-none border border-line">
           <div className="text-center">
             <div className="w-16 h-16 bg-sage/20 text-sage rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 size={32} />
@@ -95,7 +95,7 @@ export default function BookingSuccessState({
           )}
 
           {materialSource && (
-            <div className="bg-sunken border border-line rounded-xl p-4 mb-6">
+            <div className="bg-sunken border border-line rounded-none p-4 mb-6">
               <p className="text-xs font-bold uppercase tracking-wider text-ink-faint mb-2">What to Bring</p>
               {materialSource === 'own' ? (
                 <p className="text-sm text-ink flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function BookingSuccessState({
           <button
             type="button"
             onClick={() => router.push(`/store/${storeId}?tab=catalog`)}
-            className="w-full bg-sunken hover:bg-line text-ink font-medium py-3 rounded-lg transition-colors cursor-pointer text-sm"
+            className="w-full bg-sunken hover:bg-line text-ink font-medium py-3 rounded-none transition-colors cursor-pointer text-sm"
           >
             Back to Catalog
           </button>

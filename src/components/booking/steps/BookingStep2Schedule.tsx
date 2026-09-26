@@ -18,10 +18,12 @@ import BookingPaymentSection from './review/BookingPaymentSection';
 interface UserInfo {
   name?: string | null;
   email?: string | null;
+  phone?: string | null;
 }
 
 interface BookingStep2ScheduleProps {
   readonly appointmentType: string;
+  readonly refName: string | null;
   readonly materialSource: 'own' | 'shop' | '';
   readonly setMaterialSource: (val: 'own' | 'shop' | '') => void;
   readonly materialDescription: string;
@@ -36,8 +38,6 @@ interface BookingStep2ScheduleProps {
   readonly setOrderReference: (val: string) => void;
   readonly remarks: string;
   readonly setRemarks: (val: string) => void;
-  readonly branchAutoFilled: boolean;
-  readonly autoFilledBranch: Branch | null;
   readonly branchesWithDistance: Branch[];
   readonly selectedBranchId: string;
   readonly setSelectedBranchId: (val: string) => void;
@@ -66,6 +66,7 @@ interface BookingStep2ScheduleProps {
 
 export default function BookingStep2Schedule({
   appointmentType,
+  refName,
   materialSource,
   setMaterialSource,
   materialDescription,
@@ -80,8 +81,6 @@ export default function BookingStep2Schedule({
   setOrderReference,
   remarks,
   setRemarks,
-  branchAutoFilled,
-  autoFilledBranch,
   branchesWithDistance,
   selectedBranchId,
   setSelectedBranchId,
@@ -123,7 +122,11 @@ export default function BookingStep2Schedule({
         setOrderReference={setOrderReference}
       />
 
-      {(appointmentType === 'consultation' || appointmentType === 'measurement') && (
+      {/* A catalog design being custom-made always needs this answered
+          (regardless of appointmentType — catalog bookings default to
+          ref_type=fitting, which this condition used to miss entirely),
+          same as the general consultation/measurement flows. */}
+      {(appointmentType === 'consultation' || appointmentType === 'measurement' || !!refName) && (
         <BookingMaterialSelector
           materialSource={materialSource}
           setMaterialSource={setMaterialSource}
@@ -134,8 +137,6 @@ export default function BookingStep2Schedule({
 
       <BookingBranchSelector
         storeSettings={storeSettings}
-        branchAutoFilled={branchAutoFilled}
-        autoFilledBranch={autoFilledBranch}
         branchesWithDistance={branchesWithDistance}
         selectedBranchId={selectedBranchId}
         setSelectedBranchId={setSelectedBranchId}
@@ -147,7 +148,7 @@ export default function BookingStep2Schedule({
         <label className="mobile-h4 text-ink block">
           Select Date & Time <span className="text-danger">*</span>
         </label>
-        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div className="bg-surface border border-line rounded-none p-4 sm:p-5 shadow-xs">
           <InteractiveCalendar
             selectedDate={date}
             selectedTime={time}
@@ -164,7 +165,7 @@ export default function BookingStep2Schedule({
 
       {specialHoursForDate && (
         specialHoursForDate.is_closed ? (
-          <div className="bg-danger/10 border border-danger/20 rounded-xl p-4 flex gap-3 text-xs text-danger animate-in slide-in-from-top-2">
+          <div className="bg-danger/10 border border-danger/20 rounded-none p-4 flex gap-3 text-xs text-danger animate-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-sm">Temporarily Closed ({specialHoursForDate.title})</p>
@@ -172,7 +173,7 @@ export default function BookingStep2Schedule({
             </div>
           </div>
         ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-xs text-ink-body animate-in slide-in-from-top-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-none p-4 flex gap-3 text-xs text-ink-body animate-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
             <div>
               <p className="font-semibold text-sm text-amber-900">Special Holiday Hours ({specialHoursForDate.title})</p>
@@ -190,22 +191,29 @@ export default function BookingStep2Schedule({
       <div className="pt-4 border-t border-line space-y-4">
         <h3 className="mobile-h3 font-semibold text-ink">Relevant Details</h3>
 
-        <div className="space-y-1.5">
-          <label htmlFor="customer-quick-phone" className="mobile-caption font-semibold text-ink-body flex items-center gap-1">
-            <Phone size={14} className="text-taupe" /> Contact Number
-          </label>
-          <input
-            id="customer-quick-phone"
-            type="tel"
-            value={customer.phone}
-            onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
-            placeholder="e.g. 0912 345 6789"
-            className="w-full form-input-mobile bg-canvas border border-line rounded-lg text-base text-ink font-normal focus:outline-none focus:border-taupe"
-          />
-          <p className="mobile-caption text-ink-faint font-normal">
-            {user?.name ? `Booking as ${user.name} (${user.email})` : 'For appointment updates and SMS notifications.'}
-          </p>
-        </div>
+        {/* Only asked here when the account itself never collected it at
+            signup — an existing contact number already covers appointment
+            updates/SMS, so re-asking a returning customer for data the
+            account already has is exactly the redundant step this section
+            used to be. */}
+        {!user?.phone && (
+          <div className="space-y-1.5">
+            <label htmlFor="customer-quick-phone" className="mobile-caption font-semibold text-ink-body flex items-center gap-1">
+              <Phone size={14} className="text-taupe" /> Contact Number
+            </label>
+            <input
+              id="customer-quick-phone"
+              type="tel"
+              value={customer.phone}
+              onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+              placeholder="e.g. 0912 345 6789"
+              className="w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe"
+            />
+            <p className="mobile-caption text-ink-faint font-normal">
+              {user?.name ? `Booking as ${user.name} (${user.email})` : 'For appointment updates and SMS notifications.'}
+            </p>
+          </div>
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
@@ -223,7 +231,7 @@ export default function BookingStep2Schedule({
             value={remarks}
             onChange={(e) => setRemarks(e.target.value.slice(0, 120))}
             placeholder="Specify the details..."
-            className="w-full bg-canvas border border-line rounded-lg px-3.5 py-2.5 text-ink text-base font-normal focus:outline-none focus:border-taupe resize-none leading-relaxed"
+            className="w-full bg-canvas border border-line rounded-none px-3.5 py-2.5 text-ink text-base font-normal focus:outline-none focus:border-taupe resize-none leading-relaxed"
           />
         </div>
 
@@ -240,7 +248,7 @@ export default function BookingStep2Schedule({
                   required
                   value={answers[question] || ''}
                   onChange={(e) => setAnswers({ ...answers, [question]: e.target.value })}
-                  className="w-full form-input-mobile bg-canvas border border-line rounded-lg text-base text-ink font-normal focus:outline-none focus:border-taupe"
+                  className="w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe"
                 />
               </div>
             ))}

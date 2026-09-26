@@ -21,7 +21,7 @@ export default function BookingScheduleSummary({
   onEditSchedule,
 }: Readonly<BookingScheduleSummaryProps>) {
   return (
-    <div className="p-4 bg-surface border border-line rounded-2xl space-y-3">
+    <div className="p-4 bg-surface border border-line rounded-none space-y-3">
       <div className="flex items-center justify-between">
         <span className="mobile-overline text-taupe flex items-center gap-1.5">
           <Calendar size={14} className="text-taupe" /> Appointment Schedule

@@ -26,9 +26,9 @@ export default function BookingReferenceCard({
     <>
       {/* Compact Design Reference Preview */}
       {refName && (
-        <div className="mb-5 bg-surface border border-line rounded-xl shadow-xs p-3 flex items-center gap-3">
+        <div className="mb-5 bg-surface border border-line rounded-none shadow-xs p-3 flex items-center gap-3">
           {refImage && (
-            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-line shrink-0 bg-sunken">
+            <div className="relative w-12 h-12 rounded-none overflow-hidden border border-line shrink-0 bg-sunken">
               <Image src={getMediaUrl(refImage)} alt={refName} fill className="object-cover object-top" />
             </div>
           )}
@@ -51,7 +51,7 @@ export default function BookingReferenceCard({
 
       {/* Compact Package Summary Preview */}
       {packageInfo && (
-        <div className="mb-5 bg-surface border border-taupe/30 rounded-xl p-3 shadow-xs">
+        <div className="mb-5 bg-surface border border-taupe/30 rounded-none p-3 shadow-xs">
           <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">Package Inquiry</span>
           <div className="flex items-center justify-between mt-0.5">
             <h3 className="font-semibold text-xs text-ink">{packageInfo.name}</h3>

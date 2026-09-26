@@ -29,13 +29,13 @@ export default function BookingReferenceSummary({
 }: Readonly<BookingReferenceSummaryProps>) {
   if (refName) {
     return (
-      <div className="p-4 bg-surface border border-line rounded-2xl space-y-3">
+      <div className="p-4 bg-surface border border-line rounded-none space-y-3">
         <span className="mobile-overline text-taupe flex items-center gap-1.5">
           <Sparkles size={14} className="text-taupe" /> Design Reference
         </span>
         <div className="flex items-center gap-3">
           {refImage && (
-            <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-line shrink-0 bg-sunken">
+            <div className="relative w-14 h-14 rounded-none overflow-hidden border border-line shrink-0 bg-sunken">
               <Image src={getMediaUrl(refImage)} alt={refName} fill className="object-cover object-top" />
             </div>
           )}
@@ -62,7 +62,7 @@ export default function BookingReferenceSummary({
 
   if (selectedService) {
     return (
-      <div className="p-4 bg-surface border border-line rounded-2xl space-y-2">
+      <div className="p-4 bg-surface border border-line rounded-none space-y-2">
         <div className="flex items-center justify-between">
           <span className="mobile-overline text-taupe flex items-center gap-1.5">
             <Scissors size={14} className="text-taupe" /> Selected Service
@@ -90,7 +90,7 @@ export default function BookingReferenceSummary({
 
   if (packageInfo) {
     return (
-      <div className="p-4 bg-surface border border-taupe/30 rounded-2xl space-y-2">
+      <div className="p-4 bg-surface border border-taupe/30 rounded-none space-y-2">
         <span className="mobile-overline text-taupe flex items-center gap-1.5">
           <Package size={14} className="text-taupe" /> Package Inquiry
         </span>
@@ -111,7 +111,7 @@ export default function BookingReferenceSummary({
   }
 
   return (
-    <div className="p-4 bg-surface border border-line rounded-2xl space-y-2">
+    <div className="p-4 bg-surface border border-line rounded-none space-y-2">
       <span className="mobile-overline text-taupe flex items-center gap-1.5">
         <MessageSquare size={14} className="text-taupe" /> Appointment Purpose
       </span>

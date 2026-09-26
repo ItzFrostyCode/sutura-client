@@ -110,7 +110,7 @@ export default function BookingStep3Review({
       />
 
       {/* 3. Contact (read-only — already authenticated) */}
-      <div className="p-4 bg-surface border border-line rounded-2xl space-y-2">
+      <div className="p-4 bg-surface border border-line rounded-none space-y-2">
         <span className="mobile-overline text-taupe">Contact</span>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-taupe/15 border border-taupe/30 flex items-center justify-center text-taupe font-bold text-sm shrink-0">
@@ -119,7 +119,7 @@ export default function BookingStep3Review({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               <p className="mobile-h4 font-medium text-ink truncate">{user?.name || customer.name}</p>
-              <span className="text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+              <span className="text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-2 py-0.5 rounded-none shrink-0 flex items-center gap-1">
                 <CheckCircle2 size={12} /> Verified
               </span>
             </div>
@@ -138,7 +138,7 @@ export default function BookingStep3Review({
       {/* 4. Material, order reference, notes, and owner questions — only
           shown if answered */}
       {(materialSource || orderReference.trim() || remarks.trim() || answerEntries.length > 0) && (
-        <div className="p-4 bg-surface border border-line rounded-2xl space-y-3">
+        <div className="p-4 bg-surface border border-line rounded-none space-y-3">
           {orderReference.trim() && (
             <div className="flex items-start gap-2.5">
               <StickyNote size={15} className="text-taupe shrink-0 mt-0.5" />
@@ -174,7 +174,7 @@ export default function BookingStep3Review({
 
       {/* 5. What to Bring */}
       {materialSource === 'own' && (
-        <div className="bg-sunken border border-line rounded-xl p-4">
+        <div className="bg-sunken border border-line rounded-none p-4">
           <p className="text-xs font-bold uppercase tracking-wider text-ink-faint mb-2">What to Bring</p>
           <p className="text-sm text-ink flex items-center gap-2">
             <CheckCircle2 size={14} className="text-sage shrink-0" /> Your fabric/sample
@@ -184,7 +184,7 @@ export default function BookingStep3Review({
 
       {/* 6. Payment (read-only) */}
       {hasFittingFee && (
-        <div className="p-4 bg-surface border border-line rounded-2xl flex items-center gap-2.5">
+        <div className="p-4 bg-surface border border-line rounded-none flex items-center gap-2.5">
           <Wallet size={16} className="text-taupe shrink-0" />
           <p className="mobile-body-sm text-ink-body font-normal">
             Reservation fee via <span className="font-semibold text-ink capitalize">{paymentMethod}</span>

@@ -35,7 +35,7 @@ export default function BookingDesktopSummary({
 }: BookingDesktopSummaryProps) {
   return (
     <div className="hidden lg:block lg:w-[300px] lg:shrink-0">
-      <div className="sticky top-6 bg-surface border border-line rounded-2xl p-4 space-y-4">
+      <div className="sticky top-6 bg-surface border border-line rounded-none p-4 space-y-4">
         <p className="text-xs font-bold uppercase tracking-wider text-ink-faint">Appointment Summary</p>
 
         <div className="space-y-1">

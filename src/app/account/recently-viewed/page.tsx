@@ -97,7 +97,7 @@ export default function RecentlyViewedPage() {
                   ? `₱${Number(service.base_price).toLocaleString(undefined, { minimumFractionDigits: 0 })}`
                   : 'Custom Quote';
               const serviceHref = service.store
-                ? `/store/${service.store.slug}?tab=services&service_id=${service.id}`
+                ? `/store/${service.store.slug}/service/${service.id}`
                 : '/search?tab=services';
 
               return (

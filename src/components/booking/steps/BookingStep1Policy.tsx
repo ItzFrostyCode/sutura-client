@@ -44,7 +44,7 @@ export default function BookingStep1Policy({
       />
 
       {storeSettings?.booking_policy && (
-        <div className="border border-line rounded-xl overflow-hidden">
+        <div className="border border-line rounded-none overflow-hidden">
           <button
             type="button"
             onClick={() => setPolicyOpen((v) => !v)}

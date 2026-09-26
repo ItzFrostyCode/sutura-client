@@ -42,7 +42,7 @@ export default function BookingServicePicker({
             value={selectedServiceId}
             required={typesRequiringService.includes(appointmentType)}
             onChange={(e) => setSelectedServiceId(e.target.value)}
-            className="w-full h-[52px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe"
+            className="w-full h-[52px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe"
           >
             <option value="">
               {typesRequiringService.includes(appointmentType)
@@ -69,7 +69,7 @@ export default function BookingServicePicker({
             placeholder="e.g. Order #1002 or Blue Wedding Gown"
             value={orderReference}
             onChange={(e) => setOrderReference(e.target.value.slice(0, 120))}
-            className="w-full h-[52px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
+            className="w-full h-[52px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
           />
           <p className="mobile-caption text-ink-faint">
             {appointmentType === 'pickup'

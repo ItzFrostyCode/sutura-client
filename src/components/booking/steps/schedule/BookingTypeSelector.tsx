@@ -32,7 +32,7 @@ export default function BookingTypeSelector({
               type="button"
               key={t.value}
               onClick={() => onSelectType(t.value)}
-              className={`min-h-[56px] flex items-center gap-3.5 px-4 py-3 rounded-xl border text-left transition-all cursor-pointer ${
+              className={`min-h-[56px] flex items-center gap-3.5 px-4 py-3 rounded-none border text-left transition-all cursor-pointer ${
                 isSelected
                   ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20'
                   : 'border-line bg-surface hover:border-taupe/40'
