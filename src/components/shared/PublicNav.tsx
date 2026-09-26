@@ -61,10 +61,7 @@ export default function PublicNav({
         <div className="md:hidden flex-1 flex justify-center">
           <Link
             href="/"
-            onClick={() => {
-              closeMenu();
-              if (!getSavedLocation()) requestCurrentLocation();
-            }}
+            onClick={closeMenu}
             className="flex items-center justify-center group"
           >
             <span className="text-[20px] font-serif font-bold text-ink tracking-widest leading-none">
@@ -80,10 +77,7 @@ export default function PublicNav({
         <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 pointer-events-auto">
           <Link
             href="/"
-            onClick={() => {
-              closeMenu();
-              if (!getSavedLocation()) requestCurrentLocation();
-            }}
+            onClick={closeMenu}
             className="flex items-center justify-center group"
           >
             <span className="text-[20px] sm:text-[24px] font-serif font-bold text-ink tracking-widest leading-none group-hover:opacity-80 transition-opacity whitespace-nowrap">
