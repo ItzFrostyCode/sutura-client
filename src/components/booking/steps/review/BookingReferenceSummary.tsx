@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Sparkles, Scissors, Package, MessageSquare, Edit2 } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
+import { getServicePriceLabel } from '@/lib/servicePricing';
 import { Service, PackageInfo } from '../../types';
 
 interface BookingReferenceSummaryProps {
@@ -74,13 +75,11 @@ export default function BookingReferenceSummary({
             <Edit2 size={12} /> Change
           </button>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h3 className="mobile-h4 font-medium text-ink">{selectedService.name}</h3>
-          {selectedService.base_price && (
-            <span className="mobile-body-sm font-semibold text-taupe">
-              ₱{Number(selectedService.base_price).toLocaleString()}
-            </span>
-          )}
+          <span className="mobile-body-sm font-semibold text-taupe shrink-0 text-right">
+            {getServicePriceLabel(selectedService.base_price)}
+          </span>
         </div>
         {selectedService.description && (
           <p className="mobile-body-sm text-ink-muted line-clamp-2 font-normal">{selectedService.description}</p>

@@ -1,8 +1,12 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
+  ArrowLeft,
   MapPin,
   Star,
   Bookmark,
@@ -77,12 +81,27 @@ export default function StoreHeroHeader({
   onOpenMap,
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
+  const router = useRouter();
 
   return (
     <>
       {/* 📸 1. Cover Banner Image */}
       <div className="h-48 sm:h-64 md:h-72 w-full max-w-7xl mx-auto bg-surface px-0 sm:px-8">
         <div className="relative w-full h-full overflow-hidden">
+          {/* Back — returns to wherever the customer came from (search
+              results, map, a catalog item, etc.), preserving that page's own
+              state/query exactly since this is real browser-history back,
+              not a hardcoded destination. Overlaid on the banner so it's
+              reachable without scrolling on every breakpoint. */}
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Back"
+            className="absolute top-4 left-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-ink/70 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={18} />
+          </button>
+
           {(activeBranch?.guide_image_url || store.banner_path) ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img

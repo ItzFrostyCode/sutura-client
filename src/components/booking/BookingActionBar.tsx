@@ -30,7 +30,7 @@ export default function BookingActionBar({
             onClick={onNextStep}
             className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"
           >
-            <span>Agree & Continue</span>
+            <span>Continue</span>
             <ArrowRight size={18} />
           </button>
         )}

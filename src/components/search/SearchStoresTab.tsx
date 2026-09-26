@@ -7,6 +7,7 @@ import { Store, Star, ChevronRight, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
+import ModelFabricToggle from '@/components/discovery/ModelFabricToggle';
 import { RelatedStore, SearchActiveTab } from './types';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
@@ -80,25 +81,8 @@ export default function SearchStoresTab({
       </div>
 
       {/* Model/Fabric Toggle — right-aligned to match the Catalog Designs section */}
-      <div className="flex items-center justify-end mb-2 px-1">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`text-[11px] font-semibold ${!showFabric ? 'text-ink' : 'text-ink-faint'}`}>Model</span>
-          <button
-            type="button"
-            onClick={() => setShowFabric((v) => !v)}
-            aria-label="Toggle between model and fabric photos"
-            className={`relative w-8 h-[18px] rounded-full transition-colors cursor-pointer ${
-              showFabric ? 'bg-ink' : 'bg-line-strong'
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                showFabric ? 'translate-x-[14px]' : ''
-              }`}
-            />
-          </button>
-          <span className={`text-[11px] font-semibold ${showFabric ? 'text-ink' : 'text-ink-faint'}`}>Fabric</span>
-        </div>
+      <div className="flex items-center justify-end mb-2.5 px-1">
+        <ModelFabricToggle showFabric={showFabric} setShowFabric={setShowFabric} size="sm" />
       </div>
 
       {storesLoading ? (

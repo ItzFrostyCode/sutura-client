@@ -1,10 +1,9 @@
 'use client';
 
 import { FormEvent } from 'react';
+import { CheckCircle2, Mail, Phone, Shirt, StickyNote, Wallet } from 'lucide-react';
 import BookingReferenceSummary from './review/BookingReferenceSummary';
 import BookingScheduleSummary from './review/BookingScheduleSummary';
-import BookingContactSection from './review/BookingContactSection';
-import BookingPaymentSection from './review/BookingPaymentSection';
 import {
   StoreSettings,
   Branch,
@@ -33,25 +32,24 @@ interface BookingStep3ReviewProps {
   readonly selectedBranch: Branch | null;
   readonly formatDatePreview: (d: string) => string;
   readonly formatTimePreview: (t: string) => string;
+  readonly onEditPurpose: () => void;
   readonly onEditSchedule: () => void;
   readonly user: UserInfo | null;
   readonly customer: BookingCustomer;
-  readonly setCustomer: React.Dispatch<React.SetStateAction<BookingCustomer>>;
   readonly remarks: string;
-  readonly setRemarks: (val: string) => void;
-  readonly storeSettings: StoreSettings | null;
+  readonly orderReference: string;
   readonly answers: Record<string, string>;
-  readonly setAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  readonly storeSettings: StoreSettings | null;
+  readonly materialSource: 'own' | 'shop' | '';
+  readonly materialDescription: string;
   readonly paymentMethod: string;
-  readonly setPaymentMethod: (val: string) => void;
-  readonly paymentReference: string;
-  readonly setPaymentReference: (val: string) => void;
   readonly paymentReceiptUrl: string;
-  readonly uploadingReceipt: boolean;
-  readonly handleReceiptUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   readonly handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }
 
+// Review only — every field here was already collected in Steps 1-2. No new
+// inputs, nothing asked twice; each card just links back ("Change"/"Edit")
+// to the step that owns that data if something needs correcting.
 export default function BookingStep3Review({
   refName,
   refImage,
@@ -66,27 +64,28 @@ export default function BookingStep3Review({
   selectedBranch,
   formatDatePreview,
   formatTimePreview,
+  onEditPurpose,
   onEditSchedule,
   user,
   customer,
-  setCustomer,
   remarks,
-  setRemarks,
-  storeSettings,
+  orderReference,
   answers,
-  setAnswers,
+  storeSettings,
+  materialSource,
+  materialDescription,
   paymentMethod,
-  setPaymentMethod,
-  paymentReference,
-  setPaymentReference,
   paymentReceiptUrl,
-  uploadingReceipt,
-  handleReceiptUpload,
   handleSubmit,
 }: BookingStep3ReviewProps) {
+  const answerEntries = Object.entries(answers).filter(([, v]) => v);
+  const hasFittingFee = Number(storeSettings?.fitting_fee) > 0;
+
   return (
     <form id="booking-form" onSubmit={handleSubmit} className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-      {/* 1. Summary Card */}
+      <h2 className="mobile-h2 text-ink">Review</h2>
+
+      {/* 1. Design/Service Context */}
       <BookingReferenceSummary
         refName={refName}
         refImage={refImage}
@@ -96,7 +95,7 @@ export default function BookingStep3Review({
         selectedService={selectedService}
         packageInfo={packageInfo}
         appointmentType={appointmentType}
-        onEditSchedule={onEditSchedule}
+        onEditSchedule={onEditPurpose}
       />
 
       {/* 2. Schedule Card */}
@@ -110,70 +109,89 @@ export default function BookingStep3Review({
         onEditSchedule={onEditSchedule}
       />
 
-      {/* 3. Customer Contact Section */}
-      <BookingContactSection
-        user={user}
-        customer={customer}
-        setCustomer={setCustomer}
-      />
-
-      {/* 4. Notes Field */}
-      <div className="pt-3 border-t border-line">
-        <div className="flex items-center justify-between mb-1.5">
-          <label htmlFor="customer-notes" className="mobile-caption font-semibold text-ink-body block">
-            Notes
-          </label>
-          <span className={`mobile-caption ${remarks.length >= 120 ? 'text-danger font-semibold' : 'text-ink-faint'}`}>
-            {remarks.length} / 120
-          </span>
+      {/* 3. Contact (read-only — already authenticated) */}
+      <div className="p-4 bg-surface border border-line rounded-2xl space-y-2">
+        <span className="mobile-overline text-taupe">Contact</span>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-taupe/15 border border-taupe/30 flex items-center justify-center text-taupe font-bold text-sm shrink-0">
+            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="mobile-h4 font-medium text-ink truncate">{user?.name || customer.name}</p>
+              <span className="text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                <CheckCircle2 size={12} /> Verified
+              </span>
+            </div>
+            <p className="mobile-caption text-ink-muted truncate mt-0.5 flex items-center gap-1 font-normal">
+              <Mail size={12} className="text-ink-faint shrink-0" /> {user?.email || customer.email}
+            </p>
+            {customer.phone && (
+              <p className="mobile-caption text-ink-muted truncate mt-0.5 flex items-center gap-1 font-normal">
+                <Phone size={12} className="text-ink-faint shrink-0" /> {customer.phone}
+              </p>
+            )}
+          </div>
         </div>
-        <textarea
-          id="customer-notes"
-          rows={3}
-          maxLength={120}
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value.slice(0, 120))}
-          placeholder="Specify the details..."
-          className="w-full bg-canvas border border-line rounded-lg px-3.5 py-2.5 text-ink text-base font-normal focus:outline-none focus:border-taupe resize-none leading-relaxed"
-        />
-        <p className="mobile-caption text-ink-faint mt-1 font-normal">
-          Maglagay ng maikling paalala o detalye para sa iyong appointment visit.
-        </p>
       </div>
 
-      {/* 5. Additional Information */}
-      {storeSettings?.booking_questions && storeSettings.booking_questions.length > 0 && (
-        <div className="pt-3 space-y-3 border-t border-line">
-          <h3 className="mobile-h4 font-semibold text-ink">Additional Information</h3>
-          {storeSettings.booking_questions.map((question: string, idx: number) => (
-            <div key={question}>
-              <label htmlFor={`question-${idx}`} className="mobile-caption font-semibold text-ink-body mb-1 block">
-                {question}
-              </label>
-              <input
-                id={`question-${idx}`}
-                type="text"
-                required
-                value={answers[question] || ''}
-                onChange={(e) => setAnswers({ ...answers, [question]: e.target.value })}
-                className="w-full form-input-mobile bg-canvas border border-line rounded-lg text-base text-ink font-normal focus:outline-none focus:border-taupe"
-              />
+      {/* 4. Material, order reference, notes, and owner questions — only
+          shown if answered */}
+      {(materialSource || orderReference.trim() || remarks.trim() || answerEntries.length > 0) && (
+        <div className="p-4 bg-surface border border-line rounded-2xl space-y-3">
+          {orderReference.trim() && (
+            <div className="flex items-start gap-2.5">
+              <StickyNote size={15} className="text-taupe shrink-0 mt-0.5" />
+              <p className="mobile-body-sm text-ink-body font-normal">
+                Existing order: {orderReference.trim()}
+              </p>
+            </div>
+          )}
+          {materialSource && (
+            <div className="flex items-start gap-2.5">
+              <Shirt size={15} className="text-taupe shrink-0 mt-0.5" />
+              <p className="mobile-body-sm text-ink-body font-normal">
+                {materialSource === 'own'
+                  ? `I'll bring my own fabric/sample${materialDescription.trim() ? ` — ${materialDescription.trim()}` : ''}`
+                  : "I'll use the shop's material"}
+              </p>
+            </div>
+          )}
+          {remarks.trim() && (
+            <div className="flex items-start gap-2.5">
+              <StickyNote size={15} className="text-taupe shrink-0 mt-0.5" />
+              <p className="mobile-body-sm text-ink-body font-normal">{remarks.trim()}</p>
+            </div>
+          )}
+          {answerEntries.map(([q, a]) => (
+            <div key={q} className="text-sm">
+              <p className="text-ink-faint text-xs font-semibold">{q}</p>
+              <p className="text-ink-body">{a}</p>
             </div>
           ))}
         </div>
       )}
 
-      {/* 6. Fitting Reservation Fee */}
-      <BookingPaymentSection
-        storeSettings={storeSettings}
-        paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod}
-        paymentReference={paymentReference}
-        setPaymentReference={setPaymentReference}
-        paymentReceiptUrl={paymentReceiptUrl}
-        uploadingReceipt={uploadingReceipt}
-        handleReceiptUpload={handleReceiptUpload}
-      />
+      {/* 5. What to Bring */}
+      {materialSource === 'own' && (
+        <div className="bg-sunken border border-line rounded-xl p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-ink-faint mb-2">What to Bring</p>
+          <p className="text-sm text-ink flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-sage shrink-0" /> Your fabric/sample
+          </p>
+        </div>
+      )}
+
+      {/* 6. Payment (read-only) */}
+      {hasFittingFee && (
+        <div className="p-4 bg-surface border border-line rounded-2xl flex items-center gap-2.5">
+          <Wallet size={16} className="text-taupe shrink-0" />
+          <p className="mobile-body-sm text-ink-body font-normal">
+            Reservation fee via <span className="font-semibold text-ink capitalize">{paymentMethod}</span>
+            {paymentMethod !== 'cash' && (paymentReceiptUrl ? ' — receipt attached' : ' — no receipt attached yet')}
+          </p>
+        </div>
+      )}
     </form>
   );
 }

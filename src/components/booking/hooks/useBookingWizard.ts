@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
@@ -22,8 +22,22 @@ const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
 
 export function useBookingWizard(storeId: string) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, hydrated } = useAuthStore();
+
+  // Login/signup now happens BEFORE the wizard, not after — a guest tapping
+  // "Book Appointment" is bounced to /login with a `redirect` back to this
+  // exact URL (context params included) instead of filling out appointment
+  // details first. Waits for hydrate() (see AuthHydrator.tsx) so this
+  // doesn't fire on the SSR-safe "logged out" initial state and redirect a
+  // genuinely logged-in customer on every refresh.
+  useEffect(() => {
+    if (!hydrated || user) return;
+    const query = searchParams.toString();
+    const redirectTarget = `${pathname}${query ? `?${query}` : ''}`;
+    router.replace(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
+  }, [hydrated, user, pathname, searchParams, router]);
 
   // URL context parameters
   const refName = searchParams.get('ref');
@@ -59,7 +73,29 @@ export function useBookingWizard(storeId: string) {
   const [selectedServiceId, setSelectedServiceId] = useState(serviceIdParam ?? '');
   const [customer, setCustomer] = useState<BookingCustomer>({ name: '', email: '', phone: '' });
   const [remarks, setRemarks] = useState('');
+  // Separate from remarks (general "Notes") — both fields now render on the
+  // same step (2), so they need their own state or typing in one would show
+  // up in the other. Only used when needsOrderReference is true (fitting/
+  // pickup with no design reference).
+  const [orderReference, setOrderReference] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  // A customer arriving via a fitting/pickup deep link (e.g. staff sent them
+  // a link, or an order-tracking page linked here) already carries that
+  // context; everyone else starts without it and can opt in via the "I
+  // already have an order" toggle so Fitting/Pickup aren't presented as
+  // universal first-visit options (they only make sense against an existing
+  // order/garment — see BookingTypeSelector).
+  const [hasExistingOrder, setHasExistingOrder] = useState(
+    refTypeParam === 'fitting' || refTypeParam === 'pickup'
+  );
+
+  // Material/fabric responsibility — a structured choice, not a new backend
+  // field: encoded into the existing free-text `notes` column at submit time
+  // (handleSubmit), the same bracket-tag convention already used below for
+  // the design-reference/package-inquiry context.
+  const [materialSource, setMaterialSource] = useState<'own' | 'shop' | ''>('');
+  const [materialDescription, setMaterialDescription] = useState('');
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -136,18 +172,39 @@ export function useBookingWizard(storeId: string) {
   );
 
   const availableBookingTypes = useMemo(() => {
-    return refName
-      ? BOOKING_TYPES.filter((t) => t.value !== 'pickup' && t.value !== 'alteration')
-      : BOOKING_TYPES;
-  }, [refName, BOOKING_TYPES]);
+    // A design reference (a NEW catalog item the customer wants made) rules
+    // out both: Pickup/Alteration only make sense against something that
+    // already exists.
+    if (refName) {
+      return BOOKING_TYPES.filter((t) => t.value !== 'pickup' && t.value !== 'alteration');
+    }
+    // Otherwise, Fitting/Pickup stay hidden by default — they're
+    // meaningful only once a JobOrder/appointment already exists (a fitting
+    // is normally auto-created by the store when production reaches that
+    // stage; pickup is typically coordinated directly with the store) — not
+    // something a first-time visitor would ever pick. The "I already have an
+    // order" toggle (BookingTypeSelector) reveals them for the real case of
+    // a returning customer who needs to request one manually.
+    return hasExistingOrder
+      ? BOOKING_TYPES
+      : BOOKING_TYPES.filter((t) => t.value !== 'pickup' && t.value !== 'fitting');
+  }, [refName, hasExistingOrder, BOOKING_TYPES]);
 
   const durationMinutes = BOOKING_TYPES.find((t) => t.value === appointmentType)?.duration ?? 30;
 
-  const serviceAutoFilled = !!serviceIdParam && !!storeSettings?.services?.some((s) => s.id.toString() === serviceIdParam);
   const branchAutoFilled = !!branchSlugParam && !!storeSettings?.branches?.some((b) => b.slug === branchSlugParam);
   const autoFilledBranch = branchAutoFilled ? storeSettings?.branches?.find((b) => b.slug === branchSlugParam) || null : null;
 
-  const needsServicePicker = !serviceAutoFilled && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
+  // A Catalog Item's own service_id (attached to the URL by the catalog item
+  // detail page whenever item.service exists) already answers "what
+  // service is this" — trust that context and never re-ask, even if this
+  // particular service happens to be filtered out of the general public
+  // services list (e.g. deactivated after the catalog page loaded). The
+  // picker only reappears when the entry point genuinely carried no service
+  // context at all (serviceIdParam empty), which also covers every non-
+  // catalog entry point exactly as before.
+  const hasServiceContext = !!serviceIdParam;
+  const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
   const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
 
   const totalSteps = 3;
@@ -184,9 +241,12 @@ export function useBookingWizard(storeId: string) {
   }, [branchesWithDistance, selectedBranchId, branchSlugParam]);
 
   const selectedBranch = useMemo(() => {
-    if (!selectedBranchId || !storeSettings?.branches) return null;
-    return storeSettings.branches.find((b) => String(b.id) === selectedBranchId) || null;
-  }, [selectedBranchId, storeSettings?.branches]);
+    if (!selectedBranchId) return null;
+    // branchesWithDistance (not the raw storeSettings.branches list) so the
+    // review screen and confirmation can show "1.2 km away" alongside the
+    // branch, same distance data already computed for the picker.
+    return branchesWithDistance.find((b) => String(b.id) === selectedBranchId) || null;
+  }, [selectedBranchId, branchesWithDistance]);
 
   const selectedService = useMemo(() => {
     if (!storeSettings?.services) return null;
@@ -321,6 +381,16 @@ export function useBookingWizard(storeId: string) {
     if (packageInfo) {
       notesPayload += `[Package Inquiry: ${packageInfo.name} — includes ${packageInfo.services.map((s) => s.name).join(', ')}]\n`;
     }
+    if (materialSource === 'own') {
+      notesPayload += `[Material: Customer will bring own fabric/sample${
+        materialDescription.trim() ? ` — ${materialDescription.trim()}` : ''
+      }]\n`;
+    } else if (materialSource === 'shop') {
+      notesPayload += `[Material: Customer will use the shop's material]\n`;
+    }
+    if (orderReference.trim()) {
+      notesPayload += `[Existing Order: ${orderReference.trim()}]\n`;
+    }
     if (remarks.trim()) {
       notesPayload += `Notes: ${remarks.trim()}`;
     }
@@ -358,7 +428,10 @@ export function useBookingWizard(storeId: string) {
     prevStep,
     displayStep,
     totalSteps,
-    loading,
+    // Also true before hydrate() resolves and while a not-logged-in
+    // customer is mid-redirect to /login — keeps the wizard's own content
+    // from flashing in behind the redirect.
+    loading: loading || !hydrated || !user,
     success,
     submitting,
     storeSettings,
@@ -375,6 +448,8 @@ export function useBookingWizard(storeId: string) {
     availableBookingTypes,
     appointmentType,
     setAppointmentType,
+    hasExistingOrder,
+    setHasExistingOrder,
     needsServicePicker,
     typesRequiringService: TYPES_REQUIRING_SERVICE,
     selectedServiceId,
@@ -382,6 +457,12 @@ export function useBookingWizard(storeId: string) {
     needsOrderReference,
     remarks,
     setRemarks,
+    orderReference,
+    setOrderReference,
+    materialSource,
+    setMaterialSource,
+    materialDescription,
+    setMaterialDescription,
     branchAutoFilled,
     autoFilledBranch,
     branchesWithDistance,

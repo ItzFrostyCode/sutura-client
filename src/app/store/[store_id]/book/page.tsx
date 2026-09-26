@@ -6,6 +6,7 @@ import BookingHeader from '@/components/booking/BookingHeader';
 import BookingSuccessState from '@/components/booking/BookingSuccessState';
 import BookingReferenceCard from '@/components/booking/BookingReferenceCard';
 import BookingActionBar from '@/components/booking/BookingActionBar';
+import BookingDesktopSummary from '@/components/booking/BookingDesktopSummary';
 import BookingStep1Policy from '@/components/booking/steps/BookingStep1Policy';
 import BookingStep2Schedule from '@/components/booking/steps/BookingStep2Schedule';
 import BookingStep3Review from '@/components/booking/steps/BookingStep3Review';
@@ -24,15 +25,28 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
   }
 
   if (b.success) {
-    return <BookingSuccessState storeId={storeId} storeName={b.storeSettings?.name} />;
+    return (
+      <BookingSuccessState
+        storeId={storeId}
+        storeName={b.storeSettings?.name}
+        appointmentType={b.appointmentType}
+        selectedBranch={b.selectedBranch}
+        date={b.date}
+        time={b.time}
+        formatDatePreview={b.formatDatePreview}
+        formatTimePreview={b.formatTimePreview}
+        materialSource={b.materialSource}
+      />
+    );
   }
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas text-ink">
       <BookingHeader onBack={() => (b.step > 1 ? b.setStep(b.prevStep) : b.router.back())} />
 
-      <div className="flex-1 mobile-screen-margins py-4 pb-28">
-        <div className="w-full max-w-xl mx-auto">
+      <div className="flex-1 mobile-screen-margins py-4 pb-28 lg:pb-10">
+        <div className="w-full max-w-xl lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:items-start">
+        <div className="lg:flex-1 lg:max-w-xl">
           {/* Header Context & Step Progress */}
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -63,19 +77,33 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
 
           {/* Wizard Steps */}
           <div>
-            {b.step === 1 && <BookingStep1Policy storeSettings={b.storeSettings} />}
-
-            {b.step === 2 && (
-              <BookingStep2Schedule
+            {b.step === 1 && (
+              <BookingStep1Policy
+                storeSettings={b.storeSettings}
                 availableBookingTypes={b.availableBookingTypes}
                 appointmentType={b.appointmentType}
                 setAppointmentType={b.setAppointmentType}
+                showExistingOrderToggle={!b.refName}
+                hasExistingOrder={b.hasExistingOrder}
+                setHasExistingOrder={b.setHasExistingOrder}
+              />
+            )}
+
+            {b.step === 2 && (
+              <BookingStep2Schedule
+                appointmentType={b.appointmentType}
+                materialSource={b.materialSource}
+                setMaterialSource={b.setMaterialSource}
+                materialDescription={b.materialDescription}
+                setMaterialDescription={b.setMaterialDescription}
                 needsServicePicker={b.needsServicePicker}
                 typesRequiringService={b.typesRequiringService}
                 selectedServiceId={b.selectedServiceId}
                 setSelectedServiceId={b.setSelectedServiceId}
                 storeSettings={b.storeSettings}
                 needsOrderReference={b.needsOrderReference}
+                orderReference={b.orderReference}
+                setOrderReference={b.setOrderReference}
                 remarks={b.remarks}
                 setRemarks={b.setRemarks}
                 branchAutoFilled={b.branchAutoFilled}
@@ -92,6 +120,18 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 calendarAppointments={b.calendarAppointments}
                 durationMinutes={b.durationMinutes}
                 specialHoursForDate={b.specialHoursForDate}
+                user={b.user}
+                customer={b.customer}
+                setCustomer={b.setCustomer}
+                answers={b.answers}
+                setAnswers={b.setAnswers}
+                paymentMethod={b.paymentMethod}
+                setPaymentMethod={b.setPaymentMethod}
+                paymentReference={b.paymentReference}
+                setPaymentReference={b.setPaymentReference}
+                paymentReceiptUrl={b.paymentReceiptUrl}
+                uploadingReceipt={b.uploadingReceipt}
+                handleReceiptUpload={b.handleReceiptUpload}
               />
             )}
 
@@ -110,26 +150,39 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 selectedBranch={b.selectedBranch}
                 formatDatePreview={b.formatDatePreview}
                 formatTimePreview={b.formatTimePreview}
+                onEditPurpose={() => b.setStep(1)}
                 onEditSchedule={() => b.setStep(2)}
                 user={b.user}
                 customer={b.customer}
-                setCustomer={b.setCustomer}
                 remarks={b.remarks}
-                setRemarks={b.setRemarks}
-                storeSettings={b.storeSettings}
+                orderReference={b.orderReference}
                 answers={b.answers}
-                setAnswers={b.setAnswers}
+                storeSettings={b.storeSettings}
+                materialSource={b.materialSource}
+                materialDescription={b.materialDescription}
                 paymentMethod={b.paymentMethod}
-                setPaymentMethod={b.setPaymentMethod}
-                paymentReference={b.paymentReference}
-                setPaymentReference={b.setPaymentReference}
                 paymentReceiptUrl={b.paymentReceiptUrl}
-                uploadingReceipt={b.uploadingReceipt}
-                handleReceiptUpload={b.handleReceiptUpload}
                 handleSubmit={b.handleSubmit}
               />
             )}
           </div>
+        </div>
+
+        {b.step < 3 && (
+          <BookingDesktopSummary
+            refName={b.refName}
+            refPrice={b.refPrice}
+            packageInfo={b.packageInfo}
+            selectedService={b.selectedService}
+            appointmentType={b.appointmentType}
+            selectedBranch={b.selectedBranch}
+            date={b.date}
+            time={b.time}
+            formatDatePreview={b.formatDatePreview}
+            formatTimePreview={b.formatTimePreview}
+            materialSource={b.materialSource}
+          />
+        )}
         </div>
       </div>
 

@@ -12,6 +12,7 @@ import type { CatalogItemResult } from '@/types/publicCatalog';
 interface HomeFeaturedSpotlightProps {
   readonly stores: StoreResult[];
   readonly trendingItems: CatalogItemResult[];
+  readonly loading?: boolean;
 }
 
 // "Featured & Recommended" — big spotlight (left) + a rail of real
@@ -22,10 +23,43 @@ interface HomeFeaturedSpotlightProps {
 // specific store that way would read as favoritism nothing backs. The
 // rail is the real top_sales sort /search already offers, not a
 // fabricated ranking.
-export default function HomeFeaturedSpotlight({ stores, trendingItems }: HomeFeaturedSpotlightProps) {
+export default function HomeFeaturedSpotlight({ stores, trendingItems, loading = false }: HomeFeaturedSpotlightProps) {
   const gate = useGuestGatedHref();
   const [index, setIndex] = useState(0);
   const store = stores[index] ?? null;
+
+  if (loading) {
+    return (
+      <section aria-labelledby="featured-spotlight-title" className="max-w-7xl mx-auto mobile-screen-margins mt-8 sm:mt-10">
+        <p className="mobile-overline sm:tablet-overline text-taupe mb-3" id="featured-spotlight-title">
+          Featured &amp; Recommended
+        </p>
+        <div className="flex flex-col lg:flex-row gap-3 animate-pulse">
+          <div className="relative flex-1 h-[280px] sm:h-[340px] bg-sunken border border-line overflow-hidden">
+            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 space-y-2">
+              <div className="h-6 sm:h-7 w-2/3 sm:w-1/2 bg-line rounded" />
+              <div className="h-4 w-1/3 bg-line rounded" />
+            </div>
+          </div>
+          <div className="w-full lg:w-[300px] shrink-0 bg-surface border border-line p-3 flex flex-col">
+            <div className="h-3 w-24 bg-sunken rounded mb-3 mx-1" />
+            <div className="flex flex-col divide-y divide-line">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2.5 py-2 first:pt-0 last:pb-0">
+                  <div className="w-11 h-11 shrink-0 bg-sunken border border-line" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="h-3 w-4/5 bg-sunken rounded" />
+                    <div className="h-2.5 w-1/2 bg-sunken rounded" />
+                  </div>
+                  <div className="h-3 w-10 bg-sunken rounded shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (!store && trendingItems.length === 0) return null;
 

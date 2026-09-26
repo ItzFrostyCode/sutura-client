@@ -39,6 +39,7 @@ function RegisterPageContent() {
   // (from the account menu) registers as a customer, matching how a real
   // shopper vs. a store owner actually arrive at this form.
   const role = searchParams.get('as') === 'store_owner' ? 'store_owner' : 'customer';
+  const redirectParam = searchParams.get('redirect');
 
   // First/Last Name only — no Middle Initial field, per explicit direction.
   // Joined into the single `name` string the backend actually expects
@@ -71,7 +72,13 @@ function RegisterPageContent() {
         name, email, password, password_confirmation: passwordConfirmation, role
       });
       if (response.data.success) {
-        router.push('/login?registered=true');
+        // Registration never auto-authenticates, so this always lands on
+        // /login next regardless of role. A redirect carried in from a
+        // gated flow (e.g. booking an appointment) survives through to
+        // there so login can send them on to finish it, instead of the
+        // customer's normal post-signup landing page.
+        const loginTarget = `/login?registered=true${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ''}`;
+        router.push(role === 'customer' && !redirectParam ? '/' : loginTarget);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

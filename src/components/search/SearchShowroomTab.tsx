@@ -3,6 +3,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
+import ModelFabricToggle from '@/components/discovery/ModelFabricToggle';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { SearchActiveTab } from './types';
 
@@ -87,28 +88,11 @@ export default function SearchShowroomTab({
         </button>
       </div>
 
-      <div className="flex items-center justify-between mb-2 px-0.5">
-        <p className="text-[11px] text-ink-faint">{loading ? 'Searching…' : null}</p>
+      <div className="flex items-center justify-between mb-3 px-0.5">
+        <p className="text-xs text-ink-muted">{loading ? 'Searching designs…' : `${total} design${total === 1 ? '' : 's'} found`}</p>
 
         {/* Model/Fabric Toggle */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`text-[11px] font-semibold ${!showFabric ? 'text-ink' : 'text-ink-faint'}`}>Model</span>
-          <button
-            type="button"
-            onClick={() => setShowFabric((v) => !v)}
-            aria-label="Toggle between model and fabric photos"
-            className={`relative w-8 h-[18px] rounded-full transition-colors cursor-pointer ${
-              showFabric ? 'bg-ink' : 'bg-line-strong'
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                showFabric ? 'translate-x-[14px]' : ''
-              }`}
-            />
-          </button>
-          <span className={`text-[11px] font-semibold ${showFabric ? 'text-ink' : 'text-ink-faint'}`}>Fabric</span>
-        </div>
+        <ModelFabricToggle showFabric={showFabric} setShowFabric={setShowFabric} />
       </div>
 
       {/* Skeleton loading state — mirrors CatalogItemCard's exact structure

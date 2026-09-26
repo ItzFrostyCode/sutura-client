@@ -5,6 +5,7 @@ import { X, RotateCcw, TrendingUp, TrendingDown, Star, Clock, Check, Sparkles, C
 import { FILTER_TABS, FilterTabKey, DISTRICTS } from './types';
 import { SEARCH_DEPARTMENTS, getCategoryCollections } from '@/lib/navSearchCategories';
 import { PORTFOLIO_COLOR_OPTIONS } from '@/components/store-storefront/types';
+import ColorFamilyFilterSection from './ColorFamilyFilterSection';
 
 interface SearchFilterDrawerProps {
   readonly isOpen: boolean;
@@ -394,30 +395,11 @@ export default function SearchFilterDrawer({
                 </div>
               </div>
               {openSections.color && (
-                // Labeled chip (swatch + name) — same as the store profile's
-                // own color filter, not a bare unlabeled circle.
-                <div className="p-3 bg-white flex flex-wrap gap-1.5">
-                  {categoryColors.map((c) => {
-                    const isSelected = draftColor.toLowerCase() === c.label.toLowerCase();
-                    return (
-                      <button
-                        key={c.label}
-                        type="button"
-                        onClick={() => setDraftColor?.(isSelected ? '' : c.label)}
-                        className={`flex items-center gap-1.5 px-2 py-1 border text-[11px] font-medium transition-colors cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#2D2A26] text-white border-[#2D2A26]'
-                            : 'bg-white text-[#2D2A26] border-[#D1C7BD] hover:border-[#9A8073]'
-                        }`}
-                      >
-                        <span
-                          className="w-3 h-3 rounded-full border border-black/20 shrink-0"
-                          style={{ backgroundColor: c.hex }}
-                        />
-                        <span>{c.label}</span>
-                      </button>
-                    );
-                  })}
+                <div className="p-3 bg-white">
+                  <ColorFamilyFilterSection
+                    selectedColor={draftColor}
+                    onColorChange={(val) => setDraftColor?.(val)}
+                  />
                 </div>
               )}
             </div>

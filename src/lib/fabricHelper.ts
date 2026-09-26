@@ -72,3 +72,61 @@ export function resolveFabricImage(item: FabricResolveOptions): string {
   }
   return getFabricFallback(item);
 }
+
+export function getFabricLabel(item: FabricResolveOptions): string {
+  const fallback = resolveFabricImage(item);
+  if (fallback.includes('pina_cocoon')) return 'Piña Cocoon Weave';
+  if (fallback.includes('emerald_lace')) return 'Emerald Lace & Satin';
+  if (fallback.includes('crimson_satin')) return 'Crimson Duchess Satin';
+  if (fallback.includes('satin_silk')) return 'Duchess Satin & Silk';
+  if (fallback.includes('sky_blue_chiffon_tulle')) return 'Floral Chiffon & Tulle';
+  if (fallback.includes('bridal_chiffon')) return 'Bridal Chiffon & Tulle';
+  if (fallback.includes('wool_twill')) return 'Worsted Wool Twill';
+  if (fallback.includes('compression_spandex')) return 'Stretch Compression Spandex';
+  if (fallback.includes('drifit_mesh')) return 'Sublimation Drifit Mesh';
+  return item.material || 'Peach Twill Fabric';
+}
+
+const COLOR_HEX_MAP: Record<string, string> = {
+  'white': '#FFFFFF',
+  'ivory': '#FFFFF0',
+  'cream': '#FFFDD0',
+  'beige': '#D9CDB8',
+  'black': '#1A1A1A',
+  'sky blue': '#7DD3FC',
+  'light blue': '#93C5FD',
+  'blue': '#3B82F6',
+  'royal blue': '#1D4ED8',
+  'navy': '#1E3A8A',
+  'red': '#EF4444',
+  'crimson': '#DC2626',
+  'burgundy': '#800020',
+  'maroon': '#800000',
+  'pink': '#F472B6',
+  'blush': '#DE5D83',
+  'rose gold': '#B76E79',
+  'peach': '#FFDAB9',
+  'gold': '#EAB308',
+  'champagne': '#F7E7CE',
+  'silver': '#94A3B8',
+  'gray': '#6B7280',
+  'charcoal': '#374151',
+  'emerald': '#047857',
+  'green': '#22C55E',
+  'olive': '#556B2F',
+  'teal': '#0D9488',
+  'sage': '#9CAF88',
+  'purple': '#A855F7',
+  'lavender': '#E9D5FF',
+  'brown': '#78350F',
+  'bronze': '#CD7F32',
+};
+
+export function getColorHex(colorName?: string | null): string {
+  if (!colorName) return '#94A3B8';
+  const clean = colorName.toLowerCase().trim();
+  for (const [key, hex] of Object.entries(COLOR_HEX_MAP)) {
+    if (clean.includes(key)) return hex;
+  }
+  return '#94A3B8';
+}

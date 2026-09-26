@@ -1,10 +1,9 @@
-'use client';
-
 import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Shirt, Sparkles } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
-import { resolveFabricImage } from '@/lib/fabricHelper';
+import { resolveFabricImage, getFabricLabel } from '@/lib/fabricHelper';
 import { CatalogItem } from './types';
 
 interface CatalogHeroGalleryProps {
@@ -35,41 +34,58 @@ export default function CatalogHeroGallery({
 
   return (
     <>
-      {/* 1. Hero Image — <main>'s own px tiers now provide the left/right
-          inset directly (0px at 320-374px, 24px at 375-599px, see
-          page.tsx), so no margin override is needed here any more: the
-          image is just a normal child, same as every other section below
-          it, which is what keeps it genuinely aligned with them instead
-          of hand-matching two separate margin systems. Only the top
-          margin still needs its own cancel — <main>'s py-4 would
-          otherwise leave a gap between the sticky header and the image
-          on the true full-bleed tier. */}
       <div className="relative -mt-4 min-[600px]:mt-0">
         {selectedImage ? (
           <>
-            {/* aspect-square on mobile instead of the old aspect-3/4 —
-                the tall portrait crop filled the entire viewport height,
-                pushing Model/Price/Title/Sizing below the fold and
-                forcing a scroll before a customer saw anything else. A
-                shorter image lets all of that sit in the same first
-                screen, matching the reference layout. 600px+ switches to
-                a fixed, shorter height instead — at full 7-column desktop
-                width, aspect-3/4 was rendering ~990px tall, far more
-                dominant than the shorter info column next to it (or
-                Shopee's own product image, which this was meant to
-                match) — the mismatch is what created the big blank gap. */}
             <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full min-[600px]:border min-[600px]:border-line">
-              {/* object-cover through 767px so the fixed-height box is
-                  always fully filled (no bg-sunken letterbox gap around
-                  the picture); only true desktop (768px+, a wide-enough
-                  column that cropping is more noticeable) switches to
-                  object-contain to show the whole uncropped image. */}
               <Image
                 src={getMediaUrl(selectedImage)}
                 alt={item.name}
                 className="w-full h-full object-cover object-top min-[600px]:object-center md:object-contain transition-all duration-300"
                 fill
               />
+
+              {/* Floating Model / Fabric Pill Toggle on the image */}
+              {fabricImage && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center p-1 bg-black/65 backdrop-blur-md rounded-full border border-white/20 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (primaryModel) {
+                        setSelectedImage(primaryModel);
+                        setSelectedVariation('Model View');
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      !isFabricActive
+                        ? 'bg-white text-ink shadow-sm font-bold'
+                        : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    <Shirt size={12} />
+                    <span>Model</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (fabricImage) {
+                        setSelectedImage(fabricImage);
+                        setSelectedVariation('Fabric Swatch');
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      isFabricActive
+                        ? 'bg-white text-ink shadow-sm font-bold'
+                        : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    <Sparkles size={12} />
+                    <span>Fabric</span>
+                  </button>
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -86,72 +102,90 @@ export default function CatalogHeroGallery({
         )}
       </div>
 
-      {/* 2. Model & Fabric Swatch Switcher */}
+      {/* 2. Model & Fabric Swatch Switcher (Bottom Thumbnails) */}
       {(item.images.length > 0 || fabricImage) && (
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-ink">
-              {isFabricActive ? 'Fabric' : 'Model'}
+            <span className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
+              {isFabricActive ? (
+                <>
+                  <Sparkles size={13} className="text-taupe" />
+                  <span>Fabric Swatch</span>
+                </>
+              ) : (
+                <>
+                  <Shirt size={13} className="text-ink" />
+                  <span>Model Photos</span>
+                </>
+              )}
             </span>
-            {fabricImage && (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className={`text-[11px] font-semibold ${!isFabricActive ? 'text-ink' : 'text-ink-faint'}`}>
-                  Model
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isFabricActive) {
-                      if (primaryModel) {
-                        setSelectedImage(primaryModel);
-                        setSelectedVariation('Model View');
-                      }
-                    } else {
-                      if (fabricImage) {
-                        setSelectedImage(fabricImage);
-                        setSelectedVariation('Fabric Swatch');
-                      }
-                    }
-                  }}
-                  aria-label="Toggle between model and fabric photos"
-                  className={`relative w-8 h-[18px] rounded-full transition-colors ${isFabricActive ? 'bg-ink' : 'bg-line-strong'}`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                      isFabricActive ? 'translate-x-[14px]' : ''
-                    }`}
-                  />
-                </button>
-                <span className={`text-[11px] font-semibold ${isFabricActive ? 'text-ink' : 'text-ink-faint'}`}>
-                  Fabric
-                </span>
-              </div>
-            )}
+            <span className="text-[11px] font-semibold text-taupe">
+              {isFabricActive ? getFabricLabel(item) : (item.color ? `${item.color} · Model` : 'Model View')}
+            </span>
           </div>
 
           <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-            {(() => {
-              const currentThumbnailImage = isFabricActive ? (fabricImage || primaryModel) : (primaryModel || fabricImage);
+            {/* All Model Image Thumbnails */}
+            {item.images.map((img, idx) => {
+              const isSelected = selectedImage === img.image_url;
               return (
                 <button
+                  key={img.id || idx}
                   type="button"
-                  onClick={() => currentThumbnailImage && viewPhoto(currentThumbnailImage)}
-                  aria-label="View full photo"
-                  className="w-16 h-16 rounded-none overflow-hidden border-2 border-ink ring-2 ring-taupe/50 transition-all relative shrink-0 shadow-xs touch-manipulation"
-                  title={isFabricActive ? `${item.material || 'Fabric'} Swatch` : `${item.name} Model View`}
+                  onClick={() => {
+                    setSelectedImage(img.image_url);
+                    setSelectedVariation('Model View');
+                  }}
+                  className={`w-16 h-16 rounded-none overflow-hidden border-2 transition-all relative shrink-0 shadow-xs cursor-pointer ${
+                    isSelected && !isFabricActive
+                      ? 'border-ink ring-2 ring-taupe/50'
+                      : 'border-line hover:border-taupe opacity-75 hover:opacity-100'
+                  }`}
+                  title={`${item.name} Model View ${idx + 1}`}
                 >
                   <Image
-                    src={getMediaUrl(currentThumbnailImage)}
-                    alt={isFabricActive ? `${item.material || 'Fabric'} Swatch` : `${item.name} Model View`}
-                    className={`w-full h-full object-cover ${isFabricActive ? 'object-center' : 'object-top'}`}
+                    src={getMediaUrl(img.image_url)}
+                    alt={`${item.name} View ${idx + 1}`}
+                    className="w-full h-full object-cover object-top"
                     fill
                   />
+                  <span className="absolute bottom-0 inset-x-0 bg-ink/80 text-[8px] text-white text-center py-0.5 font-bold uppercase tracking-wider">
+                    Model
+                  </span>
                 </button>
               );
-            })()}
+            })}
+
+            {/* Fabric Swatch Thumbnail */}
+            {fabricImage && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedImage(fabricImage);
+                  setSelectedVariation('Fabric Swatch');
+                }}
+                className={`w-16 h-16 rounded-none overflow-hidden border-2 transition-all relative shrink-0 shadow-xs cursor-pointer ${
+                  isFabricActive
+                    ? 'border-ink ring-2 ring-taupe/50'
+                    : 'border-line hover:border-taupe opacity-75 hover:opacity-100'
+                }`}
+                title={`${getFabricLabel(item)} Swatch`}
+              >
+                <Image
+                  src={getMediaUrl(fabricImage)}
+                  alt={`${getFabricLabel(item)} Swatch`}
+                  className="w-full h-full object-cover object-center"
+                  fill
+                />
+                <span className="absolute bottom-0 inset-x-0 bg-ink/80 text-[8px] text-white text-center py-0.5 font-bold uppercase tracking-wider">
+                  Fabric
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}
     </>
   );
 }
+

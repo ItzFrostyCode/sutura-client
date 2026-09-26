@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { RotateCcw, Star, SlidersHorizontal, Check, Clock, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { SEARCH_DEPARTMENTS, getCategoryCollections } from '@/lib/navSearchCategories';
 import { PORTFOLIO_COLOR_OPTIONS } from '@/components/store-storefront/types';
+import ColorFamilyFilterSection from './ColorFamilyFilterSection';
 import { DISTRICTS } from './types';
 
 interface SearchWebFilterSidebarProps {
@@ -312,30 +313,11 @@ export default function SearchWebFilterSidebar({
           </div>
         </div>
         {openSections.color && (
-          // Labeled chip (swatch + name) — same as the store profile's own
-          // color filter, not a bare unlabeled circle.
-          <div className="p-3 bg-white flex flex-wrap gap-1.5">
-            {categoryColors.map((c) => {
-              const isSelected = color?.toLowerCase() === c.label.toLowerCase();
-              return (
-                <button
-                  key={c.label}
-                  type="button"
-                  onClick={() => setColor?.(isSelected ? '' : c.label)}
-                  className={`flex items-center gap-1.5 px-2 py-1 border text-[11px] font-medium transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#2D2A26] text-white border-[#2D2A26]'
-                      : 'bg-white text-[#2D2A26] border-[#D1C7BD] hover:border-[#9A8073]'
-                  }`}
-                >
-                  <span
-                    className="w-3 h-3 rounded-full border border-black/20 shrink-0"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span>{c.label}</span>
-                </button>
-              );
-            })}
+          <div className="p-3 bg-white">
+            <ColorFamilyFilterSection
+              selectedColor={color ?? ''}
+              onColorChange={(val) => setColor?.(val)}
+            />
           </div>
         )}
       </div>

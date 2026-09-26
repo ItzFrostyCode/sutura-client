@@ -30,7 +30,7 @@ Define, precisely and sequentially, how data moves when a Customer acts: what ge
 | Action                                                                      | Requires login?                                                |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Browse/search shops, view shop profile, catalog, services, pricing, reviews | No                                                             |
-| Book an appointment                                                         | No — a guest can book; see Section 16                         |
+| Book an appointment                                                         | **Backend: No** (`POST /catalog/{slug}/book` sits outside `auth:sanctum` — a guest submission is still technically accepted). **Current frontend: Yes** — `/store/[store_id]/book` gates on `useAuthStore().hydrated && !user` and immediately redirects to `/login` (or `/register`) before the customer can enter any appointment details; see `[CURRENT]` Section 7.0. The Section 16 shadow-account path remains true of the API, but is no longer reachable through the customer-facing UI as of this pass. |
 | View/cancel*my* appointments                                              | Yes                                                            |
 | Place a direct order (repair / bulk / made-to-order)                        | Yes (any authenticated role — see`AMBIGUITY 2`, Section 19) |
 | Track an order by tracking code                                             | No                                                             |
@@ -79,7 +79,7 @@ This is the one and only merge mechanism. It is intentionally scoped (a phone ma
 | Shop discovery / map / search | `/search`, `/map`, `/stores`                        | `GET /public/stores`                                                                                        | No   |
 | Shop profile                  | `/store/[store_id]`                                     | `GET /public/stores/{slug}` (+ services, packages, posts, reviews)                                          | No   |
 | Catalog / portfolio browsing  | `/store/[store_id]/catalog`                             | `GET /catalog/{slug}`, `GET /catalog/{slug}/{item}`                                                       | No   |
-| Appointment booking           | `/store/[store_id]/book`                                | `GET /catalog/{slug}/booking-settings`, `GET /catalog/{slug}/appointments`, `POST /catalog/{slug}/book` | No   |
+| Appointment booking           | `/store/[store_id]/book`                                | `GET /catalog/{slug}/booking-settings`, `GET /catalog/{slug}/appointments`, `POST /catalog/{slug}/book` | **Yes at the frontend** (API itself: No) — see Section 7.0 |
 | Repair/alteration request     | `/store/[store_id]/repair-request`                      | `GET /public/stores/{slug}/services`, `POST /stores/{slug}/repair-requests`                               | Yes  |
 | Bulk order                    | (catalog item action)                                     | `POST /stores/{slug}/bulk-orders`                                                                           | Yes  |
 | Made-to-order                 | (catalog item action)                                     | `POST /stores/{slug}/made-to-order`                                                                         | Yes  |
@@ -123,7 +123,38 @@ NEXT SYSTEM ACTION   Route to the chosen action's own workflow (Sections 7–8)
 WHAT CUSTOMER SEES   Storefront, itemized pricing, ratings, completed-work posts
 ```
 
+**[CURRENT] Back navigation** — the Shop Profile hero banner (`StoreHeroHeader.tsx`) now has a floating Back button (top-left, overlaid on the cover image, all breakpoints) calling `router.back()` — real browser-history back, so a customer arriving from `/search` (with their query still intact), `/map`, a Catalog Item, or anywhere else returns to that exact prior state rather than a hardcoded destination.
+
+**[CURRENT] Color-family filtering and Model/Fabric presentation** — `catalog_items.color` (real column) now has data populated for all seeded items (`CatalogItemsSeeder.php`), fixing what was previously a data-completeness gap (most items had no color value, so any color filter returned zero results — not a missing feature, a seeding gap). This now powers:
+
+- **Multi-select color filtering** grouped into named families (White & Neutrals, Black & Grays, Blues, Reds & Burgundies, Pinks & Peaches, Greens, Yellows & Golds, Purples, Browns & Earth Tones — `src/lib/colorFamilies.ts`), available on `/search`, `/search?tab=showroom`, and the Shop Profile's Catalog tab (`ColorFamilyFilterSection.tsx`, reused in both `PortfolioFilterSheet.tsx` and the search filter sidebars/drawers). Selections join into one comma-separated `color` query value; each selected color renders as its own removable chip (`Color: White ×`).
+- **Backend OR-matching on multiple colors**: `CatalogController::publicShowroom()` splits `?color=White,Ivory,Sky Blue` on commas and matches any of them via `LOWER(color) LIKE` (`orWhere` chain) — a real query change, not client-side-only filtering. The Shop Profile Catalog tab's own client-side filter (`StoreCatalogTab.tsx`, unpaginated fetch, same rationale as its existing filters) mirrors the same any-of-selected-colors logic.
+- **Model/Fabric viewing toggle** (`ModelFabricToggle.tsx`, a shared component now used from the Catalog Item detail gallery, Search Showroom, and Nearby Stores' catalog rail) switches between the garment photo and its fabric swatch photo.
+- **Color and fabric name display** on the Catalog Item detail page (`CatalogProductInfo.tsx`, via `getColorHex()`/`getFabricLabel()` in `fabricHelper.ts`) — a color swatch pill (e.g. a dot + "Ivory") and a fabric-name pill (e.g. "Fabric: Piña Cocoon Weave") next to price/title.
+- No new database table or column — `catalog_items.color`/`fabric_image_url`/`material` are pre-existing columns; this pass populated and surfaced them, it didn't add new schema.
+
 ## 7. Appointment Workflow
+
+### 7.0 [CURRENT] Entry, authentication gate, and the 3-step frontend
+
+`/store/[store_id]/book` (`useBookingWizard.ts`) is a **client-side-gated, authenticated-only** flow today, layered on top of a backend that itself still accepts anonymous submissions unchanged (7.1's table below is still the real API contract). The gate lives once, on the wizard page itself, not duplicated on every "Book Appointment" link (Shop Profile hero, Catalog Item detail, Service detail, Map, `/account/appointments` "book again", etc.) — whichever page linked here, the wizard checks auth on mount:
+
+```
+Any "Book Appointment" entry point (Shop Profile / Catalog Item / Service Detail / Map / ...)
+        ↓
+/store/[store_id]/book?<context params>
+        ↓
+useAuthStore().hydrated?  → no  → show loading spinner, wait
+        ↓ yes
+user present?  → no  → router.replace('/login?redirect=' + this exact URL incl. all context params)
+        ↓ yes
+Wizard Step 1 renders
+```
+
+- **Login** (`/login`) already supported an optional `?redirect=` param before this pass (used for other gated actions app-wide) — a customer-role login now sends them to `redirectPath || '/'`, so arriving via the booking gate lands them back on Step 1 with every original query param (`ref`, `ref_price`, `service_id`, `branch`, `ref_type`, `package_id`, …) intact. **Normal login (no `redirect` param) still goes to `/`, unchanged.**
+- **Register** (`/register`) does not auto-authenticate (unchanged — see Section 3/16). It now reads the same `redirect` param and, only when one is present, forwards to `/login?registered=true&redirect=<it>` instead of the plain customer default (`/`), so the customer still has to actually log in once to obtain a session, then lands back on Step 1. **Normal signup (no `redirect` param) still goes to `/`, unchanged** — this is the one behavior this pass deliberately did NOT touch for the non-booking case, matching the explicit instruction that only the appointment-triggered path changes.
+- Login's own "Create an Account" link forwards its current `redirect` value into `/register?redirect=...` so choosing to sign up instead of logging in doesn't drop the booking context.
+- **No backend change was made to support this** — `PublicBookingController::submit()` and its `auth:sanctum`-free route are exactly as documented in 7.1; the gate is a frontend routing decision only, and `handleSubmit` still sends `name`/`email` from the resolved `user` object as it always could.
 
 ### 7.1 Full lifecycle
 
@@ -234,6 +265,74 @@ Additional appointments created afterward, each independent, each optionally lin
 | Customer creates a follow-up appointment | Never                     | **Still never** — this stays Staff/Owner-only under the target too, matching the realistic "staff tells the customer a date verbally, then logs it" flow                                         |
 
 **Backend gap this depends on:** `JobOrderTrackingController::myOrderDetail()` does not currently return the job's linked appointments — verified against its actual response shape (Section 12 below). Target: add an `appointments` key to that response so the grouped view above is possible without a separate lookup.
+
+### 7.5 [CURRENT] The 3-step frontend wizard, step by step
+
+Steps were restructured this pass around one rule: **nothing already known gets asked twice.** Because Section 7.0's gate guarantees `user` is always present by the time Step 1 renders, and because a Catalog Item/Service entry point already carries its own context, the wizard only ever asks for what it genuinely doesn't yet know.
+
+```
+STEP 1 — Purpose only
+  BookingTypeSelector (consultation/measurement/fitting/alteration/pickup)
+  + a collapsible "Booking Policy" blurb (storeSettings.booking_policy), if the store set one
+
+STEP 2 — Branch, Schedule & Relevant Details
+  Service picker         — ONLY if hasServiceContext is false (below)
+  Material/Fabric choice — ONLY for consultation/measurement (Section 7.5.3)
+  Branch selector        — store-scoped only (storeSettings.branches; never cross-shop)
+  Date & Time            — InteractiveCalendar, real availability/conflict data
+  Relevant Details:
+    - Contact Number (editable, seeded from user.phone — name/email are NOT
+      re-asked, they're read from the authenticated account)
+    - Notes (free text, ≤120 chars)
+    - Owner's custom booking_questions (dynamic, store-configured)
+    - Payment method + reference/receipt — ONLY if store.fitting_fee > 0
+
+STEP 3 — Review (read-only, no new inputs)
+  Design/Service context card  → [Change] returns to Step 1
+  Schedule card (branch+date+time+purpose) → [Edit] returns to Step 2
+  Contact (read-only: name/email from account, phone from Step 2)
+  Material / existing-order-reference / notes / owner-question answers (read-only, shown only if filled)
+  "What to Bring" (Section 7.5.4) — shown only when material = customer-supplied
+  Payment method (read-only) — shown only if the store charges a fee
+  [Book Appointment] submit
+```
+
+`BookingDesktopSummary` mirrors the same fields as a persistent `lg:`-breakpoint sidebar during Steps 1-2 (hidden on Step 3, where the main column already is the summary) — same information architecture, not a second source of truth.
+
+#### 7.5.1 Visit purpose is no longer a universal 5-option list
+
+`availableBookingTypes` (in `useBookingWizard.ts`) filters `Appointment::TYPES` before Step 1 ever renders it:
+
+- If the customer arrived with a Catalog Item/design reference (`ref` param set): **Pickup and Alteration are hidden** — neither makes sense against a design that doesn't exist as a physical garment yet.
+- Otherwise (no design reference): **Pickup and Fitting are hidden by default** — both only make sense against an already-existing order/garment, not a first visit. A link/button ("Already have an order or appointment with this shop?") reveals them on demand (`hasExistingOrder` toggle). A deep link carrying `ref_type=fitting` or `ref_type=pickup` (e.g. a link sent by staff) sets this toggle on automatically.
+- This is presentation-layer filtering only — `Appointment::TYPES` itself is unchanged on the backend; no new type was added or removed.
+
+#### 7.5.2 Catalog Item / Service context suppresses the Service picker
+
+`needsServicePicker` is gated on `hasServiceContext = !!serviceIdParam`, **not** on whether that service happens to still resolve against the public services list. Concretely:
+
+- A Catalog Item's detail page (`useCatalogItemDetail.ts`) already appends `&service_id={item.service.id}` to its "Book Appointment" href whenever `item.service` (the `catalog_items.service_id` FK) is set — this was already true before this pass.
+- `useBookingWizard.ts` now trusts that param unconditionally: if it's present, the Service picker never renders, even if that exact service is later filtered out of `booking-settings`'s public list (e.g. deactivated) — the customer isn't asked to pick a different one just because of that edge case.
+- **The picker only reappears when the entry point genuinely carried no service_id at all** — a Catalog Item with no linked Service, a direct Shop-Profile-first booking, etc. This matches the explicit rule: only ask when there's genuinely no context, never re-ask when there is.
+- The selected Service/Catalog Item stays visible throughout (via `BookingReferenceCard` on Steps 1-2, `BookingReferenceSummary` on Step 3, and `BookingDesktopSummary` on desktop) — never re-collected.
+
+#### 7.5.3 Material/Fabric — a structured choice, not a new backend field
+
+`BookingMaterialSelector` (Step 2, consultation/measurement only) offers exactly two radio options — **"I'll bring my own fabric/sample"** (with an optional free-text description) or **"I'll use the shop's material"**. No fabric inventory, SKU, supplier, or technical classification exists or was added. The choice is encoded into the existing free-text `notes` column at submit time using the same bracket-tag convention already used for design-reference/package-inquiry context (e.g. `[Material: Customer will bring own fabric/sample — Cotton fabric]`) — **no new database column, no new API field.**
+
+#### 7.5.4 "What to Bring" and pending vs. accepted state
+
+- Immediately after submission, `BookingSuccessState` shows **"Appointment Request Sent — Waiting for [store] to confirm your slot"** (never "Confirmed" — the row is created `pending`, matching 7.1's `Appointment::STATUSES`) alongside the real purpose/branch(+distance)/date/time just submitted, plus a "What to Bring: ✓ Your fabric/sample" card when material = customer-supplied. This is rendered directly from in-memory wizard state (the customer's own submission), not re-fetched.
+- **Not yet implemented:** the `/account/appointments/[id]` detail page (the "Accepted" view once the store confirms) does not re-parse the `[Material: ...]` tag out of `notes` to re-surface "What to Bring" later — a customer would need to re-read the free-text notes on that page today. This is a genuine, current gap, not solved by this pass; flagged here rather than claimed done.
+
+#### 7.5.5 Service/Catalog pricing labels (frontend-only, no new pricing model)
+
+`src/lib/servicePricing.ts` (`getServicePriceLabel()`) is the one place price-label wording is decided, applied everywhere a bare `Service.base_price` is shown in the booking flow (BookingServicePicker's dropdown, BookingReferenceSummary, BookingDesktopSummary):
+
+- `base_price === null` (a real, existing-nullable column — `services.base_price` is `decimal(10,2) nullable`) → **"Price depends on requirements"**. This is a genuinely quote-based service in the current data model, not a fabricated label.
+- `base_price` set → **"Starting at ₱X"** — never "Total" or "Final Price". The Job Order remains the only place a real final transaction amount is computed (Section 8.1); this pass introduced no quotation engine.
+- A **specific Catalog Item's** own price (`CatalogItem.price`) is shown as a plain `₱X,XXX` figure, unchanged — it is a specific offering's specific price, not a "starting" figure, and the two are never shown as contradicting each other for the same context (Service context = "Starting at…", Catalog Item context = the exact price).
+- **Not implemented:** quantity-tiered pricing (e.g. "₱500/piece for 1-9, ₱450/piece for 10-24"). `Service.min_order_qty` exists (bulk-order minimum-quantity validation, Section 8) but there is no per-tier price table anywhere in the schema — this pass deliberately did not fabricate one. Bulk/quantity capture, where it exists at all, remains at the JobOrder self-service level (Section 8), not inside the Appointment form.
 
 ## 8. Direct Order Workflow
 
@@ -399,13 +498,13 @@ This is a presentation-layer mapping only — no backend status changes. Separat
 | `/search`, `/map`                | Shop Discovery            | search/filter terms                      | `GET /public/stores`                                             | Filtered list/map                    | Select shop                               |
 | `/store/[id]`                      | Shop Profile              | —                                       | `GET /public/stores/{slug}` (+services/packages/posts/reviews)   | Full profile                         | Catalog / Book / Order                    |
 | `/store/[id]/catalog`              | Browse items              | filter/sort                              | `GET /catalog/{slug}`, `.../{item}`                            | Item detail                          | Bulk / Made-to-Order                      |
-| `/store/[id]/book`                 | Book appointment          | type/date/time/contact/payment           | `GET booking-settings`, `POST .../book`                        | Appointment created (pending/online) | Track via account or wait to be contacted |
+| `/store/[id]/book`                 | Book appointment          | purpose/branch/date/time/details (Section 7.5) | `GET booking-settings`, `POST .../book`                        | Appointment created (pending/online) | Track via account or wait to be contacted. **Not logged in? Redirected to `/login` first (Section 7.0) — see the Identity row below.** |
 | `/store/[id]/repair-request`       | Repair order              | garment desc/damage notes/pricing/images | `POST .../repair-requests`                                       | JobOrder created                     | `/account/orders`                       |
 | `/account/orders`, `/[id]`       | Track orders              | —                                       | `GET /my-orders(+/{id})`                                         | Live status                          | Repeat until completed                    |
 | `/track`, `/track/[code]`        | Track orders (guest)      | code or order number                     | `GET /track/{code}`                                              | Live status, no login                | Repeat                                    |
 | `/account/appointments`, `/[id]` | Track/cancel appointments | — / cancel                              | `GET /my-appointments(+/{id})`, `DELETE /my-appointments/{id}` | Status / cancellation                | Rebook if needed                          |
 | `/account/measurements`            | View measurements         | —                                       | `GET /my-measurements`                                           | Versioned read-only list             | Informational only                        |
-| `/register`, `/login`            | Identity                  | credentials                              | `POST /auth/register` \| `/auth/login`                         | Token + unlocked history             | `/account/*`                            |
+| `/register`, `/login`            | Identity                  | credentials                              | `POST /auth/register` \| `/auth/login`                         | Token + unlocked history             | **Normal (no `?redirect=`): `/` (landing page), for both login and signup — not `/account/*`.** With a `?redirect=` param (set automatically by the booking gate, Section 7.0): that URL instead. Register itself never auto-authenticates either way — it always continues to `/login` next (`?registered=true`, plus `&redirect=...` when one was carried in). |
 | `/account/settings/*`              | Manage profile            | personal info/password/avatar            | `PUT /profile/*`, `POST /profile/upload`                       | Profile updated                      | —                                        |
 
 ## 14. Entity / Source-of-Truth Matrix

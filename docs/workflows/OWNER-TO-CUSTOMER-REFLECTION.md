@@ -29,6 +29,16 @@ OWNER / BRANCH
     │                             CURRENTLY REFLECTING — same CatalogItem rows.
     │                             ("Portfolio" is a legacy URL alias to this
     │                             same catalog, not a second surface.)
+    │                             [CURRENT, this pass] Owner-set `color` and
+    │                             `fabric_image_url`/`material` on CatalogItem
+    │                             now populated for all seeded items (was a
+    │                             data-completeness gap, not a missing
+    │                             feature) and surfaced to the customer via a
+    │                             color swatch + fabric-name pill on the item
+    │                             detail page and a multi-select color-family
+    │                             filter on /search and the Catalog tab — see
+    │                             docs/CUSTOMER-WORKFLOW.md §6. Same CatalogItem
+    │                             columns, no duplicate/synced copy.
     │
     ├── Designs ─────────────────→ CUSTOMER: (no dedicated page)
     │                             NOT APPLICABLE TODAY — no standalone "Designs"
@@ -69,7 +79,7 @@ OWNER / BRANCH
 | Location/Branches | `/map`, Shop Profile | **CURRENTLY REFLECTING** |
 | Services | Shop Profile, `/search` | **CURRENTLY REFLECTING** |
 | Apparel Specializations | Discovery filter, Shop Profile | **CURRENTLY REFLECTING** |
-| Catalog | `/store/[id]/catalog` | **CURRENTLY REFLECTING** |
+| Catalog | `/store/[id]/catalog` | **CURRENTLY REFLECTING** (incl. `color`/fabric now populated + surfaced via color-family filter and swatch/fabric-name display) |
 | Designs | — | **NOT APPLICABLE** (feature doesn't exist on either side) |
 | Pricing | inline fields only | **CURRENTLY REFLECTING** (no dedicated page to compare) |
 | Store Size Chart → Staff reference → Customer measurement | `/account/measurements` | **PARTIALLY REFLECTING**: Customer↔Staff measurement flow works today; the Owner-configured reference chart that SHOULD inform it does not exist yet |

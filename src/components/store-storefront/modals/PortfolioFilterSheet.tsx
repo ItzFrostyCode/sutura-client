@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { SlidersHorizontal, X, Minus, TrendingUp, TrendingDown, Star } from 'lucide-react';
+import ColorFamilyFilterSection from '@/components/search/ColorFamilyFilterSection';
 
 interface ColorOption {
   label: string;
@@ -173,40 +174,10 @@ export default function PortfolioFilterSheet({
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setDraftColorFilter('')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
-                  !draftColorFilter
-                    ? 'bg-taupe text-canvas border-taupe font-semibold shadow-xs'
-                    : 'bg-surface text-ink-body border-line hover:border-taupe'
-                }`}
-              >
-                All Colors
-              </button>
-              {availableColors.map((c) => {
-                const isSelected = draftColorFilter.toLowerCase() === c.label.toLowerCase();
-                return (
-                  <button
-                    key={c.label}
-                    type="button"
-                    onClick={() => setDraftColorFilter(isSelected ? '' : c.label)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-ink text-canvas border-ink shadow-xs ring-1 ring-taupe'
-                        : 'bg-surface text-ink-body border-line hover:border-taupe'
-                    }`}
-                  >
-                    <span
-                      className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
-                      style={{ backgroundColor: c.hex }}
-                    />
-                    <span>{c.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <ColorFamilyFilterSection
+              selectedColor={draftColorFilter}
+              onColorChange={(val) => setDraftColorFilter(val)}
+            />
           </div>
 
           {/* 3. RATING */}
