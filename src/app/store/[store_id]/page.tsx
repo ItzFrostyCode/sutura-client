@@ -224,7 +224,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
               s.setServiceError('');
               s.setIsServiceModalOpen(true);
             }}
-            onSelectPackage={(pkg) => s.setSelectedPackage(pkg)}
             user={s.user}
           />
         )}
@@ -370,28 +369,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         service={s.selectedService}
         isOpen={s.selectedService !== null}
         onClose={() => s.setSelectedService(null)}
-        facebookUrl={getSocialUrl(s.store.social_links, 'facebook')}
-        storeId={storeId}
-      />
-
-      <ServiceDetailModal
-        service={
-          s.selectedPackage
-            ? {
-                id: s.selectedPackage.id,
-                name: s.selectedPackage.name,
-                price: s.selectedPackage.bundle_price
-                  ? Number(s.selectedPackage.bundle_price)
-                  : s.selectedPackage.services.reduce((sum, item) => sum + (Number(item.base_price) || 0), 0),
-                description: s.selectedPackage.description || undefined,
-                categories: ['Package'],
-                tags: s.selectedPackage.services.map((item) => item.name),
-                kind: 'package',
-              }
-            : null
-        }
-        isOpen={s.selectedPackage !== null}
-        onClose={() => s.setSelectedPackage(null)}
         facebookUrl={getSocialUrl(s.store.social_links, 'facebook')}
         storeId={storeId}
       />

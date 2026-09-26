@@ -57,6 +57,8 @@ export interface PublicServicePackage {
   name: string;
   description: string | null;
   bundle_price: string | null;
+  reviews_count?: number;
+  reviews_avg_rating?: number | null;
   services: { id: number; name: string; base_price: string | null }[];
 }
 

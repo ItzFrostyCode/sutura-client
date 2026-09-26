@@ -1,74 +1,59 @@
 	
 
-# How to Run SUTURA (Frontend & Backend)
+# How to Open SUTURA
 
-SUTURA consists of two separate projects running **at the same time**, each in its own terminal window:
+Run these steps after the one-time setup is complete. Keep both terminals open.
 
-- **`sutura-server`** — Laravel backend/API (runs on `http://127.0.0.1:8000`)
-- **`sutura-client`** — Next.js frontend/dashboard (runs on `http://localhost:3000`)
+Windows backend: port `8001` (or `8080` if needed). macOS backend: port `8000` (or `8080` if occupied). The frontend uses port `3000`.
 
-**Always start the backend first, then the frontend.**
+## 1. Windows: Open XAMPP
 
----
+Open XAMPP Control Panel so its PHP is available. Do not start MySQL for this setup: the current server `.env` uses SQLite. Apache is not needed because Laravel serves the backend in Terminal 1.
 
-## 0. Clone Both Repositories
+## 2. Start the Backend (Terminal 1)
 
-```bash
-git clone https://github.com/ItzFrostyCode/sutura-server.git
-git clone https://github.com/ItzFrostyCode/sutura-client.git
+Open a terminal at the `SUTURA THESIS` folder, then run:
+
+**Windows PowerShell**
+```powershell
+cd sutura-server
+& "C:\xampp\php\php.exe" artisan serve --host=127.0.0.1 --port=8001
 ```
 
----
-
-## TERMINAL 1: Backend (`sutura-server`)
-
-### Windows (with XAMPP):
-
-1. Start **MySQL** in XAMPP Control Panel.
-2. In phpMyAdmin (`http://localhost/phpmyadmin`), click **New**, create a database named `sutura`.
-3. In terminal:
-   ```bash
-   cd sutura-server
-   setup-windows.bat
-   php artisan serve
-   ```
-   *(Note: If port 8000 has a conflict, run `php artisan serve --port=8080` and set `NEXT_PUBLIC_API_URL=http://127.0.0.1:8080/api/v1` in `sutura-client/.env.local`).*
-
-### macOS:
-
-1. Start MySQL: `brew services start mysql@8.4`
-2. In terminal:
-   ```bash
-   cd sutura-server
-   composer install
-   cp .env.example .env
-   php artisan key:generate
-   php artisan migrate --seed
-   php artisan storage:link
-   php artisan serve
-   ```
-
----
-
-## TERMINAL 2: Frontend (`sutura-client`)
-
-In a new terminal window:
-
+**macOS**
 ```bash
+cd sutura-server
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+If port `8000` is occupied, use `--port=8080` and set the frontend API URL to port `8080`.
+
+Leave this terminal running.
+
+## 3. Start the Frontend (Terminal 2)
+
+Open a second terminal at the `SUTURA THESIS` folder, then run:
+
+**Windows PowerShell**
+```powershell
 cd sutura-client
-npm install
-cp .env.example .env.local
+$env:NEXT_PUBLIC_API_URL = "http://127.0.0.1:8001/api/v1"
 npm run dev
 ```
 
-*(On Windows Command Prompt, use `copy .env.example .env.local` or run `setup-windows.bat`)*
+**macOS**
+```bash
+cd sutura-client
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1 npm run dev
+```
 
-Open **http://localhost:3000** in your browser.
+Leave this terminal running and open **http://localhost:3000**.
+For macOS port `8080`, replace `8000` in `NEXT_PUBLIC_API_URL` with `8080`.
 
----
+If this is a fresh clone, complete the one-time setup in the `sutura-server` and `sutura-client` README files first.
 
-## Test Accounts
+## Demo Accounts
 
-- **Shop Owner**: `owner@sutura.com` | `password`
-- **Staff**: `staff@sutura.com` | `password`
-- **Admin**: `admin@sutura.com` | `password`
+- Shop Owner: `owner@sutura.com` / `password`
+- Staff: `staff@sutura.com` / `password`
+- Admin: `admin@sutura.com` / `password`

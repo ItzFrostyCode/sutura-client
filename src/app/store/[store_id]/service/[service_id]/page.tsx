@@ -226,27 +226,6 @@ export default function ServiceDetailPage({
               >
                 <Share2 size={18} />
               </button>
-              {isOwnerViewingOwnStore && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/store/${storeId}?tab=services&edit_service=${service.id}`)}
-                    aria-label="Edit service"
-                    className="w-9 h-9 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    aria-label="Delete service"
-                    className="w-9 h-9 flex items-center justify-center text-danger hover:bg-canvas rounded-full transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </>
-              )}
-
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
@@ -266,6 +245,30 @@ export default function ServiceDetailPage({
                     className="fixed inset-0 z-40 cursor-default"
                   />
                   <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-line shadow-lg z-50 py-1">
+                    {isOwnerViewingOwnStore && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            router.push(`/store/${storeId}?tab=services&edit_service=${service.id}`);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink-body hover:bg-canvas transition-colors text-left"
+                        >
+                          <Pencil size={15} className="text-ink-faint shrink-0" /> Edit service
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            void handleDelete();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-danger hover:bg-canvas transition-colors text-left"
+                        >
+                          <Trash2 size={15} className="shrink-0" /> Delete service
+                        </button>
+                      </>
+                    )}
                     <Link
                       href="/"
                       onClick={() => setMenuOpen(false)}
@@ -309,22 +312,6 @@ export default function ServiceDetailPage({
             <button type="button" onClick={handleShare} aria-label="Share this service" className={iconButtonClass}>
               <Share2 size={19} />
             </button>
-            {isOwnerViewingOwnStore && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => router.push(`/store/${storeId}?tab=services&edit_service=${service.id}`)}
-                  aria-label="Edit service"
-                  className={iconButtonClass}
-                >
-                  <Pencil size={17} />
-                </button>
-                <button type="button" onClick={handleDelete} aria-label="Delete service" className={iconButtonClass}>
-                  <Trash2 size={17} />
-                </button>
-              </>
-            )}
-
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
@@ -343,6 +330,30 @@ export default function ServiceDetailPage({
                   className="fixed inset-0 z-40 cursor-default"
                 />
                 <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-line shadow-lg z-50 py-1">
+                  {isOwnerViewingOwnStore && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          router.push(`/store/${storeId}?tab=services&edit_service=${service.id}`);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink-body hover:bg-canvas transition-colors text-left"
+                      >
+                        <Pencil size={15} className="text-ink-faint shrink-0" /> Edit service
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          void handleDelete();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-danger hover:bg-canvas transition-colors text-left"
+                      >
+                        <Trash2 size={15} className="shrink-0" /> Delete service
+                      </button>
+                    </>
+                  )}
                   <Link
                     href="/"
                     onClick={() => setMenuOpen(false)}
