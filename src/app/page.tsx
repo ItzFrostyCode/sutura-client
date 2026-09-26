@@ -13,7 +13,6 @@ import HomeMapBanner from '@/components/home/HomeMapBanner';
 import HomeSublimationBanner from '@/components/home/HomeSublimationBanner';
 import HomeAboutSection from '@/components/home/HomeAboutSection';
 import HomeFooter from '@/components/home/HomeFooter';
-
 export default function HomePage() {
   const {
     items,

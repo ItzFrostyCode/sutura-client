@@ -3,6 +3,7 @@ import { Outfit, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import AuthHydrator from "@/components/AuthHydrator";
 import MobileFrame from "@/components/shared/MobileFrame";
+import { ToastProvider } from "@/context/ToastContext";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -30,8 +31,10 @@ export default function RootLayout({
       className={`${outfit.variable} ${playfair.variable} h-full antialiased bg-[#FAF6F3] text-[#2D2A26]`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <AuthHydrator />
-        <MobileFrame>{children}</MobileFrame>
+        <ToastProvider>
+          <AuthHydrator />
+          <MobileFrame>{children}</MobileFrame>
+        </ToastProvider>
       </body>
     </html>
   );

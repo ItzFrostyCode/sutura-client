@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { getSavedLocation, requestCurrentLocation } from '@/lib/customerLocation';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import type { StoreResult } from './homeTypes';
 
@@ -47,6 +48,9 @@ export function useHomeData() {
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!getSavedLocation()) {
+      requestCurrentLocation();
+    }
     const query = heroSearch.trim();
     router.push(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
   };

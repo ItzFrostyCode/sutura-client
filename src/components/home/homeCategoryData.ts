@@ -11,14 +11,14 @@ export const CATEGORY_VISUALS: Record<string, Record<string, CategoryVisualConfi
     shirt: { imageUrl: '/images/categories/shirt.jpg', subtitle: 'Crisp Tailored' },
     blazer: { imageUrl: '/images/categories/blazer.jpg', subtitle: 'Structured Wool' },
     pants: { imageUrl: '/images/categories/pants.jpg', subtitle: 'Pleated Trousers' },
-    outerwear: { imageUrl: '/images/categories/outerwear.jpg', subtitle: 'Luxury Trench & Coats' },
+    outerwear: { imageUrl: '/images/categories/men_outerwear.jpg', subtitle: 'Luxury Trench & Coats' },
   },
   women: {
     gown: { imageUrl: '/images/categories/wedding_gown.jpg', subtitle: 'Haute Couture' },
     filipiniana: { imageUrl: '/images/categories/filipiniana.jpg', subtitle: 'Modern Butterfly Terno' },
-    suit: { imageUrl: '/images/categories/blazer.jpg', subtitle: 'Tailored Power Suits' },
+    suit: { imageUrl: '/images/categories/women_suit.jpg', subtitle: 'Tailored Power Suits' },
     dress: { imageUrl: '/images/categories/dress.jpg', subtitle: 'Pleated Cocktail Dresses' },
-    pants: { imageUrl: '/images/categories/pants.jpg', subtitle: 'Tailored Wide-Leg' },
+    pants: { imageUrl: '/images/categories/women_pants.jpg', subtitle: 'Tailored Wide-Leg' },
   },
   wedding: {
     gown: { imageUrl: '/images/categories/wedding_gown.jpg', subtitle: 'Bridal Couture' },

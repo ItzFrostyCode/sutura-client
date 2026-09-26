@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   MapPin, CalendarDays, Clock, Lock, Loader2, AlertCircle, Info,
-  Wallet, FileText, Link as LinkIcon, Store,
+  Wallet, FileText, Link as LinkIcon, Store, CheckCircle2,
 } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import {
@@ -44,6 +44,10 @@ export default function AppointmentDetailContent({
   const scheduled = new Date(appt.scheduled_at);
   const canSelfCancel = appt.status === 'pending' || appt.status === 'confirmed';
   const isPastDue = canSelfCancel && scheduled < new Date();
+
+  const bringsOwnFabric = !!appt.notes?.toLowerCase().includes('bring own fabric');
+  const fabricMatch = appt.notes?.match(/\[Material:\s*Customer will bring own fabric\/sample(?:\s*-\s*([^\]]+))?\]/i);
+  const sampleDetail = fabricMatch?.[1]?.trim();
 
   return (
     <div className="bg-surface border border-line p-4">
@@ -125,6 +129,21 @@ export default function AppointmentDetailContent({
           <div className="flex items-center gap-2.5 mobile-body-sm font-normal text-ink-body">
             <Wallet size={16} className="text-ink-faint shrink-0" />
             <span>Payment: {appt.payment_status} · {appt.payment_method}</span>
+          </div>
+        )}
+
+        {bringsOwnFabric && (
+          <div className="bg-sand-light/50 border border-sand-warm/40 p-3 rounded-none">
+            <span className="text-[10px] font-bold text-taupe uppercase tracking-wider block mb-1">
+              WHAT TO BRING
+            </span>
+            <p className="text-xs font-semibold text-ink flex items-center gap-1.5">
+              <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+              <span>Your fabric/sample</span>
+            </p>
+            {sampleDetail && (
+              <p className="text-xs text-ink-muted mt-1 pl-5">Note: {sampleDetail}</p>
+            )}
           </div>
         )}
 

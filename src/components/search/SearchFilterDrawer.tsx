@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { X, RotateCcw, TrendingUp, TrendingDown, Star, Clock, Check, Sparkles, ChevronDown } from 'lucide-react';
-import { FILTER_TABS, FilterTabKey, DISTRICTS } from './types';
+import { FILTER_TABS, FilterTabKey, DISTRICTS, SearchActiveTab } from './types';
 import { SEARCH_DEPARTMENTS, getCategoryCollections } from '@/lib/navSearchCategories';
 import { PORTFOLIO_COLOR_OPTIONS } from '@/components/store-storefront/types';
 import ColorFamilyFilterSection from './ColorFamilyFilterSection';
@@ -31,6 +31,7 @@ interface SearchFilterDrawerProps {
   readonly setSortBy: (val: string) => void;
   readonly onReset: () => void;
   readonly onApply: () => void;
+  readonly activeTab?: SearchActiveTab;
 }
 
 export default function SearchFilterDrawer({
@@ -57,6 +58,7 @@ export default function SearchFilterDrawer({
   setSortBy,
   onReset,
   onApply,
+  activeTab = 'store',
 }: SearchFilterDrawerProps) {
   const [activeDept, setActiveDept] = useState<string>(department || 'all');
   const currentDept = SEARCH_DEPARTMENTS.find((d) => d.key === activeDept) ?? SEARCH_DEPARTMENTS[0];
@@ -183,7 +185,11 @@ export default function SearchFilterDrawer({
         <div className="flex flex-1 min-h-0">
           {/* Left rail navigation */}
           <nav className="w-[105px] shrink-0 bg-[#F5F1EC] border-r border-[#EBE6E0] overflow-y-auto rounded-none">
-            {FILTER_TABS.map((tab) => {
+            {FILTER_TABS.filter((tab) => {
+              if (tab.key === 'color') return activeTab === 'showroom';
+              if (tab.key === 'price') return activeTab === 'showroom' || activeTab === 'services';
+              return true;
+            }).map((tab) => {
               const isActive = activeFilterTab === tab.key;
               const hasValue =
                 (tab.key === 'specialization' && !!draftSpecialization) ||
@@ -332,8 +338,8 @@ export default function SearchFilterDrawer({
                 </div>
               )}
 
-              {/* Collections & Styles */}
-              {collections.length > 0 && (
+              {/* Collections & Styles — Catalog only */}
+              {activeTab === 'showroom' && collections.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-[#EBE6E0]">
                   <div
                     onClick={() => toggleSection('collections')}
@@ -366,8 +372,9 @@ export default function SearchFilterDrawer({
               )}
             </div>
 
-            {/* 2. Color section (Collapsible Dropdown) */}
-            <div ref={colorRef} className="mt-6 border border-[#EBE6E0]">
+            {/* 2. Color section (Collapsible Dropdown — Catalog only) */}
+            {activeTab === 'showroom' && (
+              <div ref={colorRef} className="mt-6 border border-[#EBE6E0]">
               <div
                 onClick={() => toggleSection('color')}
                 className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
@@ -403,9 +410,11 @@ export default function SearchFilterDrawer({
                 </div>
               )}
             </div>
+            )}
 
-            {/* 3. Price section (Collapsible Dropdown) */}
-            <div ref={priceRef} className="mt-6 border border-[#EBE6E0]">
+            {/* 3. Price section (Collapsible Dropdown — Catalog & Services) */}
+            {(activeTab === 'showroom' || activeTab === 'services') && (
+              <div ref={priceRef} className="mt-6 border border-[#EBE6E0]">
               <div
                 onClick={() => toggleSection('price')}
                 className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
@@ -486,6 +495,7 @@ export default function SearchFilterDrawer({
                 </div>
               )}
             </div>
+            )}
 
             {/* 4. Rating section (Collapsible Dropdown) */}
             <div ref={ratingRef} className="mt-6 border border-[#EBE6E0]">

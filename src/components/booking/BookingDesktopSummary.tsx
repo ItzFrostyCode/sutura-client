@@ -1,4 +1,4 @@
-import { Scissors, Sparkles, MapPin, Calendar, Clock, Shirt } from 'lucide-react';
+import { Scissors, Sparkles, MapPin, Calendar, Clock, Shirt, CheckCircle2 } from 'lucide-react';
 import { getServicePriceLabel } from '@/lib/servicePricing';
 import { Branch, Service, PackageInfo } from './types';
 
@@ -14,6 +14,7 @@ interface BookingDesktopSummaryProps {
   readonly formatDatePreview: (d: string) => string;
   readonly formatTimePreview: (t: string) => string;
   readonly materialSource: 'own' | 'shop' | '';
+  readonly quantity?: string | null;
 }
 
 // Persistent right-column summary for the desktop (lg:+) booking layout —
@@ -32,6 +33,7 @@ export default function BookingDesktopSummary({
   formatDatePreview,
   formatTimePreview,
   materialSource,
+  quantity,
 }: BookingDesktopSummaryProps) {
   return (
     <div className="hidden lg:block lg:w-[300px] lg:shrink-0">
@@ -42,7 +44,18 @@ export default function BookingDesktopSummary({
           <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint flex items-center gap-1.5">
             <Shirt size={13} className="text-taupe" /> Purpose
           </span>
-          <p className="text-sm font-medium text-ink capitalize">{appointmentType}</p>
+          <p className="text-sm font-medium text-ink">
+            {appointmentType === 'alteration'
+              ? 'Alteration / Repair'
+              : appointmentType === 'consultation' && selectedService && (
+                  selectedService.name.toLowerCase().includes('print') ||
+                  selectedService.name.toLowerCase().includes('sublimat') ||
+                  selectedService.name.toLowerCase().includes('bulk') ||
+                  selectedService.name.toLowerCase().includes('uniform')
+                )
+              ? 'Consultation / Order Discussion'
+              : appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1)}
+          </p>
         </div>
 
         {refName && (
@@ -110,6 +123,22 @@ export default function BookingDesktopSummary({
             <p className="text-sm font-medium text-ink">
               {materialSource === 'own' ? "I'll bring my own fabric/sample" : "I'll use the shop's material"}
             </p>
+          </div>
+        )}
+
+        {materialSource === 'own' && (
+          <div className="p-3 bg-sunken border border-line rounded-none space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-taupe block">What to Bring</span>
+            <p className="text-xs font-medium text-ink flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-emerald-600 shrink-0" /> Your fabric/sample
+            </p>
+          </div>
+        )}
+
+        {quantity && (
+          <div className="space-y-1 pt-3 border-t border-line">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Quantity</span>
+            <p className="text-sm font-medium text-ink">{quantity} items/people</p>
           </div>
         )}
       </div>

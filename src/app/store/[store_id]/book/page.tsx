@@ -72,6 +72,9 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
               refSize={b.refSize}
               refColor={b.refColor}
               packageInfo={b.packageInfo}
+              selectedService={b.selectedService}
+              serviceName={b.serviceNameParam}
+              quantity={b.quantity}
             />
           )}
 
@@ -149,8 +152,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 selectedBranch={b.selectedBranch}
                 formatDatePreview={b.formatDatePreview}
                 formatTimePreview={b.formatTimePreview}
-                onEditPurpose={() => b.setStep(1)}
-                onEditSchedule={() => b.setStep(2)}
+                onEditPurpose={b.onEditPurpose}
+                onEditSchedule={b.onEditSchedule}
                 user={b.user}
                 customer={b.customer}
                 remarks={b.remarks}
@@ -161,6 +164,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 materialDescription={b.materialDescription}
                 paymentMethod={b.paymentMethod}
                 paymentReceiptUrl={b.paymentReceiptUrl}
+                quantity={b.quantity}
                 handleSubmit={b.handleSubmit}
               />
             )}
@@ -180,6 +184,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             formatDatePreview={b.formatDatePreview}
             formatTimePreview={b.formatTimePreview}
             materialSource={b.materialSource}
+            quantity={b.quantity}
           />
         )}
         </div>
@@ -188,10 +193,18 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
       {/* Anchored Bottom Action Bar */}
       <BookingActionBar
         step={b.step}
-        onNextStep={() => b.setStep(b.step + 1)}
+        onNextStep={() => {
+          if (b.returnToReview && b.step < 3) {
+            b.setStep(3);
+            b.setReturnToReview(false);
+          } else {
+            b.setStep(b.step + 1);
+          }
+        }}
         step2NextDisabled={b.step2NextDisabled}
         submitting={b.submitting}
         uploadingReceipt={b.uploadingReceipt}
+        returnToReview={b.returnToReview}
       />
     </div>
   );

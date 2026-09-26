@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import api from '@/lib/axios';
 import { Check, X } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
 
 export default function RegisterPage() {
@@ -72,13 +73,16 @@ function RegisterPageContent() {
         name, email, password, password_confirmation: passwordConfirmation, role
       });
       if (response.data.success) {
-        // Registration never auto-authenticates, so this always lands on
-        // /login next regardless of role. A redirect carried in from a
-        // gated flow (e.g. booking an appointment) survives through to
-        // there so login can send them on to finish it, instead of the
-        // customer's normal post-signup landing page.
-        const loginTarget = `/login?registered=true${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ''}`;
-        router.push(role === 'customer' && !redirectParam ? '/' : loginTarget);
+        if (response.data.data?.token && response.data.data?.user) {
+          useAuthStore.getState().setAuth(response.data.data.user, response.data.data.token);
+        }
+        if (redirectParam) {
+          router.push(redirectParam);
+        } else if (role === 'store_owner') {
+          router.push('/dashboard');
+        } else {
+          router.push('/');
+        }
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

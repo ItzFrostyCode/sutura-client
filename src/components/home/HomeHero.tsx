@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Search as SearchIcon } from 'lucide-react';
+import { getSavedLocation, requestCurrentLocation } from '@/lib/customerLocation';
 
 interface HomeHeroProps {
   heroSearch: string;
@@ -65,6 +66,11 @@ export default function HomeHero({
                 />
                 <button
                   type="submit"
+                  onClick={() => {
+                    if (!getSavedLocation()) {
+                      requestCurrentLocation();
+                    }
+                  }}
                   className="shrink-0 h-full px-5 sm:px-6 bg-ink hover:bg-black text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-none transition-colors cursor-pointer flex items-center justify-center border-l border-line"
                 >
                   Search

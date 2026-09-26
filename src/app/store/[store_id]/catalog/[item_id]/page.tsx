@@ -29,7 +29,10 @@ export default function PublicProductDetailPage({
     loading,
     selectedImage,
     setSelectedImage,
+    selectedVariation,
     setSelectedVariation,
+    selectedColor,
+    setSelectedColor,
     selectedSize,
     setSelectedSize,
     orderSuccess,
@@ -143,7 +146,10 @@ export default function PublicProductDetailPage({
               item={item}
               selectedImage={selectedImage}
               setSelectedImage={setSelectedImage}
+              selectedVariation={selectedVariation}
               setSelectedVariation={setSelectedVariation}
+              selectedColor={selectedColor}
+              setSelectedColor={setSelectedColor}
               storeId={storeId}
               itemId={itemId}
             />
@@ -154,7 +160,7 @@ export default function PublicProductDetailPage({
               image, so a sticky column here just left a large blank gap
               below the buttons once the image itself extended further down. */}
           <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0">
-            <CatalogProductInfo item={item} />
+            <CatalogProductInfo item={item} selectedColor={selectedColor} />
 
             <CatalogSizeSelector
               sizes={item.sizes}

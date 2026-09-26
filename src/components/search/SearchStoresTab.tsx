@@ -7,7 +7,6 @@ import { Store, Star, ChevronRight, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
-import ModelFabricToggle from '@/components/discovery/ModelFabricToggle';
 import { RelatedStore, SearchActiveTab } from './types';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
@@ -55,8 +54,9 @@ interface SearchStoresTabProps {
   readonly items: CatalogItemResult[];
   readonly total: number;
   readonly gate: (href: string) => string;
-  readonly showFabric: boolean;
-  readonly setShowFabric: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly showFabric?: boolean;
+  readonly setShowFabric?: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly userCoords?: { lat: number; lng: number } | null;
 }
 
 export default function SearchStoresTab({
@@ -68,21 +68,16 @@ export default function SearchStoresTab({
   items,
   total,
   gate,
-  showFabric,
-  setShowFabric,
+  showFabric = false,
+  userCoords,
 }: SearchStoresTabProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3 px-1">
         <h2 className="text-base font-bold text-ink">Nearby Stores</h2>
         <span className="text-xs text-ink-muted">
-          {stores.length} {stores.length === 1 ? 'result' : 'results'} · nearest first
+          {stores.length} {stores.length === 1 ? 'result' : 'results'}{userCoords ? ' · nearest first' : ''}
         </span>
-      </div>
-
-      {/* Model/Fabric Toggle — right-aligned to match the Catalog Designs section */}
-      <div className="flex items-center justify-end mb-2.5 px-1">
-        <ModelFabricToggle showFabric={showFabric} setShowFabric={setShowFabric} size="sm" />
       </div>
 
       {storesLoading ? (
@@ -258,7 +253,7 @@ export default function SearchStoresTab({
         </div>
       )}
 
-      {activeTab === 'store' && (
+      {activeTab === 'store' && userCoords && stores.length > 0 && (
         <div className="mt-3 py-2.5 px-0 flex items-center gap-2.5 text-ink-muted text-xs border-b border-line/60">
           <MapPin size={14} className="text-taupe shrink-0" />
           <span>Distances are ordered from your current location in Davao City.</span>

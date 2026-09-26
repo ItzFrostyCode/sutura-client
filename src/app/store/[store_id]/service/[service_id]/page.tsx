@@ -413,7 +413,7 @@ export default function ServiceDetailPage({
 
             <div className="space-y-3 pt-2">
               <Link
-                href={`/store/${storeId}/book?service_id=${service.id}`}
+                href={`/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`}
                 className="w-full h-[52px] rounded-none flex items-center justify-center bg-ink hover:bg-taupe text-white text-base font-semibold transition-colors"
               >
                 Book Appointment →
@@ -432,14 +432,33 @@ export default function ServiceDetailPage({
             </div>
 
             {(service.reviews_count ?? 0) > 0 && (
-              <div className="flex items-center justify-between pt-1">
-                <h2 className="text-base font-serif font-semibold text-taupe-dark">Service Ratings</h2>
-                <Link
-                  href={`/store/${storeId}/service/${service.id}/ratings`}
-                  className="flex items-center gap-0.5 text-xs font-semibold text-taupe"
-                >
-                  View All <ChevronRight size={13} />
-                </Link>
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-serif font-semibold text-taupe-dark">Service Ratings</h2>
+                  <Link
+                    href={`/store/${storeId}/service/${service.id}/ratings`}
+                    className="flex items-center gap-0.5 text-xs font-semibold text-taupe"
+                  >
+                    View All <ChevronRight size={13} />
+                  </Link>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-0.5 text-amber-500">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        size={16}
+                        fill={n <= Math.round(service.reviews_avg_rating || 0) ? 'currentColor' : 'none'}
+                      />
+                    ))}
+                  </div>
+                  <span className="font-semibold text-ink text-sm">
+                    {service.reviews_avg_rating ? Number(service.reviews_avg_rating).toFixed(1) : '0.0'}
+                  </span>
+                  <span className="text-ink-faint text-xs">
+                    out of 5 · {service.reviews_count} review{service.reviews_count === 1 ? '' : 's'}
+                  </span>
+                </div>
               </div>
             )}
 

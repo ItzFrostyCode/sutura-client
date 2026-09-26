@@ -72,10 +72,15 @@ export default function AppointmentCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 mb-2">
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
         <span className="mobile-caption font-medium bg-sunken text-ink-muted rounded-full px-2.5 py-0.5">
           {TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type}
         </span>
+        {appt.notes?.toLowerCase().includes('bring own fabric') && (
+          <span className="text-[10px] font-semibold bg-sand text-ink border border-line rounded-full px-2 py-0.5">
+            ✓ Bring fabric/sample
+          </span>
+        )}
         {appt.intake_channel === 'walk_in' && (
           <span className="text-[10px] font-semibold bg-surface text-ink-muted border border-line rounded-full px-2 py-0.5">
             WALK-IN

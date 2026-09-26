@@ -110,13 +110,41 @@ export default function BookingReferenceSummary({
     );
   }
 
+  const PURPOSE_DETAILS: Record<string, { label: string; hint: string }> = {
+    consultation: {
+      label: 'Consultation',
+      hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
+    },
+    measurement: {
+      label: 'Measurement',
+      hint: 'Get measured in person for your garment.',
+    },
+    alteration: {
+      label: 'Alteration / Repair',
+      hint: 'Bring an existing garment for adjustment or repair.',
+    },
+    fitting: {
+      label: 'Fitting',
+      hint: 'Try on your garment in progress so the store can adjust the fit.',
+    },
+    pickup: {
+      label: 'Pickup',
+      hint: 'Collect your finished garment or order at the store.',
+    },
+  };
+
+  const purpose = PURPOSE_DETAILS[appointmentType] ?? {
+    label: appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1),
+    hint: 'Visit the store for your tailoring appointment.',
+  };
+
   return (
     <div className="p-4 bg-surface border border-line rounded-none space-y-2">
       <span className="mobile-overline text-taupe flex items-center gap-1.5">
         <MessageSquare size={14} className="text-taupe" /> Appointment Purpose
       </span>
-      <h3 className="mobile-h4 font-medium text-ink capitalize">{appointmentType} Consultation</h3>
-      <p className="mobile-body-sm text-ink-muted font-normal">Store consultation and fitting service.</p>
+      <h3 className="mobile-h4 font-medium text-ink">{purpose.label}</h3>
+      <p className="mobile-body-sm text-ink-muted font-normal">{purpose.hint}</p>
     </div>
   );
 }

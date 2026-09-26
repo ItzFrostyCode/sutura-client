@@ -2,8 +2,10 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { Scissors } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
-import { PackageInfo } from './types';
+import { getServicePriceLabel } from '@/lib/servicePricing';
+import { PackageInfo, Service } from './types';
 
 interface BookingReferenceCardProps {
   readonly refName: string | null;
@@ -12,6 +14,9 @@ interface BookingReferenceCardProps {
   readonly refSize: string | null;
   readonly refColor: string | null;
   readonly packageInfo: PackageInfo | null;
+  readonly selectedService?: Service | null;
+  readonly serviceName?: string | null;
+  readonly quantity?: string | null;
 }
 
 export default function BookingReferenceCard({
@@ -21,6 +26,9 @@ export default function BookingReferenceCard({
   refSize,
   refColor,
   packageInfo,
+  selectedService,
+  serviceName,
+  quantity,
 }: BookingReferenceCardProps) {
   return (
     <>
@@ -62,6 +70,38 @@ export default function BookingReferenceCard({
               ).toLocaleString()}
             </span>
           </div>
+        </div>
+      )}
+
+      {/* Compact Selected Service Context (from Service Detail) */}
+      {!refName && (selectedService || serviceName) && (
+        <div className="mb-5 bg-surface border border-line rounded-none shadow-xs p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-taupe uppercase tracking-wider flex items-center gap-1.5">
+              <Scissors size={12} className="text-taupe" /> Selected Service
+            </span>
+            {selectedService?.base_price && (
+              <span className="text-xs font-bold text-taupe shrink-0">
+                {getServicePriceLabel(selectedService.base_price)}
+              </span>
+            )}
+          </div>
+          <h3 className="font-semibold text-xs text-ink truncate mt-1">
+            {selectedService?.name || serviceName}
+          </h3>
+          {selectedService?.description && (
+            <p className="text-[11px] text-ink-muted line-clamp-1 mt-0.5 font-normal">
+              {selectedService.description}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Optional Quantity Context (Bulk / Group Inquiries) */}
+      {quantity && (
+        <div className="mb-4 px-3 py-2 bg-sunken border border-line rounded-none flex items-center justify-between text-xs">
+          <span className="text-ink-muted font-medium">Estimated Quantity</span>
+          <span className="font-semibold text-ink">{quantity} items/people</span>
         </div>
       )}
     </>

@@ -8,6 +8,7 @@ export interface FabricResolveOptions {
   garment_type?: string | null;
   material?: string | null;
   name?: string | null;
+  color?: string | null;
   fabric_image_url?: string | null;
 }
 
@@ -129,4 +130,119 @@ export function getColorHex(colorName?: string | null): string {
     if (clean.includes(key)) return hex;
   }
   return '#94A3B8';
+}
+
+export function getContrastTextColor(hexColor?: string | null): string {
+  if (!hexColor) return '#1A1A1A';
+  const clean = hexColor.replace('#', '').trim();
+  if (clean.length < 6) return '#1A1A1A';
+  const r = parseInt(clean.substring(0, 2), 16) || 0;
+  const g = parseInt(clean.substring(2, 4), 16) || 0;
+  const b = parseInt(clean.substring(4, 6), 16) || 0;
+  // Calculate relative luminance / brightness
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 165 ? '#1A1A1A' : '#FFFFFF';
+}
+
+export interface CatalogColorOption {
+  name: string;
+  hex: string;
+  modelImage: string;
+  fabricImage: string;
+  fabricLabel?: string;
+}
+
+export function getItemColorOptions(
+  item: FabricResolveOptions & {
+    color?: string | null;
+    images?: { image_url: string; is_primary?: boolean; view_angle?: string }[];
+  }
+): CatalogColorOption[] {
+  const primaryModel =
+    item.images?.find((i) => i.is_primary)?.image_url ||
+    item.images?.[0]?.image_url ||
+    '';
+  const primaryFabric = resolveFabricImage(item);
+  const primaryFabricLabel = getFabricLabel(item);
+
+  const rawColor = (item.color ?? '').trim();
+
+  // Extract colors explicitly defined on the item (supports comma-separated if multiple)
+  const definedColors: string[] = rawColor
+    ? rawColor
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : [];
+
+  // Check if any additional images define specific color angles (e.g. view_angle="Navy")
+  const imageColorAngles: { name: string; image_url: string }[] = [];
+  if (item.images && item.images.length > 1) {
+    for (const img of item.images) {
+      const angle = (img.view_angle ?? '').trim();
+      const lower = angle.toLowerCase();
+      if (
+        angle &&
+        !['front', 'back', 'side', 'detail', 'default', 'close-up'].includes(lower) &&
+        !lower.startsWith('view')
+      ) {
+        imageColorAngles.push({ name: angle, image_url: img.image_url });
+      }
+    }
+  }
+
+  // Combine unique colors in order
+  const colorNames: string[] = [];
+  for (const c of definedColors) {
+    if (!colorNames.some((existing) => existing.toLowerCase() === c.toLowerCase())) {
+      colorNames.push(c);
+    }
+  }
+  for (const ico of imageColorAngles) {
+    if (!colorNames.some((existing) => existing.toLowerCase() === ico.name.toLowerCase())) {
+      colorNames.push(ico.name);
+    }
+  }
+
+  // Fallback to item color or Default if empty
+  if (colorNames.length === 0) {
+    colorNames.push(rawColor || 'Default');
+  }
+
+  return colorNames.map((colorName, idx) => {
+    const isFirst = idx === 0;
+    const hex = getColorHex(colorName);
+
+    // Look for a specific model photo for this color
+    const matchedImage = item.images?.find(
+      (img) => img.view_angle?.toLowerCase() === colorName.toLowerCase()
+    )?.image_url;
+
+    const modelImage = matchedImage || primaryModel;
+
+    // Use primary fabric for the main color, or compute fabric fallback for secondary color
+    const fabricImage = isFirst
+      ? primaryFabric
+      : resolveFabricImage({
+          ...item,
+          color: colorName,
+          name: `${item.name ?? ''} ${colorName}`,
+        });
+
+    const fabricLabel = isFirst
+      ? primaryFabricLabel
+      : getFabricLabel({
+          ...item,
+          color: colorName,
+          name: `${item.name ?? ''} ${colorName}`,
+        });
+
+    return {
+      name: colorName,
+      hex,
+      modelImage,
+      fabricImage,
+      fabricLabel,
+    };
+  });
 }

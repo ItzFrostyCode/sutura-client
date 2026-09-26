@@ -94,6 +94,16 @@ export default function SearchServicesTab({
           storeMap[sid].push(svc);
         }
 
+        if (stores && stores.length > 0) {
+          storeOrder.sort((a, b) => {
+            const storeA = stores.find((s) => s.id === a);
+            const storeB = stores.find((s) => s.id === b);
+            const distA = storeA?.distance_km ?? 99999;
+            const distB = storeB?.distance_km ?? 99999;
+            return distA - distB;
+          });
+        }
+
         return (
           <div className="divide-y divide-line border-t border-line">
             {storeOrder.map((storeId, storeIndex) => {

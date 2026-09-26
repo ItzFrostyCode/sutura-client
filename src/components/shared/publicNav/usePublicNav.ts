@@ -13,13 +13,57 @@ export function usePublicNav() {
   const [screen, setScreen] = useState<MenuScreen>({ level: 0 });
   const [openSection, setOpenSection] = useState('explore');
   const [unreadCount, setUnreadCount] = useState(0);
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, hydrated } = useAuthStore();
 
-  const isNonCustomer = user?.roles?.some((r) => NON_CUSTOMER_ROLES.has(r.name)) ?? false;
-  const accountHref = isAuthenticated && isNonCustomer ? '/dashboard' : '/account';
+  const isAuth = hydrated && isAuthenticated && !!user;
+  const isNonCustomer = isAuth && (user?.roles?.some((r) => NON_CUSTOMER_ROLES.has(r.name)) ?? false);
+  const isCustomer = isAuth && !isNonCustomer;
+
+  // Track Order:
+  // - Customer Profile: routes to their personal Job Orders & garment progress list
+  // - Tailor / Staff: routes to store dashboard jobs
+  // - Guest Account: routes to receipt code tracking page (/track)
+  const trackOrderHref = isAuth
+    ? (isCustomer ? '/account/orders' : '/dashboard/jobs')
+    : '/track';
+
+  const trackOrderTitle = isAuth
+    ? (isCustomer ? 'My Orders & Tracking' : 'Track Job Orders')
+    : 'Track Order with Code';
+
+  const trackOrderLabel = isAuth
+    ? (isCustomer ? 'My Orders' : 'Track Jobs')
+    : 'Track Order';
+
+  // Notifications:
+  // - Customer Profile: routes to /notifications (fetches customer notifications)
+  // - Tailor / Staff: routes to /dashboard/notifications
+  // - Guest Account: routes to /notifications (shows guest sign-in engagement card)
+  const notificationsHref = isAuth
+    ? (isNonCustomer ? '/dashboard/notifications' : '/notifications')
+    : '/notifications';
+
+  // User Account:
+  // - Customer Profile: routes to /account
+  // - Tailor / Staff: routes to /dashboard
+  // - Guest Account: routes to /account (loads GuestAccountHub)
+  const accountHref = isAuth
+    ? (isNonCustomer ? '/dashboard' : '/account')
+    : '/account';
+
+  const userTitle = isAuth
+    ? (user?.name ? `${user.name} (${isCustomer ? 'Customer Profile' : 'Dashboard'})` : 'My Account')
+    : 'Account / Sign In';
+
+  const userDrawerLabel = isAuth
+    ? (isCustomer ? 'My Account' : 'Dashboard')
+    : 'Sign In / Register';
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
     let isMounted = true;
 
     api
@@ -40,16 +84,19 @@ export function usePublicNav() {
     };
   }, [isAuthenticated]);
 
-  // Resizing past lg (1024px) while the mobile drawer is open — e.g.
+  const effectiveUnreadCount = isAuth ? unreadCount : 0;
+  const notificationsTitle = effectiveUnreadCount > 0
+    ? `${effectiveUnreadCount} unread notification${effectiveUnreadCount > 1 ? 's' : ''}`
+    : 'Notifications';
+
+  // Resizing past md (768px) while the mobile drawer is open — e.g.
   // rotating a tablet, or dragging a browser window wider — left it open
-  // with no way to close it (the hamburger button itself is lg:hidden, so
-  // there was nothing left to click), stacked on top of the now-visible
-  // WebHoverNav, plus its body-scroll-lock never got released. Force-close
-  // it the moment the viewport crosses into desktop nav territory.
+  // with no way to close it. Force-close it the moment the viewport crosses
+  // into desktop nav territory.
   useCloseOnDesktop(() => {
     setMenuOpen(false);
     setScreen({ level: 0 });
-  }, 1024);
+  }, 768);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -99,8 +146,6 @@ export function usePublicNav() {
     setOpenSection((cur) => (cur === key ? '' : key));
   }
 
-  const effectiveUnreadCount = isAuthenticated ? unreadCount : 0;
-
   return {
     menuOpen,
     screen,
@@ -108,6 +153,18 @@ export function usePublicNav() {
     openSection,
     unreadCount: effectiveUnreadCount,
     accountHref,
+    userTitle,
+    userDrawerLabel,
+    trackOrderHref,
+    trackOrderTitle,
+    trackOrderLabel,
+    notificationsHref,
+    notificationsTitle,
+    user: isAuth ? user : null,
+    isAuthenticated: isAuth,
+    isCustomer,
+    isNonCustomer,
+    hydrated,
     toggleMenu,
     closeMenu,
     goBack,
