@@ -13,7 +13,6 @@ import HomeMapBanner from '@/components/home/HomeMapBanner';
 import HomeSublimationBanner from '@/components/home/HomeSublimationBanner';
 import HomeAboutSection from '@/components/home/HomeAboutSection';
 import HomeFooter from '@/components/home/HomeFooter';
-
 export default function HomePage() {
   const {
     items,
@@ -21,6 +20,7 @@ export default function HomePage() {
     stores,
     storesLoading,
     trendingItems,
+    trendingLoading,
     heroSearch,
     setHeroSearch,
     handleHeroSearch,
@@ -37,7 +37,11 @@ export default function HomePage() {
       />
 
       <main className="flex-1 w-full">
-        <HomeFeaturedSpotlight stores={stores} trendingItems={trendingItems} />
+        <HomeFeaturedSpotlight
+          stores={stores}
+          trendingItems={trendingItems}
+          loading={storesLoading || trendingLoading}
+        />
         <HomeQuickHub />
         <HomeCategoryGrid items={items} />
         <HomeShowroomCarousel items={items} loading={loading} />

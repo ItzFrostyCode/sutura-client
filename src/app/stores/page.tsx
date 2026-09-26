@@ -18,28 +18,15 @@ export default function StoresDirectoryPage() {
 function StoresDirectoryContent() {
   const {
     q, setQ,
-    sortBy, setSortBy,
-    district, setDistrict,
-    specialization, setSpecialization,
-    openNow, setOpenNow,
+    sortBy,
     page, setPage,
     stores, total, lastPage, loading,
-    userLocation, locating, locationError, setLocationError,
-    handleNearMe, filterOpen, setFilterOpen,
+    userLocation, locationError, setLocationError,
   } = useStoreDirectory();
 
   return (
     <div className="min-h-full flex flex-col bg-canvas">
-      <StoreDirectoryHeader
-        q={q} setQ={setQ}
-        sortBy={sortBy} setSortBy={setSortBy}
-        district={district} setDistrict={setDistrict}
-        specialization={specialization} setSpecialization={setSpecialization}
-        openNow={openNow} setOpenNow={setOpenNow}
-        userLocation={userLocation} locating={locating}
-        handleNearMe={handleNearMe}
-        filterOpen={filterOpen} setFilterOpen={setFilterOpen}
-      />
+      <StoreDirectoryHeader q={q} setQ={setQ} />
 
       <main className="flex-1 w-full max-w-5xl mx-auto mobile-screen-margins py-4">
         {locationError && (

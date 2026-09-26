@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { RotateCcw, Star, SlidersHorizontal, Check, Clock, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { SEARCH_DEPARTMENTS, getCategoryCollections } from '@/lib/navSearchCategories';
 import { PORTFOLIO_COLOR_OPTIONS } from '@/components/store-storefront/types';
-import { DISTRICTS } from './types';
+import ColorFamilyFilterSection from './ColorFamilyFilterSection';
+import { DISTRICTS, SearchActiveTab } from './types';
 
 interface SearchWebFilterSidebarProps {
   specialization: string;
@@ -27,6 +28,7 @@ interface SearchWebFilterSidebarProps {
   setDistrict: (val: string) => void;
   onReset: () => void;
   activeFilterCount: number;
+  activeTab?: SearchActiveTab;
 }
 
 export default function SearchWebFilterSidebar({
@@ -50,6 +52,7 @@ export default function SearchWebFilterSidebar({
   setDistrict,
   onReset,
   activeFilterCount,
+  activeTab = 'store',
 }: Readonly<SearchWebFilterSidebarProps>) {
   const [activeDept, setActiveDept] = useState<string>(department || 'all');
   const currentDept = SEARCH_DEPARTMENTS.find((d) => d.key === activeDept) ?? SEARCH_DEPARTMENTS[0];
@@ -250,8 +253,8 @@ export default function SearchWebFilterSidebar({
         )}
       </div>
 
-      {/* 4. Collections & Styles (Collapsible Dropdown) */}
-      {collections.length > 0 && (
+      {/* 4. Collections & Styles (Collapsible Dropdown — Catalog only) */}
+      {activeTab === 'showroom' && collections.length > 0 && (
         <div className="border-b border-[#EBE6E0]">
           <div
             onClick={() => toggleSection('collections')}
@@ -283,8 +286,9 @@ export default function SearchWebFilterSidebar({
         </div>
       )}
 
-      {/* 5. Color Swatches (Collapsible Dropdown) */}
-      <div className="border-b border-[#EBE6E0]">
+      {/* 5. Color Swatches (Collapsible Dropdown — Catalog only) */}
+      {activeTab === 'showroom' && (
+        <div className="border-b border-[#EBE6E0]">
         <div
           onClick={() => toggleSection('color')}
           className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
@@ -312,33 +316,15 @@ export default function SearchWebFilterSidebar({
           </div>
         </div>
         {openSections.color && (
-          // Labeled chip (swatch + name) — same as the store profile's own
-          // color filter, not a bare unlabeled circle.
-          <div className="p-3 bg-white flex flex-wrap gap-1.5">
-            {categoryColors.map((c) => {
-              const isSelected = color?.toLowerCase() === c.label.toLowerCase();
-              return (
-                <button
-                  key={c.label}
-                  type="button"
-                  onClick={() => setColor?.(isSelected ? '' : c.label)}
-                  className={`flex items-center gap-1.5 px-2 py-1 border text-[11px] font-medium transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#2D2A26] text-white border-[#2D2A26]'
-                      : 'bg-white text-[#2D2A26] border-[#D1C7BD] hover:border-[#9A8073]'
-                  }`}
-                >
-                  <span
-                    className="w-3 h-3 rounded-full border border-black/20 shrink-0"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span>{c.label}</span>
-                </button>
-              );
-            })}
+          <div className="p-3 bg-white">
+            <ColorFamilyFilterSection
+              selectedColor={color ?? ''}
+              onColorChange={(val) => setColor?.(val)}
+            />
           </div>
         )}
       </div>
+      )}
 
       {/* 6. Availability (Collapsible Dropdown) */}
       <div className="border-b border-[#EBE6E0]">
@@ -377,8 +363,9 @@ export default function SearchWebFilterSidebar({
         )}
       </div>
 
-      {/* 7. Price Range (Collapsible Dropdown: 1st Low to High/High to Low, 2nd Min - Max) */}
-      <div className="border-b border-[#EBE6E0]">
+      {/* 7. Price Range (Collapsible Dropdown: 1st Low to High/High to Low, 2nd Min - Max — Catalog & Services) */}
+      {(activeTab === 'showroom' || activeTab === 'services') && (
+        <div className="border-b border-[#EBE6E0]">
         <div
           onClick={() => toggleSection('price')}
           className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
@@ -459,6 +446,7 @@ export default function SearchWebFilterSidebar({
           </div>
         )}
       </div>
+      )}
 
       {/* 8. Rating (Collapsible Dropdown: 5 only, 4 & up, 3 & up, 2 & up, 1 & up) */}
       <div className="border-b border-[#EBE6E0]">

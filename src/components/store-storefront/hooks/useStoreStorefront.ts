@@ -174,7 +174,7 @@ export function useStoreStorefront(storeId: string) {
   const [catalogItems, setCatalogItems] = useState<CatalogListItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogSearch, setCatalogSearch] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
-  const [serviceSearch, setServiceSearch] = useState('');
+  const [serviceSearch, setServiceSearch] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
 
   // Portfolio Filters
   const [priceSort, setPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
@@ -206,14 +206,21 @@ export function useStoreStorefront(storeId: string) {
   const isAutoScrolling = useRef(false);
   const hasScrolledToSearchTab = useRef(false);
 
-  // Sync search query from URL
+  // Sync search query from URL — reflects the query into whichever tab the
+  // link actually pointed at (?tab=services&q=... from the Search page's
+  // Services tab should land on Services pre-filled, not force Catalog).
   const currentQParam = searchParams.get('q') || searchParams.get('search') || '';
   const [prevQParam, setPrevQParam] = useState(currentQParam);
   if (currentQParam !== prevQParam) {
     setPrevQParam(currentQParam);
     if (currentQParam) {
-      setCatalogSearch(currentQParam);
-      setActiveTab('catalog');
+      if (resolveTabFromParam(searchParams.get('tab')) === 'services') {
+        setServiceSearch(currentQParam);
+        setActiveTab('services');
+      } else {
+        setCatalogSearch(currentQParam);
+        setActiveTab('catalog');
+      }
     }
   }
 

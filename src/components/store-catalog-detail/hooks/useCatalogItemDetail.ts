@@ -21,6 +21,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
 
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [selectedVariation, setSelectedVariation] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
   // Set only by handleBulkOrder now — the plain made-to-order path that
   // used to also set this (and its own orderSubmitting/orderError
@@ -55,6 +56,9 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
         if (primary) {
           setSelectedImage(primary.image_url);
           setSelectedVariation(primary.view_angle || '');
+        }
+        if (res.data.data.color) {
+          setSelectedColor(res.data.data.color.split(',')[0].trim());
         }
         setLoading(false);
         api.post(`/catalog/${storeId}/${itemId}/view`).catch(() => {});
@@ -293,13 +297,15 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     return clean;
   };
 
-  const displayColor = (item?.color && item.color.trim())
-    ? item.color.trim()
-    : (isRealVariationLabel ? selectedVariation : (selectedImage ? colorFromFilename(selectedImage) : ''));
+  const displayColor = (selectedColor && selectedColor.trim())
+    ? selectedColor.trim()
+    : ((item?.color && item.color.trim())
+      ? item.color.trim()
+      : (isRealVariationLabel ? selectedVariation : (selectedImage ? colorFromFilename(selectedImage) : '')));
 
   const buildBookHref = (branchSlug?: string | null) => {
     if (!item) return '#';
-    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}&ref_price=${encodeURIComponent(String(item.price))}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}&ref_type=fitting`;
+    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}&ref_price=${encodeURIComponent(String(item.price))}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
   };
 
   return {
@@ -309,6 +315,8 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     setSelectedImage,
     selectedVariation,
     setSelectedVariation,
+    selectedColor,
+    setSelectedColor,
     selectedSize,
     setSelectedSize,
     orderSuccess,

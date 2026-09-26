@@ -2,11 +2,14 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Package } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
 
 export default function TrackLandingPage() {
   const router = useRouter();
+  const { user, isAuthenticated, hydrated } = useAuthStore();
   const [code, setCode] = useState('');
 
   function handleSubmit(e: FormEvent) {
@@ -15,6 +18,8 @@ export default function TrackLandingPage() {
     if (!trimmed) return;
     router.push(`/track/${encodeURIComponent(trimmed)}`);
   }
+
+  const isCustomer = user?.roles?.some((r) => r.name === 'customer') ?? false;
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
@@ -45,6 +50,20 @@ export default function TrackLandingPage() {
               Track Order
             </button>
           </form>
+
+          {hydrated && isAuthenticated && user && (
+            <div className="mt-8 pt-6 border-t border-line text-center">
+              <p className="mobile-caption text-ink-muted mb-2 font-normal">
+                Logged in as <span className="font-semibold text-ink">{user.name}</span>?
+              </p>
+              <Link
+                href={isCustomer ? '/account/orders' : '/dashboard/jobs'}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:text-taupe-hover transition-colors"
+              >
+                {isCustomer ? 'View all your Job Orders in My Orders →' : 'View Store Job Orders →'}
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     </div>

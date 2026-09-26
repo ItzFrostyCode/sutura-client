@@ -94,6 +94,16 @@ export default function SearchServicesTab({
           storeMap[sid].push(svc);
         }
 
+        if (stores && stores.length > 0) {
+          storeOrder.sort((a, b) => {
+            const storeA = stores.find((s) => s.id === a);
+            const storeB = stores.find((s) => s.id === b);
+            const distA = storeA?.distance_km ?? 99999;
+            const distB = storeB?.distance_km ?? 99999;
+            return distA - distB;
+          });
+        }
+
         return (
           <div className="divide-y divide-line border-t border-line">
             {storeOrder.map((storeId, storeIndex) => {
@@ -103,7 +113,9 @@ export default function SearchServicesTab({
               const storeInfo = matchedStore || rawStore;
               const storeName = storeInfo?.name || 'Tailoring Store';
               const storeSlug = storeInfo?.slug || (rawStore as { slug?: string })?.slug || String(storeId);
-              const storeHref = gate(`/store/${storeSlug}?tab=services`);
+              const storeHref = gate(
+                `/store/${storeSlug}?tab=services${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
+              );
               const logoSrc = storeInfo?.logo_path || (storeInfo as { banner_path?: string | null })?.banner_path;
               const distKm = matchedStore?.distance_km != null ? matchedStore.distance_km : null;
               const branch = storeInfo?.branches?.[0];

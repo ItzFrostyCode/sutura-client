@@ -52,7 +52,7 @@ function LoginFormContent() {
           router.push(redirectPath || '/dashboard');
         } else if (isCustomer) {
           setAuth(user, token, activeStore, staff_profile);
-          router.push(redirectPath || '/account');
+          router.push(redirectPath || '/');
         } else {
           setError('This account type does not have a dashboard yet. Please contact support.');
           setLoading(false);
@@ -154,7 +154,7 @@ function LoginFormContent() {
         <p className="mt-6 text-center text-sm text-ink">Don&apos;t have an Account?</p>
 
         <a
-          href="/register"
+          href={redirectPath ? `/register?redirect=${encodeURIComponent(redirectPath)}` : '/register'}
           className="block w-full mt-4 py-3.5 border border-ink text-ink text-sm font-bold uppercase tracking-widest text-center hover:bg-sunken transition-colors"
         >
           Create an Account

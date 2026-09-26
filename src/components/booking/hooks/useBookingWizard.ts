@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
@@ -22,8 +22,22 @@ const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
 
 export function useBookingWizard(storeId: string) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, hydrated } = useAuthStore();
+
+  // Login/signup now happens BEFORE the wizard, not after — a guest tapping
+  // "Book Appointment" is bounced to /login with a `redirect` back to this
+  // exact URL (context params included) instead of filling out appointment
+  // details first. Waits for hydrate() (see AuthHydrator.tsx) so this
+  // doesn't fire on the SSR-safe "logged out" initial state and redirect a
+  // genuinely logged-in customer on every refresh.
+  useEffect(() => {
+    if (!hydrated || user) return;
+    const query = searchParams.toString();
+    const redirectTarget = `${pathname}${query ? `?${query}` : ''}`;
+    router.replace(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
+  }, [hydrated, user, pathname, searchParams, router]);
 
   // URL context parameters
   const refName = searchParams.get('ref');
@@ -33,6 +47,7 @@ export function useBookingWizard(storeId: string) {
   const refColor = searchParams.get('ref_color');
   const branchSlugParam = searchParams.get('branch');
   const serviceIdParam = searchParams.get('service_id');
+  const serviceNameParam = searchParams.get('service_name');
   const packageIdParam = searchParams.get('package_id');
   const refTypeParam = searchParams.get('ref_type');
 
@@ -44,9 +59,25 @@ export function useBookingWizard(storeId: string) {
   const [success, setSuccess] = useState(false);
 
   // Form Data
-  const [appointmentType, setAppointmentType] = useState<string>(
-    refTypeParam && VALID_APPOINTMENT_TYPES.includes(refTypeParam) ? refTypeParam : 'consultation'
-  );
+  const [appointmentType, setAppointmentType] = useState<string>(() => {
+    if (refTypeParam && VALID_APPOINTMENT_TYPES.includes(refTypeParam)) {
+      return refTypeParam;
+    }
+    const initialName = (serviceNameParam || '').toLowerCase();
+    if (
+      initialName.includes('alter') ||
+      initialName.includes('repair') ||
+      initialName.includes('hem') ||
+      initialName.includes('adjust') ||
+      initialName.includes('taper') ||
+      initialName.includes('patch') ||
+      initialName.includes('fix') ||
+      initialName.includes('resize')
+    ) {
+      return 'alteration';
+    }
+    return 'consultation';
+  });
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState('');
@@ -59,7 +90,29 @@ export function useBookingWizard(storeId: string) {
   const [selectedServiceId, setSelectedServiceId] = useState(serviceIdParam ?? '');
   const [customer, setCustomer] = useState<BookingCustomer>({ name: '', email: '', phone: '' });
   const [remarks, setRemarks] = useState('');
+  // Separate from remarks (general "Notes") — both fields now render on the
+  // same step (2), so they need their own state or typing in one would show
+  // up in the other. Only used when needsOrderReference is true (fitting/
+  // pickup with no design reference).
+  const [orderReference, setOrderReference] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  // A customer arriving via a fitting/pickup deep link (e.g. staff sent them
+  // a link, or an order-tracking page linked here) already carries that
+  // context; everyone else starts without it and can opt in via the "I
+  // already have an order" toggle so Fitting/Pickup aren't presented as
+  // universal first-visit options (they only make sense against an existing
+  // order/garment — see BookingTypeSelector).
+  const [hasExistingOrder, setHasExistingOrder] = useState(
+    refTypeParam === 'fitting' || refTypeParam === 'pickup'
+  );
+
+  // Material/fabric responsibility — a structured choice, not a new backend
+  // field: encoded into the existing free-text `notes` column at submit time
+  // (handleSubmit), the same bracket-tag convention already used below for
+  // the design-reference/package-inquiry context.
+  const [materialSource, setMaterialSource] = useState<'own' | 'shop' | ''>('');
+  const [materialDescription, setMaterialDescription] = useState('');
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -94,60 +147,190 @@ export function useBookingWizard(storeId: string) {
     }
   }, []);
 
-  const BOOKING_TYPES: BookingTypeOption[] = useMemo(
-    () => [
-      {
-        value: 'consultation',
-        label: 'Consultation',
-        duration: 30,
-        icon: React.createElement(MessageSquare, { size: 18 }),
-        hint: 'Discuss your garment idea, fabric options, and pricing with the store.',
-      },
-      {
-        value: 'measurement',
-        label: 'Measurement',
-        duration: 45,
-        icon: React.createElement(Ruler, { size: 18 }),
-        hint: 'Get measured in-person so your garment is cut to fit you accurately.',
-      },
-      {
-        value: 'fitting',
-        label: 'Fitting',
-        duration: 45,
-        icon: React.createElement(Shirt, { size: 18 }),
-        hint: 'Try on your garment in progress so the store can adjust the fit.',
-      },
-      {
-        value: 'alteration',
-        label: 'Alteration',
-        duration: 30,
-        icon: React.createElement(Scissors, { size: 18 }),
-        hint: 'Bring in an existing piece for resizing, repair, or adjustment.',
-      },
-      {
-        value: 'pickup',
-        label: 'Pickup',
-        duration: 15,
-        icon: React.createElement(Package, { size: 18 }),
-        hint: 'Collect your finished garment or order at the store.',
-      },
-    ],
-    []
-  );
+  const [returnToReview, setReturnToReview] = useState(false);
+  const qtyParam = searchParams.get('qty') || searchParams.get('quantity');
+  const [quantity, setQuantity] = useState(qtyParam || '');
+
+  const onEditPurpose = () => {
+    setStep(1);
+    setReturnToReview(true);
+  };
+
+  const onEditSchedule = () => {
+    setStep(2);
+    setReturnToReview(true);
+  };
+
+  const selectedService = useMemo(() => {
+    if (!storeSettings?.services) return null;
+    return storeSettings.services.find((s) => s.id.toString() === selectedServiceId || s.id.toString() === serviceIdParam) || null;
+  }, [storeSettings?.services, selectedServiceId, serviceIdParam]);
 
   const availableBookingTypes = useMemo(() => {
-    return refName
-      ? BOOKING_TYPES.filter((t) => t.value !== 'pickup' && t.value !== 'alteration')
-      : BOOKING_TYPES;
-  }, [refName, BOOKING_TYPES]);
+    const consultationBase: BookingTypeOption = {
+      value: 'consultation',
+      label: 'Consultation',
+      duration: 30,
+      icon: React.createElement(MessageSquare, { size: 18 }),
+      hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
+    };
 
-  const durationMinutes = BOOKING_TYPES.find((t) => t.value === appointmentType)?.duration ?? 30;
+    const measurementBase: BookingTypeOption = {
+      value: 'measurement',
+      label: 'Measurement',
+      duration: 45,
+      icon: React.createElement(Ruler, { size: 18 }),
+      hint: 'Get measured in person for your garment.',
+    };
 
-  const serviceAutoFilled = !!serviceIdParam && !!storeSettings?.services?.some((s) => s.id.toString() === serviceIdParam);
-  const branchAutoFilled = !!branchSlugParam && !!storeSettings?.branches?.some((b) => b.slug === branchSlugParam);
-  const autoFilledBranch = branchAutoFilled ? storeSettings?.branches?.find((b) => b.slug === branchSlugParam) || null : null;
+    const alterationBase: BookingTypeOption = {
+      value: 'alteration',
+      label: 'Alteration / Repair',
+      duration: 30,
+      icon: React.createElement(Scissors, { size: 18 }),
+      hint: 'Bring an existing garment for adjustment or repair.',
+    };
 
-  const needsServicePicker = !serviceAutoFilled && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
+    const fittingBase: BookingTypeOption = {
+      value: 'fitting',
+      label: 'Fitting',
+      duration: 45,
+      icon: React.createElement(Shirt, { size: 18 }),
+      hint: 'Try on your garment in progress so the store can adjust the fit.',
+    };
+
+    const pickupBase: BookingTypeOption = {
+      value: 'pickup',
+      label: 'Pickup',
+      duration: 15,
+      icon: React.createElement(Package, { size: 18 }),
+      hint: 'Collect your finished garment or order at the store.',
+    };
+
+    const withExisting = (baseList: BookingTypeOption[]) => {
+      return hasExistingOrder ? [...baseList, fittingBase, pickupBase] : baseList;
+    };
+
+    // 1. SPECIFIC CATALOG DESIGN CONTEXT
+    // Discuss design/pricing or take in-person measurements.
+    if (refName) {
+      return withExisting([consultationBase, measurementBase]);
+    }
+
+    // 2. SPECIFIC SERVICE CONTEXT
+    const sName = (selectedService?.name || serviceNameParam || '').toLowerCase();
+    const hasSpecificService = !!selectedService || !!serviceIdParam || !!serviceNameParam;
+
+    if (hasSpecificService && sName) {
+      const isAlteration =
+        sName.includes('alter') ||
+        sName.includes('repair') ||
+        sName.includes('hem') ||
+        sName.includes('adjust') ||
+        sName.includes('taper') ||
+        sName.includes('patch') ||
+        sName.includes('fix') ||
+        sName.includes('resize') ||
+        sName.includes('shorten') ||
+        sName.includes('lengthen') ||
+        sName.includes('resew');
+
+      if (isAlteration) {
+        return withExisting([
+          {
+            ...alterationBase,
+            label: 'Alteration / Repair',
+            hint: 'Bring your garment for adjustment or repair with the store.',
+          },
+        ]);
+      }
+
+      const isPrinting =
+        sName.includes('print') ||
+        sName.includes('sublimat') ||
+        sName.includes('embroid') ||
+        sName.includes('silkscreen') ||
+        sName.includes('dtf') ||
+        sName.includes('heat press') ||
+        sName.includes('vinyl');
+
+      if (isPrinting) {
+        return withExisting([
+          {
+            ...consultationBase,
+            label: 'Consultation / Order Discussion',
+            hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the store.',
+          },
+        ]);
+      }
+
+      const isBulk =
+        sName.includes('bulk') ||
+        sName.includes('uniform') ||
+        sName.includes('corporate') ||
+        sName.includes('organization') ||
+        sName.includes('course') ||
+        sName.includes('batch') ||
+        sName.includes('team') ||
+        sName.includes('intramural');
+
+      if (isBulk) {
+        return withExisting([
+          {
+            ...consultationBase,
+            label: 'Consultation / Order Discussion',
+            hint: 'Discuss bulk garment requirements, fabric, sizing strategy, and quotation with the store.',
+          },
+          {
+            ...measurementBase,
+            hint: 'Get measured in person for your group or individual uniform.',
+          },
+        ]);
+      }
+
+      // Other custom tailoring / bespoke / made-to-measure services
+      return withExisting([
+        consultationBase,
+        {
+          ...measurementBase,
+          hint: 'Get measured in person for your custom garment.',
+        },
+      ]);
+    }
+
+    // 3. GENERAL SHOP CONTEXT (no specific design or service chosen yet)
+    return withExisting([consultationBase, measurementBase, alterationBase]);
+  }, [refName, selectedService, serviceIdParam, serviceNameParam, hasExistingOrder]);
+
+  // Synchronize appointmentType if current selection is invalid for this service
+  useEffect(() => {
+    if (availableBookingTypes.length > 0) {
+      const isCurrentValid = availableBookingTypes.some((t) => t.value === appointmentType);
+      if (!isCurrentValid) {
+        setAppointmentType(availableBookingTypes[0].value);
+      }
+    }
+  }, [availableBookingTypes, appointmentType]);
+
+  const durationMinutes = availableBookingTypes.find((t) => t.value === appointmentType)?.duration ?? 30;
+
+  const branchAutoFilled = !!branchSlugParam && !!storeSettings?.branches?.some((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam);
+  const autoFilledBranch = branchAutoFilled ? storeSettings?.branches?.find((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam) || null : null;
+
+  // A Catalog Item's own service_id (attached to the URL by the catalog item
+  // detail page whenever item.service exists) already answers "what
+  // service is this" — trust that context and never re-ask, even if this
+  // particular service happens to be filtered out of the general public
+  // services list (e.g. deactivated after the catalog page loaded). A design
+  // reference (refName, set for every catalog-item booking regardless of
+  // whether that item has a linked service_id) counts the same way — the
+  // catalog design itself already fully specifies what's being made, so a
+  // "Service (Optional)" dropdown underneath it is redundant, not optional.
+  // The picker only reappears when the entry point genuinely carried neither
+  // (a plain "Book Appointment" from the store profile, not tied to any
+  // design or service).
+  const hasServiceContext = !!serviceIdParam || !!refName;
+  const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
   const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
 
   const totalSteps = 3;
@@ -174,7 +357,7 @@ export function useBookingWizard(storeId: string) {
 
   useEffect(() => {
     if (!selectedBranchId && branchesWithDistance.length > 0) {
-      const match = branchSlugParam && branchesWithDistance.find((b) => b.slug === branchSlugParam);
+      const match = branchSlugParam && branchesWithDistance.find((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam);
       if (match) {
         setSelectedBranchId(String(match.id));
       } else {
@@ -184,14 +367,12 @@ export function useBookingWizard(storeId: string) {
   }, [branchesWithDistance, selectedBranchId, branchSlugParam]);
 
   const selectedBranch = useMemo(() => {
-    if (!selectedBranchId || !storeSettings?.branches) return null;
-    return storeSettings.branches.find((b) => String(b.id) === selectedBranchId) || null;
-  }, [selectedBranchId, storeSettings?.branches]);
-
-  const selectedService = useMemo(() => {
-    if (!storeSettings?.services) return null;
-    return storeSettings.services.find((s) => s.id.toString() === selectedServiceId || s.id.toString() === serviceIdParam) || null;
-  }, [storeSettings?.services, selectedServiceId, serviceIdParam]);
+    if (!selectedBranchId) return null;
+    // branchesWithDistance (not the raw storeSettings.branches list) so the
+    // review screen and confirmation can show "1.2 km away" alongside the
+    // branch, same distance data already computed for the picker.
+    return branchesWithDistance.find((b) => String(b.id) === selectedBranchId) || null;
+  }, [selectedBranchId, branchesWithDistance]);
 
   const parsedOperatingHours = useMemo(() => {
     if (!storeSettings?.operating_hours) return null;
@@ -321,6 +502,19 @@ export function useBookingWizard(storeId: string) {
     if (packageInfo) {
       notesPayload += `[Package Inquiry: ${packageInfo.name} — includes ${packageInfo.services.map((s) => s.name).join(', ')}]\n`;
     }
+    if (materialSource === 'own') {
+      notesPayload += `[Material: Customer will bring own fabric/sample${
+        materialDescription.trim() ? ` — ${materialDescription.trim()}` : ''
+      }]\n`;
+    } else if (materialSource === 'shop') {
+      notesPayload += `[Material: Customer will use the shop's material]\n`;
+    }
+    if (orderReference.trim()) {
+      notesPayload += `[Existing Order: ${orderReference.trim()}]\n`;
+    }
+    if (quantity.trim()) {
+      notesPayload += `[Quantity: ${quantity.trim()} people/items]\n`;
+    }
     if (remarks.trim()) {
       notesPayload += `Notes: ${remarks.trim()}`;
     }
@@ -358,23 +552,36 @@ export function useBookingWizard(storeId: string) {
     prevStep,
     displayStep,
     totalSteps,
-    loading,
+    returnToReview,
+    setReturnToReview,
+    onEditPurpose,
+    onEditSchedule,
+    quantity,
+    setQuantity,
+    // Also true before hydrate() resolves and while a not-logged-in
+    // customer is mid-redirect to /login — keeps the wizard's own content
+    // from flashing in behind the redirect.
+    loading: loading || !hydrated || !user,
     success,
     submitting,
     storeSettings,
     packageInfo,
 
-    // Design reference context
+    // Design / Service reference context
     refName,
     refSize,
     refImage,
     refPrice,
     refColor,
+    serviceIdParam,
+    serviceNameParam,
 
     // Step 2 state
     availableBookingTypes,
     appointmentType,
     setAppointmentType,
+    hasExistingOrder,
+    setHasExistingOrder,
     needsServicePicker,
     typesRequiringService: TYPES_REQUIRING_SERVICE,
     selectedServiceId,
@@ -382,6 +589,12 @@ export function useBookingWizard(storeId: string) {
     needsOrderReference,
     remarks,
     setRemarks,
+    orderReference,
+    setOrderReference,
+    materialSource,
+    setMaterialSource,
+    materialDescription,
+    setMaterialDescription,
     branchAutoFilled,
     autoFilledBranch,
     branchesWithDistance,

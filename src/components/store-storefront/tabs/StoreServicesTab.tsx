@@ -42,7 +42,7 @@ export default function StoreServicesTab({
   // needing to render the detail view itself any more.
   useEffect(() => {
     if (expandedServiceId) {
-      router.push(`/store/${storeId}/service/${expandedServiceId}`);
+      router.replace(`/store/${storeId}/service/${expandedServiceId}`);
     }
   }, [expandedServiceId, storeId, router]);
 

@@ -6,6 +6,7 @@ import BookingHeader from '@/components/booking/BookingHeader';
 import BookingSuccessState from '@/components/booking/BookingSuccessState';
 import BookingReferenceCard from '@/components/booking/BookingReferenceCard';
 import BookingActionBar from '@/components/booking/BookingActionBar';
+import BookingDesktopSummary from '@/components/booking/BookingDesktopSummary';
 import BookingStep1Policy from '@/components/booking/steps/BookingStep1Policy';
 import BookingStep2Schedule from '@/components/booking/steps/BookingStep2Schedule';
 import BookingStep3Review from '@/components/booking/steps/BookingStep3Review';
@@ -24,15 +25,28 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
   }
 
   if (b.success) {
-    return <BookingSuccessState storeId={storeId} storeName={b.storeSettings?.name} />;
+    return (
+      <BookingSuccessState
+        storeId={storeId}
+        storeName={b.storeSettings?.name}
+        appointmentType={b.appointmentType}
+        selectedBranch={b.selectedBranch}
+        date={b.date}
+        time={b.time}
+        formatDatePreview={b.formatDatePreview}
+        formatTimePreview={b.formatTimePreview}
+        materialSource={b.materialSource}
+      />
+    );
   }
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas text-ink">
       <BookingHeader onBack={() => (b.step > 1 ? b.setStep(b.prevStep) : b.router.back())} />
 
-      <div className="flex-1 mobile-screen-margins py-4 pb-28">
-        <div className="w-full max-w-xl mx-auto">
+      <div className="flex-1 mobile-screen-margins py-4 pb-28 lg:pb-10">
+        <div className="w-full max-w-xl lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:items-start">
+        <div className="lg:flex-1 lg:max-w-xl">
           {/* Header Context & Step Progress */}
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -44,7 +58,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 </p>
               )}
             </div>
-            <div className="text-xs font-semibold text-ink-faint bg-sunken border border-line px-2.5 py-1 rounded-full">
+            <div className="text-xs font-semibold text-ink-faint bg-sunken border border-line px-2.5 py-1 rounded-none">
               Step {b.displayStep} of {b.totalSteps}
             </div>
           </div>
@@ -58,28 +72,44 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
               refSize={b.refSize}
               refColor={b.refColor}
               packageInfo={b.packageInfo}
+              selectedService={b.selectedService}
+              serviceName={b.serviceNameParam}
+              quantity={b.quantity}
             />
           )}
 
           {/* Wizard Steps */}
           <div>
-            {b.step === 1 && <BookingStep1Policy storeSettings={b.storeSettings} />}
-
-            {b.step === 2 && (
-              <BookingStep2Schedule
+            {b.step === 1 && (
+              <BookingStep1Policy
+                storeSettings={b.storeSettings}
                 availableBookingTypes={b.availableBookingTypes}
                 appointmentType={b.appointmentType}
                 setAppointmentType={b.setAppointmentType}
+                showExistingOrderToggle={!b.refName}
+                hasExistingOrder={b.hasExistingOrder}
+                setHasExistingOrder={b.setHasExistingOrder}
+              />
+            )}
+
+            {b.step === 2 && (
+              <BookingStep2Schedule
+                appointmentType={b.appointmentType}
+                refName={b.refName}
+                materialSource={b.materialSource}
+                setMaterialSource={b.setMaterialSource}
+                materialDescription={b.materialDescription}
+                setMaterialDescription={b.setMaterialDescription}
                 needsServicePicker={b.needsServicePicker}
                 typesRequiringService={b.typesRequiringService}
                 selectedServiceId={b.selectedServiceId}
                 setSelectedServiceId={b.setSelectedServiceId}
                 storeSettings={b.storeSettings}
                 needsOrderReference={b.needsOrderReference}
+                orderReference={b.orderReference}
+                setOrderReference={b.setOrderReference}
                 remarks={b.remarks}
                 setRemarks={b.setRemarks}
-                branchAutoFilled={b.branchAutoFilled}
-                autoFilledBranch={b.autoFilledBranch}
                 branchesWithDistance={b.branchesWithDistance}
                 selectedBranchId={b.selectedBranchId}
                 setSelectedBranchId={b.setSelectedBranchId}
@@ -92,6 +122,18 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 calendarAppointments={b.calendarAppointments}
                 durationMinutes={b.durationMinutes}
                 specialHoursForDate={b.specialHoursForDate}
+                user={b.user}
+                customer={b.customer}
+                setCustomer={b.setCustomer}
+                answers={b.answers}
+                setAnswers={b.setAnswers}
+                paymentMethod={b.paymentMethod}
+                setPaymentMethod={b.setPaymentMethod}
+                paymentReference={b.paymentReference}
+                setPaymentReference={b.setPaymentReference}
+                paymentReceiptUrl={b.paymentReceiptUrl}
+                uploadingReceipt={b.uploadingReceipt}
+                handleReceiptUpload={b.handleReceiptUpload}
               />
             )}
 
@@ -110,36 +152,59 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 selectedBranch={b.selectedBranch}
                 formatDatePreview={b.formatDatePreview}
                 formatTimePreview={b.formatTimePreview}
-                onEditSchedule={() => b.setStep(2)}
+                onEditPurpose={b.onEditPurpose}
+                onEditSchedule={b.onEditSchedule}
                 user={b.user}
                 customer={b.customer}
-                setCustomer={b.setCustomer}
                 remarks={b.remarks}
-                setRemarks={b.setRemarks}
-                storeSettings={b.storeSettings}
+                orderReference={b.orderReference}
                 answers={b.answers}
-                setAnswers={b.setAnswers}
+                storeSettings={b.storeSettings}
+                materialSource={b.materialSource}
+                materialDescription={b.materialDescription}
                 paymentMethod={b.paymentMethod}
-                setPaymentMethod={b.setPaymentMethod}
-                paymentReference={b.paymentReference}
-                setPaymentReference={b.setPaymentReference}
                 paymentReceiptUrl={b.paymentReceiptUrl}
-                uploadingReceipt={b.uploadingReceipt}
-                handleReceiptUpload={b.handleReceiptUpload}
+                quantity={b.quantity}
                 handleSubmit={b.handleSubmit}
               />
             )}
           </div>
+        </div>
+
+        {b.step < 3 && (
+          <BookingDesktopSummary
+            refName={b.refName}
+            refPrice={b.refPrice}
+            packageInfo={b.packageInfo}
+            selectedService={b.selectedService}
+            appointmentType={b.appointmentType}
+            selectedBranch={b.selectedBranch}
+            date={b.date}
+            time={b.time}
+            formatDatePreview={b.formatDatePreview}
+            formatTimePreview={b.formatTimePreview}
+            materialSource={b.materialSource}
+            quantity={b.quantity}
+          />
+        )}
         </div>
       </div>
 
       {/* Anchored Bottom Action Bar */}
       <BookingActionBar
         step={b.step}
-        onNextStep={() => b.setStep(b.step + 1)}
+        onNextStep={() => {
+          if (b.returnToReview && b.step < 3) {
+            b.setStep(3);
+            b.setReturnToReview(false);
+          } else {
+            b.setStep(b.step + 1);
+          }
+        }}
         step2NextDisabled={b.step2NextDisabled}
         submitting={b.submitting}
         uploadingReceipt={b.uploadingReceipt}
+        returnToReview={b.returnToReview}
       />
     </div>
   );

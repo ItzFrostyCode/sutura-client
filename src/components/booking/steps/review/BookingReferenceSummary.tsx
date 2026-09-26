@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Sparkles, Scissors, Package, MessageSquare, Edit2 } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
+import { getServicePriceLabel } from '@/lib/servicePricing';
 import { Service, PackageInfo } from '../../types';
 
 interface BookingReferenceSummaryProps {
@@ -28,13 +29,13 @@ export default function BookingReferenceSummary({
 }: Readonly<BookingReferenceSummaryProps>) {
   if (refName) {
     return (
-      <div className="p-4 bg-surface border border-line rounded-2xl space-y-3">
+      <div className="p-4 bg-surface border border-line rounded-none space-y-3">
         <span className="mobile-overline text-taupe flex items-center gap-1.5">
           <Sparkles size={14} className="text-taupe" /> Design Reference
         </span>
         <div className="flex items-center gap-3">
           {refImage && (
-            <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-line shrink-0 bg-sunken">
+            <div className="relative w-14 h-14 rounded-none overflow-hidden border border-line shrink-0 bg-sunken">
               <Image src={getMediaUrl(refImage)} alt={refName} fill className="object-cover object-top" />
             </div>
           )}
@@ -61,7 +62,7 @@ export default function BookingReferenceSummary({
 
   if (selectedService) {
     return (
-      <div className="p-4 bg-surface border border-line rounded-2xl space-y-2">
+      <div className="p-4 bg-surface border border-line rounded-none space-y-2">
         <div className="flex items-center justify-between">
           <span className="mobile-overline text-taupe flex items-center gap-1.5">
             <Scissors size={14} className="text-taupe" /> Selected Service
@@ -74,13 +75,11 @@ export default function BookingReferenceSummary({
             <Edit2 size={12} /> Change
           </button>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h3 className="mobile-h4 font-medium text-ink">{selectedService.name}</h3>
-          {selectedService.base_price && (
-            <span className="mobile-body-sm font-semibold text-taupe">
-              ₱{Number(selectedService.base_price).toLocaleString()}
-            </span>
-          )}
+          <span className="mobile-body-sm font-semibold text-taupe shrink-0 text-right">
+            {getServicePriceLabel(selectedService.base_price)}
+          </span>
         </div>
         {selectedService.description && (
           <p className="mobile-body-sm text-ink-muted line-clamp-2 font-normal">{selectedService.description}</p>
@@ -91,7 +90,7 @@ export default function BookingReferenceSummary({
 
   if (packageInfo) {
     return (
-      <div className="p-4 bg-surface border border-taupe/30 rounded-2xl space-y-2">
+      <div className="p-4 bg-surface border border-taupe/30 rounded-none space-y-2">
         <span className="mobile-overline text-taupe flex items-center gap-1.5">
           <Package size={14} className="text-taupe" /> Package Inquiry
         </span>
@@ -111,13 +110,41 @@ export default function BookingReferenceSummary({
     );
   }
 
+  const PURPOSE_DETAILS: Record<string, { label: string; hint: string }> = {
+    consultation: {
+      label: 'Consultation',
+      hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
+    },
+    measurement: {
+      label: 'Measurement',
+      hint: 'Get measured in person for your garment.',
+    },
+    alteration: {
+      label: 'Alteration / Repair',
+      hint: 'Bring an existing garment for adjustment or repair.',
+    },
+    fitting: {
+      label: 'Fitting',
+      hint: 'Try on your garment in progress so the store can adjust the fit.',
+    },
+    pickup: {
+      label: 'Pickup',
+      hint: 'Collect your finished garment or order at the store.',
+    },
+  };
+
+  const purpose = PURPOSE_DETAILS[appointmentType] ?? {
+    label: appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1),
+    hint: 'Visit the store for your tailoring appointment.',
+  };
+
   return (
-    <div className="p-4 bg-surface border border-line rounded-2xl space-y-2">
+    <div className="p-4 bg-surface border border-line rounded-none space-y-2">
       <span className="mobile-overline text-taupe flex items-center gap-1.5">
         <MessageSquare size={14} className="text-taupe" /> Appointment Purpose
       </span>
-      <h3 className="mobile-h4 font-medium text-ink capitalize">{appointmentType} Consultation</h3>
-      <p className="mobile-body-sm text-ink-muted font-normal">Store consultation and fitting service.</p>
+      <h3 className="mobile-h4 font-medium text-ink">{purpose.label}</h3>
+      <p className="mobile-body-sm text-ink-muted font-normal">{purpose.hint}</p>
     </div>
   );
 }

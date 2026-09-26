@@ -11,7 +11,7 @@ Frontend page → API endpoint → backend controller → database entity, for e
 | `/` , `/search`, `/stores` | `GET /public/stores`, `/public/catalog-items`, `/public/services` | `StoreController::publicIndex`, `CatalogController::publicShowroom/publicIndex`, `ServiceController::publicIndex` | `Store`, `CatalogItem`, `Service` |
 | `/store/[store_id]` | `GET /public/stores/{slug}` (+ services/packages/posts/reviews) | `StoreController::publicProfile` + siblings | `Store`, `Service`, `ServicePackage`, `StorePost`, `StoreReview` |
 | `/store/[store_id]/catalog/[item_id]` | `GET /catalog/{storeId}/{itemId}` | `CatalogController::show` | `CatalogItem`, `CatalogImage` |
-| `/store/[store_id]/book` | `POST /catalog/{store:slug}/book` | `PublicBookingController::submit` | `Appointment` (+ shadow `User` if new) |
+| `/store/[store_id]/book` | `POST /catalog/{store:slug}/book` | `PublicBookingController::submit` | `Appointment` (+ shadow `User` if new) — API unchanged and still callable anonymously, but the frontend page itself now gates on login first (redirects to `/login`/`/register` and back) before this call is ever reachable; see `docs/CUSTOMER-WORKFLOW.md` §7.0. The shadow-`User` branch is now realistically only exercised by a direct API call, not the customer-facing UI. |
 | `/store/[store_id]/repair-request` | `POST /stores/{slug}/repair-requests` | `JobOrderController::customerRepairRequest` | `JobOrder` |
 | `/track/[code]` | `GET /track/{trackingCode}` | `JobOrderTrackingController::show` | `JobOrder` (safe field subset) |
 | `/account/orders/[id]` | `GET /my-orders/{id}` | `JobOrderTrackingController::myOrderDetail` | `JobOrder`, `Measurement` (via `measurement_id`) |

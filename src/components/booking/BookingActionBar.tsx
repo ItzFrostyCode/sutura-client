@@ -9,6 +9,7 @@ interface BookingActionBarProps {
   readonly step2NextDisabled: boolean;
   readonly submitting: boolean;
   readonly uploadingReceipt: boolean;
+  readonly returnToReview?: boolean;
 }
 
 export default function BookingActionBar({
@@ -17,6 +18,7 @@ export default function BookingActionBar({
   step2NextDisabled,
   submitting,
   uploadingReceipt,
+  returnToReview,
 }: BookingActionBarProps) {
   return (
     <footer
@@ -28,9 +30,9 @@ export default function BookingActionBar({
           <button
             type="button"
             onClick={onNextStep}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"
           >
-            <span>Agree & Continue</span>
+            <span>{returnToReview ? 'Return to Review' : 'Continue'}</span>
             <ArrowRight size={18} />
           </button>
         )}
@@ -39,9 +41,9 @@ export default function BookingActionBar({
             type="button"
             onClick={onNextStep}
             disabled={step2NextDisabled}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs active:scale-[0.99]"
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs active:scale-[0.99]"
           >
-            <span>Review & Confirm</span>
+            <span>{returnToReview ? 'Return to Review' : 'Review & Confirm'}</span>
             <ArrowRight size={18} />
           </button>
         )}
@@ -50,7 +52,7 @@ export default function BookingActionBar({
             type="submit"
             form="booking-form"
             disabled={submitting || uploadingReceipt}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.99]"
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.99]"
           >
             {(submitting || uploadingReceipt) && <Loader2 size={18} className="animate-spin" />}
             <span>
@@ -58,7 +60,7 @@ export default function BookingActionBar({
                 ? 'Processing...'
                 : uploadingReceipt
                 ? 'Uploading receipt...'
-                : 'Confirm Booking'}
+                : 'Book Appointment'}
             </span>
           </button>
         )}

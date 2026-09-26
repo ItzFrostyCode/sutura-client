@@ -10,6 +10,8 @@ import {
   getOldLocation,
   swapLocations,
   haversineKm,
+  requestCurrentLocation,
+  LOCATION_CHANGED_EVENT,
   type SavedLocation,
 } from '@/lib/customerLocation';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
@@ -22,6 +24,7 @@ import {
   FilterTabKey,
   SearchActiveTab,
 } from '../types';
+import { useToast } from '@/context/ToastContext';
 
 export function useSearchData() {
   const router = useRouter();
@@ -59,10 +62,8 @@ export function useSearchData() {
     const nextCat = searchParams.get('specialization') ?? searchParams.get('category') ?? '';
     const nextColor = searchParams.get('color') ?? '';
 
-    if (nextQ) {
+    if (nextQ !== null && nextQ !== undefined) {
       setQ(nextQ);
-    } else {
-      setQ('');
     }
     setCategoryLabel(searchParams.get('qlabel') ?? '');
 
@@ -77,7 +78,7 @@ export function useSearchData() {
     if (nextDept) setDepartment(nextDept);
 
     const nextDistrict = searchParams.get('district') ?? '';
-    if (nextDistrict) setDistrict(nextDistrict);
+    setDistrict(nextDistrict);
 
     const nextOpen = searchParams.get('openNow') === 'true' || searchParams.get('open_now') === '1';
     setOpenNow(nextOpen);
@@ -94,12 +95,45 @@ export function useSearchData() {
     searchInputRef.current?.focus();
   }, []);
 
-
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [savedLocation, setSavedLocation] = useState<SavedLocation | null>(null);
   const [oldLocation, setOldLocation] = useState<SavedLocation | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [locationPromptDismissed, setLocationPromptDismissed] = useState(false);
+  const toast = useToast();
+
+  // Sync with global location change events across components.
+  // Note: user coordinates are used solely for distance display and proximity sorting,
+  // never to restrict search results to a single district.
+  useEffect(() => {
+    const handleLocationChange = (e: Event) => {
+      const customEvent = e as CustomEvent<SavedLocation>;
+      if (customEvent.detail) {
+        setSavedLocation(customEvent.detail);
+        setUserCoords({ lat: customEvent.detail.lat, lng: customEvent.detail.lng });
+      }
+    };
+
+    window.addEventListener(LOCATION_CHANGED_EVENT, handleLocationChange);
+    return () => {
+      window.removeEventListener(LOCATION_CHANGED_EVENT, handleLocationChange);
+    };
+  }, []);
+
+  const handleRequestLocation = () => {
+    setLocating(true);
+    requestCurrentLocation(
+      (loc) => {
+        setSavedLocation(loc);
+        setUserCoords({ lat: loc.lat, lng: loc.lng });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+      }
+    );
+  };
 
   const initialTab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<SearchActiveTab>(
@@ -144,9 +178,21 @@ export function useSearchData() {
     if (result?.current) {
       setSavedLocation(result.current);
       setUserCoords({ lat: result.current.lat, lng: result.current.lng });
-      setDistrict(result.current.district || '');
       setOldLocation(result.old);
     }
+  }
+
+  function handleTabChange(nextTab: SearchActiveTab) {
+    setActiveTab(nextTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', nextTab);
+    const trimmed = q.trim();
+    if (trimmed) {
+      params.set('q', trimmed);
+    } else {
+      params.delete('q');
+    }
+    router.replace(`/search?${params.toString()}`, { scroll: false });
   }
 
   function handleSortNearest() {
@@ -158,22 +204,23 @@ export function useSearchData() {
       setSortBy('distance');
       return;
     }
-    if (!navigator.geolocation) {
-      alert('Location is not supported by your browser.');
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Location is not supported by your browser.');
       return;
     }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserCoords(coords);
+    requestCurrentLocation(
+      (loc) => {
+        setSavedLocation(loc);
+        setUserCoords({ lat: loc.lat, lng: loc.lng });
         setSortBy('distance');
         setLocating(false);
+        toast.success(`Showing stores nearest to ${loc.district || 'you'}.`);
       },
       () => {
         setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+        toast.error('Unable to retrieve location. Please check browser permissions.');
+      }
     );
   }
 
@@ -394,6 +441,7 @@ export function useSearchData() {
     handleSortNearest,
     activeTab,
     setActiveTab,
+    handleTabChange,
     stores,
     storesLoading,
     services,

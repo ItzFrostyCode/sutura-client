@@ -22,7 +22,7 @@ export default function SearchServiceCard({
         })}`
       : 'Custom Quote';
 
-  const serviceHref = gate(`/store/${storeSlug}?tab=services&service_id=${service.id}`);
+  const serviceHref = gate(`/store/${storeSlug}/service/${service.id}`);
 
   return (
     <Link

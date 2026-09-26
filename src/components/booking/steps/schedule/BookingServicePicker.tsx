@@ -1,5 +1,6 @@
 import React from 'react';
 import { StoreSettings } from '../../types';
+import { getServicePriceLabel } from '@/lib/servicePricing';
 
 interface BookingServicePickerProps {
   readonly needsServicePicker: boolean;
@@ -9,8 +10,8 @@ interface BookingServicePickerProps {
   readonly setSelectedServiceId: (val: string) => void;
   readonly storeSettings: StoreSettings | null;
   readonly needsOrderReference: boolean;
-  readonly remarks: string;
-  readonly setRemarks: (val: string) => void;
+  readonly orderReference: string;
+  readonly setOrderReference: (val: string) => void;
 }
 
 export default function BookingServicePicker({
@@ -21,8 +22,8 @@ export default function BookingServicePicker({
   setSelectedServiceId,
   storeSettings,
   needsOrderReference,
-  remarks,
-  setRemarks,
+  orderReference,
+  setOrderReference,
 }: BookingServicePickerProps) {
   return (
     <div className="space-y-4">
@@ -41,7 +42,7 @@ export default function BookingServicePicker({
             value={selectedServiceId}
             required={typesRequiringService.includes(appointmentType)}
             onChange={(e) => setSelectedServiceId(e.target.value)}
-            className="w-full h-[52px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe"
+            className="w-full h-[52px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe"
           >
             <option value="">
               {typesRequiringService.includes(appointmentType)
@@ -50,7 +51,7 @@ export default function BookingServicePicker({
             </option>
             {storeSettings?.services?.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} {s.base_price ? `(₱${Number(s.base_price).toLocaleString()})` : ''}
+                {s.name} — {getServicePriceLabel(s.base_price)}
               </option>
             ))}
           </select>
@@ -66,9 +67,9 @@ export default function BookingServicePicker({
             id="booking-order-reference"
             type="text"
             placeholder="e.g. Order #1002 or Blue Wedding Gown"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value.slice(0, 120))}
-            className="w-full h-[52px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
+            value={orderReference}
+            onChange={(e) => setOrderReference(e.target.value.slice(0, 120))}
+            className="w-full h-[52px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
           />
           <p className="mobile-caption text-ink-faint">
             {appointmentType === 'pickup'

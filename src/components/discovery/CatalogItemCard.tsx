@@ -6,7 +6,7 @@ import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemDistanceInfo } from '@/lib/customerLocation';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
-import { resolveFabricImage } from '@/lib/fabricHelper';
+import { resolveFabricImage, getFabricLabel, getColorHex } from '@/lib/fabricHelper';
 
 /**
  * The one catalog-item card style every customer-facing browse surface
@@ -63,11 +63,19 @@ export default function CatalogItemCard({
           </div>
         )}
 
+        {/* Fabric Swatch indicator banner on the image */}
+        {showFabric && (
+          <div className="absolute bottom-0 inset-x-0 z-10 bg-black/75 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-1 flex items-center justify-between">
+            <span className="truncate">{getFabricLabel(item)}</span>
+            <span className="text-[9px] uppercase tracking-wider text-taupe font-bold shrink-0 ml-1">Fabric</span>
+          </div>
+        )}
+
         {/* Hover overlay — matches the storefront's own catalog card exactly:
             a bordered, uppercase, tracked-out material badge, not plain text. */}
         <div className="absolute inset-0 bg-surface/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-2 text-center">
           <span className="text-[10px] font-medium tracking-widest uppercase text-ink border border-ink px-3 py-1.5">
-            {showFabric ? `Fabric: ${item.material || 'Material Swatch'}` : (item.material || 'View Details')}
+            {showFabric ? `Fabric: ${getFabricLabel(item)}` : (item.material || 'View Details')}
           </span>
         </div>
       </div>
@@ -93,10 +101,20 @@ export default function CatalogItemCard({
 
           <div className="h-4 flex items-center text-[11px] text-ink-faint mt-0.5 overflow-hidden">
             {item.garment_type ? (
-              <span className="truncate">
+              <span className="truncate flex items-center gap-1">
                 <span className="capitalize">{item.garment_type}</span>
-                {(item.material || item.color) && (
-                  <span> • {item.material || ''}{item.material && item.color ? ` (${item.color})` : item.color || ''}</span>
+                {item.color && (
+                  <span className="inline-flex items-center gap-1 shrink-0">
+                    <span>•</span>
+                    <span
+                      className="w-2 h-2 rounded-full border border-black/20 shrink-0"
+                      style={{ backgroundColor: getColorHex(item.color) }}
+                    />
+                    <span className="capitalize">{item.color}</span>
+                  </span>
+                )}
+                {item.material && !showFabric && (
+                  <span className="truncate">• {item.material}</span>
                 )}
               </span>
             ) : (

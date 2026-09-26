@@ -103,12 +103,15 @@ export default function StoreCatalogTab({
       if (maxPrice && p > Number(maxPrice)) return false;
 
       if (colorFilter) {
-        const sc = colorFilter.toLowerCase();
+        const selectedList = colorFilter.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
         const ic = (item.color || '').toLowerCase();
         const iname = (item.name || '').toLowerCase();
         const viewAngles = (item.images || []).map((img) => (img.view_angle || '').toLowerCase()).join(' ');
         const ifab = (item.material || '').toLowerCase();
-        if (!ic.includes(sc) && !iname.includes(sc) && !viewAngles.includes(sc) && !ifab.includes(sc)) {
+        const matchesAny = selectedList.some(
+          (sc) => ic.includes(sc) || iname.includes(sc) || viewAngles.includes(sc) || ifab.includes(sc)
+        );
+        if (!matchesAny) {
           return false;
         }
       }
@@ -156,10 +159,16 @@ export default function StoreCatalogTab({
     });
   }
   if (colorFilter) {
-    activeFilterChips.push({
-      id: 'color',
-      label: `Color: ${colorFilter}`,
-      onRemove: () => setColorFilter(''),
+    const list = colorFilter.split(',').map((s) => s.trim()).filter(Boolean);
+    list.forEach((col) => {
+      activeFilterChips.push({
+        id: `color-${col}`,
+        label: `Color: ${col}`,
+        onRemove: () => {
+          const rem = list.filter((c) => c.toLowerCase() !== col.toLowerCase()).join(',');
+          setColorFilter(rem);
+        },
+      });
     });
   }
   if (ratingFilter) {

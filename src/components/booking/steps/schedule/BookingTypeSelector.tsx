@@ -6,12 +6,18 @@ interface BookingTypeSelectorProps {
   readonly availableBookingTypes: BookingTypeOption[];
   readonly appointmentType: string;
   readonly onSelectType: (val: string) => void;
+  readonly showExistingOrderToggle?: boolean;
+  readonly hasExistingOrder?: boolean;
+  readonly onToggleExistingOrder?: () => void;
 }
 
 export default function BookingTypeSelector({
   availableBookingTypes,
   appointmentType,
   onSelectType,
+  showExistingOrderToggle = false,
+  hasExistingOrder = false,
+  onToggleExistingOrder,
 }: BookingTypeSelectorProps) {
   return (
     <div className="space-y-2">
@@ -26,7 +32,7 @@ export default function BookingTypeSelector({
               type="button"
               key={t.value}
               onClick={() => onSelectType(t.value)}
-              className={`min-h-[56px] flex items-center gap-3.5 px-4 py-3 rounded-xl border text-left transition-all cursor-pointer ${
+              className={`min-h-[56px] flex items-center gap-3.5 px-4 py-3 rounded-none border text-left transition-all cursor-pointer ${
                 isSelected
                   ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20'
                   : 'border-line bg-surface hover:border-taupe/40'
@@ -49,6 +55,16 @@ export default function BookingTypeSelector({
           );
         })}
       </div>
+
+      {showExistingOrderToggle && !hasExistingOrder && (
+        <button
+          type="button"
+          onClick={onToggleExistingOrder}
+          className="mobile-caption font-semibold text-taupe hover:underline cursor-pointer py-1"
+        >
+          Already have an order or appointment with this shop?
+        </button>
+      )}
     </div>
   );
 }

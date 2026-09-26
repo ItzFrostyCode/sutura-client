@@ -133,7 +133,7 @@ function SearchPageContent() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => s.setActiveTab(tab)}
+                  onClick={() => s.handleTabChange(tab)}
                   className={`min-h-[40px] py-1.5 text-sm font-semibold transition-all border-b-2 -mb-px px-3 sm:px-4 flex items-center justify-center cursor-pointer ${
                     isSelected
                       ? 'border-ink text-ink font-bold'
@@ -166,6 +166,7 @@ function SearchPageContent() {
                 gate={s.gate}
                 showFabric={s.showFabric}
                 setShowFabric={s.setShowFabric}
+                userCoords={s.userCoords}
               />
             )}
 
@@ -224,6 +225,7 @@ function SearchPageContent() {
               setDistrict={s.setDistrict}
               onReset={s.resetFilterPanel}
               activeFilterCount={s.activeFilterCount}
+              activeTab={s.activeTab}
             />
           </div>
         </div>
@@ -254,6 +256,7 @@ function SearchPageContent() {
         setSortBy={s.setSortBy}
         onReset={s.resetFilterPanel}
         onApply={s.applyFilterPanel}
+        activeTab={s.activeTab}
       />
 
       {/* Location Picker Full-screen Map Modal */}
@@ -264,7 +267,6 @@ function SearchPageContent() {
           onConfirm={(loc) => {
             s.saveLocation(loc);
             s.setSavedLocation(loc);
-            s.setDistrict(loc.district);
             s.setLocationPickerOpen(false);
           }}
         />

@@ -27,9 +27,14 @@ export function getSavedLocation(): SavedLocation | null {
   }
 }
 
+export const LOCATION_CHANGED_EVENT = 'sutura:location_changed';
+
 export function saveLocation(loc: SavedLocation): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(loc));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(LOCATION_CHANGED_EVENT, { detail: loc }));
+    }
   } catch {
     // Private browsing / storage disabled
   }
@@ -62,6 +67,9 @@ export function saveLocationWithHistory(newLoc: SavedLocation): void {
   }
   saveLocation(newLoc);
   addRecentLocation(newLoc);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(LOCATION_CHANGED_EVENT, { detail: newLoc }));
+  }
 }
 
 export function swapLocations(): { current: SavedLocation | null; old: SavedLocation | null } | null {
@@ -218,4 +226,70 @@ export function getItemDistanceInfo(
     distanceKm: minKm,
     label: nearestBranchName ? `${minKm.toFixed(1)} km · ${nearestBranchName}` : `${minKm.toFixed(1)} km`,
   };
+}
+
+export async function checkLocationPermission(): Promise<PermissionState | 'unsupported'> {
+  if (typeof navigator === 'undefined' || !navigator.permissions || !navigator.permissions.query) {
+    return 'unsupported';
+  }
+  try {
+    const status = await navigator.permissions.query({ name: 'geolocation' });
+    return status.state;
+  } catch {
+    return 'unsupported';
+  }
+}
+
+export function requestCurrentLocation(
+  onSuccess?: (loc: SavedLocation) => void,
+  onError?: (err: GeolocationPositionError | Error) => void
+): void {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    onError?.(new Error('Geolocation not supported'));
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      let address = `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+      let district = 'Davao City';
+
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          address = data?.display_name ?? address;
+          district =
+            data?.address?.suburb ||
+            data?.address?.neighbourhood ||
+            data?.address?.city_district ||
+            data?.address?.city ||
+            'Davao City';
+        }
+      } catch {
+        // Fallback
+      }
+
+      const loc: SavedLocation = {
+        lat: latitude,
+        lng: longitude,
+        address,
+        district,
+      };
+
+      saveLocationWithHistory(loc);
+      onSuccess?.(loc);
+    },
+    (err) => {
+      onError?.(err);
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 }

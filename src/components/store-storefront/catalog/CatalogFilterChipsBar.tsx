@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import ModelFabricToggle from '@/components/discovery/ModelFabricToggle';
 
 export interface FilterChip {
   id: string;
@@ -50,28 +51,13 @@ export default function CatalogFilterChipsBar({
         )}
       </div>
 
-      {/* Model / Fabric toggle */}
-      <div className="flex items-center gap-2 shrink-0 ml-auto">
-        <span className={`text-xs font-medium ${!showPortfolioFabric ? 'text-ink' : 'text-ink-faint'}`}>
-          Model
-        </span>
-        <button
-          type="button"
-          onClick={onTogglePortfolioFabric}
-          aria-label="Toggle between model and fabric photos"
-          className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer ${
-            showPortfolioFabric ? 'bg-ink' : 'bg-line-strong'
-          }`}
-        >
-          <span
-            className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-              showPortfolioFabric ? 'translate-x-4' : ''
-            }`}
-          />
-        </button>
-        <span className={`text-xs font-medium ${showPortfolioFabric ? 'text-ink' : 'text-ink-faint'}`}>
-          Fabric
-        </span>
+      {/* Model / Fabric segmented toggle */}
+      <div className="flex items-center shrink-0 ml-auto">
+        <ModelFabricToggle
+          showFabric={showPortfolioFabric}
+          setShowFabric={onTogglePortfolioFabric}
+          size="sm"
+        />
       </div>
     </div>
   );

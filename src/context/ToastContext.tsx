@@ -51,7 +51,7 @@ export function ToastProvider({ children }: { readonly children: React.ReactNode
       {/* Toast Portal */}
       <div
         aria-live="polite"
-        className="fixed top-5 right-5 z-9999 flex flex-col gap-2.5 pointer-events-none"
+        className="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none"
         style={{ maxWidth: 380 }}
       >
         {toasts.map(toast => (

@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Clock, MessageCircle, Star, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Clock, MessageCircle, Star, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
 import { getActiveSale } from '@/lib/salePricing';
@@ -92,10 +92,11 @@ export default function ServiceDetailPage({
 
   const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && user?.roles?.[0]?.name === 'store_owner';
 
-  const handleBack = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) router.back();
-    else router.push(`/store/${storeId}?tab=services`);
-  };
+  // Deterministic, not router.back() — this page is reachable via a direct
+  // link (search results, recently-viewed) with no store-profile entry in
+  // history at all, so history-based back can land anywhere but the
+  // profile. Always send the customer to the Services tab they came from.
+  const handleBack = () => router.push(`/store/${storeId}?tab=services`);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -412,7 +413,7 @@ export default function ServiceDetailPage({
 
             <div className="space-y-3 pt-2">
               <Link
-                href={`/store/${storeId}/book?service_id=${service.id}`}
+                href={`/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`}
                 className="w-full h-[52px] rounded-none flex items-center justify-center bg-ink hover:bg-taupe text-white text-base font-semibold transition-colors"
               >
                 Book Appointment →
@@ -429,6 +430,37 @@ export default function ServiceDetailPage({
                 </a>
               )}
             </div>
+
+            {(service.reviews_count ?? 0) > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-serif font-semibold text-taupe-dark">Service Ratings</h2>
+                  <Link
+                    href={`/store/${storeId}/service/${service.id}/ratings`}
+                    className="flex items-center gap-0.5 text-xs font-semibold text-taupe"
+                  >
+                    View All <ChevronRight size={13} />
+                  </Link>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-0.5 text-amber-500">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        size={16}
+                        fill={n <= Math.round(service.reviews_avg_rating || 0) ? 'currentColor' : 'none'}
+                      />
+                    ))}
+                  </div>
+                  <span className="font-semibold text-ink text-sm">
+                    {service.reviews_avg_rating ? Number(service.reviews_avg_rating).toFixed(1) : '0.0'}
+                  </span>
+                  <span className="text-ink-faint text-xs">
+                    out of 5 · {service.reviews_count} review{service.reviews_count === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {!isOwnerViewingOwnStore && (
               <form onSubmit={handleSubmitReview} className="bg-surface border border-line rounded-none p-3 mt-3">

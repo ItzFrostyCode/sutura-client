@@ -14,6 +14,7 @@ export interface MyAppointment {
   payment_status: string;
   cancellation_reason: string | null;
   rebooking_blocked: boolean;
+  notes?: string | null;
   store: { name: string; slug: string; logo_path: string | null } | null;
   branch: { name: string; address: string | null; city: string | null } | null;
 }

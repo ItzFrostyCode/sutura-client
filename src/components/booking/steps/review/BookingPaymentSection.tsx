@@ -44,7 +44,7 @@ export default function BookingPaymentSection({
             type="button"
             key={m.value}
             onClick={() => setPaymentMethod(m.value)}
-            className={`touch-target-44 min-h-[44px] p-2 text-center rounded-lg border text-sm font-medium transition-all cursor-pointer ${
+            className={`touch-target-44 min-h-[44px] p-2 text-center rounded-none border text-sm font-medium transition-all cursor-pointer ${
               paymentMethod === m.value
                 ? 'border-taupe bg-taupe/10 text-taupe font-semibold'
                 : 'border-line bg-surface text-ink-muted hover:border-taupe/40'
@@ -56,7 +56,7 @@ export default function BookingPaymentSection({
       </div>
 
       {paymentMethod !== 'cash' && (
-        <div className="space-y-3 p-4 bg-surface border border-line rounded-2xl mobile-body-sm">
+        <div className="space-y-3 p-4 bg-surface border border-line rounded-none mobile-body-sm">
           {paymentMethod === 'gcash' && (storeSettings?.gcash_number || storeSettings?.gcash_qr_path) ? (
             <div>
               <p className="text-ink-muted font-normal">
@@ -69,7 +69,7 @@ export default function BookingPaymentSection({
                 <p className="font-mono text-base font-bold text-taupe mt-1">{storeSettings.gcash_number}</p>
               )}
               {storeSettings.gcash_qr_path && (
-                <div className="mt-3 w-36 h-36 relative border border-line rounded-xl overflow-hidden mx-auto bg-white">
+                <div className="mt-3 w-36 h-36 relative border border-line rounded-none overflow-hidden mx-auto bg-white">
                   <Image src={getMediaUrl(storeSettings.gcash_qr_path)} alt="GCash QR" fill className="object-contain p-1" />
                 </div>
               )}
@@ -86,7 +86,7 @@ export default function BookingPaymentSection({
                 <p className="font-mono text-base font-bold text-taupe mt-1">{storeSettings.paymaya_number}</p>
               )}
               {storeSettings.paymaya_qr_path && (
-                <div className="mt-3 w-36 h-36 relative border border-line rounded-xl overflow-hidden mx-auto bg-white">
+                <div className="mt-3 w-36 h-36 relative border border-line rounded-none overflow-hidden mx-auto bg-white">
                   <Image src={getMediaUrl(storeSettings.paymaya_qr_path)} alt="PayMaya QR" fill className="object-contain p-1" />
                 </div>
               )}
@@ -106,7 +106,7 @@ export default function BookingPaymentSection({
                 <p className="font-mono text-base font-bold text-taupe mt-1">{storeSettings.bank_account_number}</p>
               )}
               {storeSettings.bank_qr_path && (
-                <div className="mt-3 w-36 h-36 relative border border-line rounded-xl overflow-hidden mx-auto bg-white">
+                <div className="mt-3 w-36 h-36 relative border border-line rounded-none overflow-hidden mx-auto bg-white">
                   <Image src={getMediaUrl(storeSettings.bank_qr_path)} alt="Bank QR" fill className="object-contain p-1" />
                 </div>
               )}
@@ -128,7 +128,7 @@ export default function BookingPaymentSection({
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
                 placeholder="e.g. 100234812"
-                className="w-full form-input-mobile bg-canvas border border-line rounded-lg text-base text-ink font-normal focus:outline-none focus:border-taupe"
+                className="w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe"
               />
             </div>
             <div>
@@ -140,7 +140,7 @@ export default function BookingPaymentSection({
                 type="file"
                 accept="image/*"
                 onChange={handleReceiptUpload}
-                className="w-full mobile-body-sm text-ink file:mr-3 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-taupe file:text-white hover:file:bg-taupe-hover cursor-pointer"
+                className="w-full mobile-body-sm text-ink file:mr-3 file:py-2.5 file:px-4 file:rounded-none file:border-0 file:text-sm file:font-medium file:bg-taupe file:text-white hover:file:bg-taupe-hover cursor-pointer"
               />
               {uploadingReceipt && <p className="mobile-caption text-taupe mt-1 font-normal">Uploading receipt...</p>}
               {paymentReceiptUrl && (

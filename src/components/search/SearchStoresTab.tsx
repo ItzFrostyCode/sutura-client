@@ -54,8 +54,9 @@ interface SearchStoresTabProps {
   readonly items: CatalogItemResult[];
   readonly total: number;
   readonly gate: (href: string) => string;
-  readonly showFabric: boolean;
-  readonly setShowFabric: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly showFabric?: boolean;
+  readonly setShowFabric?: React.Dispatch<React.SetStateAction<boolean>>;
+  readonly userCoords?: { lat: number; lng: number } | null;
 }
 
 export default function SearchStoresTab({
@@ -67,38 +68,16 @@ export default function SearchStoresTab({
   items,
   total,
   gate,
-  showFabric,
-  setShowFabric,
+  showFabric = false,
+  userCoords,
 }: SearchStoresTabProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3 px-1">
         <h2 className="text-base font-bold text-ink">Nearby Stores</h2>
         <span className="text-xs text-ink-muted">
-          {stores.length} {stores.length === 1 ? 'result' : 'results'} · nearest first
+          {stores.length} {stores.length === 1 ? 'result' : 'results'}{userCoords ? ' · nearest first' : ''}
         </span>
-      </div>
-
-      {/* Model/Fabric Toggle — right-aligned to match the Catalog Designs section */}
-      <div className="flex items-center justify-end mb-2 px-1">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`text-[11px] font-semibold ${!showFabric ? 'text-ink' : 'text-ink-faint'}`}>Model</span>
-          <button
-            type="button"
-            onClick={() => setShowFabric((v) => !v)}
-            aria-label="Toggle between model and fabric photos"
-            className={`relative w-8 h-[18px] rounded-full transition-colors cursor-pointer ${
-              showFabric ? 'bg-ink' : 'bg-line-strong'
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                showFabric ? 'translate-x-[14px]' : ''
-              }`}
-            />
-          </button>
-          <span className={`text-[11px] font-semibold ${showFabric ? 'text-ink' : 'text-ink-faint'}`}>Fabric</span>
-        </div>
       </div>
 
       {storesLoading ? (
@@ -274,7 +253,7 @@ export default function SearchStoresTab({
         </div>
       )}
 
-      {activeTab === 'store' && (
+      {activeTab === 'store' && userCoords && stores.length > 0 && (
         <div className="mt-3 py-2.5 px-0 flex items-center gap-2.5 text-ink-muted text-xs border-b border-line/60">
           <MapPin size={14} className="text-taupe shrink-0" />
           <span>Distances are ordered from your current location in Davao City.</span>

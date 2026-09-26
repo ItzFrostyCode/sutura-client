@@ -1,32 +1,17 @@
 'use client';
 
-import React, { Suspense, useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { TOP_GROUPS } from './navData';
 import type { CategoryLeaf } from './navTypes';
 
 import { getCategoryColumns, type NavColumn } from './navColumns';
 import { DEPARTMENT_KEY_MAP } from './navColorColumn';
 
-// Next 16.3 requires useSearchParams() to sit inside a Suspense boundary at
-// build time (pre-existing gap, not introduced by this change — same fix
-// pattern already applied to reset-password/page.tsx and
-// print/jobs/[id]/receipt/page.tsx). Fixed here only because it otherwise
-// blocks `npm run build` entirely (WebHoverNav renders via PublicNav on most
-// customer-facing pages), which this session's own validation step requires.
 export default function WebHoverNav() {
-  return (
-    <Suspense fallback={null}>
-      <WebHoverNavInner />
-    </Suspense>
-  );
-}
-
-function WebHoverNavInner() {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [activeGroupKey, setActiveGroupKey] = useState<string | null>(null);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -66,7 +51,8 @@ function WebHoverNavInner() {
     if (label && !incoming.has('q') && (incoming.has('category') || incoming.has('specialization'))) {
       incoming.set('qlabel', label);
     }
-    const merged = pathname === '/search' ? new URLSearchParams(searchParams.toString()) : new URLSearchParams();
+    const currentSearch = typeof window !== 'undefined' ? window.location.search : '';
+    const merged = pathname === '/search' ? new URLSearchParams(currentSearch) : new URLSearchParams();
     if (incoming.has('category') || incoming.has('specialization') || incoming.has('q')) {
       merged.delete('q');
       merged.delete('search');
@@ -125,11 +111,11 @@ function WebHoverNavInner() {
 
   return (
     <div
-      className="hidden lg:flex items-center"
+      className="hidden md:flex items-center"
       onMouseLeave={handleMouseLeave}
     >
       {/* Top Nav Items on the LEFT (MEN, WOMEN, WEDDING, OFFICE, DISCOVER) */}
-      <nav className="flex items-center gap-5 lg:gap-7" aria-label="Main menu">
+      <nav className="flex items-center gap-3.5 lg:gap-7" aria-label="Main menu">
         {TOP_GROUPS.map((group) => {
           const isCurrent = activeGroupKey === group.key;
           return (
@@ -141,7 +127,7 @@ function WebHoverNavInner() {
               <button
                 type="button"
                 onClick={() => handleGroupClick(group.key)}
-                className={`text-[12px] lg:text-[13px] font-semibold tracking-wider transition-colors cursor-pointer uppercase whitespace-nowrap ${
+                className={`text-[11px] lg:text-[13px] font-semibold tracking-wider transition-colors cursor-pointer uppercase whitespace-nowrap ${
                   isCurrent
                     ? 'text-ink font-bold'
                     : 'text-ink-muted hover:text-ink'

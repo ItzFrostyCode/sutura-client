@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import api from '@/lib/axios';
 import { Check, X } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
 
 export default function RegisterPage() {
@@ -39,6 +40,7 @@ function RegisterPageContent() {
   // (from the account menu) registers as a customer, matching how a real
   // shopper vs. a store owner actually arrive at this form.
   const role = searchParams.get('as') === 'store_owner' ? 'store_owner' : 'customer';
+  const redirectParam = searchParams.get('redirect');
 
   // First/Last Name only — no Middle Initial field, per explicit direction.
   // Joined into the single `name` string the backend actually expects
@@ -71,7 +73,16 @@ function RegisterPageContent() {
         name, email, password, password_confirmation: passwordConfirmation, role
       });
       if (response.data.success) {
-        router.push('/login?registered=true');
+        if (response.data.data?.token && response.data.data?.user) {
+          useAuthStore.getState().setAuth(response.data.data.user, response.data.data.token);
+        }
+        if (redirectParam) {
+          router.push(redirectParam);
+        } else if (role === 'store_owner') {
+          router.push('/dashboard');
+        } else {
+          router.push('/');
+        }
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

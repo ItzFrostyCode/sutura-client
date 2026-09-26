@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, User as UserIcon } from 'lucide-react';
 import type { CategoryLeaf, MenuScreen, TopGroup } from './navTypes';
 import { TOP_GROUPS } from './navData';
 import { getCategoryColumns } from './navColumns';
+import type { User } from '@/store/useAuthStore';
+import { getMediaUrl } from '@/lib/media';
 
 // A "category="/"specialization=" href (e.g. "Browse All Suits" ->
 // ?category=suit) carries no human-readable text — the search box stayed
@@ -38,6 +41,12 @@ interface NavMenuDrawerProps {
   readonly onSelectGroup: (group: TopGroup) => void;
   readonly onOpenCategory: (group: TopGroup, category: CategoryLeaf) => void;
   readonly onToggleSection: (key: string) => void;
+  readonly trackOrderHref?: string;
+  readonly trackOrderLabel?: string;
+  readonly accountHref?: string;
+  readonly userDrawerLabel?: string;
+  readonly user?: User | null;
+  readonly isAuthenticated?: boolean;
 }
 
 export default function NavMenuDrawer({
@@ -47,6 +56,12 @@ export default function NavMenuDrawer({
   onGoBack,
   onSelectGroup,
   onOpenCategory,
+  trackOrderHref = '/track',
+  trackOrderLabel = 'Track Order',
+  accountHref = '/account',
+  userDrawerLabel,
+  user = null,
+  isAuthenticated = false,
 }: NavMenuDrawerProps) {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
 
@@ -122,14 +137,49 @@ export default function NavMenuDrawer({
               </button>
             ))}
 
+            {/* Track Order: routes to /account/orders for Customers, /track for Guests */}
             <Link
-              href="/track"
+              href={trackOrderHref}
               onClick={onClose}
               className="w-full h-[56px] px-6 flex items-center justify-between text-black hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100"
             >
               <span className="text-[13px] font-bold uppercase tracking-wider text-black">
-                Track Order
+                {trackOrderLabel}
               </span>
+              <ChevronRight size={18} className="text-gray-400" />
+            </Link>
+
+            {/* User Account / Sign In: Customer profile vs Guest account */}
+            <Link
+              href={accountHref}
+              onClick={onClose}
+              className="w-full h-[56px] px-6 flex items-center justify-between text-black hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100"
+            >
+              <div className="flex items-center gap-2.5">
+                {isAuthenticated && user ? (
+                  user.profile_picture ? (
+                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-gray-200">
+                      <Image
+                        src={getMediaUrl(user.profile_picture)}
+                        alt={user.name || 'Account'}
+                        fill
+                        sizes="24px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-taupe text-white text-[11px] font-bold flex items-center justify-center">
+                      {(user.name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )
+                ) : (
+                  <UserIcon size={17} className="text-gray-500" />
+                )}
+                <span className="text-[13px] font-bold uppercase tracking-wider text-black">
+                  {userDrawerLabel ?? (isAuthenticated ? 'My Account' : 'Sign In / Register')}
+                </span>
+              </div>
               <ChevronRight size={18} className="text-gray-400" />
             </Link>
           </>
