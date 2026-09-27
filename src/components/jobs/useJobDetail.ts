@@ -160,7 +160,7 @@ export function useJobDetail(jobId: string) {
     }
   };
 
-  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string) => {
+  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string, cashTendered?: number) => {
     if (!store || !job) return;
     setSaving(true);
     try {
@@ -170,6 +170,7 @@ export function useJobDetail(jobId: string) {
         reference: reference || undefined,
         notes: notesVal || undefined,
         receipt_path: receiptPath || undefined,
+        cash_tendered: cashTendered,
       });
       const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
       const updatedJob = res.data.data;
@@ -177,17 +178,23 @@ export function useJobDetail(jobId: string) {
       setBalance(updatedJob.balance);
       setPaymentStatus(updatedJob.payment_status);
 
-      // A payment below the 50% downpayment threshold is still valid (it
-      // counts toward it), but saying just "logged successfully" reads as
-      // if the store's downpayment policy has been satisfied — so call out
-      // the remaining shortfall instead of leaving that unqualified.
-      const totalAmt = Number.parseFloat(String(updatedJob.total_amount)) || 0;
-      const paidSoFar = totalAmt - (Number.parseFloat(String(updatedJob.balance)) || 0);
-      const requiredDp = totalAmt * 0.5;
-      if (paidSoFar < requiredDp) {
-        toast.success(`₱${amount.toFixed(2)} payment logged. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
+      if (method !== 'cash') {
+        // Doesn't touch the balance until verified — say so plainly instead
+        // of implying the payment already counted.
+        toast.success(`₱${amount.toFixed(2)} payment submitted — pending verification before it applies to the balance.`);
       } else {
-        toast.success(`₱${amount.toFixed(2)} payment logged successfully!`);
+        // A payment below the 50% downpayment threshold is still valid (it
+        // counts toward it), but saying just "logged successfully" reads as
+        // if the store's downpayment policy has been satisfied — so call out
+        // the remaining shortfall instead of leaving that unqualified.
+        const totalAmt = Number.parseFloat(String(updatedJob.total_amount)) || 0;
+        const paidSoFar = totalAmt - (Number.parseFloat(String(updatedJob.balance)) || 0);
+        const requiredDp = totalAmt * 0.5;
+        if (paidSoFar < requiredDp) {
+          toast.success(`₱${amount.toFixed(2)} payment logged. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
+        } else {
+          toast.success(`₱${amount.toFixed(2)} payment logged successfully!`);
+        }
       }
       // Same reference number already used on another order — a possible
       // reused-screenshot scam. Doesn't block the payment (legitimate
@@ -201,6 +208,26 @@ export function useJobDetail(jobId: string) {
       throw err;
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Owner/branch-manager confirmation that a GCash/PayMaya payment actually
+  // landed — only then does it apply to the balance (JobOrderController::
+  // verifyPayment). Cash needs no equivalent since it auto-verifies at pay().
+  const handleVerifyPayment = async (paymentId: number) => {
+    if (!store || !job) return;
+    try {
+      await api.post(`/stores/${store.id}/jobs/${job.id}/payments/${paymentId}/verify`);
+      const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
+      const updatedJob = res.data.data;
+      setJob(updatedJob);
+      setBalance(updatedJob.balance);
+      setPaymentStatus(updatedJob.payment_status);
+      toast.success('Payment verified.');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to verify payment.');
+      throw err;
     }
   };
 
@@ -372,6 +399,7 @@ export function useJobDetail(jobId: string) {
     setCustomerMaterialStatus,
     handleUpdate,
     handleChargePayment,
+    handleVerifyPayment,
     handleApplyDiscount,
     handleUpdatePayment,
     handleRejectPayment,

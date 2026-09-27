@@ -7,6 +7,9 @@ import { PaymentItemRow } from './PaymentItemRow';
 interface PaymentAuditLedgerProps {
   readonly job: Job;
   readonly financials: ComputedFinancials;
+  readonly isOwnerOrManager: boolean;
+  readonly verifyingPaymentId: number | null;
+  readonly onVerifyPayment: (paymentId: number) => Promise<void>;
   readonly editingPaymentId: number | null;
   readonly setEditingPaymentId: (id: number | null) => void;
   readonly editMethod: string;
@@ -31,6 +34,9 @@ interface PaymentAuditLedgerProps {
 export function PaymentAuditLedger({
   job,
   financials,
+  isOwnerOrManager,
+  verifyingPaymentId,
+  onVerifyPayment,
   editingPaymentId,
   setEditingPaymentId,
   editMethod,
@@ -79,6 +85,9 @@ export function PaymentAuditLedger({
               payment={payment}
               jobId={job.id}
               jobIsCompleted={jobIsCompleted}
+              isOwnerOrManager={isOwnerOrManager}
+              verifying={verifyingPaymentId === payment.id}
+              onVerify={() => onVerifyPayment(payment.id)}
               menuOpen={menuOpenPaymentId === payment.id}
               onToggleMenu={() => setMenuOpenPaymentId(p => (p === payment.id ? null : payment.id))}
               isEditing={editingPaymentId === payment.id}

@@ -69,6 +69,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     refreshJob,
     handleUpdate,
     handleChargePayment,
+    handleVerifyPayment,
     handleApplyDiscount,
     handleUpdatePayment,
     handleRejectPayment,
@@ -198,10 +199,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             <JobFinancialsCard
               job={job}
               saving={saving}
+              isOwnerOrManager={isOwnerOrManager}
               onCharge={handleChargePayment}
               onApplyDiscount={handleApplyDiscount}
               onUpdatePayment={handleUpdatePayment}
               onRejectPayment={handleRejectPayment}
+              onVerifyPayment={handleVerifyPayment}
             />
           </div>
         )}

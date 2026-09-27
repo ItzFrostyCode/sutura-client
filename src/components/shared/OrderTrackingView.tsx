@@ -38,6 +38,9 @@ export interface TrackedOrder {
   total_amount: number;
   balance: number;
   payment_status: string;
+  // Sum of GCash/PayMaya payments submitted but not yet verified by the
+  // shop — never reflected in balance/payment_status until confirmed.
+  pending_payment_amount?: number;
   created_at: string;
   updated_at?: string | null;
   // The customer's own original repair request — kept separate from any
@@ -232,6 +235,11 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
             <Wallet size={16} className="text-ink-faint shrink-0" />
             ₱{order.balance.toLocaleString()} balance of ₱{order.total_amount.toLocaleString()} ({order.payment_status})
           </div>
+          {!!order.pending_payment_amount && order.pending_payment_amount > 0 && (
+            <div className="mobile-caption text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+              ₱{order.pending_payment_amount.toLocaleString()} payment submitted — pending shop verification, not yet reflected above
+            </div>
+          )}
         </div>
 
         {order.repair_note && (

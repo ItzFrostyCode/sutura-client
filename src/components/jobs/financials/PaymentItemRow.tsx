@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { CreditCard, Printer, MoreVertical, Pencil, Flag, Check, Receipt } from 'lucide-react';
+import { CreditCard, Printer, MoreVertical, Pencil, Flag, Check, Receipt, Loader2, ShieldCheck } from 'lucide-react';
 import { Payment } from '../jobTypes';
 import { METHOD_CONFIG } from './financialsTypes';
 
@@ -8,6 +8,9 @@ interface PaymentItemRowProps {
   readonly payment: Payment;
   readonly jobId: number;
   readonly jobIsCompleted: boolean;
+  readonly isOwnerOrManager: boolean;
+  readonly verifying: boolean;
+  readonly onVerify: () => void;
   readonly menuOpen: boolean;
   readonly onToggleMenu: () => void;
   readonly isEditing: boolean;
@@ -34,6 +37,9 @@ export function PaymentItemRow({
   payment,
   jobId,
   jobIsCompleted,
+  isOwnerOrManager,
+  verifying,
+  onVerify,
   menuOpen,
   onToggleMenu,
   isEditing,
@@ -72,6 +78,11 @@ export function PaymentItemRow({
           {payment.rejected_at && (
             <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full">
               Rejected
+            </span>
+          )}
+          {!payment.rejected_at && payment.status === 'pending_verification' && (
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full">
+              Pending Verification
             </span>
           )}
         </div>
@@ -183,6 +194,11 @@ export function PaymentItemRow({
           </div>
 
           <div className="flex items-center gap-2">
+            {payment.payment_method === 'cash' && payment.change_amount != null && (
+              <span className="bg-surface px-1.5 py-0.5 rounded border border-line text-ink-body">
+                Tendered ₱{Number.parseFloat(String(payment.cash_tendered)).toFixed(2)} · Change ₱{Number.parseFloat(String(payment.change_amount)).toFixed(2)}
+              </span>
+            )}
             {payment.reference && (
               <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-line text-ink-body">
                 Ref: {payment.reference}
@@ -199,6 +215,24 @@ export function PaymentItemRow({
               </a>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Pending Verification — owner/branch manager confirms the GCash/PayMaya proof before it counts toward the balance */}
+      {!payment.rejected_at && payment.status === 'pending_verification' && isOwnerOrManager && (
+        <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-amber-200 bg-amber-50/50 p-2.5 rounded-lg">
+          <p className="text-[11px] text-amber-800">
+            Confirm the {payment.payment_method === 'gcash' ? 'GCash' : 'PayMaya'} receipt before this counts toward the balance.
+          </p>
+          <button
+            type="button"
+            disabled={verifying}
+            onClick={onVerify}
+            className="shrink-0 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-2xs cursor-pointer disabled:opacity-50"
+          >
+            {verifying ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
+            {verifying ? 'Verifying…' : 'Verify'}
+          </button>
         </div>
       )}
 

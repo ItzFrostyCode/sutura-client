@@ -12,10 +12,12 @@ import { JobCashierDesk } from './financials/JobCashierDesk';
 export default function JobFinancialsCard({
   job,
   saving,
+  isOwnerOrManager,
   onCharge,
   onApplyDiscount,
   onUpdatePayment,
   onRejectPayment,
+  onVerifyPayment,
 }: JobFinancialsCardProps) {
   const financials = computeFinancials(job);
   const {
@@ -34,6 +36,13 @@ export default function JobFinancialsCard({
     charging,
     handleChargeSubmit,
     uploadReceipt,
+    cashTendered,
+    setCashTendered,
+    reviewingCharge,
+    confirmCharge,
+    cancelChargeReview,
+    verifyingPaymentId,
+    handleVerifyPayment,
     showDiscountForm,
     setShowDiscountForm,
     discountType,
@@ -69,7 +78,8 @@ export default function JobFinancialsCard({
     onCharge,
     onApplyDiscount,
     onUpdatePayment,
-    onRejectPayment
+    onRejectPayment,
+    onVerifyPayment
   );
 
   return (
@@ -97,6 +107,9 @@ export default function JobFinancialsCard({
           <PaymentAuditLedger
             job={job}
             financials={financials}
+            isOwnerOrManager={isOwnerOrManager}
+            verifyingPaymentId={verifyingPaymentId}
+            onVerifyPayment={handleVerifyPayment}
             editingPaymentId={editingPaymentId}
             setEditingPaymentId={setEditingPaymentId}
             editMethod={editMethod}
@@ -140,6 +153,11 @@ export default function JobFinancialsCard({
             charging={charging}
             onChargeSubmit={handleChargeSubmit}
             uploadReceipt={uploadReceipt}
+            cashTendered={cashTendered}
+            setCashTendered={setCashTendered}
+            reviewingCharge={reviewingCharge}
+            onConfirmCharge={confirmCharge}
+            onCancelChargeReview={cancelChargeReview}
           />
         </div>
       </div>

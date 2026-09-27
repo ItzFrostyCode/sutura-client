@@ -17,6 +17,9 @@ export interface MyOrder {
   total_amount: number;
   balance: number;
   payment_status: string;
+  // Sum of GCash/PayMaya payments submitted but not yet verified by the
+  // shop — never reflected in balance/payment_status until confirmed.
+  pending_payment_amount?: number;
   created_at: string;
   store: { name: string; slug: string; logo_path: string | null } | null;
 }

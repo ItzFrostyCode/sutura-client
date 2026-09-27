@@ -18,6 +18,14 @@ export interface Payment {
   rejected_at?: string | null;
   rejected_reason?: string | null;
   rejected_by?: { name: string; id: number } | null;
+  // Derived server-side: 'rejected' | 'verified' | 'pending_verification'.
+  // Cash auto-verifies at creation; gcash/paymaya sit pending until an
+  // owner/branch manager calls verifyPayment().
+  status?: 'pending_verification' | 'verified' | 'rejected';
+  cash_tendered?: string | number | null;
+  change_amount?: string | number | null;
+  verified_at?: string | null;
+  verified_by?: { name: string; id: number } | null;
 }
 
 export interface Job {
