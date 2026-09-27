@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Shirt, CheckCircle2, Circle } from 'lucide-react';
+import { Shirt, CheckCircle2, Circle, Ruler } from 'lucide-react';
 import { Job, RosterItem } from '../jobTypes';
+import { CUSTOM_SIZE } from '@/components/store-catalog-detail/BulkOrderSheet';
 
 interface JobRosterCardProps {
   job: Job;
@@ -15,6 +16,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
   // Render Personalized Team Roster if present
   if (teamRoster && teamRoster.length > 0) {
     const doneCount = teamRoster.filter(r => r.completed).length;
+    const customFitCount = teamRoster.filter(r => r.size === CUSTOM_SIZE).length;
     const sizeCounts = teamRoster.reduce<Record<string, number>>((acc, r) => {
       if (r.size) acc[r.size] = (acc[r.size] || 0) + 1;
       return acc;
@@ -50,6 +52,13 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
             {doneCount}/{teamRoster.length} Completed
           </span>
         </div>
+
+        {customFitCount > 0 && (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <Ruler size={13} />
+            {customFitCount} {customFitCount === 1 ? 'person needs' : 'people need'} to be measured in person before cutting.
+          </div>
+        )}
 
         {Object.keys(sizeCounts).length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -93,7 +102,16 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                   <td className="py-2.5 text-ink-muted">{row.print_name || '—'}</td>
                   <td className="py-2.5 font-mono text-ink font-bold">{row.number || '—'}</td>
                   <td className="py-2.5">
-                    <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{row.size}</span>
+                    {row.size === CUSTOM_SIZE ? (
+                      <span
+                        title="Needs to be measured in person — not one of the service's standard sizes"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-700"
+                      >
+                        <Ruler size={10} /> Custom
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{row.size}</span>
+                    )}
                   </td>
                   {extraColumns.map(col => (
                     <td key={col} className="py-2.5 text-ink-muted">

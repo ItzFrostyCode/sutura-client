@@ -17,6 +17,13 @@ export interface BulkRosterRow {
   [key: string]: string;
 }
 
+// A roster row can opt out of the service's standard size chart entirely —
+// for the one person in an otherwise-standard batch order (a late joiner,
+// an unusual build) who needs to be measured in person instead. Staff see
+// this flagged distinctly (JobRosterCard) rather than as an unrecognized
+// size string.
+export const CUSTOM_SIZE = 'Custom';
+
 interface BulkOrderSheetProps {
   readonly show: boolean;
   readonly onClose: () => void;
@@ -78,7 +85,7 @@ export default function BulkOrderSheet({
 
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           <p className="mobile-caption text-ink-muted font-normal">
-            Requires at least {minQty} piece{minQty !== 1 ? 's' : ''}. Add each person&apos;s name (optional) and size{rosterFields.length > 0 ? ', plus a few extra details' : ''}.
+            Requires at least {minQty} piece{minQty !== 1 ? 's' : ''}. Add each person&apos;s name (optional) and size{rosterFields.length > 0 ? ', plus a few extra details' : ''}. Pick &quot;Custom&quot; instead of a size for anyone who needs to be measured in person.
           </p>
 
           <div>
@@ -137,6 +144,7 @@ export default function BulkOrderSheet({
                     >
                       <option value="" disabled>Size</option>
                       {(sizes ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+                      <option value={CUSTOM_SIZE}>Custom (measure in person)</option>
                     </select>
                     <button type="button" onClick={() => removeRow(i)} disabled={roster.length <= 1} className="w-8 h-8 flex items-center justify-center shrink-0 text-ink-faint hover:text-danger disabled:opacity-30">
                       <Trash2 size={14} />

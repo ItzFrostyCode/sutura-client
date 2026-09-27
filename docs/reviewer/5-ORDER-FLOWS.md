@@ -152,6 +152,4 @@ All three can go to **on hold**, **cancelled**, or **rejected** from most points
 
 ## Known gaps in these flows
 
-1. **Custom-fit people inside a bulk order** (M7) aren't supported yet — every roster row still requires picking one of the service's standard sizes; there's no way to flag "measure this one in person" for an otherwise-standard batch order.
-
-Closed since the last review pass: booking purposes and the staff job form both now read the service's real type (not its name); the customer bulk roster supports the shop's own extra per-person columns (e.g. "Jersey Number"), not just Name/Size.
+None open as of this pass. Closed since the previous review: booking purposes and the staff job form both now read the service's real type (not its name); the customer bulk roster supports the shop's own extra per-person columns (e.g. "Jersey Number"); and a roster row can now be marked "Custom (measure in person)" (M7) instead of a standard size — staff see it flagged distinctly on the job's Team Roster card, with a count of how many people in the batch still need an in-person measurement before cutting.
