@@ -425,6 +425,22 @@ export default function ServiceDetailPage({
               <p className="text-sm text-ink-body leading-relaxed whitespace-pre-wrap">{service.description}</p>
             )}
 
+            {service.pricing && service.pricing.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Pricing Options</h4>
+                <div className="border border-line divide-y divide-line">
+                  {service.pricing.map((tier) => (
+                    <div key={tier.id} className="flex items-center justify-between px-3 py-2.5 text-sm">
+                      <span className="text-ink-body">{tier.label}</span>
+                      <span className="font-semibold text-ink">
+                        ₱{Number.parseFloat(tier.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {service.size_chart_image_url && (
               <div className="space-y-2">
                 <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Size Chart</h4>

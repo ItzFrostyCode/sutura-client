@@ -10,7 +10,6 @@ import HomeShowroomCarousel from '@/components/home/HomeShowroomCarousel';
 import HomeHowItWorks from '@/components/home/HomeHowItWorks';
 import HomeStoresGrid from '@/components/home/HomeStoresGrid';
 import HomeMapBanner from '@/components/home/HomeMapBanner';
-import HomeSublimationBanner from '@/components/home/HomeSublimationBanner';
 import HomeAboutSection from '@/components/home/HomeAboutSection';
 import HomeFooter from '@/components/home/HomeFooter';
 export default function HomePage() {
@@ -48,7 +47,6 @@ export default function HomePage() {
         <HomeHowItWorks />
         <HomeStoresGrid stores={stores} storesLoading={storesLoading} />
         <HomeMapBanner />
-        <HomeSublimationBanner />
       </main>
 
       <HomeAboutSection />
