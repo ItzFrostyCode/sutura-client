@@ -157,4 +157,3 @@ All three can go to **on hold**, **cancelled**, or **rejected** from most points
 3. **Customer bulk roster** has only Name and Size (staff side also has print name and number).
 4. **Custom-fit people inside a bulk order** (M7) aren't supported.
 5. **Same person, several identical pieces** has no quantity field on a solo order.
-6. **Sublimation bulk tracker** shows "Pattern Making" until the job actually reaches "Mass Cutting & Printing," then switches.

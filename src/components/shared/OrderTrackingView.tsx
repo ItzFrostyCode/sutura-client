@@ -121,7 +121,11 @@ export function buildStages(
   const stages: StepperStage[] = [
     { key: 'pending', label: 'Pending', Icon: Clock },
     { key: 'design', label: 'Design', Icon: Palette },
-    status === 'mass_cutting_printing'
+    // A bulk (sublimation) order always uses Mass Cutting & Printing, never
+    // Pattern Making — show that label from the very first render, not just
+    // once the job actually reaches that exact status. Falls back to the
+    // status check alone for an older response with no `pipeline` field.
+    (pipeline === 'bulk' || status === 'mass_cutting_printing')
       ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
       : { key: 'pattern_making', label: 'Pattern Making', Icon: Ruler },
     { key: 'cutting', label: 'Cutting', Icon: Scissors },
