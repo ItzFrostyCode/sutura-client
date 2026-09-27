@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import axios from 'axios';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
@@ -125,7 +126,12 @@ export function useJobs() {
     } catch (err) {
       console.error('Failed to update status', err);
       setJobs(oldJobs);
-      toast.error('Failed to update status.');
+      // Surfaces server-side gate messages (e.g. the DP gate, or the fitting
+      // limit's 'block' policy) instead of a generic failure — those are
+      // real, actionable reasons the update didn't go through, not just an
+      // unexpected error.
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      toast.error(message || 'Failed to update status.');
     }
   };
 

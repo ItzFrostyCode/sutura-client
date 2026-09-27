@@ -41,6 +41,7 @@ export interface Store {
   status: string;
   business_type?: string;
   repair_requires_downpayment?: boolean;
+  fitting_limit_policy?: 'fee' | 'block';
   description?: string;
   address?: string;
   landmark?: string;

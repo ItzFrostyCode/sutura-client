@@ -494,8 +494,38 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
               </div>
             </div>
             <p className="text-[11px] text-ink-muted max-w-xl">
-              Each round of Ready for Fitting counts as one fitting, including re-fittings after adjustments. Past the free limit, the fee is added to the order&apos;s balance automatically. Set the fee to 0 to allow unlimited free fittings.
+              Each round of Ready for Fitting counts as one fitting, including re-fittings after adjustments.
             </p>
+
+            <fieldset className="space-y-2 max-w-xl">
+              <legend className="text-sm font-medium text-ink-body">Once the free fitting limit is reached</legend>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="radio"
+                  name="fitting_limit_policy"
+                  checked={formData.fitting_limit_policy === 'fee'}
+                  onChange={() => setFormData(prev => ({ ...prev, fitting_limit_policy: 'fee' }))}
+                  className="mt-0.5 text-taupe focus:ring-taupe"
+                />
+                <span className="text-sm text-ink-body">
+                  Charge the extra-fitting fee
+                  <span className="block text-[11px] text-ink-muted">Added to the order&apos;s balance automatically. Set the fee to 0 to allow unlimited free fittings instead.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="radio"
+                  name="fitting_limit_policy"
+                  checked={formData.fitting_limit_policy === 'block'}
+                  onChange={() => setFormData(prev => ({ ...prev, fitting_limit_policy: 'block' }))}
+                  className="mt-0.5 text-taupe focus:ring-taupe"
+                />
+                <span className="text-sm text-ink-body">
+                  Don&apos;t allow more fittings
+                  <span className="block text-[11px] text-ink-muted">Once the limit is reached, the job can&apos;t be moved to Ready for Fitting again — it has to go straight to QC/Ironing or Ready for Pickup instead.</span>
+                </span>
+              </label>
+            </fieldset>
 
             <label className="flex items-start gap-3 cursor-pointer select-none max-w-xl">
               <input
