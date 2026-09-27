@@ -152,7 +152,6 @@ All three can go to **on hold**, **cancelled**, or **rejected** from most points
 
 ## Known gaps in these flows
 
-1. **Booking purposes come from the service's name, not its type.** The wizard looks for words like "alter," "print," or "uniform" in the service name. A service with an unusual name can be offered the wrong purposes. The catalog page's Bulk Order button correctly uses the real service type.
-2. **Staff job form** treats a service as bulk if its type is bulk **or** its name contains "jersey," "sublimation," "uniform," or "esports."
-3. **Customer bulk roster** has only Name and Size (staff side also has print name and number).
-4. **Custom-fit people inside a bulk order** (M7) aren't supported.
+1. **Custom-fit people inside a bulk order** (M7) aren't supported yet — every roster row still requires picking one of the service's standard sizes; there's no way to flag "measure this one in person" for an otherwise-standard batch order.
+
+Closed since the last review pass: booking purposes and the staff job form both now read the service's real type (not its name); the customer bulk roster supports the shop's own extra per-person columns (e.g. "Jersey Number"), not just Name/Size.

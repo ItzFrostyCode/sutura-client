@@ -38,6 +38,7 @@ export default function PublicProductDetailPage({
     orderSuccess,
     isBulkItem,
     bulkMinQty,
+    bulkRosterFields,
     showBulkSheet,
     setShowBulkSheet,
     openBulkSheet,
@@ -225,6 +226,7 @@ export default function PublicProductDetailPage({
         itemName={item.name}
         sizes={item.sizes}
         minQty={bulkMinQty}
+        rosterFields={bulkRosterFields}
         branches={branches}
         branchId={bulkBranchId}
         setBranchId={setBulkBranchId}

@@ -146,13 +146,17 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   // are explicitly not assumed here.
   const [showBulkSheet, setShowBulkSheet] = useState(false);
   const [bulkOrganizationName, setBulkOrganizationName] = useState('');
-  const [bulkRoster, setBulkRoster] = useState<{ name: string; size: string }[]>([]);
+  // [key: string] carries this service's extra roster_fields values (e.g.
+  // jersey_number) — always strings, one column per field, alongside the
+  // two fixed columns every roster row always has.
+  const [bulkRoster, setBulkRoster] = useState<{ name: string; size: string; [key: string]: string }[]>([]);
   const [bulkBranchId, setBulkBranchId] = useState<number | null>(null);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkError, setBulkError] = useState('');
 
   const isBulkItem = Boolean(item?.service?.service_types?.includes('bulk_sublimation'));
   const bulkMinQty = item?.service?.min_order_qty ?? 1;
+  const bulkRosterFields = item?.service?.roster_fields ?? [];
 
   const openBulkSheet = () => {
     if (!isAuthenticated) {
@@ -161,7 +165,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     }
     setBulkError('');
     setBulkOrganizationName('');
-    setBulkRoster([{ name: '', size: '' }]);
+    setBulkRoster([{ name: '', size: '', ...Object.fromEntries(bulkRosterFields.map((f) => [f.id, ''])) }]);
     setBulkBranchId(null);
     setShowBulkSheet(true);
   };
@@ -322,6 +326,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     orderSuccess,
     isBulkItem,
     bulkMinQty,
+    bulkRosterFields,
     showBulkSheet,
     setShowBulkSheet,
     openBulkSheet,
