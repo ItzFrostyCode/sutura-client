@@ -88,7 +88,7 @@ function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
   const roster = data?.team_roster;
   if (Array.isArray(roster) && roster.length > 0) return true;
   if (data?.size_breakdown && typeof data.size_breakdown === 'object' && Object.keys(data.size_breakdown).length > 0) return true;
-  return job.service?.service_type === 'bulk_sublimation';
+  return serviceHasType(job.service, 'bulk_sublimation');
 }
 
 // Mirrors JobOrder::isRepairOnly() on the backend exactly: a job whose
@@ -97,7 +97,27 @@ function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
 // in_repair -> qc_check) instead of the full custom-tailoring one.
 export function isRepairOnly(job: Pick<Job, 'garment_category' | 'service'>): boolean {
   if (job.garment_category === 'alteration_repair') return true;
-  return job.service?.service_type === 'alteration_repair';
+  return serviceHasType(job.service, 'alteration_repair');
+}
+
+// Services moved from a single `service_type` to a multi-select
+// `service_types` array (the backend's Service::hasType() reads only the
+// array); the legacy column is still checked for older rows.
+function serviceHasType(service: Job['service'], type: string): boolean {
+  return Boolean(service?.service_types?.includes(type)) || service?.service_type === type;
+}
+
+/**
+ * Mirrors JobOrder::requiresDownpaymentFor(): repairs only need the 50%
+ * downpayment when the shop turned on "Require downpayment for repairs".
+ */
+export function requiresDownpayment(
+  job: Pick<Job, 'garment_category' | 'service'>,
+  status: string,
+  repairRequiresDownpayment: boolean,
+): boolean {
+  if (!STAGES_REQUIRING_DOWNPAYMENT.has(status)) return false;
+  return isRepairOnly(job) ? repairRequiresDownpayment : true;
 }
 
 /**
@@ -137,7 +157,7 @@ export interface Job {
   total_amount?: number | string;
   discount_amount?: number | string | null;
   customer?: { name: string; suki_tag?: string | null } | null;
-  service?: { name: string; service_type?: string | null } | null;
+  service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;

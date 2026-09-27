@@ -40,6 +40,7 @@ export interface Store {
   store_code?: string;
   status: string;
   business_type?: string;
+  repair_requires_downpayment?: boolean;
   description?: string;
   address?: string;
   landmark?: string;

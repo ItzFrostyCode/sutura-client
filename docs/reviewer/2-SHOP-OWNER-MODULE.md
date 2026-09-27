@@ -58,7 +58,7 @@ Plus `on hold`, `cancelled`, `rejected`. Repairs use a short pipeline: `queued �
 
 ## Money rules
 
-- **"No DP, No Layout, No Cut":** a job can't enter pattern making or any later production stage until **50%** is paid.
+- **"No DP, No Layout, No Cut":** a job can't enter pattern making or any later production stage until **50%** is paid. **Repairs are exempt by default** (paid at pickup); the owner can require it with "Require 50% downpayment for repairs" in Settings → Booking Flow, next to the free-fittings limit and extra-fitting fee.
 - **Collected amount = total − balance − discount.** A discount lowers the balance, never the total, so it's never counted as cash received.
 - **Warn, don't block:** if a GCash/bank reference number was already used on another payment at the shop, the system shows a warning but doesn't block it. A person judges it.
 
@@ -102,7 +102,6 @@ A: The store is hidden from customers until renewal. Existing orders and data st
 ## Known gaps (be honest if asked)
 
 - **Branches share one catalog and one service list.** Separate catalogs managed per branch by Branch Managers are not built.
-- **Repairs require a 50% downpayment** before "In Repair," but many shops charge repairs at pickup. A shop setting for this is proposed.
 - **Fitting limit** can only add a fee; a "no more adjustments" option is proposed.
 - **Size-count bulk orders** (no names) have no "pieces finished" counter; named rosters do have a per-person checkbox.
 

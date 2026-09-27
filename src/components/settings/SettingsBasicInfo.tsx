@@ -459,6 +459,60 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             </p>
           </div>
 
+          <div className="space-y-4 pt-2 border-t border-line">
+            <h3 className="text-sm font-medium text-ink pt-4">Fitting &amp; Payment Rules</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <div className="space-y-1">
+                <label htmlFor="fitting-limit" className="text-sm font-medium text-ink-body">Free Fittings per Order</label>
+                <input
+                  id="fitting-limit"
+                  type="number"
+                  min={1}
+                  value={formData.fitting_limit ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFormData(prev => ({ ...prev, fitting_limit: val === '' ? 3 : Number.parseInt(val, 10) }));
+                  }}
+                  className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="fitting-fee" className="text-sm font-medium text-ink-body">Fee per Extra Fitting (₱)</label>
+                <input
+                  id="fitting-fee"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={formData.fitting_fee ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFormData(prev => ({ ...prev, fitting_fee: val === '' ? 0 : Number.parseFloat(val) }));
+                  }}
+                  className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-ink-muted max-w-xl">
+              Each round of Ready for Fitting counts as one fitting, including re-fittings after adjustments. Past the free limit, the fee is added to the order&apos;s balance automatically. Set the fee to 0 to allow unlimited free fittings.
+            </p>
+
+            <label className="flex items-start gap-3 cursor-pointer select-none max-w-xl">
+              <input
+                type="checkbox"
+                checked={formData.repair_requires_downpayment}
+                onChange={e => setFormData(prev => ({ ...prev, repair_requires_downpayment: e.target.checked }))}
+                className="mt-0.5 rounded border-line text-taupe focus:ring-taupe"
+              />
+              <span>
+                <span className="block text-sm font-medium text-ink-body">Require 50% downpayment for repairs</span>
+                <span className="block text-[11px] text-ink-muted mt-0.5">
+                  Off: repairs can start right away and are paid at pickup. On: repairs follow the same &ldquo;No DP, No Cut&rdquo; rule as custom orders. Custom and bulk orders always require 50% before production.
+                </span>
+              </span>
+            </label>
+          </div>
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-ink-body">Custom Booking Questions</span>

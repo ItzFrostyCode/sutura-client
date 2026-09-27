@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, type LucideIcon } from 'lucide-react';
-import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
+import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN } from './jobHelpers';
+import { useAuthStore } from '@/store/useAuthStore';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
 import { getMediaUrl } from '@/lib/media';
@@ -42,6 +43,7 @@ export default function JobKanbanBoard({
   highlightedJobId,
   stageFilter,
 }: JobKanbanBoardProps) {
+  const repairRequiresDownpayment = Boolean(useAuthStore((s) => s.store?.repair_requires_downpayment));
   // DP gate: tracks which job card just triggered the block (shows flash warning)
   const [dpGateJobId, setDpGateJobId] = useState<number | null>(null);
   // Balance gate: "No Balance, No Claim" — blocks marking a job Completed/Claimed
@@ -60,12 +62,16 @@ export default function JobKanbanBoard({
     // Derived downpayment = total_amount minus current balance.
     // Policy is 50% down, not just "something" — a ₱1 payment on a ₱10,000
     // job shouldn't be enough to unlock production.
+    // A discount lowers balance, not total, so subtract it or it would count
+    // as cash paid (same formula as JobOrderController@update).
     const total = Number.parseFloat(String(job.total_amount ?? '0'));
     const balance = Number.parseFloat(String(job.balance ?? '0'));
-    const paidSoFar = total - balance;
-    const noDownpayment = total > 0 && paidSoFar < total * 0.5;
+    const discount = Number.parseFloat(String(job.discount_amount ?? '0'));
+    const amountDue = total - discount;
+    const paidSoFar = total - balance - discount;
+    const noDownpayment = amountDue > 0 && paidSoFar < amountDue * 0.5;
 
-    if (STAGES_REQUIRING_DOWNPAYMENT.has(newStatus) && noDownpayment) {
+    if (requiresDownpayment(job, newStatus, repairRequiresDownpayment) && noDownpayment) {
       // Block the move — show flash warning on the card
       setDpGateJobId(job.id);
       setTimeout(() => setDpGateJobId(null), 3500);
@@ -334,7 +340,7 @@ export default function JobKanbanBoard({
                   )}
 
                   {/* Passive DP warning — already in a production stage but unpaid */}
-                  {STAGES_REQUIRING_DOWNPAYMENT.has(job.status) && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
+                  {requiresDownpayment(job, job.status, repairRequiresDownpayment) && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
                     <div className="mt-3 pt-2.5 border-t border-amber-100">
                       <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                         <Lock size={12} className="text-amber-600 mt-0.5 shrink-0" />

@@ -68,7 +68,7 @@ A walk-in customer can also get a job order directly, created by the Owner or Br
 
 ## Part 2: Measurements (after the shop accepts)
 
-**Timing:** measurements are taken **at the in-person appointment, before production**. Payment gates production, not measuring: the job can be in `pending` or `design` with no payment, but it can't enter **pattern making or any later stage** until **50%** is paid ("No DP, No Layout, No Cut").
+**Timing:** measurements are taken **at the in-person appointment, before production**. Payment gates production, not measuring: the job can be in `pending` or `design` with no payment, but it can't enter **pattern making or any later stage** until **50%** is paid ("No DP, No Layout, No Cut"). **Repairs** skip this by default (paid at pickup); a shop can turn on "Require 50% downpayment for repairs" in Settings → Booking Flow.
 
 ### Separately: 7 cases
 
@@ -157,5 +157,4 @@ All three can go to **on hold**, **cancelled**, or **rejected** from most points
 3. **Customer bulk roster** has only Name and Size (staff side also has print name and number).
 4. **Custom-fit people inside a bulk order** (M7) aren't supported.
 5. **Same person, several identical pieces** has no quantity field on a solo order.
-6. **Repairs require 50% before "In Repair,"** though many shops charge repairs at pickup.
-7. **Sublimation bulk tracker** shows "Pattern Making" until the job actually reaches "Mass Cutting & Printing," then switches.
+6. **Sublimation bulk tracker** shows "Pattern Making" until the job actually reaches "Mass Cutting & Printing," then switches.
