@@ -196,6 +196,7 @@ export default function JobCreateForm() {
             isTotalAmountCustom={isTotalAmountCustom}
             setIsTotalAmountCustom={setIsTotalAmountCustom}
             setIsDueDateCustom={setIsDueDateCustom}
+            isBulkOrder={isBulkOrder}
           />
 
           {/* Action Buttons */}

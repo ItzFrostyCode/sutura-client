@@ -263,10 +263,12 @@ export default function JobKanbanBoard({
                               <div className="flex items-center gap-1 text-[10px] font-bold text-taupe truncate">
                                 <Sparkles size={10} className="shrink-0" />
                                 <span className="truncate">{job.catalog_item.name}</span>
+                                {(job.quantity ?? 1) > 1 && <span className="shrink-0 text-ink-muted">×{job.quantity}</span>}
                               </div>
                             ) : (
-                              <div className="text-[10px] font-bold text-ink-muted truncate">
-                                {job.garment_category ? job.garment_category.toUpperCase() : (job.service?.name || 'Custom Garment')}
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-ink-muted truncate">
+                                <span className="truncate">{job.garment_category ? job.garment_category.toUpperCase() : (job.service?.name || 'Custom Garment')}</span>
+                                {(job.quantity ?? 1) > 1 && <span className="shrink-0">×{job.quantity}</span>}
                               </div>
                             )}
                             <div className="flex items-center gap-1 text-[10px] text-ink-muted mt-0.5">

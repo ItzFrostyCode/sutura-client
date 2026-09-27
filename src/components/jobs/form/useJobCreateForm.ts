@@ -123,6 +123,7 @@ export function useJobCreateForm() {
     customer_id: '',
     service_id: '',
     measurement_id: '',
+    quantity: '1',
     total_amount: '',
     downpayment: '',
     due_date: '',
@@ -316,14 +317,18 @@ export function useJobCreateForm() {
     }
   }, [store, formData.customer_id, searchParams]);
 
-  // Auto-calculate suggested total price based on service base price and rush fee
+  // Auto-calculate suggested total price based on service base price, quantity,
+  // and rush fee. Quantity multiplies the base price only (several identical
+  // pieces for one person) — the rush fee is a flat add-on for the whole
+  // order, not per-piece, so it's added after multiplying, not before.
   useEffect(() => {
     if (!isTotalAmountCustom && formData.service_id) {
       const selected = services.find((s) => s.id.toString() === formData.service_id);
       if (selected) {
         const basePrice = Number.parseFloat(selected.base_price?.toString() || '0');
+        const qty = Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
         const rushFee = formData.is_rush ? (Number.parseFloat(formData.rush_fee) || 0) : 0;
-        const suggested = basePrice + rushFee;
+        const suggested = basePrice * qty + rushFee;
         Promise.resolve().then(() => {
           setFormData((prev) => ({
             ...prev,
@@ -332,7 +337,7 @@ export function useJobCreateForm() {
         });
       }
     }
-  }, [formData.service_id, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
+  }, [formData.service_id, formData.quantity, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
 
   // Auto-suggest a due date from turnaround
   useEffect(() => {
@@ -444,6 +449,10 @@ export function useJobCreateForm() {
         store_branch_id: assignedStages.length === 0 ? (selectedBranchId ?? undefined) : undefined,
         staff_stages: assignedStages.map(([stage, userId]) => ({ stage, user_id: Number(userId) })),
         measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
+        // Meaningless for a bulk order (its roster already carries one row
+        // per person) — always sent as 1 there so a stale non-1 value from
+        // switching modes mid-form can't leak into a bulk order's record.
+        quantity: isBulkOrder ? 1 : Math.max(1, Number.parseInt(formData.quantity, 10) || 1),
         total_amount: formData.total_amount,
         discount_amount: formData.discount_amount ? Number.parseFloat(formData.discount_amount) : 0,
         balance: balance,

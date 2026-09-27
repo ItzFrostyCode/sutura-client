@@ -161,6 +161,7 @@ export interface Job {
   balance: number | string;
   downpayment?: number | string;
   total_amount?: number | string;
+  quantity?: number;
   discount_amount?: number | string | null;
   customer?: { name: string; suki_tag?: string | null } | null;
   service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;

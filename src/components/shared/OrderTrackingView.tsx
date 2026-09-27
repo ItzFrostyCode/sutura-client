@@ -23,6 +23,7 @@ export interface TrackedOrder {
   tracking_code?: string | null;
   status: string;
   garment_category: string | null;
+  quantity?: number;
   catalog_item_name?: string | null;
   service_name: string | null;
   is_rush: boolean;
@@ -211,6 +212,9 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
           <div className="flex items-center gap-2 mobile-body-sm text-ink font-normal">
             <Shirt size={16} className="text-ink-faint shrink-0" />
             <span>{itemName}</span>
+            {(order.quantity ?? 1) > 1 && (
+              <span className="text-ink-muted">× {order.quantity}</span>
+            )}
           </div>
           {order.due_date && (
             <div className="flex items-center gap-2 mobile-body-sm text-ink-muted font-normal">

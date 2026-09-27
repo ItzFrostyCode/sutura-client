@@ -41,6 +41,7 @@ interface Job {
   reference_link?: string | null;
   material_source?: 'store_supplied' | 'customer_supplied' | null;
   garment_category?: string | null;
+  quantity?: number;
 }
 
 const GARMENT_CATEGORY_LABELS: Record<string, string> = {
@@ -192,6 +193,9 @@ export default function PrintWorkTicketPage() {
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium w-28">Service</td><td className="font-bold pb-1">{job.service?.name ?? '—'}</td></tr>
                 {job.garment_category && (
                   <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Garment</td><td className="pb-1">{GARMENT_CATEGORY_LABELS[job.garment_category] ?? job.garment_category}</td></tr>
+                )}
+                {(job.quantity ?? 1) > 1 && (
+                  <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Quantity</td><td className="pb-1 font-black">{job.quantity} pcs</td></tr>
                 )}
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Channel</td><td className="pb-1 capitalize">{job.intake_channel?.replace('_', '-') ?? '—'}</td></tr>
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Date In</td><td className="pb-1">{createdFmt}</td></tr>

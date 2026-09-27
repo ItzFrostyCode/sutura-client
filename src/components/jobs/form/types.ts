@@ -65,6 +65,10 @@ export interface JobCreateFormData {
   customer_id: string;
   service_id: string;
   measurement_id: string;
+  // Same design, several identical pieces for ONE person/measurement
+  // profile — distinct from a bulk order's roster (different people,
+  // different sizes). Meaningless for a bulk order; hidden there.
+  quantity: string;
   total_amount: string;
   downpayment: string;
   due_date: string;

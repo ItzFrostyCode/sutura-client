@@ -29,6 +29,7 @@ export interface Job {
   status: string;
   payment_status: string;
   balance: number | string;
+  quantity?: number;
   total_amount: number | string;
   notes?: string;
   deadline?: string;

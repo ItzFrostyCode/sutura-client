@@ -141,7 +141,7 @@ All three can go to **on hold**, **cancelled**, or **rejected** from most points
 | **Appointment needed?** | Yes (consultation or measurement) | No, unless a consultation is booked via the Service |
 | **Team name** | No | Yes |
 | **Sizing** | Body measurements or standard size | Roster of standard sizes, or a size tally |
-| **Minimum quantity** | 1 | Set by the shop per Service |
+| **Minimum quantity** | Optional (several identical pieces for the same person) | Set by the shop per Service |
 | **50% downpayment before production** | Yes | Yes, for the whole order |
 | **Pipeline** | Custom tailoring (T1) | Bulk (T2) |
 | **Fitting** | Automatic at "Ready for Fitting," repeatable (fee after the shop's limit) | Only for a custom-bulk sample |
@@ -156,4 +156,3 @@ All three can go to **on hold**, **cancelled**, or **rejected** from most points
 2. **Staff job form** treats a service as bulk if its type is bulk **or** its name contains "jersey," "sublimation," "uniform," or "esports."
 3. **Customer bulk roster** has only Name and Size (staff side also has print name and number).
 4. **Custom-fit people inside a bulk order** (M7) aren't supported.
-5. **Same person, several identical pieces** has no quantity field on a solo order.

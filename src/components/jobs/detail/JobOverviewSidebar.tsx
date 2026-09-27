@@ -47,6 +47,12 @@ export default function JobOverviewSidebar({
         </div>
 
         <div className="space-y-2.5 text-xs">
+          {(job.quantity ?? 1) > 1 && (
+            <div className="flex justify-between text-ink-muted">
+              <span>Quantity:</span>
+              <strong className="text-ink font-bold">{job.quantity} pcs</strong>
+            </div>
+          )}
           <div className="flex justify-between text-ink-muted">
             <span>Total Amount:</span>
             <strong className="text-ink font-bold">₱{Number.parseFloat(String(job.total_amount || 0)).toFixed(2)}</strong>

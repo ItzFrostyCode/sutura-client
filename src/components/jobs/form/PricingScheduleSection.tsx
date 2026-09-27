@@ -13,6 +13,7 @@ interface PricingScheduleSectionProps {
   readonly isTotalAmountCustom: boolean;
   readonly setIsTotalAmountCustom: (custom: boolean) => void;
   readonly setIsDueDateCustom: (custom: boolean) => void;
+  readonly isBulkOrder: boolean;
 }
 
 const DISCOUNT_PRESETS = [
@@ -30,6 +31,7 @@ export default function PricingScheduleSection({
   isCustomTailoring,
   setIsTotalAmountCustom,
   setIsDueDateCustom,
+  isBulkOrder,
 }: PricingScheduleSectionProps) {
   const [showDiscount, setShowDiscount] = useState(() => Number(formData.discount_amount || '0') > 0);
   const [discountMode, setDiscountMode] = useState<'fixed' | 'percent'>('fixed');
@@ -401,6 +403,35 @@ export default function PricingScheduleSection({
           Invoice & Balance Summary
         </span>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          {/* Quantity — same design, several identical pieces for this ONE
+              customer/measurement profile. Not for a bulk order — that
+              already has one roster row per person via its own size sheet. */}
+          {!isBulkOrder && (
+            <div>
+              <label
+                htmlFor="quantity"
+                className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-1"
+              >
+                Quantity
+              </label>
+              <input
+                id="quantity"
+                type="number"
+                min="1"
+                step="1"
+                value={formData.quantity}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, quantity: e.target.value }));
+                }}
+                className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink font-semibold focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
+                placeholder="1"
+              />
+              <p className="text-[10px] text-ink-muted mt-1">
+                Identical pieces for this customer only — updates the total below automatically.
+              </p>
+            </div>
+          )}
+
           {/* Total Amount Input */}
           <div>
             <div className="flex items-center justify-between mb-1">
