@@ -1,6 +1,7 @@
 'use client';
 
 import PublicNav from '@/components/shared/PublicNav';
+import UpcomingAppointmentBar from '@/components/home/UpcomingAppointmentBar';
 import { useHomeData } from '@/components/home/useHomeData';
 import HomeHero from '@/components/home/HomeHero';
 import HomeFeaturedSpotlight from '@/components/home/HomeFeaturedSpotlight';
@@ -27,7 +28,13 @@ export default function HomePage() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
+      {/* Both stacked inside one sticky wrapper — UpcomingAppointmentBar is
+          not sticky on its own, so the two pin together as a single unit
+          instead of each fighting over its own independent `top: 0`. */}
+      <div className="sticky top-0 z-50">
+        <UpcomingAppointmentBar />
+        <PublicNav isSticky={false} />
+      </div>
 
       <HomeHero
         heroSearch={heroSearch}
