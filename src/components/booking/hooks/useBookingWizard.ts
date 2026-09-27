@@ -222,18 +222,29 @@ export function useBookingWizard(storeId: string) {
     const hasSpecificService = !!selectedService || !!serviceIdParam || !!serviceNameParam;
 
     if (hasSpecificService && sName) {
-      const isAlteration =
-        sName.includes('alter') ||
-        sName.includes('repair') ||
-        sName.includes('hem') ||
-        sName.includes('adjust') ||
-        sName.includes('taper') ||
-        sName.includes('patch') ||
-        sName.includes('fix') ||
-        sName.includes('resize') ||
-        sName.includes('shorten') ||
-        sName.includes('lengthen') ||
-        sName.includes('resew');
+      // Real functional taxonomy wins when the service is actually tagged —
+      // only falls back to guessing from the name for an older/untyped
+      // service that has no service_types set at all. isPrinting has no
+      // dedicated backend type (it's a marketing category, not a functional
+      // one), so it always goes by name.
+      const types = selectedService?.service_types ?? [];
+      const hasTypes = types.length > 0;
+
+      const isAlteration = hasTypes
+        ? types.includes('alteration_repair')
+        : (
+          sName.includes('alter') ||
+          sName.includes('repair') ||
+          sName.includes('hem') ||
+          sName.includes('adjust') ||
+          sName.includes('taper') ||
+          sName.includes('patch') ||
+          sName.includes('fix') ||
+          sName.includes('resize') ||
+          sName.includes('shorten') ||
+          sName.includes('lengthen') ||
+          sName.includes('resew')
+        );
 
       if (isAlteration) {
         return withExisting([
@@ -264,15 +275,18 @@ export function useBookingWizard(storeId: string) {
         ]);
       }
 
-      const isBulk =
-        sName.includes('bulk') ||
-        sName.includes('uniform') ||
-        sName.includes('corporate') ||
-        sName.includes('organization') ||
-        sName.includes('course') ||
-        sName.includes('batch') ||
-        sName.includes('team') ||
-        sName.includes('intramural');
+      const isBulk = hasTypes
+        ? types.includes('bulk_sublimation')
+        : (
+          sName.includes('bulk') ||
+          sName.includes('uniform') ||
+          sName.includes('corporate') ||
+          sName.includes('organization') ||
+          sName.includes('course') ||
+          sName.includes('batch') ||
+          sName.includes('team') ||
+          sName.includes('intramural')
+        );
 
       if (isBulk) {
         return withExisting([

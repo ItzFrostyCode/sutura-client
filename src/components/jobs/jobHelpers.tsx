@@ -102,8 +102,14 @@ export function isRepairOnly(job: Pick<Job, 'garment_category' | 'service'>): bo
 
 // Services moved from a single `service_type` to a multi-select
 // `service_types` array (the backend's Service::hasType() reads only the
-// array); the legacy column is still checked for older rows.
-function serviceHasType(service: Job['service'], type: string): boolean {
+// array); the legacy column is still checked for older rows. Exported —
+// also used by the job-create form (form/types.ts's ServiceData has the
+// same two fields), so bulk/alteration detection doesn't drift between the
+// two places a job order gets created.
+export function serviceHasType(
+  service: { service_type?: string | null; service_types?: string[] | null } | null | undefined,
+  type: string,
+): boolean {
   return Boolean(service?.service_types?.includes(type)) || service?.service_type === type;
 }
 

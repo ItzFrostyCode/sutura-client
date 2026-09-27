@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
 import { FileText } from 'lucide-react';
 import { SERVICE_TYPE_META } from '@/components/services/serviceHelpers';
+import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import {
   CustomerData,
@@ -78,7 +79,7 @@ function matchServiceForCatalogItem(
     }
   }
 
-  return serviceList.find((s) => s.service_type === 'custom_tailoring') || serviceList[0];
+  return serviceList.find((s) => serviceHasType(s, 'custom_tailoring')) || serviceList[0];
 }
 
 export function useJobCreateForm() {
@@ -229,7 +230,7 @@ export function useJobCreateForm() {
                   name.includes('sublimation') ||
                   name.includes('uniform') ||
                   name.includes('esports');
-                if (matchedService.service_type === 'bulk_sublimation' || looksBulk) {
+                if (serviceHasType(matchedService, 'bulk_sublimation') || looksBulk) {
                   setIsBulkOrder(true);
                 }
               }
@@ -391,7 +392,7 @@ export function useJobCreateForm() {
           name.includes('sublimation') ||
           name.includes('uniform') ||
           name.includes('esports');
-        if (matchedService.service_type === 'bulk_sublimation' || looksBulk) {
+        if (serviceHasType(matchedService, 'bulk_sublimation') || looksBulk) {
           setIsBulkOrder(true);
         }
       }
@@ -424,7 +425,7 @@ export function useJobCreateForm() {
       return;
     }
 
-    const isAlterationJob = selectedForSubmit?.service_type === 'alteration_repair' || formData.garment_category === 'alteration_repair';
+    const isAlterationJob = serviceHasType(selectedForSubmit, 'alteration_repair') || formData.garment_category === 'alteration_repair';
     if (isAlterationJob && !preExistingDamageNotes.trim()) {
       setError('Please log the garment\'s pre-existing condition before creating an alteration/repair job.');
       setSubmitting(false);
@@ -481,10 +482,14 @@ export function useJobCreateForm() {
   const selectedService = services.find(
     (s) => s.id.toString() === formData.service_id
   );
-  const isSelectedAlterationRepair = selectedService?.service_type === 'alteration_repair' || formData.garment_category === 'alteration_repair';
+  const isSelectedAlterationRepair = serviceHasType(selectedService, 'alteration_repair') || formData.garment_category === 'alteration_repair';
   const isCustomTailoring = !isSelectedAlterationRepair;
-  const sectionTwoMeta = selectedService?.service_type
-    ? SERVICE_TYPE_META[selectedService.service_type]
+  // A service can carry more than one type now (service_types); for the
+  // single icon/label this section shows, service_types[0] wins, falling
+  // back to the legacy singular column for an older, never-since-edited row.
+  const primaryServiceType = selectedService?.service_types?.[0] ?? selectedService?.service_type ?? null;
+  const sectionTwoMeta = primaryServiceType
+    ? SERVICE_TYPE_META[primaryServiceType as keyof typeof SERVICE_TYPE_META]
     : { icon: FileText, bg: 'bg-sunken', border: 'border-line', text: 'text-ink-faint' };
 
   return {

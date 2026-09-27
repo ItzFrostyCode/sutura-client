@@ -19,7 +19,13 @@ export interface ServiceData {
   id: number;
   name: string;
   category?: string;
+  // service_type (singular) is the legacy column — StoreServiceRequest only
+  // ever writes service_types (plural) now, so service_type goes stale on
+  // any service created/edited since that migration. Always prefer
+  // service_types; service_type is read only as a fallback for an older,
+  // never-since-edited row. See jobHelpers.tsx's serviceHasType().
   service_type?: 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bridal' | 'alteration_repair' | null;
+  service_types?: string[] | null;
   base_price?: string | number;
   min_order_qty?: number;
   custom_fields?: ServiceField[] | null;

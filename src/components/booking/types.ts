@@ -17,6 +17,15 @@ export interface Service {
   base_price?: string | number;
   estimated_days?: number;
   description?: string | null;
+  // Real functional taxonomy (Service::SERVICE_TYPES on the backend) — the
+  // source of truth for whether this service is bulk/alteration/etc., not
+  // the service's own display name.
+  service_types?: string[] | null;
+  min_order_qty?: number;
+  // Same shape as ServiceField (components/services/serviceHelpers.tsx) —
+  // duplicated here rather than imported since that module also pulls in
+  // owner-dashboard-only dependencies the public booking bundle shouldn't carry.
+  custom_fields?: { id: string; label: string; type: 'text' | 'number' | 'select' | 'radio' | 'checkbox'; required: boolean; options?: string[] }[] | null;
 }
 
 export interface SpecialHour {
