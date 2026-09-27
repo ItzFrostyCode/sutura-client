@@ -79,8 +79,8 @@ export default function JobProductionTab({
               </strong>
             </div>
             <div className="flex justify-between text-ink-muted">
-              <span>Assigned Tailor:</span>
-              <strong className="text-ink font-bold">{job.assigned_staff?.name || 'Unassigned'}</strong>
+              <span>Last Updated By:</span>
+              <strong className="text-ink font-bold">{job.assigned_staff?.name || 'Not yet touched'}</strong>
             </div>
             {job.due_date && (
               <div className="flex justify-between text-ink-muted">

@@ -13,7 +13,6 @@ import {
   CustomerData,
   ServiceData,
   ServiceField,
-  StaffData,
   CustomerMeasurement,
   RosterMember,
   JobCreateFormData,
@@ -93,7 +92,6 @@ export function useJobCreateForm() {
 
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [services, setServices] = useState<ServiceData[]>([]);
-  const [staff, setStaff] = useState<StaffData[]>([]);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [catalogItemId, setCatalogItemId] = useState('');
   const [standardSize, setStandardSize] = useState<string>('Custom Measurements');
@@ -137,9 +135,6 @@ export function useJobCreateForm() {
     discount_reason: '',
   });
 
-  const [staffStageAssignments, setStaffStageAssignments] = useState<Record<string, string>>({
-    design: '', pattern_making: '', cutting: '', sewing: '', qc_ironing: '',
-  });
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
   const handleCheckboxChange = (
@@ -167,20 +162,14 @@ export function useJobCreateForm() {
       Promise.all([
         api.get(`/stores/${store.id}/customers`),
         api.get(`/stores/${store.id}/services`),
-        api.get(`/stores/${store.id}/staff`),
         api.get(`/stores/${store.id}/catalog`),
       ])
-        .then(([resCustomers, resServices, resStaff, resCatalog]) => {
+        .then(([resCustomers, resServices, resCatalog]) => {
           const custs = Array.isArray(resCustomers.data?.data) ? resCustomers.data.data : [];
           const servs = sanitizeServiceCustomFields(Array.isArray(resServices.data?.data) ? resServices.data.data : []);
-          const rawStaff = resStaff.data?.data;
-          const staffList: StaffData[] = Array.isArray(rawStaff)
-            ? rawStaff
-            : (rawStaff && typeof rawStaff === 'object' ? Object.values(rawStaff) : []);
           const catItems = Array.isArray(resCatalog.data?.data) ? resCatalog.data.data : [];
           setCustomers(custs);
           setServices(servs);
-          setStaff(staffList);
           setCatalogItems(catItems);
 
           // Prefill from query params
@@ -440,14 +429,12 @@ export function useJobCreateForm() {
     const balance = totalAmt - appliedDownPay;
 
     try {
-      const assignedStages = Object.entries(staffStageAssignments).filter(([, userId]) => userId);
       await api.post(`/stores/${store.id}/jobs`, {
         intake_channel: effectiveIntakeChannel,
         fulfillment_type: 'pickup',
         customer_id: formData.customer_id,
         service_id: formData.service_id,
-        store_branch_id: assignedStages.length === 0 ? (selectedBranchId ?? undefined) : undefined,
-        staff_stages: assignedStages.map(([stage, userId]) => ({ stage, user_id: Number(userId) })),
+        store_branch_id: selectedBranchId ?? undefined,
         measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
         // Meaningless for a bulk order (its roster already carries one row
         // per person) — always sent as 1 there so a stale non-1 value from
@@ -511,7 +498,6 @@ export function useJobCreateForm() {
     handleSubmit,
     customers,
     services,
-    staff,
     catalogItems,
     customerMeasurements,
     catalogItemId,
@@ -544,8 +530,6 @@ export function useJobCreateForm() {
     setPreExistingDamageNotes,
     formData,
     setFormData,
-    staffStageAssignments,
-    setStaffStageAssignments,
     customFieldValues,
     setCustomFieldValues,
     handleCheckboxChange,

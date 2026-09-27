@@ -140,8 +140,8 @@ export default function JobOverviewSidebar({
             </span>
           </div>
           <div className="flex items-center justify-between text-xs pt-1 border-t border-line/60">
-            <span className="text-ink-muted">Assigned Tailor:</span>
-            <span className="font-bold text-ink">{job.assigned_staff?.name || 'Unassigned'}</span>
+            <span className="text-ink-muted">Last Updated By:</span>
+            <span className="font-bold text-ink">{job.assigned_staff?.name || 'Not yet touched'}</span>
           </div>
         </div>
 

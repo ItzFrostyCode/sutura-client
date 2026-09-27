@@ -294,7 +294,7 @@ export default function JobKanbanBoard({
                   <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-line">
                     <div className="flex items-center gap-1 text-xs text-ink-faint">
                       <User size={11} />
-                      <span className="truncate max-w-[100px]">{job.assigned_staff?.name || 'Unassigned'}</span>
+                      <span className="truncate max-w-[100px]">{job.assigned_staff?.name || 'Not yet touched'}</span>
                     </div>
                     {job.due_date && (
                       <div className="flex flex-col items-end gap-1 shrink-0">

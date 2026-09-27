@@ -3,12 +3,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { Job, Staff } from './jobTypes';
-import { STAFF_STAGES } from './jobHelpers';
-
-function emptyStageMap<T>(value: T): Record<string, T> {
-  return Object.fromEntries(STAFF_STAGES.map(stage => [stage, value]));
-}
+import { Job } from './jobTypes';
 
 // Local (not UTC) YYYY-MM-DDTHH:mm for a <input type="datetime-local">,
 // same timezone-drift avoidance as appointmentHelpers' getLocalDateString.
@@ -44,12 +39,6 @@ export function useJobDetail(jobId: string) {
   const [estimatedReadyAt, setEstimatedReadyAt] = useState('');
   const [customerMaterialStatus, setCustomerMaterialStatus] = useState('');
 
-  // Staff Assignment
-  const [allStaff, setAllStaff] = useState<Staff[]>([]);
-  const [staffAssignments, setStaffAssignments] = useState<Record<string, string>>(emptyStageMap(''));
-  const [staffCompletions, setStaffCompletions] = useState<Record<string, string | null>>(emptyStageMap(null));
-  const [savingStaff, setSavingStaff] = useState(false);
-
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (store && jobId) {
@@ -67,31 +56,12 @@ export function useJobDetail(jobId: string) {
           setEstimatedReadyAt(toDatetimeLocal(data.estimated_ready_at));
           setCustomerMaterialStatus(data.customer_material_status || '');
 
-          // Populate existing staff stages
-          const assignments: Record<string, string> = emptyStageMap('');
-          const completions: Record<string, string | null> = emptyStageMap(null);
-          if (data.staff_stages) {
-             data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
-                assignments[staff.pivot.stage] = staff.id.toString();
-                completions[staff.pivot.stage] = staff.pivot.completed_at || null;
-             });
-          }
-          setStaffAssignments(assignments);
-          setStaffCompletions(completions);
-          
           setLoading(false);
         })
         .catch(err => {
           console.error(err);
           setLoading(false);
         });
-
-      // Fetch Staff for assignment dropdown
-      api.get(`/stores/${store.id}/staff`)
-        .then(res => {
-          setAllStaff(res.data.data);
-        })
-        .catch(console.error);
     } else {
       timer = setTimeout(() => setLoading(false), 0);
     }
@@ -127,19 +97,10 @@ export function useJobDetail(jobId: string) {
         customerMaterialStatus !== (job.customer_material_status || '')
       )
     ),
-    staff: Boolean(
-      job &&
-      STAFF_STAGES.some(stage => {
-        const currentAssigned = staffAssignments[stage] || '';
-        const originalStaff = job.staff_stages?.find(s => s.pivot.stage === stage);
-        const originalAssigned = originalStaff ? String(originalStaff.id) : '';
-        return currentAssigned !== originalAssigned;
-      })
-    ),
   };
 
   const hasUnsavedChanges = Boolean(
-    dirtyTabs.overview || dirtyTabs.production || dirtyTabs.staff
+    dirtyTabs.overview || dirtyTabs.production
   );
 
   const handleResetChanges = () => {
@@ -151,17 +112,6 @@ export function useJobDetail(jobId: string) {
     setCompletionPhotoUrl(job.completion_photo_url || '');
     setEstimatedReadyAt(toDatetimeLocal(job.estimated_ready_at));
     setCustomerMaterialStatus(job.customer_material_status || '');
-
-    const assignments: Record<string, string> = emptyStageMap('');
-    const completions: Record<string, string | null> = emptyStageMap(null);
-    if (job.staff_stages) {
-      job.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
-        assignments[staff.pivot.stage] = staff.id.toString();
-        completions[staff.pivot.stage] = staff.pivot.completed_at || null;
-      });
-    }
-    setStaffAssignments(assignments);
-    setStaffCompletions(completions);
     toast.info('Draft changes discarded.');
   };
 
@@ -170,7 +120,10 @@ export function useJobDetail(jobId: string) {
     setSaving(true);
 
     try {
-      // 1. Persist core job updates (Production, Notes, QC, Status)
+      // Persist core job updates (Production, Notes, QC, Status). Whoever
+      // moves the status forward is auto-recorded server-side as having
+      // worked that production stage (JobOrderController::update()) — no
+      // separate staff-assignment step needed here anymore.
       await api.put(`/stores/${store.id}/jobs/${jobId}`, {
         status,
         payment_status: paymentStatus,
@@ -183,18 +136,6 @@ export function useJobDetail(jobId: string) {
         hold_reason: status === 'on_hold' ? holdReason : undefined,
       });
 
-      // 2. Persist staff assignments if modified
-      if (dirtyTabs.staff) {
-        const assignments = Object.entries(staffAssignments)
-          .filter(([, userId]) => userId)
-          .map(([stage, userId]) => ({ stage, user_id: userId }));
-
-        await api.post(`/stores/${store.id}/jobs/${jobId}/staff`, {
-          assignments,
-        });
-      }
-
-      // 3. Fetch latest confirmed server copy
       const res = await api.get(`/stores/${store.id}/jobs/${jobId}`);
       const data = res.data.data;
       setJob(data);
@@ -204,17 +145,6 @@ export function useJobDetail(jobId: string) {
       setCompletionPhotoUrl(data.completion_photo_url || '');
       setEstimatedReadyAt(toDatetimeLocal(data.estimated_ready_at));
       setCustomerMaterialStatus(data.customer_material_status || '');
-
-      const newAssignments: Record<string, string> = emptyStageMap('');
-      const newCompletions: Record<string, string | null> = emptyStageMap(null);
-      if (data.staff_stages) {
-        data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
-          newAssignments[staff.pivot.stage] = staff.id.toString();
-          newCompletions[staff.pivot.stage] = staff.pivot.completed_at || null;
-        });
-      }
-      setStaffAssignments(newAssignments);
-      setStaffCompletions(newCompletions);
 
       toast.success('All changes saved successfully.');
     } catch (err: unknown) {
@@ -227,39 +157,6 @@ export function useJobDetail(jobId: string) {
       }
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleUpdateStaff = async () => {
-    if (!store) return;
-    setSavingStaff(true);
-    try {
-      const assignments = Object.entries(staffAssignments)
-        .filter(([, userId]) => userId)
-        .map(([stage, userId]) => ({ stage, user_id: userId }));
-
-      await api.post(`/stores/${store.id}/jobs/${jobId}/staff`, {
-        assignments,
-      });
-
-      const res = await api.get(`/stores/${store.id}/jobs/${jobId}`);
-      const data = res.data.data;
-      setJob(data);
-
-      const completions: Record<string, string | null> = emptyStageMap(null);
-      if (data.staff_stages) {
-        data.staff_stages.forEach((staff: { id: number; pivot: { stage: string; completed_at?: string } }) => {
-          completions[staff.pivot.stage] = staff.pivot.completed_at || null;
-        });
-      }
-      setStaffCompletions(completions);
-      toast.success('Staff assigned successfully!');
-    } catch (err: unknown) {
-      console.error('Failed to update staff', err);
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to update staff assignments.');
-    } finally {
-      setSavingStaff(false);
     }
   };
 
@@ -473,13 +370,7 @@ export function useJobDetail(jobId: string) {
     setEstimatedReadyAt,
     customerMaterialStatus,
     setCustomerMaterialStatus,
-    allStaff,
-    staffAssignments,
-    setStaffAssignments,
-    staffCompletions,
-    savingStaff,
     handleUpdate,
-    handleUpdateStaff,
     handleChargePayment,
     handleApplyDiscount,
     handleUpdatePayment,

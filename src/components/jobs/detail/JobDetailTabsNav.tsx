@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { LayoutGrid, Scissors, Users, Store, CreditCard } from 'lucide-react';
+import { LayoutGrid, Scissors, Store, CreditCard } from 'lucide-react';
 
-export type JobDetailTabKey = 'overview' | 'production' | 'staff' | 'fulfillment' | 'financials';
+export type JobDetailTabKey = 'overview' | 'production' | 'fulfillment' | 'financials';
 
 interface JobDetailTabsNavProps {
   activeTab: JobDetailTabKey;
@@ -19,7 +19,6 @@ interface JobDetailTabsNavProps {
 const TABS = [
   { key: 'overview', label: 'Overview', icon: LayoutGrid },
   { key: 'production', label: 'Production', icon: Scissors },
-  { key: 'staff', label: 'Staff', icon: Users },
   { key: 'fulfillment', label: 'Fulfillment', icon: Store },
   { key: 'financials', label: 'Financials', icon: CreditCard },
 ] as const;

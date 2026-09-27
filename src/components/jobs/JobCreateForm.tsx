@@ -8,7 +8,6 @@ import GarmentDesignSection from './form/GarmentDesignSection';
 import CustomerServiceSection from './form/CustomerServiceSection';
 import CustomSpecsSection from './form/CustomSpecsSection';
 import ProductionFulfillmentSection from './form/ProductionFulfillmentSection';
-import StaffAssignmentSection from './form/StaffAssignmentSection';
 import PricingScheduleSection from './form/PricingScheduleSection';
 
 export default function JobCreateForm() {
@@ -20,7 +19,6 @@ export default function JobCreateForm() {
     handleSubmit,
     customers,
     services,
-    staff,
     catalogItems,
     customerMeasurements,
     catalogItemId,
@@ -53,8 +51,6 @@ export default function JobCreateForm() {
     setPreExistingDamageNotes,
     formData,
     setFormData,
-    staffStageAssignments,
-    setStaffStageAssignments,
     customFieldValues,
     setCustomFieldValues,
     handleCheckboxChange,
@@ -180,14 +176,7 @@ export default function JobCreateForm() {
           {/* Section 4: Production & Fulfillment */}
           <ProductionFulfillmentSection />
 
-          {/* Section 5: Staff Assignment */}
-          <StaffAssignmentSection
-            staff={staff}
-            staffStageAssignments={staffStageAssignments}
-            setStaffStageAssignments={setStaffStageAssignments}
-          />
-
-          {/* Section 6: Pricing & Schedule */}
+          {/* Section 5: Pricing & Schedule */}
           <PricingScheduleSection
             formData={formData}
             setFormData={setFormData}
