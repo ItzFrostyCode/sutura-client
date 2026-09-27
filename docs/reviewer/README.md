@@ -10,6 +10,8 @@ Checked against the actual code (not the thesis paper) on **2026-09-27**, branch
 | 2 | [2-SHOP-OWNER-MODULE.md](2-SHOP-OWNER-MODULE.md) | Shop Owner | Arabejo |
 | 3 | [3-STAFF-MODULE.md](3-STAFF-MODULE.md) | Tailoring Staff | Masudog (built by Arabejo) |
 | 4 | [4-ADMIN-MODULE.md](4-ADMIN-MODULE.md) | System Administrator | Bongo |
+| 5 | [5-ORDER-FLOWS.md](5-ORDER-FLOWS.md) | Cross-module: booking, measurement and tracking cases (Solo vs Bulk) | — |
+| — | [ADMIN-MODULE-CHANGES.md](ADMIN-MODULE-CHANGES.md) | What Arabejo added to the Admin backend, for Bongo to review and build on | — |
 
 ## The one-sentence pitch
 
