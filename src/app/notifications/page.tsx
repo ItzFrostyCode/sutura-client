@@ -54,6 +54,8 @@ function relativeTime(dateStr: string): string {
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; bg: string; color: string }> = {
   order_ready: { icon: Package, bg: 'bg-amber-50', color: 'text-amber-600' },
   customer_payment_rejected: { icon: XCircle, bg: 'bg-red-50', color: 'text-red-600' },
+  store_approved: { icon: Store, bg: 'bg-emerald-50', color: 'text-emerald-600' },
+  store_rejected: { icon: XCircle, bg: 'bg-red-50', color: 'text-red-600' },
   catalog_item_review_reply: { icon: Star, bg: 'bg-amber-50', color: 'text-amber-600' },
   support_ticket_reply: { icon: MessageCircle, bg: 'bg-blue-50', color: 'text-blue-600' },
   default: { icon: Info, bg: 'bg-sunken', color: 'text-ink-muted' },
