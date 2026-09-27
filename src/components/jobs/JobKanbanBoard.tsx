@@ -231,13 +231,21 @@ export default function JobKanbanBoard({
                       return (
                         <div className="flex items-center gap-2.5 my-2 p-1.5 rounded-lg bg-canvas/40 border border-line/60">
                           {refImage ? (
-                            <div className="w-10 h-10 rounded-md overflow-hidden bg-sunken shrink-0 border border-line">
+                            <div className="relative w-10 h-10 rounded-md overflow-hidden bg-sunken shrink-0 border border-line">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={getMediaUrl(refImage)}
                                 alt="Design Preview"
                                 className="w-full h-full object-cover"
                               />
+                              {(job.reference_images?.length ?? 0) > 0 && (
+                                <span
+                                  title={`${job.reference_images!.length} customer reference photo(s)`}
+                                  className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] font-bold leading-none px-1 py-0.5 rounded-tl"
+                                >
+                                  +{job.reference_images!.length}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <div className="w-10 h-10 rounded-md bg-sunken flex items-center justify-center text-ink-faint shrink-0 border border-line">
