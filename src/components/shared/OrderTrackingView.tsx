@@ -30,6 +30,10 @@ export interface TrackedOrder {
   // Time-of-day refinement on top of due_date — mainly meaningful for
   // same-day repair ETAs ("ready at 3:00 PM"), additive, not a replacement.
   estimated_ready_at?: string | null;
+  // Which production pipeline to draw (server-derived, same signal as the
+  // shop's Kanban). Absent on older responses — buildStages() then infers
+  // repair from the status alone.
+  pipeline?: 'custom' | 'bulk' | 'repair';
   total_amount: number;
   balance: number;
   payment_status: string;
@@ -89,7 +93,31 @@ export function getCustomerPhase(status: string): string | null {
 // /account/orders/[id] (authenticated, by order id) — one source of truth
 // for what "order tracking" actually looks like, not two hand-copies that
 // can quietly drift apart.
-export function buildStages(status: string, timestamps?: Record<string, string | null>): StepperStage[] {
+const REPAIR_STATUSES = new Set(['queued', 'in_repair', 'qc_check']);
+const FITTING_STATUSES = new Set(['ready_for_fitting', 'final_adjustments']);
+
+export function buildStages(
+  status: string,
+  timestamps?: Record<string, string | null>,
+  pipeline?: TrackedOrder['pipeline'],
+): StepperStage[] {
+  const withTimestamps = (list: StepperStage[]) =>
+    timestamps ? list.map((s) => ({ ...s, timestamp: timestamps[s.key] ?? null })) : list;
+
+  // Repair Override: pending → queued → in repair → QC check → ready. The
+  // tailoring stages below have none of these keys, so a repair used to
+  // render with no current step at all.
+  if (pipeline === 'repair' || REPAIR_STATUSES.has(status)) {
+    return withTimestamps([
+      { key: 'pending', label: 'Pending', Icon: Clock },
+      { key: 'queued', label: 'Queued', Icon: Clock },
+      { key: 'in_repair', label: 'In Repair', Icon: Wrench },
+      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
+      { key: 'completed', label: 'Completed', Icon: Flag },
+    ]);
+  }
+
   const stages: StepperStage[] = [
     { key: 'pending', label: 'Pending', Icon: Clock },
     { key: 'design', label: 'Design', Icon: Palette },
@@ -104,8 +132,14 @@ export function buildStages(status: string, timestamps?: Record<string, string |
     { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
     { key: 'completed', label: 'Completed', Icon: Flag },
   ];
-  if (!timestamps) return stages;
-  return stages.map((s) => ({ ...s, timestamp: timestamps[s.key] ?? null }));
+
+  // Standard bulk orders skip fitting — hide those two steps so they don't
+  // show as "done" when they never happened. A custom-bulk job that does get
+  // a sample fitting keeps them (its status is then a fitting status).
+  if (pipeline === 'bulk' && !FITTING_STATUSES.has(status)) {
+    return withTimestamps(stages.filter((s) => !FITTING_STATUSES.has(s.key)));
+  }
+  return withTimestamps(stages);
 }
 
 export const TERMINAL_STATUSES: Record<string, { label: string; Icon: typeof Ban; tone: string }> = {
@@ -229,7 +263,7 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
             );
           })()
         ) : (
-          <StatusStepper stages={buildStages(order.status, order.stage_timestamps)} currentKey={order.status} layout={stepperLayout} />
+          <StatusStepper stages={buildStages(order.status, order.stage_timestamps, order.pipeline)} currentKey={order.status} layout={stepperLayout} />
         )}
       </div>
 
