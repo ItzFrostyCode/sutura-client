@@ -68,12 +68,6 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     setCancellationReason,
     setHoldReason,
     refreshJob,
-    isOutsourced,
-    setIsOutsourced,
-    partnerStoreName,
-    setPartnerStoreName,
-    outsourcingCost,
-    setOutsourcingCost,
     allStaff,
     staffAssignments,
     setStaffAssignments,
@@ -197,13 +191,6 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             setCancellationReason={setCancellationReason}
             setHoldReason={setHoldReason}
             refreshJob={refreshJob}
-            isOutsourced={isOutsourced}
-            setIsOutsourced={setIsOutsourced}
-            partnerStoreName={partnerStoreName}
-            setPartnerStoreName={setPartnerStoreName}
-            outsourcingCost={outsourcingCost}
-            setOutsourcingCost={setOutsourcingCost}
-            store={store}
           />
         )}
 
@@ -222,11 +209,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
 
         {activeTab === 'fulfillment' && (
           <div className="space-y-6">
-            <JobFulfillmentCard
-              isOutsourced={job.is_outsourced}
-              partnerStoreName={job.partner_store_name}
-              outsourcingCost={job.outsourcing_cost}
-            />
+            <JobFulfillmentCard />
           </div>
         )}
 

@@ -44,11 +44,6 @@ export function useJobDetail(jobId: string) {
   const [estimatedReadyAt, setEstimatedReadyAt] = useState('');
   const [customerMaterialStatus, setCustomerMaterialStatus] = useState('');
 
-  // Outsourcing
-  const [isOutsourced, setIsOutsourced] = useState(false);
-  const [partnerStoreName, setPartnerStoreName] = useState('');
-  const [outsourcingCost, setOutsourcingCost] = useState('');
-
   // Staff Assignment
   const [allStaff, setAllStaff] = useState<Staff[]>([]);
   const [staffAssignments, setStaffAssignments] = useState<Record<string, string>>(emptyStageMap(''));
@@ -71,9 +66,6 @@ export function useJobDetail(jobId: string) {
           setCompletionPhotoUrl(data.completion_photo_url || '');
           setEstimatedReadyAt(toDatetimeLocal(data.estimated_ready_at));
           setCustomerMaterialStatus(data.customer_material_status || '');
-          setIsOutsourced(data.is_outsourced || false);
-          setPartnerStoreName(data.partner_store_name || '');
-          setOutsourcingCost(data.outsourcing_cost != null ? String(data.outsourcing_cost) : '');
 
           // Populate existing staff stages
           const assignments: Record<string, string> = emptyStageMap('');
@@ -130,9 +122,6 @@ export function useJobDetail(jobId: string) {
       job && (
         status !== job.status ||
         notes !== (job.notes || '') ||
-        isOutsourced !== Boolean(job.is_outsourced) ||
-        partnerStoreName !== (job.partner_store_name || '') ||
-        outsourcingCost !== (job.outsourcing_cost != null ? String(job.outsourcing_cost) : '') ||
         completionPhotoUrl !== (job.completion_photo_url || '') ||
         estimatedReadyAt !== toDatetimeLocal(job.estimated_ready_at) ||
         customerMaterialStatus !== (job.customer_material_status || '')
@@ -162,9 +151,6 @@ export function useJobDetail(jobId: string) {
     setCompletionPhotoUrl(job.completion_photo_url || '');
     setEstimatedReadyAt(toDatetimeLocal(job.estimated_ready_at));
     setCustomerMaterialStatus(job.customer_material_status || '');
-    setIsOutsourced(job.is_outsourced || false);
-    setPartnerStoreName(job.partner_store_name || '');
-    setOutsourcingCost(job.outsourcing_cost != null ? String(job.outsourcing_cost) : '');
 
     const assignments: Record<string, string> = emptyStageMap('');
     const completions: Record<string, string | null> = emptyStageMap(null);
@@ -184,15 +170,12 @@ export function useJobDetail(jobId: string) {
     setSaving(true);
 
     try {
-      // 1. Persist core job updates (Production, Notes, Outsourcing, QC, Status)
+      // 1. Persist core job updates (Production, Notes, QC, Status)
       await api.put(`/stores/${store.id}/jobs/${jobId}`, {
         status,
         payment_status: paymentStatus,
         balance: Number.parseFloat(String(balance || 0)),
         notes,
-        is_outsourced: isOutsourced,
-        partner_store_name: isOutsourced ? partnerStoreName : null,
-        outsourcing_cost: isOutsourced && outsourcingCost ? Number.parseFloat(outsourcingCost) : null,
         completion_photo_url: completionPhotoUrl || null,
         estimated_ready_at: estimatedReadyAt || null,
         customer_material_status: customerMaterialStatus || null,
@@ -218,9 +201,6 @@ export function useJobDetail(jobId: string) {
       setStatus(data.status);
       setPaymentStatus(data.payment_status);
       setNotes(data.notes || '');
-      setIsOutsourced(data.is_outsourced || false);
-      setPartnerStoreName(data.partner_store_name || '');
-      setOutsourcingCost(data.outsourcing_cost != null ? String(data.outsourcing_cost) : '');
       setCompletionPhotoUrl(data.completion_photo_url || '');
       setEstimatedReadyAt(toDatetimeLocal(data.estimated_ready_at));
       setCustomerMaterialStatus(data.customer_material_status || '');
@@ -493,12 +473,6 @@ export function useJobDetail(jobId: string) {
     setEstimatedReadyAt,
     customerMaterialStatus,
     setCustomerMaterialStatus,
-    isOutsourced,
-    setIsOutsourced,
-    partnerStoreName,
-    setPartnerStoreName,
-    outsourcingCost,
-    setOutsourcingCost,
     allStaff,
     staffAssignments,
     setStaffAssignments,

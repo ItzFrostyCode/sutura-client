@@ -64,9 +64,6 @@ export interface JobCreateFormData {
   due_date: string;
   notes: string;
   po_number: string;
-  is_outsourced: boolean;
-  partner_store_name: string;
-  outsourcing_cost: string;
   is_rush: boolean;
   rush_fee: string;
   material_source: 'store_supplied' | 'customer_supplied';

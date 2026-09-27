@@ -139,16 +139,6 @@ export default function JobOverviewSidebar({
           </div>
         </div>
 
-        {job.is_outsourced && (
-          <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs space-y-1">
-            <span className="font-bold text-purple-900 block">Outsourced Production</span>
-            <p className="text-purple-800">Partner: {job.partner_store_name || 'Subcontractor'}</p>
-            {job.outsourcing_cost && (
-              <p className="text-purple-700">Cost: ₱{Number.parseFloat(String(job.outsourcing_cost)).toFixed(2)}</p>
-            )}
-          </div>
-        )}
-
         {Boolean(job.adjustment_count && job.adjustment_count > 0) && (
           <div className="p-3 bg-canvas border border-line rounded-xl text-xs flex items-center justify-between">
             <span className="text-ink-muted font-semibold">Fitting Adjustments:</span>

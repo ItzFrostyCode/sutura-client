@@ -55,14 +55,6 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
         </div>
       </div>
 
-      {job.is_outsourced && (
-        <div className="border-2 border-black rounded-lg p-3 mb-6">
-          <p className="text-sm font-black uppercase tracking-wide">
-            ⚠ Outsourced to Partner Store{job.partner_store_name ? `: ${job.partner_store_name}` : ''}
-          </p>
-        </div>
-      )}
-
       {job.measurement && (
         <div className="mb-8">
           <h2 className="font-bold uppercase tracking-widest text-xs border-b border-black pb-1 mb-3">

@@ -51,9 +51,6 @@ export interface Job {
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
   custom_order_data?: Record<string, unknown> | null;
   payments?: Payment[];
-  is_outsourced?: boolean;
-  partner_store_name?: string | null;
-  outsourcing_cost?: number | string | null;
   is_rush?: boolean;
   rush_fee?: number | string;
   completion_photo_url?: string | null;
@@ -92,15 +89,6 @@ export interface Job {
     fabric_image_url?: string | null;
     images?: { id: number; image_url: string; is_primary: boolean }[];
   } | null;
-  materials?: {
-    id: number;
-    material_name: string;
-    quantity_used: string | number;
-    unit: string;
-    unit_cost: string | number | null;
-    subtotal_cost: string | number | null;
-    logged_by: { id: number; name: string } | null;
-  }[];
 }
 
 export interface Staff {

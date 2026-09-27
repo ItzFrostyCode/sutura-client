@@ -55,8 +55,6 @@ export default function JobCreateForm() {
     setFormData,
     staffStageAssignments,
     setStaffStageAssignments,
-    showOutsourcingHelp,
-    setShowOutsourcingHelp,
     customFieldValues,
     setCustomFieldValues,
     handleCheckboxChange,
@@ -180,12 +178,7 @@ export default function JobCreateForm() {
           />
 
           {/* Section 4: Production & Fulfillment */}
-          <ProductionFulfillmentSection
-            formData={formData}
-            setFormData={setFormData}
-            showOutsourcingHelp={showOutsourcingHelp}
-            setShowOutsourcingHelp={setShowOutsourcingHelp}
-          />
+          <ProductionFulfillmentSection />
 
           {/* Section 5: Staff Assignment */}
           <StaffAssignmentSection

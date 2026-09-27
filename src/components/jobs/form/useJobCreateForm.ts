@@ -127,9 +127,6 @@ export function useJobCreateForm() {
     due_date: '',
     notes: '',
     po_number: '',
-    is_outsourced: false,
-    partner_store_name: '',
-    outsourcing_cost: '',
     is_rush: false,
     rush_fee: '',
     material_source: 'store_supplied',
@@ -141,7 +138,6 @@ export function useJobCreateForm() {
   const [staffStageAssignments, setStaffStageAssignments] = useState<Record<string, string>>({
     design: '', pattern_making: '', cutting: '', sewing: '', qc_ironing: '',
   });
-  const [showOutsourcingHelp, setShowOutsourcingHelp] = useState(false);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
   const handleCheckboxChange = (
@@ -465,9 +461,6 @@ export function useJobCreateForm() {
             ? preExistingDamageNotes.trim()
             : null,
         },
-        is_outsourced: formData.is_outsourced,
-        partner_store_name: formData.is_outsourced ? formData.partner_store_name : null,
-        outsourcing_cost: formData.is_outsourced && formData.outsourcing_cost ? Number.parseFloat(formData.outsourcing_cost) : null,
         appointment_id: appointmentId ? Number(appointmentId) : null,
         catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
         reference_images: referenceImages.length > 0 ? referenceImages : null,
@@ -539,8 +532,6 @@ export function useJobCreateForm() {
     setFormData,
     staffStageAssignments,
     setStaffStageAssignments,
-    showOutsourcingHelp,
-    setShowOutsourcingHelp,
     customFieldValues,
     setCustomFieldValues,
     handleCheckboxChange,
