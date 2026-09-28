@@ -143,6 +143,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           onPrint={() => window.print()}
           onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
           onUpdate={handleUpdate}
+          canDelete={isOwnerOrManager}
         />
 
         <JobDetailTabsNav

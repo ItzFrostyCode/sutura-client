@@ -30,6 +30,9 @@ export default function JobOrdersPage() {
 function JobOrdersPageContent() {
   const { store, user } = useAuthStore();
   const isStaff = user?.roles?.[0]?.name === 'staff';
+  const isOwnerOrManager = Boolean(
+    user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
+  );
   const {
     jobs,
     loading,
@@ -108,6 +111,7 @@ function JobOrdersPageContent() {
         jobsCount={jobs.length}
         onOpenTrash={() => setTrashModalOpen(true)}
         onOpenQuickJob={() => setQuickModalOpen(true)}
+        isOwnerOrManager={isOwnerOrManager}
       />
 
       {overdueOnly && (

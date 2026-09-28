@@ -44,6 +44,13 @@ export default function JobKanbanBoard({
   stageFilter,
 }: JobKanbanBoardProps) {
   const repairRequiresDownpayment = Boolean(useAuthStore((s) => s.store?.repair_requires_downpayment));
+  // POST .../jobs/{id}/reject is role:store_owner,branch_manager-only in
+  // routes/api.php (grouped with pay/discount/destroy as a supervisory
+  // action) — Approve is a plain PUT status update staff can already make,
+  // but Reject was shown to every role and 403'd for plain staff.
+  const isOwnerOrManager = Boolean(
+    useAuthStore((s) => s.user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)))
+  );
   // DP gate: tracks which job card just triggered the block (shows flash warning)
   const [dpGateJobId, setDpGateJobId] = useState<number | null>(null);
   // Balance gate: "No Balance, No Claim" — blocks marking a job Completed/Claimed
@@ -368,13 +375,15 @@ export default function JobKanbanBoard({
                           >
                             <Check size={13} /> <span>Approve</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
-                            className="flex-none flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors"
-                          >
-                            <X size={13} /> <span>Reject</span>
-                          </button>
+                          {isOwnerOrManager && (
+                            <button
+                              type="button"
+                              onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
+                              className="flex-none flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors"
+                            >
+                              <X size={13} /> <span>Reject</span>
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
