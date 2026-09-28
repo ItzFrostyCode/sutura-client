@@ -208,7 +208,12 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   );
 
   return (
-    <div className="h-screen bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
+    // h-dvh, not h-screen — on mobile Safari/Chrome, h-screen's 100vh is
+    // taller than the actually-visible viewport while the browser's address
+    // bar is showing, clipping the bottom of this fixed-height app-shell
+    // (sidebar/drawer, sticky header) until the page is scrolled once.
+    // Matches the min-h-dvh pattern already used on customer-facing pages.
+    <div className="h-dvh bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
       {/* ── Header: Aligned 1:1 with desktop rail width (Cloudflare-style) ── */}
       <header className="print:hidden h-16 bg-surface border-b border-line flex items-center sticky top-0 z-50">
         {/* Left Box: 100% matched to rail width (w-60 / w-16) with vertical border-r */}
