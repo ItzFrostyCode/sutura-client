@@ -131,8 +131,14 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
         </div>
       </div>
 
-      {/* Card Footer */}
-      <div className="bg-canvas/60 px-5 py-3 border-t border-line flex items-center justify-between gap-2">
+      {/* Card Footer — flex-wrap: a satellite branch viewed by the owner
+          can show up to 5 right-side controls (Set as Main, Preview, Map,
+          Edit, Delete) alongside the Staff/Orders stat pair on the left;
+          combined they're wider than a real 320-375px phone, and the card's
+          own rounded-2xl overflow-hidden would silently clip whatever
+          didn't fit instead of visibly breaking. Wrapping lets the action
+          row drop to its own line under the stats instead. */}
+      <div className="bg-canvas/60 px-5 py-3 border-t border-line flex items-center justify-between gap-2 flex-wrap gap-y-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs font-medium text-ink-muted" title="Assigned Staff">
             <Users size={13} />
