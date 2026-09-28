@@ -18,7 +18,7 @@ import { StoreBranch, StatusBadge, getMapUrl } from './branchHelpers';
 interface BranchCardProps {
   readonly branch: StoreBranch;
   readonly onEdit: (branch: StoreBranch) => void;
-  readonly onDelete: (id: number) => void;
+  readonly onDelete?: (id: number) => void;
   readonly onSetMain?: (branch: StoreBranch) => void;
 }
 
@@ -182,7 +182,7 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
           >
             <Pencil size={15} />
           </button>
-          {!branch.is_main && (
+          {!branch.is_main && onDelete && (
             <button
               type="button"
               onClick={() => onDelete(branch.id)}
