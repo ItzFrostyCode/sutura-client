@@ -83,10 +83,15 @@ export default function SupportDetailView({
         <button onClick={onBack} className="p-2 rounded-lg hover:bg-sunken text-ink-muted transition-colors mt-1">
           <ArrowLeft size={18} />
         </button>
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-ink tracking-tight">{selected.subject}</h1>
+        <div className="flex-1 min-w-0">
+          {/* flex-wrap so a long ticket subject on a narrow phone drops the
+              status badge/Close button to their own row instead of forcing
+              the whole page to scroll horizontally — neither the subject
+              nor the badge/button group had any way to shrink or wrap
+              before this. */}
+          <div className="flex items-start justify-between gap-4 flex-wrap gap-y-2">
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-ink tracking-tight break-words">{selected.subject}</h1>
               <p className="text-ink-faint text-xs mt-0.5">Ticket #{selected.id} · Opened {formatDate(selected.created_at)}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
