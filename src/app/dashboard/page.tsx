@@ -62,9 +62,12 @@ function DashboardPageContent() {
   const storeId = store?.id;
 
   const fetchOnlineStaff = useCallback(() => {
-    // Staff list/management is owner-only (matches GET /stores/{store}/staff) —
-    // staff/branch managers share this dashboard and shouldn't 403 on it.
-    if (!storeId || !isStoreOwner) return;
+    // GET /stores/{store}/staff is shared by store_owner AND branch_manager
+    // (role:store_owner,branch_manager,staff group in routes/api.php) — this
+    // used to gate on isStoreOwner alone, so a branch manager's Home never
+    // showed who's online on their own team even though they're fully
+    // permitted to call this same endpoint on the Staff page.
+    if (!storeId || !canViewAnalytics) return;
     api.get(`/stores/${storeId}/staff`)
       .then(res => {
         const raw: StaffPresence[] = Array.isArray(res.data?.data) ? res.data.data : [];
@@ -85,7 +88,7 @@ function DashboardPageContent() {
         setOnlineStaff(online);
       })
       .catch(() => {});
-  }, [storeId, isStoreOwner, selectedBranchId]);
+  }, [storeId, canViewAnalytics, selectedBranchId]);
 
   // Main analytics & store settings fetch
   useEffect(() => {
@@ -135,11 +138,11 @@ function DashboardPageContent() {
 
   // Periodic online staff poll (every 30s)
   useEffect(() => {
-    if (!storeId || !isStoreOwner) return;
+    if (!storeId || !canViewAnalytics) return;
     fetchOnlineStaff();
     const interval = setInterval(fetchOnlineStaff, 30_000);
     return () => clearInterval(interval);
-  }, [storeId, isStoreOwner, fetchOnlineStaff]);
+  }, [storeId, canViewAnalytics, fetchOnlineStaff]);
 
   // The backend reads start_date/end_date, not a 'period' string — converting
   // client-side (same pattern as the Reports page) so the period buttons
@@ -247,7 +250,33 @@ function DashboardPageContent() {
       {activeTab === 'news' && <NewsView />}
       {activeTab === 'welcome' && <WelcomeView />}
 
-      {activeTab === 'dashboard' && (
+      {activeTab === 'dashboard' && !canViewAnalytics && (
+        // Plain staff can't call GET /analytics (role:store_owner,branch_manager
+        // only) — every section below is sourced from that one response, so
+        // rendering them for staff just showed ₱0.00/empty everywhere instead
+        // of real data. Staff "cannot ... see owner-only financials" per the
+        // role model (CLAUDE.md) — give them a day-to-day quick-links view
+        // instead of a dashboard silently lying about the numbers.
+        <div className="bg-surface border border-line rounded-2xl p-8 text-center">
+          <h2 className="text-display text-lg font-semibold text-ink">Welcome back, {user?.name}</h2>
+          <p className="text-sm text-ink-muted mt-1 max-w-md mx-auto">
+            Financial and performance reporting is only visible to the store owner and branch managers. Here&apos;s where your day starts:
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+            <Link href="/dashboard/jobs" className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors">
+              <Scissors size={15} /> Orders
+            </Link>
+            <Link href="/dashboard/appointments" className="flex items-center gap-2 bg-surface border border-line hover:bg-canvas text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors">
+              <Calendar size={15} /> Appointments
+            </Link>
+            <Link href="/dashboard/customers" className="flex items-center gap-2 bg-surface border border-line hover:bg-canvas text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors">
+              <Users size={15} /> Customers
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'dashboard' && canViewAnalytics && (
         <>
       {/* ── Section 2: Financial Snapshot + Metric Chips ─────────────────── */}
       <section>
