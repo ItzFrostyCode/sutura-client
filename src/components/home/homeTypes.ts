@@ -14,6 +14,14 @@ export interface StoreResult {
   reviews_avg_rating: number | null;
   branches: { city: string | null; name: string }[];
   operating_hours?: OperatingHours | null;
+  specializations?: string[] | null;
+  catalog_items?: {
+    id: number;
+    name: string;
+    price?: number | string | null;
+    garment_type?: string | null;
+    images?: { image_url: string; is_primary?: boolean | number }[];
+  }[];
 }
 
 export const ABOUT_PILLARS = [
