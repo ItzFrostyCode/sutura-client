@@ -113,7 +113,11 @@ export function usePayments() {
   const [payReference, setPayReference] = useState('');
   const [payReceiptPath, setPayReceiptPath] = useState('');
   const [payReceiptUploading, setPayReceiptUploading] = useState(false);
+  const [payCashTendered, setPayCashTendered] = useState('');
   const [paySubmitting, setPaySubmitting] = useState(false);
+  // Same two-step process as the Job Detail cashier desk: review before it
+  // actually submits.
+  const [payReviewing, setPayReviewing] = useState(false);
 
   // Catalog Orders tab
   const [catalogOrders, setCatalogOrders] = useState<CatalogOrderItem[]>([]);
@@ -278,6 +282,8 @@ export function usePayments() {
     if (!store || !logPaymentJob) return;
     const amt = Number.parseFloat(payAmount);
     if (!amt || amt <= 0) return;
+    if (payMethod === 'cash' && (!payCashTendered || Number.parseFloat(payCashTendered) < amt)) return;
+    if (payMethod !== 'cash' && !payReceiptPath) return;
     setPaySubmitting(true);
     try {
       await api.post(`/stores/${store.id}/jobs/${logPaymentJob.id}/pay`, {
@@ -286,23 +292,30 @@ export function usePayments() {
         reference: payReference || undefined,
         notes: payNotes || undefined,
         receipt_path: payReceiptPath || undefined,
+        cash_tendered: payMethod === 'cash' ? Number.parseFloat(payCashTendered) : undefined,
       });
-      // Same shortfall-aware messaging as the Job Detail page's own payment
-      // form — a payment below the 50% downpayment threshold still counts
-      // toward it, but shouldn't read as an unqualified "done".
-      const totalAmt = Number.parseFloat(String(logPaymentJob.total_amount)) || 0;
-      const paidSoFar = (totalAmt - (Number.parseFloat(String(logPaymentJob.balance)) || 0)) + amt;
-      const requiredDp = totalAmt * 0.5;
-      if (paidSoFar < requiredDp) {
-        toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
+      if (payMethod !== 'cash') {
+        toast.success(`₱${amt.toFixed(2)} payment submitted for ${logPaymentJob.order_number} — pending verification before it applies to the balance.`);
       } else {
-        toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}`);
+        // Same shortfall-aware messaging as the Job Detail page's own payment
+        // form — a payment below the 50% downpayment threshold still counts
+        // toward it, but shouldn't read as an unqualified "done".
+        const totalAmt = Number.parseFloat(String(logPaymentJob.total_amount)) || 0;
+        const paidSoFar = (totalAmt - (Number.parseFloat(String(logPaymentJob.balance)) || 0)) + amt;
+        const requiredDp = totalAmt * 0.5;
+        if (paidSoFar < requiredDp) {
+          toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
+        } else {
+          toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}`);
+        }
       }
       setLogPaymentJob(null);
       setPayAmount('');
       setPayNotes('');
       setPayReference('');
       setPayReceiptPath('');
+      setPayCashTendered('');
+      setPayReviewing(false);
       fetchJobBalances();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -345,6 +358,10 @@ export function usePayments() {
     setPayReceiptPath,
     payReceiptUploading,
     handlePayReceiptUpload,
+    payCashTendered,
+    setPayCashTendered,
+    payReviewing,
+    setPayReviewing,
     paySubmitting,
     catalogOrders,
     catalogLoading,

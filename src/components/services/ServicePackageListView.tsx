@@ -15,6 +15,10 @@ interface ServicePackageListViewProps {
   readonly onDelete: (id: number) => void;
   // Optional so existing /services page caller (which doesn't pass it) still compiles
   readonly onToggleActive?: (pkg: ServicePackage) => void;
+  // Edit/delete call routes that are role:store_owner,branch_manager-only —
+  // defaults to false so a missing prop fails closed for a plain staff
+  // viewer, who can read packages but not manage them.
+  readonly canManage?: boolean;
 }
 
 export default function ServicePackageListView({
@@ -25,6 +29,7 @@ export default function ServicePackageListView({
   onEdit,
   onDelete,
   onToggleActive,
+  canManage = false,
 }: ServicePackageListViewProps) {
   return (
     <div className="space-y-4">
@@ -130,40 +135,42 @@ export default function ServicePackageListView({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-0.5">
-                    {/* Toggle active/inactive */}
-                    {onToggleActive && (
+                  {canManage && (
+                    <div className="flex items-center gap-0.5">
+                      {/* Toggle active/inactive */}
+                      {onToggleActive && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleActive(pkg)}
+                          title={pkg.is_active ? 'Deactivate package' : 'Activate package'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            pkg.is_active
+                              ? 'text-emerald-600 hover:bg-emerald-50'
+                              : 'text-ink-faint hover:text-ink hover:bg-sunken'
+                          }`}
+                        >
+                          {pkg.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                        </button>
+                      )}
+
                       <button
                         type="button"
-                        onClick={() => onToggleActive(pkg)}
-                        title={pkg.is_active ? 'Deactivate package' : 'Activate package'}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          pkg.is_active
-                            ? 'text-emerald-600 hover:bg-emerald-50'
-                            : 'text-ink-faint hover:text-ink hover:bg-sunken'
-                        }`}
+                        onClick={() => onEdit(pkg)}
+                        title="Edit package"
+                        className="p-1.5 text-ink-faint hover:text-ink hover:bg-sunken rounded-lg transition-colors"
                       >
-                        {pkg.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                        <Pencil size={14} />
                       </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => onEdit(pkg)}
-                      title="Edit package"
-                      className="p-1.5 text-ink-faint hover:text-ink hover:bg-sunken rounded-lg transition-colors"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(pkg.id)}
-                      title="Delete package"
-                      className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(pkg.id)}
+                        title="Delete package"
+                        className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

@@ -17,10 +17,18 @@ import ServicePackageFormModal from '@/components/services/ServicePackageFormMod
 import PageHeader from '@/components/shared/PageHeader';
 import StatBand from '@/components/shared/StatBand';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
+import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
 
 export default function ServicesPage() {
   const { store, user } = useAuthStore();
   const toast = useToast();
+  // POST/PUT/DELETE on services, service-packages, and restore are all
+  // role:store_owner,branch_manager-only in routes/api.php, but the Services
+  // nav (with the Packages tab) is shown to plain staff too since they need
+  // read access to pick a service on a job/appointment.
+  const isOwnerOrManager = Boolean(
+    user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
+  );
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -43,7 +51,7 @@ export default function ServicesPage() {
   const [saleError, setSaleError] = useState('');
 
   // Packages tab
-  const [activeTab, setActiveTab] = useState<'services' | 'packages'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'packages' | 'analytics'>('services');
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [packageSearch, setPackageSearch] = useState('');
@@ -272,7 +280,7 @@ export default function ServicesPage() {
         title="Service Catalog"
         description="Curated tailoring services, turnaround times, and combo packages."
         actions={
-          activeTab === 'services' ? (
+          !isOwnerOrManager ? null : activeTab === 'services' ? (
             <>
               <button
                 onClick={() => setShowTrash(true)}
@@ -290,7 +298,7 @@ export default function ServicesPage() {
                 Add Service
               </button>
             </>
-          ) : (
+          ) : activeTab === 'packages' ? (
             <button
               onClick={() => { setEditingPackageId(null); setPackageError(''); setIsPackageModalOpen(true); }}
               disabled={services.length < 2}
@@ -300,7 +308,7 @@ export default function ServicesPage() {
               <Plus size={17} />
               Add Package
             </button>
-          )
+          ) : null
         }
       >
         <ServicesModuleTabs
@@ -308,6 +316,7 @@ export default function ServicesPage() {
           onTabChange={setActiveTab}
           serviceCount={services.length}
           packageCount={packages.length}
+          isOwnerOrManager={isOwnerOrManager}
         />
       </PageHeader>
 
@@ -329,23 +338,22 @@ export default function ServicesPage() {
       })()}
 
       {activeTab === 'services' ? (
-        <>
-          <ServiceListView
-            filteredServices={filtered}
-            loading={loading}
-            search={search}
-            onSearchChange={setSearch}
-            categoryFilter={categoryFilter}
-            onCategoryFilterChange={setCategoryFilter}
-            allCategories={categoriesList}
-            actionLoadingId={actionLoadingId}
-            onDuplicate={handleDuplicateClick}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteClick}
-            onOpenSale={openSale}
-          />
-        </>
-      ) : (
+        <ServiceListView
+          filteredServices={filtered}
+          loading={loading}
+          search={search}
+          onSearchChange={setSearch}
+          categoryFilter={categoryFilter}
+          onCategoryFilterChange={setCategoryFilter}
+          allCategories={categoriesList}
+          actionLoadingId={actionLoadingId}
+          onDuplicate={handleDuplicateClick}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          onOpenSale={openSale}
+          canManage={isOwnerOrManager}
+        />
+      ) : activeTab === 'packages' ? (
         <ServicePackageListView
           filteredPackages={filteredPackages}
           loading={packagesLoading}
@@ -353,8 +361,11 @@ export default function ServicesPage() {
           onSearchChange={setPackageSearch}
           onEdit={handleEditPackageClick}
           onDelete={handleDeletePackageClick}
+          canManage={isOwnerOrManager}
         />
-      )}
+      ) : isOwnerOrManager ? (
+        <ServiceAnalyticsView />
+      ) : null}
 
       <ServiceFormModal
         isOpen={isModalOpen}

@@ -41,8 +41,7 @@ interface Job {
   reference_link?: string | null;
   material_source?: 'store_supplied' | 'customer_supplied' | null;
   garment_category?: string | null;
-  is_outsourced?: boolean;
-  partner_store_name?: string | null;
+  quantity?: number;
 }
 
 const GARMENT_CATEGORY_LABELS: Record<string, string> = {
@@ -195,6 +194,9 @@ export default function PrintWorkTicketPage() {
                 {job.garment_category && (
                   <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Garment</td><td className="pb-1">{GARMENT_CATEGORY_LABELS[job.garment_category] ?? job.garment_category}</td></tr>
                 )}
+                {(job.quantity ?? 1) > 1 && (
+                  <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Quantity</td><td className="pb-1 font-black">{job.quantity} pcs</td></tr>
+                )}
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Channel</td><td className="pb-1 capitalize">{job.intake_channel?.replace('_', '-') ?? '—'}</td></tr>
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Date In</td><td className="pb-1">{createdFmt}</td></tr>
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Due Date</td><td className="font-bold underline pb-1">{dueFmt}</td></tr>
@@ -227,7 +229,7 @@ export default function PrintWorkTicketPage() {
         {/* Production Instructions (Cut Sheet) — the single most important
             section on the ticket, so everything a cutter/sewer needs is
             gathered here instead of scattered across separate warning
-            boxes: material source, outsourcing, written notes, and every
+            boxes: material source, written notes, and every
             custom spec captured at intake (fabric, color, style details,
             alteration damage notes, etc.), not just the freeform notes. */}
         <div className="border-t-2 border-black pt-3 mb-6">
@@ -241,14 +243,6 @@ export default function PrintWorkTicketPage() {
                   {materialSourceLabel}
                 </td>
               </tr>
-              {job.is_outsourced && (
-                <tr>
-                  <td className="text-gray-600 pr-3 pb-1 font-medium align-top">Outsourced To</td>
-                  <td className="pb-1 font-black underline align-top">
-                    Partner Store{job.partner_store_name ? ` — ${job.partner_store_name}` : ''}
-                  </td>
-                </tr>
-              )}
               {customSpecs.map(([label, value]) => (
                 <tr key={label}>
                   <td className="text-gray-600 pr-3 pb-1 font-medium align-top capitalize">{label.replaceAll('_', ' ')}</td>

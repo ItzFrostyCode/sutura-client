@@ -47,6 +47,12 @@ export default function JobOverviewSidebar({
         </div>
 
         <div className="space-y-2.5 text-xs">
+          {(job.quantity ?? 1) > 1 && (
+            <div className="flex justify-between text-ink-muted">
+              <span>Quantity:</span>
+              <strong className="text-ink font-bold">{job.quantity} pcs</strong>
+            </div>
+          )}
           <div className="flex justify-between text-ink-muted">
             <span>Total Amount:</span>
             <strong className="text-ink font-bold">₱{Number.parseFloat(String(job.total_amount || 0)).toFixed(2)}</strong>
@@ -134,20 +140,10 @@ export default function JobOverviewSidebar({
             </span>
           </div>
           <div className="flex items-center justify-between text-xs pt-1 border-t border-line/60">
-            <span className="text-ink-muted">Assigned Tailor:</span>
-            <span className="font-bold text-ink">{job.assigned_staff?.name || 'Unassigned'}</span>
+            <span className="text-ink-muted">Last Updated By:</span>
+            <span className="font-bold text-ink">{job.assigned_staff?.name || 'Not yet touched'}</span>
           </div>
         </div>
-
-        {job.is_outsourced && (
-          <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs space-y-1">
-            <span className="font-bold text-purple-900 block">Outsourced Production</span>
-            <p className="text-purple-800">Partner: {job.partner_store_name || 'Subcontractor'}</p>
-            {job.outsourcing_cost && (
-              <p className="text-purple-700">Cost: ₱{Number.parseFloat(String(job.outsourcing_cost)).toFixed(2)}</p>
-            )}
-          </div>
-        )}
 
         {Boolean(job.adjustment_count && job.adjustment_count > 0) && (
           <div className="p-3 bg-canvas border border-line rounded-xl text-xs flex items-center justify-between">

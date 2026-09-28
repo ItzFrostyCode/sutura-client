@@ -15,6 +15,7 @@ interface JobDetailHeaderProps {
   onPrint: () => void;
   onOpenDeleteModal: () => void;
   onUpdate: () => void;
+  canDelete: boolean;
 }
 
 export default function JobDetailHeader({
@@ -28,6 +29,7 @@ export default function JobDetailHeader({
   onPrint,
   onOpenDeleteModal,
   onUpdate,
+  canDelete,
 }: JobDetailHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
@@ -115,14 +117,16 @@ export default function JobDetailHeader({
         >
           <Printer size={15} />
         </button>
-        <button
-          onClick={onOpenDeleteModal}
-          className="h-9 w-9 rounded-xl bg-surface hover:bg-rose-50 border border-line hover:border-rose-200 text-ink-faint hover:text-rose-600 transition-colors flex items-center justify-center shadow-2xs active:scale-95"
-          title="Delete Job Order"
-          type="button"
-        >
-          <Trash2 size={15} />
-        </button>
+        {canDelete && (
+          <button
+            onClick={onOpenDeleteModal}
+            className="h-9 w-9 rounded-xl bg-surface hover:bg-rose-50 border border-line hover:border-rose-200 text-ink-faint hover:text-rose-600 transition-colors flex items-center justify-center shadow-2xs active:scale-95"
+            title="Delete Job Order"
+            type="button"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
 
         <button
           onClick={onUpdate}

@@ -25,6 +25,7 @@ export function useCatalogForm({
     description: '',
     care_instructions: '',
     garment_type: '',
+    department: '',
     sizes: [],
     external_gallery_url: '',
     is_active: true,

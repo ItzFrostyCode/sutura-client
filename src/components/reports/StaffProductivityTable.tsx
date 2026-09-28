@@ -17,7 +17,6 @@ export interface StaffPerformance {
   total_jobs: number;
   completed_jobs: number;
   completion_rate: number;
-  total_revenue: number;
   avg_adjustments?: number;
 }
 
@@ -26,24 +25,22 @@ interface StaffProductivityTableProps {
   readonly loading: boolean;
 }
 
-interface RevenueTooltipPayload {
+interface ProductivityTooltipPayload {
   readonly payload: StaffPerformance;
 }
 
 const roleLabel = (role: string) => role.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: readonly RevenueTooltipPayload[] }) => {
+const ProductivityTooltip = ({ active, payload }: { active?: boolean; payload?: readonly ProductivityTooltipPayload[] }) => {
   if (active && payload?.length) {
     const row = payload[0].payload;
     return (
       <div className="bg-surface border border-line rounded-xl px-4 py-3">
         <p className="text-xs font-medium text-ink mb-1">{row.name || 'Unnamed Staff'}</p>
         <p className="text-base font-bold text-taupe">
-          ₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-        </p>
-        <p className="text-xs text-ink-faint mt-1">
           {row.completed_jobs} of {row.total_jobs} jobs completed
         </p>
+        <p className="text-xs text-ink-faint mt-1">{row.completion_rate}% completion</p>
       </div>
     );
   }
@@ -74,7 +71,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
         <UserCog size={18} className="text-taupe" />
         <div>
           <h2 className="text-base font-semibold text-ink">Individual Staff Productivity</h2>
-          <p className="text-sm text-ink-faint mt-0.5">Jobs completed and revenue attributed to each staff member.</p>
+          <p className="text-sm text-ink-faint mt-0.5">Jobs completed, completion rate, and rework rounds per staff member.</p>
         </div>
       </div>
 
@@ -104,7 +101,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
               axisLine={false}
               width={140}
             />
-            <Tooltip content={<RevenueTooltip />} cursor={{ fill: '#F0EAE3', radius: 6 }} />
+            <Tooltip content={<ProductivityTooltip />} cursor={{ fill: '#F0EAE3', radius: 6 }} />
             <Bar dataKey="completed_jobs" fill="#9A8073" radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -119,7 +116,6 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
                 <p className="font-medium text-ink">{row.name || 'Unnamed Staff'}</p>
                 <p className="text-xs text-ink-muted">{roleLabel(row.role)}</p>
               </div>
-              <p className="font-semibold text-ink">₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
             </div>
             <p className="text-xs text-ink-muted mt-1.5">
               {row.completed_jobs} / {row.total_jobs} jobs · {row.completion_rate}% completion
@@ -137,7 +133,6 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
             <tr>
               <th className="px-6 py-3 font-medium">Staff Member</th>
               <th className="px-6 py-3 font-medium">Role</th>
-              <th className="px-6 py-3 font-medium">Revenue</th>
               <th className="px-6 py-3 font-medium">Jobs</th>
               <th className="px-6 py-3 font-medium">Completion</th>
               <th className="px-6 py-3 font-medium">Avg. Adjustments</th>
@@ -148,9 +143,6 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
               <tr key={row.staff_id} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3 font-medium text-ink">{row.name || 'Unnamed Staff'}</td>
                 <td className="px-6 py-3 text-ink-muted">{roleLabel(row.role)}</td>
-                <td className="px-6 py-3">
-                  ₱{row.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                </td>
                 <td className="px-6 py-3">{row.completed_jobs} / {row.total_jobs}</td>
                 <td className="px-6 py-3">{row.completion_rate}%</td>
                 <td className={`px-6 py-3 ${row.avg_adjustments && row.avg_adjustments > 1 ? 'text-danger font-semibold' : ''}`}>

@@ -1,7 +1,7 @@
 'use client';
 
 import { use, Suspense } from 'react';
-import { Loader2, MapPin } from 'lucide-react';
+import { Loader2, MapPin, ClipboardList, CalendarDays as CalendarDaysIcon, CheckCircle2 } from 'lucide-react';
 import BookingHeader from '@/components/booking/BookingHeader';
 import BookingSuccessState from '@/components/booking/BookingSuccessState';
 import BookingReferenceCard from '@/components/booking/BookingReferenceCard';
@@ -11,6 +11,19 @@ import BookingStep1Policy from '@/components/booking/steps/BookingStep1Policy';
 import BookingStep2Schedule from '@/components/booking/steps/BookingStep2Schedule';
 import BookingStep3Review from '@/components/booking/steps/BookingStep3Review';
 import { useBookingWizard } from '@/components/booking/hooks/useBookingWizard';
+import StatusStepper, { type StepperStage } from '@/components/shared/StatusStepper';
+
+// Real visual progress indicator, replacing a plain "Step X of Y" text pill
+// — reuses the same StatusStepper already proven on OrderTrackingView rather
+// than inventing a second stepper style. Three fixed steps regardless of
+// dynamic sub-fields within Step 2 (Schedule bundles several sections but is
+// still one step in the flow).
+const BOOKING_STAGE_KEYS = ['policy', 'schedule', 'review'] as const;
+const BOOKING_STAGES: StepperStage[] = [
+  { key: 'policy', label: 'Details', Icon: ClipboardList },
+  { key: 'schedule', label: 'Schedule', Icon: CalendarDaysIcon },
+  { key: 'review', label: 'Review', Icon: CheckCircle2 },
+];
 
 function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
@@ -47,20 +60,20 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
       <div className="flex-1 mobile-screen-margins py-4 pb-28 lg:pb-10">
         <div className="w-full max-w-xl lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:items-start">
         <div className="lg:flex-1 lg:max-w-xl">
-          {/* Header Context & Step Progress */}
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-ink">{b.storeSettings?.name}</p>
-              {b.branchAutoFilled && b.autoFilledBranch && (
-                <p className="flex items-center gap-1 text-xs text-ink-faint mt-0.5">
-                  <MapPin size={11} className="text-taupe shrink-0" />
-                  {b.autoFilledBranch.name}
-                </p>
-              )}
-            </div>
-            <div className="text-xs font-semibold text-ink-faint bg-sunken border border-line px-2.5 py-1 rounded-none">
-              Step {b.displayStep} of {b.totalSteps}
-            </div>
+          {/* Header Context */}
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-ink">{b.storeSettings?.name}</p>
+            {b.branchAutoFilled && b.autoFilledBranch && (
+              <p className="flex items-center gap-1 text-xs text-ink-faint">
+                <MapPin size={11} className="text-taupe shrink-0" />
+                {b.autoFilledBranch.name}
+              </p>
+            )}
+          </div>
+
+          {/* Step Progress — real visual stepper, not a text pill */}
+          <div className="mb-5">
+            <StatusStepper stages={BOOKING_STAGES} currentKey={BOOKING_STAGE_KEYS[b.step - 1]} layout="horizontal" />
           </div>
 
           {/* Compact Design Reference Preview for Steps 1 & 2 */}
@@ -140,6 +153,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             {b.step === 3 && (
               <BookingStep3Review
                 refName={b.refName}
+                refDetailHref={b.refItemId ? `/store/${storeId}/catalog/${b.refItemId}` : null}
+                serviceDetailHref={b.selectedService ? `/store/${storeId}/service/${b.selectedService.id}` : null}
                 refImage={b.refImage}
                 refPrice={b.refPrice}
                 refSize={b.refSize}

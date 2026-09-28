@@ -15,8 +15,14 @@ export default function PlanComparisonSection({
       <p className="text-xs font-semibold uppercase tracking-widest text-taupe flex items-center gap-1.5">
         <ShieldCheck size={12} /> Compare Plans
       </p>
+      {/* Inner overflow-x-auto wrapper around just the table, same pattern
+          as audit-log/page.tsx — a 4-column table (Feature + 3 plans, each
+          with px-5 padding) is wider than a phone screen, and this card's
+          own overflow-hidden was clipping it outright instead of letting
+          it scroll. */}
       <div className="bg-surface border border-line rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="bg-canvas border-b border-line">
               <th className="text-left px-5 py-3.5 text-ink-muted font-semibold text-[12px] uppercase tracking-wider w-1/4">
@@ -81,6 +87,7 @@ export default function PlanComparisonSection({
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   );

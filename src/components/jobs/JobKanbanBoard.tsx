@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, type LucideIcon } from 'lucide-react';
-import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, STAGES_REQUIRING_DOWNPAYMENT, ON_HOLD_COLUMN } from './jobHelpers';
+import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN } from './jobHelpers';
+import { useAuthStore } from '@/store/useAuthStore';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
 import { getMediaUrl } from '@/lib/media';
@@ -42,6 +43,14 @@ export default function JobKanbanBoard({
   highlightedJobId,
   stageFilter,
 }: JobKanbanBoardProps) {
+  const repairRequiresDownpayment = Boolean(useAuthStore((s) => s.store?.repair_requires_downpayment));
+  // POST .../jobs/{id}/reject is role:store_owner,branch_manager-only in
+  // routes/api.php (grouped with pay/discount/destroy as a supervisory
+  // action) — Approve is a plain PUT status update staff can already make,
+  // but Reject was shown to every role and 403'd for plain staff.
+  const isOwnerOrManager = Boolean(
+    useAuthStore((s) => s.user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)))
+  );
   // DP gate: tracks which job card just triggered the block (shows flash warning)
   const [dpGateJobId, setDpGateJobId] = useState<number | null>(null);
   // Balance gate: "No Balance, No Claim" — blocks marking a job Completed/Claimed
@@ -60,12 +69,16 @@ export default function JobKanbanBoard({
     // Derived downpayment = total_amount minus current balance.
     // Policy is 50% down, not just "something" — a ₱1 payment on a ₱10,000
     // job shouldn't be enough to unlock production.
+    // A discount lowers balance, not total, so subtract it or it would count
+    // as cash paid (same formula as JobOrderController@update).
     const total = Number.parseFloat(String(job.total_amount ?? '0'));
     const balance = Number.parseFloat(String(job.balance ?? '0'));
-    const paidSoFar = total - balance;
-    const noDownpayment = total > 0 && paidSoFar < total * 0.5;
+    const discount = Number.parseFloat(String(job.discount_amount ?? '0'));
+    const amountDue = total - discount;
+    const paidSoFar = total - balance - discount;
+    const noDownpayment = amountDue > 0 && paidSoFar < amountDue * 0.5;
 
-    if (STAGES_REQUIRING_DOWNPAYMENT.has(newStatus) && noDownpayment) {
+    if (requiresDownpayment(job, newStatus, repairRequiresDownpayment) && noDownpayment) {
       // Block the move — show flash warning on the card
       setDpGateJobId(job.id);
       setTimeout(() => setDpGateJobId(null), 3500);
@@ -231,13 +244,21 @@ export default function JobKanbanBoard({
                       return (
                         <div className="flex items-center gap-2.5 my-2 p-1.5 rounded-lg bg-canvas/40 border border-line/60">
                           {refImage ? (
-                            <div className="w-10 h-10 rounded-md overflow-hidden bg-sunken shrink-0 border border-line">
+                            <div className="relative w-10 h-10 rounded-md overflow-hidden bg-sunken shrink-0 border border-line">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={getMediaUrl(refImage)}
                                 alt="Design Preview"
                                 className="w-full h-full object-cover"
                               />
+                              {(job.reference_images?.length ?? 0) > 0 && (
+                                <span
+                                  title={`${job.reference_images!.length} customer reference photo(s)`}
+                                  className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] font-bold leading-none px-1 py-0.5 rounded-tl"
+                                >
+                                  +{job.reference_images!.length}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <div className="w-10 h-10 rounded-md bg-sunken flex items-center justify-center text-ink-faint shrink-0 border border-line">
@@ -249,10 +270,12 @@ export default function JobKanbanBoard({
                               <div className="flex items-center gap-1 text-[10px] font-bold text-taupe truncate">
                                 <Sparkles size={10} className="shrink-0" />
                                 <span className="truncate">{job.catalog_item.name}</span>
+                                {(job.quantity ?? 1) > 1 && <span className="shrink-0 text-ink-muted">×{job.quantity}</span>}
                               </div>
                             ) : (
-                              <div className="text-[10px] font-bold text-ink-muted truncate">
-                                {job.garment_category ? job.garment_category.toUpperCase() : (job.service?.name || 'Custom Garment')}
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-ink-muted truncate">
+                                <span className="truncate">{job.garment_category ? job.garment_category.toUpperCase() : (job.service?.name || 'Custom Garment')}</span>
+                                {(job.quantity ?? 1) > 1 && <span className="shrink-0">×{job.quantity}</span>}
                               </div>
                             )}
                             <div className="flex items-center gap-1 text-[10px] text-ink-muted mt-0.5">
@@ -278,7 +301,7 @@ export default function JobKanbanBoard({
                   <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-line">
                     <div className="flex items-center gap-1 text-xs text-ink-faint">
                       <User size={11} />
-                      <span className="truncate max-w-[100px]">{job.assigned_staff?.name || 'Unassigned'}</span>
+                      <span className="truncate max-w-[100px]">{job.assigned_staff?.name || 'Not yet touched'}</span>
                     </div>
                     {job.due_date && (
                       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -326,7 +349,7 @@ export default function JobKanbanBoard({
                   )}
 
                   {/* Passive DP warning — already in a production stage but unpaid */}
-                  {STAGES_REQUIRING_DOWNPAYMENT.has(job.status) && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
+                  {requiresDownpayment(job, job.status, repairRequiresDownpayment) && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
                     <div className="mt-3 pt-2.5 border-t border-amber-100">
                       <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                         <Lock size={12} className="text-amber-600 mt-0.5 shrink-0" />
@@ -352,13 +375,15 @@ export default function JobKanbanBoard({
                           >
                             <Check size={13} /> <span>Approve</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
-                            className="flex-none flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors"
-                          >
-                            <X size={13} /> <span>Reject</span>
-                          </button>
+                          {isOwnerOrManager && (
+                            <button
+                              type="button"
+                              onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
+                              className="flex-none flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors"
+                            >
+                              <X size={13} /> <span>Reject</span>
+                            </button>
+                          )}
                         </>
                       )}
                     </div>

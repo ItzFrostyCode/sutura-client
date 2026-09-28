@@ -28,7 +28,11 @@ export default function JobOrdersPage() {
 }
 
 function JobOrdersPageContent() {
-  const { store } = useAuthStore();
+  const { store, user } = useAuthStore();
+  const isStaff = user?.roles?.[0]?.name === 'staff';
+  const isOwnerOrManager = Boolean(
+    user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
+  );
   const {
     jobs,
     loading,
@@ -36,6 +40,8 @@ function JobOrdersPageContent() {
     setSearch,
     tab,
     setTab,
+    myJobsOnly,
+    setMyJobsOnly,
     rejectModalOpen,
     setRejectModalOpen,
     actionLoadingId,
@@ -105,6 +111,7 @@ function JobOrdersPageContent() {
         jobsCount={jobs.length}
         onOpenTrash={() => setTrashModalOpen(true)}
         onOpenQuickJob={() => setQuickModalOpen(true)}
+        isOwnerOrManager={isOwnerOrManager}
       />
 
       {overdueOnly && (
@@ -136,6 +143,9 @@ function JobOrdersPageContent() {
           walkInCount={walkInCount}
           onlineCount={onlineCount}
           onOpenSettings={() => setSettingsModalOpen(true)}
+          showMyJobsToggle={isStaff}
+          myJobsOnly={myJobsOnly}
+          setMyJobsOnly={setMyJobsOnly}
           designOriginFilter={designOriginFilter}
           setDesignOriginFilter={setDesignOriginFilter}
           catalogJobsCount={catalogJobsCount}

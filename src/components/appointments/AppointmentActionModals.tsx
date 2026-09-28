@@ -48,6 +48,8 @@ interface AppointmentActionModalsProps {
   readonly onCompleteSubmit: (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => Promise<void>;
   readonly onCancelConfirm: (aptId: number, reason: string, blockRebooking: boolean) => Promise<void>;
   readonly onCreateJob: (apt: Appointment) => void;
+  readonly onAccommodateEarly?: (aptId: number) => Promise<void>;
+  readonly onAskToWait?: (aptId: number) => Promise<void>;
 }
 
 export default function AppointmentActionModals({
@@ -58,7 +60,8 @@ export default function AppointmentActionModals({
   showViewModal, setShowViewModal, viewApt, setViewApt,
   todayStr, minTimeFor,
   isSubmitting, actionLoadingId,
-  onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob
+  onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob,
+  onAccommodateEarly, onAskToWait
 }: AppointmentActionModalsProps) {
 
   const { store } = useAuthStore();
@@ -511,9 +514,61 @@ export default function AppointmentActionModals({
                   </p>
                 </div>
               )}
+              {viewApt.arrival_status === 'early' && (
+                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                  <p className="text-[11px] text-amber-800 font-bold uppercase tracking-wider">
+                    Arrived Early{viewApt.early_arrival_decision ? ` — ${viewApt.early_arrival_decision.replace('_', ' ')}` : ''}
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    Scheduled for {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}.
+                    {' '}The customer&apos;s original appointment time is unchanged unless accommodated below.
+                  </p>
+                  {viewApt.early_arrival_decision !== 'accommodated' && (onAccommodateEarly || onAskToWait) && (
+                    <div className="flex gap-2">
+                      {onAccommodateEarly && (
+                        <button
+                          type="button"
+                          onClick={() => onAccommodateEarly(viewApt.id)}
+                          disabled={actionLoadingId === viewApt.id}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Accommodate Now
+                        </button>
+                      )}
+                      {onAskToWait && (
+                        <button
+                          type="button"
+                          onClick={() => onAskToWait(viewApt.id)}
+                          disabled={actionLoadingId === viewApt.id}
+                          className="flex-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          Ask Customer to Wait
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {viewApt.early_arrival_decision === 'accommodated' && viewApt.actual_service_start_at && (
+                    <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                      <Check size={12} /> Service started at{' '}
+                      {new Date(viewApt.actual_service_start_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Service</p>
-                <p className="text-ink font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-ink-faint">Consultation</span>}</p>
+                {viewApt.service && store?.slug ? (
+                  <a
+                    href={`/store/${store.slug}/service/${viewApt.service.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#6B7FA8] hover:underline font-medium mt-0.5 inline-block"
+                  >
+                    {viewApt.service.name}
+                  </a>
+                ) : (
+                  <p className="text-ink font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-ink-faint">Consultation</span>}</p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Branch</p>

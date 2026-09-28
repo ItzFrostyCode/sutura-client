@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Job } from './jobTypes';
-import { isRepairOnly } from './jobHelpers';
+import { isRepairOnly, serviceHasType } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
@@ -120,7 +120,7 @@ export default function JobProductionTimeline({
   const roster = customData?.team_roster;
   const isBulkOrder = (Array.isArray(roster) && roster.length > 0) ||
     (customData?.size_breakdown && typeof customData.size_breakdown === 'object' && Object.keys(customData.size_breakdown).length > 0) ||
-    job.service?.service_type === 'bulk_sublimation';
+    serviceHasType(job.service, 'bulk_sublimation');
   const isRepair = isRepairOnly(job);
 
   // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the

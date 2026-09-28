@@ -95,8 +95,8 @@ The division boundaries above, rounded to the nearest clean value:
 
 Two **independent** breakpoint systems exist side by side — don't conflate them:
 
-### A. PublicNav / WebHoverNav department nav — Tailwind's stock `lg:` (1024px)
-`src/components/shared/publicNav/WebHoverNav.tsx` — hamburger menu below 1024px, inline MEN/WOMEN/WEDDING/OFFICE/DISCOVER nav at 1024px+. This predates the work below and was left as-is (stock Tailwind `sm`/`lg`, no arbitrary values).
+### A. PublicNav / WebHoverNav department nav — Tailwind's stock `md:` (768px)
+`src/components/shared/publicNav/WebHoverNav.tsx` — hamburger menu (`PublicNav.tsx`'s `md:hidden`) below 768px, inline MEN/WOMEN/WEDDING/OFFICE/DISCOVER nav (`WebHoverNav`'s own `hidden md:flex`) at 768px+. Corrected 2026-09-28 — this section previously said `lg:`/1024px, which doesn't match the code; `lg:` only appears inside `WebHoverNav` for secondary gap/font-size scaling (`lg:gap-7`, `lg:text-[13px]`), not the show/hide breakpoint itself. This predates the work below and was left as-is (stock Tailwind `sm`/`md`, no arbitrary values).
 
 ### B. Catalog Item Detail & Service Detail pages — a custom 600px system
 Built this session (`src/app/store/[store_id]/catalog/[item_id]/page.tsx`, `src/app/store/[store_id]/service/[service_id]/page.tsx`, and their shared component patterns). Uses Tailwind v4 arbitrary variants (`min-[375px]:`, `min-[600px]:`) instead of the stock `sm`/`md` because neither lined up with where this specific two-column layout needed to switch:

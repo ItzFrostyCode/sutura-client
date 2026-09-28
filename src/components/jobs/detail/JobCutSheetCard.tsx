@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Scissors, BookOpen, Link as LinkIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Scissors, BookOpen, Link as LinkIcon, Maximize2 } from 'lucide-react';
+import PostImageLightbox from '@/components/profile/PostImageLightbox';
+import { getMediaUrl } from '@/lib/media';
 import { Job } from '../jobTypes';
 
 interface JobCutSheetCardProps {
@@ -11,13 +13,16 @@ interface JobCutSheetCardProps {
 }
 
 export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCardProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const catalogImageUrl =
     job.catalog_item?.images?.find(i => i.is_primary)?.image_url ??
     job.catalog_item?.images?.[0]?.image_url ??
     job.catalog_item?.fabric_image_url ??
     null;
 
-  const heroImages = [catalogImageUrl, ...(job.reference_images ?? [])].filter((u): u is string => Boolean(u));
+  const heroImages = [catalogImageUrl, ...(job.reference_images ?? [])]
+    .filter((u): u is string => Boolean(u))
+    .map(getMediaUrl);
   const mainImage = heroImages[0];
   const extraImages = heroImages.slice(1);
 
@@ -58,11 +63,11 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
           <div className="space-y-2.5">
-            <a
-              href={mainImage}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block aspect-3/4 bg-sunken rounded-xl overflow-hidden border border-line shadow-2xs"
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(0)}
+              title="View full size"
+              className="relative block w-full aspect-3/4 bg-sunken rounded-xl overflow-hidden border border-line shadow-2xs cursor-zoom-in group"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -70,7 +75,11 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
                 alt={job.catalog_item?.name ?? 'Design reference'}
                 className="w-full h-full object-cover"
               />
-            </a>
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 text-white text-[11px] font-semibold px-2 py-1 rounded-full group-hover:bg-black/80 transition-colors">
+                <Maximize2 size={11} />
+                {heroImages.length > 1 ? `${heroImages.length} photos` : 'Expand'}
+              </span>
+            </button>
             {job.catalog_item && (
               <p className="text-xs font-bold text-ink-body flex items-center gap-1.5 truncate">
                 <BookOpen size={13} className="text-taupe shrink-0" /> {job.catalog_item.name}
@@ -78,14 +87,17 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
             )}
             {extraImages.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {extraImages.map(url => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                {extraImages.map((url, i) => (
+                  <button
                     key={url}
-                    src={url}
-                    alt="Additional reference"
-                    className="h-12 w-12 object-cover rounded-lg border border-line shadow-2xs"
-                  />
+                    type="button"
+                    onClick={() => setLightboxIndex(i + 1)}
+                    title="View full size"
+                    className="h-12 w-12 rounded-lg overflow-hidden border border-line shadow-2xs cursor-zoom-in hover:ring-2 hover:ring-taupe transition"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="Additional reference" className="w-full h-full object-cover" />
+                  </button>
                 ))}
               </div>
             )}
@@ -114,6 +126,13 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
         These cut sheet instructions will automatically print on the physical Work Ticket.
       </p>
+
+      <PostImageLightbox
+        images={heroImages}
+        initialIndex={lightboxIndex ?? 0}
+        isOpen={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+      />
     </div>
   );
 }

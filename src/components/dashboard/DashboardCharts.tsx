@@ -202,14 +202,18 @@ export default function DashboardCharts({
             )}
           </div>
 
-          {/* Period pills */}
-          <div className="flex gap-1 bg-sunken p-1 rounded-xl self-start">
+          {/* Period pills — overflow-x-auto, not just flex, since the
+              parent section has overflow-hidden: the 4 pills together are
+              wider than a real phone screen, so without a scroll wrapper
+              "All Time" was getting clipped off the edge instead of just
+              wrapping or scrolling into view. */}
+          <div className="flex gap-1 bg-sunken p-1 rounded-xl self-start max-w-full overflow-x-auto hide-scrollbar">
             {PERIODS.map(p => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => handlePeriod(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ${
+                className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ${
                   localPeriod === p.id
                     ? 'bg-white text-ink border-line'
                     : 'text-ink-muted hover:text-ink-body border-transparent'

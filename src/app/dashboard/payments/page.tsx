@@ -33,7 +33,14 @@ export default function PaymentQueuePage() {
     setPayNotes,
     payReference,
     setPayReference,
+    payReceiptPath,
     setPayReceiptPath,
+    payReceiptUploading,
+    handlePayReceiptUpload,
+    payCashTendered,
+    setPayCashTendered,
+    payReviewing,
+    setPayReviewing,
     paySubmitting,
     catalogOrders,
     catalogLoading,
@@ -191,6 +198,8 @@ export default function PaymentQueuePage() {
           setPayNotes('');
           setPayReference('');
           setPayReceiptPath('');
+          setPayCashTendered('');
+          setPayReviewing(false);
         }}
         payAmount={payAmount}
         setPayAmount={setPayAmount}
@@ -200,6 +209,14 @@ export default function PaymentQueuePage() {
         setPayReference={setPayReference}
         payNotes={payNotes}
         setPayNotes={setPayNotes}
+        payReceiptPath={payReceiptPath}
+        setPayReceiptPath={setPayReceiptPath}
+        payReceiptUploading={payReceiptUploading}
+        handlePayReceiptUpload={handlePayReceiptUpload}
+        payCashTendered={payCashTendered}
+        setPayCashTendered={setPayCashTendered}
+        payReviewing={payReviewing}
+        setPayReviewing={setPayReviewing}
         handleLogPayment={handleLogPayment}
         paySubmitting={paySubmitting}
       />

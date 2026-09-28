@@ -291,6 +291,7 @@ export function useSearchData() {
       const params: Record<string, string | number> = { per_page: 30, page };
       if (effectiveQ.trim()) params.q = effectiveQ.trim();
       if (specialization) applyCategoryFilter(params, specialization);
+      if (department) params.department = department;
       if (color) params.color = color;
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
@@ -318,7 +319,7 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, specialization, color, minPrice, maxPrice, minRating, district, sortBy, page, userCoords]);
+  }, [effectiveQ, specialization, department, color, minPrice, maxPrice, minRating, district, sortBy, page, userCoords]);
 
   // Nearby stores fetch (aligned with /stores filter logic)
   useEffect(() => {

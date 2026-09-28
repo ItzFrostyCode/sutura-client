@@ -11,7 +11,8 @@ export function useJobFinancials(
   onCharge: JobFinancialsCardProps['onCharge'],
   onApplyDiscount: JobFinancialsCardProps['onApplyDiscount'],
   onUpdatePayment: JobFinancialsCardProps['onUpdatePayment'],
-  onRejectPayment: JobFinancialsCardProps['onRejectPayment']
+  onRejectPayment: JobFinancialsCardProps['onRejectPayment'],
+  onVerifyPayment: JobFinancialsCardProps['onVerifyPayment']
 ) {
   const { store } = useAuthStore();
   const { remainingBalance, totalAmount } = financials;
@@ -24,6 +25,15 @@ export function useJobFinancials(
   const [receiptUrl, setReceiptUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [charging, setCharging] = useState(false);
+  // Cash only — the amount physically handed over, so change can be
+  // computed instead of the cashier doing mental math at the counter.
+  const [cashTendered, setCashTendered] = useState('');
+  // A charge is a two-step process: fill in the details, review a summary
+  // (amount/change/method, and for gcash/paymaya a note that it lands as
+  // Pending Verification, not applied yet), then confirm. Nothing is sent
+  // to the server until the review step is confirmed.
+  const [reviewingCharge, setReviewingCharge] = useState(false);
+  const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null);
 
   // Discount State
   const [showDiscountForm, setShowDiscountForm] = useState(false);
@@ -108,19 +118,43 @@ export function useJobFinancials(
     }
   };
 
-  const handleChargeSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+  // Step 1: validate and move to the review screen — no request sent yet.
+  const handleChargeSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const amt = Number.parseFloat(amount);
+    if (!amt || amt <= 0) return;
+    if (method === 'cash' && (!cashTendered || Number.parseFloat(cashTendered) < amt)) return;
+    if (method !== 'cash' && !receiptUrl) return;
+    setReviewingCharge(true);
+  };
+
+  // Step 2: the actual submit, only reachable from the review screen.
+  const confirmCharge = async () => {
     const amt = Number.parseFloat(amount);
     if (!amt || amt <= 0) return;
     setCharging(true);
     try {
-      await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined);
+      const tendered = method === 'cash' ? Number.parseFloat(cashTendered) : undefined;
+      await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined, tendered);
       setAmount('');
       setReference('');
       setNotes('');
       setReceiptUrl('');
+      setCashTendered('');
+      setReviewingCharge(false);
     } finally {
       setCharging(false);
+    }
+  };
+
+  const cancelChargeReview = () => setReviewingCharge(false);
+
+  const handleVerifyPayment = async (paymentId: number) => {
+    setVerifyingPaymentId(paymentId);
+    try {
+      await onVerifyPayment(paymentId);
+    } finally {
+      setVerifyingPaymentId(null);
     }
   };
 
@@ -151,6 +185,13 @@ export function useJobFinancials(
     charging,
     handleChargeSubmit,
     uploadReceipt,
+    cashTendered,
+    setCashTendered,
+    reviewingCharge,
+    confirmCharge,
+    cancelChargeReview,
+    verifyingPaymentId,
+    handleVerifyPayment,
 
     // Discount
     showDiscountForm,

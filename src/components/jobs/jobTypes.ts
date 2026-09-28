@@ -18,6 +18,14 @@ export interface Payment {
   rejected_at?: string | null;
   rejected_reason?: string | null;
   rejected_by?: { name: string; id: number } | null;
+  // Derived server-side: 'rejected' | 'verified' | 'pending_verification'.
+  // Cash auto-verifies at creation; gcash/paymaya sit pending until an
+  // owner/branch manager calls verifyPayment().
+  status?: 'pending_verification' | 'verified' | 'rejected';
+  cash_tendered?: string | number | null;
+  change_amount?: string | number | null;
+  verified_at?: string | null;
+  verified_by?: { name: string; id: number } | null;
 }
 
 export interface Job {
@@ -29,6 +37,7 @@ export interface Job {
   status: string;
   payment_status: string;
   balance: number | string;
+  quantity?: number;
   total_amount: number | string;
   notes?: string;
   deadline?: string;
@@ -51,9 +60,6 @@ export interface Job {
   staff_stages?: { id: number; pivot: { stage: string; completed_at?: string } }[];
   custom_order_data?: Record<string, unknown> | null;
   payments?: Payment[];
-  is_outsourced?: boolean;
-  partner_store_name?: string | null;
-  outsourcing_cost?: number | string | null;
   is_rush?: boolean;
   rush_fee?: number | string;
   completion_photo_url?: string | null;
@@ -92,15 +98,6 @@ export interface Job {
     fabric_image_url?: string | null;
     images?: { id: number; image_url: string; is_primary: boolean }[];
   } | null;
-  materials?: {
-    id: number;
-    material_name: string;
-    quantity_used: string | number;
-    unit: string;
-    unit_cost: string | number | null;
-    subtotal_cost: string | number | null;
-    logged_by: { id: number; name: string } | null;
-  }[];
 }
 
 export interface Staff {

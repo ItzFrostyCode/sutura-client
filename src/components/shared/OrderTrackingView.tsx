@@ -23,6 +23,7 @@ export interface TrackedOrder {
   tracking_code?: string | null;
   status: string;
   garment_category: string | null;
+  quantity?: number;
   catalog_item_name?: string | null;
   service_name: string | null;
   is_rush: boolean;
@@ -30,9 +31,16 @@ export interface TrackedOrder {
   // Time-of-day refinement on top of due_date — mainly meaningful for
   // same-day repair ETAs ("ready at 3:00 PM"), additive, not a replacement.
   estimated_ready_at?: string | null;
+  // Which production pipeline to draw (server-derived, same signal as the
+  // shop's Kanban). Absent on older responses — buildStages() then infers
+  // repair from the status alone.
+  pipeline?: 'custom' | 'bulk' | 'repair';
   total_amount: number;
   balance: number;
   payment_status: string;
+  // Sum of GCash/PayMaya payments submitted but not yet verified by the
+  // shop — never reflected in balance/payment_status until confirmed.
+  pending_payment_amount?: number;
   created_at: string;
   updated_at?: string | null;
   // The customer's own original repair request — kept separate from any
@@ -89,11 +97,39 @@ export function getCustomerPhase(status: string): string | null {
 // /account/orders/[id] (authenticated, by order id) — one source of truth
 // for what "order tracking" actually looks like, not two hand-copies that
 // can quietly drift apart.
-export function buildStages(status: string, timestamps?: Record<string, string | null>): StepperStage[] {
+const REPAIR_STATUSES = new Set(['queued', 'in_repair', 'qc_check']);
+const FITTING_STATUSES = new Set(['ready_for_fitting', 'final_adjustments']);
+
+export function buildStages(
+  status: string,
+  timestamps?: Record<string, string | null>,
+  pipeline?: TrackedOrder['pipeline'],
+): StepperStage[] {
+  const withTimestamps = (list: StepperStage[]) =>
+    timestamps ? list.map((s) => ({ ...s, timestamp: timestamps[s.key] ?? null })) : list;
+
+  // Repair Override: pending → queued → in repair → QC check → ready. The
+  // tailoring stages below have none of these keys, so a repair used to
+  // render with no current step at all.
+  if (pipeline === 'repair' || REPAIR_STATUSES.has(status)) {
+    return withTimestamps([
+      { key: 'pending', label: 'Pending', Icon: Clock },
+      { key: 'queued', label: 'Queued', Icon: Clock },
+      { key: 'in_repair', label: 'In Repair', Icon: Wrench },
+      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
+      { key: 'completed', label: 'Completed', Icon: Flag },
+    ]);
+  }
+
   const stages: StepperStage[] = [
     { key: 'pending', label: 'Pending', Icon: Clock },
     { key: 'design', label: 'Design', Icon: Palette },
-    status === 'mass_cutting_printing'
+    // A bulk (sublimation) order always uses Mass Cutting & Printing, never
+    // Pattern Making — show that label from the very first render, not just
+    // once the job actually reaches that exact status. Falls back to the
+    // status check alone for an older response with no `pipeline` field.
+    (pipeline === 'bulk' || status === 'mass_cutting_printing')
       ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
       : { key: 'pattern_making', label: 'Pattern Making', Icon: Ruler },
     { key: 'cutting', label: 'Cutting', Icon: Scissors },
@@ -104,8 +140,14 @@ export function buildStages(status: string, timestamps?: Record<string, string |
     { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
     { key: 'completed', label: 'Completed', Icon: Flag },
   ];
-  if (!timestamps) return stages;
-  return stages.map((s) => ({ ...s, timestamp: timestamps[s.key] ?? null }));
+
+  // Standard bulk orders skip fitting — hide those two steps so they don't
+  // show as "done" when they never happened. A custom-bulk job that does get
+  // a sample fitting keeps them (its status is then a fitting status).
+  if (pipeline === 'bulk' && !FITTING_STATUSES.has(status)) {
+    return withTimestamps(stages.filter((s) => !FITTING_STATUSES.has(s.key)));
+  }
+  return withTimestamps(stages);
 }
 
 export const TERMINAL_STATUSES: Record<string, { label: string; Icon: typeof Ban; tone: string }> = {
@@ -127,7 +169,17 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
   const hasMaterialNote = order.customer_material_status && order.customer_material_status !== 'safe';
 
   return (
-    <div className="space-y-3">
+    // Own max-width lives here now, not on whichever page happens to embed
+    // this — /account/orders/[id] used to inherit AccountLayout's max-w-7xl
+    // while /track/[code] wrapped it in a page-level max-w-2xl, so the same
+    // component rendered at two different widths depending on the caller.
+    // At md:+ (768px) the single card stack becomes a two-column layout:
+    // order info + the production stepper (the actual "saan na ang order
+    // ko?" answer) get the wider left column, appointments become a sticky
+    // right-side summary — more room for the stepper's per-stage timestamps
+    // instead of a long single-column scroll.
+    <div className="md:max-w-3xl md:mx-auto md:grid md:grid-cols-5 md:gap-4 md:items-start">
+    <div className="space-y-3 md:col-span-3">
       <div className="bg-surface border border-line p-4">
         <div className="flex gap-3 mb-2">
           <div className="w-[52px] h-[52px] rounded-full bg-sunken overflow-hidden relative shrink-0 border border-line">
@@ -173,6 +225,9 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
           <div className="flex items-center gap-2 mobile-body-sm text-ink font-normal">
             <Shirt size={16} className="text-ink-faint shrink-0" />
             <span>{itemName}</span>
+            {(order.quantity ?? 1) > 1 && (
+              <span className="text-ink-muted">× {order.quantity}</span>
+            )}
           </div>
           {order.due_date && (
             <div className="flex items-center gap-2 mobile-body-sm text-ink-muted font-normal">
@@ -190,6 +245,11 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
             <Wallet size={16} className="text-ink-faint shrink-0" />
             ₱{order.balance.toLocaleString()} balance of ₱{order.total_amount.toLocaleString()} ({order.payment_status})
           </div>
+          {!!order.pending_payment_amount && order.pending_payment_amount > 0 && (
+            <div className="mobile-caption text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+              ₱{order.pending_payment_amount.toLocaleString()} payment submitted — pending shop verification, not yet reflected above
+            </div>
+          )}
         </div>
 
         {order.repair_note && (
@@ -229,12 +289,13 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
             );
           })()
         ) : (
-          <StatusStepper stages={buildStages(order.status, order.stage_timestamps)} currentKey={order.status} layout={stepperLayout} />
+          <StatusStepper stages={buildStages(order.status, order.stage_timestamps, order.pipeline)} currentKey={order.status} layout={stepperLayout} />
         )}
       </div>
+    </div>
 
       {order.appointments && order.appointments.length > 0 && (
-        <div className="bg-surface border border-line p-4">
+        <div className="bg-surface border border-line p-4 mt-3 md:mt-0 md:col-span-2 md:sticky md:top-4">
           <h4 className="mobile-caption font-semibold text-ink-muted mb-2">
             Related appointment{order.appointments.length > 1 ? 's' : ''}
           </h4>

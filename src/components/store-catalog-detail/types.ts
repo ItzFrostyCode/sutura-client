@@ -55,6 +55,7 @@ export interface CatalogItem {
   external_gallery_url?: string;
   reviews_avg_rating?: number | null;
   reviews_count?: number;
+  saves_count?: number | null;
   store?: {
     id: number;
     name: string;
@@ -71,6 +72,9 @@ export interface CatalogItem {
     name: string;
     service_types?: string[];
     min_order_qty?: number;
+    // Extra per-person roster columns (e.g. "Jersey Number") the shop owner
+    // defined for this bulk service — same shape as ServiceField.
+    roster_fields?: { id: string; label: string; type: 'text' | 'number' | 'select' | 'radio' | 'checkbox'; required: boolean; options?: string[] }[] | null;
   } | null;
   reviews?: CatalogItemReview[];
 }

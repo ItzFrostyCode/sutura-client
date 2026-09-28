@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, X, Upload, Image as ImageIcon, Plus } from 'lucide-react';
-import { Service, SERVICE_CATEGORIES, SERVICE_TYPES, SERVICE_TYPE_META, ServiceType, PricingTierInput, deriveTiersFromService } from './serviceHelpers';
+import { Service, SERVICE_CATEGORIES, SERVICE_TYPES, SERVICE_TYPE_META, ServiceType, ServiceField, PricingTierInput, deriveTiersFromService } from './serviceHelpers';
 import SizeChartEditor, { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -35,6 +35,8 @@ export default function ServiceFormModal({
   const [basePrice, setBasePrice] = useState('');
   const [estimatedDays, setEstimatedDays] = useState('');
   const [minOrderQty, setMinOrderQty] = useState('1');
+  const [rosterFields, setRosterFields] = useState<ServiceField[]>([]);
+  const [rosterFieldLabelInput, setRosterFieldLabelInput] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -74,6 +76,7 @@ export default function ServiceFormModal({
         setBasePrice(editingService.base_price != null ? String(editingService.base_price) : '');
         setEstimatedDays(editingService.estimated_days != null ? String(editingService.estimated_days) : '');
         setMinOrderQty(editingService.min_order_qty != null ? String(editingService.min_order_qty) : '1');
+        setRosterFields(editingService.roster_fields || []);
         setTiers(deriveTiersFromService(editingService));
         setIsActive(editingService.is_active !== false);
         setImageUrl(editingService.image_url || null);
@@ -92,6 +95,8 @@ export default function ServiceFormModal({
         setBasePrice('');
         setEstimatedDays('');
         setMinOrderQty('1');
+        setRosterFields([]);
+        setRosterFieldLabelInput('');
         setTiers([]);
         setTierLabelInput('');
         setTierAmountInput('');
@@ -139,6 +144,29 @@ export default function ServiceFormModal({
     setTiers(prev => prev.filter(t => t.label !== label));
   };
 
+  const ROSTER_FIELD_PRESETS = ['Jersey Number', 'Position', 'Department', 'Section/Grade'];
+
+  const addRosterField = (label: string) => {
+    const trimmed = label.trim();
+    if (!trimmed || rosterFields.some(f => f.label.toLowerCase() === trimmed.toLowerCase())) return;
+    setRosterFields(prev => [
+      ...prev,
+      { id: trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''), label: trimmed, type: 'text', required: false },
+    ]);
+    setRosterFieldLabelInput('');
+  };
+
+  const handleRosterFieldKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addRosterField(rosterFieldLabelInput);
+    }
+  };
+
+  const removeRosterField = (id: string) => {
+    setRosterFields(prev => prev.filter(f => f.id !== id));
+  };
+
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (selectedServiceTypes.length === 0) return;
@@ -160,6 +188,10 @@ export default function ServiceFormModal({
       base_price: basePrice.trim() === '' ? null : Number.parseFloat(basePrice),
       estimated_days: estimatedDays.trim() === '' ? null : Number.parseInt(estimatedDays, 10),
       min_order_qty: minOrderQty.trim() === '' ? 1 : Number.parseInt(minOrderQty, 10),
+      // Only meaningful for a bulk service — cleared if the owner turns
+      // bulk_sublimation off after adding some, so a stale roster shape
+      // doesn't linger on a service that's no longer bulk.
+      roster_fields: selectedServiceTypes.includes('bulk_sublimation') && rosterFields.length > 0 ? rosterFields : null,
     };
     onSubmit(payload);
   };
@@ -395,6 +427,59 @@ export default function ServiceFormModal({
                   placeholder="e.g. 10"
                 />
                 <p className="text-xs text-ink-faint mt-1">Team/bulk orders below this quantity will be blocked at job creation.</p>
+              </div>
+            )}
+
+            {selectedServiceTypes.includes('bulk_sublimation') && (
+              <div>
+                <label className={labelClass}>Roster Columns</label>
+                <p className="text-xs text-ink-faint mb-2">
+                  Extra columns customers fill in per person on this service&apos;s Bulk Order roster, alongside Name and Size — e.g. a jersey needs a number, an SSC/office uniform needs a position.
+                </p>
+                {rosterFields.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {rosterFields.map(f => (
+                      <span
+                        key={f.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-taupe/10 border border-taupe/30 rounded-full text-xs text-ink"
+                      >
+                        {f.label}
+                        <button type="button" onClick={() => removeRosterField(f.id)} className="text-ink-faint hover:text-danger">
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {ROSTER_FIELD_PRESETS.filter(p => !rosterFields.some(f => f.label === p)).map(preset => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => addRosterField(preset)}
+                      className="px-2.5 py-1 border border-line rounded-full text-xs text-ink-muted hover:border-taupe hover:text-taupe transition-colors"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={rosterFieldLabelInput}
+                    onChange={(e) => setRosterFieldLabelInput(e.target.value)}
+                    onKeyDown={handleRosterFieldKeyDown}
+                    className={inputClass}
+                    placeholder="Or type a custom column name"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addRosterField(rosterFieldLabelInput)}
+                    className="shrink-0 px-3 py-2 border border-line rounded-lg text-sm text-ink-muted hover:border-taupe hover:text-taupe transition-colors"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
               </div>
             )}
 

@@ -80,6 +80,8 @@ export default function AppointmentsPage() {
     handleRejectReview,
     updateStatus,
     handleCheckIn,
+    handleAccommodateEarly,
+    handleAskToWait,
     handleCreateFollowUp,
     handleCreateSubmit,
     handleRescheduleSubmit,
@@ -157,7 +159,13 @@ export default function AppointmentsPage() {
         title="Schedule & Appointments"
         description="Book and manage client fittings, measurement sessions, and bespoke consultations."
         actions={
-          <div className="flex items-center gap-2">
+          // flex-wrap — on the narrowest real phones (320px, e.g. iPhone SE)
+          // "Schedule Follow-Up" + "New Appointment" together are wider than
+          // the available width and this row has no sibling to wrap between
+          // (PageHeader's own flex-wrap only applies above this one child),
+          // so without its own wrap the second button would overflow off
+          // the edge of the screen instead of dropping to its own line.
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Staff's narrow booking authority — a follow-up visit only,
                 not the full owner/manager form. See docs/STAFF-WORKFLOW.md §17. */}
             <button
@@ -263,11 +271,20 @@ export default function AppointmentsPage() {
           <div className="flex items-center justify-between gap-3">
             {/* Left Controls: Search + Filter Button (or Type Select on huge screens) */}
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {/* flex-1 min-w-0 instead of a fixed w-48 shrink-0 — at real
+                  narrow-phone widths (320-375px) the search box's old fixed
+                  192px plus the Filter button plus the view-switcher pill on
+                  the right added up to more than the available row width,
+                  and with nothing allowed to shrink the pill got clipped by
+                  this card's own overflow-hidden. Letting the search input
+                  compress (while Filter/pill stay fixed-size) is what
+                  actually keeps this a single row at every real width,
+                  instead of just asserting it in a comment. */}
               <SearchInput
                 value={search}
                 onChange={setSearch}
                 placeholder="Search customer, service, notes..."
-                className="w-48 sm:w-64 shrink-0"
+                className="flex-1 min-w-0 sm:w-64 sm:flex-none"
               />
 
               {/* Filter Trigger Button — clean, never collides, opens drawer */}
@@ -514,6 +531,8 @@ export default function AppointmentsPage() {
         onCompleteSubmit={handleCompleteSubmit}
         onCancelConfirm={handleCancelConfirm}
         onCreateJob={handleCreateJob}
+        onAccommodateEarly={handleAccommodateEarly}
+        onAskToWait={handleAskToWait}
       />
 
       <FollowUpAppointmentModal

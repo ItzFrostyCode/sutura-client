@@ -459,6 +459,90 @@ export default function SettingsBasicInfo({ formData, onChange, handleSocialChan
             </p>
           </div>
 
+          <div className="space-y-4 pt-2 border-t border-line">
+            <h3 className="text-sm font-medium text-ink pt-4">Fitting &amp; Payment Rules</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <div className="space-y-1">
+                <label htmlFor="fitting-limit" className="text-sm font-medium text-ink-body">Free Fittings per Order</label>
+                <input
+                  id="fitting-limit"
+                  type="number"
+                  min={1}
+                  value={formData.fitting_limit ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFormData(prev => ({ ...prev, fitting_limit: val === '' ? 3 : Number.parseInt(val, 10) }));
+                  }}
+                  className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="fitting-fee" className="text-sm font-medium text-ink-body">Fee per Extra Fitting (₱)</label>
+                <input
+                  id="fitting-fee"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={formData.fitting_fee ?? ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFormData(prev => ({ ...prev, fitting_fee: val === '' ? 0 : Number.parseFloat(val) }));
+                  }}
+                  className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe text-sm"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-ink-muted max-w-xl">
+              Each round of Ready for Fitting counts as one fitting, including re-fittings after adjustments.
+            </p>
+
+            <fieldset className="space-y-2 max-w-xl">
+              <legend className="text-sm font-medium text-ink-body">Once the free fitting limit is reached</legend>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="radio"
+                  name="fitting_limit_policy"
+                  checked={formData.fitting_limit_policy === 'fee'}
+                  onChange={() => setFormData(prev => ({ ...prev, fitting_limit_policy: 'fee' }))}
+                  className="mt-0.5 text-taupe focus:ring-taupe"
+                />
+                <span className="text-sm text-ink-body">
+                  Charge the extra-fitting fee
+                  <span className="block text-[11px] text-ink-muted">Added to the order&apos;s balance automatically. Set the fee to 0 to allow unlimited free fittings instead.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="radio"
+                  name="fitting_limit_policy"
+                  checked={formData.fitting_limit_policy === 'block'}
+                  onChange={() => setFormData(prev => ({ ...prev, fitting_limit_policy: 'block' }))}
+                  className="mt-0.5 text-taupe focus:ring-taupe"
+                />
+                <span className="text-sm text-ink-body">
+                  Don&apos;t allow more fittings
+                  <span className="block text-[11px] text-ink-muted">Once the limit is reached, the job can&apos;t be moved to Ready for Fitting again — it has to go straight to QC/Ironing or Ready for Pickup instead.</span>
+                </span>
+              </label>
+            </fieldset>
+
+            <label className="flex items-start gap-3 cursor-pointer select-none max-w-xl">
+              <input
+                type="checkbox"
+                checked={formData.repair_requires_downpayment}
+                onChange={e => setFormData(prev => ({ ...prev, repair_requires_downpayment: e.target.checked }))}
+                className="mt-0.5 rounded border-line text-taupe focus:ring-taupe"
+              />
+              <span>
+                <span className="block text-sm font-medium text-ink-body">Require 50% downpayment for repairs</span>
+                <span className="block text-[11px] text-ink-muted mt-0.5">
+                  Off: repairs can start right away and are paid at pickup. On: repairs follow the same &ldquo;No DP, No Cut&rdquo; rule as custom orders. Custom and bulk orders always require 50% before production.
+                </span>
+              </span>
+            </label>
+          </div>
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-ink-body">Custom Booking Questions</span>

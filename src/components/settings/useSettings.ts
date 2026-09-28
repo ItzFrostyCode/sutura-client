@@ -34,6 +34,8 @@ export interface StoreSettingsData {
   // read by any business logic.
   fitting_fee: number;
   fitting_limit: number;
+  fitting_limit_policy: 'fee' | 'block';
+  repair_requires_downpayment: boolean;
   specializations: string[];
   is_featured: boolean;
   is_hidden: boolean;
@@ -123,6 +125,8 @@ export function useSettings() {
     operating_hours: DEFAULT_HOURS as Record<string, { is_open: boolean; open: string; close: string }>,
     fitting_fee: 0,
     fitting_limit: 3,
+    fitting_limit_policy: 'fee' as 'fee' | 'block',
+    repair_requires_downpayment: false,
     specializations: [] as string[],
     is_featured: false,
     is_hidden: false,
@@ -180,6 +184,8 @@ export function useSettings() {
             operating_hours: s.operating_hours || DEFAULT_HOURS,
             fitting_fee: s.fitting_fee ?? 0,
             fitting_limit: s.fitting_limit ?? 3,
+            fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
+            repair_requires_downpayment: !!s.repair_requires_downpayment,
             specializations: Array.isArray(s.specializations) ? s.specializations : [],
             is_featured: !!s.is_featured,
             is_hidden: !!s.is_hidden,

@@ -449,8 +449,11 @@ export default function AppointmentCalendarView({
                   </div>
                 </div>
 
-                {/* Right: Actions */}
-                <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60">
+                {/* Right: Actions — flex-wrap: same Check In + Start + Job +
+                    Eye combination that can appear together on a confirmed
+                    appointment as in the list/card views, wider than a real
+                    320-375px phone in one non-wrapping row. */}
+                <div className="flex items-center flex-wrap gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60">
                   {isPending && isOwnerOrManager && (
                     <button
                       type="button"

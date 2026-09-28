@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ChevronRight, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Clock, MessageCircle, Star, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Clock, MessageCircle, Star, CheckCircle2, AlertCircle, Loader2, Heart } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
 import { getActiveSale } from '@/lib/salePricing';
@@ -40,6 +40,10 @@ export default function ServiceDetailPage({
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const [isSaved, setIsSaved] = useState(false);
+  const [savesCount, setSavesCount] = useState(0);
+  const [togglingSave, setTogglingSave] = useState(false);
+
   useEffect(() => {
     // No single-service-by-id public endpoint exists yet — fetching the
     // store's whole service list and finding by id matches the same
@@ -51,7 +55,9 @@ export default function ServiceDetailPage({
       .then(([storeRes, servicesRes]) => {
         setStore(storeRes.data.data);
         const list: PublicService[] = servicesRes.data.data ?? [];
-        setService(list.find((s) => s.id === Number(serviceId)) ?? null);
+        const found = list.find((s) => s.id === Number(serviceId)) ?? null;
+        setService(found);
+        setSavesCount(found?.saves_count ?? 0);
       })
       .catch(() => {
         setStore(null);
@@ -69,6 +75,37 @@ export default function ServiceDetailPage({
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, store?.slug, service?.id]);
+
+  useEffect(() => {
+    if (!user || !store?.slug || !service) return;
+    api.get(`/stores/${store.slug}/services/${service.id}/my-save`)
+      .then((res) => {
+        if (res.data?.success) {
+          setIsSaved(!!res.data.is_saved);
+          setSavesCount(res.data.saves_count ?? 0);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, store?.slug, service?.id]);
+
+  const handleToggleSave = async () => {
+    if (!user) {
+      toast.error('Please log in to save this service.');
+      return;
+    }
+    if (!store?.slug || !service || togglingSave) return;
+    setTogglingSave(true);
+    try {
+      const res = await api.post(`/stores/${store.slug}/services/${service.id}/save`);
+      setIsSaved(res.data.status === 'saved');
+      setSavesCount(res.data.saves_count ?? 0);
+    } catch {
+      toast.error('Failed to update saved status.');
+    } finally {
+      setTogglingSave(false);
+    }
+  };
 
   useEffect(() => {
     // 'scroll' can fire dozens of times per second — without throttling,
@@ -403,7 +440,19 @@ export default function ServiceDetailPage({
           {/* Info Column */}
           <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0">
             <div className="space-y-2">
-              <p className="text-lg font-bold text-ink">{priceDisplay}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-lg font-bold text-ink">{priceDisplay}</p>
+                <button
+                  type="button"
+                  onClick={handleToggleSave}
+                  disabled={togglingSave}
+                  aria-label={isSaved ? 'Unsave this service' : 'Save this service'}
+                  aria-pressed={isSaved}
+                  className="w-9 h-9 shrink-0 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors disabled:opacity-50"
+                >
+                  <Heart size={19} className={isSaved ? 'fill-rose-600 text-rose-600' : 'text-ink-muted'} />
+                </button>
+              </div>
               <h1 className="text-base font-serif font-semibold text-ink">{service.name}</h1>
               <div className="flex items-center gap-2.5 text-sm flex-wrap">
                 {service.estimated_days ? (
@@ -418,11 +467,33 @@ export default function ServiceDetailPage({
                     {(service.reviews_count ?? 0) > 0 && <span>({service.reviews_count})</span>}
                   </span>
                 ) : null}
+                {savesCount > 0 ? (
+                  <span className="flex items-center gap-1 text-ink-muted text-xs">
+                    <Heart size={12} className="fill-rose-500 text-rose-500" />
+                    <span>{savesCount} saved</span>
+                  </span>
+                ) : null}
               </div>
             </div>
 
             {service.description && (
               <p className="text-sm text-ink-body leading-relaxed whitespace-pre-wrap">{service.description}</p>
+            )}
+
+            {service.pricing && service.pricing.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Pricing Options</h4>
+                <div className="border border-line divide-y divide-line">
+                  {service.pricing.map((tier) => (
+                    <div key={tier.id} className="flex items-center justify-between px-3 py-2.5 text-sm">
+                      <span className="text-ink-body">{tier.label}</span>
+                      <span className="font-semibold text-ink">
+                        ₱{Number.parseFloat(tier.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {service.size_chart_image_url && (

@@ -237,20 +237,27 @@ export default function NotificationListTab({
                 <ChevronLeft size={16} />
               </button>
 
-              {Array.from({ length: lastPage }, (_, i) => i + 1).map((pageNum) => (
-                <button
-                  key={pageNum}
-                  type="button"
-                  onClick={() => onPageChange(pageNum)}
-                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${
-                    pageNum === currentPage
-                      ? 'bg-taupe text-white'
-                      : 'bg-surface text-ink hover:bg-sunken border border-line'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              ))}
+              {/* Numbered buttons hidden below sm: — rendering one button per
+                  page with no cap meant a large notification history (easily
+                  10+ pages) would overflow this row past a phone's width,
+                  since the flex row has nowhere to wrap or scroll. "Page X
+                  of Y" above plus Prev/Next here already cover mobile. */}
+              <div className="hidden sm:flex items-center gap-1.5">
+                {Array.from({ length: lastPage }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => onPageChange(pageNum)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${
+                      pageNum === currentPage
+                        ? 'bg-taupe text-white'
+                        : 'bg-surface text-ink hover:bg-sunken border border-line'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
 
               <button
                 type="button"
