@@ -4,23 +4,21 @@ export interface GarmentCategory {
   value: string;
   label: string;
   Icon: LucideIcon;
-  // catalog_items.garment_type has no 'jersey' or 'costume' value -- those
-  // are real, common item names (checked live: 13 items with "jersey" in
-  // the name, all tagged garment_type=uniform) but not a distinct type
-  // column value, so those two categories filter by a name search (q=)
-  // instead of the garment_type column the rest use.
+  // catalog_items.garment_type is now a real, validated enum
+  // (CatalogItem::GARMENT_CATEGORIES on the backend) that includes
+  // 'jersey' — it didn't used to (garment_type was free text with no
+  // canonical value list, so real jersey items had nowhere correct to go
+  // and got tagged garment_type=uniform instead, the exact bug this file
+  // used to work around with a name-search fallback). 'costume' and
+  // 'accessories' are genuinely cross-cutting search terms (a costume or
+  // an accessory isn't itself a base garment type), not workarounds —
+  // those stay q=.
   filterBy: 'garment_type' | 'q';
 }
 
-// Checked live against catalog_items: Filipiniana and Costumes currently
-// have 0 matching items (0 by garment_type for Filipiniana, 0 by name match
-// for "costume") -- kept in the list anyway per an explicit decision to
-// show the full category set rather than only what's stocked today, unlike
-// the earlier data-only-driven cut. Clicking either shows the real empty
-// state, not a fabricated result.
 export const GARMENT_CATEGORIES: GarmentCategory[] = [
   { value: '', label: 'All', Icon: Grid3x3, filterBy: 'garment_type' },
-  { value: 'jersey', label: 'Jersey', Icon: Shirt, filterBy: 'q' },
+  { value: 'jersey', label: 'Jersey', Icon: Shirt, filterBy: 'garment_type' },
   { value: 'uniform', label: 'Uniform', Icon: GraduationCap, filterBy: 'garment_type' },
   { value: 'barong', label: 'Barong Tagalog', Icon: Shirt, filterBy: 'garment_type' },
   { value: 'filipiniana', label: 'Filipiniana', Icon: Sparkles, filterBy: 'garment_type' },

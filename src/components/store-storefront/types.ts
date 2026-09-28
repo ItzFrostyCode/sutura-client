@@ -32,6 +32,7 @@ export interface PublicService {
   image_url?: string | null;
   reviews_count?: number | null;
   reviews_avg_rating?: number | null;
+  saves_count?: number | null;
   // Star-only — no comment column exists on service_reviews (see the
   // backend's ServiceReview model docblock), unlike CatalogItemReview.
   reviews?: {

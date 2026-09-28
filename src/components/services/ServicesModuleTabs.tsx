@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Scissors, Layers } from 'lucide-react';
+import { Scissors, Layers, BarChart3 } from 'lucide-react';
 
-export type ServiceTabId = 'services' | 'packages';
+export type ServiceTabId = 'services' | 'packages' | 'analytics';
 
 export interface ServiceTabItem {
   id: ServiceTabId;
@@ -14,6 +14,7 @@ export interface ServiceTabItem {
 export const SERVICE_TABS: readonly ServiceTabItem[] = [
   { id: 'services', label: 'Individual Services', icon: Scissors },
   { id: 'packages', label: 'Combo Packages', icon: Layers },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ] as const;
 
 interface ServicesModuleTabsProps {

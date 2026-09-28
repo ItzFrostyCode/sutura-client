@@ -1,5 +1,6 @@
 import React from 'react';
 import { CatalogFormData } from '../catalogTypes';
+import { CATALOG_GARMENT_CATEGORIES, CATALOG_DEPARTMENTS } from '../catalogCategories';
 import { StoreServiceOption } from './formTypes';
 import { FabricTextureUpload } from './FabricTextureUpload';
 import { AvailableSizesField } from './AvailableSizesField';
@@ -107,16 +108,39 @@ export function BasicInfoSection({
         </div>
 
         <div>
-          <label htmlFor="catalog-garment" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Garment Type</label>
-          <input
+          <label htmlFor="catalog-garment" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
+            Garment Type <span className="text-ink-faint normal-case font-normal">— controls which category filters/nav links show this item</span>
+          </label>
+          <select
             id="catalog-garment"
-            type="text"
             name="garment_type"
             value={formData.garment_type}
             onChange={onChange}
-            placeholder="e.g. Barong, Gown, Suit"
-            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-          />
+            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink focus:outline-none focus:border-taupe text-sm"
+          >
+            <option value="">Select a garment type…</option>
+            {CATALOG_GARMENT_CATEGORIES.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="catalog-department" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
+            Department <span className="text-ink-faint normal-case font-normal">— Men / Women / Wedding / Office in the site header</span>
+          </label>
+          <select
+            id="catalog-department"
+            name="department"
+            value={formData.department}
+            onChange={onChange}
+            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink focus:outline-none focus:border-taupe text-sm"
+          >
+            <option value="">No specific department</option>
+            {CATALOG_DEPARTMENTS.map(d => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 

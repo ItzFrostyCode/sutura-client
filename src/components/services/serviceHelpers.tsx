@@ -60,6 +60,14 @@ export interface Service {
   roster_fields?: ServiceField[] | null;
   pricing?: ServicePricing[];
   tags?: string[];
+  // Owner-facing analytics fields — populated by ServiceController::index()'s
+  // withCount/withSum aggregation, same discount-aware total_revenue formula
+  // as CatalogItem's own (total_amount - balance - discount_amount).
+  reviews_count?: number;
+  reviews_avg_rating?: number | null;
+  saves_count?: number;
+  job_orders_count?: number;
+  total_revenue?: number;
 }
 
 export interface PricingTierInput {

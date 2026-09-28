@@ -140,6 +140,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             {b.step === 3 && (
               <BookingStep3Review
                 refName={b.refName}
+                refDetailHref={b.refItemId ? `/store/${storeId}/catalog/${b.refItemId}` : null}
+                serviceDetailHref={b.selectedService ? `/store/${storeId}/service/${b.selectedService.id}` : null}
                 refImage={b.refImage}
                 refPrice={b.refPrice}
                 refSize={b.refSize}

@@ -15,6 +15,7 @@ export interface CatalogItemResponse {
   size_chart_rows?: { size: string; values: string[] }[] | null;
   care_instructions?: string;
   garment_type?: string;
+  department?: string | null;
   images: { id: number; image_url: string; view_angle?: string; is_primary: number }[];
   external_gallery_url?: string;
   is_active?: boolean;
@@ -44,6 +45,7 @@ export interface CatalogFormData {
   description: string;
   care_instructions: string;
   garment_type: string;
+  department: string;
   sizes: string[];
   external_gallery_url: string;
   is_active: boolean;

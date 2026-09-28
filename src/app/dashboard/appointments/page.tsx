@@ -80,6 +80,8 @@ export default function AppointmentsPage() {
     handleRejectReview,
     updateStatus,
     handleCheckIn,
+    handleAccommodateEarly,
+    handleAskToWait,
     handleCreateFollowUp,
     handleCreateSubmit,
     handleRescheduleSubmit,
@@ -514,6 +516,8 @@ export default function AppointmentsPage() {
         onCompleteSubmit={handleCompleteSubmit}
         onCancelConfirm={handleCancelConfirm}
         onCreateJob={handleCreateJob}
+        onAccommodateEarly={handleAccommodateEarly}
+        onAskToWait={handleAskToWait}
       />
 
       <FollowUpAppointmentModal

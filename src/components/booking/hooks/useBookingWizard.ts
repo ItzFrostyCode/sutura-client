@@ -41,6 +41,7 @@ export function useBookingWizard(storeId: string) {
 
   // URL context parameters
   const refName = searchParams.get('ref');
+  const refItemId = searchParams.get('ref_item_id');
   const refSize = searchParams.get('ref_size');
   const refImage = searchParams.get('ref_image');
   const refPrice = searchParams.get('ref_price');
@@ -583,6 +584,7 @@ export function useBookingWizard(storeId: string) {
 
     // Design / Service reference context
     refName,
+    refItemId,
     refSize,
     refImage,
     refPrice,

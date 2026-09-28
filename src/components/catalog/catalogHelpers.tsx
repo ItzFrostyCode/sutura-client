@@ -119,6 +119,7 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
     description: item.description ?? '',
     care_instructions: careText,
     garment_type: item.garment_type ?? '',
+    department: item.department ?? '',
     sizes: Array.isArray(item.sizes) ? item.sizes : [],
     external_gallery_url: item.external_gallery_url ?? '',
     is_active: item.is_active ?? true,

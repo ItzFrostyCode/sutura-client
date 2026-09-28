@@ -17,7 +17,9 @@ import {
   Clock,
   MessageSquare,
   Edit2,
+  ExternalLink,
 } from 'lucide-react';
+import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media';
 import { getServicePriceLabel } from '@/lib/servicePricing';
 import {
@@ -36,6 +38,8 @@ interface UserInfo {
 
 interface BookingStep3ReviewProps {
   readonly refName: string | null;
+  readonly refDetailHref?: string | null;
+  readonly serviceDetailHref?: string | null;
   readonly refImage: string | null;
   readonly refPrice: string | null;
   readonly refSize: string | null;
@@ -89,6 +93,8 @@ const PURPOSE_MAP: Record<string, { label: string; hint: string }> = {
 
 export default function BookingStep3Review({
   refName,
+  refDetailHref,
+  serviceDetailHref,
   refImage,
   refPrice,
   refSize,
@@ -191,6 +197,16 @@ export default function BookingStep3Review({
               </div>
             </div>
           </div>
+          {refDetailHref && (
+            <Link
+              href={refDetailHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-caption font-semibold text-taupe hover:underline flex items-center gap-1 w-fit"
+            >
+              View full design details <ExternalLink size={11} />
+            </Link>
+          )}
         </div>
       )}
 
@@ -219,6 +235,16 @@ export default function BookingStep3Review({
             <p className="mobile-body-sm text-ink-muted line-clamp-2 font-normal">
               {selectedService.description}
             </p>
+          )}
+          {serviceDetailHref && (
+            <Link
+              href={serviceDetailHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-caption font-semibold text-taupe hover:underline flex items-center gap-1 w-fit"
+            >
+              View full service details <ExternalLink size={11} />
+            </Link>
           )}
         </div>
       )}

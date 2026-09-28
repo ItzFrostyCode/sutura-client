@@ -55,6 +55,7 @@ export interface CatalogItem {
   external_gallery_url?: string;
   reviews_avg_rating?: number | null;
   reviews_count?: number;
+  saves_count?: number | null;
   store?: {
     id: number;
     name: string;

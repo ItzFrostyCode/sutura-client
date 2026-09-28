@@ -36,6 +36,9 @@ export default function PublicProductDetailPage({
     selectedSize,
     setSelectedSize,
     orderSuccess,
+    isSaved,
+    togglingSave,
+    handleToggleSave,
     isBulkItem,
     bulkMinQty,
     bulkRosterFields,
@@ -161,7 +164,13 @@ export default function PublicProductDetailPage({
               image, so a sticky column here just left a large blank gap
               below the buttons once the image itself extended further down. */}
           <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0">
-            <CatalogProductInfo item={item} selectedColor={selectedColor} />
+            <CatalogProductInfo
+              item={item}
+              selectedColor={selectedColor}
+              isSaved={isSaved}
+              togglingSave={togglingSave}
+              onToggleSave={handleToggleSave}
+            />
 
             <CatalogSizeSelector
               sizes={item.sizes}
