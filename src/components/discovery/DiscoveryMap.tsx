@@ -12,16 +12,16 @@ import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 // Generic fallback pin — same inline store SVG used when a store has no
 // logo on file, kept visually close to BranchesMap.tsx's own pin so it
 // doesn't look like a different, broken marker type.
-const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A8073" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20l-2 7H4L2 3Z"/><path d="M4 10v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9"/><path d="M9 13v4"/><path d="M15 13v4"/></svg>';
+const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D2A26" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20l-2 7H4L2 3Z"/><path d="M4 10v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9"/><path d="M9 13v4"/><path d="M15 13v4"/></svg>';
 
 // One pin per branch, but the pin itself IS the store's logo (a circular
 // avatar with a pointer tail), not a generic teardrop — at multiple stores
 // clustered close together on a real street grid, identical plain pins were
 // unreadable; a recognizable logo lets a visitor tell stores apart at a
-// glance the way real map apps (Google/Waze business pins) do. A gold ring
+// glance the way real map apps (Google/Waze business pins) do. A crisp dark ring
 // + "MAIN" badge marks a store's main branch versus a satellite branch.
 export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean): L.DivIcon {
-  const ringColor = isMain ? '#9A8073' : '#EBE6E0';
+  const ringColor = '#2D2A26';
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
   const logoHtml = logoPath
     ? `<img src="${getMediaUrl(logoPath)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`
@@ -29,7 +29,7 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
 
   const html = `
     <div style="position:relative;width:40px;height:52px;">
-      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};box-shadow:0 2px 6px rgba(45,42,38,0.35);background:#fff;">
+      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};box-shadow:0 2px 6px rgba(45,42,38,0.45);background:#fff;">
         ${logoHtml}
       </div>
       <div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid ${ringColor};"></div>
@@ -37,7 +37,7 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
       <!-- Online (Green) / Offline (Red) Indicator -->
       <span style="position:absolute;bottom:10px;right:-2px;width:12px;height:12px;border-radius:50%;background:${statusColor};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);z-index:10;" title="${isOpen ? 'Online (Open now)' : 'Offline (Closed now)'}"></span>
 
-      ${isMain ? '<span style="position:absolute;top:-3px;right:-6px;background:#9A8073;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.02em;padding:1.5px 4px;border-radius:6px;border:1.5px solid #fff;z-index:11;">MAIN</span>' : ''}
+      ${isMain ? '<span style="position:absolute;top:-3px;right:-6px;background:#2D2A26;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.02em;padding:1.5px 4px;border-radius:6px;border:1.5px solid #fff;z-index:11;">MAIN</span>' : ''}
     </div>
   `;
 
@@ -105,6 +105,19 @@ function MapEventsHandler({
       return () => clearTimeout(timer);
     }
   }, [map, mapRef]);
+
+  // Auto-resize when container changes (e.g. sidebar toggle or window resize)
+  useEffect(() => {
+    const container = map.getContainer();
+    if (!container || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [map]);
 
   useMapEvents({
     moveend(e) {
@@ -200,7 +213,7 @@ export default function DiscoveryMap({
                 <Popup>
                   <strong>{b.storeName}</strong>
                   {' '}
-                  <span style={{ fontSize: '11px', color: '#886E62', fontWeight: 700 }}>
+                  <span style={{ fontSize: '11px', color: '#2D2A26', fontWeight: 700 }}>
                     {b.isMain ? '(Main Branch)' : `(${b.branchName})`}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '11px', fontWeight: 600, color: b.isOpen ? '#16a34a' : '#dc2626' }}>
@@ -215,7 +228,7 @@ export default function DiscoveryMap({
                     </>
                   ) : null}
                   <br />
-                  <Link href={gate(`/store/${b.storeSlug}`)} className="text-[#9A8073] font-semibold">
+                  <Link href={gate(`/store/${b.storeSlug}`)} className="text-ink font-bold hover:underline">
                     View store →
                   </Link>
                 </Popup>
@@ -229,7 +242,7 @@ export default function DiscoveryMap({
       {selectable && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[500]">
           <svg width="30" height="38" viewBox="0 0 30 38" fill="none">
-            <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="#9A8073" stroke="#fff" strokeWidth="2" />
+            <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="#2D2A26" stroke="#fff" strokeWidth="2" />
             <circle cx="15" cy="15" r="5" fill="#fff" />
           </svg>
         </div>

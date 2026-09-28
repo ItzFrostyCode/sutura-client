@@ -36,7 +36,7 @@ export default function RecentLocationsList({
       </div>
 
       {recents.length > 0 ? (
-        <div className="bg-surface border border-line rounded-2xl divide-y divide-line overflow-hidden shadow-xs">
+        <div className="bg-surface border border-line rounded-none divide-y divide-line overflow-hidden shadow-xs">
           {recents.map((loc, idx) => (
             <div
               key={`${loc.lat}-${loc.lng}-${idx}`}
@@ -67,7 +67,7 @@ export default function RecentLocationsList({
           ))}
         </div>
       ) : (
-        <div className="bg-surface border border-line rounded-2xl p-7 text-center">
+        <div className="bg-surface border border-line rounded-none p-7 text-center">
           <Clock size={26} className="mx-auto text-ink-faint mb-2" />
           <p className="text-xs font-medium text-ink-muted">No recent locations yet.</p>
           <p className="text-[11px] text-ink-faint mt-0.5">Pick a suggested place or choose on the map.</p>

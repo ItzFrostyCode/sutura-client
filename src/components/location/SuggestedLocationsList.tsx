@@ -50,10 +50,10 @@ export default function SuggestedLocationsList({
             key={chip.id}
             type="button"
             onClick={() => setHubCategory(chip.id)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border ${
               hubCategory === chip.id
-                ? 'bg-taupe text-white shadow-xs'
-                : 'bg-surface border border-line text-ink-muted hover:text-ink'
+                ? 'bg-taupe text-white border-taupe shadow-2xs'
+                : 'bg-surface border-line text-ink-muted hover:text-ink hover:bg-sunken'
             }`}
           >
             {chip.label}
@@ -62,7 +62,7 @@ export default function SuggestedLocationsList({
       </div>
 
       {/* Dynamic list sorted by distance */}
-      <div className="bg-surface border border-line rounded-2xl divide-y divide-line overflow-hidden shadow-xs">
+      <div className="bg-surface border border-line rounded-none divide-y divide-line overflow-hidden shadow-xs">
         {dynamicSuggested.map((hub, idx) => (
           <button
             key={`${hub.lat}-${hub.lng}-${idx}`}
@@ -83,7 +83,7 @@ export default function SuggestedLocationsList({
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-bold text-ink line-clamp-1">{hub.name}</p>
                 {hub.type === 'tailor_store' && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-taupe/15 text-taupe shrink-0">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 bg-taupe/15 text-taupe shrink-0">
                     Store
                   </span>
                 )}

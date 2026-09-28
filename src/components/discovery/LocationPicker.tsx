@@ -127,7 +127,7 @@ export default function LocationPicker({
           {/* Center pin */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[500]">
             <svg width="30" height="38" viewBox="0 0 30 38" fill="none">
-              <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="#9A8073" stroke="#fff" strokeWidth="2" />
+              <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.7 23.3 0 15 0z" fill="#2D2A26" stroke="#fff" strokeWidth="2" />
               <circle cx="15" cy="15" r="5" fill="#fff" />
             </svg>
           </div>
@@ -137,7 +137,7 @@ export default function LocationPicker({
             type="button"
             onClick={state.handleUseCurrentLocation}
             disabled={state.locating}
-            className="absolute bottom-3 right-3 z-[400] w-11 h-11 rounded-full bg-white border border-line flex items-center justify-center text-taupe shadow-md touch-target-48 disabled:opacity-60"
+            className="absolute bottom-3 right-3 z-[400] w-11 h-11 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-md touch-target-48 disabled:opacity-60"
             aria-label="Use my current location"
           >
             <LocateFixed size={20} className={state.locating ? 'animate-pulse' : ''} />

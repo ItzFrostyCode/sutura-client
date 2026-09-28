@@ -84,11 +84,18 @@ export function useSearchData() {
     setOpenNow(nextOpen);
 
     const nextTab = searchParams.get('tab');
-    if (nextTab === 'services' || nextTab === 'service') setActiveTab('services');
-    else if (nextTab === 'showroom' || nextTab === 'catalog') setActiveTab('showroom');
-    else if (nextTab === 'store' || nextTab === 'stores') setActiveTab('store');
-    else if (nextCat) setActiveTab('showroom');
-    else setActiveTab('store');
+    if (nextTab === 'services' || nextTab === 'service') {
+      setActiveTab('services');
+      setFilterPanelOpen(false);
+    } else if (nextTab === 'showroom' || nextTab === 'catalog') {
+      setActiveTab('showroom');
+    } else if (nextTab === 'store' || nextTab === 'stores') {
+      setActiveTab('store');
+    } else if (nextCat) {
+      setActiveTab('showroom');
+    } else {
+      setActiveTab('store');
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -184,6 +191,9 @@ export function useSearchData() {
 
   function handleTabChange(nextTab: SearchActiveTab) {
     setActiveTab(nextTab);
+    if (nextTab === 'services') {
+      setFilterPanelOpen(false);
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', nextTab);
     const trimmed = q.trim();
@@ -240,6 +250,7 @@ export function useSearchData() {
   const [draftDistrict, setDraftDistrict] = useState('');
 
   function openFilterPanel() {
+    if (activeTab === 'services') return;
     setDraftSpecialization(specialization);
     setDraftColor(color);
     setDraftOpenNow(openNow);
@@ -371,7 +382,10 @@ export function useSearchData() {
     setServicesLoading(true);
     const handle = setTimeout(() => {
       const params: Record<string, string | number> = { per_page: 30 };
-      const qSearch = [effectiveQ.trim(), specialization ? specialization.replace(/_/g, ' ') : ''].filter(Boolean).join(' ');
+      const qSearch = [
+        effectiveQ.trim(),
+        activeTab !== 'services' && specialization ? specialization.replace(/_/g, ' ') : '',
+      ].filter(Boolean).join(' ');
       if (qSearch) params.q = qSearch;
       if (district) params.district = district;
       if (userCoords) {
@@ -394,7 +408,7 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, userCoords, sortBy]);
+  }, [effectiveQ, district, specialization, userCoords, sortBy, activeTab]);
 
   const activeFilterCount = [specialization, color, openNow ? 'open' : '', minPrice || maxPrice, minRating, district].filter(Boolean).length;
 

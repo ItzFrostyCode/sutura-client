@@ -110,16 +110,17 @@ export default function CatalogHeroGallery({
 
   return (
     <>
-      <div className="relative -mt-4 min-[600px]:mt-0">
+      <div className="relative w-full">
         {selectedImage ? (
           <>
-            <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full min-[600px]:border min-[600px]:border-line">
+            <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full border-b border-line min-[600px]:border min-[600px]:border-line">
               <Image
                 src={getMediaUrl(selectedImage)}
                 alt={item.name}
                 className="w-full h-full object-cover object-top min-[600px]:object-center md:object-contain transition-all duration-300"
                 fill
                 priority
+                sizes="(max-width: 600px) 100vw, (max-width: 1024px) 60vw, 55vw"
               />
             </div>
             <button
@@ -131,14 +132,14 @@ export default function CatalogHeroGallery({
             />
           </>
         ) : (
-          <div className="aspect-3/4 bg-sunken overflow-hidden relative flex items-center justify-center text-ink-muted">
+          <div className="aspect-3/4 bg-sunken overflow-hidden relative flex items-center justify-center text-ink-muted border-b border-line min-[600px]:border min-[600px]:border-line">
             No Image
           </div>
         )}
       </div>
 
       {/* Model & Fabric Controls + Color Selector */}
-      <div className="mt-3.5 space-y-2.5">
+      <div className="mt-3.5 space-y-2.5 px-4 min-[375px]:px-6 min-[600px]:px-0">
         {/* Header Bar: Left = Color Label, Right = Model/Fabric Toggle */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-1.5">

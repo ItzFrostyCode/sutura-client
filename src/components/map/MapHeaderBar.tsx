@@ -40,7 +40,7 @@ export default function MapHeaderBar({
 
         <div className="hidden md:flex flex-col">
           <div className="flex items-center gap-1.5">
-            <MapPin size={14} className="text-taupe" />
+            <MapPin size={14} className="text-ink" />
             <h1 className="text-sm font-bold text-ink tracking-tight">
               {isSelectMode ? 'Choose Location' : 'Tailor Locator'}
             </h1>
@@ -74,7 +74,7 @@ export default function MapHeaderBar({
                 ? 'Search address, store, or Maps link…'
                 : 'Search stores, garment type…'
             }
-            className="w-full bg-sunken border border-line rounded-full pl-9 pr-8 py-2 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-taupe focus:bg-surface transition-all shadow-2xs"
+            className="w-full bg-sunken border border-line rounded-full pl-9 pr-8 py-2 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink focus:bg-surface transition-all shadow-2xs"
           />
           {q && (
             <button
@@ -105,8 +105,8 @@ export default function MapHeaderBar({
               title={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
               className={`p-2 rounded-lg border transition-colors cursor-pointer ${
                 isSidebarOpen
-                  ? 'bg-surface text-ink border-line hover:border-taupe'
-                  : 'bg-canvas text-ink-muted border-line hover:border-taupe'
+                  ? 'bg-surface text-ink border-line hover:border-ink'
+                  : 'bg-canvas text-ink-muted border-line hover:border-ink'
               }`}
             >
               <PanelRight size={16} />
@@ -121,8 +121,8 @@ export default function MapHeaderBar({
           aria-label="Filter stores and districts"
           className={`md:hidden relative z-[1100] p-2 rounded-full border transition-colors shrink-0 cursor-pointer ${
             hasActiveFilters
-              ? 'bg-taupe text-white border-taupe shadow-xs'
-              : 'bg-surface text-ink-muted border-line hover:border-taupe'
+              ? 'bg-ink text-white border-ink shadow-xs'
+              : 'bg-surface text-ink-muted border-line hover:border-ink'
           }`}
         >
           <SlidersHorizontal size={15} />

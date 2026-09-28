@@ -289,14 +289,11 @@ export default function ServiceDetailPage({
       </div>
 
       {/* Mobile: fixed (not sticky) floating over the full-bleed hero image —
-          mirrors CatalogDetailHeader.tsx. A sticky+negative-margin version
-          of this was tried there and found broken (collapses its
-          shrink-wrapped parent to ~0px, leaving sticky nothing to stick
-          within), so this goes straight to `fixed` instead of repeating
-          that mistake. */}
+          mirrors CatalogDetailHeader.tsx. Floating back & action buttons with
+          subtle edge insets over the true edge-to-edge image. */}
       <div className="min-[600px]:hidden">
         <div
-          className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center justify-between px-0 min-[375px]:px-6"
+          className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center justify-between px-3 sm:px-4"
           style={{
             backgroundColor: `rgba(255,255,255,${headerOpacity})`,
             borderBottom: headerOpacity > 0.6 ? '1px solid var(--brand-border)' : 'none',
@@ -364,33 +361,35 @@ export default function ServiceDetailPage({
         </div>
       </div>
 
-      {/* px-0/375/600/md tiers, same unified margin system as the catalog
-          item detail page's <main> — every section inherits this same
-          inset directly instead of each hand-tuning its own margin. */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[375px]:px-6 min-[600px]:px-[10px] md:px-8 py-4 min-[600px]:py-[10px] md:py-6 pb-10">
+      {/* Main layout: on mobile (<600px), px-0 py-0 ensures the hero image
+          is exact full width with zero left/right margin. On tablet/desktop
+          (600px+), container insets, border, and 2-column grid take over. */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-10">
         <div className="min-[600px]:grid min-[600px]:grid-cols-12 min-[600px]:gap-2.5 md:gap-10 min-[600px]:items-start">
-          {/* Image Column */}
+          {/* Image Column — 100% full width edge-to-edge on mobile */}
           <div className="min-[600px]:col-span-7">
-            <div className="relative -mt-4 min-[600px]:mt-0">
+            <div className="relative w-full">
               {service.image_url ? (
-                <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full min-[600px]:border min-[600px]:border-line">
+                <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full border-b border-line min-[600px]:border min-[600px]:border-line">
                   <Image
                     src={getMediaUrl(service.image_url)}
                     alt={service.name}
                     className="w-full h-full object-cover object-top min-[600px]:object-center md:object-contain transition-all duration-300"
                     fill
+                    priority
+                    sizes="(max-width: 600px) 100vw, (max-width: 1024px) 60vw, 55vw"
                   />
                 </div>
               ) : (
-                <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken flex items-center justify-center text-ink-faint min-[600px]:border min-[600px]:border-line">
+                <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken flex items-center justify-center text-ink-faint border-b border-line min-[600px]:border min-[600px]:border-line">
                   No Image
                 </div>
               )}
             </div>
           </div>
 
-          {/* Info Column */}
-          <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0">
+          {/* Info Column — inherits 8-point linear grid screen margins on mobile (<600px) */}
+          <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0 px-4 min-[375px]:px-6 min-[600px]:px-0">
             <div className="space-y-2">
               <p className="text-lg font-bold text-ink">{priceDisplay}</p>
               <h1 className="text-base font-serif font-semibold text-ink">{service.name}</h1>
@@ -418,7 +417,13 @@ export default function ServiceDetailPage({
               <div className="space-y-2">
                 <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Size Chart</h4>
                 <div className="relative w-full h-[200px] border border-line bg-canvas overflow-hidden">
-                  <Image src={service.size_chart_image_url} alt="Size chart" fill className="object-cover object-center" />
+                  <Image
+                    src={service.size_chart_image_url}
+                    alt="Size chart"
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 600px) 100vw, 400px"
+                  />
                 </div>
               </div>
             )}

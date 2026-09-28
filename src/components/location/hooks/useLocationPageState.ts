@@ -16,6 +16,7 @@ import {
   haversineKm,
 } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
+import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
 import { SuggestedHub, DAVAO_LANDMARKS } from '../types';
 
 export function useLocationPageState() {
@@ -152,19 +153,12 @@ export function useLocationPageState() {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
-          );
-          const data = await res.json();
+          const res = await reverseGeocodeCoords(latitude, longitude);
           handleSelectLocation({
             lat: latitude,
             lng: longitude,
-            address: data?.display_name ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-            district:
-              data?.address?.suburb ||
-              data?.address?.neighbourhood ||
-              data?.address?.city_district ||
-              'Davao City',
+            address: res.address,
+            district: res.district,
           });
         } catch {
           handleSelectLocation({
@@ -194,15 +188,12 @@ export function useLocationPageState() {
     const parsedCoords = parseCoordsFromMapsLink(text);
     if (parsedCoords) {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${parsedCoords.lat}&lon=${parsedCoords.lng}`
-        );
-        const data = await res.json();
+        const res = await reverseGeocodeCoords(parsedCoords.lat, parsedCoords.lng);
         handleSelectLocation({
           lat: parsedCoords.lat,
           lng: parsedCoords.lng,
-          address: data?.display_name ?? text,
-          district: data?.address?.suburb || 'Davao City',
+          address: res.address,
+          district: res.district,
         });
       } catch {
         handleSelectLocation({
@@ -217,25 +208,11 @@ export function useLocationPageState() {
 
     setSearching(true);
     try {
-      const cleaned = cleanLocationQuery(text);
-      const isDavaoQuery = cleaned.toLowerCase().includes('davao');
-      const queryText = isDavaoQuery ? cleaned : `${cleaned}, Davao City`;
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-          queryText
-        )}&viewbox=125.30,7.40,125.80,6.85&bounded=1&limit=8&countrycodes=ph`
-      );
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) {
+      const places = await searchPlacesAroundDavao(text);
+      if (!Array.isArray(places) || places.length === 0) {
         setSearchError('No places found around Davao City. Try a landmark, street, or choose on map.');
       } else {
-        setSearchResults(
-          data.map((d: { lat: string; lon: string; display_name: string }) => ({
-            lat: parseFloat(d.lat),
-            lng: parseFloat(d.lon),
-            display_name: d.display_name,
-          }))
-        );
+        setSearchResults(places);
       }
     } catch {
       setSearchError('Connection error. Please try again.');

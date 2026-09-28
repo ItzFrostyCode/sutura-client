@@ -105,8 +105,8 @@ export default function FindLocationMap({ branches, selectedBranchId, onSelectBr
               radius={isSelected ? 11 : 9}
               pathOptions={
                 isSelected
-                  ? { color: '#6B5647', weight: 3, fillColor: '#9A8073', fillOpacity: 1 }
-                  : { color: '#9A8073', weight: 2, fillColor: '#FFFFFF', fillOpacity: 1 }
+                  ? { color: '#2D2A26', weight: 3, fillColor: '#2D2A26', fillOpacity: 1 }
+                  : { color: '#2D2A26', weight: 2, fillColor: '#FFFFFF', fillOpacity: 1 }
               }
               eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b.id) } : undefined}
             />

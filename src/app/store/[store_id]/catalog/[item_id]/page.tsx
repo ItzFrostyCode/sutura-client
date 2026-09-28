@@ -128,19 +128,17 @@ export default function PublicProductDetailPage({
         />
       </div>
 
-      {/* px-0/375/600/md tiers: 0px (320-374px), 24px (375-599px), 10px
-          (600-767px), 32px (768px+) — every section (image, header,
-          Model/Price/Title/Sizing, ...) inherits this same inset from
-          <main> directly instead of each one hand-tuning its own margin,
-          so they all stay aligned by construction. */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[375px]:px-6 min-[600px]:px-[10px] md:px-8 py-4 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10">
+      {/* Main layout: on mobile (<600px), px-0 py-0 ensures the hero image
+          is exact full width with zero left/right margin. On tablet/desktop
+          (600px+), container insets, border, and 2-column grid take over. */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10">
         {/* Two-column layout activates at 600px, not md's 768px — a
             600-767px screen showing only the tall portrait hero image with
             price/title/model below the fold (needing a scroll to see
             anything else) read as broken; side-by-side here matches what
             768px+ already does, just at narrower column widths. */}
         <div className="min-[600px]:grid min-[600px]:grid-cols-12 min-[600px]:gap-2.5 md:gap-10 min-[600px]:items-start">
-          {/* Gallery Column */}
+          {/* Gallery Column — 100% full width edge-to-edge on mobile */}
           <div className="min-[600px]:col-span-7">
             <CatalogHeroGallery
               item={item}
@@ -155,11 +153,8 @@ export default function PublicProductDetailPage({
             />
           </div>
 
-          {/* Product Info & Purchase Column — not sticky: the info content
-              (price/title/store card/accordions) is shorter than the hero
-              image, so a sticky column here just left a large blank gap
-              below the buttons once the image itself extended further down. */}
-          <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0">
+          {/* Product Info & Purchase Column — inherits standard screen margins on mobile */}
+          <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0 px-4 min-[375px]:px-6 min-[600px]:px-0">
             <CatalogProductInfo item={item} selectedColor={selectedColor} />
 
             <CatalogSizeSelector
