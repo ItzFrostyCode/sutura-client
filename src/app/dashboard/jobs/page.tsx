@@ -28,7 +28,8 @@ export default function JobOrdersPage() {
 }
 
 function JobOrdersPageContent() {
-  const { store } = useAuthStore();
+  const { store, user } = useAuthStore();
+  const isStaff = user?.roles?.[0]?.name === 'staff';
   const {
     jobs,
     loading,
@@ -36,6 +37,8 @@ function JobOrdersPageContent() {
     setSearch,
     tab,
     setTab,
+    myJobsOnly,
+    setMyJobsOnly,
     rejectModalOpen,
     setRejectModalOpen,
     actionLoadingId,
@@ -136,6 +139,9 @@ function JobOrdersPageContent() {
           walkInCount={walkInCount}
           onlineCount={onlineCount}
           onOpenSettings={() => setSettingsModalOpen(true)}
+          showMyJobsToggle={isStaff}
+          myJobsOnly={myJobsOnly}
+          setMyJobsOnly={setMyJobsOnly}
           designOriginFilter={designOriginFilter}
           setDesignOriginFilter={setDesignOriginFilter}
           catalogJobsCount={catalogJobsCount}

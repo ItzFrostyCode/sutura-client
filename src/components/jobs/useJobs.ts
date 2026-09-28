@@ -33,6 +33,10 @@ export function useJobs() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
   const [designOriginFilter, setDesignOriginFilter] = useState<'all' | 'catalog' | 'custom' | 'alteration'>('all');
+  // "My Assigned Jobs" — the backend's ?assigned_staff_id already worked,
+  // this was just never wired to a toggle anywhere in the UI (staff's
+  // missing piece, not the API's — see CLAUDE.md).
+  const [myJobsOnly, setMyJobsOnly] = useState(false);
 
   // Review gate state
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -54,6 +58,9 @@ export function useJobs() {
       // gives instant feedback on each keystroke without waiting on it.
       if (search.trim()) {
         params.search = search.trim();
+      }
+      if (myJobsOnly && user?.id) {
+        params.assigned_staff_id = user.id;
       }
       api.get(`/stores/${store.id}/jobs`, { params })
         .then(res => {
@@ -83,7 +90,7 @@ export function useJobs() {
       if (cleanup) cleanup();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store, user, selectedBranchId]);
+  }, [store, user, selectedBranchId, myJobsOnly]);
 
   // Debounced re-fetch when the search term changes, so typing doesn't fire
   // a request per keystroke — the branch/store effect above still runs
@@ -252,6 +259,8 @@ export function useJobs() {
     setSearch,
     tab,
     setTab,
+    myJobsOnly,
+    setMyJobsOnly,
     rejectModalOpen,
     setRejectModalOpen,
     rejectingJobId,
