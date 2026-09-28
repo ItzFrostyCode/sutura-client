@@ -194,6 +194,12 @@ Grounded in real shop-owner/customer interviews (`Tailorshop,Sublimationshop,Fas
 - **Multi-branch is a first-class dimension, not an afterthought.** A shop owner with multiple branches needs to filter by branch everywhere — jobs, staff, appointments, analytics — not just on a dedicated branches page. `ShopBranch` model and `/branches` route already exist; when adding a new list/dashboard view, check whether it needs a branch filter too.
 - **Staff notifications matter operationally**, not just as a nice-to-have: staff should get an in-app ping the moment they're assigned to a production stage (built recently per `GroupTasks.md` — verify it still fires end-to-end before building more on top of it).
 
+## Audit Log nav — mobile view re-check (2026-09-28)
+
+Checked thoroughly at real narrow-phone widths — no genuine bug found. `dashboard/audit-log/page.tsx`'s table is already the canonical pattern every other table-overflow fix this session copied from (`overflow-x-auto` wrapping just the `<table>`, inside a `rounded-xl overflow-hidden` card), and the pagination footer is just "Page X of Y" text plus two `w-11 h-11` Prev/Next buttons — well within a 320px budget, no wrap needed. `PageHeader` here has no `actions` prop at all, so there's no button row to overflow either.
+
+One cosmetic-only inconsistency noted but **not fixed**: `TableSkeleton` (`components/ui/Skeleton.tsx`, the shared loading placeholder this page uses) renders its fake header/row cells in a plain `flex gap-4` row inside a flat `overflow-hidden` wrapper, with no `overflow-x-auto` fallback — at `cols=5` the row's combined width exceeds a 320px screen, so the skeleton's rightmost fake cells get clipped during the brief loading state, unlike the real table underneath it which scrolls once loaded. Left as-is since it's a shared component used by several pages, affects only the sub-second loading flash, and clips nothing a user ever needs to reach (unlike every other bug fixed this session, which hid real, interactive content). Worth revisiting only if `TableSkeleton` itself becomes a target of a future pass.
+
 ## Tech stack — thesis paper vs. current reality (don't cite the paper blindly)
 
 | Layer | Approved thesis paper says | Actual current team decision |
