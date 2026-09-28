@@ -229,7 +229,16 @@ function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }:
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-line/60">
+      {/* flex-col sm:flex-row: WorkloadBar's own class is `w-full sm:w-36`
+          — it assumes it owns its row alone (true in the desktop table,
+          where it sits in its own <td>). Here it shared a single
+          non-wrapping row with StatusBadges, which can render up to 4
+          badges (Active/Busy/Branch Manager/+N roles) comfortably wider
+          than a real phone on its own, forcing the two to fight over
+          width instead of WorkloadBar ever getting its intended
+          full-width bar. Stacking below sm: gives both the room the
+          desktop table already gives them. */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-line/60">
         <StatusBadges member={member} />
         <WorkloadBar jobs={member.active_jobs || 0} />
       </div>

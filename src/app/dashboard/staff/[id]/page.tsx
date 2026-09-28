@@ -356,9 +356,9 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
                 <span className="text-ink-muted">Primary Role</span>
                 <span className="font-bold text-ink">{roleLabel(member.role)}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-line/60">
-                <span className="text-ink-muted">Assigned Branch</span>
-                <span className="font-bold text-ink">{member.branch?.name || 'All Branches'}</span>
+              <div className="flex justify-between gap-3 py-1 border-b border-line/60">
+                <span className="text-ink-muted shrink-0">Assigned Branch</span>
+                <span className="font-bold text-ink text-right truncate">{member.branch?.name || 'All Branches'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-line/60">
                 <span className="text-ink-muted">Branch Manager</span>
