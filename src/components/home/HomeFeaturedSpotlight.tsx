@@ -133,23 +133,23 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
           </p>
         </div>
         <div className="bg-surface border border-line overflow-hidden animate-pulse">
-          <div className="flex flex-col lg:flex-row h-auto lg:h-[420px]">
+          <div className="flex flex-col lg:flex-row h-auto lg:h-[450px] xl:h-[460px]">
             {/* Left large banner skeleton */}
             <div className="w-full lg:flex-1 h-[220px] sm:h-[300px] lg:h-full bg-sunken" />
             {/* Right panel skeleton */}
-            <div className="w-full lg:w-[380px] xl:w-[410px] shrink-0 p-5 sm:p-6 bg-surface border-t lg:border-t-0 lg:border-l border-line flex flex-col justify-between space-y-4">
+            <div className="w-full lg:w-[380px] xl:w-[410px] shrink-0 p-4 sm:p-5 bg-surface border-t lg:border-t-0 lg:border-l border-line flex flex-col justify-between space-y-3">
               <div className="space-y-2">
                 <div className="h-6 w-3/4 bg-sunken rounded" />
                 <div className="h-4 w-1/2 bg-sunken rounded" />
               </div>
-              <div className="grid grid-cols-2 gap-2 my-2">
+              <div className="grid grid-cols-2 gap-2 my-1">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="aspect-[4/3] bg-sunken border border-line" />
+                  <div key={i} className="aspect-[16/10] bg-sunken border border-line" />
                 ))}
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-line">
+              <div className="flex items-center justify-between pt-3 border-t border-line shrink-0">
                 <div className="h-4 w-20 bg-sunken rounded" />
-                <div className="h-8 w-24 bg-sunken rounded" />
+                <div className="h-9 w-24 bg-sunken rounded" />
               </div>
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
 
         {/* The Card */}
         <div className="bg-surface border border-line shadow-xs overflow-hidden transition-all duration-300">
-          <div className="flex flex-col lg:flex-row h-auto lg:h-[420px] xl:h-[440px]">
+          <div className="flex flex-col lg:flex-row h-auto lg:h-[450px] xl:h-[460px]">
             {/* ─── LEFT: Big Hero Banner / Dynamic Artwork Preview ─── */}
             <div className="relative w-full lg:flex-1 h-[220px] sm:h-[300px] lg:h-full bg-sunken overflow-hidden group">
               <Link href={gate(`/store/${store.slug}`)} className="absolute inset-0 block">
@@ -321,8 +321,8 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
               </div>
 
               {/* 2x2 Thumbnail Grid (Steam screenshots style) */}
-              <div className="my-3">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-2">
+              <div className="my-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1.5">
                   Signature Works &amp; Catalog
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -334,7 +334,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                         href={gate(`/store/${store.slug}/catalog/${thumb.id}`)}
                         onMouseEnter={() => setHoveredPreview(thumb)}
                         onMouseLeave={() => setHoveredPreview(null)}
-                        className={`relative aspect-[4/3] bg-sunken border overflow-hidden transition-all duration-200 group/thumb ${
+                        className={`relative aspect-[16/10] bg-sunken border overflow-hidden transition-all duration-200 group/thumb ${
                           isHovered
                             ? 'border-taupe ring-2 ring-taupe/40 shadow-sm scale-102'
                             : 'border-line hover:border-line-strong'
@@ -362,7 +362,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
               </div>
 
               {/* Footer: Starting Price + Action Button */}
-              <div className="pt-3 border-t border-line flex items-center justify-between gap-3">
+              <div className="pt-3 border-t border-line flex items-center justify-between gap-3 shrink-0">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
                     {startingPrice ? 'Starting At' : 'Service Type'}
@@ -396,9 +396,9 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
         )}
       </div>
 
-      {/* Steam-Style Dash Pagination Indicators */}
+      {/* Steam-Style Sleek Dash Pagination Indicators */}
       {canCycle && (
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-4">
+        <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-3 sm:mt-4">
           {stores.map((s, i) => {
             const isActive = i === index;
             return (
@@ -410,12 +410,15 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   setIndex(i);
                 }}
                 aria-label={`Jump to ${s.name}`}
-                className={`h-2 rounded-full transition-all duration-300 cursor-pointer min-h-[24px] flex items-center justify-center py-2 ${
-                  isActive
-                    ? 'w-8 sm:w-10 bg-taupe shadow-xs'
-                    : 'w-3 sm:w-4 bg-line hover:bg-line-strong'
-                }`}
+                className="h-6 px-1 flex items-center justify-center cursor-pointer group"
               >
+                <span
+                  className={`block h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
+                    isActive
+                      ? 'w-7 sm:w-8 bg-taupe'
+                      : 'w-2.5 sm:w-3 bg-line group-hover:bg-taupe/60'
+                  }`}
+                />
                 <span className="sr-only">{s.name}</span>
               </button>
             );
