@@ -227,6 +227,16 @@ Two real bugs found and fixed:
 
 Everything else checked clean: the page header's "Add Staff Member" button, workload summary cards, and filter toolbar (`flex-col sm:flex-row` with a shrinkable `SearchInput`) were already correct; `StaffMemberRow`'s desktop table and the profile page's header/KPI grid/assignment list all already use `min-w-0`/`truncate`/`shrink-0` properly; `StaffFormModal`'s header, collapsible Portal Login section, and footer all wrap safely at 320-375px (long labels wrap onto multiple lines rather than overflow); `StaffDeleteModal` is a trivial two-button footer.
 
+## Appointments and Payments nav — mobile view re-check, round 2 (2026-09-28)
+
+A second, deeper pass over these two navs (the first pass covered the page header/toolbar/`PaymentTabsNav`/`DeckReceiptViewer`) turned up three more real bugs, all in components not touched by that first pass:
+
+- **`AppointmentListView`'s card action bar** (the Cards view) has no wrap on a row that can show up to 5 controls at once for a confirmed appointment — Check In + Start + Job on the left, Eye + Edit on the right — wider than a real 320-375px phone, and the card has no `overflow-hidden` to hide the spill. Fixed with `flex-wrap`.
+- **`AppointmentCalendarView`'s day-agenda action row** has the identical Check In + Start + Job + Eye combination in one non-wrapping row. Fixed the same way.
+- **`JobBalancesTab`'s mobile row** packed three unconstrained text items (Total, Paid, status badge) into one flex row with no wrap — the same shape as the `OutstandingBalancesList` bug fixed earlier this session on Reports. Fixed with `flex-wrap gap-x-3 gap-y-1`.
+
+Everything else checked clean this round: `AppointmentCreateModal`, `AppointmentActionModals` (including the "Arrived Early" Accommodate Now/Ask to Wait buttons, which are `flex-1` and split evenly), and `FollowUpAppointmentModal` all use the shared `Modal` with short, safe footers; the calendar's month-view grid and navigation rows already had `flex-wrap`; `PaymentStatsCards` is `grid-cols-1` on mobile with plenty of room; `DigitalReceiptsTab`'s sub-filter/view-switcher toolbar already has an outer `flex-wrap`; `TableReceiptList` and `CatalogOrdersTab`'s desktop tables are a deliberate alternate dense view (horizontal scroll, not a bug, same as Billing's tables); `LogPaymentModal`'s header, cash-tendered flow, and footer all fit comfortably at 320px.
+
 ## Tech stack — thesis paper vs. current reality (don't cite the paper blindly)
 
 | Layer | Approved thesis paper says | Actual current team decision |
