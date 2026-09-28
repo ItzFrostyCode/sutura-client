@@ -95,7 +95,11 @@ function MyOrdersPageContent() {
       )}
 
       {!loading && filteredOrders.length > 0 && (
-        <div className="space-y-3">
+        // Single column on mobile; a 2-3 col grid from md: up so a wide
+        // AccountLayout content area doesn't stretch each card into a thin,
+        // mostly-empty full-width row — OrderCard's own layout (avatar left,
+        // info right) already works fine inside a grid cell as-is.
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {filteredOrders.map((order) => (
             <OrderCard key={order.id} order={order} />
           ))}

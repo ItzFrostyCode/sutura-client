@@ -22,10 +22,16 @@ export default function BookingActionBar({
 }: BookingActionBarProps) {
   return (
     <footer
-      className="fixed bottom-0 left-0 right-0 max-w-[599px] mx-auto z-40 bg-surface border-t border-x border-line px-4 py-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+      // max-w-5xl at lg: matches the exact breakpoint used by the content
+      // wrapper in book/page.tsx (`max-w-xl lg:max-w-5xl mx-auto`) — this
+      // footer used to stay capped at the mobile 599px width even once the
+      // two-column desktop layout (with BookingDesktopSummary alongside)
+      // was active, so the CTA visually orphaned itself from the wider
+      // content above it.
+      className="fixed bottom-0 left-0 right-0 max-w-[599px] lg:max-w-5xl mx-auto z-40 bg-surface border-t border-x border-line px-4 py-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
       style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
     >
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-xl lg:max-w-5xl mx-auto">
         {step === 1 && (
           <button
             type="button"

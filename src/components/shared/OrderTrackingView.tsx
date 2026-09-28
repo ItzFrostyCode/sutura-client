@@ -169,7 +169,17 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
   const hasMaterialNote = order.customer_material_status && order.customer_material_status !== 'safe';
 
   return (
-    <div className="space-y-3">
+    // Own max-width lives here now, not on whichever page happens to embed
+    // this — /account/orders/[id] used to inherit AccountLayout's max-w-7xl
+    // while /track/[code] wrapped it in a page-level max-w-2xl, so the same
+    // component rendered at two different widths depending on the caller.
+    // At md:+ (768px) the single card stack becomes a two-column layout:
+    // order info + the production stepper (the actual "saan na ang order
+    // ko?" answer) get the wider left column, appointments become a sticky
+    // right-side summary — more room for the stepper's per-stage timestamps
+    // instead of a long single-column scroll.
+    <div className="md:max-w-3xl md:mx-auto md:grid md:grid-cols-5 md:gap-4 md:items-start">
+    <div className="space-y-3 md:col-span-3">
       <div className="bg-surface border border-line p-4">
         <div className="flex gap-3 mb-2">
           <div className="w-[52px] h-[52px] rounded-full bg-sunken overflow-hidden relative shrink-0 border border-line">
@@ -282,9 +292,10 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
           <StatusStepper stages={buildStages(order.status, order.stage_timestamps, order.pipeline)} currentKey={order.status} layout={stepperLayout} />
         )}
       </div>
+    </div>
 
       {order.appointments && order.appointments.length > 0 && (
-        <div className="bg-surface border border-line p-4">
+        <div className="bg-surface border border-line p-4 mt-3 md:mt-0 md:col-span-2 md:sticky md:top-4">
           <h4 className="mobile-caption font-semibold text-ink-muted mb-2">
             Related appointment{order.appointments.length > 1 ? 's' : ''}
           </h4>

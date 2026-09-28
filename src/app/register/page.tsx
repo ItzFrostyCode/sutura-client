@@ -126,7 +126,13 @@ function RegisterPageContent() {
         </p>
       </section>
 
-      <div className="flex-1 px-[10px] py-6">
+      {/* Mobile: full page, edge-to-edge, same as before. Tablet/desktop:
+          the form no longer stretches full-bleed under the hero banner —
+          it sits centered in a modal-like card instead, matching
+          login/page.tsx's existing md: breakpoint pattern so the two auth
+          forms feel like the same product at any width. */}
+      <div className="flex-1 px-[10px] py-6 md:flex md:items-start md:justify-center md:px-4 md:py-12">
+        <div className="md:w-full md:max-w-md md:bg-surface md:border md:border-line md:shadow-sm md:p-8">
         <h1 className="text-display text-2xl text-ink mb-6">Create Account</h1>
 
         {error && (
@@ -246,6 +252,7 @@ function RegisterPageContent() {
             Sign in
           </a>
         </p>
+        </div>
       </div>
     </div>
   );
