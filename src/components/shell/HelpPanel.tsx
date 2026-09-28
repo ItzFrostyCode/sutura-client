@@ -77,10 +77,6 @@ export default function HelpPanel({ open, onClose }: HelpPanelProps) {
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line shrink-0">
           <h2 className="text-sm font-semibold text-ink">Help &amp; Support</h2>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted bg-canvas border border-line rounded-full pl-2 pr-2.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-              All systems operational
-            </span>
             <button
               type="button"
               onClick={onClose}

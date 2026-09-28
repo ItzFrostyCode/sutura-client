@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
@@ -19,9 +20,10 @@ import {
   ShoppingBag, Package, UserCog, Building2,
 } from 'lucide-react';
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const { store, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
+  const searchParams = useSearchParams();
   const roleName = user?.roles?.[0]?.name;
   const isStoreOwner = roleName === 'store_owner';
   // Matches the backend's role:store_owner,branch_manager gate on GET /analytics
@@ -29,7 +31,23 @@ export default function DashboardPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState('this_month');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'news' | 'welcome'>('dashboard');
+  // The Help panel's "Welcome guide"/"System news" links navigate here with
+  // ?tab=welcome/news — this used to be dead-on-arrival: activeTab always
+  // defaulted to 'dashboard' and never read the URL, so those links silently
+  // landed on the regular Home view instead of the tab they promised.
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'news' | 'welcome'>(
+    tabParam === 'news' || tabParam === 'welcome' ? tabParam : 'dashboard'
+  );
+
+  // Re-sync on every navigation to this route, not just first mount — the
+  // Help panel can link here again with a different ?tab= while already on
+  // /dashboard, which reuses this component instance instead of remounting it.
+  useEffect(() => {
+    if (tabParam === 'news' || tabParam === 'welcome') {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Visibility toggle
   const [storeVisible, setStoreVisible] = useState<boolean | null>(null);
@@ -360,5 +378,13 @@ export default function DashboardPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
   );
 }
