@@ -325,7 +325,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         </main>
       </div>
 
-      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} isStoreOwner={isStoreOwner} />
 
       {showTour && <WhatsNewTour onClose={closeTour} />}
     </div>
