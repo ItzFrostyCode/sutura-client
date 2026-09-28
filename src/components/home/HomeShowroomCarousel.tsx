@@ -18,7 +18,7 @@ export default function HomeShowroomCarousel({
     <section aria-labelledby="showroom-catalog-title" className="max-w-7xl mx-auto mobile-screen-margins mt-6">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="mobile-overline sm:tablet-overline text-taupe">Curated Atelier Creations</p>
+          <p className="mobile-overline sm:tablet-overline text-taupe">Curated Tailoring Works</p>
           <h2 id="showroom-catalog-title" className="mobile-h2 sm:tablet-h2 text-ink">
             Catalog Designs
           </h2>

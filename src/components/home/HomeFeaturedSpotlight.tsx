@@ -251,9 +251,6 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                 {/* Mobile / Left Banner Bottom Overlay */}
                 <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-white flex items-end justify-between gap-3 pointer-events-none">
                   <div>
-                    <span className="inline-block px-2 py-0.5 mb-1 text-[10px] font-bold uppercase tracking-wider bg-taupe/90 text-white rounded-xs">
-                      Featured Atelier
-                    </span>
                     <h3 className="mobile-h2 sm:tablet-h2 text-white drop-shadow-sm truncate">
                       {store.name}
                     </h3>
@@ -368,7 +365,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                     {startingPrice ? 'Starting At' : 'Service Type'}
                   </p>
                   <p className="text-sm sm:text-base font-bold text-ink">
-                    {startingPrice ? `₱${startingPrice.toLocaleString()}` : 'Bespoke Order'}
+                    {startingPrice ? `₱${startingPrice.toLocaleString()}` : 'Tailoring & Repair'}
                   </p>
                 </div>
                 <Link
