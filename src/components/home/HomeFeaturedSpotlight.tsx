@@ -26,7 +26,20 @@ interface HomeFeaturedSpotlightProps {
 export default function HomeFeaturedSpotlight({ stores, trendingItems, loading = false }: HomeFeaturedSpotlightProps) {
   const gate = useGuestGatedHref();
   const [index, setIndex] = useState(0);
-  const store = stores[index] ?? null;
+  const activeStore = stores[index] ?? null;
+  const fallbackStore = !activeStore && trendingItems.length > 0 && trendingItems[0]?.store
+    ? ({
+        id: trendingItems[0].store.id ?? 1,
+        name: trendingItems[0].store.name,
+        slug: trendingItems[0].store.slug,
+        logo_path: null,
+        banner_path: '/storage/banners/thread_needle_banner.jpg',
+        reviews_count: 0,
+        reviews_avg_rating: null,
+        branches: trendingItems[0].store.branches?.map((b) => ({ city: b.city ?? null, name: b.name })) ?? [],
+      } as StoreResult)
+    : null;
+  const store = activeStore ?? fallbackStore;
 
   if (loading) {
     return (
@@ -35,7 +48,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
           Featured &amp; Recommended
         </p>
         <div className="flex flex-col lg:flex-row gap-3 animate-pulse">
-          <div className="relative flex-1 h-[280px] sm:h-[340px] bg-sunken border border-line overflow-hidden">
+          <div className="relative w-full lg:flex-1 h-[280px] sm:h-[340px] min-h-[280px] sm:min-h-[340px] shrink-0 lg:shrink bg-sunken border border-line overflow-hidden">
             <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 space-y-2">
               <div className="h-6 sm:h-7 w-2/3 sm:w-1/2 bg-line rounded" />
               <div className="h-4 w-1/3 bg-line rounded" />
@@ -81,7 +94,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
 
       <div className="flex flex-col lg:flex-row gap-3">
         {store && (
-          <div className="relative flex-1 h-[280px] sm:h-[340px] bg-sunken border border-line overflow-hidden group">
+          <div className="relative w-full lg:flex-1 h-[280px] sm:h-[340px] min-h-[280px] sm:min-h-[340px] shrink-0 lg:shrink bg-sunken border border-line overflow-hidden group">
             <Link href={gate(`/store/${store.slug}`)} className="absolute inset-0">
               {store.banner_path ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
