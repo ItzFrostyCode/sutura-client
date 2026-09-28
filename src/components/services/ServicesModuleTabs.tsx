@@ -23,6 +23,12 @@ interface ServicesModuleTabsProps {
   readonly serviceCount?: number;
   readonly packageCount?: number;
   readonly className?: string;
+  // Analytics shows revenue-ranked figures (total_revenue is embedded in
+  // every service returned by the staff-accessible GET /services) — the role
+  // model says staff "cannot see owner-only financials," so this tab is
+  // hidden for anyone who isn't a store owner or branch manager. Defaults to
+  // false so a missing prop fails closed.
+  readonly isOwnerOrManager?: boolean;
 }
 
 export default function ServicesModuleTabs({
@@ -31,13 +37,15 @@ export default function ServicesModuleTabs({
   serviceCount,
   packageCount,
   className = '',
+  isOwnerOrManager = false,
 }: ServicesModuleTabsProps) {
+  const visibleTabs = SERVICE_TABS.filter(tab => tab.id !== 'analytics' || isOwnerOrManager);
   return (
     <nav
       className={`flex items-center gap-3 sm:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap -mb-px ${className}`}
       aria-label="Services Catalog Navigation"
     >
-      {SERVICE_TABS.map(tab => {
+      {visibleTabs.map(tab => {
         const active = tab.id === activeTab;
         const Icon = tab.icon;
         const count = tab.id === 'services' ? serviceCount : packageCount;

@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, Pencil } from 'lucide-react';
 import { StoreProfile } from '../types';
 import { formatTime12h } from '../storeStorefrontHelpers';
+import SpecialHoursAnnouncementCard from '@/components/profile/SpecialHoursAnnouncementCard';
 
 interface StoreHoursTabProps {
   readonly store: StoreProfile;
@@ -62,6 +63,16 @@ export default function StoreHoursTab({
           </div>
         </div>
       </div>
+
+      {isOwnerViewingOwnStore && (
+        <div className="mt-8">
+          <SpecialHoursAnnouncementCard
+            storeId={store.id}
+            branches={store.branches ?? []}
+            onSaved={() => {}}
+          />
+        </div>
+      )}
     </div>
   );
 }
