@@ -309,6 +309,7 @@ export default function StaffPage() {
           staff={visibleStaff}
           loading={loading}
           canManage={canManageStaff}
+          isStoreOwner={isStoreOwner}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
         />
@@ -322,6 +323,7 @@ export default function StaffPage() {
           saving={saving}
           formData={formData}
           setFormData={setFormData}
+          isStoreOwner={isStoreOwner}
         />
 
         {/* Delete Confirmation Modal */}

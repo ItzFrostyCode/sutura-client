@@ -38,6 +38,12 @@ interface StaffFormModalProps {
     bio: string;
     is_available: boolean;
   }>>;
+  // Only the store owner can promote someone to branch manager —
+  // StaffController::staffManagerCrudDenied() 403s a branch_manager caller's
+  // request outright if it sets is_branch_manager, even when everything else
+  // about the edit is within their own branch. Defaults to false (hide it)
+  // rather than true, so a missing prop fails closed, not open.
+  readonly isStoreOwner?: boolean;
 }
 
 const ROLE_OPTIONS = [
@@ -63,6 +69,7 @@ export default function StaffFormModal({
   saving,
   formData,
   setFormData,
+  isStoreOwner = false,
 }: StaffFormModalProps) {
   const { branches } = useBranch();
   const [showPortalSection, setShowPortalSection] = useState(false);
@@ -355,21 +362,23 @@ export default function StaffFormModal({
 
           {/* Manager & Status Checkboxes */}
           <div className="space-y-3 pt-2 border-t border-line/70">
-            <label className="flex items-start gap-3 cursor-pointer select-none">
-              <input
-                id="staff_is_branch_manager"
-                type="checkbox"
-                checked={formData.is_branch_manager}
-                onChange={e => setFormData(prev => ({ ...prev, is_branch_manager: e.target.checked }))}
-                className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-[#8A7063] cursor-pointer"
-              />
-              <span className="text-xs font-semibold text-ink leading-snug">
-                <span>Grant Branch Manager Authority</span>
-                <span className="block text-[11px] font-normal text-ink-muted mt-0.5">
-                  Allows collecting customer payments, assigning workroom staff, and updating jobs for their branch.
+            {isStoreOwner && (
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  id="staff_is_branch_manager"
+                  type="checkbox"
+                  checked={formData.is_branch_manager}
+                  onChange={e => setFormData(prev => ({ ...prev, is_branch_manager: e.target.checked }))}
+                  className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-[#8A7063] cursor-pointer"
+                />
+                <span className="text-xs font-semibold text-ink leading-snug">
+                  <span>Grant Branch Manager Authority</span>
+                  <span className="block text-[11px] font-normal text-ink-muted mt-0.5">
+                    Allows collecting customer payments, assigning workroom staff, and updating jobs for their branch.
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+            )}
 
             {editingId && (
               <label className="flex items-start gap-3 cursor-pointer select-none">

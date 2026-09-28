@@ -79,7 +79,14 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
   }, [loadData]);
 
   const member = detail?.staff;
-  const canEdit = isStoreOwner || isBranchManager || (user?.id !== undefined && user.id === member?.user_id);
+  // PUT /stores/{store}/staff/{id} is role:store_owner,branch_manager-only —
+  // plain staff has no self-edit path through StaffController::update at
+  // all (self-service profile fields go through ProfileController on
+  // Account Settings instead), so "viewing your own profile" was never a
+  // legitimate case for this button; it just 403'd. A branch manager also
+  // can't edit another branch manager's account
+  // (StaffController::staffManagerCrudDenied()), so that's excluded too.
+  const canEdit = isStoreOwner || (isBranchManager && !member?.is_branch_manager);
 
   const openEdit = () => {
     if (!member) return;
@@ -423,6 +430,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
         saving={saving}
         formData={formData}
         setFormData={setFormData}
+        isStoreOwner={isStoreOwner}
       />
     </div>
   );

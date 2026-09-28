@@ -17,6 +17,12 @@ interface StaffListViewProps {
   readonly staff: Staff[];
   readonly loading: boolean;
   readonly canManage?: boolean;
+  // Only the store owner can edit/remove another branch manager's account or
+  // promote someone to branch manager — matches
+  // StaffController::staffManagerCrudDenied() exactly. Defaults to false so a
+  // branch_manager viewer (canManage=true but isStoreOwner=false) doesn't see
+  // Edit/Delete on another branch manager's row and then get a 403.
+  readonly isStoreOwner?: boolean;
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
 }
@@ -235,6 +241,7 @@ export default function StaffListView({
   staff,
   loading,
   canManage = true,
+  isStoreOwner = false,
   onEdit,
   onDelete,
 }: StaffListViewProps) {
@@ -391,7 +398,14 @@ export default function StaffListView({
           <p className="px-6 py-12 text-center text-ink-faint text-sm">No staff members match the selected filters.</p>
         )}
         {!loading && filteredStaff.map(member => (
-          <StaffMemberCard key={member.id} member={member} onEdit={onEdit} onDelete={onDelete} onView={onView} />
+          <StaffMemberCard
+            key={member.id}
+            member={member}
+            canManage={canManage && (isStoreOwner || !member.is_branch_manager)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onView={onView}
+          />
         ))}
       </div>
 
@@ -447,6 +461,7 @@ export default function StaffListView({
               <StaffMemberRow
                 key={member.id}
                 member={member}
+                canManage={canManage && (isStoreOwner || !member.is_branch_manager)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onView={onView}
