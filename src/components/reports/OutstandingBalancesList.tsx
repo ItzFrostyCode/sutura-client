@@ -33,7 +33,12 @@ export default function OutstandingBalancesList({ rows }: OutstandingBalancesLis
                 </div>
                 <p className="font-semibold text-amber-700 shrink-0">₱{row.balance.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
               </div>
-              <div className="flex items-center justify-between mt-2 text-xs">
+              {/* flex-wrap: three unconstrained text items (order number,
+                  total, due date) in one row with no shrink/wrap safety —
+                  a large total plus an "(overdue)" date can exceed a real
+                  320-375px phone's width, unlike the sibling lists in this
+                  folder which only ever pack two items into this row. */}
+              <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
                 <Link href={`/dashboard/jobs/${row.id}`} className="text-taupe hover:underline font-medium">
                   {row.order_number || `#${row.id}`}
                 </Link>
