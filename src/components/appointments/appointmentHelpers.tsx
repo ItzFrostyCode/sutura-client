@@ -36,6 +36,13 @@ export interface Appointment {
   // Staff Check-In action — On Time/Late is DERIVED from this vs
   // scheduled_at, never its own stored status. See OnTimeLateBadge below.
   checked_in_at?: string | null;
+  // Early-Arrival Accommodation workflow — scheduled_at is never rewritten
+  // when a customer arrives early/late; these record what actually
+  // happened alongside it. arrival_status is auto-derived server-side from
+  // checked_in_at vs scheduled_at (never client-submitted).
+  arrival_status?: 'on_time' | 'early' | 'late' | 'no_show' | null;
+  early_arrival_decision?: 'waiting' | 'accommodated' | 'declined' | null;
+  actual_service_start_at?: string | null;
   notes: string;
   reference_images?: string[] | null;
   reference_link?: string | null;

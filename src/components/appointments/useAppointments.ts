@@ -164,6 +164,37 @@ export function useAppointments() {
     }
   };
 
+  // Early-Arrival Accommodation — staff decides to start service now
+  // (capacity-checked server-side, see AppointmentController::update()) or
+  // ask the customer to keep waiting. Never touches scheduled_at.
+  const handleAccommodateEarly = async (id: number) => {
+    if (!store) return;
+    setActionLoadingId(id);
+    try {
+      await api.put(`/stores/${store.id}/appointments/${id}`, { early_arrival_decision: 'accommodated' });
+      toast.success('Early arrival accommodated — service started now.');
+      fetchAppointments();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not accommodate this early arrival right now.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleAskToWait = async (id: number) => {
+    if (!store) return;
+    setActionLoadingId(id);
+    try {
+      await api.put(`/stores/${store.id}/appointments/${id}`, { early_arrival_decision: 'waiting' });
+      toast.success('Customer will wait for their scheduled time.');
+      fetchAppointments();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   // Staff's narrow follow-up booking — see FollowUpAppointmentModal and
   // AppointmentController::createFollowUp. Deliberately its own endpoint,
   // not handleCreateSubmit, so Staff can never reach the full owner/manager
@@ -414,6 +445,8 @@ export function useAppointments() {
     handleCreateCustomer,
     updateStatus,
     handleCheckIn,
+    handleAccommodateEarly,
+    handleAskToWait,
     handleCreateFollowUp,
     handleCreateSubmit,
     handleRescheduleSubmit,

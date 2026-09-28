@@ -22,8 +22,13 @@ interface JobCashierDeskProps {
   readonly uploadingReceipt: boolean;
   readonly setUploadingReceipt: (v: boolean) => void;
   readonly charging: boolean;
-  readonly onChargeSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => Promise<void>;
+  readonly onChargeSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;
   readonly uploadReceipt: (file: File | undefined, onDone: (url: string) => void, setUploading: (v: boolean) => void) => Promise<void>;
+  readonly cashTendered: string;
+  readonly setCashTendered: (v: string) => void;
+  readonly reviewingCharge: boolean;
+  readonly onConfirmCharge: () => Promise<void>;
+  readonly onCancelChargeReview: () => void;
 }
 
 export function JobCashierDesk({
@@ -45,8 +50,73 @@ export function JobCashierDesk({
   charging,
   onChargeSubmit,
   uploadReceipt,
+  cashTendered,
+  setCashTendered,
+  reviewingCharge,
+  onConfirmCharge,
+  onCancelChargeReview,
 }: JobCashierDeskProps) {
   const { remainingBalance, totalAmount, amountPaid, isDownpaymentMet } = financials;
+  const parsedAmount = Number.parseFloat(amount) || 0;
+  const parsedTendered = Number.parseFloat(cashTendered) || 0;
+  const change = method === 'cash' ? Math.max(0, parsedTendered - parsedAmount) : 0;
+  const cashShortfall = method === 'cash' && cashTendered !== '' && parsedTendered < parsedAmount;
+
+  if (reviewingCharge) {
+    return (
+      <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
+        <div className="flex items-center gap-2 border-b border-line pb-3">
+          <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage flex items-center justify-center font-bold">
+            <Banknote size={16} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-ink">Review Payment</h3>
+            <p className="text-[11px] text-ink-muted">Confirm before this is recorded</p>
+          </div>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-ink-muted">Amount</span><strong className="text-ink">₱{parsedAmount.toFixed(2)}</strong></div>
+          <div className="flex justify-between"><span className="text-ink-muted">Method</span><strong className="text-ink capitalize">{method}</strong></div>
+          {method === 'cash' && (
+            <>
+              <div className="flex justify-between"><span className="text-ink-muted">Cash Tendered</span><strong className="text-ink">₱{parsedTendered.toFixed(2)}</strong></div>
+              <div className="flex justify-between border-t border-line pt-2"><span className="text-ink-muted">Change</span><strong className="text-emerald-700">₱{change.toFixed(2)}</strong></div>
+            </>
+          )}
+          {method !== 'cash' && reference && (
+            <div className="flex justify-between"><span className="text-ink-muted">Reference #</span><strong className="text-ink font-mono">{reference}</strong></div>
+          )}
+        </div>
+
+        {method !== 'cash' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+            This {method === 'gcash' ? 'GCash' : 'PayMaya'} payment will be logged as <strong>Pending Verification</strong> — it won&apos;t reduce the balance until an owner or branch manager verifies the receipt.
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancelChargeReview}
+            disabled={charging}
+            className="flex-1 h-11 border border-line rounded-xl text-xs font-bold text-ink-muted hover:text-ink hover:bg-canvas transition-colors cursor-pointer"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={onConfirmCharge}
+            disabled={charging}
+            className="flex-1 h-11 bg-taupe hover:bg-taupe-hover text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+          >
+            {charging ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
+            <span>{charging ? 'Recording…' : 'Confirm & Record'}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
@@ -120,6 +190,37 @@ export function JobCashierDesk({
           {/* Payment Method Selector */}
           <CashierMethodSelector method={method} setMethod={setMethod} />
 
+          {/* Cash Tendered & Change */}
+          {method === 'cash' && (
+            <div className="space-y-1.5 p-3 bg-canvas border border-line rounded-xl">
+              <label htmlFor="cash-tendered" className="text-[11px] font-bold text-ink-muted uppercase">
+                Cash Tendered <span className="text-danger">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-bold text-sm">₱</span>
+                <input
+                  id="cash-tendered"
+                  type="number"
+                  step="0.01"
+                  min={amount || '0'}
+                  required
+                  value={cashTendered}
+                  onChange={e => setCashTendered(e.target.value)}
+                  placeholder="0.00"
+                  className={`w-full pl-7 pr-3 py-2 bg-surface border rounded-lg text-sm font-bold focus:outline-none ${cashShortfall ? 'border-danger text-danger' : 'border-line text-ink focus:border-taupe'}`}
+                />
+              </div>
+              {cashShortfall ? (
+                <p className="text-[11px] font-semibold text-danger">Cash tendered can&apos;t be less than the amount being paid.</p>
+              ) : (
+                <div className="flex justify-between text-xs pt-1">
+                  <span className="text-ink-muted">Change</span>
+                  <strong className="text-emerald-700">₱{change.toFixed(2)}</strong>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Reference & Receipt Screenshot */}
           {method !== 'cash' && (
             <div className="space-y-3 p-3 bg-canvas border border-line rounded-xl">
@@ -138,7 +239,9 @@ export function JobCashierDesk({
               </div>
 
               <div className="space-y-1">
-                <span className="text-[11px] font-bold text-ink-muted uppercase block">Receipt Proof (Optional)</span>
+                <span className="text-[11px] font-bold text-ink-muted uppercase block">
+                  Receipt Proof <span className="text-danger">*</span>
+                </span>
                 {receiptUrl ? (
                   <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -183,18 +286,17 @@ export function JobCashierDesk({
             />
           </div>
 
-          {/* Submit Action Button */}
+          {/* Submit Action Button — opens the Review step, nothing is sent yet */}
           <button
             type="submit"
-            disabled={saving || charging || !amount || Number.parseFloat(amount) <= 0}
+            disabled={
+              saving || charging || !amount || parsedAmount <= 0 ||
+              (method === 'cash' ? (!cashTendered || cashShortfall) : !receiptUrl)
+            }
             className="w-full h-11 bg-taupe hover:bg-taupe-hover text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 active:scale-95 cursor-pointer"
           >
-            {saving || charging ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <CreditCard size={15} />
-            )}
-            <span>{charging ? 'Processing…' : 'Record Payment & Issue Receipt'}</span>
+            <CreditCard size={15} />
+            <span>Review Payment</span>
           </button>
         </form>
       ) : (

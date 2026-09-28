@@ -88,9 +88,8 @@ export function useStoreStorefront(storeId: string) {
   const [serviceHoveredStar, setServiceHoveredStar] = useState<number | null>(null);
   const [isSubmittingServiceRating, setIsSubmittingServiceRating] = useState(false);
 
-  // Service & Package Modals
+  // Service detail modal
   const [selectedService, setSelectedService] = useState<PublicService | null>(null);
-  const [selectedPackage, setSelectedPackage] = useState<PublicServicePackage | null>(null);
   const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null);
   const [highlightedServiceId, setHighlightedServiceId] = useState<number | null>(null);
   const hasScrolledToService = useRef(false);
@@ -916,8 +915,6 @@ export function useStoreStorefront(storeId: string) {
     highlightedServiceId,
     selectedService,
     setSelectedService,
-    selectedPackage,
-    setSelectedPackage,
 
     // Owner service modals
     ownerServices,

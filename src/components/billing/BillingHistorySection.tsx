@@ -23,7 +23,11 @@ export default function BillingHistorySection({
       </p>
       <div className="bg-surface border border-line rounded-2xl overflow-hidden">
         {currentSubscription ? (
-          <table className="w-full text-sm">
+          // Inner overflow-x-auto wrapper, same pattern as
+          // PlanComparisonSection/audit-log — a 4-column table clipped
+          // outright on a narrow phone instead of scrolling.
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="bg-canvas border-b border-line">
                 <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink-muted">
@@ -65,6 +69,7 @@ export default function BillingHistorySection({
               </tr>
             </tbody>
           </table>
+          </div>
         ) : (
           <div className="text-center py-12 text-ink-faint text-sm">
             No subscription history yet.

@@ -38,18 +38,18 @@ export default function DeckReceiptViewer({
   return (
     <div className="p-3.5 sm:p-5 max-w-4xl mx-auto space-y-4">
       {/* Header (Title & Status) */}
-      <div className="flex items-center justify-between border-b border-line pb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-ink-faint">
+      <div className="flex items-center justify-between gap-2 border-b border-line pb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs font-bold uppercase tracking-wider text-ink-faint truncate">
             {receiptFilter === 'rejected' ? 'Rejected Proof History' : receiptFilter === 'approved' ? 'Approved Proof Archive' : 'Receipt Review'}
           </span>
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-taupe/10 text-taupe border border-taupe/20">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-taupe/10 text-taupe border border-taupe/20 shrink-0">
             {deckIndex + 1} of {totalCount}
           </span>
         </div>
 
         {/* Stepper Navigation */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={onPrev}
@@ -181,52 +181,59 @@ export default function DeckReceiptViewer({
       <div className="pt-3 border-t border-line">
         {receipt.payment_status === 'pending' ? (
           <div className="grid grid-cols-2 gap-3 w-full">
+            {/* min-h-10 (not a fixed h-10) plus a shorter mobile-only label
+                — at real phone widths these two columns are only ~140px
+                each, and the full "Reject & Request New Proof"/"Approve &
+                Mark as Paid" labels were wrapping to two lines inside a
+                fixed-height button, spilling outside it. */}
             <button
               type="button"
               onClick={() => onOpenRejectModal(receipt)}
               disabled={processingId !== null}
-              className="w-full h-10 border border-rose-300 text-rose-700 hover:bg-rose-50 disabled:opacity-50 font-bold px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-colors shadow-2xs"
+              className="w-full min-h-10 border border-rose-300 text-rose-700 hover:bg-rose-50 disabled:opacity-50 font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-colors shadow-2xs"
             >
-              <X size={14} />
-              <span>Reject & Request New Proof</span>
+              <X size={14} className="shrink-0" />
+              <span className="sm:hidden">Reject</span>
+              <span className="hidden sm:inline">Reject & Request New Proof</span>
             </button>
             <button
               type="button"
               onClick={() => onVerify(receipt, 'paid')}
               disabled={processingId !== null}
-              className="w-full h-10 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-colors shadow-2xs"
+              className="w-full min-h-10 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-colors shadow-2xs"
             >
               {processingId === receipt.id ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin shrink-0" />
               ) : (
-                <Check size={14} />
+                <Check size={14} className="shrink-0" />
               )}
-              <span>Approve & Mark as Paid</span>
+              <span className="sm:hidden">Approve</span>
+              <span className="hidden sm:inline">Approve & Mark as Paid</span>
             </button>
           </div>
         ) : receipt.payment_status === 'rejected' ? (
           <div className="grid grid-cols-2 gap-3 w-full">
-            <div className="w-full h-10 flex items-center justify-center text-xs text-rose-700 font-bold px-3 bg-rose-50 border border-rose-200 rounded-xl">
+            <div className="w-full min-h-10 flex items-center justify-center text-xs text-rose-700 font-bold px-3 py-2 bg-rose-50 border border-rose-200 rounded-xl text-center">
               Status: Rejected
             </div>
             <button
               type="button"
               onClick={() => onVerify(receipt, 'paid')}
               disabled={processingId !== null}
-              className="w-full h-10 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-colors shadow-2xs"
+              className="w-full min-h-10 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs transition-colors shadow-2xs text-center"
             >
               {processingId === receipt.id ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin shrink-0" />
               ) : (
-                <RotateCcw size={14} />
+                <RotateCcw size={14} className="shrink-0" />
               )}
               <span>Re-Approve as Paid</span>
             </button>
           </div>
         ) : (
-          <div className="w-full h-10 flex items-center justify-between text-xs px-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
+          <div className="w-full min-h-10 flex items-center justify-between gap-2 flex-wrap text-xs px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
             <span className="font-bold flex items-center gap-1.5">
-              <CheckCircle2 size={14} className="text-emerald-600" />
+              <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
               Verified & Approved
             </span>
             <button

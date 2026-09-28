@@ -7,12 +7,12 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
 import { FileText } from 'lucide-react';
 import { SERVICE_TYPE_META } from '@/components/services/serviceHelpers';
+import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import {
   CustomerData,
   ServiceData,
   ServiceField,
-  StaffData,
   CustomerMeasurement,
   RosterMember,
   JobCreateFormData,
@@ -78,7 +78,7 @@ function matchServiceForCatalogItem(
     }
   }
 
-  return serviceList.find((s) => s.service_type === 'custom_tailoring') || serviceList[0];
+  return serviceList.find((s) => serviceHasType(s, 'custom_tailoring')) || serviceList[0];
 }
 
 export function useJobCreateForm() {
@@ -92,7 +92,6 @@ export function useJobCreateForm() {
 
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [services, setServices] = useState<ServiceData[]>([]);
-  const [staff, setStaff] = useState<StaffData[]>([]);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [catalogItemId, setCatalogItemId] = useState('');
   const [standardSize, setStandardSize] = useState<string>('Custom Measurements');
@@ -122,14 +121,12 @@ export function useJobCreateForm() {
     customer_id: '',
     service_id: '',
     measurement_id: '',
+    quantity: '1',
     total_amount: '',
     downpayment: '',
     due_date: '',
     notes: '',
     po_number: '',
-    is_outsourced: false,
-    partner_store_name: '',
-    outsourcing_cost: '',
     is_rush: false,
     rush_fee: '',
     material_source: 'store_supplied',
@@ -138,10 +135,6 @@ export function useJobCreateForm() {
     discount_reason: '',
   });
 
-  const [staffStageAssignments, setStaffStageAssignments] = useState<Record<string, string>>({
-    design: '', pattern_making: '', cutting: '', sewing: '', qc_ironing: '',
-  });
-  const [showOutsourcingHelp, setShowOutsourcingHelp] = useState(false);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
   const handleCheckboxChange = (
@@ -169,20 +162,14 @@ export function useJobCreateForm() {
       Promise.all([
         api.get(`/stores/${store.id}/customers`),
         api.get(`/stores/${store.id}/services`),
-        api.get(`/stores/${store.id}/staff`),
         api.get(`/stores/${store.id}/catalog`),
       ])
-        .then(([resCustomers, resServices, resStaff, resCatalog]) => {
+        .then(([resCustomers, resServices, resCatalog]) => {
           const custs = Array.isArray(resCustomers.data?.data) ? resCustomers.data.data : [];
           const servs = sanitizeServiceCustomFields(Array.isArray(resServices.data?.data) ? resServices.data.data : []);
-          const rawStaff = resStaff.data?.data;
-          const staffList: StaffData[] = Array.isArray(rawStaff)
-            ? rawStaff
-            : (rawStaff && typeof rawStaff === 'object' ? Object.values(rawStaff) : []);
           const catItems = Array.isArray(resCatalog.data?.data) ? resCatalog.data.data : [];
           setCustomers(custs);
           setServices(servs);
-          setStaff(staffList);
           setCatalogItems(catItems);
 
           // Prefill from query params
@@ -233,7 +220,7 @@ export function useJobCreateForm() {
                   name.includes('sublimation') ||
                   name.includes('uniform') ||
                   name.includes('esports');
-                if (matchedService.service_type === 'bulk_sublimation' || looksBulk) {
+                if (serviceHasType(matchedService, 'bulk_sublimation') || looksBulk) {
                   setIsBulkOrder(true);
                 }
               }
@@ -319,14 +306,18 @@ export function useJobCreateForm() {
     }
   }, [store, formData.customer_id, searchParams]);
 
-  // Auto-calculate suggested total price based on service base price and rush fee
+  // Auto-calculate suggested total price based on service base price, quantity,
+  // and rush fee. Quantity multiplies the base price only (several identical
+  // pieces for one person) — the rush fee is a flat add-on for the whole
+  // order, not per-piece, so it's added after multiplying, not before.
   useEffect(() => {
     if (!isTotalAmountCustom && formData.service_id) {
       const selected = services.find((s) => s.id.toString() === formData.service_id);
       if (selected) {
         const basePrice = Number.parseFloat(selected.base_price?.toString() || '0');
+        const qty = Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
         const rushFee = formData.is_rush ? (Number.parseFloat(formData.rush_fee) || 0) : 0;
-        const suggested = basePrice + rushFee;
+        const suggested = basePrice * qty + rushFee;
         Promise.resolve().then(() => {
           setFormData((prev) => ({
             ...prev,
@@ -335,7 +326,7 @@ export function useJobCreateForm() {
         });
       }
     }
-  }, [formData.service_id, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
+  }, [formData.service_id, formData.quantity, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
 
   // Auto-suggest a due date from turnaround
   useEffect(() => {
@@ -395,7 +386,7 @@ export function useJobCreateForm() {
           name.includes('sublimation') ||
           name.includes('uniform') ||
           name.includes('esports');
-        if (matchedService.service_type === 'bulk_sublimation' || looksBulk) {
+        if (serviceHasType(matchedService, 'bulk_sublimation') || looksBulk) {
           setIsBulkOrder(true);
         }
       }
@@ -428,7 +419,7 @@ export function useJobCreateForm() {
       return;
     }
 
-    const isAlterationJob = selectedForSubmit?.service_type === 'alteration_repair' || formData.garment_category === 'alteration_repair';
+    const isAlterationJob = serviceHasType(selectedForSubmit, 'alteration_repair') || formData.garment_category === 'alteration_repair';
     if (isAlterationJob && !preExistingDamageNotes.trim()) {
       setError('Please log the garment\'s pre-existing condition before creating an alteration/repair job.');
       setSubmitting(false);
@@ -438,15 +429,17 @@ export function useJobCreateForm() {
     const balance = totalAmt - appliedDownPay;
 
     try {
-      const assignedStages = Object.entries(staffStageAssignments).filter(([, userId]) => userId);
       await api.post(`/stores/${store.id}/jobs`, {
         intake_channel: effectiveIntakeChannel,
         fulfillment_type: 'pickup',
         customer_id: formData.customer_id,
         service_id: formData.service_id,
-        store_branch_id: assignedStages.length === 0 ? (selectedBranchId ?? undefined) : undefined,
-        staff_stages: assignedStages.map(([stage, userId]) => ({ stage, user_id: Number(userId) })),
+        store_branch_id: selectedBranchId ?? undefined,
         measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
+        // Meaningless for a bulk order (its roster already carries one row
+        // per person) — always sent as 1 there so a stale non-1 value from
+        // switching modes mid-form can't leak into a bulk order's record.
+        quantity: isBulkOrder ? 1 : Math.max(1, Number.parseInt(formData.quantity, 10) || 1),
         total_amount: formData.total_amount,
         discount_amount: formData.discount_amount ? Number.parseFloat(formData.discount_amount) : 0,
         balance: balance,
@@ -465,9 +458,6 @@ export function useJobCreateForm() {
             ? preExistingDamageNotes.trim()
             : null,
         },
-        is_outsourced: formData.is_outsourced,
-        partner_store_name: formData.is_outsourced ? formData.partner_store_name : null,
-        outsourcing_cost: formData.is_outsourced && formData.outsourcing_cost ? Number.parseFloat(formData.outsourcing_cost) : null,
         appointment_id: appointmentId ? Number(appointmentId) : null,
         catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
         reference_images: referenceImages.length > 0 ? referenceImages : null,
@@ -488,10 +478,14 @@ export function useJobCreateForm() {
   const selectedService = services.find(
     (s) => s.id.toString() === formData.service_id
   );
-  const isSelectedAlterationRepair = selectedService?.service_type === 'alteration_repair' || formData.garment_category === 'alteration_repair';
+  const isSelectedAlterationRepair = serviceHasType(selectedService, 'alteration_repair') || formData.garment_category === 'alteration_repair';
   const isCustomTailoring = !isSelectedAlterationRepair;
-  const sectionTwoMeta = selectedService?.service_type
-    ? SERVICE_TYPE_META[selectedService.service_type]
+  // A service can carry more than one type now (service_types); for the
+  // single icon/label this section shows, service_types[0] wins, falling
+  // back to the legacy singular column for an older, never-since-edited row.
+  const primaryServiceType = selectedService?.service_types?.[0] ?? selectedService?.service_type ?? null;
+  const sectionTwoMeta = primaryServiceType
+    ? SERVICE_TYPE_META[primaryServiceType as keyof typeof SERVICE_TYPE_META]
     : { icon: FileText, bg: 'bg-sunken', border: 'border-line', text: 'text-ink-faint' };
 
   return {
@@ -504,7 +498,6 @@ export function useJobCreateForm() {
     handleSubmit,
     customers,
     services,
-    staff,
     catalogItems,
     customerMeasurements,
     catalogItemId,
@@ -537,10 +530,6 @@ export function useJobCreateForm() {
     setPreExistingDamageNotes,
     formData,
     setFormData,
-    staffStageAssignments,
-    setStaffStageAssignments,
-    showOutsourcingHelp,
-    setShowOutsourcingHelp,
     customFieldValues,
     setCustomFieldValues,
     handleCheckboxChange,

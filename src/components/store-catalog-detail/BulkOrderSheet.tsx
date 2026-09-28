@@ -3,10 +3,26 @@
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { StoreBranch } from './types';
 
+export interface RosterField {
+  id: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'radio' | 'checkbox';
+  required: boolean;
+  options?: string[];
+}
+
 export interface BulkRosterRow {
   name: string;
   size: string;
+  [key: string]: string;
 }
+
+// A roster row can opt out of the service's standard size chart entirely —
+// for the one person in an otherwise-standard batch order (a late joiner,
+// an unusual build) who needs to be measured in person instead. Staff see
+// this flagged distinctly (JobRosterCard) rather than as an unrecognized
+// size string.
+export const CUSTOM_SIZE = 'Custom';
 
 interface BulkOrderSheetProps {
   readonly show: boolean;
@@ -14,6 +30,10 @@ interface BulkOrderSheetProps {
   readonly itemName: string;
   readonly sizes: string[] | null | undefined;
   readonly minQty: number;
+  // Extra per-person columns the shop owner defined on this bulk service
+  // (e.g. "Jersey Number", "Position") — shown below Name/Size on each
+  // roster row, alongside them, not replacing them.
+  readonly rosterFields?: RosterField[];
   readonly branches: StoreBranch[];
   readonly branchId: number | null;
   readonly setBranchId: (id: number | null) => void;
@@ -28,22 +48,28 @@ interface BulkOrderSheetProps {
 
 /**
  * Standard Bulk customer entry point — calls the existing customerBulkOrder()
- * contract as-is (catalog_item_id, organization_name, store_branch_id,
- * roster[]{name,size}). No extra fields invented. Custom Bulk's possible
- * future needs (consultation/sample approval) are explicitly out of scope
- * here — docs/CUSTOMER-JOURNEY-TARGET.md §11.
+ * contract (catalog_item_id, organization_name, store_branch_id,
+ * roster[]{name,size,...extra}). The backend already preserves whatever
+ * extra keys a row carries beyond name/size (see JobOrderController::
+ * customerBulkOrder's raw-input roster comment), so rosterFields here are
+ * additive, not a contract change.
  */
 export default function BulkOrderSheet({
-  show, onClose, itemName, sizes, minQty, branches, branchId, setBranchId,
+  show, onClose, itemName, sizes, minQty, rosterFields = [], branches, branchId, setBranchId,
   organizationName, setOrganizationName, roster, setRoster, submitting, error, onSubmit,
 }: BulkOrderSheetProps) {
   if (!show) return null;
 
   const validCount = roster.filter((r) => r.size).length;
 
-  const addRow = () => setRoster([...roster, { name: '', size: '' }]);
+  const emptyRow = (): BulkRosterRow => {
+    const row: BulkRosterRow = { name: '', size: '' };
+    rosterFields.forEach((f) => { row[f.id] = ''; });
+    return row;
+  };
+  const addRow = () => setRoster([...roster, emptyRow()]);
   const removeRow = (i: number) => setRoster(roster.filter((_, idx) => idx !== i));
-  const updateRow = (i: number, patch: Partial<BulkRosterRow>) =>
+  const updateRow = (i: number, patch: Record<string, string>) =>
     setRoster(roster.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   return (
@@ -59,7 +85,7 @@ export default function BulkOrderSheet({
 
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           <p className="mobile-caption text-ink-muted font-normal">
-            Requires at least {minQty} piece{minQty !== 1 ? 's' : ''}. Add each person&apos;s name (optional) and size.
+            Requires at least {minQty} piece{minQty !== 1 ? 's' : ''}. Add each person&apos;s name (optional) and size{rosterFields.length > 0 ? ', plus a few extra details' : ''}. Pick &quot;Custom&quot; instead of a size for anyone who needs to be measured in person.
           </p>
 
           <div>
@@ -100,27 +126,44 @@ export default function BulkOrderSheet({
                 <Plus size={12} /> Add person
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {roster.map((row, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={row.name}
-                    onChange={(e) => updateRow(i, { name: e.target.value })}
-                    placeholder={`Person ${i + 1} (optional)`}
-                    className="flex-1 min-w-0 h-10 px-2.5 bg-canvas border border-line focus:border-taupe focus:outline-none text-sm text-ink rounded-none"
-                  />
-                  <select
-                    value={row.size}
-                    onChange={(e) => updateRow(i, { size: e.target.value })}
-                    className={`w-24 h-10 px-2 bg-canvas border focus:outline-none text-sm rounded-none ${row.size ? 'border-line text-ink' : 'border-taupe text-ink-faint'}`}
-                  >
-                    <option value="" disabled>Size</option>
-                    {(sizes ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  <button type="button" onClick={() => removeRow(i)} disabled={roster.length <= 1} className="w-8 h-8 flex items-center justify-center shrink-0 text-ink-faint hover:text-danger disabled:opacity-30">
-                    <Trash2 size={14} />
-                  </button>
+                <div key={i} className="border border-line p-2 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={row.name}
+                      onChange={(e) => updateRow(i, { name: e.target.value })}
+                      placeholder={`Person ${i + 1} (optional)`}
+                      className="flex-1 min-w-0 h-10 px-2.5 bg-canvas border border-line focus:border-taupe focus:outline-none text-sm text-ink rounded-none"
+                    />
+                    <select
+                      value={row.size}
+                      onChange={(e) => updateRow(i, { size: e.target.value })}
+                      className={`w-24 h-10 px-2 bg-canvas border focus:outline-none text-sm rounded-none ${row.size ? 'border-line text-ink' : 'border-taupe text-ink-faint'}`}
+                    >
+                      <option value="" disabled>Size</option>
+                      {(sizes ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+                      <option value={CUSTOM_SIZE}>Custom (measure in person)</option>
+                    </select>
+                    <button type="button" onClick={() => removeRow(i)} disabled={roster.length <= 1} className="w-8 h-8 flex items-center justify-center shrink-0 text-ink-faint hover:text-danger disabled:opacity-30">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  {rosterFields.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {rosterFields.map((f) => (
+                        <input
+                          key={f.id}
+                          type={f.type === 'number' ? 'number' : 'text'}
+                          value={row[f.id] ?? ''}
+                          onChange={(e) => updateRow(i, { [f.id]: e.target.value })}
+                          placeholder={f.label + (f.required ? ' *' : '')}
+                          className="flex-1 min-w-[100px] h-9 px-2 bg-canvas border border-line focus:border-taupe focus:outline-none text-xs text-ink rounded-none"
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

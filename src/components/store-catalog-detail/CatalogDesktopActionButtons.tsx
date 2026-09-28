@@ -6,7 +6,7 @@ import Link from 'next/link';
 interface CatalogDesktopActionButtonsProps {
   onOpenFind: () => void;
   bookHref: string;
-  orderAction?: 'made_to_order' | 'bulk' | null;
+  orderAction?: 'bulk' | null;
   onOrder?: () => void;
   orderSubmitting?: boolean;
 }
@@ -41,7 +41,7 @@ export default function CatalogDesktopActionButtons({
           disabled={orderSubmitting}
           className={`${buttonBase} bg-ink hover:bg-taupe text-white disabled:opacity-60`}
         >
-          {orderSubmitting ? 'Placing order…' : orderAction === 'bulk' ? 'Bulk Order' : 'Order This Design'}
+          {orderSubmitting ? 'Placing order…' : 'Bulk Order'}
         </button>
       ) : (
         <Link href={bookHref} className={`${buttonBase} bg-ink hover:bg-taupe text-white text-center`}>

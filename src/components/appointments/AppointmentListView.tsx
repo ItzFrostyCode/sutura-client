@@ -512,8 +512,13 @@ export default function AppointmentListView({
                 </div>
               </div>
 
-              {/* Card Action Bar */}
-              <div className="flex items-center justify-between gap-2 border-t border-line/60 pt-3">
+              {/* Card Action Bar — flex-wrap: a confirmed appointment can
+                  show Check In + Start + Job on the left plus Eye + Edit on
+                  the right all at once (up to 5 controls), which is wider
+                  than a real 320-375px phone card and this row has no
+                  overflow-hidden to hide the overflow, so it would spill
+                  visibly past the card edge instead of wrapping cleanly. */}
+              <div className="flex items-center justify-between flex-wrap gap-2 border-t border-line/60 pt-3">
                 <div className="flex items-center gap-1.5">
                   {isPending && isOwnerOrManager && (
                     <button

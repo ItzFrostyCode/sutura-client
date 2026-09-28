@@ -59,7 +59,14 @@ export default function CustomerProfileStats({
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div key={stat.label} className="h-24 bg-surface border border-line rounded-2xl p-4 flex flex-col justify-between shadow-2xs">
+          // min-h-24 (not a fixed h-24) and break-words on the value: at
+          // grid-cols-2 on a real 320-375px phone each card is only
+          // ~105px of content width, and "Lifetime Spend" is the one
+          // figure here that can realistically grow past what a fixed
+          // h-6 single-line box could hold without clipping or spilling
+          // past the card's edge (the card has no overflow-hidden of its
+          // own to catch it).
+          <div key={stat.label} className="min-h-24 bg-surface border border-line rounded-2xl p-4 flex flex-col justify-between shadow-2xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">{stat.label}</span>
               <div className={`p-1.5 rounded-lg border ${stat.color} shrink-0`}>
@@ -67,7 +74,7 @@ export default function CustomerProfileStats({
               </div>
             </div>
             <div>
-              <div className="h-6 flex items-baseline font-black font-mono text-lg text-ink">
+              <div className="min-h-6 flex items-baseline font-black font-mono text-base sm:text-lg text-ink break-words">
                 {stat.value}
               </div>
               <div className="text-[10px] text-ink-muted leading-none mt-0.5 truncate">{stat.sub}</div>

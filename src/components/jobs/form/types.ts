@@ -19,7 +19,13 @@ export interface ServiceData {
   id: number;
   name: string;
   category?: string;
+  // service_type (singular) is the legacy column — StoreServiceRequest only
+  // ever writes service_types (plural) now, so service_type goes stale on
+  // any service created/edited since that migration. Always prefer
+  // service_types; service_type is read only as a fallback for an older,
+  // never-since-edited row. See jobHelpers.tsx's serviceHasType().
   service_type?: 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bridal' | 'alteration_repair' | null;
+  service_types?: string[] | null;
   base_price?: string | number;
   min_order_qty?: number;
   custom_fields?: ServiceField[] | null;
@@ -59,14 +65,15 @@ export interface JobCreateFormData {
   customer_id: string;
   service_id: string;
   measurement_id: string;
+  // Same design, several identical pieces for ONE person/measurement
+  // profile — distinct from a bulk order's roster (different people,
+  // different sizes). Meaningless for a bulk order; hidden there.
+  quantity: string;
   total_amount: string;
   downpayment: string;
   due_date: string;
   notes: string;
   po_number: string;
-  is_outsourced: boolean;
-  partner_store_name: string;
-  outsourcing_cost: string;
   is_rush: boolean;
   rush_fee: string;
   material_source: 'store_supplied' | 'customer_supplied';

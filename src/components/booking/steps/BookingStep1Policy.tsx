@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, MapPin } from 'lucide-react';
 import { StoreSettings, BookingTypeOption } from '../types';
 import BookingTypeSelector from './schedule/BookingTypeSelector';
 
@@ -33,6 +33,18 @@ export default function BookingStep1Policy({
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
       <h2 className="mobile-h2 text-ink">What are you coming in for?</h2>
+
+      {/* Sets expectations up front, before the customer picks a purpose —
+          a customer coming from a catalog item ("Book a Fitting") can easily
+          read this as an online-checkout flow otherwise, then be surprised
+          later that there's no delivery and they have to show up themselves. */}
+      <div className="flex items-start gap-2.5 p-3 bg-sunken border border-line text-xs text-ink-body">
+        <MapPin size={15} className="text-taupe shrink-0 mt-0.5" />
+        <p>
+          This books an in-person visit, not a delivery — once the store accepts your request,
+          you&apos;ll need to go to the shop yourself on the scheduled date to be measured or fitted.
+        </p>
+      </div>
 
       <BookingTypeSelector
         availableBookingTypes={availableBookingTypes}

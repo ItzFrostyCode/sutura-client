@@ -1,5 +1,5 @@
 import {
-  Store, ShoppingBag, SlidersHorizontal, Sparkles, Scissors, Shirt, Truck,
+  Store, ShoppingBag, SlidersHorizontal, Sparkles, Scissors, Shirt, Truck, UserCheck,
 } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import type { StageIconFilter } from './stageIconFilters';
@@ -11,6 +11,11 @@ interface JobsPageToolbarProps {
   walkInCount: number;
   onlineCount: number;
   onOpenSettings: () => void;
+  // "My Assigned Jobs" — shown only for staff, who aren't looking at the
+  // whole store's production board, just what they personally need to work.
+  showMyJobsToggle?: boolean;
+  myJobsOnly?: boolean;
+  setMyJobsOnly?: (val: boolean) => void;
   designOriginFilter: 'all' | 'catalog' | 'custom' | 'alteration';
   setDesignOriginFilter: (val: 'all' | 'catalog' | 'custom' | 'alteration') => void;
   catalogJobsCount: number;
@@ -31,6 +36,9 @@ export default function JobsPageToolbar({
   walkInCount,
   onlineCount,
   onOpenSettings,
+  showMyJobsToggle = false,
+  myJobsOnly = false,
+  setMyJobsOnly,
   designOriginFilter,
   setDesignOriginFilter,
   catalogJobsCount,
@@ -89,6 +97,22 @@ export default function JobsPageToolbar({
                 <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{onlineCount}</span>
               </button>
             </div>
+
+            {showMyJobsToggle && setMyJobsOnly && (
+              <button
+                type="button"
+                onClick={() => setMyJobsOnly(!myJobsOnly)}
+                title="Show only jobs assigned to me"
+                className={`h-9.5 px-3 rounded-lg border text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                  myJobsOnly
+                    ? 'bg-taupe text-white border-taupe'
+                    : 'bg-canvas border-line text-ink-muted hover:text-ink hover:bg-surface'
+                }`}
+              >
+                <UserCheck size={14} />
+                <span>My Jobs</span>
+              </button>
+            )}
 
             {/* Settings Button */}
             <button

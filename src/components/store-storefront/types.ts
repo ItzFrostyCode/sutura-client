@@ -32,6 +32,7 @@ export interface PublicService {
   image_url?: string | null;
   reviews_count?: number | null;
   reviews_avg_rating?: number | null;
+  saves_count?: number | null;
   // Star-only — no comment column exists on service_reviews (see the
   // backend's ServiceReview model docblock), unlike CatalogItemReview.
   reviews?: {
@@ -43,6 +44,10 @@ export interface PublicService {
   size_chart_image_url?: string | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: { size: string; values: string[] }[] | null;
+  // Per-item/per-job-type pricing (e.g. Alteration -> Pants Hemming ₱150,
+  // Dress Alteration ₱300) — always present alongside base_price, never a
+  // replacement for it; base_price stays the "starting at" headline figure.
+  pricing?: { id: number; label: string; amount: string | number }[];
   custom_fields?: {
     name: string;
     label: string;
@@ -57,6 +62,8 @@ export interface PublicServicePackage {
   name: string;
   description: string | null;
   bundle_price: string | null;
+  reviews_count?: number;
+  reviews_avg_rating?: number | null;
   services: { id: number; name: string; base_price: string | null }[];
 }
 

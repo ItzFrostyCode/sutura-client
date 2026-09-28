@@ -5,10 +5,12 @@ import { Job, Payment } from '../jobTypes';
 export interface JobFinancialsCardProps {
   readonly job: Job;
   readonly saving: boolean;
-  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string) => Promise<void>;
+  readonly isOwnerOrManager: boolean;
+  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string, cashTendered?: number) => Promise<void>;
   readonly onApplyDiscount: (amount: number, reason: string) => Promise<void>;
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;
   readonly onRejectPayment: (paymentId: number, reason: string) => Promise<void>;
+  readonly onVerifyPayment: (paymentId: number) => Promise<void>;
 }
 
 export const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeCls: string }> = {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Trash2, Gift } from 'lucide-react';
 import { SERVICE_TYPES, SERVICE_TYPE_META } from '@/components/services/serviceHelpers';
+import { serviceHasType } from '@/components/jobs/jobHelpers';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
 import { JobCreateFormData, RosterMember, ServiceData, ServiceField } from './types';
 
@@ -43,6 +44,7 @@ export default function CustomSpecsSection({
   setRoster,
   sectionTwoMeta,
 }: CustomSpecsSectionProps) {
+  const primaryServiceType = selectedService?.service_types?.[0] ?? selectedService?.service_type ?? null;
   const SectionTwoIcon = sectionTwoMeta.icon;
 
   const renderCustomField = (field: ServiceField) => {
@@ -186,14 +188,14 @@ export default function CustomSpecsSection({
       iconBoxClassName={`${sectionTwoMeta.bg} border ${sectionTwoMeta.border}`}
       title="Custom Specifications & Notes"
       description={
-        selectedService?.service_type
-          ? `Fields adapted for ${SERVICE_TYPES.find((t) => t.value === selectedService.service_type)?.label}`
+        primaryServiceType
+          ? `Fields adapted for ${SERVICE_TYPES.find((t) => t.value === primaryServiceType)?.label}`
           : undefined
       }
       defaultOpen={false}
       forceOpenWhen={isBulkOrder || isSelectedAlterationRepair}
     >
-      {selectedService?.service_type === 'fashion_bridal' && (
+      {(serviceHasType(selectedService, 'fashion_bridal')) && (
         <div
           className={`flex items-start gap-2 text-xs ${sectionTwoMeta.text} ${sectionTwoMeta.bg} border ${sectionTwoMeta.border} rounded-xl p-3`}
         >

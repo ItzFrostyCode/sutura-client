@@ -24,9 +24,14 @@ const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
 });
 
 export default function BranchesPage() {
-  const { store, user } = useAuthStore();
+  const { store, user, staffProfile } = useAuthStore();
   const { refreshBranches } = useBranch();
   const toast = useToast();
+  const isStoreOwner = user?.roles?.[0]?.name === 'store_owner';
+  // A branch manager may only edit their OWN branch — matches
+  // StoreBranchController::branchManagerCrudDenied() on the backend.
+  // Adding/deleting a branch or designating the main one stay owner-only.
+  const myBranchId = staffProfile?.store_branch_id ?? null;
   const [branches, setBranches] = useState<StoreBranch[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,6 +71,14 @@ export default function BranchesPage() {
     setFormData(EMPTY_FORM);
     setErrorMsg('');
     setIsModalOpen(true);
+  };
+
+  const handleEditClickGated = (branch: StoreBranch) => {
+    if (!isStoreOwner && branch.id !== myBranchId) {
+      toast.error('You can only edit your own branch.');
+      return;
+    }
+    handleEditClick(branch);
   };
 
   const handleEditClick = (branch: StoreBranch) => {
@@ -237,14 +250,16 @@ export default function BranchesPage() {
                 <MapIcon size={15} /> Map
               </button>
             </div>
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
-            >
-              <Plus size={17} />
-              Add Branch
-            </button>
+            {isStoreOwner && (
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+              >
+                <Plus size={17} />
+                Add Branch
+              </button>
+            )}
           </>
         }
       />
@@ -255,9 +270,9 @@ export default function BranchesPage() {
         <BranchListView
           branches={branches}
           onAddClick={openAddModal}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-          onSetMain={handleSetMain}
+          onEdit={handleEditClickGated}
+          onDelete={isStoreOwner ? handleDeleteClick : undefined}
+          onSetMain={isStoreOwner ? handleSetMain : undefined}
         />
       )}
 

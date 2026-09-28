@@ -44,6 +44,7 @@ export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <h3 className="mobile-h4 font-semibold text-ink truncate flex-1 leading-snug">
             {itemName}
+            {(order.quantity ?? 1) > 1 && <span className="text-ink-muted font-normal"> × {order.quantity}</span>}
           </h3>
           <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 ${meta.tone}`}>
             <StatusIcon size={12} /> {meta.label}
@@ -71,6 +72,12 @@ export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
             <Eye size={14} />
           </div>
         </div>
+
+        {!!order.pending_payment_amount && order.pending_payment_amount > 0 && (
+          <div className="mt-1.5 mobile-caption text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+            ₱{order.pending_payment_amount.toLocaleString()} payment submitted — pending shop verification
+          </div>
+        )}
       </div>
     </Link>
   );

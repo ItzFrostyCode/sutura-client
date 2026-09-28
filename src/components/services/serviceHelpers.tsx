@@ -54,8 +54,20 @@ export interface Service {
   size_chart_columns?: string[] | null;
   size_chart_rows?: SizeChartRow[] | null;
   custom_fields?: ServiceField[] | null;
+  // Extra per-person roster columns for a bulk Service (e.g. "Jersey
+  // Number", "Position") — asked once PER ROSTER ROW, unlike custom_fields
+  // above, which is asked once per whole booking/order.
+  roster_fields?: ServiceField[] | null;
   pricing?: ServicePricing[];
   tags?: string[];
+  // Owner-facing analytics fields — populated by ServiceController::index()'s
+  // withCount/withSum aggregation, same discount-aware total_revenue formula
+  // as CatalogItem's own (total_amount - balance - discount_amount).
+  reviews_count?: number;
+  reviews_avg_rating?: number | null;
+  saves_count?: number;
+  job_orders_count?: number;
+  total_revenue?: number;
 }
 
 export interface PricingTierInput {

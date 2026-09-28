@@ -7,7 +7,7 @@ interface BranchListViewProps {
   readonly branches: StoreBranch[];
   readonly onAddClick: () => void;
   readonly onEdit: (branch: StoreBranch) => void;
-  readonly onDelete: (id: number) => void;
+  readonly onDelete?: (id: number) => void;
   readonly onSetMain?: (branch: StoreBranch) => void;
 }
 

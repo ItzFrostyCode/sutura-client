@@ -86,12 +86,12 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
         </div>
 
         <div className="space-y-1 border-t border-line/60 pt-3 sm:border-0 sm:pt-0">
-          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Assigned Staff</span>
-          <p className="font-bold text-ink text-sm">{job.assigned_staff?.name || 'Unassigned'}</p>
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Last Updated By</span>
+          <p className="font-bold text-ink text-sm">{job.assigned_staff?.name || 'Not yet touched'}</p>
           <p className="text-xs text-ink-muted">
             {job.staff_stages && job.staff_stages.length > 0
-              ? `${job.staff_stages.length} multi-stage role(s) assigned`
-              : 'Assigned to primary store queue'}
+              ? `${job.staff_stages.length} production stage(s) recorded`
+              : 'No production stage recorded yet'}
           </p>
         </div>
       </div>

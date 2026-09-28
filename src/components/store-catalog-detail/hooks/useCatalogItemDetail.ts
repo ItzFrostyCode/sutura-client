@@ -32,6 +32,8 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   const [hoverRating, setHoverRating] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [togglingSave, setTogglingSave] = useState(false);
   const [headerOpacity, setHeaderOpacity] = useState(0);
   const [fromSameShop, setFromSameShop] = useState<CatalogItemResult[]>([]);
   const [moreLikeThis, setMoreLikeThis] = useState<CatalogItemResult[]>([]);
@@ -71,6 +73,35 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
         setLoading(false);
       });
   }, [storeId, itemId, user]);
+
+  useEffect(() => {
+    if (!user || !item) return;
+    api.get(`/stores/${storeId}/catalog/${item.id}/my-save`)
+      .then((res) => {
+        if (res.data?.success) setIsSaved(!!res.data.is_saved);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, storeId, item?.id]);
+
+  const handleToggleSave = async () => {
+    if (!isAuthenticated || !user) {
+      setReviewMessage({ type: 'error', text: 'Please log in to save this item.' });
+      return;
+    }
+    if (!item || togglingSave) return;
+    setTogglingSave(true);
+    try {
+      const res = await api.post(`/stores/${storeId}/catalog/${item.id}/save`);
+      setIsSaved(res.data.status === 'saved');
+      setItem((prev) => (prev ? { ...prev, saves_count: res.data.saves_count } : prev));
+    } catch {
+      // Non-critical UI toggle — silently no-op, matches the low-stakes
+      // nature of a save/heart action elsewhere in this codebase.
+    } finally {
+      setTogglingSave(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -146,13 +177,17 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   // are explicitly not assumed here.
   const [showBulkSheet, setShowBulkSheet] = useState(false);
   const [bulkOrganizationName, setBulkOrganizationName] = useState('');
-  const [bulkRoster, setBulkRoster] = useState<{ name: string; size: string }[]>([]);
+  // [key: string] carries this service's extra roster_fields values (e.g.
+  // jersey_number) — always strings, one column per field, alongside the
+  // two fixed columns every roster row always has.
+  const [bulkRoster, setBulkRoster] = useState<{ name: string; size: string; [key: string]: string }[]>([]);
   const [bulkBranchId, setBulkBranchId] = useState<number | null>(null);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkError, setBulkError] = useState('');
 
   const isBulkItem = Boolean(item?.service?.service_types?.includes('bulk_sublimation'));
   const bulkMinQty = item?.service?.min_order_qty ?? 1;
+  const bulkRosterFields = item?.service?.roster_fields ?? [];
 
   const openBulkSheet = () => {
     if (!isAuthenticated) {
@@ -161,7 +196,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     }
     setBulkError('');
     setBulkOrganizationName('');
-    setBulkRoster([{ name: '', size: '' }]);
+    setBulkRoster([{ name: '', size: '', ...Object.fromEntries(bulkRosterFields.map((f) => [f.id, ''])) }]);
     setBulkBranchId(null);
     setShowBulkSheet(true);
   };
@@ -305,7 +340,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
 
   const buildBookHref = (branchSlug?: string | null) => {
     if (!item) return '#';
-    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}&ref_price=${encodeURIComponent(String(item.price))}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
+    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}&ref_item_id=${item.id}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}&ref_price=${encodeURIComponent(String(item.price))}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
   };
 
   return {
@@ -320,8 +355,12 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     selectedSize,
     setSelectedSize,
     orderSuccess,
+    isSaved,
+    togglingSave,
+    handleToggleSave,
     isBulkItem,
     bulkMinQty,
+    bulkRosterFields,
     showBulkSheet,
     setShowBulkSheet,
     openBulkSheet,

@@ -17,6 +17,12 @@ interface StaffListViewProps {
   readonly staff: Staff[];
   readonly loading: boolean;
   readonly canManage?: boolean;
+  // Only the store owner can edit/remove another branch manager's account or
+  // promote someone to branch manager — matches
+  // StaffController::staffManagerCrudDenied() exactly. Defaults to false so a
+  // branch_manager viewer (canManage=true but isStoreOwner=false) doesn't see
+  // Edit/Delete on another branch manager's row and then get a 403.
+  readonly isStoreOwner?: boolean;
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
 }
@@ -223,7 +229,16 @@ function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }:
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-line/60">
+      {/* flex-col sm:flex-row: WorkloadBar's own class is `w-full sm:w-36`
+          — it assumes it owns its row alone (true in the desktop table,
+          where it sits in its own <td>). Here it shared a single
+          non-wrapping row with StatusBadges, which can render up to 4
+          badges (Active/Busy/Branch Manager/+N roles) comfortably wider
+          than a real phone on its own, forcing the two to fight over
+          width instead of WorkloadBar ever getting its intended
+          full-width bar. Stacking below sm: gives both the room the
+          desktop table already gives them. */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-line/60">
         <StatusBadges member={member} />
         <WorkloadBar jobs={member.active_jobs || 0} />
       </div>
@@ -235,6 +250,7 @@ export default function StaffListView({
   staff,
   loading,
   canManage = true,
+  isStoreOwner = false,
   onEdit,
   onDelete,
 }: StaffListViewProps) {
@@ -391,7 +407,14 @@ export default function StaffListView({
           <p className="px-6 py-12 text-center text-ink-faint text-sm">No staff members match the selected filters.</p>
         )}
         {!loading && filteredStaff.map(member => (
-          <StaffMemberCard key={member.id} member={member} onEdit={onEdit} onDelete={onDelete} onView={onView} />
+          <StaffMemberCard
+            key={member.id}
+            member={member}
+            canManage={canManage && (isStoreOwner || !member.is_branch_manager)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onView={onView}
+          />
         ))}
       </div>
 
@@ -447,6 +470,7 @@ export default function StaffListView({
               <StaffMemberRow
                 key={member.id}
                 member={member}
+                canManage={canManage && (isStoreOwner || !member.is_branch_manager)}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onView={onView}

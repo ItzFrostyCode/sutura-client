@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import JobFulfillmentCard from '@/components/jobs/JobFulfillmentCard';
-import JobStaffAssignmentCard from '@/components/jobs/JobStaffAssignmentCard';
 import JobFinancialsCard from '@/components/jobs/JobFinancialsCard';
 import SendCustomerMessageModal from '@/components/jobs/SendCustomerMessageModal';
 import { useJobDetail } from '@/components/jobs/useJobDetail';
@@ -38,7 +37,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   // In-page tabs — lazy initialized from URL hash (e.g. #financials from dashboard quick actions)
   const [activeTab, setActiveTab] = useState<JobDetailTabKey>(() => {
     if (typeof window === 'undefined') return 'overview';
-    const validTabs = ['overview', 'production', 'staff', 'fulfillment', 'financials'] as const;
+    const validTabs = ['overview', 'production', 'fulfillment', 'financials'] as const;
     const hash = window.location.hash.replace('#', '');
     if ((validTabs as readonly string[]).includes(hash)) {
       return hash as JobDetailTabKey;
@@ -68,20 +67,9 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     setCancellationReason,
     setHoldReason,
     refreshJob,
-    isOutsourced,
-    setIsOutsourced,
-    partnerStoreName,
-    setPartnerStoreName,
-    outsourcingCost,
-    setOutsourcingCost,
-    allStaff,
-    staffAssignments,
-    setStaffAssignments,
-    staffCompletions,
-    savingStaff,
     handleUpdate,
-    handleUpdateStaff,
     handleChargePayment,
+    handleVerifyPayment,
     handleApplyDiscount,
     handleUpdatePayment,
     handleRejectPayment,
@@ -155,6 +143,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           onPrint={() => window.print()}
           onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
           onUpdate={handleUpdate}
+          canDelete={isOwnerOrManager}
         />
 
         <JobDetailTabsNav
@@ -197,36 +186,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             setCancellationReason={setCancellationReason}
             setHoldReason={setHoldReason}
             refreshJob={refreshJob}
-            isOutsourced={isOutsourced}
-            setIsOutsourced={setIsOutsourced}
-            partnerStoreName={partnerStoreName}
-            setPartnerStoreName={setPartnerStoreName}
-            outsourcingCost={outsourcingCost}
-            setOutsourcingCost={setOutsourcingCost}
-            store={store}
           />
-        )}
-
-        {activeTab === 'staff' && (
-          <div className="space-y-6">
-            <JobStaffAssignmentCard
-              allStaff={allStaff}
-              staffAssignments={staffAssignments}
-              setStaffAssignments={setStaffAssignments}
-              staffCompletions={staffCompletions}
-              handleUpdateStaff={handleUpdateStaff}
-              savingStaff={savingStaff}
-            />
-          </div>
         )}
 
         {activeTab === 'fulfillment' && (
           <div className="space-y-6">
-            <JobFulfillmentCard
-              isOutsourced={job.is_outsourced}
-              partnerStoreName={job.partner_store_name}
-              outsourcingCost={job.outsourcing_cost}
-            />
+            <JobFulfillmentCard />
           </div>
         )}
 
@@ -235,10 +200,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             <JobFinancialsCard
               job={job}
               saving={saving}
+              isOwnerOrManager={isOwnerOrManager}
               onCharge={handleChargePayment}
               onApplyDiscount={handleApplyDiscount}
               onUpdatePayment={handleUpdatePayment}
               onRejectPayment={handleRejectPayment}
+              onVerifyPayment={handleVerifyPayment}
             />
           </div>
         )}

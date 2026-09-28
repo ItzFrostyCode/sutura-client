@@ -36,8 +36,12 @@ export default function PublicProductDetailPage({
     selectedSize,
     setSelectedSize,
     orderSuccess,
+    isSaved,
+    togglingSave,
+    handleToggleSave,
     isBulkItem,
     bulkMinQty,
+    bulkRosterFields,
     showBulkSheet,
     setShowBulkSheet,
     openBulkSheet,
@@ -155,7 +159,13 @@ export default function PublicProductDetailPage({
 
           {/* Product Info & Purchase Column — inherits standard screen margins on mobile */}
           <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0 px-4 min-[375px]:px-6 min-[600px]:px-0">
-            <CatalogProductInfo item={item} selectedColor={selectedColor} />
+            <CatalogProductInfo
+              item={item}
+              selectedColor={selectedColor}
+              isSaved={isSaved}
+              togglingSave={togglingSave}
+              onToggleSave={handleToggleSave}
+            />
 
             <CatalogSizeSelector
               sizes={item.sizes}
@@ -220,6 +230,7 @@ export default function PublicProductDetailPage({
         itemName={item.name}
         sizes={item.sizes}
         minQty={bulkMinQty}
+        rosterFields={bulkRosterFields}
         branches={branches}
         branchId={bulkBranchId}
         setBranchId={setBulkBranchId}

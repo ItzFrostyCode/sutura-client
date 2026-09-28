@@ -7,13 +7,16 @@ interface CatalogBottomActionBarProps {
   onOpenFind: () => void;
   bookHref: string;
   /**
-   * When the item has a directly-orderable linked Service, the primary
-   * action becomes ordering it instead of booking a fitting — 'made_to_order'
-   * calls onOrder() directly (single piece), 'bulk' opens the roster sheet.
-   * Items with no linked Service keep the original "Book a Fitting" behavior
-   * unchanged (no direct order path exists for those).
+   * Bulk/team-roster items (min_order_qty-gated) skip the fitting and open
+   * the roster sheet directly via onOrder() instead — every other item
+   * (single custom pieces, which always need an in-person fitting to lock
+   * down exact fabric/measurements/quantity) keeps "Book a Fitting". There
+   * is deliberately no direct single-piece order shortcut here anymore —
+   * one existed ('made_to_order') but nothing has set it since the catalog
+   * item detail page stopped offering it, so it's removed rather than left
+   * as dead, confusing optionality.
    */
-  orderAction?: 'made_to_order' | 'bulk' | null;
+  orderAction?: 'bulk' | null;
   onOrder?: () => void;
   orderSubmitting?: boolean;
 }
@@ -56,7 +59,7 @@ export default function CatalogBottomActionBar({
             disabled={orderSubmitting}
             className={`${buttonBase} bg-ink hover:bg-taupe text-white disabled:opacity-60`}
           >
-            {orderSubmitting ? 'Placing order…' : orderAction === 'bulk' ? 'Bulk Order' : 'Order This Design'}
+            {orderSubmitting ? 'Placing order…' : 'Bulk Order'}
           </button>
         ) : (
           <Link href={bookHref} className={`${buttonBase} bg-ink hover:bg-taupe text-white text-center`}>

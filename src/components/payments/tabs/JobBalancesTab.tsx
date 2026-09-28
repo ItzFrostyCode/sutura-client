@@ -87,7 +87,11 @@ export default function JobBalancesTab({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-ink-muted">
+                  {/* flex-wrap: three unconstrained text items (Total, Paid,
+                      status badge) with no wrap — same shape as the
+                      OutstandingBalancesList bug fixed earlier this pass,
+                      large peso amounts can exceed a real 320-375px phone. */}
+                  <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted">
                     <span>Total: ₱{job.total_amount.toFixed(2)}</span>
                     <span className="text-emerald-700 font-semibold">Paid: ₱{amountPaid.toFixed(2)}</span>
                     {getPaymentStatusBadge(job.payment_status)}

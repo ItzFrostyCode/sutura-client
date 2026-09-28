@@ -79,7 +79,14 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
   }, [loadData]);
 
   const member = detail?.staff;
-  const canEdit = isStoreOwner || isBranchManager || (user?.id !== undefined && user.id === member?.user_id);
+  // PUT /stores/{store}/staff/{id} is role:store_owner,branch_manager-only —
+  // plain staff has no self-edit path through StaffController::update at
+  // all (self-service profile fields go through ProfileController on
+  // Account Settings instead), so "viewing your own profile" was never a
+  // legitimate case for this button; it just 403'd. A branch manager also
+  // can't edit another branch manager's account
+  // (StaffController::staffManagerCrudDenied()), so that's excluded too.
+  const canEdit = isStoreOwner || (isBranchManager && !member?.is_branch_manager);
 
   const openEdit = () => {
     if (!member) return;
@@ -349,9 +356,9 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
                 <span className="text-ink-muted">Primary Role</span>
                 <span className="font-bold text-ink">{roleLabel(member.role)}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-line/60">
-                <span className="text-ink-muted">Assigned Branch</span>
-                <span className="font-bold text-ink">{member.branch?.name || 'All Branches'}</span>
+              <div className="flex justify-between gap-3 py-1 border-b border-line/60">
+                <span className="text-ink-muted shrink-0">Assigned Branch</span>
+                <span className="font-bold text-ink text-right truncate">{member.branch?.name || 'All Branches'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-line/60">
                 <span className="text-ink-muted">Branch Manager</span>
@@ -423,6 +430,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
         saving={saving}
         formData={formData}
         setFormData={setFormData}
+        isStoreOwner={isStoreOwner}
       />
     </div>
   );

@@ -9,7 +9,17 @@ import {
 interface HelpPanelProps {
   readonly open: boolean;
   readonly onClose: () => void;
+  // Support Tickets (SupportTicketController's dashboard routes) and Audit
+  // Logs are both role:store_owner-only on the backend — the sidebar nav
+  // already hides "Audit Log" from anyone but the owner (dashboard/
+  // layout.tsx), but this panel showed both links to every role regardless,
+  // so a branch manager or staff account opening a support ticket or the
+  // audit log from here got a 403/empty page instead of the sidebar's
+  // correct behavior. Defaults to false so a missing prop fails closed.
+  readonly isStoreOwner?: boolean;
 }
+
+const OWNER_ONLY_LINK_HREFS = ['/dashboard/support', '/dashboard/audit-log'];
 
 const LINKS = [
   {
@@ -44,7 +54,8 @@ const LINKS = [
  * you are, not a destination that earns permanent space in the nav.
  * Full-screen on mobile, side panel on desktop, matching the Modal contract.
  */
-export default function HelpPanel({ open, onClose }: HelpPanelProps) {
+export default function HelpPanel({ open, onClose, isStoreOwner = false }: HelpPanelProps) {
+  const visibleLinks = LINKS.filter(link => isStoreOwner || !OWNER_ONLY_LINK_HREFS.includes(link.href));
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = 'hidden';
@@ -77,10 +88,6 @@ export default function HelpPanel({ open, onClose }: HelpPanelProps) {
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line shrink-0">
           <h2 className="text-sm font-semibold text-ink">Help &amp; Support</h2>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted bg-canvas border border-line rounded-full pl-2 pr-2.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-sage" />
-              All systems operational
-            </span>
             <button
               type="button"
               onClick={onClose}
@@ -93,7 +100,7 @@ export default function HelpPanel({ open, onClose }: HelpPanelProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-line">
-          {LINKS.map(link => (
+          {visibleLinks.map(link => (
             <Link
               key={link.title}
               href={link.href}
@@ -110,20 +117,22 @@ export default function HelpPanel({ open, onClose }: HelpPanelProps) {
           ))}
         </div>
 
-        <div className="px-5 py-5 border-t border-line shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
-          <p className="text-sm font-semibold text-ink">Still stuck?</p>
-          <p className="text-xs text-ink-muted mt-1 leading-relaxed">
-            Open a support ticket and the admin team will pick it up. Include the order number
-            or page you were on — it gets resolved faster.
-          </p>
-          <Link
-            href="/dashboard/support"
-            onClick={onClose}
-            className="mt-3 inline-flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
-          >
-            <Mail size={15} /> Contact support
-          </Link>
-        </div>
+        {isStoreOwner && (
+          <div className="px-5 py-5 border-t border-line shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+            <p className="text-sm font-semibold text-ink">Still stuck?</p>
+            <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+              Open a support ticket and the admin team will pick it up. Include the order number
+              or page you were on — it gets resolved faster.
+            </p>
+            <Link
+              href="/dashboard/support"
+              onClick={onClose}
+              className="mt-3 inline-flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+            >
+              <Mail size={15} /> Contact support
+            </Link>
+          </div>
+        )}
       </aside>
     </div>
   );

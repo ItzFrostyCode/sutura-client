@@ -63,7 +63,7 @@ export default function JobOverviewKPIStrip({ job }: JobOverviewKPIStripProps) {
           {job.status.replaceAll('_', ' ')}
         </p>
         <p className="text-xs text-ink-muted mt-0.5 truncate">
-          Staff: <strong className="text-ink-body font-semibold">{job.assigned_staff?.name || 'Unassigned'}</strong>
+          Last updated by: <strong className="text-ink-body font-semibold">{job.assigned_staff?.name || 'Not yet touched'}</strong>
         </p>
       </div>
     </div>

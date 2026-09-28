@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { User, ShoppingBag, Store, Sparkles } from 'lucide-react';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
+import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
 import { CustomerData, CustomerMeasurement, JobCreateFormData, ServiceData } from './types';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
@@ -283,7 +284,7 @@ export default function CustomerServiceSection({
                 name.includes('sublimation') ||
                 name.includes('uniform') ||
                 name.includes('esports');
-              if (selected.service_type === 'bulk_sublimation' || looksBulk) {
+              if (serviceHasType(selected, 'bulk_sublimation') || looksBulk) {
                 setIsBulkOrder(true);
               }
             }

@@ -23,6 +23,12 @@ interface ServiceListViewProps {
   readonly onEdit: (service: Service) => void;
   readonly onDelete: (id: number) => void;
   readonly onOpenSale: (service: Service) => void;
+  // Edit/duplicate(create)/sale/delete all call routes that are
+  // role:store_owner,branch_manager-only in routes/api.php — but the
+  // Services nav is shown to plain staff too (they need read access to pick
+  // a service on a job/appointment), so these buttons must not render
+  // unconditionally. Defaults to false so a missing prop fails closed.
+  readonly canManage?: boolean;
 }
 
 export default function ServiceListView({
@@ -38,6 +44,7 @@ export default function ServiceListView({
   onEdit,
   onDelete,
   onOpenSale,
+  canManage = false,
 }: ServiceListViewProps) {
   return (
     <div className="space-y-4 text-ink">
@@ -236,42 +243,44 @@ export default function ServiceListView({
                   )}
 
                   {/* Action buttons */}
-                  <div className="flex items-center gap-1 pt-1">
-                    {isLoading ? (
-                      <Loader2 size={14} className="animate-spin text-ink-faint mx-auto" />
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => onEdit(service)}
-                          title="Edit"
-                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-ink-body bg-canvas hover:bg-sunken rounded-lg transition-colors"
-                        >
-                          <Pencil size={12} /> Edit
-                        </button>
-                        <button
-                          onClick={() => onDuplicate(service)}
-                          title="Duplicate"
-                          className="flex items-center justify-center p-1.5 text-ink-faint hover:text-taupe hover:bg-canvas rounded-lg transition-colors"
-                        >
-                          <Copy size={14} />
-                        </button>
-                        <button
-                          onClick={() => onOpenSale(service)}
-                          title="Set Sale Price"
-                          className={`flex items-center justify-center p-1.5 rounded-lg transition-colors ${service.sale_price != null ? 'text-rose-600' : 'text-ink-faint hover:text-rose-600 hover:bg-rose-50'}`}
-                        >
-                          <Tag size={14} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(service.id)}
-                          title="Delete"
-                          className="flex items-center justify-center p-1.5 text-ink-faint hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {canManage && (
+                    <div className="flex items-center gap-1 pt-1">
+                      {isLoading ? (
+                        <Loader2 size={14} className="animate-spin text-ink-faint mx-auto" />
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onEdit(service)}
+                            title="Edit"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium text-ink-body bg-canvas hover:bg-sunken rounded-lg transition-colors"
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button
+                            onClick={() => onDuplicate(service)}
+                            title="Duplicate"
+                            className="flex items-center justify-center p-1.5 text-ink-faint hover:text-taupe hover:bg-canvas rounded-lg transition-colors"
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <button
+                            onClick={() => onOpenSale(service)}
+                            title="Set Sale Price"
+                            className={`flex items-center justify-center p-1.5 rounded-lg transition-colors ${service.sale_price != null ? 'text-rose-600' : 'text-ink-faint hover:text-rose-600 hover:bg-rose-50'}`}
+                          >
+                            <Tag size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(service.id)}
+                            title="Delete"
+                            className="flex items-center justify-center p-1.5 text-ink-faint hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
