@@ -75,12 +75,18 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     return { ...toPublicService(service), reviews: publicView?.reviews ?? [], reviews_count: publicView?.reviews_count ?? service.reviews_count ?? 0, reviews_avg_rating: publicView?.reviews_avg_rating ?? service.reviews_avg_rating ?? null };
   }, [service, publicView]);
 
+  // A combo needs 2+ orderable services; the server pauses any that fall short and says which.
+  const notePausedPackages = (names?: string[]) => {
+    if (names?.length) toast.info(`Paused ${names.length === 1 ? 'the combo' : 'these combos'} because fewer than 2 services are left: ${names.join(', ')}.`);
+  };
+
   const saveWithActive = async (isActive: boolean) => {
     if (!store?.id || !service) return;
     setToggling(true);
     try {
-      await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
+      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
       toast.success(isActive ? 'Service is live again.' : 'Service paused.');
+      notePausedPackages(res.data?.paused_packages);
       await reload();
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not change the service status.'));
@@ -93,8 +99,9 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     if (!store?.id || !service) return;
     setModalBusy(true);
     try {
-      await api.delete(`/stores/${store.id}/services/${service.id}`);
+      const res = await api.delete(`/stores/${store.id}/services/${service.id}`);
       toast.success('Service deleted.');
+      notePausedPackages(res.data?.paused_packages);
       router.push('/dashboard/services');
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to delete service.'));
