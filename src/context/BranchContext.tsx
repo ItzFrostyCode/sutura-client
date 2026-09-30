@@ -104,7 +104,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
         }
 
         // Restore from localStorage or default to main branch
-        const cached = localStorage.getItem(`sutura_branch_${storeId}`);
+        const cached = sessionStorage.getItem(`sutura_branch_${storeId}`);
         if (cached) {
           const parsed = cached === 'all' ? null : Number.parseInt(cached, 10);
           if (parsed === null || list.some(b => b.id === parsed)) {
@@ -141,7 +141,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
 
   useEffect(() => {
     if (storeId && hasResolvedInitialRef.current) {
-      localStorage.setItem(`sutura_branch_${storeId}`, selectedBranchId === null ? 'all' : selectedBranchId.toString());
+      sessionStorage.setItem(`sutura_branch_${storeId}`, selectedBranchId === null ? 'all' : selectedBranchId.toString());
     }
   }, [storeId, selectedBranchId]);
 

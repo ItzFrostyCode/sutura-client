@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
  * Mounted once in the root layout. useAuthStore always starts in the
  * SSR-safe "logged out" shape so the client's first paint matches the
  * server-rendered HTML exactly (no hydration mismatch); this effect then
- * reads the real token from localStorage after mount, updating the store
+ * reads this tab's own login (sessionStorage) after mount, updating the store
  * via a normal post-hydration re-render instead of during hydration itself.
  */
 export default function AuthHydrator() {

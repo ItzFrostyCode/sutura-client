@@ -10,7 +10,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (globalThis.window !== undefined) {
-    const token = sessionStorage.getItem('sutura_token') || localStorage.getItem('sutura_token');
+    const token = sessionStorage.getItem('sutura_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,10 +30,6 @@ api.interceptors.response.use(
         sessionStorage.removeItem('sutura_user');
         sessionStorage.removeItem('sutura_store');
         sessionStorage.removeItem('sutura_staff');
-        localStorage.removeItem('sutura_token');
-        localStorage.removeItem('sutura_user');
-        localStorage.removeItem('sutura_store');
-        localStorage.removeItem('sutura_staff_profile');
 
         const pathname = globalThis.window.location.pathname;
         const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
