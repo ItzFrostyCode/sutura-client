@@ -3,6 +3,10 @@ import { Outfit, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import AuthHydrator from "@/components/AuthHydrator";
 import MobileFrame from "@/components/shared/MobileFrame";
+import NetworkGuard from "@/components/shared/NetworkGuard";
+import LoginModal from "@/components/auth/LoginModal";
+import SignInFromQuery from "@/components/auth/SignInFromQuery";
+import ShopRouteGuard from "@/components/auth/ShopRouteGuard";
 import { ToastProvider } from "@/context/ToastContext";
 
 const outfit = Outfit({
@@ -32,8 +36,14 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         <ToastProvider>
-          <AuthHydrator />
-          <MobileFrame>{children}</MobileFrame>
+          <NetworkGuard>
+            <AuthHydrator />
+            <MobileFrame>
+              <ShopRouteGuard>{children}</ShopRouteGuard>
+            </MobileFrame>
+            <LoginModal />
+            <SignInFromQuery />
+          </NetworkGuard>
         </ToastProvider>
       </body>
     </html>

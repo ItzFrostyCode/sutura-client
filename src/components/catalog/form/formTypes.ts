@@ -1,4 +1,4 @@
-import { BulletItem, ImageItem, CatalogFormData } from '../catalogTypes';
+import { BulletItem, ImageItem, ColorItem, CatalogFormData } from '../catalogTypes';
 import { SizeChartValue } from '@/components/shared/SizeChartEditor';
 import { buildSavePayload } from '../catalogHelpers';
 
@@ -19,6 +19,8 @@ export interface CatalogFormInitialData {
   featuresImage: string;
   sizeChart: SizeChartValue;
   careImage: string;
+  measurementGuideImage: string;
+  colorItems: ColorItem[];
   formData: CatalogFormData;
   images: ImageItem[];
 }
@@ -30,6 +32,11 @@ export interface CatalogFormProps {
   readonly initialData?: CatalogFormInitialData;
   readonly onSubmit: (payload: ReturnType<typeof buildSavePayload>) => Promise<void>;
   readonly submitting: boolean;
+  /** Inline-embedded usage (e.g. the design detail page's own Overview tab):
+   * Back/Cancel close edit mode in place instead of navigating to
+   * /dashboard/catalog. Omitted for the standalone /new and /edit pages,
+   * which keep their normal Link-based navigation. */
+  readonly onCancel?: () => void;
 }
 
 export interface StoreServiceOption {

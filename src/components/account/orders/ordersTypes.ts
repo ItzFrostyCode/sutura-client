@@ -11,6 +11,7 @@ export interface MyOrder {
   garment_category: string | null;
   catalog_item_name: string | null;
   service_name: string | null;
+  service_package?: { id: number; name: string; services?: string[] } | null;
   quantity?: number;
   is_rush: boolean;
   due_date: string | null;

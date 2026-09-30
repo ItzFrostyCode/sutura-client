@@ -1,6 +1,7 @@
 import { ShoppingBag, CheckCircle, Clock, XCircle, Package } from 'lucide-react';
 
 export interface CatalogOrder {
+  order_number?: string | null;
   id: number;
   catalog_item_id: number;
   selected_size: string | null;

@@ -57,7 +57,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
     <div className="min-h-dvh flex flex-col bg-canvas text-ink">
       <BookingHeader onBack={() => (b.step > 1 ? b.setStep(b.prevStep) : b.router.back())} />
 
-      <div className="flex-1 mobile-screen-margins py-4 pb-28 lg:pb-10">
+      <div className="flex-1 mobile-screen-margins py-4 pb-[calc(140px+env(safe-area-inset-bottom))]">
         <div className="w-full max-w-xl lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:items-start">
         <div className="lg:flex-1 lg:max-w-xl">
           {/* Header Context */}
@@ -139,6 +139,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 customer={b.customer}
                 setCustomer={b.setCustomer}
                 answers={b.answers}
+                serviceFields={b.selectedService?.custom_fields}
                 setAnswers={b.setAnswers}
                 paymentMethod={b.paymentMethod}
                 setPaymentMethod={b.setPaymentMethod}

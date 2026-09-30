@@ -5,18 +5,24 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Star, Heart, ShoppingBag, Wallet } from 'lucide-react';
 
-import { Service } from '@/components/services/serviceHelpers';
+import { Service, ServicePackage } from '@/components/services/serviceHelpers';
 import ServiceTopPerformersChart from '@/components/services/ServiceTopPerformersChart';
+import ServiceRevenueByCategoryChart from '@/components/services/ServiceRevenueByCategoryChart';
+import ServiceRatingsBreakdownChart from '@/components/services/ServiceRatingsBreakdownChart';
+import ServiceEngagementChart from '@/components/services/ServiceEngagementChart';
+import ServiceReviewsView from '@/components/services/ServiceReviewsView';
 
 // Mirrors CatalogAnalyticsView exactly — same KPI-cards + top-performers
 // chart shape, for Services instead of Catalog Designs.
 export default function ServiceAnalyticsView() {
   const { store, user } = useAuthStore();
   const [services, setServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchServices = useCallback(() => {
     if (store?.id) {
+      api.get(`/stores/${store.id}/service-packages`).then(res => setPackages(res.data.data ?? [])).catch(() => setPackages([]));
       api.get(`/stores/${store.id}/services`)
         .then(res => {
           setServices(res.data.data);
@@ -37,8 +43,9 @@ export default function ServiceAnalyticsView() {
 
   const totalReviews = services.reduce((sum, s) => sum + (s.reviews_count || 0), 0);
   const totalSaves = services.reduce((sum, s) => sum + (s.saves_count || 0), 0);
-  const totalOrders = services.reduce((sum, s) => sum + (s.job_orders_count || 0), 0);
-  const totalRevenue = services.reduce((sum, s) => sum + (s.total_revenue || 0), 0);
+  // Combo packages sell as one order each; their money is counted once, under the package.
+  const totalOrders = services.reduce((sum, s) => sum + (s.job_orders_count || 0), 0) + packages.reduce((sum, p) => sum + (p.job_orders_count || 0), 0);
+  const totalRevenue = services.reduce((sum, s) => sum + (s.total_revenue || 0), 0) + packages.reduce((sum, p) => sum + (p.total_revenue || 0), 0);
 
   const kpiCards = [
     { label: 'Total Reviews', value: totalReviews.toLocaleString(), icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -53,22 +60,22 @@ export default function ServiceAnalyticsView() {
 
   if (services.length === 0) {
     return (
-      <div className="text-center py-16 bg-surface rounded-2xl border border-line shadow-2xs">
+      <div className="text-center py-16 bg-surface border border-line">
         <p className="text-xs text-ink-muted">No services yet. Add some to see performance analytics here.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {kpiCards.map(card => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+            <div key={card.label} className="bg-surface border border-line p-4 sm:p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-muted">{card.label}</span>
-                <span className={`p-2 rounded-xl ${card.bg} ${card.color}`}>
+                <span className={`p-2 ${card.bg} ${card.color}`}>
                   <Icon size={16} />
                 </span>
               </div>
@@ -78,7 +85,15 @@ export default function ServiceAnalyticsView() {
         })}
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <ServiceRevenueByCategoryChart services={services} packages={packages} />
+        <ServiceRatingsBreakdownChart services={services} />
+        <ServiceEngagementChart services={services} packages={packages} />
+      </div>
+
       <ServiceTopPerformersChart services={services} loading={loading} />
+
+      <ServiceReviewsView />
     </div>
   );
 }

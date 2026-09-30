@@ -1,19 +1,29 @@
 'use client';
 
+import Link from 'next/link';
 import AccountHeader from '@/components/account/AccountHeader';
 
-// A full-takeover screen rather than the usual "coming soon" card: this isn't a settings
-// toggle, it's the start of a real onboarding flow the customer would walk
-// through, so it gets its own focused space to grow into once the flow
-// itself is built (mirrors /register's own account-type step conceptually,
-// just not wired up yet on this side).
+// Entry point into the shop application (/register/store). A shop is its
+// own login, reviewed by the System Admin, so it can't reuse this customer
+// account's email — the copy says so up front rather than letting the
+// applicant hit that error on the last step.
 export default function BecomeStoreOwnerPage() {
   return (
     <div>
       <AccountHeader title="Become a Store Owner" backHref="/account" />
-      <p className="text-sm text-ink-muted leading-relaxed">
-        This is still being worked on — soon you&apos;ll be able to start your own tailoring store on SUTURA right from here.
+      <p className="mobile-body-md text-ink-body">
+        Apply to open your tailoring shop on SUTURA. You&apos;ll upload your business documents and choose a plan, and
+        our team will review your application before your shop goes live.
       </p>
+      <p className="mobile-body-sm text-ink-muted mt-4">
+        Your shop gets its own sign-in, so use a business email that isn&apos;t already linked to this customer account.
+      </p>
+      <Link
+        href="/register/store"
+        className="btn-primary-mobile rounded-none! mt-8 flex w-full items-center justify-center bg-ink text-white uppercase tracking-widest"
+      >
+        Start Application
+      </Link>
     </div>
   );
 }

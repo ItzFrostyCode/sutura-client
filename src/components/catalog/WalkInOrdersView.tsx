@@ -365,7 +365,7 @@ export default function WalkInOrdersView({
                       {/* Top Badges: Order ID & Status */}
                       <div className="absolute top-2.5 left-2.5 z-10">
                         <span className="font-mono font-bold text-[10px] px-2 py-1 rounded-md bg-black/70 backdrop-blur-md text-white border border-white/10 shadow-xs">
-                          #ORD-{order.id}
+                          {order.order_number ?? `#${order.id}`}
                         </span>
                       </div>
 
@@ -568,7 +568,7 @@ export default function WalkInOrdersView({
 
                         {/* Order ID */}
                         <td className="px-3.5 py-2.5 font-mono font-bold text-ink whitespace-nowrap">
-                          #ORD-{order.id}
+                          {order.order_number ?? `#${order.id}`}
                         </td>
 
                         {/* Garment Name */}

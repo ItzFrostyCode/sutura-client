@@ -26,6 +26,7 @@ export interface TrackedOrder {
   quantity?: number;
   catalog_item_name?: string | null;
   service_name: string | null;
+  service_package?: { id: number; name: string; services?: string[] } | null;
   is_rush: boolean;
   due_date: string | null;
   // Time-of-day refinement on top of due_date — mainly meaningful for
@@ -164,7 +165,7 @@ interface OrderTrackingViewProps {
 }
 
 export default function OrderTrackingView({ order, stepperLayout = 'horizontal' }: OrderTrackingViewProps) {
-  const itemName = order.catalog_item_name ?? order.service_name ?? order.garment_category ?? 'Garment';
+  const itemName = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? order.garment_category ?? 'Garment';
   const phase = order.status in TERMINAL_STATUSES ? null : getCustomerPhase(order.status);
   const hasMaterialNote = order.customer_material_status && order.customer_material_status !== 'safe';
 
@@ -229,6 +230,9 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
               <span className="text-ink-muted">× {order.quantity}</span>
             )}
           </div>
+          {order.service_package && (order.service_package.services?.length ?? 0) > 0 && (
+            <p className="mobile-caption text-ink-muted font-normal pl-6">Package · includes {order.service_package.services!.join(', ')}</p>
+          )}
           {order.due_date && (
             <div className="flex items-center gap-2 mobile-body-sm text-ink-muted font-normal">
               <CalendarDays size={16} className="text-ink-faint shrink-0" />

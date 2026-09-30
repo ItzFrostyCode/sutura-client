@@ -16,7 +16,6 @@ export default function NotificationsHeader({
 }: NotificationsHeaderProps) {
   return (
     <PageHeader
-      eyebrow="ALERTS & ACTIVITY"
       title="Notifications"
       description="Review your order activity, customer appointments, and pickup notifications."
       actions={

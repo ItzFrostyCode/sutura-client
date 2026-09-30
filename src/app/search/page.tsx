@@ -120,36 +120,34 @@ function SearchPageContent() {
               )}
             </div>
 
-            {/* Mobile-only filter button (hidden on services tab) */}
-            {s.activeTab !== 'services' && (
-              <button
-                type="button"
-                onClick={s.openFilterPanel}
-                className={`sm:hidden h-11 px-3.5 border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl ${
-                  s.activeFilterCount > 0
-                    ? 'bg-ink text-white border-ink'
-                    : 'bg-surface text-ink-body border-line hover:bg-sunken'
-                }`}
-                aria-label="Open filter options"
-                title="Filters"
-              >
-                <SlidersHorizontal size={16} />
-                <span>Filter</span>
-                {s.activeFilterCount > 0 && (
-                  <span className="w-5 h-5 bg-white/20 text-white text-[10px] font-bold flex items-center justify-center rounded-sm">
-                    {s.activeFilterCount}
-                  </span>
-                )}
-              </button>
-            )}
+            {/* Mobile-only filter button */}
+            <button
+              type="button"
+              onClick={s.openFilterPanel}
+              className={`sm:hidden h-11 px-3.5 border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl ${
+                s.activeFilterCount > 0
+                  ? 'bg-ink text-white border-ink'
+                  : 'bg-surface text-ink-body border-line hover:bg-sunken'
+              }`}
+              aria-label="Open filter options"
+              title="Filters"
+            >
+              <SlidersHorizontal size={16} />
+              <span>Filter</span>
+              {s.activeFilterCount > 0 && (
+                <span className="w-5 h-5 bg-white/20 text-white text-[10px] font-bold flex items-center justify-center rounded-sm">
+                  {s.activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Segmented Tabs: Stores, Services, Catalog (NO ALL) */}
+          {/* Segmented Tabs: Stores, Catalog, Services */}
           <div className="flex items-center justify-around sm:justify-start sm:gap-6 max-w-md sm:max-w-none mx-auto sm:mx-0">
-            {(['store', 'services', 'showroom'] as const).map((tab) => {
+            {(['store', 'showroom', 'services'] as const).map((tab) => {
               const isSelected = s.activeTab === tab;
               const label =
-                tab === 'store' ? 'Stores' : tab === 'services' ? 'Services' : 'Catalog';
+                tab === 'store' ? 'Stores' : tab === 'showroom' ? 'Catalog' : 'Services';
               return (
                 <button
                   key={tab}
@@ -185,9 +183,8 @@ function SearchPageContent() {
                 items={s.items}
                 total={s.total}
                 gate={s.gate}
-                showFabric={s.showFabric}
-                setShowFabric={s.setShowFabric}
                 userCoords={s.userCoords}
+                department={s.department}
               />
             )}
 
@@ -197,6 +194,7 @@ function SearchPageContent() {
                 services={s.services}
                 servicesLoading={s.servicesLoading}
                 servicesTotal={s.servicesTotal}
+                packages={s.packages}
                 stores={s.stores}
                 activeTab={s.activeTab}
                 effectiveQ={s.effectiveQ}
@@ -212,8 +210,6 @@ function SearchPageContent() {
                 sortBy={s.sortBy}
                 setSortBy={s.setSortBy}
                 loading={s.loading}
-                showFabric={s.showFabric}
-                setShowFabric={s.setShowFabric}
                 items={s.items}
                 page={s.page}
                 setPage={s.setPage}
@@ -223,18 +219,24 @@ function SearchPageContent() {
             )}
           </div>
 
-          {/* Web Persistent Filter Sidebar (hidden on mobile and on services tab, visible on sm+) — right side */}
-          {s.activeTab !== 'services' && (
-            <div className="hidden sm:block">
+          {/* Web Persistent Filter Sidebar (hidden on mobile, visible on sm+) — right side. Shown on every tab, including Services (Service Category/Type). */}
+          <div className="hidden sm:block">
               <SearchWebFilterSidebar
                 specialization={s.specialization}
                 setSpecialization={s.setSpecialization}
                 department={s.department}
-                color={s.color}
-                setColor={s.setColor}
+                setDepartment={s.setDepartment}
+                subcategory={s.subcategory}
+                setSubcategory={s.setSubcategory}
+                structure={s.structure}
+                setStructure={s.setStructure}
+                garmentType={s.garmentType}
+                setGarmentType={s.setGarmentType}
+                serviceCategory={s.serviceCategory}
+                setServiceCategory={s.setServiceCategory}
+                serviceType={s.serviceType}
+                setServiceType={s.setServiceType}
                 onSelectQuery={(q) => s.setQ(q)}
-                openNow={s.openNow}
-                setOpenNow={s.setOpenNow}
                 minPrice={s.minPrice}
                 setMinPrice={s.setMinPrice}
                 maxPrice={s.maxPrice}
@@ -249,40 +251,44 @@ function SearchPageContent() {
                 activeFilterCount={s.activeFilterCount}
                 activeTab={s.activeTab}
               />
-            </div>
-          )}
+          </div>
         </div>
       </main>
 
-      {/* Filter Drawer Dropdown (hidden on services tab) */}
-      {s.activeTab !== 'services' && (
-        <SearchFilterDrawer
-          isOpen={s.filterPanelOpen}
-          onClose={() => s.setFilterPanelOpen(false)}
-          activeFilterTab={s.activeFilterTab}
-          setActiveFilterTab={s.setActiveFilterTab}
-          draftSpecialization={s.draftSpecialization}
-          setDraftSpecialization={s.setDraftSpecialization}
-          department={s.department}
-          draftColor={s.draftColor}
-          setDraftColor={s.setDraftColor}
-          draftOpenNow={s.draftOpenNow}
-          setDraftOpenNow={s.setDraftOpenNow}
-          draftMinPrice={s.draftMinPrice}
-          setDraftMinPrice={s.setDraftMinPrice}
-          draftMaxPrice={s.draftMaxPrice}
-          setDraftMaxPrice={s.setDraftMaxPrice}
-          draftMinRating={s.draftMinRating}
-          setDraftMinRating={s.setDraftMinRating}
-          draftDistrict={s.draftDistrict}
-          setDraftDistrict={s.setDraftDistrict}
-          sortBy={s.sortBy}
-          setSortBy={s.setSortBy}
-          onReset={s.resetFilterPanel}
-          onApply={s.applyFilterPanel}
-          activeTab={s.activeTab}
-        />
-      )}
+      {/* Filter Drawer Dropdown — shown on every tab, including Services. */}
+      <SearchFilterDrawer
+        isOpen={s.filterPanelOpen}
+        onClose={() => s.setFilterPanelOpen(false)}
+        activeFilterTab={s.activeFilterTab}
+        setActiveFilterTab={s.setActiveFilterTab}
+        draftSpecialization={s.draftSpecialization}
+        setDraftSpecialization={s.setDraftSpecialization}
+        department={s.draftDepartment}
+        setDepartment={s.setDraftDepartment}
+        draftSubcategory={s.draftSubcategory}
+        setDraftSubcategory={s.setDraftSubcategory}
+        draftStructure={s.draftStructure}
+        setDraftStructure={s.setDraftStructure}
+        draftGarmentType={s.draftGarmentType}
+        setDraftGarmentType={s.setDraftGarmentType}
+        draftServiceCategory={s.draftServiceCategory}
+        setDraftServiceCategory={s.setDraftServiceCategory}
+        draftServiceType={s.draftServiceType}
+        setDraftServiceType={s.setDraftServiceType}
+        draftMinPrice={s.draftMinPrice}
+        setDraftMinPrice={s.setDraftMinPrice}
+        draftMaxPrice={s.draftMaxPrice}
+        setDraftMaxPrice={s.setDraftMaxPrice}
+        draftMinRating={s.draftMinRating}
+        setDraftMinRating={s.setDraftMinRating}
+        draftDistrict={s.draftDistrict}
+        setDraftDistrict={s.setDraftDistrict}
+        sortBy={s.sortBy}
+        setSortBy={s.setSortBy}
+        onReset={s.resetFilterPanel}
+        onApply={s.applyFilterPanel}
+        activeTab={s.activeTab}
+      />
 
       {/* Location Picker Full-screen Map Modal */}
       {s.locationPickerOpen && (

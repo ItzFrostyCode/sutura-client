@@ -319,12 +319,14 @@ export function useAppointments() {
     if (!custId) { toast.error('Customer not found.'); return; }
     const serviceParam = servId ? `&service_id=${servId}` : '';
     const notesParam = encodeURIComponent(`From appointment. Notes: ${apt.notes || ''}`);
-    router.push(`/dashboard/jobs/new?customer_id=${custId}${serviceParam}&notes=${notesParam}&appointment_id=${apt.id}`);
+    const packageParam = apt.service_package?.id ? `&service_package_id=${apt.service_package.id}` : '';
+    router.push(`/dashboard/jobs/new?customer_id=${custId}${serviceParam}${packageParam}&notes=${notesParam}&appointment_id=${apt.id}`);
   };
 
   // Multi-attribute searching and filtering
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const needsNewTime = (x: Appointment) => x.status === 'pending' && x.outcome === 'rescheduled';
     return appointments.filter(a => {
       const matchStatus = statusFilter === 'all' || a.status === statusFilter;
       const matchType   = typeFilter   === 'all' || a.appointment_type === typeFilter;
@@ -342,7 +344,9 @@ export function useAppointments() {
         a.branch?.name?.toLowerCase().includes(q) ||
         a.assigned_staff?.name?.toLowerCase().includes(q)
       );
-    });
+    })
+      // Requests whose slot a walk-in took go to the top so they are not missed (stable: the rest keep their order).
+      .sort((x, y) => Number(needsNewTime(y)) - Number(needsNewTime(x)));
   }, [appointments, statusFilter, typeFilter, search]);
 
   // Operational metrics

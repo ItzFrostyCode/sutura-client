@@ -19,11 +19,13 @@ import StoreSwitcher from '@/components/shell/StoreSwitcher';
 import SidebarControl, { type SidebarMode } from '@/components/shell/SidebarControl';
 import HelpPanel from '@/components/shell/HelpPanel';
 import HeaderBreadcrumbs from '@/components/shell/HeaderBreadcrumbs';
+import StoreApplicationGate from '@/components/dashboard/StoreApplicationGate';
+import ChangePasswordGate from '@/components/dashboard/ChangePasswordGate';
 
 const SIDEBAR_KEY = 'sutura.sidebar';
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
-  const { user, isAuthenticated, logout, setAuth, token, staffProfile } = useAuthStore();
+  const { user, isAuthenticated, logout, setAuth, token, staffProfile, store } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -107,6 +109,24 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   };
 
   if (!mounted || !isAuthenticated) return null;
+
+  // Admin-issued shop logins start with a temporary password; the API
+  // refuses store-scoped calls until it's replaced.
+  if (user?.must_change_password && token) {
+    return (
+      <ChangePasswordGate
+        loginEmail={user.email}
+        onChanged={() => setAuth({ ...user, must_change_password: false }, token, store ?? undefined, staffProfile ?? undefined)}
+        onLogout={() => { logout(); router.push('/login?as=store'); }}
+      />
+    );
+  }
+
+  // A new shop stays pending until a System Admin approves its application
+  // (/admin/applications). Its owner waits here instead of the workspace.
+  if (isStoreOwner && store && store.status !== 'approved') {
+    return <StoreApplicationGate store={store} onLogout={() => { logout(); router.push('/login?as=store'); }} />;
+  }
 
   const NAV_GROUPS = [
     {
@@ -323,7 +343,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-canvas print:p-0 print:overflow-visible print:bg-white">
+        <main data-scroll-root className="flex-1 overflow-y-auto bg-canvas print:p-0 print:overflow-visible print:bg-white">
           <div className="p-4 print:p-0">
             {children}
           </div>

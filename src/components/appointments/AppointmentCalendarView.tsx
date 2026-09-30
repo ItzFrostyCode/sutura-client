@@ -1,4 +1,5 @@
 import React from 'react';
+import AppointmentSubject from './AppointmentSubject';
 import {
   ChevronLeft, ChevronRight, ArrowLeft, Eye, Plus, Building2, UserCheck, Phone,
   AlertCircle, Globe, Store, RefreshCw
@@ -409,7 +410,7 @@ export default function AppointmentCalendarView({
                         <RescheduledBadge />
                       )}
                       <TypeBadge type={apt.appointment_type} />
-                      <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+                      <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
                       <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
                     </div>
 
@@ -420,15 +421,9 @@ export default function AppointmentCalendarView({
                       </div>
                     )}
 
+                    <AppointmentSubject apt={apt} />
+
                     <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">
-                      {apt.service && (
-                        <span className="font-medium text-ink-body">Service: {apt.service.name}</span>
-                      )}
-                      {apt.garment_category && (
-                        <span className="text-[10px] uppercase font-bold tracking-wide bg-canvas border border-line px-1.5 py-0.2 rounded text-taupe">
-                          {apt.garment_category.replace(/_/g, ' ')}
-                        </span>
-                      )}
                       {apt.customer?.phone && (
                         <span className="flex items-center gap-1 text-ink-faint">
                           <Phone size={11} /> {apt.customer.phone}

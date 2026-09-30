@@ -25,6 +25,8 @@ export interface User {
   profile_picture?: string;
   cover_photo?: string;
   roles: { id: number; name: string }[];
+  /** Admin-issued temporary password not yet replaced (shop accounts). */
+  must_change_password?: boolean;
   bio?: string;
   skills?: string[];
   social_links?: UserSocialLink[];
@@ -39,6 +41,7 @@ export interface Store {
   slug: string;
   store_code?: string;
   status: string;
+  rejection_reason?: string | null;
   business_type?: string;
   repair_requires_downpayment?: boolean;
   fitting_limit_policy?: 'fee' | 'block';

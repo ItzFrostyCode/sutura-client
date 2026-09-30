@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useJobCreateForm } from './form/useJobCreateForm';
 import GarmentDesignSection from './form/GarmentDesignSection';
@@ -11,6 +12,11 @@ import ProductionFulfillmentSection from './form/ProductionFulfillmentSection';
 import PricingScheduleSection from './form/PricingScheduleSection';
 
 export default function JobCreateForm() {
+  // Arrived from a specific page (e.g. a design's "Tailor this Design")? Back and
+  // Cancel return there instead of the jobs list. Dashboard paths only.
+  const returnParam = useSearchParams().get('return');
+  const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//') ? returnParam : '/dashboard/jobs';
+
   const {
     store,
     loading,
@@ -28,6 +34,7 @@ export default function JobCreateForm() {
     setStandardSize,
     appointmentId,
     setAppointmentId,
+    servicePackage,
     effectiveIntakeChannel,
     referenceImages,
     setReferenceImages,
@@ -74,7 +81,7 @@ export default function JobCreateForm() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          href="/dashboard/jobs"
+          href={backHref}
           className="p-2 bg-surface border border-line rounded-lg hover:bg-sunken text-ink-muted hover:text-ink transition-colors cursor-pointer"
         >
           <ArrowLeft size={20} />
@@ -113,6 +120,16 @@ export default function JobCreateForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {servicePackage && (
+            <div className="border border-taupe/40 bg-taupe/5 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-taupe">Combo package · one order for the whole set</p>
+              <p className="text-base font-semibold text-ink mt-1">{servicePackage.name}</p>
+              {(servicePackage.services?.length ?? 0) > 0 && (
+                <p className="text-sm text-ink-body mt-1">Includes: {servicePackage.services!.map(s => s.name).join(', ')}</p>
+              )}
+              <p className="text-xs text-ink-muted mt-1">The total is set to the bundle price; you can still adjust it below.</p>
+            </div>
+          )}
           {/* Section 1: Garment Type & Design */}
           <GarmentDesignSection
             formData={formData}
@@ -191,7 +208,7 @@ export default function JobCreateForm() {
           {/* Action Buttons */}
           <div className="pt-6 border-t border-line flex justify-end gap-4">
             <Link
-              href="/dashboard/jobs"
+              href={backHref}
               className="px-6 py-2.5 rounded-lg font-medium text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
             >
               Cancel

@@ -46,7 +46,6 @@ export default function AccountSettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <PageHeader
-        eyebrow="Your Account"
         title="Account Settings"
         description="Manage your personal details and security preferences."
       />

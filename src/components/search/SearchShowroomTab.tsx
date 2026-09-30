@@ -3,7 +3,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
-import ModelFabricToggle from '@/components/discovery/ModelFabricToggle';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { SearchActiveTab } from './types';
 
@@ -13,8 +12,6 @@ interface SearchShowroomTabProps {
   readonly sortBy: string;
   readonly setSortBy: (val: string) => void;
   readonly loading: boolean;
-  readonly showFabric: boolean;
-  readonly setShowFabric: React.Dispatch<React.SetStateAction<boolean>>;
   readonly items: CatalogItemResult[];
   readonly page: number;
   readonly setPage: React.Dispatch<React.SetStateAction<number>>;
@@ -28,8 +25,6 @@ export default function SearchShowroomTab({
   sortBy,
   setSortBy,
   loading,
-  showFabric,
-  setShowFabric,
   items,
   page,
   setPage,
@@ -90,29 +85,23 @@ export default function SearchShowroomTab({
 
       <div className="flex items-center justify-between mb-3 px-0.5">
         <p className="text-xs text-ink-muted">{loading ? 'Searching designs…' : `${total} design${total === 1 ? '' : 's'} found`}</p>
-
-        {/* Model/Fabric Toggle */}
-        <ModelFabricToggle showFabric={showFabric} setShowFabric={setShowFabric} />
       </div>
 
       {/* Skeleton loading state — mirrors CatalogItemCard's exact structure
-          (aspect-3/4 image, rating row, 2-line name, price row) so nothing
+          (aspect-3/4 image, 2-line name, price, rating|sold, clock turnaround, location) so nothing
           shifts size when the real cards swap in. */}
       {loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
+          {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="bg-surface border border-line overflow-hidden">
               <div className="aspect-3/4 bg-sunken animate-pulse" />
-              <div className="px-1.5 pt-2 pb-2.5">
-                <div className="h-4 w-10 bg-sunken rounded animate-pulse mb-1.5" />
-                <div className="h-[36px] space-y-1">
-                  <div className="h-3.5 w-full bg-sunken rounded animate-pulse" />
-                  <div className="h-3.5 w-2/3 bg-sunken rounded animate-pulse" />
-                </div>
-                <div className="h-4 w-1/2 bg-sunken rounded animate-pulse mt-0.5" />
-                <div className="mt-2 pt-1 border-t border-line/40">
-                  <div className="h-3.5 w-12 bg-sunken rounded animate-pulse" />
-                </div>
+              <div className="p-2 sm:p-2.5 space-y-1.5">
+                <div className="h-3.5 w-full bg-sunken rounded animate-pulse" />
+                <div className="h-3 w-2/3 bg-sunken rounded animate-pulse" />
+                <div className="h-4 w-1/2 bg-sunken rounded animate-pulse" />
+                <div className="h-3 w-3/4 bg-sunken rounded animate-pulse" />
+                <div className="h-3 w-2/3 bg-sunken rounded animate-pulse" />
+                <div className="h-3 w-4/5 bg-sunken rounded animate-pulse pt-1 border-t border-line/40" />
               </div>
             </div>
           ))}
@@ -129,9 +118,9 @@ export default function SearchShowroomTab({
 
       {!loading && items.length > 0 && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
             {items.map((item) => (
-              <CatalogItemCard key={item.id} item={item} showFabric={showFabric} userCoords={userCoords} />
+              <CatalogItemCard key={item.id} item={item} userCoords={userCoords} />
             ))}
           </div>
 

@@ -1,5 +1,7 @@
-import CatalogShowcaseShell from '@/components/catalog/CatalogShowcaseShell';
+import { redirect } from 'next/navigation';
 
+// Reviews merged into the Analytics tab as its own section — old links to
+// this route still land somewhere useful instead of a stale "reviews" tab.
 export default function CatalogItemReviewsPage() {
-  return <CatalogShowcaseShell initialTab="reviews" />;
+  redirect('/dashboard/catalog/analytics');
 }

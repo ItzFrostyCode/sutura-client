@@ -6,6 +6,10 @@ import Image from 'next/image';
 import { Bell, Package, User as UserIcon } from 'lucide-react';
 import type { User } from '@/store/useAuthStore';
 import { getMediaUrl } from '@/lib/media';
+import { useLoginModalStore } from '@/store/useLoginModalStore';
+
+// Matches MobileFrame's mobile/tablet cutover (Tailwind `sm`).
+const TABLET_UP = '(min-width: 640px)';
 
 interface NavActionButtonsProps {
   readonly trackOrderHref: string;
@@ -32,6 +36,19 @@ export default function NavActionButtons({
   isAuthenticated,
   onActionClick,
 }: NavActionButtonsProps) {
+  const openLoginModal = useLoginModalStore((s) => s.open);
+  const isGuest = !(isAuthenticated && user);
+
+  // Guests on tablet/desktop get the Sign In modal over the current page;
+  // phones keep the full-page flow (plain link navigation).
+  const handleAccountClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onActionClick?.();
+    if (isGuest && window.matchMedia(TABLET_UP).matches) {
+      e.preventDefault();
+      openLoginModal();
+    }
+  };
+
   return (
     <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 justify-end">
       {/* 1. Track Order: routes to /account/orders for Customers, /track for Guests */}
@@ -64,10 +81,10 @@ export default function NavActionButtons({
       {/* 3. User / Account: Customer avatar/initial when logged in, outline User icon for guests */}
       <Link
         href={accountHref}
-        aria-label={userTitle}
-        title={userTitle}
-        onClick={onActionClick}
-        className="shrink-0 w-10 h-10 flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
+        aria-label={isGuest ? 'Login / Register' : userTitle}
+        title={isGuest ? 'Login / Register' : userTitle}
+        onClick={handleAccountClick}
+        className={`shrink-0 h-10 flex items-center justify-center gap-2 text-ink hover:bg-sunken rounded-full transition-colors ${isGuest ? 'min-w-10 lg:px-3' : 'w-10'}`}
       >
         {isAuthenticated && user ? (
           user.profile_picture ? (
@@ -87,7 +104,11 @@ export default function NavActionButtons({
             </div>
           )
         ) : (
-          <UserIcon size={19} />
+          <>
+            <UserIcon size={19} />
+            {/* lg+ only: at md the centered logo leaves no room for a label. */}
+            <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">Login / Register</span>
+          </>
         )}
       </Link>
     </div>

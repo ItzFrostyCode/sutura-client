@@ -67,7 +67,7 @@ export default function ServicesModuleTabs({
 
             {typeof count === 'number' && count > 0 && (
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                className={`text-[10px] font-bold px-2 py-0.5 transition-colors ${
                   active
                     ? 'bg-taupe/15 text-taupe'
                     : 'bg-sunken text-ink-muted'
@@ -79,7 +79,7 @@ export default function ServicesModuleTabs({
 
             {/* Bottom stroke line resting right on the header divider line */}
             {active && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-taupe rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-taupe" />
             )}
           </button>
         );

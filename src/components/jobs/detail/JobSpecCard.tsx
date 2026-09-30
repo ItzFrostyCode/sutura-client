@@ -57,7 +57,10 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
 
         <div className="space-y-1">
           <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Service & Category</span>
-          <p className="font-bold text-ink text-sm">{job.service?.name || 'Custom Garment'}</p>
+          <p className="font-bold text-ink text-sm">{job.service_package?.name || job.service?.name || 'Custom Garment'}</p>
+          {job.service_package && (job.service_package.services?.length ?? 0) > 0 && (
+            <p className="text-xs text-ink-body">Package · includes {job.service_package.services!.map(s => s.name).join(', ')}</p>
+          )}
           <p className="text-xs text-ink-muted font-medium">
             Category: <strong className="text-ink-body font-semibold">{resolvedCategory}</strong>
           </p>

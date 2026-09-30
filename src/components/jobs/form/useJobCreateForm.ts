@@ -98,6 +98,8 @@ export function useJobCreateForm() {
 
   const [customerMeasurements, setCustomerMeasurements] = useState<CustomerMeasurement[]>([]);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  // The combo package this order is for (one job order for the whole set).
+  const [servicePackage, setServicePackage] = useState<{ id: number; name: string; bundle_price?: string | null; services?: { id: number; name: string; base_price?: string | null }[] } | null>(null);
   const [linkedAppointmentChannel, setLinkedAppointmentChannel] = useState<'walk_in' | 'online' | null>(null);
   const effectiveIntakeChannel: 'walk_in' | 'online' = appointmentId ? (linkedAppointmentChannel ?? 'walk_in') : 'walk_in';
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
@@ -178,6 +180,7 @@ export function useJobCreateForm() {
           const qNotes = searchParams.get('notes') || '';
           const qAptId = searchParams.get('appointment_id') || '';
           const qCatId = searchParams.get('catalog_item_id') || '';
+          const qPkgId = searchParams.get('service_package_id') || '';
 
           setAppointmentId(qAptId || null);
           setCustomerLocked(!!qCust);
@@ -233,6 +236,21 @@ export function useJobCreateForm() {
                 const apt = (res.data.data || []).find((a: { id: number }) => a.id === Number(qAptId));
                 if (apt?.reference_images?.length) setReferenceImages(apt.reference_images);
                 if (apt?.reference_link) setReferenceLink(apt.reference_link);
+                if (apt?.service_package && String(apt.service_package.id) === qPkgId) {
+                  const pkg = apt.service_package;
+                  setServicePackage(pkg);
+                  // The set is sold at its bundle price (or, with none, the services' total).
+                  const sum = (pkg.services ?? []).reduce((t: number, s: { base_price?: string | null }) => t + (Number(s.base_price) || 0), 0);
+                  const price = pkg.bundle_price ? Number(pkg.bundle_price) : sum;
+                  if (price > 0) setFormData(prev => ({ ...prev, total_amount: String(price) }));
+                }
+                // What the customer already answered on the service's questions when booking.
+                if (apt?.answers && typeof apt.answers === 'object') {
+                  const given = Object.fromEntries(
+                    Object.entries(apt.answers as Record<string, unknown>).filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+                  ) as Record<string, string>;
+                  setCustomFieldValues(prev => ({ ...prev, ...given }));
+                }
                 setLinkedAppointmentChannel(apt?.intake_channel === 'online' ? 'online' : 'walk_in');
                 if (apt?.garment_category) {
                   setFormData(prev => ({ ...prev, garment_category: apt.garment_category }));
@@ -460,6 +478,7 @@ export function useJobCreateForm() {
         },
         appointment_id: appointmentId ? Number(appointmentId) : null,
         catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
+        service_package_id: servicePackage?.id ?? null,
         reference_images: referenceImages.length > 0 ? referenceImages : null,
         reference_link: referenceLink.trim() || null,
         material_source: formData.material_source,
@@ -507,6 +526,7 @@ export function useJobCreateForm() {
     setStandardSize,
     appointmentId,
     setAppointmentId,
+    servicePackage,
     effectiveIntakeChannel,
     referenceImages,
     setReferenceImages,

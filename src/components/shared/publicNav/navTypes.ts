@@ -1,22 +1,14 @@
-export interface AccordionItem {
-  label: string;
-  href?: string;
-  hex?: string;
-}
-
-export interface AccordionSectionDef {
-  key: string;
-  label: string;
-  swatches?: boolean;
-  flat?: boolean;
-  items: AccordionItem[];
-}
-
 export interface CategoryLeaf {
   label: string;
+  /**
+   * The canonical taxonomy key for this leaf — a subcategory slug (men/
+   * women/children groups) or a service_category slug (services group).
+   * Passed to getTaxonomyColumns()/getServiceColumns() instead of
+   * label-string-matching.
+   */
+  key?: string;
   garmentType?: string;
   query?: string;
-  sections?: AccordionSectionDef[];
 }
 
 export interface TopGroup {

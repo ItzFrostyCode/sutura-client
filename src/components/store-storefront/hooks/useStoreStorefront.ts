@@ -9,6 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
 import { Service } from '@/components/services/serviceHelpers';
 import { isStoreOpen } from '@/lib/storeStatus';
+import type { DeptKey } from '../catalog/StoreCatalogFilterSidebar';
 import {
   StoreProfile,
   StoreBranch,
@@ -18,7 +19,6 @@ import {
   PublicStorePost,
   StorefrontReview,
   StorefrontTab,
-  PORTFOLIO_COLOR_OPTIONS,
 } from '../types';
 
 const emptySubscribe = () => () => {};
@@ -46,6 +46,14 @@ export function useStoreStorefront(storeId: string) {
   const [serviceError, setServiceError] = useState('');
   const [isServiceDeleteOpen, setIsServiceDeleteOpen] = useState(false);
   const [deletingServiceId, setDeletingServiceId] = useState<number | null>(null);
+
+  // Owner catalog item deletion — add/edit stay on the dashboard's own
+  // full-page CatalogForm (fabric images, size charts, color variants —
+  // too much to cram into a storefront-tab modal), but delete is a single
+  // confirm step, so it happens right here on the grid.
+  const [isCatalogDeleteOpen, setIsCatalogDeleteOpen] = useState(false);
+  const [deletingCatalogItemId, setDeletingCatalogItemId] = useState<number | null>(null);
+  const [isCatalogDeleteSubmitting, setIsCatalogDeleteSubmitting] = useState(false);
 
   // Operating Hours
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
@@ -179,10 +187,13 @@ export function useStoreStorefront(storeId: string) {
   const [priceSort, setPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [colorFilter, setColorFilter] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
   const [catalogGarmentTypeFilters, setCatalogGarmentTypeFilters] = useState<Set<string>>(new Set());
-  const [showPortfolioFabric, setShowPortfolioFabric] = useState(false);
+  // Department (Men/Women/Kids) — a separate filter dimension from the
+  // specific garment_type checkboxes above, not a shortcut that pre-checks
+  // all of them. Desktop-only (StoreCatalogFilterSidebar); mobile's
+  // PortfolioFilterSheet has no Department section, so no draft counterpart.
+  const [catalogDepartmentFilter, setCatalogDepartmentFilter] = useState<DeptKey>('all');
 
   // Draft filters for modal
   const [isPortfolioFilterOpen, setIsPortfolioFilterOpen] = useState(false);
@@ -193,7 +204,6 @@ export function useStoreStorefront(storeId: string) {
   const [draftPriceSort, setDraftPriceSort] = useState<'' | 'price_asc' | 'price_desc'>('');
   const [draftMinPrice, setDraftMinPrice] = useState('');
   const [draftMaxPrice, setDraftMaxPrice] = useState('');
-  const [draftColorFilter, setDraftColorFilter] = useState('');
   const [draftRatingFilter, setDraftRatingFilter] = useState('');
   const [draftGarmentTypeFilters, setDraftGarmentTypeFilters] = useState<Set<string>>(new Set());
 
@@ -330,23 +340,6 @@ export function useStoreStorefront(storeId: string) {
       .map((v) => ({ id: v, label: v }));
   }, [garmentTypeTally]);
 
-  const availableColors = useMemo(() => {
-    const map = new Map<string, string>();
-    PORTFOLIO_COLOR_OPTIONS.forEach(c => map.set(c.label.toLowerCase(), c.hex));
-    catalogItems.forEach(item => {
-      if (item.color?.trim()) {
-        const cName = item.color.trim();
-        if (!map.has(cName.toLowerCase())) {
-          map.set(cName.toLowerCase(), '#888888');
-        }
-      }
-    });
-    return Array.from(map.entries()).map(([k, hex]) => {
-      const found = PORTFOLIO_COLOR_OPTIONS.find(c => c.label.toLowerCase() === k);
-      return { label: found?.label || (k.charAt(0).toUpperCase() + k.slice(1)), hex };
-    });
-  }, [catalogItems]);
-
   const isStoreCurrentlyOpen = useMemo(() => {
     return isStoreOpen(store?.operating_hours);
   }, [store?.operating_hours]);
@@ -355,44 +348,41 @@ export function useStoreStorefront(storeId: string) {
     setDraftPriceSort(priceSort);
     setDraftMinPrice(minPrice);
     setDraftMaxPrice(maxPrice);
-    setDraftColorFilter(colorFilter);
     setDraftRatingFilter(ratingFilter);
     setDraftGarmentTypeFilters(new Set(catalogGarmentTypeFilters));
     setIsPortfolioFilterOpen(true);
-  }, [priceSort, minPrice, maxPrice, colorFilter, ratingFilter, catalogGarmentTypeFilters]);
+  }, [priceSort, minPrice, maxPrice, ratingFilter, catalogGarmentTypeFilters]);
 
   const applyFilterPanel = useCallback(() => {
     setPriceSort(draftPriceSort);
     setMinPrice(draftMinPrice);
     setMaxPrice(draftMaxPrice);
-    setColorFilter(draftColorFilter);
     setRatingFilter(draftRatingFilter);
     setCatalogGarmentTypeFilters(new Set(draftGarmentTypeFilters));
     setIsPortfolioFilterOpen(false);
-  }, [draftPriceSort, draftMinPrice, draftMaxPrice, draftColorFilter, draftRatingFilter, draftGarmentTypeFilters]);
+  }, [draftPriceSort, draftMinPrice, draftMaxPrice, draftRatingFilter, draftGarmentTypeFilters]);
 
   const resetFilterPanel = useCallback(() => {
     setDraftPriceSort('');
     setDraftMinPrice('');
     setDraftMaxPrice('');
-    setDraftColorFilter('');
     setDraftRatingFilter('');
     setDraftGarmentTypeFilters(new Set());
     setPriceSort('');
     setMinPrice('');
     setMaxPrice('');
-    setColorFilter('');
     setRatingFilter('');
     setCatalogGarmentTypeFilters(new Set());
+    setCatalogDepartmentFilter('all');
   }, []);
 
   const activeFilterCount = useMemo(() => {
     return (priceSort ? 1 : 0) +
       (minPrice || maxPrice ? 1 : 0) +
-      (colorFilter ? 1 : 0) +
       (ratingFilter ? 1 : 0) +
+      (catalogDepartmentFilter !== 'all' ? 1 : 0) +
       catalogGarmentTypeFilters.size;
-  }, [priceSort, minPrice, maxPrice, colorFilter, ratingFilter, catalogGarmentTypeFilters]);
+  }, [priceSort, minPrice, maxPrice, ratingFilter, catalogDepartmentFilter, catalogGarmentTypeFilters]);
 
   const toggleGarmentType = useCallback((v: string) => {
     setCatalogGarmentTypeFilters((prev) => {
@@ -633,6 +623,22 @@ export function useStoreStorefront(storeId: string) {
     }
   };
 
+  const confirmDeleteCatalogItem = async () => {
+    if (!authStore || !deletingCatalogItemId) return;
+    setIsCatalogDeleteSubmitting(true);
+    try {
+      await api.delete(`/stores/${authStore.id}/catalog/${deletingCatalogItemId}`);
+      setCatalogItems(prev => prev.filter(i => i.id !== deletingCatalogItemId));
+      setIsCatalogDeleteOpen(false);
+      setDeletingCatalogItemId(null);
+      toast.success('Item deleted.');
+    } catch {
+      toast.error('Failed to delete item.');
+    } finally {
+      setIsCatalogDeleteSubmitting(false);
+    }
+  };
+
   const confirmDeleteService = async () => {
     if (!authStore || !deletingServiceId) return;
     setIsServiceSubmitting(true);
@@ -705,7 +711,7 @@ export function useStoreStorefront(storeId: string) {
       setPostCaption('');
       setPostServiceId('');
       setIsAddingPost(false);
-      toast.success('Posted! Customers can now see this on your storefront.');
+      toast.success('Posted! Customers can now see this on your store profile.');
     } catch {
       toast.error('Failed to publish post.');
     } finally {
@@ -732,6 +738,29 @@ export function useStoreStorefront(storeId: string) {
       toast.success('Review deleted.');
     } catch {
       toast.error('Failed to delete review.');
+    }
+  };
+
+  const handleReplyToReview = async (reviewId: number, reply: string): Promise<boolean> => {
+    if (!authStore) return false;
+    try {
+      const res = await api.put(`/stores/${authStore.id}/reviews/${reviewId}`, { reply });
+      setReviews(prev => prev.map(r => (r.id === reviewId ? { ...r, reply: res.data.data.reply } : r)));
+      toast.success('Reply saved.');
+      return true;
+    } catch {
+      toast.error('Failed to save reply.');
+      return false;
+    }
+  };
+
+  const handleToggleFeaturedReview = async (reviewId: number, isFeatured: boolean) => {
+    if (!authStore) return;
+    try {
+      const res = await api.put(`/stores/${authStore.id}/reviews/${reviewId}`, { is_featured: isFeatured });
+      setReviews(prev => prev.map(r => (r.id === reviewId ? { ...r, is_featured: res.data.data.is_featured } : r)));
+    } catch {
+      toast.error('Failed to update review.');
     }
   };
 
@@ -857,6 +886,7 @@ export function useStoreStorefront(storeId: string) {
     isBookmarked,
     setIsBookmarked,
     isStoreCurrentlyOpen,
+    fetchStore,
 
     // Header & Navigation
     tabBarRef,
@@ -867,20 +897,25 @@ export function useStoreStorefront(storeId: string) {
     catalogSearch,
     setCatalogSearch,
     highlightedItemId,
+    isCatalogDeleteOpen,
+    setIsCatalogDeleteOpen,
+    deletingCatalogItemId,
+    setDeletingCatalogItemId,
+    isCatalogDeleteSubmitting,
+    confirmDeleteCatalogItem,
     priceSort,
     setPriceSort,
     minPrice,
     setMinPrice,
     maxPrice,
     setMaxPrice,
-    colorFilter,
-    setColorFilter,
     ratingFilter,
     setRatingFilter,
     catalogGarmentTypeFilters,
     toggleGarmentType,
-    showPortfolioFabric,
-    setShowPortfolioFabric,
+    setCatalogGarmentTypeFilters,
+    catalogDepartmentFilter,
+    setCatalogDepartmentFilter,
 
     // Portfolio filter modal
     isPortfolioFilterOpen,
@@ -895,15 +930,12 @@ export function useStoreStorefront(storeId: string) {
     setDraftMinPrice,
     draftMaxPrice,
     setDraftMaxPrice,
-    draftColorFilter,
-    setDraftColorFilter,
     draftRatingFilter,
     setDraftRatingFilter,
     draftGarmentTypeFilters,
     setDraftGarmentTypeFilters,
     garmentTypeTally,
     garmentTypeOptions,
-    availableColors,
 
     // Services
     services,
@@ -966,6 +998,8 @@ export function useStoreStorefront(storeId: string) {
     reviewFilterRating,
     setReviewFilterRating,
     handleDeleteReview,
+    handleReplyToReview,
+    handleToggleFeaturedReview,
     isRatingModalOpen,
     setIsRatingModalOpen,
     ratingValue,

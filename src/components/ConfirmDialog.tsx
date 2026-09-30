@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import OverlayPortal from '@/components/shared/OverlayPortal';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface ConfirmDialogProps {
   readonly isOpen: boolean;
@@ -34,10 +36,10 @@ export default function ConfirmDialog({
   busy = false,
 }: ConfirmDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
     panelRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -45,14 +47,14 @@ export default function ConfirmDialog({
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+    <OverlayPortal>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <button
         type="button"
         aria-label="Close dialog"
@@ -65,8 +67,7 @@ export default function ConfirmDialog({
         role="alertdialog"
         aria-modal="true"
         tabIndex={-1}
-        className="relative bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden w-full max-w-sm p-5 focus:outline-none animate-rise"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="relative bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-sm max-h-full overflow-y-auto overscroll-contain p-5 focus:outline-none animate-rise"
       >
         <div className="flex items-start gap-3.5">
           {tone === 'danger' && (
@@ -102,5 +103,6 @@ export default function ConfirmDialog({
         </div>
       </div>
     </div>
+    </OverlayPortal>
   );
 }

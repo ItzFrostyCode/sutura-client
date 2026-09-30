@@ -1,5 +1,6 @@
 'use client';
 
+import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,6 +23,7 @@ interface RecentService {
   image_url: string | null;
   base_price: number | null;
   estimated_days: number | null;
+  estimated_days_max?: number | null;
   reviews_count: number;
   reviews_avg_rating: number | null;
   store: { name: string; slug: string } | null;
@@ -146,7 +148,7 @@ export default function RecentlyViewedPage() {
                       <span className="text-xs font-bold text-ink truncate">{priceDisplay}</span>
                       <span className="flex items-center gap-1 text-[10px] text-ink-muted font-medium shrink-0 ml-1">
                         <Clock size={10} className="text-taupe shrink-0" />
-                        <span>Est. {service.estimated_days ? `${service.estimated_days}d` : '7-10d'}</span>
+                        <span>{service.estimated_days ? 'Est. ' : ''}{formatServiceTurnaround(service.estimated_days, service.estimated_days_max)}</span>
                       </span>
                     </div>
                   </div>

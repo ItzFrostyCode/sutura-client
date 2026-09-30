@@ -109,7 +109,6 @@ export default function SupportListView({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Help Desk"
         title="Support Tickets"
         description={<>Submit issues, update requests, or questions to the SUTURA admin team.{openCount > 0 && <span className="text-taupe font-semibold"> {openCount} active ticket{openCount > 1 ? 's' : ''}.</span>}</>}
         actions={

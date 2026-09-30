@@ -17,6 +17,8 @@ interface StoreReviewsTabProps {
   readonly myReview: { id?: number; rating: number; comment?: string | null } | null;
   readonly onOpenRatingModal: () => void;
   readonly onDeleteReview: (id: number) => void;
+  readonly onReplyToReview: (id: number, reply: string) => Promise<boolean>;
+  readonly onToggleFeaturedReview: (id: number, isFeatured: boolean) => void;
 }
 
 export default function StoreReviewsTab({
@@ -32,6 +34,8 @@ export default function StoreReviewsTab({
   myReview,
   onOpenRatingModal,
   onDeleteReview,
+  onReplyToReview,
+  onToggleFeaturedReview,
 }: StoreReviewsTabProps) {
   return (
     <section aria-labelledby="store-reviews-title" className="space-y-3">
@@ -100,6 +104,8 @@ export default function StoreReviewsTab({
               review={review}
               isOwnerViewingOwnStore={isOwnerViewingOwnStore}
               onDeleteReview={onDeleteReview}
+              onReplyToReview={onReplyToReview}
+              onToggleFeatured={onToggleFeaturedReview}
             />
           ))}
 

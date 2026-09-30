@@ -8,7 +8,7 @@ import { UploadItem } from './supportHelpers';
 const SUBJECT_OPTIONS = [
   'Home', 'Appointments', 'Collect Payments', 'Job Orders', 'Customers',
   'Design Catalog', 'Services', 'Staff', 'Reports & Insights',
-  'Branches', 'My Storefront', 'Billing & Plans', 'Account Settings',
+  'Branches', 'My Store Profile', 'Billing & Plans', 'Account Settings',
   'Log Out', 'Notifications',
 ];
 

@@ -1,60 +1,101 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, Clock, MapPin } from 'lucide-react';
+import { Store, Star, Clock, MapPin, Pencil, Trash2 } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemDistanceInfo } from '@/lib/customerLocation';
+import { formatEstimatedTurnaround } from '@/lib/turnaroundHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
-import { resolveFabricImage, getFabricLabel, getColorHex } from '@/lib/fabricHelper';
-
 /**
- * The one catalog-item card style every customer-facing browse surface
- * (landing page's Catalog Showroom, /search's results grid) should use —
- * matches store/[store_id]'s own catalog tab card exactly (aspect-3/4,
- * bordered uppercase material badge on hover, rating-or-est.-days row,
- * name + price) so a visitor doesn't land somewhere that looks like a
- * different product. Clicking navigates straight to that item's real page
- * (store/[store_id]/catalog/[item_id]) — same destination the storefront's
- * own catalog tab uses.
+ * The single catalog-item card style every customer-facing browse surface
+ * (landing page's Catalog Showroom, /search's results grid, store profile catalog) uses.
+ * Sequential structure per user specification:
+ * 1. Image Thumbnail
+ * 2. Name
+ * 3. Price
+ * 4. Star (Average Rating) | (count) sold
+ * 5. Clock {estimated exact count days day-day/monthday - day}
+ * 6. Location
  */
 export default function CatalogItemCard({
   item,
-  showFabric = false,
   userCoords,
+  canManage,
+  onDelete,
+  hideLocation,
+  hrefOverride,
+  isPaused,
 }: {
   readonly item: CatalogItemResult;
-  /** Model/Fabric toggle on /search — seamlessly swaps between the model wearing
-   * the garment and the high-resolution fabric texture swatch. */
-  readonly showFabric?: boolean;
   readonly userCoords?: { lat: number; lng: number } | null;
+  /** Owner viewing their own store's catalog — shows an edit/delete overlay. */
+  readonly canManage?: boolean;
+  readonly onDelete?: (id: number) => void;
+  /** Dashboard grids: every item is this store's own, so location is a given. */
+  readonly hideLocation?: boolean;
+  /** Dashboard grids link to the item's own management page, not its public storefront page. */
+  readonly hrefOverride?: string;
+  /** Owner-only: this item is currently paused (is_active === false). */
+  readonly isPaused?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
   const primaryImage = item.images.find((img) => img.is_primary)?.image_url ?? item.images[0]?.image_url;
-  const fabricImage = resolveFabricImage(item);
-  const displayImage = imgError ? (fabricImage || primaryImage) : (showFabric ? (fabricImage || primaryImage) : primaryImage);
+  const displayImage = imgError ? primaryImage : primaryImage;
   const gate = useGuestGatedHref();
   const distInfo = getItemDistanceInfo(item, userCoords);
 
   useEffect(() => {
     setImgError(false);
-  }, [item.id, showFabric]);
+  }, [item.id]);
+
+  const turnaroundText = formatEstimatedTurnaround(item.estimated_days);
+  const branch = item.store?.branches?.[0];
+  const locationText = branch?.district
+    ? `${branch.district}, Davao City`
+    : (branch?.city || item.store?.name || 'Davao City');
 
   return (
-    <Link
-      href={gate(item.store ? `/store/${item.store.slug}/catalog/${item.id}` : '/search')}
-      className="group flex flex-col justify-between w-full h-full bg-surface border border-line overflow-hidden hover:border-line-strong transition-colors"
-    >
+    <div className="group relative w-full h-full">
+      {canManage && (
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+          <Link
+            href={`/dashboard/catalog/${item.id}`}
+            aria-label="Edit catalog item"
+            className="w-7 h-7 flex items-center justify-center bg-white/90 hover:bg-white text-ink border border-line shadow-xs transition-colors"
+          >
+            <Pencil size={12} />
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete?.(item.id); }}
+            aria-label="Delete catalog item"
+            className="w-7 h-7 flex items-center justify-center bg-white/90 hover:bg-rose-50 text-danger border border-line shadow-xs transition-colors cursor-pointer"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      )}
+      <Link
+        href={hrefOverride ?? gate(item.store ? `/store/${item.store.slug}/catalog/${item.id}` : '/search')}
+        className="flex flex-col justify-between w-full h-full bg-surface border border-line overflow-hidden hover:border-line-strong transition-colors"
+      >
+      {/* 1. Image Thumbnail */}
       <div className="aspect-3/4 bg-sunken relative overflow-hidden shrink-0">
+        {isPaused && (
+          <div className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 bg-ink/85 text-white text-[9px] font-bold uppercase tracking-wider">
+            Paused
+          </div>
+        )}
         {displayImage ? (
           <Image
             key={displayImage}
             src={getMediaUrl(displayImage)}
-            alt={`${item.name}${showFabric ? ' - Fabric Swatch' : ''}`}
+            alt={item.name}
             fill
             onError={() => setImgError(true)}
-            className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+            className={`object-cover object-top transition-transform duration-700 group-hover:scale-105 ${isPaused ? 'grayscale opacity-60' : ''}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -62,80 +103,72 @@ export default function CatalogItemCard({
           </div>
         )}
 
-        {/* Distance Badge on image — instant proximity awareness */}
-        {distInfo && (
-          <div className="absolute top-1.5 left-1.5 z-10 bg-ink/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            <MapPin size={9} className="text-white/80 shrink-0" />
-            <span className="truncate max-w-[110px]">{distInfo.label}</span>
-          </div>
-        )}
-
-        {/* Fabric Swatch indicator banner on the image */}
-        {showFabric && (
-          <div className="absolute bottom-0 inset-x-0 z-10 bg-black/75 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-1 flex items-center justify-between">
-            <span className="truncate">{getFabricLabel(item)}</span>
-            <span className="text-[9px] uppercase tracking-wider text-taupe font-bold shrink-0 ml-1">Fabric</span>
-          </div>
-        )}
-
-        {/* Hover overlay — matches the storefront's own catalog card exactly:
-            a bordered, uppercase, tracked-out material badge, not plain text. */}
+        {/* Hover overlay with material badge */}
         <div className="absolute inset-0 bg-surface/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-2 text-center">
           <span className="text-[10px] font-medium tracking-widest uppercase text-ink border border-ink px-3 py-1.5">
-            {showFabric ? `Fabric: ${getFabricLabel(item)}` : (item.material || 'View Details')}
+            {item.material || 'View Details'}
           </span>
         </div>
       </div>
 
-      <div className="px-1.5 pt-2 pb-2.5 flex-1 flex flex-col justify-between">
-        <div>
-          {item.reviews_avg_rating && Number(item.reviews_avg_rating) > 0 ? (
-            <div className="flex items-center gap-1 mb-1.5 h-4">
-              <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
-              <span className="text-[11px] font-semibold text-ink">{Number(item.reviews_avg_rating).toFixed(1)}</span>
-              {item.reviews_count > 0 && <span className="text-[11px] text-ink-faint">({item.reviews_count})</span>}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 mb-1.5 text-ink-faint h-4">
-              <Clock size={11} />
-              <span className="text-[11px]">Est. {item.estimated_days ?? 7}d</span>
-            </div>
-          )}
-
-          <p className="text-[13px] font-semibold text-ink line-clamp-2 leading-snug group-hover:text-taupe transition-colors h-[36px]">
+      {/* Card Info Body - Sequential order per user spec */}
+      <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between gap-1.5">
+        <div className="space-y-1">
+          {/* 2. Name */}
+          <h3 className="text-[13px] font-semibold text-ink line-clamp-2 leading-snug group-hover:text-taupe transition-colors min-h-[36px]">
             {item.name}
+          </h3>
+
+          {/* 3. Price */}
+          <p className="text-sm font-bold text-ink">
+            {item.price !== null && item.price !== undefined
+              ? `₱${Number(item.price).toLocaleString()}`
+              : 'Custom Quote'}
           </p>
 
-          <div className="h-4 flex items-center text-[11px] text-ink-faint mt-0.5 overflow-hidden">
-            {item.garment_type ? (
-              <span className="truncate flex items-center gap-1">
-                <span className="capitalize">{item.garment_type}</span>
-                {item.color && (
-                  <span className="inline-flex items-center gap-1 shrink-0">
-                    <span>•</span>
-                    <span
-                      className="w-2 h-2 rounded-full border border-black/20 shrink-0"
-                      style={{ backgroundColor: getColorHex(item.color) }}
-                    />
-                    <span className="capitalize">{item.color}</span>
-                  </span>
-                )}
-                {item.material && !showFabric && (
-                  <span className="truncate">• {item.material}</span>
-                )}
+          {/* 4. Star (Average Rating) | (count) sold */}
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+            <div className="flex items-center gap-1 shrink-0">
+              <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
+              <span className="font-semibold text-ink">
+                {item.reviews_avg_rating && Number(item.reviews_avg_rating) > 0
+                  ? Number(item.reviews_avg_rating).toFixed(1)
+                  : '0.0'}
               </span>
-            ) : (
-              <span className="text-transparent">Custom</span>
-            )}
+            </div>
+            <span className="text-ink-faint">|</span>
+            <span className="truncate">{item.order_count ?? 0} sold</span>
+          </div>
+
+          {/* 5. Clock {estimated exact count days day-day/monthday - day} */}
+          <div
+            className="flex items-center gap-1 text-[11px] text-ink-muted truncate"
+            title={turnaroundText}
+          >
+            <Clock size={11} className="text-taupe shrink-0" />
+            <span className="truncate">{turnaroundText}</span>
           </div>
         </div>
 
-        {item.price !== null && (
-          <div className="mt-2 pt-1 border-t border-line/40">
-            <p className="text-sm font-bold text-ink">₱{Number(item.price).toLocaleString()}</p>
+        {/* 6. Location on left, KM on right — skipped in the shop owner's
+            own dashboard grid, where every item is obviously this store's
+            own and repeating its location on every card is just noise. */}
+        {!hideLocation && (
+          <div className="flex items-center justify-between gap-1 text-[11px] text-ink-faint pt-1 border-t border-line/50">
+            <div className="flex items-center gap-1 min-w-0 truncate">
+              <MapPin size={11} className="text-taupe/70 shrink-0" />
+              <span className="truncate">{locationText}</span>
+            </div>
+            {distInfo ? (
+              <span className="shrink-0 text-ink-muted font-medium text-[10px] pl-1">
+                {distInfo.distanceKm.toFixed(1)} km
+              </span>
+            ) : null}
           </div>
         )}
       </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
+

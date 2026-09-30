@@ -131,7 +131,7 @@ export default function OrderDiscountModal({
       title={
         <div className="flex items-center gap-2 text-ink">
           <Tag className="text-rose-600 shrink-0" size={18} />
-          <span className="font-bold">Apply Discount — Order #ORD-{order.id}</span>
+          <span className="font-bold">Apply Discount — Order {order.order_number ?? `#${order.id}`}</span>
         </div>
       }
       maxWidth="max-w-lg"

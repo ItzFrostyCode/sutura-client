@@ -2,11 +2,12 @@
 
 import { use, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Loader2, MapPin, Search, X, SlidersHorizontal } from 'lucide-react';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
-import ServiceFormModal from '@/components/services/ServiceFormModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
+import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
 import EditOperatingHoursModal from '@/components/profile/EditOperatingHoursModal';
 import PostImageLightbox from '@/components/profile/PostImageLightbox';
 import { getSocialUrl } from '@/components/store-storefront/storeStorefrontHelpers';
@@ -14,7 +15,9 @@ import { getSocialUrl } from '@/components/store-storefront/storeStorefrontHelpe
 import { PublicStoreProfilePageProps } from '@/components/store-storefront/types';
 import { useStoreStorefront } from '@/components/store-storefront/hooks/useStoreStorefront';
 import PublicNav from '@/components/shared/PublicNav';
+import { useShopViewingOwnStore } from '@/hooks/useShopAccount';
 import StoreHeroHeader from '@/components/store-storefront/header/StoreHeroHeader';
+import StoreOwnerTopBar from '@/components/store-storefront/header/StoreOwnerTopBar';
 import StoreCatalogTab from '@/components/store-storefront/tabs/StoreCatalogTab';
 import StoreCatalogFilterSidebar from '@/components/store-storefront/catalog/StoreCatalogFilterSidebar';
 import StoreServicesTab from '@/components/store-storefront/tabs/StoreServicesTab';
@@ -40,6 +43,11 @@ const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
 function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePageProps>) {
   const { store_id: storeId } = use(params);
   const s = useStoreStorefront(storeId);
+  const router = useRouter();
+  // Owner / branch manager / staff looking at their own Store Profile: no
+  // customer header or back arrow — the hero's Dashboard button is their
+  // way back, and ShopRouteGuard blocks the customer pages anyway.
+  const isShopView = useShopViewingOwnStore(storeId);
 
   if (s.loading) {
     return (
@@ -55,8 +63,17 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
 
   return (
     <div className="flex-1 flex flex-col bg-surface text-ink selection:bg-sunken selection:text-indigo-900 relative">
-      {/* Header — same PublicNav used on the landing page, not a page-specific header */}
-      <PublicNav />
+      {/* Header — same PublicNav used on the landing page for customers;
+          the owner/manager/staff viewing their own store gets a sticky
+          Dashboard + Edit + notifications/account bar instead. */}
+      {isShopView ? (
+        <StoreOwnerTopBar
+          canEditProfile={s.isOwnerViewingOwnStore}
+          onEditProfile={() => s.setActiveTab('about')}
+        />
+      ) : (
+        <PublicNav />
+      )}
 
       {/* Hero Banner, Avatar, Details & Tab Bar */}
       <StoreHeroHeader
@@ -65,7 +82,8 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         isStoreCurrentlyOpen={s.isStoreCurrentlyOpen}
         activeBranch={s.activeBranch}
         isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
-        onEditProfile={() => s.router.push('/dashboard/settings')}
+        isShopViewingOwnStore={isShopView}
+        onEditProfile={() => s.setActiveTab('about')}
         myReview={s.myReview}
         isBookmarked={s.isBookmarked}
         setIsBookmarked={s.setIsBookmarked}
@@ -78,6 +96,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         setActiveTab={s.setActiveTab}
         tabBarRef={s.tabBarRef}
         onOpenMap={() => s.setIsAllBranchesMapOpen(true)}
+        onImagesSaved={s.fetchStore}
       />
 
       {/* Main Tab Content */}
@@ -167,21 +186,25 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
                 catalogSearch={s.catalogSearch}
                 catalogGarmentTypeFilters={s.catalogGarmentTypeFilters}
                 toggleGarmentType={s.toggleGarmentType}
+                departmentFilter={s.catalogDepartmentFilter}
+                setDepartmentFilter={s.setCatalogDepartmentFilter}
                 minPrice={s.minPrice}
                 setMinPrice={s.setMinPrice}
                 maxPrice={s.maxPrice}
                 setMaxPrice={s.setMaxPrice}
                 priceSort={s.priceSort}
                 setPriceSort={s.setPriceSort}
-                colorFilter={s.colorFilter}
-                setColorFilter={s.setColorFilter}
                 ratingFilter={s.ratingFilter}
                 setRatingFilter={s.setRatingFilter}
                 resetFilterPanel={s.resetFilterPanel}
-                showPortfolioFabric={s.showPortfolioFabric}
-                setShowPortfolioFabric={s.setShowPortfolioFabric}
                 highlightedItemId={s.highlightedItemId}
                 storeId={storeId}
+                store={s.store}
+                isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
+                onDeleteItem={(id) => {
+                  s.setDeletingCatalogItemId(id);
+                  s.setIsCatalogDeleteOpen(true);
+                }}
               />
             </div>
 
@@ -195,14 +218,13 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
                 setMinPrice={s.setMinPrice}
                 maxPrice={s.maxPrice}
                 setMaxPrice={s.setMaxPrice}
-                colorFilter={s.colorFilter}
-                setColorFilter={s.setColorFilter}
-                availableColors={s.availableColors}
                 ratingFilter={s.ratingFilter}
                 setRatingFilter={s.setRatingFilter}
                 garmentTypeTally={s.garmentTypeTally}
                 garmentTypeFilters={s.catalogGarmentTypeFilters}
                 toggleGarmentType={s.toggleGarmentType}
+                departmentFilter={s.catalogDepartmentFilter}
+                setDepartmentFilter={s.setCatalogDepartmentFilter}
                 onReset={s.resetFilterPanel}
               />
             </div>
@@ -219,12 +241,14 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
             serviceSearch={s.serviceSearch}
             setServiceSearch={s.setServiceSearch}
             isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
-            onAddService={() => {
-              s.setEditingServiceId(null);
-              s.setServiceError('');
-              s.setIsServiceModalOpen(true);
+            onAddService={() => router.push('/dashboard/services/new')}
+            onEditService={(id) => router.push(`/dashboard/services/${id}`)}
+            onDeleteService={(id) => {
+              s.setDeletingServiceId(id);
+              s.setIsServiceDeleteOpen(true);
             }}
             user={s.user}
+            store={s.store}
           />
         )}
 
@@ -234,6 +258,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
             isStoreCurrentlyOpen={s.isStoreCurrentlyOpen}
             isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
             onOpenHoursModal={() => s.setIsHoursModalOpen(true)}
+            onProfileSaved={s.fetchStore}
           />
         )}
 
@@ -301,6 +326,8 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
               s.setIsRatingModalOpen(true);
             }}
             onDeleteReview={s.handleDeleteReview}
+            onReplyToReview={s.handleReplyToReview}
+            onToggleFeaturedReview={s.handleToggleFeaturedReview}
           />
         )}
       </main>
@@ -317,9 +344,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         setDraftMinPrice={s.setDraftMinPrice}
         draftMaxPrice={s.draftMaxPrice}
         setDraftMaxPrice={s.setDraftMaxPrice}
-        draftColorFilter={s.draftColorFilter}
-        setDraftColorFilter={s.setDraftColorFilter}
-        availableColors={s.availableColors}
         draftRatingFilter={s.draftRatingFilter}
         setDraftRatingFilter={s.setDraftRatingFilter}
         garmentTypeOptions={s.garmentTypeOptions}
@@ -412,20 +436,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
       {/* Owner Inline Management Modals */}
       {s.isOwnerViewingOwnStore && (
         <>
-          <ServiceFormModal
-            isOpen={s.isServiceModalOpen}
-            onClose={() => {
-              s.setIsServiceModalOpen(false);
-              s.setEditingServiceId(null);
-              s.setServiceError('');
-            }}
-            editingId={s.editingServiceId}
-            onSubmit={s.handleServiceSubmit}
-            isSubmitting={s.isServiceSubmitting}
-            error={s.serviceError}
-            editingService={s.editingServiceId ? s.ownerServices.find((item) => item.id === s.editingServiceId) || null : null}
-          />
-
           <ServiceDeleteModal
             isOpen={s.isServiceDeleteOpen}
             onClose={() => {
@@ -434,6 +444,16 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
             }}
             onConfirm={s.confirmDeleteService}
             isSubmitting={s.isServiceSubmitting}
+          />
+
+          <CatalogDeleteModal
+            isOpen={s.isCatalogDeleteOpen}
+            onClose={() => {
+              s.setIsCatalogDeleteOpen(false);
+              s.setDeletingCatalogItemId(null);
+            }}
+            onConfirm={s.confirmDeleteCatalogItem}
+            isSubmitting={s.isCatalogDeleteSubmitting}
           />
 
           <EditOperatingHoursModal

@@ -9,7 +9,7 @@ export default function LegacyDashboardPortfolioEditRedirect({ params }: Readonl
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(`/dashboard/catalog/${id}/edit`);
+    router.replace(`/dashboard/catalog/${id}`);
   }, [id, router]);
 
   return (

@@ -26,7 +26,32 @@ export interface Appointment {
   appointment_type: AppointmentType;
   intake_channel?: 'walk_in' | 'online';
   customer: { id: number; name: string; email?: string; phone?: string | null };
-  service: { id: number; name: string } | null;
+  service: {
+    id: number;
+    name: string;
+    service_category?: string | null;
+    service_leaf_type?: string | null;
+  } | null;
+  // The catalog design this booking was made from (its page's "Book an
+  // Appointment" button), with the size/color picked there.
+  catalog_item?: {
+    id: number;
+    name: string;
+    department?: string | null;
+    subcategory?: string | null;
+    garment_structure?: string | null;
+    garment_type?: string | null;
+  } | null;
+  // The combo package this booking came from, with what it includes.
+  service_package?: {
+    id: number;
+    name: string;
+    bundle_price?: string | null;
+    service_category?: string | null;
+    services?: { id: number; name: string; base_price?: string | null }[];
+  } | null;
+  selected_size?: string | null;
+  selected_color?: string | null;
   branch: { id: number; name: string } | null;
   scheduled_at: string;
   duration_minutes: number;
@@ -46,6 +71,9 @@ export interface Appointment {
   notes: string;
   reference_images?: string[] | null;
   reference_link?: string | null;
+  // What the shop shared back once the appointment was accepted.
+  shared_link?: string | null;
+  shared_images?: string[] | null;
   store_branch_id?: number | null;
   job_order_id?: number | null;
   job_order?: { id: number; order_number: string } | null;
@@ -120,7 +148,17 @@ export function TypeBadge({ type }: { readonly type: AppointmentType }) {
  * this owner hasn't made), it just makes an appointment that's silently
  * sitting unresolved actually visible in a scan of the list/calendar.
  */
-export function StatusBadge({ status, scheduledAt }: { readonly status: AppointmentStatus; readonly scheduledAt?: string }) {
+export function StatusBadge({ status, scheduledAt, outcome }: { readonly status: AppointmentStatus; readonly scheduledAt?: string; readonly outcome?: Appointment['outcome'] }) {
+  // A walk-in took this request's slot: it is still pending, but the customer has to pick another time.
+  if (status === 'pending' && outcome === 'rescheduled') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 bg-amber-50 text-amber-800 border-amber-300">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+        <span>Needs new time</span>
+      </span>
+    );
+  }
+
   const isOverdue = (status === 'pending' || status === 'confirmed') && !!scheduledAt && new Date(scheduledAt) < new Date();
 
   if (isOverdue) {
@@ -173,7 +211,7 @@ export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'onli
           ? 'bg-sky-50 text-sky-700 border-sky-200'
           : 'bg-stone-50 text-stone-600 border-stone-200'
       }`}
-      title={isOnline ? 'Booked online by customer via storefront' : 'Walk-in booking entered in atelier'}
+      title={isOnline ? 'Booked online by customer via store profile' : 'Walk-in booking entered in atelier'}
     >
       {isOnline ? <Globe size={11} className="text-sky-600 shrink-0" /> : <Store size={11} className="text-stone-500 shrink-0" />}
       <span>{isOnline ? 'Online Booking' : 'Walk-in'}</span>

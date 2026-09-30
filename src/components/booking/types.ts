@@ -68,6 +68,7 @@ export interface PackageInfo {
   id: number;
   name: string;
   bundle_price: string | null;
+  service_category?: string | null;
   services: { id: number; name: string; base_price: string | null }[];
 }
 

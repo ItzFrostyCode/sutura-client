@@ -7,6 +7,9 @@ import {
 } from './appointmentHelpers';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { serviceCategoryPath } from '@/lib/canonicalTaxonomy';
+import AppointmentSubject from './AppointmentSubject';
+import AppointmentCustomerToolkit from './AppointmentCustomerToolkit';
 
 interface AppointmentActionModalsProps {
   // Modal visibility & active records
@@ -50,6 +53,8 @@ interface AppointmentActionModalsProps {
   readonly onCreateJob: (apt: Appointment) => void;
   readonly onAccommodateEarly?: (aptId: number) => Promise<void>;
   readonly onAskToWait?: (aptId: number) => Promise<void>;
+  /** Called after the shop shares something with the customer, so the list refreshes. */
+  readonly onAppointmentUpdated?: () => void;
 }
 
 export default function AppointmentActionModals({
@@ -61,7 +66,7 @@ export default function AppointmentActionModals({
   todayStr, minTimeFor,
   isSubmitting, actionLoadingId,
   onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob,
-  onAccommodateEarly, onAskToWait
+  onAccommodateEarly, onAskToWait, onAppointmentUpdated
 }: AppointmentActionModalsProps) {
 
   const { store } = useAuthStore();
@@ -555,6 +560,10 @@ export default function AppointmentActionModals({
                   )}
                 </div>
               )}
+              {(viewApt.catalog_item || viewApt.service_package) && (
+                // Design / package only here — the Service block right below keeps its own link.
+                <AppointmentSubject apt={{ ...viewApt, service: null }} storeSlug={store?.slug} variant="full" />
+              )}
               <div>
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Service</p>
                 {viewApt.service && store?.slug ? (
@@ -568,6 +577,9 @@ export default function AppointmentActionModals({
                   </a>
                 ) : (
                   <p className="text-ink font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-ink-faint">Consultation</span>}</p>
+                )}
+                {viewApt.service && serviceCategoryPath(viewApt.service).length > 0 && (
+                  <p className="text-xs text-ink-muted mt-0.5">{serviceCategoryPath(viewApt.service).join(' → ')}</p>
                 )}
               </div>
               <div>
@@ -658,6 +670,10 @@ export default function AppointmentActionModals({
                   ))}
                 </div>
               </div>
+            )}
+
+            {['pending', 'confirmed', 'in_progress'].includes(viewApt.status) && (
+              <AppointmentCustomerToolkit key={viewApt.id} apt={viewApt} onChanged={() => onAppointmentUpdated?.()} />
             )}
 
             <div className="pt-3 border-t border-line flex justify-end">

@@ -40,9 +40,6 @@ export default function CatalogAngleThumbnails({
               className="w-full h-full object-cover object-top"
               fill
             />
-            <span className="absolute bottom-0 inset-x-0 bg-ink/80 text-[8px] text-white text-center py-0.5 font-bold uppercase tracking-wider">
-              View {idx + 1}
-            </span>
           </button>
         );
       })}

@@ -2,9 +2,12 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, BarChart3, Star } from 'lucide-react';
+import { ShoppingBag, BarChart3 } from 'lucide-react';
 
-export type CatalogTabId = 'catalog' | 'analytics' | 'reviews';
+// Reviews used to be its own top-level tab — merged into Analytics as a
+// section (with the rest of the charts/KPIs) instead, since it had no
+// numbers of its own worth a whole separate destination.
+export type CatalogTabId = 'catalog' | 'analytics';
 
 export interface CatalogTabItem {
   id: CatalogTabId;
@@ -16,7 +19,6 @@ export interface CatalogTabItem {
 export const CATALOG_TABS: readonly CatalogTabItem[] = [
   { id: 'catalog', label: 'Designs', href: '/dashboard/catalog', icon: ShoppingBag },
   { id: 'analytics', label: 'Analytics', href: '/dashboard/catalog/analytics', icon: BarChart3 },
-  { id: 'reviews', label: 'Reviews', href: '/dashboard/catalog/reviews', icon: Star },
 ] as const;
 
 interface CatalogModuleTabsProps {
@@ -33,10 +35,8 @@ export default function CatalogModuleTabs({
   const pathname = usePathname();
 
   const activeId: CatalogTabId = controlledTab ?? (
-    pathname.includes('/analytics')
+    pathname.includes('/analytics') || pathname.includes('/reviews')
       ? 'analytics'
-      : pathname.includes('/reviews')
-      ? 'reviews'
       : 'catalog'
   );
 

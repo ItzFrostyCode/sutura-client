@@ -189,11 +189,42 @@ Go to → **http://localhost:3000** 🎉
 
 | Role | Email | Password |
 |------|-------|----------|
-| Shop Owner | `owner@sutura.com` | `password` |
+| Shop Owner | `maria.cruz@gmail.com` | `password` |
 | Staff | `staff@sutura.com` | `password` |
+| Branch Manager | `manager@sutura.com` | `password` |
 | Admin | `admin@sutura.com` | `password` |
 | Customer | `customer@sutura.com` | `password` |
+| Customer (no bookings yet — use this one to test booking) | `booking.tester1@sutura.com` | `password` |
 | Customer | `jose.rizal@gmail.com` | `password` |
+
+### 🔄 Already set up? After every `git pull`
+
+```bash
+cd sutura-server
+composer install            # new PHP packages, if any
+php artisan migrate         # NEW tables/columns (the latest update adds several)
+php artisan db:seed         # safe to re-run — adds new demo accounts/data without duplicating
+
+cd ../sutura-client
+npm install                 # new JS packages, if any
+```
+
+Restart both servers afterwards. If something still looks wrong (broken pages, missing data), the clean reset is `php artisan migrate:fresh --seed` (this **wipes** your local database and rebuilds the demo data).
+
+### 🧪 What to try (booking → job order → payment)
+
+Sign in as the role shown; every account uses the password `password`.
+
+| # | As | Do this | You should see |
+|---|----|---------|----------------|
+| 1 | Customer `booking.tester1@sutura.com` | Book an appointment from **the store profile**, from a **Catalog Design**, from a **Service**, and from a **Combo package** ("Book this package") — one at a time (a customer may hold only one active appointment per store, so cancel the previous one from *My Appointments* first) | 3-step wizard; the Review step lists what you're booking; the appointment shows in *My Appointments* as **Pending** |
+| 2 | Shop Owner `maria.cruz@gmail.com` | *Appointments* → open it → **Confirm** | Customer is notified; status becomes **Confirmed** |
+| 3 | Staff `staff@sutura.com` | *Appointments* → **Record measurements** on the confirmed appointment | Measurements saved and visible to the customer under *My Measurements* |
+| 4 | Owner or Branch Manager `manager@sutura.com` | On the appointment press **Job** → create the job order | One order (`ORD-…`) for the service, design or whole combo, at the right price |
+| 5 | Owner / Branch Manager | *Collect Payments* → log a **50% downpayment** | Balance drops; production can now start. Plain staff **cannot** collect payments and cannot move a job past design without the downpayment |
+| 6 | Customer | *My Orders* | The order, its stage, the package contents (if a combo) and the remaining balance |
+
+Plain **Staff** (`staff@sutura.com`) is deliberately narrower than the **Branch Manager** (`manager@sutura.com`): Services/Catalog are view-only for staff and the Collect Payments, Catalog Designs, Reports and Branches menus are hidden.
 
 ---
 

@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import api from '@/lib/axios';
 import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
+import { PASSWORD_RULES } from '@/lib/passwordRules';
 
 export default function RegisterPage() {
   return (
@@ -16,31 +17,14 @@ export default function RegisterPage() {
   );
 }
 
-// Mirrors AppServiceProvider's Password::defaults() (min 8, mixed case, a
-// number, a symbol) exactly — this is a live UI checklist for a real server
-// rule, not decorative copy that happens to look similar.
-const PASSWORD_RULES = [
-  { key: 'length', label: '8+ characters', test: (p: string) => p.length >= 8 },
-  {
-    key: 'numberSymbol',
-    label: 'At least 1 number and a special character',
-    test: (p: string) => /\d/.test(p) && /[^A-Za-z0-9]/.test(p),
-  },
-  {
-    key: 'case',
-    label: 'At least 1 lowercase and uppercase letter',
-    test: (p: string) => /[a-z]/.test(p) && /[A-Z]/.test(p),
-  },
-];
-
 function RegisterPageContent() {
   const searchParams = useSearchParams();
-  // No visible account-type picker — the entry point decides it instead:
-  // the header's "Start a Store" link sends ?as=store_owner, plain "Sign Up"
-  // (from the account menu) registers as a customer, matching how a real
-  // shopper vs. a store owner actually arrive at this form.
-  const role = searchParams.get('as') === 'store_owner' ? 'store_owner' : 'customer';
+  // Customers only. Shop owners now apply through /register/store (admin
+  // reviewed, with documents) — the API no longer accepts role=store_owner
+  // here, so old ?as=store_owner links are forwarded there instead.
+  const role = 'customer';
   const redirectParam = searchParams.get('redirect');
+  const wantsStore = searchParams.get('as') === 'store_owner';
 
   // First/Last Name only — no Middle Initial field, per explicit direction.
   // Joined into the single `name` string the backend actually expects
@@ -55,6 +39,10 @@ function RegisterPageContent() {
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    if (wantsStore) router.replace('/register/store');
+  }, [wantsStore, router]);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -76,13 +64,7 @@ function RegisterPageContent() {
         if (response.data.data?.token && response.data.data?.user) {
           useAuthStore.getState().setAuth(response.data.data.user, response.data.data.token);
         }
-        if (redirectParam) {
-          router.push(redirectParam);
-        } else if (role === 'store_owner') {
-          router.push('/dashboard');
-        } else {
-          router.push('/');
-        }
+        router.push(redirectParam || '/');
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

@@ -197,7 +197,7 @@ export default function NotificationsPage() {
                 </Link>
 
                 <Link
-                  href="/register?as=store_owner"
+                  href="/register/store"
                   className="flex items-start gap-3 bg-surface border border-line px-4 py-3.5 hover:border-line-strong transition-colors"
                 >
                   <div className="w-9 h-9 shrink-0 rounded-full bg-sunken text-taupe flex items-center justify-center mt-0.5">

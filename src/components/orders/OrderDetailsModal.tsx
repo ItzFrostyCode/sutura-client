@@ -80,7 +80,7 @@ export default function OrderDetailsModal({
       onClose={onClose}
       title={
         <div className="flex items-center gap-3">
-          <span className="font-mono font-bold text-ink">#ORD-{order.id}</span>
+          <span className="font-mono font-bold text-ink">{order.order_number ?? `#${order.id}`}</span>
           <StatusBadge status={order.status} />
         </div>
       }

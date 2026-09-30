@@ -1,6 +1,5 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import ModelFabricToggle from '@/components/discovery/ModelFabricToggle';
 
 export interface FilterChip {
   id: string;
@@ -12,16 +11,12 @@ interface CatalogFilterChipsBarProps {
   readonly totalCount: number;
   readonly activeFilterChips: FilterChip[];
   readonly onClearAll: () => void;
-  readonly showPortfolioFabric: boolean;
-  readonly onTogglePortfolioFabric: () => void;
 }
 
 export default function CatalogFilterChipsBar({
   totalCount,
   activeFilterChips,
   onClearAll,
-  showPortfolioFabric,
-  onTogglePortfolioFabric,
 }: CatalogFilterChipsBarProps) {
   return (
     <div className="flex items-center justify-between gap-3 mb-3">
@@ -49,15 +44,6 @@ export default function CatalogFilterChipsBar({
             Clear All
           </button>
         )}
-      </div>
-
-      {/* Model / Fabric segmented toggle */}
-      <div className="flex items-center shrink-0 ml-auto">
-        <ModelFabricToggle
-          showFabric={showPortfolioFabric}
-          setShowFabric={onTogglePortfolioFabric}
-          size="sm"
-        />
       </div>
     </div>
   );

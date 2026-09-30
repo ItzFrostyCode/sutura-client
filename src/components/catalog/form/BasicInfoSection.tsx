@@ -1,6 +1,6 @@
 import React from 'react';
 import { CatalogFormData } from '../catalogTypes';
-import { CATALOG_GARMENT_CATEGORIES, CATALOG_DEPARTMENTS } from '../catalogCategories';
+import { CatalogCategoryFields } from './CatalogCategoryFields';
 import { StoreServiceOption } from './formTypes';
 import { FabricTextureUpload } from './FabricTextureUpload';
 import { AvailableSizesField } from './AvailableSizesField';
@@ -94,54 +94,7 @@ export function BasicInfoSection({
           />
         </div>
 
-        <div>
-          <label htmlFor="catalog-color" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">Color</label>
-          <input
-            id="catalog-color"
-            type="text"
-            name="color"
-            value={formData.color}
-            onChange={onChange}
-            placeholder="e.g. Ivory, Navy Blue"
-            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="catalog-garment" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-            Garment Type <span className="text-ink-faint normal-case font-normal">— controls which category filters/nav links show this item</span>
-          </label>
-          <select
-            id="catalog-garment"
-            name="garment_type"
-            value={formData.garment_type}
-            onChange={onChange}
-            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink focus:outline-none focus:border-taupe text-sm"
-          >
-            <option value="">Select a garment type…</option>
-            {CATALOG_GARMENT_CATEGORIES.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="catalog-department" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-            Department <span className="text-ink-faint normal-case font-normal">— Men / Women / Wedding / Office in the site header</span>
-          </label>
-          <select
-            id="catalog-department"
-            name="department"
-            value={formData.department}
-            onChange={onChange}
-            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink focus:outline-none focus:border-taupe text-sm"
-          >
-            <option value="">No specific department</option>
-            {CATALOG_DEPARTMENTS.map(d => (
-              <option key={d.value} value={d.value}>{d.label}</option>
-            ))}
-          </select>
-        </div>
+        <CatalogCategoryFields formData={formData} onChange={onChange} setFormData={setFormData} />
       </div>
 
       <div>
@@ -165,20 +118,37 @@ export function BasicInfoSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label htmlFor="catalog-estimated-days" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
-            Estimated Days to Complete
-          </label>
-          <input
-            id="catalog-estimated-days"
-            type="number"
-            min="1"
-            name="estimated_days"
-            value={formData.estimated_days}
-            onChange={onChange}
-            placeholder="e.g. 7"
-            className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="catalog-estimated-days" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
+              Days — from
+            </label>
+            <input
+              id="catalog-estimated-days"
+              type="number"
+              min="1"
+              name="estimated_days"
+              value={formData.estimated_days}
+              onChange={onChange}
+              placeholder="e.g. 5"
+              className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="catalog-estimated-days-max" className="block text-xs font-semibold text-ink-body uppercase tracking-wider mb-2">
+              to
+            </label>
+            <input
+              id="catalog-estimated-days-max"
+              type="number"
+              min="1"
+              name="estimated_days_max"
+              value={formData.estimated_days_max}
+              onChange={onChange}
+              placeholder="e.g. 7"
+              className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
+            />
+          </div>
         </div>
 
         <div>
@@ -207,7 +177,7 @@ export function BasicInfoSection({
         <label htmlFor="catalog-is-active" className="text-sm font-medium text-ink-body">
           Active &amp; Visible to Customers{' '}
           <span className="block text-xs font-normal text-ink-faint">
-            Uncheck to pause this item (e.g. out of stock) without deleting it — it&apos;s hidden from your public storefront but stays in your own catalog list.
+            Uncheck to pause this item (e.g. out of stock) without deleting it — it&apos;s hidden from your public store profile but stays in your own catalog list.
           </span>
         </label>
       </div>

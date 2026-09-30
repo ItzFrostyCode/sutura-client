@@ -6,6 +6,8 @@ interface PlanCardsSectionProps {
   activePlanId: number | undefined;
   currentPrice: number;
   upgradingTo: number | null;
+  /** A paid plan change is already waiting for confirmation — no second one until it is answered. */
+  hasPendingRequest?: boolean;
   onSubscribe: (planId: number) => void;
 }
 
@@ -14,6 +16,7 @@ export default function PlanCardsSection({
   activePlanId,
   currentPrice,
   upgradingTo,
+  hasPendingRequest = false,
   onSubscribe,
 }: PlanCardsSectionProps) {
   const getButtonContent = (plan: Plan) => {
@@ -94,7 +97,7 @@ export default function PlanCardsSection({
               <button
                 id={`plan-btn-${plan.slug}`}
                 onClick={() => onSubscribe(plan.id)}
-                disabled={isActive || upgradingTo !== null}
+                disabled={isActive || upgradingTo !== null || (hasPendingRequest && plan.price_monthly >= currentPrice)}
                 className={`w-full py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm cursor-pointer ${
                   isActive
                     ? 'bg-sunken text-ink-faint cursor-not-allowed'

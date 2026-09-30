@@ -5,7 +5,6 @@ import UpcomingAppointmentBar from '@/components/home/UpcomingAppointmentBar';
 import { useHomeData } from '@/components/home/useHomeData';
 import HomeHero from '@/components/home/HomeHero';
 import HomeFeaturedSpotlight from '@/components/home/HomeFeaturedSpotlight';
-import HomeQuickHub from '@/components/home/HomeQuickHub';
 import HomeCategoryGrid from '@/components/home/HomeCategoryGrid';
 import HomeShowroomCarousel from '@/components/home/HomeShowroomCarousel';
 import HomeHowItWorks from '@/components/home/HomeHowItWorks';
@@ -48,7 +47,6 @@ export default function HomePage() {
           trendingItems={trendingItems}
           loading={storesLoading || trendingLoading}
         />
-        <HomeQuickHub />
         <HomeCategoryGrid items={items} />
         <HomeShowroomCarousel items={items} loading={loading} />
         <HomeHowItWorks />

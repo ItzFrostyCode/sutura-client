@@ -6,8 +6,10 @@ import Image from 'next/image';
 import { Store, Star, ChevronRight, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
+import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
+import SearchServiceCard from './SearchServiceCard';
 import { RelatedStore, SearchActiveTab } from './types';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
@@ -31,7 +33,7 @@ function toCatalogItemResult(item: CatalogItemResult | LeanCatalogItem, store: R
     estimated_days: maybeFull.estimated_days ?? null,
     reviews_count: maybeFull.reviews_count ?? 0,
     reviews_avg_rating: maybeFull.reviews_avg_rating ?? null,
-    order_count: maybeFull.order_count ?? 0,
+    order_count: (item as { order_count?: number }).order_count ?? maybeFull.order_count ?? 0,
     images: (item.images ?? []).map((img) => ({
       image_url: img.image_url,
       is_primary: img.is_primary ?? false,
@@ -42,7 +44,12 @@ function toCatalogItemResult(item: CatalogItemResult | LeanCatalogItem, store: R
     // repeating it as a badge on every one of that store's mini cards is
     // redundant clutter specific to this section.
     distance_km: null,
-    store: maybeFull.store ?? { id: store.id, name: store.name, slug: store.slug },
+    store: maybeFull.store ?? {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      branches: store.branches,
+    },
   };
 }
 
@@ -55,9 +62,8 @@ interface SearchStoresTabProps {
   readonly items: CatalogItemResult[];
   readonly total: number;
   readonly gate: (href: string) => string;
-  readonly showFabric?: boolean;
-  readonly setShowFabric?: React.Dispatch<React.SetStateAction<boolean>>;
   readonly userCoords?: { lat: number; lng: number } | null;
+  readonly department?: string;
 }
 
 export default function SearchStoresTab({
@@ -69,8 +75,8 @@ export default function SearchStoresTab({
   items,
   total,
   gate,
-  showFabric = false,
   userCoords,
+  department = '',
 }: SearchStoresTabProps) {
   return (
     <div className="mb-6">
@@ -104,11 +110,12 @@ export default function SearchStoresTab({
                 {Array.from({ length: 3 }).map((__, j) => (
                   <div
                     key={j}
-                    className="w-[34%] min-w-[118px] max-w-[142px] sm:w-[140px] shrink-0 border border-line"
+                    className="w-[160px] shrink-0 border border-line"
                   >
                     <div className="aspect-3/4 bg-sunken" />
-                    <div className="px-1.5 pt-1.5 pb-2 space-y-1">
-                      <div className="h-2.5 w-full bg-sunken rounded" />
+                    <div className="px-2 pt-2 pb-2.5 space-y-1.5">
+                      <div className="h-3 w-full bg-sunken rounded" />
+                      <div className="h-2.5 w-1/2 bg-sunken rounded" />
                       <div className="h-2 w-2/3 bg-sunken rounded" />
                     </div>
                   </div>
@@ -151,17 +158,36 @@ export default function SearchStoresTab({
                   ? matchingCatalogItems
                   : store.catalog_items ?? [];
 
+            // store.catalog_items is capped (take(10) server-side, for the
+            // preview carousel) — its .length silently undercounts once a
+            // store has more than 10 active designs. store.catalog_items_count
+            // is a real, uncapped count from the backend and must win
+            // whenever it's present; the .length fallbacks only cover a
+            // stale response that predates this field.
             const matchedCount = effectiveQ.trim()
               ? store.matching_items_count ?? (itemsMatchingStore.length || matchingCatalogItems.length)
-              : store.catalog_items?.length ?? storeCarouselItems.length;
+              : store.catalog_items_count ?? store.catalog_items?.length ?? storeCarouselItems.length;
+
+            const isServicesFilter = department?.toLowerCase() === 'services' || department?.toLowerCase() === 'service';
+            const storeServices = store.services ?? [];
+            // Unlike catalog_items, the services relation isn't capped
+            // server-side, so storeServices.length is only wrong when a
+            // search query has narrowed the visible array down from the
+            // store's real total — services_count is the uncapped figure.
+            const matchedServicesCount = effectiveQ.trim() ? storeServices.length : store.services_count ?? storeServices.length;
+            const showServicesCarousel = isServicesFilter || (storeCarouselItems.length === 0 && storeServices.length > 0);
+
+            const storeHref = gate(
+              showServicesCarousel && storeServices.length > 0
+                ? `/store/${store.slug}?tab=services${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
+                : `/store/${store.slug}?tab=catalog${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
+            );
 
             return (
               <div key={store.id} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-2.5">
                 {/* Store Header Row */}
                 <Link
-                  href={gate(
-                    `/store/${store.slug}?tab=catalog${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
-                  )}
+                  href={storeHref}
                   className="flex items-center justify-between gap-3 group active:opacity-80"
                 >
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
@@ -203,13 +229,33 @@ export default function SearchStoresTab({
                       <p className="text-[11px] text-ink-faint truncate">
                         {districtText} · Davao City
                       </p>
+                      {store.specializations && store.specializations.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                          {store.specializations.slice(0, 2).map((id) => (
+                            <span key={id} className="px-1.5 py-0.5 text-[9px] font-semibold bg-canvas border border-line text-ink-muted">
+                              {STORE_SPECIALIZATIONS.find((s) => s.value === id)?.label || id}
+                            </span>
+                          ))}
+                          {store.specializations.length > 2 && (
+                            <span className="text-[9px] font-semibold text-ink-faint">+{store.specializations.length - 2}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-ink-faint group-hover:text-ink transition-colors shrink-0" />
                 </Link>
 
                 {/* Carousel Header */}
-                {storeCarouselItems.length > 0 && (
+                {showServicesCarousel && storeServices.length > 0 ? (
+                  <div className="px-0.5 pt-0.5">
+                    <span className="text-[11px] font-bold text-ink">
+                      {effectiveQ.trim()
+                        ? `${matchedServicesCount} matching tailoring service${matchedServicesCount === 1 ? '' : 's'}`
+                        : `Tailoring services (${matchedServicesCount})`}
+                    </span>
+                  </div>
+                ) : storeCarouselItems.length > 0 ? (
                   <div className="px-0.5 pt-0.5">
                     <span className="text-[11px] font-bold text-ink">
                       {effectiveQ.trim()
@@ -217,21 +263,52 @@ export default function SearchStoresTab({
                         : `Catalog designs (${matchedCount})`}
                     </span>
                   </div>
-                )}
+                ) : null}
 
-                {/* Carousel — same CatalogItemCard as the Catalog Designs section, just narrower */}
-                {storeCarouselItems.length > 0 && (
+                {/* Carousel */}
+                {showServicesCarousel && storeServices.length > 0 ? (
+                  <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory">
+                    {storeServices.map((svc) => (
+                      <SearchServiceCard
+                        key={svc.id}
+                        service={{
+                          id: svc.id,
+                          name: svc.name,
+                          category: svc.category,
+                          service_type: (svc as { service_type?: string }).service_type || svc.service_types?.[0] || svc.category,
+                          description: svc.description,
+                          base_price: svc.base_price != null ? Number(svc.base_price) : null,
+                          sale_price: svc.sale_price != null ? Number(svc.sale_price) : null,
+                          estimated_days: svc.estimated_days ?? null,
+                          image_url: svc.image_url ?? null,
+                          reviews_count: svc.reviews_count ?? null,
+                          reviews_avg_rating: svc.reviews_avg_rating ?? null,
+                          orders_count: (svc as { orders_count?: number }).orders_count ?? null,
+                          store: {
+                            id: store.id,
+                            name: store.name,
+                            slug: store.slug,
+                            branches: store.branches,
+                            distance_km: store.distance_km,
+                          },
+                        }}
+                        storeSlug={store.slug}
+                        gate={gate}
+                      />
+                    ))}
+                  </div>
+                ) : storeCarouselItems.length > 0 ? (
                   <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory">
                     {storeCarouselItems.map((item) => (
                       <div
                         key={item.id}
-                        className="snap-start w-[34%] min-w-[118px] max-w-[142px] sm:w-[140px] shrink-0"
+                        className="snap-start w-[160px] shrink-0"
                       >
-                        <CatalogItemCard item={toCatalogItemResult(item, store)} showFabric={showFabric} />
+                        <CatalogItemCard item={toCatalogItemResult(item, store)} />
                       </div>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             );
           })}

@@ -8,6 +8,7 @@ interface CatalogFormHeaderProps {
   readonly submitLabel: string;
   readonly submitting: boolean;
   readonly saveDisabled: boolean;
+  readonly onCancel?: () => void;
 }
 
 export function CatalogFormHeader({
@@ -16,29 +17,50 @@ export function CatalogFormHeader({
   submitLabel,
   submitting,
   saveDisabled,
+  onCancel,
 }: CatalogFormHeaderProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-line pb-6">
         <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/catalog"
-            className="p-2.5 bg-surface border border-line rounded-xl text-ink-muted hover:text-ink hover:border-line-strong transition-all shrink-0"
-          >
-            <ArrowLeft size={18} />
-          </Link>
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="p-2.5 bg-surface border border-line rounded-xl text-ink-muted hover:text-ink hover:border-line-strong transition-all shrink-0 cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          ) : (
+            <Link
+              href="/dashboard/catalog"
+              className="p-2.5 bg-surface border border-line rounded-xl text-ink-muted hover:text-ink hover:border-line-strong transition-all shrink-0"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+          )}
           <div>
             <h1 className="text-2xl font-serif font-bold text-ink tracking-tight">{title}</h1>
             <p className="text-ink-muted text-sm mt-0.5">{description}</p>
           </div>
         </div>
         <div className="flex gap-3">
-          <Link
-            href="/dashboard/catalog"
-            className="px-5 py-2.5 bg-surface border border-line rounded-xl text-sm font-semibold text-ink-body hover:bg-canvas transition-colors flex items-center justify-center animate-fade-in"
-          >
-            Cancel
-          </Link>
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-5 py-2.5 bg-surface border border-line rounded-xl text-sm font-semibold text-ink-body hover:bg-canvas transition-colors flex items-center justify-center animate-fade-in cursor-pointer"
+            >
+              Cancel
+            </button>
+          ) : (
+            <Link
+              href="/dashboard/catalog"
+              className="px-5 py-2.5 bg-surface border border-line rounded-xl text-sm font-semibold text-ink-body hover:bg-canvas transition-colors flex items-center justify-center animate-fade-in"
+            >
+              Cancel
+            </Link>
+          )}
           <button
             type="submit"
             disabled={saveDisabled}

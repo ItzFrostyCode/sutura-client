@@ -24,7 +24,7 @@ export default function HomeShowroomCarousel({
           </h2>
         </div>
         <Link
-          href="/search"
+          href="/search?tab=catalog"
           className="text-xs font-semibold text-taupe hover:text-taupe-hover min-h-[44px] flex items-center gap-1"
         >
           See all →
@@ -62,7 +62,7 @@ export default function HomeShowroomCarousel({
 
           <div className="flex justify-center mt-3 sm:mt-6">
             <Link
-              href="/search"
+              href="/search?tab=catalog"
               className="min-h-[44px] h-[48px] px-6 border border-line text-sm font-semibold text-ink hover:border-line-strong hover:bg-sunken transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
             >
               <SearchIcon size={16} />

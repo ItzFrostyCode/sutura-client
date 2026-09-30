@@ -1,27 +1,24 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Plus, Trash2, Package as PackageIcon, Layers, Tag, Clock } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
 import { Service, ServicePackage, deriveTiersFromService } from '@/components/services/serviceHelpers';
-import ServiceFormModal from '@/components/services/ServiceFormModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
-import ServiceListView from '@/components/services/ServiceListView';
-import ServiceSaleModal from '@/components/services/ServiceSaleModal';
-import ServiceTrashModal from '@/components/services/ServiceTrashModal';
-import ServicePackageListView from '@/components/services/ServicePackageListView';
-import ServicePackageFormModal from '@/components/services/ServicePackageFormModal';
+import ServiceGridView from '@/components/services/ServiceGridView';
+import PackageGridView from '@/components/services/packages/PackageGridView';
 import PageHeader from '@/components/shared/PageHeader';
-import StatBand from '@/components/shared/StatBand';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
 
 export default function ServicesPage() {
   const { store, user } = useAuthStore();
   const toast = useToast();
+  const router = useRouter();
   // POST/PUT/DELETE on services, service-packages, and restore are all
   // role:store_owner,branch_manager-only in routes/api.php, but the Services
   // nav (with the Packages tab) is shown to plain staff too since they need
@@ -35,32 +32,30 @@ export default function ServicesPage() {
   const [categoryFilter, setCategoryFilter] = useState('All');
 
   // Modals state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Set when the owner arrived from a design's "+" (?add=1&return=/dashboard/catalog/12):
+  // the add form opens right away, and saving it sends them back to that design.
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [showTrash, setShowTrash] = useState(false);
 
-  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
-  const [saleServiceItem, setSaleServiceItem] = useState<Service | null>(null);
-  const [saleSubmitting, setSaleSubmitting] = useState(false);
-  const [saleError, setSaleError] = useState('');
 
   // Packages tab
-  const [activeTab, setActiveTab] = useState<'services' | 'packages' | 'analytics'>('services');
+  type Tab = 'services' | 'packages' | 'analytics';
+  const [activeTab, setActiveTabState] = useState<Tab>('services');
+  // The tab lives in the URL (?tab=packages) so coming back from a package page lands on the same tab.
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabState(tab);
+    window.history.replaceState(null, '', tab === 'services' ? window.location.pathname : `?tab=${tab}`);
+  };
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (t === 'packages' || t === 'analytics') setActiveTabState(t);
+  }, []);
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
-  const [packageSearch, setPackageSearch] = useState('');
-  const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
-  const [editingPackageId, setEditingPackageId] = useState<number | null>(null);
-  const [deletingPackageId, setDeletingPackageId] = useState<number | null>(null);
-  const [isPackageDeleteModalOpen, setIsPackageDeleteModalOpen] = useState(false);
-  const [packageSubmitting, setPackageSubmitting] = useState(false);
-  const [packageError, setPackageError] = useState('');
 
   const fetchServices = useCallback(() => {
     if (!store?.id) {
@@ -102,112 +97,15 @@ export default function ServicesPage() {
     fetchPackages();
   }, [fetchPackages]);
 
-  const handlePackageFormSubmit = async (payload: Record<string, unknown>) => {
-    if (!store) return;
-    setPackageSubmitting(true);
-    setPackageError('');
-    try {
-      if (editingPackageId) {
-        const res = await api.put(`/stores/${store.id}/service-packages/${editingPackageId}`, payload);
-        setPackages(prev => prev.map(p => p.id === editingPackageId ? res.data.data : p));
-        toast.success('Package updated successfully.');
-      } else {
-        const res = await api.post(`/stores/${store.id}/service-packages`, payload);
-        setPackages(prev => [res.data.data, ...prev]);
-        toast.success('Package created successfully.');
-      }
-      setIsPackageModalOpen(false);
-      setEditingPackageId(null);
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setPackageError(error.response?.data?.message || 'Failed to save package');
-    } finally {
-      setPackageSubmitting(false);
-    }
-  };
-
-  const confirmDeletePackage = async () => {
-    if (!store || !deletingPackageId) return;
-    setPackageSubmitting(true);
-    try {
-      await api.delete(`/stores/${store.id}/service-packages/${deletingPackageId}`);
-      setPackages(prev => prev.filter(p => p.id !== deletingPackageId));
-      setIsPackageDeleteModalOpen(false);
-      setDeletingPackageId(null);
-      toast.success('Package deleted.');
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to delete package.');
-    } finally {
-      setPackageSubmitting(false);
-    }
-  };
-
-  const handleEditPackageClick = (pkg: ServicePackage) => {
-    setEditingPackageId(pkg.id);
-    setIsPackageModalOpen(true);
-  };
-
-  const handleDeletePackageClick = (id: number) => {
-    setDeletingPackageId(id);
-    setIsPackageDeleteModalOpen(true);
-  };
-
-  const handleDuplicateClick = async (service: Service) => {
-    if (!store) return;
-    setActionLoadingId(service.id);
-    try {
-      const payload = {
-        name: `${service.name} (Copy)`,
-        description: service.description || '',
-        categories: service.categories || [],
-        service_types: service.service_types || [],
-        base_price: service.base_price ? Number.parseFloat(service.base_price.toString()) : null,
-        estimated_days: service.estimated_days,
-        min_order_qty: service.min_order_qty || 1,
-        custom_fields: service.custom_fields || [],
-        is_active: service.is_active,
-        pricing_tiers: deriveTiersFromService(service).map(t => ({
-          label: t.label,
-          amount: t.amount.trim() === '' ? null : Number.parseFloat(t.amount),
-        })),
-        image_url: service.image_url || null,
-      };
-      const res = await api.post(`/stores/${store.id}/services`, payload);
-      setServices(prev => [res.data.data, ...prev]);
-      toast.success('Service duplicated successfully.');
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to duplicate service. Please try again.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleFormSubmit = async (payload: Record<string, unknown>) => {
-    if (!store) return;
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      if (editingId) {
-        const res = await api.put(`/stores/${store.id}/services/${editingId}`, payload);
-        setServices(prev => prev.map(s => s.id === editingId ? res.data.data : s));
-        toast.success('Service updated successfully.');
-      } else {
-        const res = await api.post(`/stores/${store.id}/services`, payload);
-        setServices(prev => [res.data.data, ...prev]);
-        toast.success('Service created successfully.');
-      }
-      setIsModalOpen(false);
-      setEditingId(null);
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Failed to save service');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  useEffect(() => {
+    if (!isOwnerOrManager) return;
+    const params = new URLSearchParams(window.location.search);
+    const back = params.get('return');
+    if (params.get('add') !== '1') return;
+    // Only ever return to a dashboard page — never an arbitrary URL.
+    const safe = back?.startsWith('/dashboard/') && !back.startsWith('//') ? `?return=${encodeURIComponent(back)}` : '';
+    router.replace(`/dashboard/services/new${safe}`);
+  }, [isOwnerOrManager]);
 
   const confirmDelete = async () => {
     if (!store || !deletingId) return;
@@ -226,38 +124,15 @@ export default function ServicesPage() {
     }
   };
 
+  // Editing happens on the service's own page now (every section has a pencil);
+  // the modal stays for adding a new service.
   const handleEditClick = (service: Service) => {
-    setEditingId(service.id);
-    setIsModalOpen(true);
+    router.push(`/dashboard/services/${service.id}`);
   };
 
   const handleDeleteClick = (id: number) => {
     setDeletingId(id);
     setIsDeleteModalOpen(true);
-  };
-
-  const openSale = (service: Service) => {
-    setSaleServiceItem(service);
-    setSaleError('');
-    setIsSaleModalOpen(true);
-  };
-
-  const submitSale = async (payload: Record<string, unknown>) => {
-    if (!store || !saleServiceItem) return;
-    setSaleSubmitting(true);
-    setSaleError('');
-    try {
-      const res = await api.put(`/stores/${store.id}/services/${saleServiceItem.id}/sale`, payload);
-      setServices(prev => prev.map(s => s.id === saleServiceItem.id ? res.data.data : s));
-      toast.success(payload.sale_price ? 'Sale price updated.' : 'Sale removed.');
-      setIsSaleModalOpen(false);
-      setSaleServiceItem(null);
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setSaleError(error.response?.data?.message || 'Failed to update sale price.');
-    } finally {
-      setSaleSubmitting(false);
-    }
   };
 
   const categoriesList = ['All', ...Array.from(new Set(services.flatMap(s => s.categories || [])))];
@@ -268,45 +143,34 @@ export default function ServicesPage() {
     return matchSearch && matchCategory;
   });
 
-  const editingService = editingId ? (services.find(s => s.id === editingId) || null) : null;
 
-  const filteredPackages = packages.filter(p => p.name.toLowerCase().includes(packageSearch.toLowerCase()));
-  const editingPackage = editingPackageId ? (packages.find(p => p.id === editingPackageId) || null) : null;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Offerings"
-        title="Service Catalog"
-        description="Curated tailoring services, turnaround times, and combo packages."
+        title="Services"
+        description="Your tailoring services, turnaround times, and combo packages."
+        inlineActions
         actions={
           !isOwnerOrManager ? null : activeTab === 'services' ? (
             <>
               <button
-                onClick={() => setShowTrash(true)}
-                title="View deleted services"
-                aria-label="View deleted services"
-                className="flex items-center justify-center w-11 h-11 rounded-lg bg-surface border border-line text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
-              >
-                <Trash2 size={16} />
-              </button>
-              <button
-                onClick={() => { setEditingId(null); setError(''); setIsModalOpen(true); }}
-                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+                onClick={() => router.push('/dashboard/services/new')}
+                className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
               >
                 <Plus size={17} />
-                Add Service
+                Create New
               </button>
             </>
           ) : activeTab === 'packages' ? (
             <button
-              onClick={() => { setEditingPackageId(null); setPackageError(''); setIsPackageModalOpen(true); }}
+              onClick={() => router.push('/dashboard/services/packages/new')}
               disabled={services.length < 2}
               title={services.length < 2 ? 'Add at least 2 services first' : undefined}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Plus size={17} />
-              Add Package
+              Create New
             </button>
           ) : null
         }
@@ -320,66 +184,13 @@ export default function ServicesPage() {
         />
       </PageHeader>
 
-      {services.length > 0 && (() => {
-        const activeServices = services.filter(s => s.is_active);
-        const prices = services.map(s => Number(s.base_price || 0)).filter(p => p > 0);
-        const avgPrice = prices.length > 0 ? prices.reduce((sum, p) => sum + p, 0) / prices.length : 0;
-        const avgDays = services.reduce((sum, s) => sum + (s.estimated_days || 0), 0) / services.length;
-        return (
-          <StatBand
-            items={[
-              { label: 'Active Services', value: `${activeServices.length} / ${services.length}`, icon: PackageIcon },
-              { label: 'Packages', value: packages.length, icon: Layers },
-              { label: 'Avg. Price', value: `₱${avgPrice.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`, icon: Tag },
-              { label: 'Avg. Turnaround', value: `${avgDays.toFixed(0)}d`, icon: Clock },
-            ]}
-          />
-        );
-      })()}
-
       {activeTab === 'services' ? (
-        <ServiceListView
-          filteredServices={filtered}
-          loading={loading}
-          search={search}
-          onSearchChange={setSearch}
-          categoryFilter={categoryFilter}
-          onCategoryFilterChange={setCategoryFilter}
-          allCategories={categoriesList}
-          actionLoadingId={actionLoadingId}
-          onDuplicate={handleDuplicateClick}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-          onOpenSale={openSale}
-          canManage={isOwnerOrManager}
-        />
+        <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} />
       ) : activeTab === 'packages' ? (
-        <ServicePackageListView
-          filteredPackages={filteredPackages}
-          loading={packagesLoading}
-          search={packageSearch}
-          onSearchChange={setPackageSearch}
-          onEdit={handleEditPackageClick}
-          onDelete={handleDeletePackageClick}
-          canManage={isOwnerOrManager}
-        />
+        <PackageGridView packages={packages} loading={packagesLoading} />
       ) : isOwnerOrManager ? (
         <ServiceAnalyticsView />
       ) : null}
-
-      <ServiceFormModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingId(null);
-          setError('');
-        }}
-        editingId={editingId}
-        onSubmit={handleFormSubmit}
-        isSubmitting={isSubmitting}
-        error={error}
-        editingService={editingService}
-      />
 
       <ServiceDeleteModal
         isOpen={isDeleteModalOpen}
@@ -392,54 +203,7 @@ export default function ServicesPage() {
       />
 
 
-      {store && (
-        <ServiceTrashModal
-          isOpen={showTrash}
-          onClose={() => setShowTrash(false)}
-          storeId={store.id}
-          onRestored={(restored) => {
-            setServices(prev => [restored, ...prev]);
-            toast.success(`"${restored.name}" restored to your active catalog.`);
-          }}
-        />
-      )}
 
-      <ServicePackageFormModal
-        isOpen={isPackageModalOpen}
-        onClose={() => {
-          setIsPackageModalOpen(false);
-          setEditingPackageId(null);
-          setPackageError('');
-        }}
-        services={services}
-        editingPackage={editingPackage}
-        onSubmit={handlePackageFormSubmit}
-        isSubmitting={packageSubmitting}
-        error={packageError}
-      />
-
-      <ServiceDeleteModal
-        isOpen={isPackageDeleteModalOpen}
-        onClose={() => {
-          setIsPackageDeleteModalOpen(false);
-          setDeletingPackageId(null);
-        }}
-        onConfirm={confirmDeletePackage}
-        isSubmitting={packageSubmitting}
-        label="package"
-      />
-
-      <ServiceSaleModal
-        isOpen={isSaleModalOpen}
-        onClose={() => {
-          setIsSaleModalOpen(false);
-          setSaleServiceItem(null);
-        }}
-        service={saleServiceItem}
-        onSubmit={submitSale}
-        isSubmitting={saleSubmitting}
-        error={saleError}
-      />
     </div>
   );
 }

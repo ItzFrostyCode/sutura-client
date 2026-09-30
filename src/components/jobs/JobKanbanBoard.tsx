@@ -284,7 +284,7 @@ export default function JobKanbanBoard({
                                   Size {standardSize}
                                 </span>
                               ) : null}
-                              <span className="truncate">{job.service?.name || 'Tailored'}</span>
+                              <span className="truncate">{job.service_package?.name || job.service?.name || 'Tailored'}</span>
                             </div>
                           </div>
                         </div>

@@ -173,7 +173,6 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
   };
 
   const currentBannerImage = hoveredPreview?.imageUrl ?? store.banner_path ?? '/images/hero_banner.jpg';
-  const startingPrice = thumbnails[0]?.price ? Number(thumbnails[0].price) : null;
 
   return (
     <section
@@ -358,19 +357,11 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                 </div>
               </div>
 
-              {/* Footer: Starting Price + Action Button */}
-              <div className="pt-3 border-t border-line flex items-center justify-between gap-3 shrink-0">
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-ink-muted tracking-wider">
-                    {startingPrice ? 'Starting At' : 'Service Type'}
-                  </p>
-                  <p className="text-sm sm:text-base font-bold text-ink">
-                    {startingPrice ? `₱${startingPrice.toLocaleString()}` : 'Tailoring & Repair'}
-                  </p>
-                </div>
+              {/* Footer: Action Button */}
+              <div className="pt-3 border-t border-line flex items-center shrink-0">
                 <Link
                   href={gate(`/store/${store.slug}`)}
-                  className="min-h-[44px] px-5 bg-ink text-white hover:bg-taupe text-xs font-semibold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  className="w-full min-h-[44px] px-5 bg-ink text-white hover:bg-taupe text-xs font-semibold uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <span>Visit Store</span>
                   <span>→</span>

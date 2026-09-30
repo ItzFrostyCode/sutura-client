@@ -7,7 +7,7 @@ import { type MyOrder, getPhaseMeta } from './ordersTypes';
 export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
   const meta = getPhaseMeta(order.status);
   const StatusIcon = meta.Icon;
-  const itemName = order.catalog_item_name ?? order.service_name ?? order.garment_category ?? 'Garment';
+  const itemName = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? order.garment_category ?? 'Garment';
 
   return (
     <Link

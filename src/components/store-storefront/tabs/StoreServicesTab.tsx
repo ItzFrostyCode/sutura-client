@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Plus } from 'lucide-react';
-import { PublicService, PublicServicePackage } from '../types';
+import Link from 'next/link';
+import { X, Plus, Package } from 'lucide-react';
+import { PublicService, PublicServicePackage, StoreProfile } from '../types';
 import api from '@/lib/axios';
 import ServiceCardItem from '../services/ServiceCardItem';
 import PackageCardItem from '../services/PackageCardItem';
@@ -16,7 +17,10 @@ interface StoreServicesTabProps {
   readonly setServiceSearch: (s: string) => void;
   readonly isOwnerViewingOwnStore: boolean;
   readonly onAddService: () => void;
+  readonly onEditService: (id: number) => void;
+  readonly onDeleteService: (id: number) => void;
   readonly user: { id: number } | null;
+  readonly store?: StoreProfile | null;
 }
 
 export default function StoreServicesTab({
@@ -29,7 +33,10 @@ export default function StoreServicesTab({
   setServiceSearch,
   isOwnerViewingOwnStore,
   onAddService,
+  onEditService,
+  onDeleteService,
   user,
+  store,
 }: StoreServicesTabProps) {
   const router = useRouter();
 
@@ -75,13 +82,23 @@ export default function StoreServicesTab({
   });
 
   const totalFilteredCount = filteredServices.length + filteredPackages.length;
+  // This line used to say "Showing {totalFilteredCount} services." even
+  // though totalFilteredCount is services + packages combined — the search
+  // page's own store card shows a real services-only count (services_count),
+  // so an owner with even one package saw this tab claim one more "service"
+  // than actually exists, a discrepancy customers noticed between the two
+  // pages. Report both counts explicitly instead of merging them under one
+  // ambiguous label.
+  const countLabel = filteredPackages.length > 0
+    ? `Showing ${filteredServices.length} service${filteredServices.length === 1 ? '' : 's'} and ${filteredPackages.length} package${filteredPackages.length === 1 ? '' : 's'}.`
+    : `Showing ${filteredServices.length} service${filteredServices.length === 1 ? '' : 's'}.`;
 
   return (
     <div className="space-y-3.5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <span className="mobile-caption text-ink-muted whitespace-nowrap">
-            Showing {totalFilteredCount} services.
+            {countLabel}
           </span>
           {serviceSearch && (
             <button
@@ -95,13 +112,23 @@ export default function StoreServicesTab({
           )}
         </div>
         {isOwnerViewingOwnStore && (
-          <button
-            type="button"
-            onClick={onAddService}
-            className="min-h-[44px] flex items-center gap-1.5 bg-taupe hover:bg-taupe/90 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors shrink-0 cursor-pointer shadow-xs active:scale-[0.98]"
-          >
-            <Plus size={16} /> Add Service
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {filteredPackages.length > 0 && (
+              <Link
+                href="/dashboard/services"
+                className="min-h-[44px] flex items-center gap-1.5 bg-canvas hover:bg-sunken border border-line text-ink-body text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors"
+              >
+                <Package size={14} /> Manage Packages
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={onAddService}
+              className="min-h-[44px] flex items-center gap-1.5 bg-taupe hover:bg-taupe/90 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
+            >
+              <Plus size={16} /> Add Service
+            </button>
+          </div>
         )}
       </div>
 
@@ -120,6 +147,10 @@ export default function StoreServicesTab({
               key={`service-${service.id}`}
               service={service}
               isHighlighted={highlightedServiceId === service.id}
+              storeDistrict={store?.branches?.[0]?.district || store?.branches?.[0]?.city || 'Davao City'}
+              canManage={isOwnerViewingOwnStore}
+              onEdit={onEditService}
+              onDelete={onDeleteService}
               onSelect={(id) => {
                 if (user) {
                   api.post('/recently-viewed', { type: 'service', id }).catch(() => {});

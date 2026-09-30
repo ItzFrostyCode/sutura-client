@@ -166,8 +166,9 @@ iPhones and Macs save camera photos as **HEIC** by default. Windows PCs and Andr
 
 | Role | Email | Password |
 |---|---|---|
-| Shop Owner | `owner@sutura.com` | `password` |
+| Shop Owner | `maria.cruz@gmail.com` | `password` |
 | Staff | `staff@sutura.com` | `password` |
+| Branch Manager | `manager@sutura.com` | `password` |
 | Admin | `admin@sutura.com` | `password` |
 
 ---

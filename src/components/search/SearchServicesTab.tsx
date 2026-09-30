@@ -7,7 +7,8 @@ import { Scissors, Store, Star, ChevronRight } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
-import { SearchServiceResult, RelatedStore, SearchActiveTab } from './types';
+import { SearchServiceResult, SearchPackageResult, RelatedStore, SearchActiveTab } from './types';
+import SearchPackageCard from './SearchPackageCard';
 import ServiceCarouselRow from './ServiceCarouselRow';
 import SearchServiceCard from './SearchServiceCard';
 
@@ -15,6 +16,7 @@ interface SearchServicesTabProps {
   readonly services: SearchServiceResult[];
   readonly servicesLoading: boolean;
   readonly servicesTotal: number;
+  readonly packages?: SearchPackageResult[];
   readonly stores: RelatedStore[];
   readonly activeTab: SearchActiveTab;
   readonly effectiveQ: string;
@@ -25,12 +27,13 @@ export default function SearchServicesTab({
   services,
   servicesLoading,
   servicesTotal,
+  packages = [],
   stores,
   activeTab,
   effectiveQ,
   gate,
 }: SearchServicesTabProps) {
-  if (activeTab !== 'services' && (activeTab !== 'all' || (!servicesLoading && services.length === 0))) {
+  if (activeTab !== 'services' && (activeTab !== 'all' || (!servicesLoading && services.length === 0 && packages.length === 0))) {
     return null;
   }
 
@@ -43,6 +46,15 @@ export default function SearchServicesTab({
         </div>
         <span className="text-xs text-ink-muted font-medium">{servicesTotal}</span>
       </div>
+
+      {!servicesLoading && packages.length > 0 && (
+        <div className="mb-5">
+          <p className="text-[11px] font-bold text-ink mb-2 px-1">Combo packages ({packages.length})</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {packages.map((p) => <SearchPackageCard key={p.id} pkg={p} gate={gate} />)}
+          </div>
+        </div>
+      )}
 
       {servicesLoading ? (
         // Mirrors the real store row + service-card carousel below, so

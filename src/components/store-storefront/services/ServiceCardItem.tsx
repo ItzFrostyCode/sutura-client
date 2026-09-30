@@ -1,19 +1,40 @@
 import React from 'react';
-import { Clock, Scissors, Star } from 'lucide-react';
+import { Clock, Scissors, Star, MapPin, Pencil, Trash2 } from 'lucide-react';
 import { PublicService } from '../types';
 import { getMediaUrl } from '@/lib/media';
 import { getActiveSale } from '@/lib/salePricing';
+import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
+import { SERVICE_TYPE_LABELS } from '@/lib/canonicalTaxonomy';
 
 interface ServiceCardItemProps {
   readonly service: PublicService;
   readonly isHighlighted: boolean;
   readonly onSelect: (id: number) => void;
+  readonly storeDistrict?: string | null;
+  readonly canManage?: boolean;
+  readonly onEdit?: (id: number) => void;
+  readonly onDelete?: (id: number) => void;
 }
 
+/**
+ * Service Card for Storefront Services Tab (/store/[store_id]?tab=services).
+ * Sequential structure per user specification:
+ * 1. Image Thumbnail
+ * 2. Name
+ * 3. Service Type
+ * 4. Price
+ * 5. Star (Average Rating) | (count) sold
+ * 6. Clock {estimated exact count days day-day/monthday - day}
+ * 7. Location
+ */
 export default function ServiceCardItem({
   service,
   isHighlighted,
   onSelect,
+  storeDistrict,
+  canManage,
+  onEdit,
+  onDelete,
 }: ServiceCardItemProps) {
   const activeSale = service.base_price
     ? getActiveSale({
@@ -24,11 +45,18 @@ export default function ServiceCardItem({
       })
     : null;
 
+  const turnaroundText = (service.estimated_days ? 'Est. ' : '') + formatServiceTurnaround(service.estimated_days, service.estimated_days_max);
+  const locationText = storeDistrict ? `${storeDistrict}, Davao City` : 'Davao City';
+  // Prefer the canonical Services taxonomy label over the legacy free-text
+  // service_type/category fields — matches ServiceAccordionSections.tsx's
+  // own Category row so the badge shown here and on the detail page agree.
+  const rawType = service.service_leaf_type
+    ? SERVICE_TYPE_LABELS[service.service_leaf_type] ?? service.service_leaf_type
+    : service.service_type || service.category || 'Tailoring Service';
+  const serviceTypeDisplay = rawType.replace(/_/g, ' ');
+  const soldCount = service.orders_count ?? service.reviews_count ?? 0;
+
   return (
-    // Same card visual language as SearchServicesTab's service card on
-    // /search — flat (no rounded corners), aspect-4/3 image, compact type
-    // scale — just wired to onSelect (in-page detail expand) instead of a
-    // route Link, since this card lives on the store's own page already.
     <div
       id={`service-item-${service.id}`}
       onClick={() => onSelect(service.id)}
@@ -41,6 +69,7 @@ export default function ServiceCardItem({
         isHighlighted ? 'ring-2 ring-taupe' : ''
       }`}
     >
+      {/* 1. Image Thumbnail */}
       <div className="aspect-4/3 w-full bg-sunken relative overflow-hidden shrink-0 border-b border-line">
         {service.image_url ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -63,51 +92,93 @@ export default function ServiceCardItem({
         >
           <Scissors size={24} className="text-taupe/40" />
         </div>
+
+        {canManage && (
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEdit?.(service.id); }}
+              aria-label="Edit service"
+              className="w-7 h-7 flex items-center justify-center bg-white/90 hover:bg-white text-ink border border-line shadow-xs transition-colors cursor-pointer"
+            >
+              <Pencil size={12} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete?.(service.id); }}
+              aria-label="Delete service"
+              className="w-7 h-7 flex items-center justify-center bg-white/90 hover:bg-rose-50 text-danger border border-line shadow-xs transition-colors cursor-pointer"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="p-2.5 flex-1 flex flex-col justify-between">
-        <div>
-          {service.reviews_avg_rating && Number(service.reviews_avg_rating) > 0 ? (
-            <div className="flex items-center gap-1 mb-1 h-3.5">
-              <Star size={10} className="fill-amber-400 text-amber-500 shrink-0" />
-              <span className="text-[10px] font-semibold text-ink">
-                {Number(service.reviews_avg_rating).toFixed(1)}
-              </span>
-              {(service.reviews_count ?? 0) > 0 && (
-                <span className="text-[10px] text-ink-faint">({service.reviews_count})</span>
-              )}
-            </div>
-          ) : null}
-          <span className="text-[9px] font-medium uppercase tracking-wide text-taupe truncate block">
-            {service.category || service.service_type || 'Tailoring Service'}
-          </span>
-          <h4 className="text-xs font-semibold text-ink group-hover:text-taupe transition-colors leading-snug mt-0.5 line-clamp-2">
+      {/* Card Info Body - Sequential order per user spec */}
+      <div className="p-2.5 flex-1 flex flex-col justify-between gap-1.5">
+        <div className="space-y-1">
+          {/* 2. Name */}
+          <h3 className="text-xs font-semibold text-ink group-hover:text-taupe transition-colors leading-snug line-clamp-1">
             {service.name}
-          </h4>
-        </div>
+          </h3>
 
-        <div className="flex items-center justify-between pt-1.5 border-t border-line/50 mt-2">
-          <span className="text-xs font-bold text-ink truncate">
+          {/* 3. Service Type */}
+          <span className="text-[10px] font-medium uppercase tracking-wide text-taupe truncate block">
+            {serviceTypeDisplay}
+          </span>
+
+          {/* 4. Price */}
+          <div>
             {activeSale ? (
-              <span className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <span className="line-through text-ink-faint text-[10px] font-normal">
                   ₱{activeSale.original.toLocaleString()}
                 </span>
-                <span className="text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
-              </span>
+                <span className="text-xs font-bold text-rose-600">
+                  ₱{activeSale.sale.toLocaleString()}
+                </span>
+              </div>
             ) : service.base_price !== null && service.base_price !== undefined ? (
-              `₱${Number(service.base_price).toLocaleString(undefined, { minimumFractionDigits: 0 })}`
+              <p className="text-xs font-bold text-ink">
+                ₱{Number(service.base_price).toLocaleString(undefined, { minimumFractionDigits: 0 })}
+              </p>
             ) : (
-              'Custom Quote'
+              <p className="text-xs font-bold text-ink">Custom Quote</p>
             )}
-          </span>
+          </div>
 
-          <span className="flex items-center gap-1 text-[10px] text-ink-muted font-medium shrink-0 ml-1">
+          {/* 5. Star (Average Rating) | (count) sold */}
+          <div className="flex items-center gap-1.5 text-[10px] text-ink-muted">
+            <div className="flex items-center gap-0.5 shrink-0">
+              <Star size={10} className="fill-amber-400 text-amber-500 shrink-0" />
+              <span className="font-semibold text-ink">
+                {service.reviews_avg_rating && Number(service.reviews_avg_rating) > 0
+                  ? Number(service.reviews_avg_rating).toFixed(1)
+                  : '0.0'}
+              </span>
+            </div>
+            <span className="text-ink-faint">|</span>
+            <span className="truncate">{soldCount} sold</span>
+          </div>
+
+          {/* 6. Clock {estimated exact count days day-day/monthday - day} */}
+          <div
+            className="flex items-center gap-1 text-[10px] text-ink-muted truncate"
+            title={turnaroundText}
+          >
             <Clock size={10} className="text-taupe shrink-0" />
-            <span>Est. {service.estimated_days ? `${service.estimated_days}d` : '7-10d'}</span>
-          </span>
+            <span className="truncate">{turnaroundText}</span>
+          </div>
+        </div>
+
+        {/* 7. Location */}
+        <div className="flex items-center gap-1 text-[10px] text-ink-faint truncate pt-1 border-t border-line/50">
+          <MapPin size={10} className="text-taupe/70 shrink-0" />
+          <span className="truncate">{locationText}</span>
         </div>
       </div>
     </div>
   );
 }
+

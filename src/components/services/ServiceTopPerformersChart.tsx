@@ -1,3 +1,4 @@
+import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import React from 'react';
 import {
   BarChart,
@@ -26,7 +27,7 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
   if (active && payload?.length) {
     const service = payload[0].payload;
     return (
-      <div className="bg-surface border border-line rounded-xl px-4 py-3 max-w-[220px]">
+      <div className="bg-surface border border-line px-4 py-3 max-w-[220px]">
         <p className="text-xs font-medium text-ink mb-1 leading-snug">{service.name}</p>
         <p className="text-base font-bold text-taupe">
           ₱{Number(service.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
@@ -46,7 +47,7 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
 export default function ServiceTopPerformersChart({ services, loading }: ServiceTopPerformersChartProps) {
   if (loading) {
     return (
-      <div className="bg-surface border border-line rounded-2xl p-6 text-center text-sm text-ink-faint py-12">
+      <div className="bg-surface border border-line p-6 text-center text-sm text-ink-faint py-12">
         Loading top performers…
       </div>
     );
@@ -66,7 +67,7 @@ export default function ServiceTopPerformersChart({ services, loading }: Service
   }
 
   return (
-    <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
+    <div className="bg-surface border border-line p-6 space-y-6">
       <div className="flex items-center gap-2">
         <Trophy size={18} className="text-taupe" />
         <div>
@@ -119,7 +120,7 @@ export default function ServiceTopPerformersChart({ services, loading }: Service
             <div key={service.id} className="px-6 py-3 hover:bg-sunken/20 transition-colors">
               <p className="font-medium text-ink truncate">{service.name}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-ink-muted">
-                <span>Est. {service.estimated_days ?? 7}d</span>
+                <span>{service.estimated_days ? 'Est. ' : ''}{formatServiceTurnaround(service.estimated_days, service.estimated_days_max)}</span>
                 <span>{service.saves_count || 0} saved</span>
                 <span>{service.job_orders_count || 0} orders</span>
                 <span className="font-semibold text-ink">₱{Number(service.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
@@ -143,7 +144,7 @@ export default function ServiceTopPerformersChart({ services, loading }: Service
               {allRankedServices.map(service => (
                 <tr key={service.id} className="hover:bg-sunken/20 transition-colors">
                   <td className="px-6 py-3 font-medium text-ink max-w-[220px] truncate">{service.name}</td>
-                  <td className="px-6 py-3 text-ink-muted">{service.estimated_days ?? 7}</td>
+                  <td className="px-6 py-3 text-ink-muted">{formatServiceTurnaround(service.estimated_days, service.estimated_days_max)}</td>
                   <td className="px-6 py-3">{service.saves_count || 0}</td>
                   <td className="px-6 py-3">{service.job_orders_count || 0}</td>
                   <td className="px-6 py-3">₱{Number(service.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>

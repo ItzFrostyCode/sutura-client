@@ -120,7 +120,6 @@ export default function AuditLogPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Accountability"
         title="Audit Log"
         description="A record of accountability-sensitive actions — discounts, payment rejections, and reschedules — with who did it, when, and why."
       />

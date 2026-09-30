@@ -6,66 +6,81 @@ import Link from 'next/link';
 interface CatalogBottomActionBarProps {
   onOpenFind: () => void;
   bookHref: string;
-  /**
-   * Bulk/team-roster items (min_order_qty-gated) skip the fitting and open
-   * the roster sheet directly via onOrder() instead — every other item
-   * (single custom pieces, which always need an in-person fitting to lock
-   * down exact fabric/measurements/quantity) keeps "Book a Fitting". There
-   * is deliberately no direct single-piece order shortcut here anymore —
-   * one existed ('made_to_order') but nothing has set it since the catalog
-   * item detail page stopped offering it, so it's removed rather than left
-   * as dead, confusing optionality.
-   */
+  storeSlug?: string;
   orderAction?: 'bulk' | null;
   onOrder?: () => void;
   orderSubmitting?: boolean;
+  /** The owner closed appointments for this design. */
 }
 
 export default function CatalogBottomActionBar({
   onOpenFind,
   bookHref,
+  storeSlug,
   orderAction,
   onOrder,
   orderSubmitting,
 }: CatalogBottomActionBarProps) {
-  // True-mobile-only docked bar (below 600px) — 600px+ gets the same
-  // actions placed inline in the right column instead (see
-  // CatalogDesktopActionButtons, activates alongside the two-column
-  // layout), so this never floats as a small centered card over scrolled
-  // content on wider screens. True edge-to-edge (no max-width, no side
-  // borders/rounding), border-top only, and a sleeker 44-46px button
-  // height instead of the shared .btn-*-mobile classes' 52px (that class
-  // is the right call for most primary CTAs elsewhere, just too tall for
-  // this always-visible bar).
-  const buttonBase = 'flex-1 h-11 min-h-[44px] rounded-none text-sm font-semibold flex items-center justify-center transition-colors whitespace-nowrap px-3';
-
   return (
     <div
-      className="min-[600px]:hidden sticky bottom-0 left-0 right-0 z-40 bg-surface border-t border-line p-3 shrink-0"
-      style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
+      className="min-[600px]:hidden sticky bottom-0 left-0 right-0 z-40 bg-white border-t border-line shrink-0"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onOpenFind}
-          className={`${buttonBase} border border-line-strong hover:border-ink text-ink font-medium`}
-        >
-          Find Branch
-        </button>
-        {orderAction && onOrder ? (
+      <div className="flex items-stretch h-14">
+        {/* Left: Shop icon + Categories icon */}
+        <div className="flex items-stretch border-r border-line">
+          <Link
+            href={storeSlug ? `/store/${storeSlug}` : '/search?tab=store'}
+            className="flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span className="text-[10px] font-semibold">Shop</span>
+          </Link>
           <button
             type="button"
-            onClick={onOrder}
-            disabled={orderSubmitting}
-            className={`${buttonBase} bg-ink hover:bg-taupe text-white disabled:opacity-60`}
+            onClick={onOpenFind}
+            className="flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors border-l border-line"
           >
-            {orderSubmitting ? 'Placing order…' : 'Bulk Order'}
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            <span className="text-[10px] font-semibold">Find</span>
           </button>
-        ) : (
-          <Link href={bookHref} className={`${buttonBase} bg-ink hover:bg-taupe text-white text-center`}>
-            Book a Fitting
-          </Link>
-        )}
+        </div>
+
+        {/* Right: Add to Cart + Book Appointment */}
+        <div className="flex flex-1 items-stretch">
+          <button
+            type="button"
+            onClick={onOpenFind}
+            className="flex-1 flex items-center justify-center text-sm font-semibold text-taupe border-r border-line hover:bg-canvas transition-colors"
+          >
+            Add To Cart
+          </button>
+          {orderAction && onOrder ? (
+            <button
+              type="button"
+              onClick={onOrder}
+              disabled={orderSubmitting}
+              className="flex-1 flex items-center justify-center text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors disabled:opacity-60"
+            >
+              {orderSubmitting ? 'Placing…' : 'Bulk Order'}
+            </button>
+          ) : (
+            <Link
+              href={bookHref}
+              className="flex-1 flex items-center justify-center text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors text-center"
+            >
+              Book an Appointment
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

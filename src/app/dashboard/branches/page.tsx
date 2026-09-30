@@ -229,7 +229,6 @@ export default function BranchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Locations"
         title="Store Branches"
         description="Manage every physical location of your store. Each branch appears on the customer discovery map."
         actions={
