@@ -77,7 +77,7 @@ export default function OrderListItem({
           <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[11px] font-mono font-bold text-ink-muted bg-canvas px-2 py-0.5 rounded border border-line">
-                #ORD-{order.id}
+                {order.order_number ?? `#${order.id}`}
               </span>
               <StatusBadge status={order.status} />
               {order.selected_size && (

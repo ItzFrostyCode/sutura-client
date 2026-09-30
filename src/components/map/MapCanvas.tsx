@@ -63,7 +63,7 @@ export default function MapCanvas({
         type="button"
         onClick={onNearMe}
         disabled={locating}
-        className="absolute bottom-3 right-3 z-[400] w-10 h-10 rounded-full bg-white border border-line flex items-center justify-center text-taupe shadow-md hover:bg-sunken disabled:opacity-60 cursor-pointer"
+        className="absolute bottom-3 right-3 z-[400] w-10 h-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-md hover:bg-sunken disabled:opacity-60 cursor-pointer"
         aria-label="Use my current location"
       >
         <LocateFixed size={18} className={locating ? 'animate-pulse' : ''} />

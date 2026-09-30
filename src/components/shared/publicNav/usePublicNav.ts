@@ -138,7 +138,7 @@ export function usePublicNav() {
   }
 
   function openCategory(group: TopGroup, category: CategoryLeaf) {
-    setOpenSection(category.sections ? category.sections[0].key : 'explore');
+    setOpenSection('explore');
     setScreen({ level: 2, group, category });
   }
 

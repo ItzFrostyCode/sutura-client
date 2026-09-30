@@ -23,9 +23,20 @@ export type ServiceType = 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bri
 export const SERVICE_TYPES: { value: ServiceType; label: string; hint: string }[] = [
   { value: 'custom_tailoring', label: 'Custom Tailoring & Bespoke', hint: 'Measurement-driven made-to-order garments' },
   { value: 'bulk_sublimation', label: 'Bulk / Sublimation Printing', hint: 'Team jerseys, corporate & school uniforms — enables team roster ordering' },
-  { value: 'fashion_bridal', label: 'Fashion & Bridal', hint: 'Gowns, barong, Filipiniana — supports two-fitting scheduling & rentals' },
+  { value: 'fashion_bridal', label: 'Fashion & Bridal', hint: 'Gowns, barong, Filipiniana — supports two-fitting scheduling' },
   { value: 'alteration_repair', label: 'Alterations & Repairs', hint: 'Resizing, repairs, hemming — requires pre-existing damage notes' },
 ];
+
+// What each canonical category means for order handling. The category already says
+// what the service is, so the "how it works" flag is derived from it, not asked twice.
+export const CATEGORY_HANDLING: Record<string, { types: ServiceType[]; note: string }> = {
+  custom_tailoring:        { types: ['custom_tailoring'],  note: 'Made to measure — customers are measured and fitted before the garment is finished.' },
+  alterations_repairs:     { types: ['alteration_repair'], note: 'Repairs and resizing — customers describe the damage or the change they need when ordering.' },
+  uniform_production:      { types: ['bulk_sublimation'],  note: 'Bulk order — customers can submit a team roster with sizes.' },
+  printing_sublimation:    { types: ['bulk_sublimation'],  note: 'Bulk order — customers can submit a team roster with sizes.' },
+  custom_costume_creation: { types: ['custom_tailoring'],  note: 'Made to measure — customers are measured and fitted before the garment is finished.' },
+  others:                  { types: ['custom_tailoring'],  note: 'Handled as a made-to-measure order.' },
+};
 
 // Shared icon + color per service_type, reused by both the Services catalog and Job
 // Creation's conditional fields so a type reads the same everywhere in the app.
@@ -42,11 +53,16 @@ export interface Service {
   description: string;
   categories: string[];
   service_types?: ServiceType[];
+  // New canonical taxonomy fields (src/lib/canonicalTaxonomy.ts) — additive,
+  // do not replace the free-text `categories` or the operational `service_types` above.
+  service_category?: string | null;
+  service_leaf_type?: string | null;
   base_price: string | null;
   sale_price?: string | number | null;
   sale_starts_at?: string | null;
   sale_ends_at?: string | null;
-  estimated_days: number;
+  estimated_days: number | null;
+  estimated_days_max?: number | null;
   min_order_qty?: number;
   is_active: boolean;
   image_url?: string | null;
@@ -91,6 +107,10 @@ export interface ServicePackage {
   id: number;
   name: string;
   description: string | null;
+  image_url?: string | null;
+  service_category?: string | null;
+  job_orders_count?: number;
+  total_revenue?: number;
   bundle_price: string | null;
   is_active: boolean;
   services: Service[];

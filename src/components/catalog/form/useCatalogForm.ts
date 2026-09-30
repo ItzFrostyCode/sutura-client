@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
-import { BulletItem, ImageItem, CatalogFormData } from '../catalogTypes';
+import { BulletItem, ImageItem, ColorItem, CatalogFormData } from '../catalogTypes';
 import { uploadSectionImage, buildSavePayload } from '../catalogHelpers';
 import { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
 import { CatalogFormProps, StoreServiceOption } from './formTypes';
@@ -19,13 +19,16 @@ export function useCatalogForm({
     price: '',
     service_id: '',
     estimated_days: '',
+    estimated_days_max: '',
     material: '',
-    color: '',
     fabric_image_url: '',
     description: '',
     care_instructions: '',
+    measurement_guide: '',
     garment_type: '',
     department: '',
+    subcategory: '',
+    garment_structure: '',
     sizes: [],
     external_gallery_url: '',
     is_active: true,
@@ -56,17 +59,20 @@ export function useCatalogForm({
 
   const [features, setFeatures] = useState<BulletItem[]>([{ id: 'init', text: '' }]);
   const [sizeChart, setSizeChart] = useState<SizeChartValue>(emptySizeChart);
+  const [colorItems, setColorItems] = useState<ColorItem[]>([]);
   const [images, setImages] = useState<ImageItem[]>([
     { id: 'init', url: '', angle: 'Default', is_primary: true },
   ]);
 
   const [featuresImage, setFeaturesImage] = useState<string>('');
   const [careImage, setCareImage] = useState<string>('');
-  const [uploadingSection, setUploadingSection] = useState<'specs' | 'care' | null>(null);
+  const [measurementGuideImage, setMeasurementGuideImage] = useState<string>('');
+  const [uploadingSection, setUploadingSection] = useState<'specs' | 'care' | 'measurement_guide' | null>(null);
 
   const [accordionOpen, setAccordionOpen] = useState({
     specs: false,
     care: false,
+    measurement_guide: false,
   });
 
   const [showMoreDetails, setShowMoreDetails] = useState(false);
@@ -77,14 +83,16 @@ export function useCatalogForm({
       setFormData(initialData.formData);
       setFeatures(initialData.features);
       setSizeChart(initialData.sizeChart);
+      setColorItems(initialData.colorItems);
       setImages(initialData.images);
       setFeaturesImage(initialData.featuresImage);
       setCareImage(initialData.careImage);
+      setMeasurementGuideImage(initialData.measurementGuideImage);
     }, 0);
     return () => clearTimeout(timer);
   }, [initialData]);
 
-  const toggleAccordion = (section: 'specs' | 'care') => {
+  const toggleAccordion = (section: 'specs' | 'care' | 'measurement_guide') => {
     setAccordionOpen(prev => ({
       ...prev,
       [section]: !prev[section],
@@ -95,7 +103,7 @@ export function useCatalogForm({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSectionUpload = (file: File | undefined, section: 'specs' | 'care') => {
+  const handleSectionUpload = (file: File | undefined, section: 'specs' | 'care' | 'measurement_guide') => {
     if (!file || !store?.id) return;
     uploadSectionImage({
       file,
@@ -104,6 +112,7 @@ export function useCatalogForm({
       setUploadingSection,
       setFeaturesImage,
       setCareImage,
+      setMeasurementGuideImage,
     });
   };
 
@@ -135,7 +144,9 @@ export function useCatalogForm({
       featuresImage,
       sizeChart,
       careImage,
-      images
+      images,
+      measurementGuideImage,
+      colorItems
     );
     await onSubmit(payload);
   };
@@ -155,12 +166,16 @@ export function useCatalogForm({
     setFeatures,
     sizeChart,
     setSizeChart,
+    colorItems,
+    setColorItems,
     images,
     setImages,
     featuresImage,
     setFeaturesImage,
     careImage,
     setCareImage,
+    measurementGuideImage,
+    setMeasurementGuideImage,
     uploadingSection,
     accordionOpen,
     toggleAccordion,

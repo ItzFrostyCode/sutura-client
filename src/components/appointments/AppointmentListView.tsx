@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AppointmentSubject from './AppointmentSubject';
 import {
   Calendar as CalendarIcon, Clock, Loader2, Eye, Play, Scissors,
   CheckSquare, RefreshCw, Pencil, Trash2, UserX, Mail, Phone,
@@ -216,16 +217,9 @@ export default function AppointmentListView({
         )}
       </div>
 
-      {apt.service && (
-        <p className="text-xs text-ink font-medium truncate max-w-[200px]">
-          {apt.service.name}
-        </p>
-      )}
-      {!apt.service && apt.garment_category && (
-        <p className="text-xs text-ink-muted capitalize truncate max-w-[200px]">
-          {apt.garment_category.replace(/_/g, ' ')}
-        </p>
-      )}
+      <div className="max-w-[260px]">
+        <AppointmentSubject apt={apt} />
+      </div>
     </div>
   );
 
@@ -378,7 +372,7 @@ export default function AppointmentListView({
           {/* Status */}
           <td className="px-5 py-3.5 align-middle whitespace-nowrap">
             <div className="flex items-center gap-1.5">
-              <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+              <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
               <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
             </div>
           </td>
@@ -467,7 +461,7 @@ export default function AppointmentListView({
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} />
+                    <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
                     <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
                   </div>
                 </div>

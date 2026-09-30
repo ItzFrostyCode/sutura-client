@@ -36,21 +36,27 @@ const COLS: Record<number, string> = {
  */
 export default function StatBand({ items, columns = 4 }: StatBandProps) {
   return (
-    <div className={`grid grid-cols-1 ${COLS[columns]} bg-surface border border-line rounded-xl divide-y sm:divide-y-0 sm:divide-x divide-line overflow-hidden`}>
-      {items.map(item => (
-        <div key={item.label} className="p-5 flex flex-col justify-between gap-2.5 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted truncate">{item.label}</p>
-            {item.icon && <item.icon size={15} className="text-ink-faint shrink-0" />}
+    <div className="bg-surface border border-line rounded-xl overflow-hidden">
+      {/* -mr-px/-mb-px pushes each cell's trailing hairline outside the
+          clipped frame, so rules run between cells in both directions (the
+          2×2 mobile layout used to have only horizontal ones and read as
+          crammed) without doubling up on the outer border. */}
+      <div className={`grid grid-cols-1 ${COLS[columns]} -mr-px -mb-px`}>
+        {items.map(item => (
+          <div key={item.label} className="p-4 sm:p-5 flex flex-col justify-between gap-2 sm:gap-2.5 min-w-0 border-r border-b border-line">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted truncate">{item.label}</p>
+              {item.icon && <item.icon size={15} className="text-ink-faint shrink-0" />}
+            </div>
+            <div className="min-w-0">
+              <p className={`text-figure text-xl sm:text-2xl font-semibold break-words ${TONE[item.tone ?? 'default']}`}>
+                {item.value}
+              </p>
+              {item.hint && <p className="text-xs text-ink-faint mt-1 truncate">{item.hint}</p>}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className={`text-figure text-2xl font-semibold break-words ${TONE[item.tone ?? 'default']}`}>
-              {item.value}
-            </p>
-            {item.hint && <p className="text-xs text-ink-faint mt-1 truncate">{item.hint}</p>}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

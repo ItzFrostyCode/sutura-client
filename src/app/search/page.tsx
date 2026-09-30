@@ -79,7 +79,7 @@ function SearchPageContent() {
                   <span className="absolute -inset-y-2 -inset-x-1.5" aria-hidden="true" />
 
                   {/* Visual Box: +2px up/down padding, smaller than 44px filter button, crisp borders */}
-                  <span className="relative z-10 px-2.5 py-[5px] border border-line bg-surface group-hover/change:bg-sunken group-hover/change:border-ink/50 group-active/change:scale-95 text-[11px] sm:text-xs font-semibold tracking-wide text-ink transition-all flex items-center gap-1 shadow-2xs">
+                  <span className="relative z-10 px-2.5 py-[5px] border border-line bg-surface group-hover/change:bg-sunken group-hover/change:border-ink/50 group-active/change:scale-95 text-[11px] sm:text-xs font-semibold tracking-wide text-ink transition-all flex items-center gap-1 shadow-2xs rounded-lg">
                     Change
                   </span>
                 </button>
@@ -88,7 +88,7 @@ function SearchPageContent() {
 
           {/* Search + Filter row */}
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1 flex items-center gap-2 h-11 px-3.5 border border-line bg-surface">
+            <div className="flex-1 flex items-center gap-2 h-11 px-3.5 border border-line bg-surface rounded-xl focus-within:border-ink transition-all">
               <Search size={18} className="text-taupe shrink-0" />
               {/* Falls back to categoryLabel (e.g. "All Suits") when q is
                   empty, so arriving via a nav category link shows what
@@ -113,7 +113,7 @@ function SearchPageContent() {
                     s.searchInputRef.current?.focus();
                   }}
                   aria-label="Clear"
-                  className="w-7 h-7 flex items-center justify-center shrink-0 text-ink-faint hover:text-ink cursor-pointer"
+                  className="w-7 h-7 flex items-center justify-center shrink-0 text-ink-faint hover:text-ink cursor-pointer rounded-md hover:bg-sunken"
                 >
                   <X size={15} />
                 </button>
@@ -124,7 +124,7 @@ function SearchPageContent() {
             <button
               type="button"
               onClick={s.openFilterPanel}
-              className={`sm:hidden h-11 px-3.5 border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+              className={`sm:hidden h-11 px-3.5 border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl ${
                 s.activeFilterCount > 0
                   ? 'bg-ink text-white border-ink'
                   : 'bg-surface text-ink-body border-line hover:bg-sunken'
@@ -135,19 +135,19 @@ function SearchPageContent() {
               <SlidersHorizontal size={16} />
               <span>Filter</span>
               {s.activeFilterCount > 0 && (
-                <span className="w-5 h-5 bg-white/20 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="w-5 h-5 bg-white/20 text-white text-[10px] font-bold flex items-center justify-center rounded-sm">
                   {s.activeFilterCount}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Segmented Tabs: Stores, Services, Catalog (NO ALL) */}
+          {/* Segmented Tabs: Stores, Catalog, Services */}
           <div className="flex items-center justify-around sm:justify-start sm:gap-6 max-w-md sm:max-w-none mx-auto sm:mx-0">
-            {(['store', 'services', 'showroom'] as const).map((tab) => {
+            {(['store', 'showroom', 'services'] as const).map((tab) => {
               const isSelected = s.activeTab === tab;
               const label =
-                tab === 'store' ? 'Stores' : tab === 'services' ? 'Services' : 'Catalog';
+                tab === 'store' ? 'Stores' : tab === 'showroom' ? 'Catalog' : 'Services';
               return (
                 <button
                   key={tab}
@@ -183,9 +183,8 @@ function SearchPageContent() {
                 items={s.items}
                 total={s.total}
                 gate={s.gate}
-                showFabric={s.showFabric}
-                setShowFabric={s.setShowFabric}
                 userCoords={s.userCoords}
+                department={s.department}
               />
             )}
 
@@ -195,6 +194,7 @@ function SearchPageContent() {
                 services={s.services}
                 servicesLoading={s.servicesLoading}
                 servicesTotal={s.servicesTotal}
+                packages={s.packages}
                 stores={s.stores}
                 activeTab={s.activeTab}
                 effectiveQ={s.effectiveQ}
@@ -210,8 +210,6 @@ function SearchPageContent() {
                 sortBy={s.sortBy}
                 setSortBy={s.setSortBy}
                 loading={s.loading}
-                showFabric={s.showFabric}
-                setShowFabric={s.setShowFabric}
                 items={s.items}
                 page={s.page}
                 setPage={s.setPage}
@@ -221,36 +219,43 @@ function SearchPageContent() {
             )}
           </div>
 
-          {/* Web Persistent Filter Sidebar (hidden on mobile, visible on sm+) — right side */}
+          {/* Web Persistent Filter Sidebar (hidden on mobile, visible on sm+) — right side. Shown on every tab, including Services (Service Category/Type). */}
           <div className="hidden sm:block">
-            <SearchWebFilterSidebar
-              specialization={s.specialization}
-              setSpecialization={s.setSpecialization}
-              department={s.department}
-              color={s.color}
-              setColor={s.setColor}
-              onSelectQuery={(q) => s.setQ(q)}
-              openNow={s.openNow}
-              setOpenNow={s.setOpenNow}
-              minPrice={s.minPrice}
-              setMinPrice={s.setMinPrice}
-              maxPrice={s.maxPrice}
-              setMaxPrice={s.setMaxPrice}
-              sortBy={s.sortBy}
-              setSortBy={s.setSortBy}
-              minRating={s.minRating}
-              setMinRating={s.setMinRating}
-              district={s.district}
-              setDistrict={s.setDistrict}
-              onReset={s.resetFilterPanel}
-              activeFilterCount={s.activeFilterCount}
-              activeTab={s.activeTab}
-            />
+              <SearchWebFilterSidebar
+                specialization={s.specialization}
+                setSpecialization={s.setSpecialization}
+                department={s.department}
+                setDepartment={s.setDepartment}
+                subcategory={s.subcategory}
+                setSubcategory={s.setSubcategory}
+                structure={s.structure}
+                setStructure={s.setStructure}
+                garmentType={s.garmentType}
+                setGarmentType={s.setGarmentType}
+                serviceCategory={s.serviceCategory}
+                setServiceCategory={s.setServiceCategory}
+                serviceType={s.serviceType}
+                setServiceType={s.setServiceType}
+                onSelectQuery={(q) => s.setQ(q)}
+                minPrice={s.minPrice}
+                setMinPrice={s.setMinPrice}
+                maxPrice={s.maxPrice}
+                setMaxPrice={s.setMaxPrice}
+                sortBy={s.sortBy}
+                setSortBy={s.setSortBy}
+                minRating={s.minRating}
+                setMinRating={s.setMinRating}
+                district={s.district}
+                setDistrict={s.setDistrict}
+                onReset={s.resetFilterPanel}
+                activeFilterCount={s.activeFilterCount}
+                activeTab={s.activeTab}
+              />
           </div>
         </div>
       </main>
 
-      {/* Filter Drawer Dropdown */}
+      {/* Filter Drawer Dropdown — shown on every tab, including Services. */}
       <SearchFilterDrawer
         isOpen={s.filterPanelOpen}
         onClose={() => s.setFilterPanelOpen(false)}
@@ -258,11 +263,18 @@ function SearchPageContent() {
         setActiveFilterTab={s.setActiveFilterTab}
         draftSpecialization={s.draftSpecialization}
         setDraftSpecialization={s.setDraftSpecialization}
-        department={s.department}
-        draftColor={s.draftColor}
-        setDraftColor={s.setDraftColor}
-        draftOpenNow={s.draftOpenNow}
-        setDraftOpenNow={s.setDraftOpenNow}
+        department={s.draftDepartment}
+        setDepartment={s.setDraftDepartment}
+        draftSubcategory={s.draftSubcategory}
+        setDraftSubcategory={s.setDraftSubcategory}
+        draftStructure={s.draftStructure}
+        setDraftStructure={s.setDraftStructure}
+        draftGarmentType={s.draftGarmentType}
+        setDraftGarmentType={s.setDraftGarmentType}
+        draftServiceCategory={s.draftServiceCategory}
+        setDraftServiceCategory={s.setDraftServiceCategory}
+        draftServiceType={s.draftServiceType}
+        setDraftServiceType={s.setDraftServiceType}
         draftMinPrice={s.draftMinPrice}
         setDraftMinPrice={s.setDraftMinPrice}
         draftMaxPrice={s.draftMaxPrice}

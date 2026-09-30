@@ -26,18 +26,22 @@ export default function LocationHeader({
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-40 bg-surface border-b border-line px-3 py-3 shadow-xs">
-      <div className="flex items-center gap-2 max-w-lg mx-auto">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="p-2 rounded-full text-ink hover:bg-sunken active:scale-95 transition-all shrink-0 cursor-pointer"
-        >
-          <ArrowLeft size={20} />
-        </button>
+    <header className="sticky top-0 z-40 bg-surface border-b border-line px-3 sm:px-6 py-3 sm:py-3.5 shadow-2xs">
+      <div className="max-w-xl mx-auto">
+        {/* Unified Search Input with Integrated Back Button (No isolated box) */}
+        <div className="flex items-center gap-2 bg-surface h-11 pl-2 pr-3.5 border border-line focus-within:border-ink focus-within:ring-1 focus-within:ring-ink transition-all rounded-xl shadow-2xs">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Back"
+            className="w-9 h-9 flex items-center justify-center text-ink hover:text-taupe hover:bg-sunken active:bg-sunken rounded-lg transition-colors shrink-0 cursor-pointer"
+          >
+            <ArrowLeft size={19} />
+          </button>
 
-        <div className="flex-1 flex items-center gap-2 bg-sunken rounded-full px-3.5 py-2 border border-line focus-within:border-taupe focus-within:bg-white transition-all">
-          <MapPin size={17} className="text-taupe shrink-0" />
+          <div className="w-px h-4 bg-line shrink-0" />
+
+          <MapPin size={17} className="text-taupe shrink-0 ml-0.5" />
           <input
             ref={searchInputRef}
             type="text"
@@ -53,7 +57,8 @@ export default function LocationHeader({
             <button
               type="button"
               onClick={onClearSearch}
-              className="text-ink-faint hover:text-ink shrink-0 cursor-pointer"
+              aria-label="Clear search"
+              className="text-ink-faint hover:text-ink shrink-0 cursor-pointer p-1 rounded-md hover:bg-sunken"
             >
               <X size={15} />
             </button>
@@ -62,7 +67,7 @@ export default function LocationHeader({
               type="button"
               onClick={() => void onSearch()}
               aria-label="Search"
-              className="text-ink-faint hover:text-taupe shrink-0 cursor-pointer"
+              className="text-ink-faint hover:text-taupe shrink-0 cursor-pointer p-1 rounded-md hover:bg-sunken"
             >
               <SearchIcon size={16} />
             </button>
@@ -70,17 +75,17 @@ export default function LocationHeader({
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 mt-3 max-w-lg mx-auto">
+      {/* Tabs with smooth corner radius */}
+      <div className="flex items-center gap-2 mt-3 max-w-xl mx-auto">
         {(['recent', 'suggested'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all shrink-0 cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all shrink-0 cursor-pointer border rounded-lg ${
               activeTab === tab
-                ? 'bg-taupe text-white shadow-xs'
-                : 'bg-sunken text-ink-muted hover:text-ink hover:bg-line/40'
+                ? 'bg-taupe text-white border-taupe shadow-2xs'
+                : 'bg-surface border-line text-ink-muted hover:text-ink hover:bg-sunken'
             }`}
           >
             {tab === 'recent' ? 'Recent' : 'Suggested'}

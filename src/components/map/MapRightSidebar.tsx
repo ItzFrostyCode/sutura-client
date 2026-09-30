@@ -88,7 +88,7 @@ export default function MapRightSidebar({
               <button
                 type="button"
                 onClick={() => onConfirmLocation()}
-                className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-taupe text-white text-xs font-semibold hover:bg-taupe-hover transition-colors shadow-xs cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-none bg-ink text-white text-xs font-semibold hover:bg-ink/90 transition-colors shadow-xs cursor-pointer"
               >
                 <Check size={14} /> Choose Map Location
               </button>

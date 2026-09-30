@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
+import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { CatalogItem, CatalogItemImage, MapBranch } from '../types';
 
@@ -54,13 +55,30 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     api.get(`/catalog/${storeId}/${itemId}`)
       .then(res => {
         setItem(res.data.data);
-        const primary = res.data.data.images.find((i: CatalogItemImage) => i.is_primary) || res.data.data.images[0];
+
+        // Whichever color renders as swatch #1 and whichever photo renders
+        // as bottom-thumbnail #1 must be what's already showing as the main
+        // image/selected color on load — deriving both from the exact same
+        // lists the UI renders (instead of independently picking off
+        // is_primary / the raw color string) guarantees "thumb #1 in the
+        // bottom row = main image" and "swatch #1 = default color" can never
+        // drift apart from what CatalogHeroGallery/CatalogColorSelector
+        // actually display.
+        const colorOpts = getItemColorOptions(res.data.data);
+        const hasRealColors = colorOpts.length > 1;
+        if (hasRealColors) {
+          setSelectedColor(colorOpts[0].name);
+        }
+
+        const angleImages = hasRealColors
+          ? res.data.data.images.filter((img: CatalogItemImage) => isAngleLabel(img.view_angle))
+          : res.data.data.images;
+        const primary = angleImages.find((i: CatalogItemImage) => i.is_primary)
+          || angleImages[0]
+          || res.data.data.images[0];
         if (primary) {
           setSelectedImage(primary.image_url);
           setSelectedVariation(primary.view_angle || '');
-        }
-        if (res.data.data.color) {
-          setSelectedColor(res.data.data.color.split(',')[0].trim());
         }
         setLoading(false);
         api.post(`/catalog/${storeId}/${itemId}/view`).catch(() => {});
@@ -127,26 +145,38 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     };
   }, []);
 
-  // "From the Same Shop" — same store, same garment_type. Deliberately
-  // store-scoped (unlike moreLikeThis below) so this section never mixes
-  // in a different shop's designs just because they share a garment_type.
-  useEffect(() => {
-    if (!item?.garment_type || !item?.store?.id) return;
-    api.get('/public/catalog-items', { params: { garment_type: item.garment_type, store_id: item.store.id, per_page: 8 } })
-      .then(res => setFromSameShop((res.data.data ?? []).filter((i: CatalogItemResult) => i.id !== item.id)))
-      .catch(() => setFromSameShop([]));
-  }, [item?.garment_type, item?.id, item?.store?.id]);
+  // Related designs follow the category trail (Women's Apparel → Dresses &
+  // Gowns → …): everything in the same department + subcategory counts, with
+  // the exact same garment type listed first. Designs with no taxonomy fall
+  // back to garment type alone.
+  const relatedParams = item?.department && item?.subcategory
+    ? { department: item.department, subcategory: item.subcategory }
+    : item?.garment_type ? { garment_type: item.garment_type } : null;
+  const relatedKey = JSON.stringify(relatedParams);
+  const sameTypeFirst = (list: CatalogItemResult[]) =>
+    [...list]
+      .filter(i => i.id !== item?.id)
+      .sort((a, b) => Number(b.garment_type === item?.garment_type) - Number(a.garment_type === item?.garment_type));
 
-  // "More Like This" — broader, platform-wide by garment_type, deliberately
-  // NOT store-scoped (that's what "From the Same Shop" above is for). This
-  // is the cross-shop discovery rail, matching Shopee's own "You May Also
-  // Like" — same reference item, distinct purpose.
+  // "From the Same Shop" — deliberately store-scoped so it never mixes in
+  // another shop's designs.
   useEffect(() => {
-    if (!item?.garment_type) return;
-    api.get('/public/catalog-items', { params: { garment_type: item.garment_type, per_page: 12 } })
-      .then(res => setMoreLikeThis((res.data.data ?? []).filter((i: CatalogItemResult) => i.id !== item.id)))
+    if (!relatedParams || !item?.store?.id) return;
+    api.get('/public/catalog-items', { params: { ...relatedParams, store_id: item.store.id, per_page: 12 } })
+      .then(res => setFromSameShop(sameTypeFirst(res.data.data ?? [])))
+      .catch(() => setFromSameShop([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relatedKey, item?.id, item?.store?.id]);
+
+  // "More Like This" — platform-wide, deliberately NOT store-scoped (that is
+  // what "From the Same Shop" above is for): the cross-shop discovery rail.
+  useEffect(() => {
+    if (!relatedParams) return;
+    api.get('/public/catalog-items', { params: { ...relatedParams, per_page: 18 } })
+      .then(res => setMoreLikeThis(sameTypeFirst(res.data.data ?? [])))
       .catch(() => setMoreLikeThis([]));
-  }, [item?.garment_type, item?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relatedKey, item?.id]);
 
   const handleBackClick = () => {
     if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -291,6 +321,13 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     }
   };
 
+  // A single-entry result just means "no real color variants" (the helper
+  // falls back to the item's own color/"Default" so the selector always has
+  // something to key off of) — only show the Color row when there's an
+  // actual choice to make.
+  const allColorOptions = item ? getItemColorOptions(item) : [];
+  const colorOptions = allColorOptions.length > 1 ? allColorOptions : [];
+
   const branches = item?.store?.branches ?? [];
   const findBranch = branches.find(b => b.latitude && b.longitude) ?? branches[0] ?? null;
 
@@ -352,6 +389,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     setSelectedVariation,
     selectedColor,
     setSelectedColor,
+    colorOptions,
     selectedSize,
     setSelectedSize,
     orderSuccess,

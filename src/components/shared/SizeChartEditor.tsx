@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Upload, Image as ImageIcon, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import api from '@/lib/axios';
+import GuideImageField from './GuideImageField';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export interface SizeChartRow {
   size: string;
@@ -65,9 +67,8 @@ export default function SizeChartEditor({
     openIfPopulated();
   }, [imageUrl, columns.length]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
-    const file = e.target.files[0];
+  const handleImageUpload = async (file: File | undefined) => {
+    if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
     setUploading(true);
@@ -144,6 +145,8 @@ export default function SizeChartEditor({
     onChange({ ...value, rows: rows.map(r => (r.size === originalKey ? { ...r, size: newName } : r)) });
   };
 
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const resetTable = () => {
     onChange({ ...value, columns: [], rows: [] });
     setNewColumnInput('');
@@ -182,35 +185,15 @@ export default function SizeChartEditor({
 
       {showBuilder && (
         <div className="space-y-5 mt-3">
-          <div className="max-w-xs">
+          <div className="max-w-md">
             <label className={labelClass}>Reference Chart Image</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-line border-dashed rounded-xl relative overflow-hidden group bg-canvas/50">
-              <div className="space-y-1 text-center relative z-10">
-                {uploading ? (
-                  <Loader2 className="mx-auto h-8 w-8 text-ink-faint animate-spin" />
-                ) : imageUrl ? (
-                  <div className="flex flex-col items-center">
-                    <ImageIcon className="mx-auto h-8 w-8 text-sage mb-2" />
-                    <span className="text-sm text-sage font-medium">Image uploaded</span>
-                    <button type="button" onClick={() => onChange({ ...value, image_url: null })} className="mt-2 text-xs text-danger hover:text-[#91544A] font-medium focus:outline-none">Remove image</button>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="mx-auto h-8 w-8 text-ink-faint" />
-                    <div className="flex text-sm text-ink-muted justify-center">
-                      <label htmlFor={`size-chart-image-${title}`} className="relative cursor-pointer bg-transparent rounded-md font-medium text-taupe hover:underline focus-within:outline-none">
-                        <span>Upload a file</span>
-                        <input id={`size-chart-image-${title}`} name="size-chart-image" type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-                      </label>
-                    </div>
-                    <p className="text-xs text-ink-faint">PNG, JPG up to 2MB</p>
-                  </>
-                )}
-              </div>
-              {imageUrl && (
-                <img src={imageUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-10 transition-opacity" />
-              )}
-            </div>
+            <GuideImageField
+              imageUrl={imageUrl ?? ''}
+              uploading={uploading}
+              alt="Reference chart"
+              onUpload={handleImageUpload}
+              onRemove={() => onChange({ ...value, image_url: null })}
+            />
           </div>
 
           {mode === 'table' ? (
@@ -218,7 +201,7 @@ export default function SizeChartEditor({
               <div className="flex items-center justify-between mb-1">
                 <label className={labelClass}>Measurement Table</label>
                 {(columns.length > 0 || rows.length > 0) && (
-                  <button type="button" onClick={resetTable} className="text-[11px] font-semibold text-danger hover:underline focus:outline-none">
+                  <button type="button" onClick={() => setConfirmClear(true)} className="text-[11px] font-semibold text-danger hover:underline focus:outline-none">
                     Clear table
                   </button>
                 )}
@@ -355,7 +338,7 @@ export default function SizeChartEditor({
               <div className="flex items-center justify-between mb-1">
                 <label className={labelClass}>Measurement Fields</label>
                 {columns.length > 0 && (
-                  <button type="button" onClick={resetTable} className="text-[11px] font-semibold text-danger hover:underline focus:outline-none">
+                  <button type="button" onClick={() => setConfirmClear(true)} className="text-[11px] font-semibold text-danger hover:underline focus:outline-none">
                     Clear all
                   </button>
                 )}
@@ -428,6 +411,22 @@ export default function SizeChartEditor({
           )}
         </div>
       )}
+      <ConfirmDialog
+        isOpen={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={() => {
+          resetTable();
+          setConfirmClear(false);
+        }}
+        tone="danger"
+        title={mode === 'table' ? 'Clear the whole table?' : 'Clear all measurement fields?'}
+        message={
+          mode === 'table'
+            ? 'This removes every measurement column and size row you added. The reference chart image is not affected, and nothing changes for customers until you save.'
+            : 'This removes every measurement field you added, along with anything already filled in. Nothing changes for customers until you save.'
+        }
+        confirmLabel={mode === 'table' ? 'Clear table' : 'Clear all'}
+      />
     </div>
   );
 }

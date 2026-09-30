@@ -1,7 +1,11 @@
 import React from 'react';
-import { CatalogListItem } from '../types';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { CatalogListItem, StoreProfile } from '../types';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import CatalogFilterChipsBar, { FilterChip } from '../catalog/CatalogFilterChipsBar';
+import type { DeptKey } from '../catalog/StoreCatalogFilterSidebar';
+import { DEPARTMENT_LABELS, garmentTypesForDepartment } from '@/lib/canonicalTaxonomy';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
 // CatalogListItem (this store's own catalog feed) is already shaped almost
@@ -11,7 +15,7 @@ import type { CatalogItemResult } from '@/types/publicCatalog';
 // the same card component every other catalog grid in the app uses (see
 // SearchStoresTab.tsx's own toCatalogItemResult) keeps this store's own
 // catalog page visually identical to how its items look everywhere else.
-function toCatalogItemResult(item: CatalogListItem, storeId: string): CatalogItemResult {
+function toCatalogItemResult(item: CatalogListItem, storeId: string, store?: StoreProfile | null): CatalogItemResult {
   return {
     id: item.id,
     name: item.name,
@@ -22,11 +26,24 @@ function toCatalogItemResult(item: CatalogListItem, storeId: string): CatalogIte
     estimated_days: item.estimated_days ?? null,
     reviews_count: item.reviews_count ?? 0,
     reviews_avg_rating: item.reviews_avg_rating ?? null,
-    order_count: 0,
+    order_count: (item as { order_count?: number }).order_count ?? 0,
     images: item.images.map((img) => ({ image_url: img.image_url, is_primary: img.is_primary })),
     fabric_image_url: item.fabric_image_url ?? null,
     distance_km: null,
-    store: { id: 0, name: '', slug: storeId },
+    store: {
+      id: store?.id ?? 0,
+      name: store?.name ?? '',
+      slug: storeId,
+      branches: store?.branches?.map((b) => ({
+        id: b.id,
+        name: b.name,
+        is_main: Boolean(b.is_main),
+        district: b.district ?? null,
+        city: b.city ?? null,
+        latitude: b.latitude,
+        longitude: b.longitude,
+      })),
+    },
   };
 }
 
@@ -36,21 +53,22 @@ interface StoreCatalogTabProps {
   readonly catalogSearch: string;
   readonly catalogGarmentTypeFilters: Set<string>;
   readonly toggleGarmentType: (g: string) => void;
+  readonly departmentFilter: DeptKey;
+  readonly setDepartmentFilter: (d: DeptKey) => void;
   readonly minPrice: string;
   readonly setMinPrice: (p: string) => void;
   readonly maxPrice: string;
   readonly setMaxPrice: (p: string) => void;
   readonly priceSort: '' | 'price_asc' | 'price_desc';
   readonly setPriceSort: (s: '' | 'price_asc' | 'price_desc') => void;
-  readonly colorFilter: string;
-  readonly setColorFilter: (c: string) => void;
   readonly ratingFilter: string;
   readonly setRatingFilter: (r: string) => void;
   readonly resetFilterPanel: () => void;
-  readonly showPortfolioFabric: boolean;
-  readonly setShowPortfolioFabric: React.Dispatch<React.SetStateAction<boolean>>;
   readonly highlightedItemId: number | null;
   readonly storeId: string;
+  readonly store?: StoreProfile | null;
+  readonly isOwnerViewingOwnStore: boolean;
+  readonly onDeleteItem: (id: number) => void;
 }
 
 export default function StoreCatalogTab({
@@ -59,21 +77,22 @@ export default function StoreCatalogTab({
   catalogSearch,
   catalogGarmentTypeFilters,
   toggleGarmentType,
+  departmentFilter,
+  setDepartmentFilter,
   minPrice,
   setMinPrice,
   maxPrice,
   setMaxPrice,
   priceSort,
   setPriceSort,
-  colorFilter,
-  setColorFilter,
   ratingFilter,
   setRatingFilter,
   resetFilterPanel,
-  showPortfolioFabric,
-  setShowPortfolioFabric,
   highlightedItemId,
   storeId,
+  store,
+  isOwnerViewingOwnStore,
+  onDeleteItem,
 }: StoreCatalogTabProps) {
   if (catalogLoading) {
     return <div className="text-center py-16 text-ink-faint animate-pulse mobile-body-sm">Curating showcase...</div>;
@@ -81,15 +100,28 @@ export default function StoreCatalogTab({
 
   if (catalogItems.length === 0) {
     return (
-      <div className="text-center py-16 bg-surface border border-line rounded-2xl p-6 text-ink-muted mobile-body-sm shadow-xs">
-        This store hasn&apos;t published any showcase items yet.
+      <div className="text-center py-16 bg-surface border border-line rounded-2xl p-6 text-ink-muted mobile-body-sm shadow-xs space-y-3">
+        <p>This store hasn&apos;t published any showcase items yet.</p>
+        {isOwnerViewingOwnStore && (
+          <Link
+            href="/dashboard/catalog/new"
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-4 bg-taupe hover:bg-taupe/90 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Plus size={16} /> Add Your First Item
+          </Link>
+        )}
       </div>
     );
   }
 
+  const departmentGarmentTypes = departmentFilter !== 'all' ? new Set(garmentTypesForDepartment(departmentFilter)) : null;
+
   const filteredCatalogItems = catalogItems
     .filter((item) => {
       if (catalogSearch && !item.name.toLowerCase().includes(catalogSearch.toLowerCase())) {
+        return false;
+      }
+      if (departmentGarmentTypes && (!item.garment_type || !departmentGarmentTypes.has(item.garment_type))) {
         return false;
       }
       if (
@@ -101,20 +133,6 @@ export default function StoreCatalogTab({
       const p = Number(item.price) || 0;
       if (minPrice && p < Number(minPrice)) return false;
       if (maxPrice && p > Number(maxPrice)) return false;
-
-      if (colorFilter) {
-        const selectedList = colorFilter.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
-        const ic = (item.color || '').toLowerCase();
-        const iname = (item.name || '').toLowerCase();
-        const viewAngles = (item.images || []).map((img) => (img.view_angle || '').toLowerCase()).join(' ');
-        const ifab = (item.material || '').toLowerCase();
-        const matchesAny = selectedList.some(
-          (sc) => ic.includes(sc) || iname.includes(sc) || viewAngles.includes(sc) || ifab.includes(sc)
-        );
-        if (!matchesAny) {
-          return false;
-        }
-      }
 
       if (ratingFilter) {
         const itemRating = Number(item.reviews_avg_rating ?? 0);
@@ -129,6 +147,13 @@ export default function StoreCatalogTab({
     });
 
   const activeFilterChips: FilterChip[] = [];
+  if (departmentFilter !== 'all') {
+    activeFilterChips.push({
+      id: 'department',
+      label: DEPARTMENT_LABELS[departmentFilter],
+      onRemove: () => setDepartmentFilter('all'),
+    });
+  }
   if (priceSort) {
     activeFilterChips.push({
       id: 'sort',
@@ -158,19 +183,6 @@ export default function StoreCatalogTab({
       onRemove: () => setMaxPrice(''),
     });
   }
-  if (colorFilter) {
-    const list = colorFilter.split(',').map((s) => s.trim()).filter(Boolean);
-    list.forEach((col) => {
-      activeFilterChips.push({
-        id: `color-${col}`,
-        label: `Color: ${col}`,
-        onRemove: () => {
-          const rem = list.filter((c) => c.toLowerCase() !== col.toLowerCase()).join(',');
-          setColorFilter(rem);
-        },
-      });
-    });
-  }
   if (ratingFilter) {
     activeFilterChips.push({
       id: 'rating',
@@ -188,12 +200,20 @@ export default function StoreCatalogTab({
 
   return (
     <div className="min-w-0">
+      {isOwnerViewingOwnStore && (
+        <div className="flex justify-end mb-3">
+          <Link
+            href="/dashboard/catalog/new"
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 bg-taupe hover:bg-taupe/90 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Plus size={16} /> Add Item
+          </Link>
+        </div>
+      )}
       <CatalogFilterChipsBar
         totalCount={filteredCatalogItems.length}
         activeFilterChips={activeFilterChips}
         onClearAll={resetFilterPanel}
-        showPortfolioFabric={showPortfolioFabric}
-        onTogglePortfolioFabric={() => setShowPortfolioFabric((v) => !v)}
       />
 
       {filteredCatalogItems.length === 0 ? (
@@ -209,8 +229,9 @@ export default function StoreCatalogTab({
               className={highlightedItemId === item.id ? 'ring-2 ring-taupe' : undefined}
             >
               <CatalogItemCard
-                item={toCatalogItemResult(item, storeId)}
-                showFabric={showPortfolioFabric}
+                item={toCatalogItemResult(item, storeId, store)}
+                canManage={isOwnerViewingOwnStore}
+                onDelete={onDeleteItem}
               />
             </div>
           ))}

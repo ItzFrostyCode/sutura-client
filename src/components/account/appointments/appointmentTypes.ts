@@ -11,6 +11,21 @@ export interface MyAppointment {
   checked_in_at?: string | null;
   duration_minutes: number;
   service_name: string | null;
+  service?: { id: number; name: string; service_category?: string | null; service_leaf_type?: string | null } | null;
+  // The catalog design this was booked from, with the size/color picked on its page.
+  catalog_item?: {
+    id: number;
+    name: string;
+    department?: string | null;
+    subcategory?: string | null;
+    garment_structure?: string | null;
+    garment_type?: string | null;
+  } | null;
+  service_package?: { id: number; name: string; service_category?: string | null } | null;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  // A walk-in took this request's slot; the customer must pick another time.
+  needs_new_time?: boolean;
   payment_status: string;
   cancellation_reason: string | null;
   rebooking_blocked: boolean;

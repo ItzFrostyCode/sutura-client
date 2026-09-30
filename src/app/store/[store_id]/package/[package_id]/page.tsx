@@ -4,6 +4,8 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CalendarDays, ChevronRight, HelpCircle, Home, Image as ImageIcon, Loader2, MoreHorizontal, Package, Share2, Star } from 'lucide-react';
 import api from '@/lib/axios';
+import { getMediaUrl } from '@/lib/media';
+import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import { useToast } from '@/context/ToastContext';
 import { PublicServicePackage, StoreProfile } from '@/components/store-storefront/types';
 
@@ -154,14 +156,24 @@ export default function StorePackageDetailPage({
       <main className="mx-auto w-full max-w-7xl px-0 min-[375px]:px-6 min-[600px]:px-[10px] md:px-8 py-4 min-[600px]:py-8">
         <div className="grid min-[600px]:grid-cols-12 min-[600px]:gap-8 min-[600px]:items-start">
           <div className="min-[600px]:col-span-7">
-            <div className="aspect-square min-[600px]:aspect-[4/3] min-[600px]:border min-[600px]:border-line bg-sunken flex flex-col items-center justify-center gap-2 text-ink-faint">
-              <ImageIcon size={40} className="opacity-30" />
-              <span className="text-sm font-medium">No Image Available</span>
+            <div className="aspect-square min-[600px]:aspect-[4/3] min-[600px]:border min-[600px]:border-line bg-sunken relative overflow-hidden flex flex-col items-center justify-center gap-2 text-ink-faint">
+              {servicePackage.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={getMediaUrl(servicePackage.image_url)} alt={servicePackage.name} className="absolute inset-0 w-full h-full object-cover object-top min-[600px]:object-center" />
+              ) : (
+                <>
+                  <ImageIcon size={40} className="opacity-30" />
+                  <span className="text-sm font-medium">No Image Available</span>
+                </>
+              )}
             </div>
           </div>
 
           <section className="min-[600px]:col-span-5 px-4 min-[600px]:px-0 py-5 min-[600px]:py-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-taupe">Service package</p>
+            {servicePackage.service_category && SERVICE_CATEGORY_LABELS[servicePackage.service_category as ServiceCategory] && (
+              <p className="mt-1 text-xs text-ink-muted">Services → {SERVICE_CATEGORY_LABELS[servicePackage.service_category as ServiceCategory]}</p>
+            )}
             <h1 className="mt-2 text-2xl md:text-3xl font-serif font-bold leading-tight">{servicePackage.name}</h1>
             <p className="mt-3 text-2xl font-bold text-ink">
               ₱{displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}

@@ -51,7 +51,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
         />
 
         <div
-          className="relative bg-surface rounded-2xl shadow-2xl flex flex-col w-[calc(100%-32px)] max-w-[420px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 border border-line p-5 space-y-4 touch-auto"
+          className="relative bg-surface rounded-none shadow-2xl flex flex-col w-[calc(100%-32px)] max-w-[420px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 border border-line p-5 space-y-4 touch-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between pb-2 border-b border-line/60">
@@ -60,7 +60,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="w-10 h-10 -mr-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
+              className="w-10 h-10 -mr-1 flex items-center justify-center rounded-none text-ink-muted hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -74,7 +74,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. My Home, Office, School"
-              className="w-full bg-sunken border border-line rounded-xl px-3.5 py-3 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-taupe"
+              className="w-full bg-sunken border border-line rounded-none px-3.5 py-3 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-taupe"
             />
           </div>
 
@@ -83,7 +83,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
             {chosen ? (
               <div
                 onClick={() => setShowPicker(true)}
-                className="w-full flex items-start justify-between gap-3 p-3 bg-sunken border border-line rounded-xl hover:border-taupe cursor-pointer transition-all text-left group min-h-[56px]"
+                className="w-full flex items-start justify-between gap-3 p-3 bg-sunken border border-line rounded-none hover:border-taupe cursor-pointer transition-all text-left group min-h-[56px]"
               >
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-full bg-taupe/10 flex items-center justify-center shrink-0 mt-0.5 text-taupe">
@@ -110,7 +110,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               <button
                 type="button"
                 onClick={() => setShowPicker(true)}
-                className="w-full flex items-center justify-between gap-3 p-3.5 bg-sunken border border-line rounded-xl hover:border-taupe hover:bg-taupe/5 transition-all text-left cursor-pointer min-h-[56px]"
+                className="w-full flex items-center justify-between gap-3 p-3.5 bg-sunken border border-line rounded-none hover:border-taupe hover:bg-taupe/5 transition-all text-left cursor-pointer min-h-[56px]"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-full bg-taupe/10 flex items-center justify-center shrink-0 text-taupe">
@@ -133,7 +133,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               if (!chosen) return;
               onSave({ ...chosen, label: label.trim() || 'My Home' });
             }}
-            className="w-full btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-[0.99]"
+            className="w-full btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-[0.99]"
           >
             Save Home Address
           </button>

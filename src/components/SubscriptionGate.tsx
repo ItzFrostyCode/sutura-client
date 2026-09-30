@@ -51,7 +51,7 @@ const FEATURE_DESC: Record<GatedFeature, string> = {
   boosted_visibility: "Appear higher in search results than Basic stores for your garment specializations.",
   reports:            "Download detailed income and order reports to track monthly sales performance.",
   featured_visibility:"Get pinned as a \u201cFeatured Store\u201d at the top of relevant search results.",
-  custom_branding:    "Apply your own store colors, logo, and identity across your public storefront.",
+  custom_branding:    "Apply your own store colors, logo, and identity across your public store profile.",
   advanced_dashboard: "Access in-depth analytics: staff productivity, revenue trends, and forecasts.",
 };
 

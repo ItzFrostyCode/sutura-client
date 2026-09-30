@@ -4,25 +4,20 @@ import { Pencil, Trash2, Heart, Eye, Star, Image as ImageIcon, Clock, Scissors }
 import { CatalogItem, formatCatalogPrice } from './catalogHelpers';
 import Badge from '@/components/shared/Badge';
 import { getMediaUrl } from '@/lib/media';
-import { resolveFabricImage } from '@/lib/fabricHelper';
-
 interface CatalogItemCardProps {
   readonly item: CatalogItem;
-  readonly showFabric?: boolean;
   readonly onView?: (id: number) => void;
   readonly onOpenDelete: (id: number) => void;
 }
 
 export default function CatalogItemCard({
   item,
-  showFabric = false,
   onView,
   onOpenDelete,
 }: CatalogItemCardProps) {
   const [imgError, setImgError] = React.useState(false);
   const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
-  const fabricImage = resolveFabricImage(item);
-  const displayImage = showFabric ? (fabricImage || primaryImage) : primaryImage;
+  const displayImage = primaryImage;
 
   return (
     <div className="bg-surface border border-line rounded-2xl overflow-hidden group relative flex flex-col text-ink shadow-2xs hover:shadow-md transition-all">
@@ -33,7 +28,7 @@ export default function CatalogItemCard({
           <img
             key={displayImage}
             src={getMediaUrl(displayImage)}
-            alt={`${item.name}${showFabric ? ' - Fabric Swatch' : ''}`}
+            alt={item.name}
             onError={() => setImgError(true)}
             className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${item.is_active === false ? 'grayscale opacity-60' : ''}`}
           />
@@ -41,12 +36,6 @@ export default function CatalogItemCard({
           <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF6F3] text-ink-muted">
             <ImageIcon size={36} className="text-ink-faint mb-1" />
             <span className="text-[10px] font-semibold text-ink-muted">No Image</span>
-          </div>
-        )}
-        {showFabric && (
-          <div className="absolute top-12 left-3 z-20 bg-ink/85 backdrop-blur-xs text-white text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs border border-white/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-            <span>Fabric</span>
           </div>
         )}
         {item.is_active === false && (
@@ -60,7 +49,7 @@ export default function CatalogItemCard({
 
         <div className="absolute top-3 left-3 flex gap-2 z-20">
           <Link
-            href={`/dashboard/catalog/${item.id}/edit`}
+            href={`/dashboard/catalog/${item.id}`}
             className="p-1.5 bg-surface border border-line rounded-lg text-ink-body hover:text-taupe transition-colors shadow-2xs"
             title="Edit Design"
           >

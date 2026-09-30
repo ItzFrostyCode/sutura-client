@@ -25,6 +25,8 @@ export interface User {
   profile_picture?: string;
   cover_photo?: string;
   roles: { id: number; name: string }[];
+  /** Admin-issued temporary password not yet replaced (shop accounts). */
+  must_change_password?: boolean;
   bio?: string;
   skills?: string[];
   social_links?: UserSocialLink[];
@@ -39,6 +41,7 @@ export interface Store {
   slug: string;
   store_code?: string;
   status: string;
+  rejection_reason?: string | null;
   business_type?: string;
   repair_requires_downpayment?: boolean;
   fitting_limit_policy?: 'fee' | 'block';
@@ -117,6 +120,15 @@ interface AuthState {
 // first paint diverge from the server-rendered HTML whenever a token was already
 // stored, causing React hydration mismatches. `hydrate()` is called once from
 // a client-only effect (see AuthHydrator.tsx) so auth state updates safely post-mount.
+// Each browser tab is its own login. Auth used to be mirrored into localStorage, which every tab
+// shares — so signing in as a shop owner in one tab and a customer in another overwrote each other,
+// and a fresh tab or a browser restart woke up as whichever account signed in last. These keys are
+// only ever removed now (old builds may have left them behind).
+function clearLegacySharedAuth() {
+  if (globalThis.window === undefined) return;
+  for (const key of ['sutura_token', 'sutura_user', 'sutura_store', 'sutura_staff_profile']) localStorage.removeItem(key);
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   store: null,
@@ -134,12 +146,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (staffProfile) sessionStorage.setItem('sutura_staff', JSON.stringify(staffProfile));
       else sessionStorage.removeItem('sutura_staff');
 
-      localStorage.setItem('sutura_token', token);
-      localStorage.setItem('sutura_user', JSON.stringify(user));
-      if (store) localStorage.setItem('sutura_store', JSON.stringify(store));
-      else localStorage.removeItem('sutura_store');
-      if (staffProfile) localStorage.setItem('sutura_staff_profile', JSON.stringify(staffProfile));
-      else localStorage.removeItem('sutura_staff_profile');
     }
     set({ user, token, store: store || null, staffProfile: staffProfile || null, isAuthenticated: true, hydrated: true });
   },
@@ -150,20 +156,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       sessionStorage.removeItem('sutura_user');
       sessionStorage.removeItem('sutura_store');
       sessionStorage.removeItem('sutura_staff');
-      localStorage.removeItem('sutura_token');
-      localStorage.removeItem('sutura_user');
-      localStorage.removeItem('sutura_store');
-      localStorage.removeItem('sutura_staff_profile');
+      clearLegacySharedAuth();
     }
     set({ user: null, store: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });
   },
 
   hydrate: () => {
     if (globalThis.window === undefined) return;
-    const token = sessionStorage.getItem('sutura_token') || localStorage.getItem('sutura_token');
-    const userStr = sessionStorage.getItem('sutura_user') || localStorage.getItem('sutura_user');
-    const storeStr = sessionStorage.getItem('sutura_store') || localStorage.getItem('sutura_store');
-    const staffStr = sessionStorage.getItem('sutura_staff') || localStorage.getItem('sutura_staff_profile');
+    clearLegacySharedAuth();
+    const token = sessionStorage.getItem('sutura_token');
+    const userStr = sessionStorage.getItem('sutura_user');
+    const storeStr = sessionStorage.getItem('sutura_store');
+    const staffStr = sessionStorage.getItem('sutura_staff');
     let user: User | null = null;
     let store: Store | null = null;
     let staffProfile: StaffProfile | null = null;

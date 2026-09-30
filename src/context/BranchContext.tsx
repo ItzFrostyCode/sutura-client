@@ -42,6 +42,7 @@ const BranchContext = createContext<BranchContextValue | undefined>(undefined);
 
 export function BranchProvider({ children }: { readonly children: React.ReactNode }) {
   const { store, user, staffProfile } = useAuthStore();
+  const mustChangePassword = Boolean(user?.must_change_password);
   const storeId = store?.id;
   
   const roleNames = user?.roles?.map(r => r.name) || [];
@@ -82,6 +83,11 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       hasResolvedInitialRef.current = true;
       return;
     }
+    // Admin-issued temporary password not replaced yet: the API refuses
+    // store-scoped calls (403 password_change_required) and the dashboard
+    // shows ChangePasswordGate instead. Stay inert — this re-fires once the
+    // flag clears, since it's in the dependency list below.
+    if (mustChangePassword) return;
     setLoadingBranches(true);
     try {
       const res = await api.get(`/stores/${storeId}/branches`);
@@ -98,7 +104,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
         }
 
         // Restore from localStorage or default to main branch
-        const cached = localStorage.getItem(`sutura_branch_${storeId}`);
+        const cached = sessionStorage.getItem(`sutura_branch_${storeId}`);
         if (cached) {
           const parsed = cached === 'all' ? null : Number.parseInt(cached, 10);
           if (parsed === null || list.some(b => b.id === parsed)) {
@@ -125,7 +131,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       setLoadingBranches(false);
       hasResolvedInitialRef.current = true;
     }
-  }, [storeId, canAccessBranches, isStoreOwner, isBranchManager, staffProfile]);
+  }, [storeId, canAccessBranches, isStoreOwner, isBranchManager, staffProfile, mustChangePassword]);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -135,7 +141,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
 
   useEffect(() => {
     if (storeId && hasResolvedInitialRef.current) {
-      localStorage.setItem(`sutura_branch_${storeId}`, selectedBranchId === null ? 'all' : selectedBranchId.toString());
+      sessionStorage.setItem(`sutura_branch_${storeId}`, selectedBranchId === null ? 'all' : selectedBranchId.toString());
     }
   }, [storeId, selectedBranchId]);
 

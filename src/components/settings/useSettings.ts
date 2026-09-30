@@ -61,8 +61,6 @@ const DEFAULT_HOURS = {
   sunday: { is_open: false, open: '09:00', close: '18:00' },
 };
 
-export type SettingsTab = 'business_type' | 'basic_info' | 'social_links' | 'booking_flow' | 'map_coordinates';
-
 export function useSettings() {
   const { store, setAuth, user, token, staffProfile } = useAuthStore();
   const toast = useToast();
@@ -70,36 +68,6 @@ export function useSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-
-  // Initialize tab from URL search parameters if valid
-  const getInitialTab = (): SettingsTab => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get('tab') as SettingsTab;
-      const validTabs: SettingsTab[] = ['business_type', 'basic_info', 'social_links', 'booking_flow', 'map_coordinates'];
-      if (validTabs.includes(tab)) return tab;
-    }
-    return 'basic_info';
-  };
-
-  const [activeTab, setActiveTab] = useState<SettingsTab>(getInitialTab());
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const handleLocationChange = () => {
-        const params = new URLSearchParams(window.location.search);
-        const tab = params.get('tab') as SettingsTab;
-        const validTabs: SettingsTab[] = ['business_type', 'basic_info', 'social_links', 'booking_flow', 'map_coordinates'];
-        if (validTabs.includes(tab)) {
-          setActiveTab(tab);
-        }
-      };
-      
-      handleLocationChange();
-      window.addEventListener('popstate', handleLocationChange);
-      return () => window.removeEventListener('popstate', handleLocationChange);
-    }
-  }, []);
 
   const savedDataRef = useRef<StoreSettingsData | null>(null);
 
@@ -333,8 +301,8 @@ export function useSettings() {
     }));
   };
 
-  const handleSave = async () => {
-    if (!store) return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!store) return false;
     setSaving(true);
     try {
       const res = await api.put(`/stores/${store.id}`, formData);
@@ -344,8 +312,10 @@ export function useSettings() {
       if (user && token) {
         setAuth(user, token, res.data.data, staffProfile || undefined);
       }
+      return true;
     } catch {
       toast.error('Failed to save settings. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -363,8 +333,6 @@ export function useSettings() {
     loading,
     saving,
     isDirty,
-    activeTab,
-    setActiveTab,
     formData,
     setFormDataWithDirty,
     handleChange,

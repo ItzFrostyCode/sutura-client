@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { TOP_GROUPS } from './navData';
 import type { CategoryLeaf } from './navTypes';
@@ -15,6 +16,19 @@ export default function WebHoverNav() {
   const [activeGroupKey, setActiveGroupKey] = useState<string | null>(null);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Category row's own scrollbar is hidden (hide-scrollbar) — without this,
+  // a department with enough subcategories to overflow the row (e.g. 8
+  // items) gave no visual hint anything sat past the right edge. Tracks
+  // real overflow via scroll position, not just "does it have many items",
+  // so the fade disappears once actually scrolled to the end.
+  const categoryRowRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollFade = () => {
+    const el = categoryRowRef.current;
+    if (!el) return;
+    setCanScrollRight(el.scrollWidth - el.scrollLeft - el.clientWidth > 4);
+  };
 
   // A header category link is a bare "/search?category=X" or "/search?q=X"
   // href — following it normally would wipe out whatever the customer
@@ -105,6 +119,17 @@ export default function WebHoverNav() {
     setActiveGroupKey(null);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!activeGroupKey) return;
+    // Layout settles a tick after the menu mounts/swaps groups.
+    const raf = requestAnimationFrame(updateScrollFade);
+    window.addEventListener('resize', updateScrollFade);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updateScrollFade);
+    };
+  }, [activeGroupKey]);
+
   const activeGroup = TOP_GROUPS.find((g) => g.key === activeGroupKey);
   const currentCat = activeGroup?.categories?.[activeCategoryIndex] ?? activeGroup?.categories?.[0];
   const columns = activeGroup ? getCategoryColumns(activeGroup.key, currentCat) : [];
@@ -114,7 +139,7 @@ export default function WebHoverNav() {
       className="hidden md:flex items-center"
       onMouseLeave={handleMouseLeave}
     >
-      {/* Top Nav Items on the LEFT (MEN, WOMEN, WEDDING, OFFICE, DISCOVER) */}
+      {/* Top Nav Items on the LEFT (MEN, WOMEN, KIDS, SERVICES, DISCOVER) */}
       <nav className="flex items-center gap-3.5 lg:gap-7" aria-label="Main menu">
         {TOP_GROUPS.map((group) => {
           const isCurrent = activeGroupKey === group.key;
@@ -155,26 +180,40 @@ export default function WebHoverNav() {
           <div className="max-w-7xl mx-auto px-6 sm:px-8">
             {/* ROW 2: CATEGORY ROW (SUITS, TUXEDOS, SHIRTS, BLAZERS, PANTS...) */}
             {activeGroup.categories.length > 0 && (
-              <div className="flex items-center gap-6 lg:gap-8 overflow-x-auto hide-scrollbar border-b border-gray-200">
-                {activeGroup.categories.map((cat, idx) => {
-                  const isSelected = activeCategoryIndex === idx;
-                  return (
-                    <button
-                      key={cat.label}
-                      type="button"
-                      onClick={() => setActiveCategoryIndex(idx)}
-                      onMouseEnter={() => setActiveCategoryIndex(idx)}
-                      className={`relative py-3.5 text-[12px] font-bold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
-                        isSelected ? 'text-black font-extrabold' : 'text-gray-500 hover:text-black'
-                      }`}
-                    >
-                      <span>{cat.label}</span>
-                      {isSelected && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="relative">
+                <div
+                  ref={categoryRowRef}
+                  onScroll={updateScrollFade}
+                  className="flex items-center gap-6 lg:gap-8 overflow-x-auto hide-scrollbar border-b border-gray-200"
+                >
+                  {activeGroup.categories.map((cat, idx) => {
+                    const isSelected = activeCategoryIndex === idx;
+                    return (
+                      <button
+                        key={cat.label}
+                        type="button"
+                        onClick={() => setActiveCategoryIndex(idx)}
+                        onMouseEnter={() => setActiveCategoryIndex(idx)}
+                        className={`relative py-3.5 text-[12px] font-bold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
+                          isSelected ? 'text-black font-extrabold' : 'text-gray-500 hover:text-black'
+                        }`}
+                      >
+                        <span>{cat.label}</span>
+                        {isSelected && (
+                          <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-black" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Fade + hint that more categories sit past the right edge
+                    — the row's own scrollbar is deliberately hidden, so
+                    without this a user has no way to know it scrolls. */}
+                {canScrollRight && (
+                  <div className="pointer-events-none absolute right-0 top-0 bottom-[1px] w-12 bg-gradient-to-l from-white to-transparent flex items-center justify-end">
+                    <ChevronRight size={14} className="text-gray-400 mr-0.5" />
+                  </div>
+                )}
               </div>
             )}
 
@@ -184,7 +223,7 @@ export default function WebHoverNav() {
                 const isColorCol = col.title.toUpperCase().includes('COLOR') || col.items.some((i) => !!i.hex);
                 return (
                     <div
-                      key={col.title}
+                      key={col.key}
                       className={`w-60 shrink-0 ${
                         idx === 0
                           ? 'pr-10'

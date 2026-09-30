@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useMapPage } from '@/components/map/useMapPage';
 import MapHeaderBar from '@/components/map/MapHeaderBar';
 import MapFilterDropdown from '@/components/map/MapFilterDropdown';
@@ -56,6 +56,14 @@ function MapPageContent() {
   } = useMapPage();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // When sidebar toggles open/close, force Leaflet to recalculate container bounds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [isSidebarOpen, mapRef]);
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden bg-canvas relative">

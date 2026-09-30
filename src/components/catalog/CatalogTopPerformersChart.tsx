@@ -8,8 +8,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { Trophy } from 'lucide-react';
+import { Trophy, Eye, ShoppingBag } from 'lucide-react';
 import { CatalogItem } from './catalogHelpers';
+import { getMediaUrl } from '@/lib/media';
 
 interface CatalogTopPerformersChartProps {
   readonly items: CatalogItem[];
@@ -26,7 +27,7 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
   if (active && payload?.length) {
     const item = payload[0].payload;
     return (
-      <div className="bg-surface border border-line rounded-xl px-4 py-3 max-w-[220px]">
+      <div className="bg-surface border border-line px-4 py-3 max-w-[220px]">
         <p className="text-xs font-medium text-ink mb-1 leading-snug">{item.name}</p>
         <p className="text-base font-bold text-taupe">
           ₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
@@ -43,7 +44,7 @@ const RevenueTooltip = ({ active, payload }: { active?: boolean; payload?: reado
 export default function CatalogTopPerformersChart({ items, loading }: CatalogTopPerformersChartProps) {
   if (loading) {
     return (
-      <div className="bg-surface border border-line rounded-2xl p-6 text-center text-sm text-ink-faint py-12">
+      <div className="bg-surface border border-line p-6 text-center text-sm text-ink-faint py-12">
         Loading top performers…
       </div>
     );
@@ -53,22 +54,23 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
   const sortFn = (a: CatalogItem, b: CatalogItem) =>
     hasAnyRevenue ? (b.total_revenue || 0) - (a.total_revenue || 0) : (b.views_count || 0) - (a.views_count || 0);
 
-  // The chart only ever shows the top 8 — a bar per item stops being readable
-  // well before you get anywhere near a full catalog. The table below it,
-  // however, lists every item so nothing is hidden from view.
-  const chartItems = [...items].sort(sortFn).slice(0, 8).map(i => ({ ...i, chartLabel: truncateName(i.name) }));
-  const allRankedItems = [...items].sort(sortFn);
+  // Chart shows the top 8; the ranked list under it goes to 10 — both are
+  // a curated leaderboard, not a full data dump of the whole catalog. The
+  // full catalog is already one click away on the Designs tab itself.
+  const ranked = [...items].sort(sortFn);
+  const chartItems = ranked.slice(0, 8).map(i => ({ ...i, chartLabel: truncateName(i.name) }));
+  const topTen = ranked.slice(0, 10);
 
   if (chartItems.length === 0) {
     return null;
   }
 
   return (
-    <div className="bg-surface border border-line rounded-2xl p-6 space-y-6">
+    <div className="bg-surface border border-line p-6 space-y-6">
       <div className="flex items-center gap-2">
         <Trophy size={18} className="text-taupe" />
         <div>
-          <h2 className="text-base font-semibold text-ink">Top Performing Items</h2>
+          <h2 className="text-base font-semibold text-ink">Top Performing Designs</h2>
           <p className="text-sm text-ink-faint mt-0.5">
             {hasAnyRevenue ? 'Top 8, ranked by revenue generated.' : 'No orders yet — top 8 by views in the meantime.'}
           </p>
@@ -102,54 +104,40 @@ export default function CatalogTopPerformersChart({ items, loading }: CatalogTop
               axisLine={false}
               width={150}
             />
-            <Tooltip content={<RevenueTooltip />} cursor={{ fill: '#F0EAE3', radius: 6 }} />
-            <Bar dataKey={hasAnyRevenue ? 'total_revenue' : 'views_count'} fill="#9A8073" radius={[0, 6, 6, 0]} />
+            <Tooltip content={<RevenueTooltip />} cursor={{ fill: '#F0EAE3' }} />
+            <Bar dataKey={hasAnyRevenue ? 'total_revenue' : 'views_count'} fill="#9A8073" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="-mx-6 -mb-6 border-t border-line">
-        <p className="px-6 pt-4 pb-2 text-xs font-semibold text-ink-faint uppercase tracking-wider">
-          All {allRankedItems.length} Item{allRankedItems.length === 1 ? '' : 's'}
-        </p>
-        {/* Mobile cards — no sideways scroll needed for a 5-column table */}
-        <div className="md:hidden overflow-y-auto max-h-[420px] divide-y divide-[#F0EAE3]">
-          {allRankedItems.map(item => (
-            <div key={item.id} className="px-6 py-3 hover:bg-sunken/20 transition-colors">
-              <p className="font-medium text-ink truncate">{item.name}</p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-ink-muted">
-                <span>Est. {item.estimated_days ?? 7}d</span>
-                <span>{item.views_count} views</span>
-                <span>{item.order_count || 0} orders</span>
-                <span className="font-semibold text-ink">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+      {/* Ranked list — actual design photos, not another data table. */}
+      <div className="pt-2 border-t border-line">
+        <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-3">Top 10 Leaderboard</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {topTen.map((item, idx) => {
+            const primaryImage = item.images.find(img => img.is_primary)?.image_url || item.images[0]?.image_url;
+            return (
+              <div key={item.id} className="flex items-center gap-3 border border-line p-2 hover:border-line-strong transition-colors">
+                <span className="w-5 text-center text-sm font-bold text-ink-faint shrink-0">{idx + 1}</span>
+                <div className="w-11 h-11 bg-sunken shrink-0 overflow-hidden">
+                  {primaryImage ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={getMediaUrl(primaryImage)} alt="" className="w-full h-full object-cover" />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-ink truncate">{item.name}</p>
+                  <div className="flex items-center gap-2.5 text-[11px] text-ink-muted mt-0.5">
+                    <span className="flex items-center gap-0.5"><Eye size={10} /> {item.views_count}</span>
+                    <span className="flex items-center gap-0.5"><ShoppingBag size={10} /> {item.order_count || 0}</span>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-ink shrink-0">
+                  ₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 0 })}
+                </span>
               </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[420px]">
-          <table className="w-full text-left text-sm text-ink-body min-w-[560px]">
-            <thead className="bg-canvas text-xs uppercase text-ink-faint border-y border-line sticky top-0 z-10">
-              <tr>
-                <th className="px-6 py-3 font-medium bg-canvas">Item</th>
-                <th className="px-6 py-3 font-medium bg-canvas">Est. Days</th>
-                <th className="px-6 py-3 font-medium bg-canvas">Views</th>
-                <th className="px-6 py-3 font-medium bg-canvas">Orders</th>
-                <th className="px-6 py-3 font-medium bg-canvas">Revenue</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F0EAE3]">
-              {allRankedItems.map(item => (
-                <tr key={item.id} className="hover:bg-sunken/20 transition-colors">
-                  <td className="px-6 py-3 font-medium text-ink max-w-[220px] truncate">{item.name}</td>
-                  <td className="px-6 py-3 text-ink-muted">{item.estimated_days ?? 7}</td>
-                  <td className="px-6 py-3">{item.views_count}</td>
-                  <td className="px-6 py-3">{item.order_count || 0}</td>
-                  <td className="px-6 py-3">₱{Number(item.total_revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            );
+          })}
         </div>
       </div>
     </div>

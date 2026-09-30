@@ -61,7 +61,7 @@ export default function StoreLocationsTab({
             Davao City Branch Locations
           </h2>
           <p className="mobile-body-sm text-ink-muted mt-1">
-            Explore physical branches of {store.name} across Davao City. Select a branch to view its profile or book a fitting.
+            Explore physical branches of {store.name} across Davao City. Select a branch to highlight it on the map or book a fitting there.
           </p>
         </div>
         {isOwnerViewingOwnStore && (
@@ -152,6 +152,11 @@ export default function StoreLocationsTab({
                         Satellite Branch
                       </span>
                     )}
+                    {isOwnerViewingOwnStore && branch.status === 'inactive' && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-none bg-rose-100 text-rose-800 border border-rose-300">
+                        Inactive — Not Shown to Customers
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -200,7 +205,7 @@ export default function StoreLocationsTab({
                         onClick={() => onSelectBranch(branch)}
                         className="flex-1 flex items-center justify-center text-xs font-semibold text-ink hover:bg-sunken transition-colors min-h-[44px] border-r border-line cursor-pointer"
                       >
-                        View Profile
+                        Select This Branch
                       </button>
                     )}
 

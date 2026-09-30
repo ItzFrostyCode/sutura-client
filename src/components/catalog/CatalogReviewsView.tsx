@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Loader2, Star, Trash2 } from 'lucide-react';
-import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 
 interface CatalogItemReview {
@@ -27,10 +26,6 @@ export default function CatalogReviewsView() {
   const [lastPage, setLastPage] = useState(1);
   const [filterRating, setFilterRating] = useState('');
 
-  const [replyModalOpen, setReplyModalOpen] = useState(false);
-  const [currentReview, setCurrentReview] = useState<CatalogItemReview | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [replySubmitting, setReplySubmitting] = useState(false);
 
   const reloadReviews = useCallback(() => {
     if (!storeId) return;
@@ -66,28 +61,6 @@ export default function CatalogReviewsView() {
     };
   }, [storeId, page, filterRating]);
 
-  const openReplyModal = (review: CatalogItemReview) => {
-    setCurrentReview(review);
-    setReplyText(review.reply || '');
-    setReplyModalOpen(true);
-  };
-
-  const submitReply = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!storeId || !currentReview) return;
-    setReplySubmitting(true);
-    try {
-      await api.put(`/stores/${storeId}/catalog-item-reviews/${currentReview.id}`, { reply: replyText });
-      toast.success('Reply saved.');
-      setReplyModalOpen(false);
-      reloadReviews();
-    } catch {
-      toast.error('Failed to save reply.');
-    } finally {
-      setReplySubmitting(false);
-    }
-  };
-
   const handleDelete = async (reviewId: number) => {
     if (!storeId) return;
     if (!confirm('Delete this review? This cannot be undone.')) return;
@@ -111,7 +84,7 @@ export default function CatalogReviewsView() {
 
     if (reviews.length === 0) {
       return (
-        <div className="text-center py-16 bg-surface rounded-2xl border border-line shadow-2xs">
+        <div className="text-center py-16 bg-surface border border-line">
           <Star className="mx-auto h-10 w-10 text-ink-faint mb-3" />
           <p className="text-ink-muted text-sm">No item reviews yet.</p>
         </div>
@@ -119,7 +92,7 @@ export default function CatalogReviewsView() {
     }
 
     return (
-      <div className="bg-surface rounded-2xl border border-line divide-y divide-line overflow-hidden shadow-2xs">
+      <div className="bg-surface border border-line divide-y divide-line overflow-hidden">
         {reviews.map(review => (
           <div key={review.id} className="p-6">
             <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -160,13 +133,6 @@ export default function CatalogReviewsView() {
               </div>
 
               <div className="flex flex-row md:flex-col items-start md:items-end gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => openReplyModal(review)}
-                  className="px-3 py-1.5 bg-surface hover:bg-canvas text-ink border border-line rounded-lg text-xs font-medium cursor-pointer shadow-2xs"
-                >
-                  {review.reply ? 'Edit Reply' : 'Reply'}
-                </button>
                 <button
                   type="button"
                   onClick={() => handleDelete(review.id)}
@@ -235,45 +201,6 @@ export default function CatalogReviewsView() {
       </div>
 
       {renderReviewsContent()}
-
-      <Modal
-        isOpen={replyModalOpen}
-        onClose={() => setReplyModalOpen(false)}
-        title={currentReview?.reply ? 'Edit Store Reply' : 'Reply to Review'}
-      >
-        <form onSubmit={submitReply} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
-              Your Response
-            </label>
-            <textarea
-              required
-              rows={4}
-              value={replyText}
-              onChange={e => setReplyText(e.target.value)}
-              placeholder="Thank the customer or address their feedback professionally..."
-              className="w-full bg-canvas border border-line rounded-xl p-3 text-sm text-ink focus:outline-none focus:border-taupe resize-none"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setReplyModalOpen(false)}
-              className="px-4 py-2 border border-line rounded-xl text-sm font-medium text-ink-muted hover:bg-canvas cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={replySubmitting}
-              className="px-4 py-2 bg-taupe hover:bg-taupe-hover text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {replySubmitting ? 'Saving...' : 'Post Reply'}
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

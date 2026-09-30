@@ -38,7 +38,7 @@ export default function RecentItemMenu({ onUse, onDelete }: RecentItemMenuProps)
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-line rounded-xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-line rounded-none shadow-lg z-50 overflow-hidden">
           <button
             type="button"
             onClick={() => {

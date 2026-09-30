@@ -55,7 +55,7 @@ Concretely: keep the *logic and data wiring*, replace the *entire presentation l
 - Frontend: `sutura-client/` — Next.js 16.3, React 19, TypeScript, Tailwind CSS v4, Zustand, lucide-react, recharts, react-leaflet
 - Backend: `sutura-server/` — Laravel API, MySQL 8.4
 - Run: backend `php artisan serve` (:8000), frontend `npm run dev` (:3000)
-- Login: `owner@sutura.com` / `password`
+- Login: `maria.cruz@gmail.com` / `password`
 
 **Read first:** `CLAUDE.md` (both repos), `PRODUCT.md` (client repo).
 
@@ -186,7 +186,7 @@ Rules:
 Create a single `<Modal>` (plus a `<ConfirmDialog>` variant for the small destructive ones) that implements all of the above, and route **every** modal through it. Kill all 9 hand-rolled overlays. Two of these need a variant:
 
 - `CatalogPreviewModal`, `OrderReceiptModal` → image/document-heavy, full-bleed on mobile
-- `ServiceDeleteModal`, `StaffDeleteModal`, `CustomerDeleteModal`, `BranchDeleteModal`, `CatalogDeleteModal`, `ServiceTrashModal`, `JobTrashModal` → small confirm dialogs, may stay centered on mobile but must be comfortably sized and thumb-reachable
+- `ServiceDeleteModal`, `StaffDeleteModal`, `CustomerDeleteModal`, `BranchDeleteModal`, `CatalogDeleteModal`, `JobTrashModal` → small confirm dialogs, may stay centered on mobile but must be comfortably sized and thumb-reachable
 
 ### Other overlays — same principle
 
@@ -262,7 +262,7 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 
 await page.goto('http://localhost:3000/login');
-await page.fill('input[type="email"]', 'owner@sutura.com');
+await page.fill('input[type="email"]', 'maria.cruz@gmail.com');
 await page.fill('input[type="password"]', 'password');
 await page.click('button[type="submit"]');
 await page.waitForURL('**/dashboard', { timeout: 15000 }).catch(() => {});

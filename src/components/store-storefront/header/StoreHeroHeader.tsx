@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import {
   Star,
   Bookmark,
   Pencil,
+  Camera,
   Calendar,
   Clock,
   Phone,
@@ -19,7 +20,7 @@ import {
 import { StoreProfile, StoreBranch, StorefrontTab } from '../types';
 import { getMediaUrl } from '@/lib/media';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
-import AccountHeaderMenu from '@/components/AccountHeaderMenu';
+import StoreImageEditModal from './StoreImageEditModal';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -27,6 +28,8 @@ interface StoreHeroHeaderProps {
   readonly isStoreCurrentlyOpen: boolean;
   readonly activeBranch?: StoreBranch;
   readonly isOwnerViewingOwnStore: boolean;
+  /** Owner, branch manager, or staff on their own Store Profile (hides back, shows Dashboard). */
+  readonly isShopViewingOwnStore?: boolean;
   readonly onEditProfile: () => void;
   readonly tabList: { id: StorefrontTab; label: string }[];
   readonly activeTab: StorefrontTab;
@@ -37,6 +40,8 @@ interface StoreHeroHeaderProps {
   readonly isBookmarked: boolean;
   readonly setIsBookmarked: React.Dispatch<React.SetStateAction<boolean>>;
   readonly onOpenMap?: () => void;
+  /** Refreshes the storefront's own `store` state after the logo/banner is replaced. */
+  readonly onImagesSaved?: () => void;
 }
 
 // Clean address deduplication to avoid repetitive "Poblacion, Poblacion, Davao City"
@@ -69,6 +74,7 @@ export default function StoreHeroHeader({
   isStoreCurrentlyOpen,
   activeBranch,
   isOwnerViewingOwnStore,
+  isShopViewingOwnStore = false,
   onEditProfile,
   tabList,
   activeTab,
@@ -79,9 +85,11 @@ export default function StoreHeroHeader({
   isBookmarked,
   setIsBookmarked,
   onOpenMap,
+  onImagesSaved,
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
   const router = useRouter();
+  const [editingImage, setEditingImage] = useState<'logo' | 'banner' | null>(null);
 
   return (
     <>
@@ -93,14 +101,16 @@ export default function StoreHeroHeader({
               state/query exactly since this is real browser-history back,
               not a hardcoded destination. Overlaid on the banner so it's
               reachable without scrolling on every breakpoint. */}
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="Back"
-            className="absolute top-4 left-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-ink/70 transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={18} />
-          </button>
+          {!isShopViewingOwnStore && (
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Back"
+              className="absolute top-4 left-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-ink/70 transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
 
           {(activeBranch?.guide_image_url || store.banner_path) ? (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -122,6 +132,21 @@ export default function StoreHeroHeader({
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/30" />
+
+          {/* Banner only ever shows the store's own image when no branch is
+              selected — a branch's guide_image_url takes over otherwise, so
+              editing store.banner_path wouldn't visibly change anything. */}
+          {isOwnerViewingOwnStore && !activeBranch && (
+            <button
+              type="button"
+              onClick={() => setEditingImage('banner')}
+              aria-label="Change cover banner"
+              className="absolute bottom-3 right-3 z-20 min-h-[44px] px-3.5 flex items-center gap-1.5 bg-ink/60 hover:bg-ink/80 backdrop-blur-sm text-white text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Camera size={14} />
+              <span>Change Cover</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -153,12 +178,24 @@ export default function StoreHeroHeader({
         <div className="relative flex flex-col items-center text-center pb-2">
           {/* Centered Avatar Overlapping Cover Banner */}
           <div className="-mt-14 sm:-mt-18 md:-mt-20 relative z-10 flex justify-center">
-            <StoreLogoAvatar
-              src={store.logo_path}
-              name={store.name}
-              className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
-              isOpen={isStoreCurrentlyOpen}
-            />
+            <div className="relative inline-block">
+              <StoreLogoAvatar
+                src={store.logo_path}
+                name={store.name}
+                className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
+                isOpen={isStoreCurrentlyOpen}
+              />
+              {isOwnerViewingOwnStore && (
+                <button
+                  type="button"
+                  onClick={() => setEditingImage('logo')}
+                  aria-label="Change store logo"
+                  className="absolute bottom-0.5 right-0.5 w-9 h-9 rounded-full flex items-center justify-center bg-ink/80 hover:bg-ink text-white border-2 border-surface shadow-md transition-colors cursor-pointer"
+                >
+                  <Camera size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Main Store Name */}
@@ -190,7 +227,11 @@ export default function StoreHeroHeader({
             )}
           </div>
 
-          {/* ⚡ 3. Centered Action Buttons Row */}
+          {/* ⚡ 3. Centered Action Buttons Row — the sticky StoreOwnerTopBar
+              (page.tsx) also carries Dashboard/Edit + the notification/
+              account menu so they're reachable without scrolling back up;
+              these stay here too since they read as this page's own primary
+              call-to-action, not just page-chrome. */}
           <div className="flex items-center justify-center gap-2 mt-4 max-w-md w-full">
             {isOwnerViewingOwnStore ? (
               <>
@@ -207,10 +248,19 @@ export default function StoreHeroHeader({
                   className="min-h-[46px] px-4 py-2.5 bg-sunken hover:bg-line border border-line text-ink text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Pencil size={15} />
-                  <span>Edit Profile</span>
+                  <span>Edit</span>
                 </button>
-                <AccountHeaderMenu />
               </>
+            ) : isShopViewingOwnStore ? (
+              // Branch manager / staff: same way back as the owner, minus
+              // Edit (store settings are owner-only).
+              <Link
+                href="/dashboard"
+                className="flex-1 min-h-[46px] px-5 py-2.5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+              >
+                <LayoutDashboard size={16} />
+                <span>Dashboard</span>
+              </Link>
             ) : (
               <>
                 <Link
@@ -312,6 +362,16 @@ export default function StoreHeroHeader({
           </div>
         </div>
       </div>
+
+      {isOwnerViewingOwnStore && editingImage && (
+        <StoreImageEditModal
+          isOpen={Boolean(editingImage)}
+          onClose={() => setEditingImage(null)}
+          imageType={editingImage}
+          currentUrl={editingImage === 'logo' ? store.logo_path : store.banner_path}
+          onSaved={() => onImagesSaved?.()}
+        />
+      )}
     </>
   );
 }

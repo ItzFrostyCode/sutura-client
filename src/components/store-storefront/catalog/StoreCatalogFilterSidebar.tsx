@@ -1,14 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SlidersHorizontal, RotateCcw, Check, Star, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
-import { SEARCH_DEPARTMENTS } from '@/lib/navSearchCategories';
-import ColorFamilyFilterSection from '@/components/search/ColorFamilyFilterSection';
-
-interface ColorOption {
-  label: string;
-  hex: string;
+import {
+  DEPARTMENTS,
+  DEPARTMENT_LABELS,
+  GARMENT_TYPE_LABELS,
+  garmentTypesForDepartment,
+  type Department,
+} from '@/lib/canonicalTaxonomy';
+function humanizeGarmentType(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+// Reverse index (garment_type slug -> owning department) built once from
+// canonicalTaxonomy.ts's tree, so this store's own real garment_type tally
+// can be grouped by Department without needing the full department ->
+// subcategory -> structure -> garment_type cascade UI SearchWebFilterSidebar
+// uses — this sidebar only ever needed Department + a flat garment-type list.
+const DEPARTMENT_GARMENT_TYPES: Record<Department, Set<string>> = DEPARTMENTS.reduce(
+  (acc, dept) => {
+    acc[dept] = new Set(garmentTypesForDepartment(dept));
+    return acc;
+  },
+  {} as Record<Department, Set<string>>
+);
+
+export type DeptKey = 'all' | Department;
 
 interface StoreCatalogFilterSidebarProps {
   readonly activeFilterCount: number;
@@ -18,14 +36,13 @@ interface StoreCatalogFilterSidebarProps {
   readonly setMinPrice: (val: string) => void;
   readonly maxPrice: string;
   readonly setMaxPrice: (val: string) => void;
-  readonly colorFilter: string;
-  readonly setColorFilter: (val: string) => void;
-  readonly availableColors: ColorOption[];
   readonly ratingFilter: string;
   readonly setRatingFilter: (val: string) => void;
   readonly garmentTypeTally: Record<string, number>;
   readonly garmentTypeFilters: Set<string>;
   readonly toggleGarmentType: (id: string) => void;
+  readonly departmentFilter: DeptKey;
+  readonly setDepartmentFilter: (dept: DeptKey) => void;
   readonly onReset: () => void;
 }
 
@@ -36,10 +53,14 @@ interface StoreCatalogFilterSidebarProps {
  * checkbox-row list pattern, same Department + Narrow by Category picker
  * instead of a flat "Garment Type" list) so a customer doesn't get two
  * different filter languages depending on which page they filtered from.
- * garment_type values already match SEARCH_DEPARTMENTS' category slugs
- * ('barong', 'suit', 'gown', ...) directly — no remapping needed, just
- * cross-referenced against this store's own real tally so an empty
- * category never shows as a selectable option.
+ * Unlike SearchWebFilterSidebar's full department -> subcategory ->
+ * structure -> garment_type cascade, this sidebar only ever needed
+ * Department + a flat garment-type list — canonicalTaxonomy.ts's real
+ * garment_type slugs are grouped by department via a reverse index (see
+ * DEPARTMENT_GARMENT_TYPES above) and cross-referenced against this store's
+ * own real tally so an empty category never shows as a selectable option.
+ * A garment_type value not found in canonicalTaxonomy.ts (e.g. legacy data)
+ * still surfaces under "All", humanized, rather than silently disappearing.
  */
 export default function StoreCatalogFilterSidebar({
   activeFilterCount,
@@ -49,27 +70,47 @@ export default function StoreCatalogFilterSidebar({
   setMinPrice,
   maxPrice,
   setMaxPrice,
-  colorFilter,
-  setColorFilter,
-  availableColors,
   ratingFilter,
   setRatingFilter,
   garmentTypeTally,
   garmentTypeFilters,
   toggleGarmentType,
+  departmentFilter,
+  setDepartmentFilter,
   onReset,
 }: StoreCatalogFilterSidebarProps) {
-  const [activeDept, setActiveDept] = useState<string>('all');
-  const currentDept = SEARCH_DEPARTMENTS.find((d) => d.key === activeDept) ?? SEARCH_DEPARTMENTS[0];
-  const categoriesInStock = currentDept.categories.filter((cat) => (garmentTypeTally[cat.value] ?? 0) > 0);
-  const departmentsInStock = SEARCH_DEPARTMENTS.filter(
-    (d) => d.key === 'all' || d.categories.some((cat) => (garmentTypeTally[cat.value] ?? 0) > 0)
+  const tallyKeysInStock = useMemo(
+    () => Object.keys(garmentTypeTally).filter((k) => (garmentTypeTally[k] ?? 0) > 0),
+    [garmentTypeTally]
   );
+
+  // Department only narrows which categories this section offers below —
+  // it does NOT pre-check any of them. Selecting "Men" filters results to
+  // every Men's item on its own; picking a specific category underneath
+  // (e.g. Barong Tagalog) is a separate, further narrowing step, not
+  // something Department does automatically on the customer's behalf.
+  const categoriesInStock = useMemo(() => {
+    const keys = departmentFilter === 'all'
+      ? tallyKeysInStock
+      : tallyKeysInStock.filter((k) => DEPARTMENT_GARMENT_TYPES[departmentFilter].has(k));
+    return keys
+      .map((value) => ({ value, label: GARMENT_TYPE_LABELS[value] ?? humanizeGarmentType(value) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [departmentFilter, tallyKeysInStock]);
+
+  const departmentsInStock: { key: DeptKey; label: string }[] = useMemo(() => {
+    const options: { key: DeptKey; label: string }[] = [{ key: 'all', label: 'All' }];
+    DEPARTMENTS.forEach((dept) => {
+      if (tallyKeysInStock.some((k) => DEPARTMENT_GARMENT_TYPES[dept].has(k))) {
+        options.push({ key: dept, label: DEPARTMENT_LABELS[dept] });
+      }
+    });
+    return options;
+  }, [tallyKeysInStock]);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     department: true,
     category: true,
-    color: true,
     price: true,
     rating: true,
   });
@@ -121,12 +162,12 @@ export default function StoreCatalogFilterSidebar({
           {openSections.department && (
             <div className="divide-y divide-[#F5F1EC] bg-white">
               {departmentsInStock.map((dept) => {
-                const isSelected = activeDept === dept.key;
+                const isSelected = departmentFilter === dept.key;
                 return (
                   <button
                     key={dept.key}
                     type="button"
-                    onClick={() => setActiveDept(dept.key)}
+                    onClick={() => setDepartmentFilter(dept.key)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors cursor-pointer rounded-none group ${
                       isSelected ? 'bg-[#F0EAE3] font-bold text-[#2D2A26]' : 'hover:bg-[#FAF6F3] text-[#524A44]'
                     }`}
@@ -204,46 +245,6 @@ export default function StoreCatalogFilterSidebar({
                   </button>
                 );
               })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Color Swatches (Collapsible Dropdown) */}
-      {availableColors.length > 0 && (
-        <div className="border-b border-[#EBE6E0]">
-          <div
-            onClick={() => toggleSection('color')}
-            className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
-          >
-            <span>Color</span>
-            <div className="flex items-center gap-2">
-              {colorFilter && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setColorFilter('');
-                  }}
-                  className="text-[10px] font-semibold text-[#9A8073] hover:text-[#2D2A26] hover:underline cursor-pointer lowercase"
-                >
-                  (clear)
-                </button>
-              )}
-              <ChevronDown
-                size={13}
-                className={`text-[#827A73] transition-transform duration-200 ${
-                  openSections.color ? 'rotate-180' : ''
-                }`}
-              />
-            </div>
-          </div>
-          {openSections.color && (
-            <div className="p-3 bg-white">
-              <ColorFamilyFilterSection
-                selectedColor={colorFilter}
-                onColorChange={(val) => setColorFilter(val)}
-              />
             </div>
           )}
         </div>

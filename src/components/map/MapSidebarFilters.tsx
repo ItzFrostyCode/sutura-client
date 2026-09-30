@@ -34,7 +34,7 @@ export default function MapSidebarFilters({
           <button
             type="button"
             onClick={onResetFilters}
-            className="flex items-center gap-1 text-[11px] font-semibold text-taupe hover:text-ink cursor-pointer transition-colors"
+            className="flex items-center gap-1 text-[11px] font-semibold text-ink hover:underline cursor-pointer transition-colors"
           >
             <RotateCcw size={11} /> Reset
           </button>
@@ -49,7 +49,7 @@ export default function MapSidebarFilters({
         <select
           value={district}
           onChange={(e) => onDistrictChange(e.target.value)}
-          className="w-full bg-canvas border border-line rounded-lg px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-taupe"
+          className="w-full bg-canvas border border-line rounded-none px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:border-ink"
         >
           <option value="">All Districts</option>
           {DISTRICTS.map((d) => (
@@ -69,10 +69,10 @@ export default function MapSidebarFilters({
           <button
             type="button"
             onClick={() => onStatusFilterChange('all')}
-            className={`py-1 px-1.5 rounded-md text-[11px] font-medium border text-center transition-colors cursor-pointer ${
+            className={`py-1 px-1.5 rounded-none text-[11px] font-medium border text-center transition-colors cursor-pointer ${
               statusFilter === 'all'
                 ? 'bg-ink text-white border-ink font-semibold'
-                : 'bg-canvas text-ink-body border-line hover:border-taupe'
+                : 'bg-canvas text-ink-body border-line hover:border-ink'
             }`}
           >
             All
@@ -80,7 +80,7 @@ export default function MapSidebarFilters({
           <button
             type="button"
             onClick={() => onStatusFilterChange('online')}
-            className={`py-1 px-1.5 rounded-md text-[11px] font-medium border flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+            className={`py-1 px-1.5 rounded-none text-[11px] font-medium border flex items-center justify-center gap-1 transition-colors cursor-pointer ${
               statusFilter === 'online'
                 ? 'bg-emerald-600 text-white border-emerald-600 font-semibold'
                 : 'bg-canvas text-ink-body border-line hover:border-emerald-600'
@@ -92,7 +92,7 @@ export default function MapSidebarFilters({
           <button
             type="button"
             onClick={() => onStatusFilterChange('offline')}
-            className={`py-1 px-1.5 rounded-md text-[11px] font-medium border flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+            className={`py-1 px-1.5 rounded-none text-[11px] font-medium border flex items-center justify-center gap-1 transition-colors cursor-pointer ${
               statusFilter === 'offline'
                 ? 'bg-rose-600 text-white border-rose-600 font-semibold'
                 : 'bg-canvas text-ink-body border-line hover:border-rose-600'
@@ -109,8 +109,8 @@ export default function MapSidebarFilters({
         type="button"
         onClick={onNearMe}
         disabled={locating}
-        className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors disabled:opacity-60 cursor-pointer ${
-          userLocation ? 'bg-taupe text-white border-taupe' : 'bg-canvas text-ink border-line hover:border-taupe'
+        className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-none border transition-colors disabled:opacity-60 cursor-pointer ${
+          userLocation ? 'bg-ink text-white border-ink' : 'bg-canvas text-ink border-line hover:border-ink'
         }`}
       >
         <LocateFixed size={13} className={locating ? 'animate-pulse' : ''} />

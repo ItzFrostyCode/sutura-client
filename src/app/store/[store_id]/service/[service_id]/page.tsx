@@ -4,15 +4,24 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ChevronRight, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Clock, MessageCircle, Star, CheckCircle2, AlertCircle, Loader2, Heart } from 'lucide-react';
+import { ArrowLeft, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
-import { getActiveSale } from '@/lib/salePricing';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { PublicService, StoreProfile } from '@/components/store-storefront/types';
 import { getSocialUrl, getMessengerUrl } from '@/components/store-storefront/storeStorefrontHelpers';
 import ServiceRatingsSection from '@/components/store-service-detail/ServiceRatingsSection';
+import ServiceProductInfo from '@/components/store-service-detail/ServiceProductInfo';
+import ServiceHeroBar from '@/components/store-service-detail/ServiceHeroBar';
+import { ServiceInlineActions, ServiceBottomBar } from '@/components/store-service-detail/ServiceActionButtons';
+import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
+import ServiceAccordionSections from '@/components/store-service-detail/ServiceAccordionSections';
+import ServiceStoreProfileCard from '@/components/store-service-detail/ServiceStoreProfileCard';
+import ServiceRecommendationsSection from '@/components/store-service-detail/ServiceRecommendationsSection';
+import ServiceDetailBreadcrumb from '@/components/store-service-detail/ServiceDetailBreadcrumb';
+import type { SearchServiceResult } from '@/components/search/types';
 
 // Dedicated page for a single service — was an in-place swap inside the
 // Store Profile's Service tab (the old ServiceDetailView.tsx component,
@@ -27,9 +36,12 @@ export default function ServiceDetailPage({
   const router = useRouter();
   const toast = useToast();
   const { user, store: authStore } = useAuthStore();
+  const gate = useGuestGatedHref();
 
   const [store, setStore] = useState<StoreProfile | null>(null);
   const [service, setService] = useState<PublicService | null>(null);
+  const [fromSameShop, setFromSameShop] = useState<SearchServiceResult[]>([]);
+  const [moreLikeThis, setMoreLikeThis] = useState<SearchServiceResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [headerOpacity, setHeaderOpacity] = useState(0);
 
@@ -58,6 +70,11 @@ export default function ServiceDetailPage({
         const found = list.find((s) => s.id === Number(serviceId)) ?? null;
         setService(found);
         setSavesCount(found?.saves_count ?? 0);
+        // "From the Same Shop" reuses this same store-scoped fetch rather
+        // than firing a second request — the store's own service list is
+        // already everything that section needs to show, just minus the
+        // service currently being viewed.
+        setFromSameShop((list as unknown as SearchServiceResult[]).filter((s) => s.id !== Number(serviceId)));
       })
       .catch(() => {
         setStore(null);
@@ -65,6 +82,16 @@ export default function ServiceDetailPage({
       })
       .finally(() => setLoading(false));
   }, [storeId, serviceId]);
+
+  // "More Like This" — cross-shop, platform-wide by service_category, the
+  // same shape as useCatalogItemDetail.ts's own moreLikeThis effect (More
+  // Like This is deliberately NOT store-scoped, unlike From the Same Shop).
+  useEffect(() => {
+    if (!service?.service_category) return;
+    api.get('/public/services', { params: { service_category: service.service_category, per_page: 12 } })
+      .then((res) => setMoreLikeThis((res.data.data ?? []).filter((s: SearchServiceResult) => s.id !== service.id)))
+      .catch(() => setMoreLikeThis([]));
+  }, [service?.service_category, service?.id]);
 
   useEffect(() => {
     if (!user || !store?.slug || !service) return;
@@ -130,11 +157,23 @@ export default function ServiceDetailPage({
 
   const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && user?.roles?.[0]?.name === 'store_owner';
 
-  // Deterministic, not router.back() — this page is reachable via a direct
-  // link (search results, recently-viewed) with no store-profile entry in
-  // history at all, so history-based back can land anywhere but the
-  // profile. Always send the customer to the Services tab they came from.
-  const handleBack = () => router.push(`/store/${storeId}?tab=services`);
+  // Real history-back when there's actual history to go back to (matches
+  // useCatalogItemDetail.ts's handleBackClick) — a plain unconditional
+  // router.push() here was pushing a *new* Profile entry on top of Search
+  // instead of reusing/popping the existing one, so the stack became
+  // [Search, ServiceDetail, Profile]. Profile's own back button is real
+  // browser history (router.back(), see StoreHeroHeader.tsx) — it would
+  // then pop back into ServiceDetail instead of Search, forcing the
+  // customer to hit back twice no matter which shop they were on. Only
+  // fall back to a hardcoded destination when there's truly no history to
+  // go back to (a direct link, recently-viewed on a fresh tab, etc.).
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(`/store/${storeId}?tab=services`);
+    }
+  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -216,27 +255,9 @@ export default function ServiceDetailPage({
     );
   }
 
-  const activeSale = service.base_price
-    ? getActiveSale({
-        price: service.base_price,
-        sale_price: service.sale_price,
-        sale_starts_at: service.sale_starts_at,
-        sale_ends_at: service.sale_ends_at,
-      })
-    : null;
-
-  const priceDisplay = activeSale ? (
-    <span className="flex items-center gap-1.5">
-      <span className="line-through text-ink-faint font-normal text-sm">₱{activeSale.original.toLocaleString()}</span>
-      <span className="text-rose-600">₱{activeSale.sale.toLocaleString()}</span>
-    </span>
-  ) : service.base_price !== null && service.base_price !== undefined ? (
-    `₱${Number.parseFloat(service.base_price.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-  ) : (
-    'Custom Quote'
-  );
-
   const facebookUrl = getSocialUrl(store.social_links, 'facebook');
+  const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`;
+  const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
     <div className="min-h-full flex flex-col bg-canvas">
@@ -329,14 +350,11 @@ export default function ServiceDetailPage({
       </div>
 
       {/* Mobile: fixed (not sticky) floating over the full-bleed hero image —
-          mirrors CatalogDetailHeader.tsx. A sticky+negative-margin version
-          of this was tried there and found broken (collapses its
-          shrink-wrapped parent to ~0px, leaving sticky nothing to stick
-          within), so this goes straight to `fixed` instead of repeating
-          that mistake. */}
+          mirrors CatalogDetailHeader.tsx. Floating back & action buttons with
+          subtle edge insets over the true edge-to-edge image. */}
       <div className="min-[600px]:hidden">
         <div
-          className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center justify-between px-0 min-[375px]:px-6"
+          className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center justify-between px-3 sm:px-4"
           style={{
             backgroundColor: `rgba(255,255,255,${headerOpacity})`,
             borderBottom: headerOpacity > 0.6 ? '1px solid var(--brand-border)' : 'none',
@@ -412,134 +430,93 @@ export default function ServiceDetailPage({
         </div>
       </div>
 
-      {/* px-0/375/600/md tiers, same unified margin system as the catalog
-          item detail page's <main> — every section inherits this same
-          inset directly instead of each hand-tuning its own margin. */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[375px]:px-6 min-[600px]:px-[10px] md:px-8 py-4 min-[600px]:py-[10px] md:py-6 pb-10">
-        <div className="min-[600px]:grid min-[600px]:grid-cols-12 min-[600px]:gap-2.5 md:gap-10 min-[600px]:items-start">
-          {/* Image Column */}
-          <div className="min-[600px]:col-span-7">
-            <div className="relative -mt-4 min-[600px]:mt-0">
-              {service.image_url ? (
-                <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full min-[600px]:border min-[600px]:border-line">
-                  <Image
-                    src={getMediaUrl(service.image_url)}
-                    alt={service.name}
-                    className="w-full h-full object-cover object-top min-[600px]:object-center md:object-contain transition-all duration-300"
-                    fill
-                  />
-                </div>
-              ) : (
-                <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken flex items-center justify-center text-ink-faint min-[600px]:border min-[600px]:border-line">
-                  No Image
-                </div>
+      {/* Main layout: on mobile (<600px), px-0 py-0 ensures the hero image
+          is exact full width with zero left/right margin. On tablet/desktop
+          (600px+), container insets, border, and 2-column grid take over. */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10">
+        {/* Breadcrumb — tablet/desktop only, matches CatalogDetailBreadcrumb's placement */}
+        <div className="hidden min-[600px]:block">
+          <ServiceDetailBreadcrumb service={service} />
+        </div>
+
+        <CatalogDetailGrid
+          gallery={
+            <>
+              {/* Image — 100% full width edge-to-edge on mobile */}
+              <div className="relative w-full">
+                {service.image_url ? (
+                  <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full border-b border-line min-[600px]:border min-[600px]:border-line">
+                    <Image
+                      src={getMediaUrl(service.image_url)}
+                      alt={service.name}
+                      className="w-full h-full object-cover object-top min-[600px]:object-center md:object-contain transition-all duration-300"
+                      fill
+                      priority
+                      sizes="(max-width: 600px) 100vw, (max-width: 1024px) 60vw, 55vw"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken flex items-center justify-center text-ink-faint border-b border-line min-[600px]:border min-[600px]:border-line">
+                    No Image
+                  </div>
+                )}
+              </div>
+              <ServiceHeroBar
+                savesCount={savesCount}
+                isSaved={isSaved}
+                togglingSave={togglingSave}
+                onToggleSave={handleToggleSave}
+                myRating={myRating}
+                setMyRating={setMyRating}
+                hoverRating={hoverRating}
+                setHoverRating={setHoverRating}
+                onSubmitRating={handleSubmitReview}
+                submittingReview={submittingReview}
+                canRate={!isOwnerViewingOwnStore}
+              />
+              {reviewMessage && (
+                <p className={`mt-2 px-4 min-[375px]:px-6 min-[600px]:px-0 text-xs ${reviewMessage.type === 'success' ? 'text-sage' : 'text-danger'}`}>
+                  {reviewMessage.text}
+                </p>
               )}
+            </>
+          }
+          buyZone={
+            <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
+              <ServiceProductInfo service={service} />
+              <ServiceInlineActions bookHref={bookHref} messageHref={messageHref} />
             </div>
-          </div>
+          }
+        />
 
-          {/* Info Column */}
-          <div className="min-[600px]:col-span-5 space-y-3 mt-4 min-[600px]:mt-0">
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-lg font-bold text-ink">{priceDisplay}</p>
-                <button
-                  type="button"
-                  onClick={handleToggleSave}
-                  disabled={togglingSave}
-                  aria-label={isSaved ? 'Unsave this service' : 'Save this service'}
-                  aria-pressed={isSaved}
-                  className="w-9 h-9 shrink-0 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors disabled:opacity-50"
-                >
-                  <Heart size={19} className={isSaved ? 'fill-rose-600 text-rose-600' : 'text-ink-muted'} />
-                </button>
-              </div>
-              <h1 className="text-base font-serif font-semibold text-ink">{service.name}</h1>
-              <div className="flex items-center gap-2.5 text-sm flex-wrap">
-                {service.estimated_days ? (
-                  <span className="flex items-center gap-1 text-ink-muted text-xs">
-                    <Clock size={12} /> {service.estimated_days}d
-                  </span>
-                ) : null}
-                {service.reviews_avg_rating && Number(service.reviews_avg_rating) > 0 ? (
-                  <span className="flex items-center gap-1 text-ink-muted text-xs">
-                    <Star size={12} className="fill-amber-400 text-amber-500" />
-                    <span className="font-semibold text-ink">{Number(service.reviews_avg_rating).toFixed(1)}</span>
-                    {(service.reviews_count ?? 0) > 0 && <span>({service.reviews_count})</span>}
-                  </span>
-                ) : null}
-                {savesCount > 0 ? (
-                  <span className="flex items-center gap-1 text-ink-muted text-xs">
-                    <Heart size={12} className="fill-rose-500 text-rose-500" />
-                    <span>{savesCount} saved</span>
-                  </span>
-                ) : null}
-              </div>
-            </div>
+        {/* Specification · Description — same numbered-card system as the
+            Catalog Item Detail page's Size Guide/Specification/Description. */}
+        <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0">
+          <ServiceAccordionSections service={service} />
+        </div>
 
-            {service.description && (
-              <p className="text-sm text-ink-body leading-relaxed whitespace-pre-wrap">{service.description}</p>
-            )}
+        {/* Ratings — below the specification, like the Catalog Design page */}
+        <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
+          <ServiceRatingsSection service={service} />
+        </div>
 
-            {service.pricing && service.pricing.length > 0 && (
-              <div className="space-y-2 pt-1">
-                <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Pricing Options</h4>
-                <div className="border border-line divide-y divide-line">
-                  {service.pricing.map((tier) => (
-                    <div key={tier.id} className="flex items-center justify-between px-3 py-2.5 text-sm">
-                      <span className="text-ink-body">{tier.label}</span>
-                      <span className="font-semibold text-ink">
-                        ₱{Number.parseFloat(tier.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Shop card */}
+        <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
+          <ServiceStoreProfileCard store={store} gate={gate} />
+        </div>
 
-            {service.size_chart_image_url && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Size Chart</h4>
-                <div className="relative w-full h-[200px] border border-line bg-canvas overflow-hidden">
-                  <Image src={service.size_chart_image_url} alt="Size chart" fill className="object-cover object-center" />
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3 pt-2">
-              <Link
-                href={`/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`}
-                className="w-full h-[52px] rounded-none flex items-center justify-center bg-ink hover:bg-taupe text-white text-base font-semibold transition-colors"
-              >
-                Book Appointment →
-              </Link>
-
-              {facebookUrl && (
-                <a
-                  href={getMessengerUrl(facebookUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full h-[52px] rounded-none flex items-center justify-center gap-2 border border-line hover:bg-sunken text-ink text-base font-medium transition-colors"
-                >
-                  <MessageCircle size={18} /> Inquire on Facebook
-                </a>
-              )}
-            </div>
-
-            <ServiceRatingsSection
-              service={service}
-              storeId={storeId}
-              myRating={myRating}
-              setMyRating={setMyRating}
-              hoverRating={hoverRating}
-              setHoverRating={setHoverRating}
-              submittingReview={submittingReview}
-              reviewMessage={reviewMessage}
-              onSubmitReview={handleSubmitReview}
-              isOwnerViewingOwnStore={isOwnerViewingOwnStore}
-            />
-          </div>
+        {/* From the Same Shop + You May Also Like */}
+        <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0 space-y-4">
+          <ServiceRecommendationsSection
+            fromSameShop={fromSameShop}
+            moreLikeThis={moreLikeThis}
+            storeId={storeId}
+            gate={gate}
+          />
         </div>
       </main>
+
+      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} storeHref={`/store/${storeId}`} />
     </div>
   );
 }

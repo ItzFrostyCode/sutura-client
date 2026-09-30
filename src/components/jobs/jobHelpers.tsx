@@ -165,6 +165,7 @@ export interface Job {
   discount_amount?: number | string | null;
   customer?: { name: string; suki_tag?: string | null } | null;
   service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
+  service_package?: { id: number; name: string } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;

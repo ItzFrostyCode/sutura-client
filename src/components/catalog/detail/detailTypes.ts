@@ -1,3 +1,4 @@
+
 export interface CatalogImage {
   id: number;
   image_url: string;
@@ -18,8 +19,11 @@ export interface ConnectedOrder {
   id: number;
   order_number?: string;
   type?: string;
+  intake_channel?: 'walk_in' | 'online' | string | null;
   selected_size?: string | null;
   total_amount: string | number;
+  discount_amount?: string | number | null;
+  balance?: string | number | null;
   payment_status?: string;
   status?: string;
   created_at: string;
@@ -39,12 +43,20 @@ export interface DetailedCatalogItem {
   name: string;
   price: string | number;
   estimated_days?: number | null;
+  estimated_days_max?: number | null;
   material?: string;
   color?: string;
   fabric_image_url?: string | null;
   sizes?: string[] | null;
   description?: string | null;
   garment_type?: string | null;
+  department?: string | null;
+  subcategory?: string | null;
+  garment_structure?: string | null;
+  measurement_guide?: string | null;
+  /** Owner's Appointment Configuration for this design (null = store defaults). */
+  service_id?: number | null;
+  service?: { id: number; name: string } | null;
   listing_type?: string;
   is_active?: boolean;
   images?: CatalogImage[];

@@ -30,7 +30,7 @@ export default function ServiceDeleteModal({
           delete (see ServiceController::destroy/restore), it stays
           recoverable from Trash, it just won't show up on the store's
           storefront or in job/order forms until restored. */}
-          It will be hidden from your storefront and won&apos;t be selectable for new orders, but you can restore {count ? 'them' : 'it'} later from Trash.
+          It will be hidden from your store profile and won&apos;t be selectable for new orders, but you can restore {count ? 'them' : 'it'} later from Trash.
         </p>
         <div className="pt-4 flex justify-end gap-3">
           <button 

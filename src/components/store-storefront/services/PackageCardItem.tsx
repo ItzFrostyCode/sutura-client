@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Package, Star } from 'lucide-react';
 import { PublicServicePackage } from '../types';
+import { getMediaUrl } from '@/lib/media';
 
 interface PackageCardItemProps {
   readonly pkg: PublicServicePackage;
@@ -19,7 +20,12 @@ export default function PackageCardItem({ pkg, storeId }: PackageCardItemProps) 
       className="group flex flex-col justify-between w-full bg-surface border border-line hover:border-taupe transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-taupe"
     >
       <div className="aspect-4/3 w-full bg-taupe/10 relative overflow-hidden shrink-0 border-b border-line flex items-center justify-center">
-        <Package size={32} className="text-taupe/50 transition-transform duration-500 group-hover:scale-110" />
+        {pkg.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={getMediaUrl(pkg.image_url)} alt="" className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+        ) : (
+          <Package size={32} className="text-taupe/50 transition-transform duration-500 group-hover:scale-110" />
+        )}
       </div>
 
       <div className="p-2.5 flex-1 flex flex-col justify-between">

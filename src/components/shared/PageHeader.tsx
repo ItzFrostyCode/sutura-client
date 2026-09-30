@@ -9,6 +9,8 @@ interface PageHeaderProps {
   readonly actions?: React.ReactNode;
   /** Tabs or filters rendered flush with the header's bottom rule. */
   readonly children?: React.ReactNode;
+  /** Keep the actions on the title's row (right side) at every width instead of wrapping below on mobile. */
+  readonly inlineActions?: boolean;
 }
 
 /**
@@ -17,10 +19,26 @@ interface PageHeaderProps {
  * tab strip. Every page rolled its own before — same idea, eight variations
  * of size, weight and spacing.
  */
-export default function PageHeader({ eyebrow, title, description, actions, children }: PageHeaderProps) {
+export default function PageHeader({ eyebrow, title, description, actions, children, inlineActions }: PageHeaderProps) {
+  if (inlineActions) {
+    return (
+      <header className={`border-b border-line ${children ? '' : 'pb-5'}`}>
+        <div className={children ? 'pb-5' : ''}>
+          {eyebrow && <p className="text-eyebrow-accent">{eyebrow}</p>}
+          <div className="flex items-center justify-between gap-3 mt-2">
+            <h1 className="text-display text-3xl font-semibold text-ink min-w-0">{title}</h1>
+            {actions && <div className="flex items-center gap-2.5 shrink-0">{actions}</div>}
+          </div>
+          {description && <div className="text-sm text-ink-muted mt-2 max-w-2xl">{description}</div>}
+        </div>
+        {children}
+      </header>
+    );
+  }
+
   return (
     <header className={`border-b border-line ${children ? '' : 'pb-5'}`}>
-      <div className={`flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 ${children ? 'pb-5' : ''}`}>
+      <div className={`flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 ${children ? 'pb-5' : ''}`}>
         <div className="min-w-0">
           {eyebrow && <p className="text-eyebrow-accent">{eyebrow}</p>}
           <h1 className="text-display text-3xl font-semibold text-ink mt-2">{title}</h1>

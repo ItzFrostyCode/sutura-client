@@ -1,21 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { SEARCH_DEPARTMENTS } from '@/lib/navSearchCategories';
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import {
+  DEPARTMENTS,
+  DEPARTMENT_LABELS,
+  SUBCATEGORY_LABELS,
+  SERVICE_CATEGORIES,
+  SERVICE_CATEGORY_LABELS,
+  subcategoriesFor,
+  serviceSearchHref,
+  type Department,
+} from '@/lib/canonicalTaxonomy';
 import HomeCarouselRow from './HomeCarouselRow';
 import HomeCategoryCard from './HomeCategoryCard';
-import { getCategoryVisual } from './homeCategoryData';
+import { getCategoryVisual, getServiceCategoryVisual } from './homeCategoryData';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
 interface HomeCategoryGridProps {
   readonly items?: CatalogItemResult[];
 }
 
-const DEPARTMENTS = SEARCH_DEPARTMENTS.filter((d) => d.key !== 'all');
+type ActiveTab = Department | 'services';
+const TABS: { key: ActiveTab; label: string }[] = [
+  ...DEPARTMENTS.map((d) => ({ key: d as ActiveTab, label: DEPARTMENT_LABELS[d] })),
+  { key: 'services', label: 'Services' },
+];
+
+// 'others' is every department's safety-valve catch-all subcategory (see
+// canonicalTaxonomy.ts), not a real browsable category — excluded the same
+// way this grid already deliberately excludes Accessories below.
+function subcategoryTilesFor(department: Department) {
+  return subcategoriesFor(department)
+    .filter((sub) => sub !== 'others')
+    .map((sub) => ({ value: sub, label: SUBCATEGORY_LABELS[sub] ?? sub }));
+}
 
 export default function HomeCategoryGrid({}: HomeCategoryGridProps) {
-  const [activeDept, setActiveDept] = useState(DEPARTMENTS[0].key);
-  const dept = DEPARTMENTS.find((d) => d.key === activeDept) ?? DEPARTMENTS[0];
+  const [activeTab, setActiveTab] = useState<ActiveTab>(TABS[0].key);
 
   return (
     <section aria-labelledby="category-grid-title" className="max-w-7xl mx-auto mobile-screen-margins mt-12 sm:mt-16">
@@ -32,49 +55,64 @@ export default function HomeCategoryGrid({}: HomeCategoryGridProps) {
         </p>
       </div>
 
-      {/* Department Tabs */}
+      {/* Category Tabs — Men's/Women's/Children's Apparel + Services */}
       <div className="flex items-center justify-start sm:justify-center gap-2 mb-6 overflow-x-auto hide-scrollbar pb-1 px-1">
-        {DEPARTMENTS.map((d) => {
-          const isActive = d.key === activeDept;
+        {TABS.map((tab) => {
+          const isActive = tab.key === activeTab;
           return (
             <button
-              key={d.key}
+              key={tab.key}
               type="button"
-              onClick={() => setActiveDept(d.key)}
+              onClick={() => setActiveTab(tab.key)}
               className={`shrink-0 min-h-[44px] px-5 py-2.5 rounded-none text-xs sm:text-sm font-bold uppercase tracking-wider border transition-colors cursor-pointer ${
                 isActive
                   ? 'bg-ink text-white border-ink'
                   : 'bg-surface text-ink-muted border-line hover:border-ink hover:text-ink'
               }`}
             >
-              {d.label}
+              {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* Carousel of High-Definition Category Visual Cards.
-          Accessories deliberately excluded here — kept minor (search-only,
-          via /search's own filter) rather than given landing-page-card
-          prominence, since no shop actually lists real accessory items
-          yet (ties/cufflinks are sourced, not tailored) and no real photo
-          exists to represent it honestly. */}
+      {/* Carousel of High-Definition Category Visual Cards — one per
+          subcategory under the active department, or one per service
+          category when the Services tab is active. */}
       <HomeCarouselRow className="pb-4">
-        {dept.categories.filter((cat) => cat.value !== 'accessories').map((cat, idx) => {
-          const visual = getCategoryVisual(dept.key, cat.value);
+        {activeTab === 'services'
+          ? SERVICE_CATEGORIES.filter((cat) => cat !== 'others').map((cat, idx) => (
+              <HomeCategoryCard
+                key={`services-${cat}`}
+                href={serviceSearchHref(cat)}
+                category={{ value: cat, label: SERVICE_CATEGORY_LABELS[cat] }}
+                visual={getServiceCategoryVisual(cat)}
+                isPriority={idx < 3}
+              />
+            ))
+          : subcategoryTilesFor(activeTab).map((sub, idx) => {
+              const visual = getCategoryVisual(activeTab, sub.value);
 
-          return (
-            <HomeCategoryCard
-              key={`${dept.key}-${cat.value}`}
-              departmentKey={dept.key}
-              departmentLabel={dept.label}
-              category={cat}
-              visual={visual}
-              isPriority={idx < 3}
-            />
-          );
-        })}
+              return (
+                <HomeCategoryCard
+                  key={`${activeTab}-${sub.value}`}
+                  href={`/search?tab=catalog&department=${encodeURIComponent(activeTab)}&subcategory=${encodeURIComponent(sub.value)}`}
+                  category={sub}
+                  visual={visual}
+                  isPriority={idx < 3}
+                />
+              );
+            })}
       </HomeCarouselRow>
+
+      <div className="text-center mt-2">
+        <Link
+          href="/categories"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-taupe hover:text-ink transition-colors"
+        >
+          All Categories <ChevronRight size={15} />
+        </Link>
+      </div>
     </section>
   );
 }

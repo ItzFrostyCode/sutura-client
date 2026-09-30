@@ -263,7 +263,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
                 className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
               >
                 <Pencil size={13} />
-                <span>Edit Profile</span>
+                <span>Edit</span>
               </button>
             </div>
           )}

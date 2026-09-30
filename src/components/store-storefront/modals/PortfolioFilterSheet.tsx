@@ -1,12 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { SlidersHorizontal, X, Minus, TrendingUp, TrendingDown, Star } from 'lucide-react';
-import ColorFamilyFilterSection from '@/components/search/ColorFamilyFilterSection';
-
-interface ColorOption {
-  label: string;
-  hex: string;
-}
 
 interface GarmentOption {
   id: string;
@@ -24,9 +18,6 @@ interface PortfolioFilterSheetProps {
   readonly setDraftMinPrice: (val: string) => void;
   readonly draftMaxPrice: string;
   readonly setDraftMaxPrice: (val: string) => void;
-  readonly draftColorFilter: string;
-  readonly setDraftColorFilter: (val: string) => void;
-  readonly availableColors: ColorOption[];
   readonly draftRatingFilter: string;
   readonly setDraftRatingFilter: (val: string) => void;
   readonly garmentTypeOptions: GarmentOption[];
@@ -48,9 +39,6 @@ export default function PortfolioFilterSheet({
   setDraftMinPrice,
   draftMaxPrice,
   setDraftMaxPrice,
-  draftColorFilter,
-  setDraftColorFilter,
-  availableColors,
   draftRatingFilter,
   setDraftRatingFilter,
   garmentTypeOptions,
@@ -159,31 +147,10 @@ export default function PortfolioFilterSheet({
             </div>
           </div>
 
-          {/* 2. COLOR */}
+          {/* 2. RATING */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
-              <p className="text-xs font-bold uppercase tracking-wider text-ink">2. Color</p>
-              {draftColorFilter && (
-                <button
-                  type="button"
-                  onClick={() => setDraftColorFilter('')}
-                  className="text-[11px] font-medium text-taupe hover:underline cursor-pointer"
-                >
-                  Clear color
-                </button>
-              )}
-            </div>
-
-            <ColorFamilyFilterSection
-              selectedColor={draftColorFilter}
-              onColorChange={(val) => setDraftColorFilter(val)}
-            />
-          </div>
-
-          {/* 3. RATING */}
-          <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <p className="text-xs font-bold uppercase tracking-wider text-ink">3. Rating</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-ink">2. Rating</p>
               {draftRatingFilter && (
                 <button
                   type="button"
@@ -233,11 +200,11 @@ export default function PortfolioFilterSheet({
             </div>
           </div>
 
-          {/* 4. GARMENT TYPE */}
+          {/* 3. GARMENT TYPE */}
           {garmentTypeOptions.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-ink">4. Garment Type</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink">3. Garment Type</p>
                 {draftGarmentTypeFilters.size > 0 && (
                   <button
                     type="button"

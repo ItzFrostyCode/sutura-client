@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, User as UserIcon } from 'lucide-react';
@@ -63,24 +64,29 @@ export default function NavMenuDrawer({
   user = null,
   isAuthenticated = false,
 }: NavMenuDrawerProps) {
+  const [mounted, setMounted] = useState(false);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Auto-open first section when navigating to Level 2
   useEffect(() => {
     if (screen.level === 2) {
       const cols = getCategoryColumns(screen.group.key, screen.category);
       if (cols.length > 0) {
-        setOpenSections(new Set([cols[0].title]));
+        setOpenSections(new Set([cols[0].key]));
       }
     } else if (screen.level === 1 && screen.group.key === 'discover') {
       const cols = getCategoryColumns('discover');
       if (cols.length > 0) {
-        setOpenSections(new Set([cols[0].title]));
+        setOpenSections(new Set([cols[0].key]));
       }
     }
   }, [screen.level, screen.level === 2 ? screen.category.label : '']);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const toggleSection = (title: string) => {
     setOpenSections((prev) => {
@@ -94,10 +100,10 @@ export default function NavMenuDrawer({
   const level2Cols = screen.level === 2 ? getCategoryColumns(screen.group.key, screen.category) : [];
   const discoverCols = screen.level === 1 && screen.group.key === 'discover' ? getCategoryColumns('discover') : [];
 
-  return (
+  return createPortal(
     <div
       data-public-nav-menu
-      className="fixed inset-0 top-[52px] sm:top-[64px] z-50 bg-white text-black flex flex-col overscroll-contain shadow-2xl animate-in fade-in-0 duration-150 max-w-[599px] mx-auto border-x border-gray-200"
+      className="fixed inset-x-0 top-[52px] sm:top-[64px] bottom-0 z-[55] bg-white text-black flex flex-col overscroll-contain shadow-2xl animate-in fade-in-0 duration-150 w-full"
     >
       {/* Submenu Top Bar with Back Button & Breadcrumb */}
       {screen.level > 0 && (
@@ -189,12 +195,12 @@ export default function NavMenuDrawer({
         {screen.level === 1 && screen.group.key === 'discover' && (
           <div>
             {discoverCols.map((col) => {
-              const isOpen = openSections.has(col.title);
+              const isOpen = openSections.has(col.key);
               return (
-                <div key={col.title} className="border-b border-gray-100">
+                <div key={col.key} className="border-b border-gray-100">
                   <button
                     type="button"
-                    onClick={() => toggleSection(col.title)}
+                    onClick={() => toggleSection(col.key)}
                     className="w-full h-[52px] px-6 flex items-center justify-between text-black cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <span className="text-[12px] font-bold uppercase tracking-wider text-black">
@@ -222,7 +228,7 @@ export default function NavMenuDrawer({
           </div>
         )}
 
-        {/* LEVEL 1: Category Drilldowns (Men, Women, Wedding, Office) */}
+        {/* LEVEL 1: Category Drilldowns (Men, Women, Kids, Services) */}
         {screen.level === 1 && screen.group.key !== 'discover' && (
           <>
             {screen.group.categories.map((category) => (
@@ -243,12 +249,12 @@ export default function NavMenuDrawer({
         {screen.level === 2 && (
           <div>
             {level2Cols.map((col) => {
-              const isOpen = openSections.has(col.title);
+              const isOpen = openSections.has(col.key);
               return (
-                <div key={col.title} className="border-b border-gray-100">
+                <div key={col.key} className="border-b border-gray-100">
                   <button
                     type="button"
-                    onClick={() => toggleSection(col.title)}
+                    onClick={() => toggleSection(col.key)}
                     className="w-full h-[52px] px-6 flex items-center justify-between text-black cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <span className="text-[12px] font-bold uppercase tracking-wider text-black">
@@ -308,6 +314,7 @@ export default function NavMenuDrawer({
           Explore All Stores
         </Link>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

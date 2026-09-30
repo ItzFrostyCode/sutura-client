@@ -1,5 +1,6 @@
 'use client';
 
+import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import React, { useState } from 'react';
 import { X, Clock, Tag, MessageCircle, Calendar, Image as ImageIcon, Wrench } from 'lucide-react';
 import Image from 'next/image';
@@ -23,7 +24,8 @@ export interface ServiceDetailModalItem {
   name: string;
   price?: number;
   base_price?: string | number;
-  estimated_days?: number;
+  estimated_days?: number | null;
+  estimated_days_max?: number | null;
   description?: string;
   categories?: string[];
   service_types?: string[];
@@ -183,7 +185,7 @@ export default function ServiceDetailModal({
               {service.estimated_days !== undefined && (
                 <div className="flex items-center gap-1.5 text-ink-muted font-medium bg-canvas border border-line px-3 py-1 rounded-full text-xs">
                   <Clock size={13} />
-                  <span>{service.estimated_days} Days Est. Turnaround</span>
+                  <span>{service.estimated_days ? `Est. ${formatServiceTurnaround(service.estimated_days, service.estimated_days_max)}` : formatServiceTurnaround(null)}</span>
                 </div>
               )}
             </div>

@@ -61,7 +61,7 @@ export default function CatalogDetailHeader({
   // and the price/title text below at every mobile width.
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center justify-between px-0 min-[375px]:px-6"
+      className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center justify-between px-3 sm:px-4"
       style={{
         backgroundColor: `rgba(255,255,255,${headerOpacity})`,
         borderBottom: headerOpacity > 0.6 ? '1px solid var(--brand-border)' : 'none',

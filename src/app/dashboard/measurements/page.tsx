@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import Modal from '@/components/Modal';
@@ -19,6 +19,7 @@ function MeasurementsContent() {
   const { store, user } = useAuthStore();
   const toast = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [records, setRecords] = useState<MeasurementRecord[]>([]);
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +105,9 @@ function MeasurementsContent() {
         setRecords(prev => [res.data.data, ...prev]);
       }
       closeModal();
+      // Came from an appointment (?return=/dashboard/appointments)? Go back to it. Dashboard paths only.
+      const back = searchParams.get('return');
+      if (back?.startsWith('/dashboard/') && !back.startsWith('//')) router.push(back);
     } catch (err: unknown) {
       const ex = err as { response?: { data?: { message?: string } } };
       setError(ex.response?.data?.message || 'Failed to save measurement profile.');
@@ -198,7 +202,6 @@ function MeasurementsContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Relationships"
         title="All Measurements"
         description="Search measurement profiles across every customer. To add a new profile, open a customer's own page and use their Measurements tab — it's faster since the customer is already selected."
         actions={

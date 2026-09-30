@@ -83,7 +83,7 @@ export default function AccountHeaderMenu() {
               </Link>
             ) : (
               <Link href={store?.slug ? `/store/${store.slug}` : '/dashboard/profile'} className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
-                <Eye size={16} /> My Storefront
+                <Eye size={16} /> My Store Profile
               </Link>
             )}
 

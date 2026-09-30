@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { refreshSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import api from '@/lib/axios';
-import { BRANCH_LIMITS, type Plan, type Subscription } from './billingTypes';
+import { BRANCH_LIMITS, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
 
 export function useBillingData() {
   const { store, user } = useAuthStore();
@@ -14,6 +14,7 @@ export function useBillingData() {
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradingTo, setUpgradingTo] = useState<number | null>(null);
+  const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [now] = useState(() => Date.now());
 
   const [usageCounts, setUsageCounts] = useState({ branches: 0, staff: 0, services: 0 });
@@ -24,10 +25,12 @@ export function useBillingData() {
       return;
     }
     try {
-      const [plansRes, subRes] = await Promise.all([
+      const [plansRes, subRes, reqRes] = await Promise.all([
         api.get('/subscriptions/plans'),
         api.get(`/stores/${store.id}/subscription`),
+        api.get(`/stores/${store.id}/subscription/upgrade-requests`).catch(() => ({ data: { data: [] } })),
       ]);
+      setUpgradeRequests(reqRes.data.data ?? []);
       const order = ['basic', 'pro', 'premium'];
       const sorted = [...(plansRes.data.data ?? [])]
         .map((p: Plan) => ({ ...p, price_monthly: Number(p.price_monthly) }))
@@ -80,6 +83,28 @@ export function useBillingData() {
     }
   };
 
+  // A paid upgrade / renewal: GCash receipt → admin approval; the plan only changes then.
+  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, reference: string) => {
+    if (!store) return false;
+    const fd = new FormData();
+    fd.append('plan_id', String(planId));
+    fd.append('billing_cycle', billingCycle);
+    fd.append('payment_receipt', receipt);
+    if (reference.trim()) fd.append('payment_reference', reference.trim());
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success(res.data.message || 'Payment sent for review.');
+      await fetchBillingData();
+      return true;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Could not send your payment. Please try again.');
+      return false;
+    }
+  };
+
+  const pendingRequest = upgradeRequests.find((r) => r.status === 'pending') ?? null;
+
   const activePlanId = currentSubscription?.plan_id;
   const activePlanSlug = currentSubscription?.plan?.slug ?? '';
   const activePlanMaxStaff = currentSubscription?.plan?.max_staff;
@@ -110,5 +135,9 @@ export function useBillingData() {
     isExpired,
     isExpiringSoon,
     handleSubscribe,
+    upgradeRequests,
+    pendingRequest,
+    submitUpgradeRequest,
+    storeId: store?.id,
   };
 }

@@ -1,34 +1,33 @@
 import React from 'react';
-import Image from 'next/image';
+import { CatalogColorOption } from '@/lib/fabricHelper';
 import { getMediaUrl } from '@/lib/media';
-import { CatalogColorOption, getContrastTextColor } from '@/lib/fabricHelper';
 
 interface CatalogColorSelectorProps {
   options: CatalogColorOption[];
   selectedColor: string;
   onSelectColor: (option: CatalogColorOption) => void;
-  isFabricActive: boolean;
 }
 
+// Photo swatch: each option shows the actual reference photo for that
+// color (opt.modelImage — either a photo uploaded specifically for that
+// color, or the item's primary photo as a fallback) next to its name, so
+// "what am I actually getting" is answered by a real picture, not a
+// guessed CSS color dot standing in for it.
 export default function CatalogColorSelector({
   options,
   selectedColor,
   onSelectColor,
-  isFabricActive,
 }: CatalogColorSelectorProps) {
   if (!options || options.length === 0) return null;
 
   return (
     <div
-      className="flex flex-wrap gap-2 sm:gap-2.5 pt-0.5"
+      className="flex flex-wrap gap-2"
       role="radiogroup"
       aria-label="Available product colors"
     >
       {options.map((opt) => {
-        const isSelected =
-          opt.name.toLowerCase() === selectedColor.toLowerCase();
-        const currentThumb = isFabricActive ? opt.fabricImage : opt.modelImage;
-        const textColor = getContrastTextColor(opt.hex);
+        const isSelected = opt.name.toLowerCase() === selectedColor.toLowerCase();
 
         return (
           <button
@@ -38,43 +37,26 @@ export default function CatalogColorSelector({
             aria-checked={isSelected}
             onClick={() => onSelectColor(opt)}
             aria-label={`Color: ${opt.name}`}
-            className={`group relative flex flex-col w-[76px] sm:w-[84px] rounded-none overflow-hidden text-left transition-all duration-150 cursor-pointer ${
+            className={`inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-150 cursor-pointer ${
               isSelected
-                ? 'border-2 border-taupe shadow-xs'
-                : 'border-2 border-line hover:border-taupe/60 opacity-90 hover:opacity-100 shadow-2xs'
+                ? 'border-taupe bg-taupe/[0.08] shadow-sm'
+                : 'border-line hover:border-taupe/50 bg-surface'
             }`}
           >
-            {/* Top: Model or Fabric Image Box (sharp corners, no border radius) */}
-            <div className="relative w-full aspect-square bg-sunken rounded-none overflow-hidden">
-              {currentThumb ? (
-                <Image
-                  src={getMediaUrl(currentThumb)}
-                  alt={`${opt.name} ${isFabricActive ? 'fabric' : 'model'}`}
-                  fill
-                  sizes="84px"
-                  className="object-cover object-top transition-transform duration-200 group-hover:scale-105"
-                />
-              ) : (
-                <div
-                  className="w-full h-full"
-                  style={{ backgroundColor: opt.hex }}
-                />
-              )}
-            </div>
-
-            {/* Bottom: Literal Color bar with text inside (sharp corners, no border radius) */}
-            <div
-              className="w-full py-1.5 px-1 text-center border-t border-black/15 rounded-none shrink-0"
-              style={{ backgroundColor: opt.hex }}
-            >
+            {opt.modelImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={getMediaUrl(opt.modelImage)}
+                alt=""
+                className="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-black/10"
+              />
+            ) : (
               <span
-                className="block text-[11px] font-semibold leading-tight capitalize truncate"
-                style={{ color: textColor }}
-                title={opt.name}
-              >
-                {opt.name}
-              </span>
-            </div>
+                aria-hidden
+                className="w-6 h-6 rounded-full shrink-0 ring-1 ring-black/10 bg-sunken"
+              />
+            )}
+            <span className="text-ink-body">{opt.name}</span>
           </button>
         );
       })}

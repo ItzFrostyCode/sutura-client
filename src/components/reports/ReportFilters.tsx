@@ -18,7 +18,6 @@ export default function ReportFilters({
   return (
     <div className="no-print">
       <PageHeader
-        eyebrow="Analytics"
         title="Reports & Insights"
         description="Revenue, production trends, and business performance at a glance."
         actions={

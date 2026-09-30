@@ -17,10 +17,10 @@ import {
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
 import type { CatalogItemResult } from '@/types/publicCatalog';
-import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 import {
   RelatedStore,
   SearchServiceResult,
+  SearchPackageResult,
   FilterTabKey,
   SearchActiveTab,
 } from '../types';
@@ -45,11 +45,28 @@ export function useSearchData() {
   const [specialization, setSpecialization] = useState(
     searchParams.get('specialization') ?? searchParams.get('category') ?? ''
   );
-  const [department, setDepartment] = useState(searchParams.get('department') ?? '');
-  const [color, setColor] = useState(searchParams.get('color') ?? '');
-  const [openNow, setOpenNow] = useState(
-    searchParams.get('openNow') === 'true' || searchParams.get('open_now') === '1'
+  const initialTabVal = searchParams.get('tab');
+  const initialDeptVal = searchParams.get('department') ?? '';
+  const isInitialStoreTab =
+    initialTabVal === 'store' ||
+    initialTabVal === 'stores' ||
+    (!initialTabVal && !searchParams.get('category') && !searchParams.get('specialization'));
+
+  const [department, setDepartment] = useState(
+    !isInitialStoreTab && (initialDeptVal.toLowerCase() === 'services' || initialDeptVal.toLowerCase() === 'service')
+      ? ''
+      : initialDeptVal
   );
+  // Canonical Categories.md taxonomy — Subcategory/Structure/Garment Type,
+  // the levels between Department and the leaf item. Additive to (not a
+  // replacement for) `specialization` above, which stays as a legacy alias
+  // for old bookmarked/shared links (see the URL-sync effect below).
+  const [subcategory, setSubcategory] = useState(searchParams.get('subcategory') ?? '');
+  const [structure, setStructure] = useState(searchParams.get('structure') ?? '');
+  const [garmentType, setGarmentType] = useState(searchParams.get('garment_type') ?? '');
+  // Canonical Services.md taxonomy — Service Category/Service Type.
+  const [serviceCategory, setServiceCategory] = useState(searchParams.get('service_category') ?? '');
+  const [serviceType, setServiceType] = useState(searchParams.get('service_type') ?? '');
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') ?? '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') ?? '');
   const [minRating, setMinRating] = useState(searchParams.get('minRating') ?? '');
@@ -60,7 +77,6 @@ export function useSearchData() {
   useEffect(() => {
     const nextQ = searchParams.get('q') ?? searchParams.get('search') ?? '';
     const nextCat = searchParams.get('specialization') ?? searchParams.get('category') ?? '';
-    const nextColor = searchParams.get('color') ?? '';
 
     if (nextQ !== null && nextQ !== undefined) {
       setQ(nextQ);
@@ -68,27 +84,45 @@ export function useSearchData() {
     setCategoryLabel(searchParams.get('qlabel') ?? '');
 
     setSpecialization(nextCat);
-    setColor(nextColor);
 
-    // Header links (Men/Women/Wedding/Office & Teams) carry a "department"
-    // param alongside "category" — sync it so the sidebar's Department
-    // selector reflects what was actually clicked instead of always
-    // falling back to "All".
+    const nextTab = searchParams.get('tab');
+    let resolvedTab: SearchActiveTab = 'store';
+    if (nextTab === 'services' || nextTab === 'service') {
+      setActiveTab('services');
+      setFilterPanelOpen(false);
+      resolvedTab = 'services';
+    } else if (nextTab === 'showroom' || nextTab === 'catalog') {
+      setActiveTab('showroom');
+      resolvedTab = 'showroom';
+    } else if (nextTab === 'store' || nextTab === 'stores') {
+      setActiveTab('store');
+      resolvedTab = 'store';
+    } else if (nextCat) {
+      setActiveTab('showroom');
+      resolvedTab = 'showroom';
+    } else {
+      setActiveTab('store');
+      resolvedTab = 'store';
+    }
+
+    // Header links (Men/Women/Kids) carry a "department" param alongside
+    // "category" — sync it so the sidebar's Department selector reflects
+    // what was actually clicked instead of always falling back to "All".
     const nextDept = searchParams.get('department') ?? '';
-    if (nextDept) setDepartment(nextDept);
+    if (nextDept.toLowerCase() === 'services' || nextDept.toLowerCase() === 'service' || resolvedTab === 'services') {
+      setDepartment('');
+    } else {
+      setDepartment(nextDept);
+    }
+
+    setSubcategory(searchParams.get('subcategory') ?? '');
+    setStructure(searchParams.get('structure') ?? '');
+    setGarmentType(searchParams.get('garment_type') ?? '');
+    setServiceCategory(searchParams.get('service_category') ?? '');
+    setServiceType(searchParams.get('service_type') ?? '');
 
     const nextDistrict = searchParams.get('district') ?? '';
     setDistrict(nextDistrict);
-
-    const nextOpen = searchParams.get('openNow') === 'true' || searchParams.get('open_now') === '1';
-    setOpenNow(nextOpen);
-
-    const nextTab = searchParams.get('tab');
-    if (nextTab === 'services' || nextTab === 'service') setActiveTab('services');
-    else if (nextTab === 'showroom' || nextTab === 'catalog') setActiveTab('showroom');
-    else if (nextTab === 'store' || nextTab === 'stores') setActiveTab('store');
-    else if (nextCat) setActiveTab('showroom');
-    else setActiveTab('store');
   }, [searchParams]);
 
   useEffect(() => {
@@ -153,12 +187,12 @@ export function useSearchData() {
   const [services, setServices] = useState<SearchServiceResult[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesTotal, setServicesTotal] = useState(0);
+  const [packages, setPackages] = useState<SearchPackageResult[]>([]);
 
   const [items, setItems] = useState<CatalogItemResult[]>([]);
   const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [showFabric, setShowFabric] = useState(false);
 
   useEffect(() => {
     const loc = getSavedLocation();
@@ -184,14 +218,62 @@ export function useSearchData() {
 
   function handleTabChange(nextTab: SearchActiveTab) {
     setActiveTab(nextTab);
+    if (nextTab === 'services') {
+      setFilterPanelOpen(false);
+    }
     const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', nextTab);
+    // Canonicalize outgoing URL: internal 'showroom' → public-facing 'catalog'
+    // so the address bar always shows ?tab=catalog (matching the tab label).
+    // Both values are accepted on read (see initialTab resolution above).
+    params.set('tab', nextTab === 'showroom' ? 'catalog' : nextTab);
     const trimmed = q.trim();
     if (trimmed) {
       params.set('q', trimmed);
     } else {
       params.delete('q');
     }
+
+    const currentDept = (params.get('department') || department).toLowerCase();
+    // 1. Department 'services' only belongs to the Stores tab.
+    // When switching to Catalog or Services, immediately remove it so results aren't blocked.
+    if (currentDept === 'services' || currentDept === 'service') {
+      if (nextTab === 'showroom' || nextTab === 'services') {
+        params.delete('department');
+        setDepartment('');
+        setDraftDepartment('');
+      }
+    }
+
+    // 2. Services tab doesn't use Department (services use Service Category/Type).
+    // Ensure department doesn't pollute the Services tab.
+    if (nextTab === 'services') {
+      params.delete('department');
+      setDepartment('');
+      setDraftDepartment('');
+    }
+
+    // 3. Catalog-only filters shouldn't pollute Services or Stores
+    if (nextTab === 'services' || nextTab === 'store') {
+      params.delete('subcategory');
+      params.delete('structure');
+      params.delete('garment_type');
+      setSubcategory('');
+      setDraftSubcategory('');
+      setStructure('');
+      setDraftStructure('');
+      setGarmentType('');
+      setDraftGarmentType('');
+    }
+
+    // 4. Service-only filters shouldn't pollute Stores or Catalog
+    if (nextTab === 'store' || nextTab === 'showroom') {
+      params.delete('service_category');
+      params.delete('service_type');
+      setServiceCategory('');
+      setServiceType('');
+    }
+
+    setPage(1);
     router.replace(`/search?${params.toString()}`, { scroll: false });
   }
 
@@ -232,8 +314,12 @@ export function useSearchData() {
   useCloseOnDesktop(() => setFilterPanelOpen(false), 640);
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTabKey>('specialization');
   const [draftSpecialization, setDraftSpecialization] = useState('');
-  const [draftColor, setDraftColor] = useState('');
-  const [draftOpenNow, setDraftOpenNow] = useState(false);
+  const [draftDepartment, setDraftDepartment] = useState('');
+  const [draftSubcategory, setDraftSubcategory] = useState('');
+  const [draftStructure, setDraftStructure] = useState('');
+  const [draftGarmentType, setDraftGarmentType] = useState('');
+  const [draftServiceCategory, setDraftServiceCategory] = useState('');
+  const [draftServiceType, setDraftServiceType] = useState('');
   const [draftMinPrice, setDraftMinPrice] = useState('');
   const [draftMaxPrice, setDraftMaxPrice] = useState('');
   const [draftMinRating, setDraftMinRating] = useState('');
@@ -241,8 +327,12 @@ export function useSearchData() {
 
   function openFilterPanel() {
     setDraftSpecialization(specialization);
-    setDraftColor(color);
-    setDraftOpenNow(openNow);
+    setDraftDepartment(department);
+    setDraftSubcategory(subcategory);
+    setDraftStructure(structure);
+    setDraftGarmentType(garmentType);
+    setDraftServiceCategory(serviceCategory);
+    setDraftServiceType(serviceType);
     setDraftMinPrice(minPrice);
     setDraftMaxPrice(maxPrice);
     setDraftMinRating(minRating);
@@ -253,8 +343,12 @@ export function useSearchData() {
 
   function applyFilterPanel() {
     setSpecialization(draftSpecialization);
-    setColor(draftColor);
-    setOpenNow(draftOpenNow);
+    setDepartment(draftDepartment);
+    setSubcategory(draftSubcategory);
+    setStructure(draftStructure);
+    setGarmentType(draftGarmentType);
+    setServiceCategory(draftServiceCategory);
+    setServiceType(draftServiceType);
     setMinPrice(draftMinPrice);
     setMaxPrice(draftMaxPrice);
     setMinRating(draftMinRating);
@@ -264,15 +358,23 @@ export function useSearchData() {
 
   function resetFilterPanel() {
     setSpecialization('');
-    setColor('');
-    setOpenNow(false);
+    setDepartment('');
+    setSubcategory('');
+    setStructure('');
+    setGarmentType('');
+    setServiceCategory('');
+    setServiceType('');
     setMinPrice('');
     setMaxPrice('');
     setMinRating('');
     setDistrict('');
     setDraftSpecialization('');
-    setDraftColor('');
-    setDraftOpenNow(false);
+    setDraftDepartment('');
+    setDraftSubcategory('');
+    setDraftStructure('');
+    setDraftGarmentType('');
+    setDraftServiceCategory('');
+    setDraftServiceType('');
     setDraftMinPrice('');
     setDraftMaxPrice('');
     setDraftMinRating('');
@@ -282,7 +384,7 @@ export function useSearchData() {
   // Reset to page 1 on filter changes
   useEffect(() => {
     setPage(1);
-  }, [effectiveQ, specialization, color, openNow, minPrice, maxPrice, minRating, district, sortBy]);
+  }, [effectiveQ, specialization, minPrice, maxPrice, minRating, district, sortBy]);
 
   // Catalog items fetch
   useEffect(() => {
@@ -290,9 +392,19 @@ export function useSearchData() {
       setLoading(true);
       const params: Record<string, string | number> = { per_page: 30, page };
       if (effectiveQ.trim()) params.q = effectiveQ.trim();
-      if (specialization) applyCategoryFilter(params, specialization);
-      if (department) params.department = department;
-      if (color) params.color = color;
+      // Canonical garment_type (from the new cascading filter) wins over
+      // the legacy specialization->garment_type/q mapping when both are
+      // somehow present — specialization stays purely for old links.
+      if (garmentType) {
+        params.garment_type = garmentType;
+      } else if (specialization) {
+        applyCategoryFilter(params, specialization);
+      }
+      if (subcategory) params.subcategory = subcategory;
+      if (structure) params.garment_structure = structure;
+      if (department && department.toLowerCase() !== 'services' && department.toLowerCase() !== 'service') {
+        params.department = department;
+      }
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
       if (minRating) params.min_rating = minRating;
@@ -319,7 +431,7 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, specialization, department, color, minPrice, maxPrice, minRating, district, sortBy, page, userCoords]);
+  }, [effectiveQ, specialization, garmentType, subcategory, structure, department, minPrice, maxPrice, minRating, district, sortBy, page, userCoords]);
 
   // Nearby stores fetch (aligned with /stores filter logic)
   useEffect(() => {
@@ -329,7 +441,13 @@ export function useSearchData() {
       if (effectiveQ.trim()) params.q = effectiveQ.trim();
       if (district) params.district = district;
       if (specialization) params.specialization = specialization;
-      if (openNow) params.open_now = 1;
+      // Header nav's MEN/WOMEN/KIDS/SERVICES axis — 'services' is a real,
+      // valid value here (unlike the catalog fetch's `department`, Store
+      // has no department column of its own; the backend interprets
+      // 'services' as "has any active service" instead of a garment tag).
+      if (department) params.department = department;
+      if (minPrice) params.min_price = minPrice;
+      if (maxPrice) params.max_price = maxPrice;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
@@ -365,21 +483,40 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, openNow, userCoords]);
+  }, [effectiveQ, district, specialization, department, userCoords, minPrice, maxPrice]);
 
   // Services fetch
   useEffect(() => {
     setServicesLoading(true);
     const handle = setTimeout(() => {
       const params: Record<string, string | number> = { per_page: 30 };
-      const qSearch = [effectiveQ.trim(), specialization ? specialization.replace(/_/g, ' ') : ''].filter(Boolean).join(' ');
+      // Canonical service_category/service_type filter directly — only
+      // fall back to folding `specialization` into free text (legacy
+      // behavior) when the new structured filters aren't set.
+      const qSearch = [
+        effectiveQ.trim(),
+        !serviceCategory && activeTab !== 'services' && specialization ? specialization.replace(/_/g, ' ') : '',
+      ].filter(Boolean).join(' ');
       if (qSearch) params.q = qSearch;
+      if (serviceCategory) params.service_category = serviceCategory;
+      if (serviceType) params.service_leaf_type = serviceType;
+      if (department && department.toLowerCase() !== 'services' && department.toLowerCase() !== 'service') {
+        params.department = department;
+      }
       if (district) params.district = district;
+      if (minPrice) params.min_price = minPrice;
+      if (maxPrice) params.max_price = maxPrice;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
       }
       if (sortBy) params.sort_by = sortBy;
+
+      // Combo packages ride along with services: same text, category and district filters.
+      api
+        .get('/public/service-packages', { params: { q: params.q, service_category: params.service_category, district: params.district } })
+        .then((res) => setPackages(res.data.data ?? []))
+        .catch(() => setPackages([]));
 
       api
         .get('/public/services', { params })
@@ -395,9 +532,12 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, userCoords, sortBy]);
+  }, [effectiveQ, district, specialization, serviceCategory, serviceType, department, userCoords, sortBy, activeTab, minPrice, maxPrice]);
 
-  const activeFilterCount = [specialization, color, openNow ? 'open' : '', minPrice || maxPrice, minRating, district].filter(Boolean).length;
+  const activeFilterCount = [
+    specialization, garmentType, subcategory, structure, serviceCategory, serviceType,
+    minPrice || maxPrice, minRating, district,
+  ].filter(Boolean).length;
 
   return {
     router,
@@ -415,10 +555,16 @@ export function useSearchData() {
     setCategory: setSpecialization,
     department,
     setDepartment,
-    color,
-    setColor,
-    openNow,
-    setOpenNow,
+    subcategory,
+    setSubcategory,
+    structure,
+    setStructure,
+    garmentType,
+    setGarmentType,
+    serviceCategory,
+    setServiceCategory,
+    serviceType,
+    setServiceType,
     minPrice,
     setMinPrice,
     maxPrice,
@@ -448,22 +594,29 @@ export function useSearchData() {
     services,
     servicesLoading,
     servicesTotal,
+    packages,
     items,
     total,
     lastPage,
     loading,
-    showFabric,
-    setShowFabric,
     filterPanelOpen,
     setFilterPanelOpen,
     activeFilterTab,
     setActiveFilterTab,
     draftSpecialization,
     setDraftSpecialization,
-    draftColor,
-    setDraftColor,
-    draftOpenNow,
-    setDraftOpenNow,
+    draftDepartment,
+    setDraftDepartment,
+    draftSubcategory,
+    setDraftSubcategory,
+    draftStructure,
+    setDraftStructure,
+    draftGarmentType,
+    setDraftGarmentType,
+    draftServiceCategory,
+    setDraftServiceCategory,
+    draftServiceType,
+    setDraftServiceType,
     draftMinPrice,
     setDraftMinPrice,
     draftMaxPrice,

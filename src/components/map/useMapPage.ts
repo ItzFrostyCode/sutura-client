@@ -9,6 +9,7 @@ import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocation
 import { isStoreOpen } from '@/lib/storeStatus';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 import { DAVAO_CENTER, type StoreApiResult } from './mapTypes';
+import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
 
 export function useMapPage() {
   const router = useRouter();
@@ -107,23 +108,15 @@ export function useMapPage() {
       geocodeTimeout.current = setTimeout(async () => {
         setReverseLoading(true);
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-          );
-          const data = await res.json();
-          setPickedAddress(data?.display_name ?? `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-          const d =
-            data?.address?.suburb ||
-            data?.address?.neighbourhood ||
-            data?.address?.city_district ||
-            '';
-          if (d) setPickedDistrict(d);
+          const res = await reverseGeocodeCoords(lat, lng);
+          setPickedAddress(res.address);
+          if (res.district) setPickedDistrict(res.district);
         } catch {
           setPickedAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
         } finally {
           setReverseLoading(false);
         }
-      }, 350);
+      }, 300);
     },
     [isSelectMode]
   );
@@ -140,22 +133,12 @@ export function useMapPage() {
     }
 
     try {
-      const cleaned = cleanLocationQuery(text);
-      const queryText = cleaned.toLowerCase().includes('davao')
-        ? cleaned
-        : `${cleaned}, Davao City`;
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-          queryText
-        )}&viewbox=125.30,7.40,125.80,6.85&bounded=1&limit=3&countrycodes=ph`
-      );
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
+      const places = await searchPlacesAroundDavao(text);
+      if (places.length > 0) {
+        const { lat, lng, display_name } = places[0];
         mapRef.current?.setView([lat, lng], 16);
         handleMapMoveEnd(lat, lng);
-        setPickedAddress(data[0].display_name);
+        setPickedAddress(display_name);
       }
     } catch {
       // Keep store filter query

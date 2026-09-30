@@ -106,7 +106,7 @@ export default function SelectedBranchCard({
               district: branch.district || branch.city || 'Davao City',
             })
           }
-          className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-taupe text-white text-xs font-semibold hover:bg-taupe-hover transition-colors shadow-xs cursor-pointer"
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-none bg-ink text-white text-xs font-semibold hover:bg-ink/90 transition-colors shadow-xs cursor-pointer"
         >
           <Check size={15} /> Choose this Store Location
         </button>
@@ -114,7 +114,7 @@ export default function SelectedBranchCard({
         <div className="flex items-center gap-2">
           <Link
             href={gate(`/store/${branch.storeSlug}/book`)}
-            className="flex-1 bg-ink hover:bg-taupe text-white font-medium h-8 transition-colors flex items-center justify-center rounded-lg text-xs"
+            className="flex-1 bg-ink hover:bg-ink/90 text-white font-medium h-8 transition-colors flex items-center justify-center rounded-none text-xs"
           >
             Book Now
           </Link>
@@ -124,7 +124,7 @@ export default function SelectedBranchCard({
             }destination=${branch.latitude},${branch.longitude}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium h-8 transition-colors flex items-center justify-center rounded-lg text-xs"
+            className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium h-8 transition-colors flex items-center justify-center rounded-none text-xs"
           >
             Direction
           </a>
@@ -139,7 +139,7 @@ export default function SelectedBranchCard({
               })
             }
             title="Set as My Location"
-            className="px-2.5 h-8 border border-line hover:border-taupe text-taupe font-medium rounded-lg text-xs flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            className="px-2.5 h-8 border border-line hover:border-ink text-ink font-medium rounded-none text-xs flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             <Navigation size={13} />
           </button>

@@ -9,7 +9,9 @@ import {
   CalendarAppointment,
   SpecialHour,
   BookingCustomer,
+  Service,
 } from '../types';
+import BookingServiceQuestions from './BookingServiceQuestions';
 import BookingServicePicker from './schedule/BookingServicePicker';
 import BookingBranchSelector from './schedule/BookingBranchSelector';
 import BookingMaterialSelector from './schedule/BookingMaterialSelector';
@@ -54,6 +56,8 @@ interface BookingStep2ScheduleProps {
   readonly customer: BookingCustomer;
   readonly setCustomer: React.Dispatch<React.SetStateAction<BookingCustomer>>;
   readonly answers: Record<string, string>;
+  /** The chosen service's own questions, if the shop set any. */
+  readonly serviceFields?: Service['custom_fields'];
   readonly setAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   readonly paymentMethod: string;
   readonly setPaymentMethod: (val: string) => void;
@@ -98,6 +102,7 @@ export default function BookingStep2Schedule({
   setCustomer,
   answers,
   setAnswers,
+  serviceFields,
   paymentMethod,
   setPaymentMethod,
   paymentReference,
@@ -253,6 +258,10 @@ export default function BookingStep2Schedule({
               </div>
             ))}
           </div>
+        )}
+
+        {serviceFields && serviceFields.length > 0 && (
+          <BookingServiceQuestions fields={serviceFields} answers={answers} setAnswers={setAnswers} />
         )}
 
         <BookingPaymentSection

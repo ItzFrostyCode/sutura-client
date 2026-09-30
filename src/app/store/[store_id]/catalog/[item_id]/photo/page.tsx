@@ -30,7 +30,23 @@ function CatalogPhotoViewerContent({ params }: Readonly<{ params: Promise<{ stor
     <div className="min-h-dvh flex flex-col bg-black">
       <button
         type="button"
-        onClick={() => router.push(`/store/${storeId}/catalog/${itemId}`)}
+        onClick={() => {
+          // Real history-back (matches useCatalogItemDetail.ts's own
+          // handleBackClick) — an unconditional router.push() here was
+          // pushing a *new* Catalog Detail entry on top of the existing
+          // one instead of popping back to it, so the stack became
+          // [..., Profile, CatalogDetail, PhotoViewer, CatalogDetail]. The
+          // Catalog Detail page's own back button is real router.back(),
+          // which then popped straight back into PhotoViewer instead of
+          // Profile — looping the customer into the image again instead of
+          // reaching the page before it. Only fall back to a hardcoded
+          // destination when there's truly no history (a direct link).
+          if (typeof window !== 'undefined' && window.history.length > 1) {
+            router.back();
+          } else {
+            router.push(`/store/${storeId}/catalog/${itemId}`);
+          }
+        }}
         aria-label="Back"
         className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm text-white flex items-center justify-center"
       >

@@ -207,7 +207,6 @@ export default function StaffPage() {
   return (
     <div className="space-y-6 animate-fade-in text-ink">
       <PageHeader
-        eyebrow="Staff Directory"
         title="Staff Management"
         description="Manage your tailors, cutters, seamstresses, and branch managers."
         actions={

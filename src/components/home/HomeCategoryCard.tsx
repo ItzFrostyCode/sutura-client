@@ -5,27 +5,21 @@ import Image from 'next/image';
 import type { CategoryVisualConfig } from './homeCategoryData';
 
 interface HomeCategoryCardProps {
-  readonly departmentKey: string;
-  readonly departmentLabel: string;
+  readonly href: string;
   readonly category: {
     value: string;
     label: string;
-    query?: string;
   };
   readonly visual: CategoryVisualConfig;
   readonly isPriority?: boolean;
 }
 
 export default function HomeCategoryCard({
-  departmentKey,
+  href,
   category,
   visual,
   isPriority = false,
 }: HomeCategoryCardProps) {
-  const href = `/search?category=${encodeURIComponent(category.value)}&department=${departmentKey}${
-    category.query ? `&q=${encodeURIComponent(category.query)}` : ''
-  }`;
-
   return (
     <Link
       href={href}

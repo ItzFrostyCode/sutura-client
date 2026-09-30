@@ -8,7 +8,6 @@ import PageHeader from '@/components/shared/PageHeader';
 import CatalogModuleTabs, { CatalogTabId } from '@/components/catalog/CatalogModuleTabs';
 import CatalogGridView from '@/components/catalog/CatalogGridView';
 import CatalogAnalyticsView from '@/components/catalog/CatalogAnalyticsView';
-import CatalogReviewsView from '@/components/catalog/CatalogReviewsView';
 
 interface CatalogShowcaseShellProps {
   readonly initialTab?: CatalogTabId;
@@ -17,11 +16,8 @@ interface CatalogShowcaseShellProps {
 function resolveTabFromPath(): CatalogTabId {
   if (typeof window === 'undefined') return 'catalog';
   const pathname = window.location.pathname;
-  if (pathname.includes('/analytics')) {
+  if (pathname.includes('/analytics') || pathname.includes('/reviews')) {
     return 'analytics';
-  }
-  if (pathname.includes('/reviews')) {
-    return 'reviews';
   }
   return 'catalog';
 }
@@ -56,15 +52,15 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
   const headerActions = (
     <Link
       href="/dashboard/catalog/new"
-      className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white px-3.5 py-2 rounded-xl font-semibold text-xs transition-colors shadow-2xs cursor-pointer"
+      className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
     >
       <Plus size={15} />
-      <span>Create New Item</span>
+      <span>Create New</span>
     </Link>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/*
         Standard SUTURA PageHeader:
         - Eyebrow: "Collections"
@@ -73,10 +69,10 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
         - Tabs as children, sitting flush directly on the header bottom border rule
       */}
       <PageHeader
-        eyebrow="Collections"
         title="Catalog Designs"
         description="Curated garment designs, collection performance metrics, and client reviews."
         actions={headerActions}
+        inlineActions
       >
         <CatalogModuleTabs activeTab={activeTab} onTabChange={handleTabChange} />
       </PageHeader>
@@ -88,7 +84,6 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
       <div className="tab-content-panel">
         {activeTab === 'catalog' && <CatalogGridView />}
         {activeTab === 'analytics' && <CatalogAnalyticsView />}
-        {activeTab === 'reviews' && <CatalogReviewsView />}
       </div>
     </div>
   );

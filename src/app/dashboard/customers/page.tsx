@@ -48,7 +48,6 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Relationships"
         title="Client Book"
         description="Manage your customer directory, loyalty suki tiers, and lifetime value."
         actions={

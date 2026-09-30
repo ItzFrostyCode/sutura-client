@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useBillingData } from '@/components/billing/useBillingData';
 import CurrentPlanSection from '@/components/billing/CurrentPlanSection';
@@ -7,6 +8,9 @@ import FeatureUsageSection from '@/components/billing/FeatureUsageSection';
 import PlanCardsSection from '@/components/billing/PlanCardsSection';
 import PlanComparisonSection from '@/components/billing/PlanComparisonSection';
 import BillingHistorySection from '@/components/billing/BillingHistorySection';
+import UpgradePaymentModal from '@/components/billing/UpgradePaymentModal';
+import UpgradeRequestsSection from '@/components/billing/UpgradeRequestsSection';
+import { planNeedsPayment, type Plan } from '@/components/billing/billingTypes';
 
 export default function BillingPage() {
   const {
@@ -22,7 +26,21 @@ export default function BillingPage() {
     isExpired,
     isExpiringSoon,
     handleSubscribe,
+    upgradeRequests,
+    pendingRequest,
+    submitUpgradeRequest,
+    storeId,
   } = useBillingData();
+  const [payingFor, setPayingFor] = useState<Plan | null>(null);
+
+  // Moving up to (or renewing) a paid plan takes a GCash payment + receipt;
+  // free plans and step-downs switch right away, as before.
+  const choosePlan = (planId: number) => {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    if (planNeedsPayment(plan, currentSubscription ? currentSubscription.plan.price_monthly : null)) setPayingFor(plan);
+    else handleSubscribe(planId);
+  };
 
   if (loading) {
     return (
@@ -94,8 +112,20 @@ export default function BillingPage() {
         activePlanId={activePlanId}
         currentPrice={currentSubscription?.plan?.price_monthly ?? 0}
         upgradingTo={upgradingTo}
-        onSubscribe={handleSubscribe}
+        hasPendingRequest={pendingRequest !== null}
+        onSubscribe={choosePlan}
       />
+
+      {pendingRequest && (
+        <div className="flex items-start gap-3 p-4 border border-amber-300 bg-amber-50 text-sm text-amber-900">
+          <AlertTriangle size={18} className="shrink-0 text-amber-600 mt-0.5" />
+          <p>Your payment for the <strong>{pendingRequest.plan?.name}</strong> plan is waiting for the SUTURA team to confirm. Your plan changes as soon as it is approved.</p>
+        </div>
+      )}
+
+      <UpgradeRequestsSection requests={upgradeRequests} storeId={storeId} />
+
+      <UpgradePaymentModal plan={payingFor} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} />
 
       <PlanComparisonSection
         plans={plans}

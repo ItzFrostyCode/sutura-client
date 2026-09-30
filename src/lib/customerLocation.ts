@@ -12,6 +12,8 @@ export interface SavedLocation {
   district: string;
 }
 
+import { reverseGeocodeCoords } from './geocoding';
+
 const KEY = 'sutura_customer_location';
 const OLD_KEY = 'sutura_old_location';
 
@@ -252,27 +254,13 @@ export function requestCurrentLocation(
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const { latitude, longitude } = pos.coords;
-      let address = `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+      let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
       let district = 'Davao City';
 
       try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
-          { signal: controller.signal }
-        );
-        clearTimeout(timer);
-        if (res.ok) {
-          const data = await res.json();
-          address = data?.display_name ?? address;
-          district =
-            data?.address?.suburb ||
-            data?.address?.neighbourhood ||
-            data?.address?.city_district ||
-            data?.address?.city ||
-            'Davao City';
-        }
+        const geo = await reverseGeocodeCoords(latitude, longitude);
+        address = geo.address;
+        district = geo.district;
       } catch {
         // Fallback
       }

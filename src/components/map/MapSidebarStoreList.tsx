@@ -48,14 +48,14 @@ export default function MapSidebarStoreList({
               key={`${b.storeSlug}-${b.branchId}`}
               type="button"
               onClick={() => onSelectBranch(b)}
-              className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center gap-2.5 cursor-pointer ${
+              className={`w-full text-left p-2.5 rounded-none border transition-all flex items-center gap-2.5 cursor-pointer ${
                 isSelected
-                  ? 'bg-surface border-taupe shadow-xs ring-1 ring-taupe'
+                  ? 'bg-surface border-ink shadow-xs ring-1 ring-ink'
                   : 'bg-canvas hover:bg-surface border-line/70 hover:border-line'
               }`}
             >
               {/* Store Avatar */}
-              <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-line shrink-0 bg-sunken">
+              <div className="relative w-9 h-9 rounded-none overflow-hidden border border-line shrink-0 bg-sunken">
                 {b.storeLogoPath ? (
                   <Image
                     src={getMediaUrl(b.storeLogoPath)}
@@ -94,7 +94,7 @@ export default function MapSidebarStoreList({
 
                 <div className="mt-1 space-y-0.5">
                   <p className="flex items-center gap-1 text-[11px] font-semibold text-ink leading-tight truncate">
-                    <MapPin size={10} className="text-taupe shrink-0" />
+                    <MapPin size={10} className="text-ink shrink-0" />
                     <span className="truncate">
                       {b.address || (b.isMain ? 'Main Branch' : b.branchName)}
                     </span>

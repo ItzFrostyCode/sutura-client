@@ -36,6 +36,19 @@ export function useBookingWizard(storeId: string) {
     if (!hydrated || user) return;
     const query = searchParams.toString();
     const redirectTarget = `${pathname}${query ? `?${query}` : ''}`;
+    // Tablet/desktop: send the guest back to the page they came from (design, service, package or
+    // the store) with the Sign In modal over it, instead of a blank /login page.
+    if (typeof window !== 'undefined' && window.innerWidth >= 600) {
+      const itemId = searchParams.get('ref_item_id');
+      const svcId = searchParams.get('service_id');
+      const pkgId = searchParams.get('package_id');
+      const context = itemId ? `/store/${storeId}/catalog/${itemId}`
+        : svcId ? `/store/${storeId}/service/${svcId}`
+        : pkgId ? `/store/${storeId}/package/${pkgId}`
+        : `/store/${storeId}`;
+      router.replace(`${context}?signin=1&redirect=${encodeURIComponent(redirectTarget)}`);
+      return;
+    }
     router.replace(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
   }, [hydrated, user, pathname, searchParams, router]);
 
@@ -56,6 +69,7 @@ export function useBookingWizard(storeId: string) {
   const [loading, setLoading] = useState(true);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [packageInfo, setPackageInfo] = useState<PackageInfo | null>(null);
+  // The owner's Appointment Configuration for the design being booked from.
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -218,6 +232,15 @@ export function useBookingWizard(storeId: string) {
       return withExisting([consultationBase, measurementBase]);
     }
 
+    // 1b. COMBO PACKAGE CONTEXT — the package's category decides the purpose,
+    // the same way a single service's type does.
+    if (packageIdParam) {
+      if (packageInfo?.service_category === 'alterations_repairs') {
+        return withExisting([{ ...alterationBase, label: 'Alteration / Repair', hint: 'Bring your garments for adjustment or repair with the store.' }]);
+      }
+      return withExisting([consultationBase, measurementBase]);
+    }
+
     // 2. SPECIFIC SERVICE CONTEXT
     const sName = (selectedService?.name || serviceNameParam || '').toLowerCase();
     const hasSpecificService = !!selectedService || !!serviceIdParam || !!serviceNameParam;
@@ -315,7 +338,7 @@ export function useBookingWizard(storeId: string) {
 
     // 3. GENERAL SHOP CONTEXT (no specific design or service chosen yet)
     return withExisting([consultationBase, measurementBase, alterationBase]);
-  }, [refName, selectedService, serviceIdParam, serviceNameParam, hasExistingOrder]);
+  }, [refName, selectedService, serviceIdParam, serviceNameParam, hasExistingOrder, packageIdParam, packageInfo]);
 
   // Synchronize appointmentType if current selection is invalid for this service
   useEffect(() => {
@@ -344,7 +367,7 @@ export function useBookingWizard(storeId: string) {
   // The picker only reappears when the entry point genuinely carried neither
   // (a plain "Book Appointment" from the store profile, not tied to any
   // design or service).
-  const hasServiceContext = !!serviceIdParam || !!refName;
+  const hasServiceContext = !!serviceIdParam || !!refName || !!packageIdParam;
   const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
   const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
 
@@ -433,7 +456,9 @@ export function useBookingWizard(storeId: string) {
     !time ||
     !!getSpecialHoursForDate(date)?.is_closed ||
     (!!storeSettings?.branches && storeSettings.branches.length > 0 && !selectedBranchId) ||
-    (TYPES_REQUIRING_SERVICE.includes(appointmentType) && needsServicePicker && !selectedServiceId);
+    (TYPES_REQUIRING_SERVICE.includes(appointmentType) && needsServicePicker && !selectedServiceId) ||
+    // The service's own required questions (Services → Booking Form).
+    (selectedService?.custom_fields ?? []).some((f) => f.required && f.type !== 'checkbox' && f.label?.trim() && !(answers[f.label] ?? '').trim());
 
   useEffect(() => {
     if (!storeId) return;
@@ -508,8 +533,12 @@ export function useBookingWizard(storeId: string) {
 
     const scheduled_at = `${date}T${time || '12:00'}:00`;
 
+    // The design itself (title, category, size, color) is sent as structured
+    // fields below — catalog_item_id/selected_size/selected_color — instead
+    // of a "[Design Reference: …]" line in notes, so the owner, branch, and
+    // staff views can show its real title and category.
     let notesPayload = '';
-    if (refName) {
+    if (refName && !refItemId) {
       notesPayload += `[Design Reference: ${refName}${refPrice ? ` (₱${Number(refPrice).toLocaleString()})` : ''}${
         refSize ? ` — Size ${refSize}` : ''
       }${refColor ? ` — ${refColor}` : ''}]\n`;
@@ -544,6 +573,11 @@ export function useBookingWizard(storeId: string) {
         notes: notesPayload.trim() || null,
         store_branch_id: selectedBranchId ? Number(selectedBranchId) : null,
         service_id: selectedServiceId ? Number(selectedServiceId) : null,
+        catalog_item_id: refItemId ? Number(refItemId) : null,
+        service_package_id: packageIdParam ? Number(packageIdParam) : null,
+        selected_size: refItemId ? refSize : null,
+        selected_color: refItemId ? refColor : null,
+        reference_images: refImage ? [refImage] : undefined,
         duration_minutes: durationMinutes,
         payment_method: paymentMethod,
         payment_reference: paymentMethod !== 'cash' ? paymentReference : null,
@@ -553,7 +587,11 @@ export function useBookingWizard(storeId: string) {
       setSuccess(true);
     } catch (err) {
       console.error('Failed to book appointment:', err);
-      alert('Failed to book appointment. Please check all fields.');
+      // Say what the server actually objected to (an existing active booking, a taken slot,
+      // a missing answer…) instead of a generic message.
+      const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data;
+      const detail = res?.message ?? Object.values(res?.errors ?? {})[0]?.[0];
+      alert(detail ? `Could not book: ${detail}` : 'Failed to book appointment. Please check all fields.');
     } finally {
       setSubmitting(false);
     }

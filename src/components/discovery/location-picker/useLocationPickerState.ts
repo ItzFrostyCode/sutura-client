@@ -6,6 +6,7 @@ import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocation
 import api from '@/lib/axios';
 import { isStoreOpen } from '@/lib/storeStatus';
 import { type StoreMapPin, DAVAO_CENTER } from './locationPickerTypes';
+import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
 
 export function useLocationPickerState(
   initial: SavedLocation | null,
@@ -102,11 +103,11 @@ export function useLocationPickerState(
   function reverseGeocode(lat: number, lng: number) {
     const requestId = ++geocodeRequestId.current;
     setReverseLoading(true);
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-      .then((res) => res.json())
-      .then((data) => {
+    reverseGeocodeCoords(lat, lng)
+      .then((res) => {
         if (requestId !== geocodeRequestId.current) return;
-        setAddress(data?.display_name ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        setAddress(res.address);
+        if (res.district) setDistrict(res.district);
       })
       .catch(() => {
         if (requestId !== geocodeRequestId.current) return;
@@ -172,35 +173,25 @@ export function useLocationPickerState(
     }
 
     const cleaned = cleanLocationQuery(text);
-    const geocode = (q: string) =>
-      fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=5&countrycodes=ph`)
-        .then((res) => res.json());
 
     setSearching(true);
     try {
-      let data = await geocode(cleaned);
+      let data = await searchPlacesAroundDavao(cleaned);
       const firstSegment = cleaned.split(',')[0].trim();
-      if ((!Array.isArray(data) || data.length === 0) && firstSegment && firstSegment !== cleaned) {
-        data = await geocode(firstSegment);
+      if (data.length === 0 && firstSegment && firstSegment !== cleaned) {
+        data = await searchPlacesAroundDavao(firstSegment);
       }
 
-      if (!Array.isArray(data) || data.length === 0) {
+      if (data.length === 0) {
         setError("Couldn't find that place. Try pasting the full Google Maps link, or a more specific address.");
         setShowSuggestions(false);
       } else if (data.length === 1) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
+        const { lat, lng, display_name } = data[0];
         jumpTo(lat, lng);
-        setAddress(data[0].display_name ?? cleaned);
+        setAddress(display_name ?? cleaned);
         setShowSuggestions(false);
       } else {
-        setSearchResults(
-          data.map((d: { lat: string; lon: string; display_name: string }) => ({
-            lat: parseFloat(d.lat),
-            lng: parseFloat(d.lon),
-            display_name: d.display_name,
-          }))
-        );
+        setSearchResults(data);
         setShowSuggestions(true);
       }
     } catch {

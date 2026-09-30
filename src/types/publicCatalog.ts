@@ -9,6 +9,8 @@ export interface CatalogItemResult {
   id: number;
   name: string;
   garment_type: string;
+  department?: string | null;
+  subcategory?: string | null;
   price: number | null;
   material: string | null;
   color?: string | null;

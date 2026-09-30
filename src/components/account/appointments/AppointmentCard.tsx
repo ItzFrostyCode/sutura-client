@@ -5,6 +5,7 @@ import {
   MapPin, CalendarDays, Lock, Loader2, AlertCircle, Info, Store,
 } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
+import { catalogCategoryPath, serviceCategoryPath, SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import {
   type MyAppointment,
   STATUS_META,
@@ -26,6 +27,10 @@ export default function AppointmentCard({
   const meta = STATUS_META[appt.status] ?? STATUS_META.pending;
   const StatusIcon = meta.Icon;
   const scheduled = new Date(appt.scheduled_at);
+  const categoryPath = appt.catalog_item
+    ? catalogCategoryPath(appt.catalog_item)
+    : appt.service_package?.service_category ? ['Services', SERVICE_CATEGORY_LABELS[appt.service_package.service_category as ServiceCategory] ?? ''].filter(Boolean)
+    : appt.service ? serviceCategoryPath(appt.service) : [];
   const canSelfCancel = appt.status === 'pending' || appt.status === 'confirmed';
   const isPastDue = canSelfCancel && scheduled < new Date();
 
@@ -88,9 +93,15 @@ export default function AppointmentCard({
         )}
       </div>
 
+      {appt.needs_new_time && appt.status === 'pending' && (
+        <p className="mb-2 inline-block px-2 py-0.5 bg-amber-50 border border-amber-300 text-[11px] font-bold uppercase text-amber-800">Pick a new time</p>
+      )}
       <h3 className="mobile-h4 font-semibold text-ink mb-1">
-        {appt.service_name ?? (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type)}
+        {appt.catalog_item?.name ?? appt.service_package?.name ?? appt.service_name ?? (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type)}
       </h3>
+      {categoryPath.length > 0 && (
+        <p className="mobile-caption text-ink-muted font-normal truncate">{categoryPath.join(' → ')}</p>
+      )}
 
       <div className="flex items-center gap-1.5 mt-1.5 mobile-caption text-ink-muted font-normal">
         <CalendarDays size={14} className="shrink-0 text-ink-faint" />

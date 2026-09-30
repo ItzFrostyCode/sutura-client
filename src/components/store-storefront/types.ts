@@ -21,16 +21,20 @@ export interface PublicService {
   description?: string;
   category?: string;
   service_type?: string;
+  service_category?: string | null;
+  service_leaf_type?: string | null;
   categories?: string[];
   service_types?: string[];
   base_price: string;
   sale_price?: string | number | null;
   sale_starts_at?: string | null;
   sale_ends_at?: string | null;
-  estimated_days: number;
+  estimated_days: number | null;
+  estimated_days_max?: number | null;
   is_active: boolean;
   image_url?: string | null;
   reviews_count?: number | null;
+  orders_count?: number | null;
   reviews_avg_rating?: number | null;
   saves_count?: number | null;
   // Star-only — no comment column exists on service_reviews (see the
@@ -62,6 +66,8 @@ export interface PublicServicePackage {
   name: string;
   description: string | null;
   bundle_price: string | null;
+  image_url?: string | null;
+  service_category?: string | null;
   reviews_count?: number;
   reviews_avg_rating?: number | null;
   services: { id: number; name: string; base_price: string | null }[];

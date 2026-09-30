@@ -6,8 +6,10 @@ import { CatalogFormProps } from './form/formTypes';
 import { useCatalogForm } from './form/useCatalogForm';
 import { CatalogFormHeader } from './form/CatalogFormHeader';
 import { BasicInfoSection } from './form/BasicInfoSection';
+import CatalogColorEditor from './form/CatalogColorEditor';
 import { SpecificationsAccordion } from './form/SpecificationsAccordion';
 import { CareAccordion } from './form/CareAccordion';
+import { MeasurementGuideAccordion } from './form/MeasurementGuideAccordion';
 import { ImagesSidebar } from './form/ImagesSidebar';
 
 export default function CatalogForm({
@@ -17,6 +19,7 @@ export default function CatalogForm({
   initialData,
   onSubmit,
   submitting,
+  onCancel,
 }: Readonly<CatalogFormProps>) {
   const {
     store,
@@ -33,12 +36,16 @@ export default function CatalogForm({
     setFeatures,
     sizeChart,
     setSizeChart,
+    colorItems,
+    setColorItems,
     images,
     setImages,
     featuresImage,
     setFeaturesImage,
     careImage,
     setCareImage,
+    measurementGuideImage,
+    setMeasurementGuideImage,
     uploadingSection,
     accordionOpen,
     toggleAccordion,
@@ -52,13 +59,14 @@ export default function CatalogForm({
   } = useCatalogForm({ initialData, onSubmit, submitting });
 
   return (
-    <form onSubmit={handleFormSubmit} className="bg-canvas min-h-screen text-ink pb-16 font-sans selection:bg-line">
+    <form onSubmit={handleFormSubmit} className={`bg-canvas text-ink pb-16 font-sans selection:bg-line ${onCancel ? '' : 'min-h-screen'}`}>
       <CatalogFormHeader
         title={title}
         description={description}
         submitLabel={submitLabel}
         submitting={submitting}
         saveDisabled={saveDisabled}
+        onCancel={onCancel}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
@@ -81,16 +89,20 @@ export default function CatalogForm({
               onRemoveSize={removeSize}
             />
 
+            <div className="bg-surface border border-line rounded-2xl p-5">
+              <CatalogColorEditor
+                value={colorItems}
+                onChange={setColorItems}
+                storeId={store?.id ?? 0}
+              />
+            </div>
+
             <div className="space-y-4">
               <SpecificationsAccordion
                 isOpen={accordionOpen.specs}
                 onToggle={() => toggleAccordion('specs')}
                 features={features}
                 setFeatures={setFeatures}
-                featuresImage={featuresImage}
-                setFeaturesImage={setFeaturesImage}
-                uploading={uploadingSection === 'specs'}
-                onUpload={file => handleSectionUpload(file, 'specs')}
               />
 
               <div className="bg-surface border border-line rounded-2xl p-5">
@@ -103,6 +115,17 @@ export default function CatalogForm({
                   description="Show customers exactly how you measure — upload your own reference chart image and/or build a size & measurement table."
                 />
               </div>
+
+              <MeasurementGuideAccordion
+                isOpen={accordionOpen.measurement_guide}
+                onToggle={() => toggleAccordion('measurement_guide')}
+                measurementGuide={formData.measurement_guide}
+                onChange={handleChange}
+                measurementGuideImage={measurementGuideImage}
+                setMeasurementGuideImage={setMeasurementGuideImage}
+                uploading={uploadingSection === 'measurement_guide'}
+                onUpload={file => handleSectionUpload(file, 'measurement_guide')}
+              />
 
               <CareAccordion
                 isOpen={accordionOpen.care}

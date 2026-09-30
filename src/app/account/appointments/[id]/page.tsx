@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useToast } from '@/context/ToastContext';
+import RescheduleAppointmentModal from '@/components/account/appointments/RescheduleAppointmentModal';
 import AccountHeader from '@/components/account/AccountHeader';
 import AppointmentDetailContent, { type AppointmentDetailData } from '@/components/account/appointments/AppointmentDetailContent';
 
@@ -18,15 +19,20 @@ export default function AppointmentDetailPage({ params }: Readonly<{ params: Pro
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+
+  const load = () =>
+    api.get(`/my-appointments/${id}`)
+      .then((res) => setAppt(res.data.data))
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     setNotFound(false);
-    api.get(`/my-appointments/${id}`)
-      .then((res) => setAppt(res.data.data))
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleSelfCancel = async () => {
@@ -76,6 +82,19 @@ export default function AppointmentDetailPage({ params }: Readonly<{ params: Pro
           appt={appt}
           cancelling={cancelling}
           onCancel={handleSelfCancel}
+          onReschedule={() => setRescheduleOpen(true)}
+        />
+      )}
+
+      {appt?.store?.slug && (
+        <RescheduleAppointmentModal
+          isOpen={rescheduleOpen}
+          onClose={() => setRescheduleOpen(false)}
+          appointmentId={appt.id}
+          storeSlug={appt.store.slug}
+          branchId={appt.store_branch_id ?? null}
+          durationMinutes={appt.duration_minutes ?? 60}
+          onMoved={async () => { await load(); }}
         />
       )}
     </div>

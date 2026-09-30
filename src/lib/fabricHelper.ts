@@ -144,6 +144,20 @@ export function getContrastTextColor(hexColor?: string | null): string {
   return yiq >= 165 ? '#1A1A1A' : '#FFFFFF';
 }
 
+// Angle-view images (front/back/side/etc.) live in the bottom thumbnail
+// strip; an image whose view_angle is anything else (e.g. "Navy", "Red")
+// is treated as a color variant photo instead, shown in the Color swatch
+// row. Unlabeled images default to "angle" so single-color items with no
+// view_angle data keep behaving exactly as before.
+// Words that mark a photo as a view of the garment rather than a color.
+const ANGLE_PATTERN = /\b(front|back|side|left|right|top|bottom|middle|detail|default|close-?up|angle|view|thumb)\b/i;
+
+export function isAngleLabel(label?: string | null): boolean {
+  const trimmed = (label ?? '').trim();
+  if (!trimmed) return true;
+  return ANGLE_PATTERN.test(trimmed);
+}
+
 export interface CatalogColorOption {
   name: string;
   hex: string;
@@ -180,12 +194,7 @@ export function getItemColorOptions(
   if (item.images && item.images.length > 1) {
     for (const img of item.images) {
       const angle = (img.view_angle ?? '').trim();
-      const lower = angle.toLowerCase();
-      if (
-        angle &&
-        !['front', 'back', 'side', 'detail', 'default', 'close-up'].includes(lower) &&
-        !lower.startsWith('view')
-      ) {
+      if (angle && !isAngleLabel(angle)) {
         imageColorAngles.push({ name: angle, image_url: img.image_url });
       }
     }

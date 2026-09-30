@@ -24,7 +24,8 @@ import { usePathname } from 'next/navigation';
  */
 export default function MobileFrame({ children }: { readonly children: React.ReactNode }) {
   const pathname = usePathname();
-  const isDashboard = pathname?.startsWith('/dashboard') ?? false;
+  // The System Admin console is desktop-first too, same as /dashboard.
+  const isDashboard = (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) ?? false;
 
   if (isDashboard) return <>{children}</>;
 

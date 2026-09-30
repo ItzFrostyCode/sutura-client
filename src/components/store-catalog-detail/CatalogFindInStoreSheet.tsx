@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { ArrowLeft, Locate as LocateIcon } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { MapBranch } from './types';
+import CatalogFindSidebar, { CatalogFindHeader } from './CatalogFindSidebar';
 
 const FindLocationMap = dynamic(() => import('@/components/profile/FindLocationMap'), { ssr: false });
 
@@ -59,14 +60,14 @@ export default function CatalogFindInStoreSheet({
 }: CatalogFindInStoreSheetProps) {
   return (
     <div
-      className={`fixed inset-0 z-50 transition-all duration-300 ease-out bg-surface max-w-[599px] sm:max-w-2xl mx-auto border-x border-line ${
+      className={`fixed inset-0 z-50 transition-all duration-300 ease-out bg-surface max-w-[599px] sm:max-w-2xl md:max-w-none mx-auto border-x md:border-x-0 border-line ${
         showFind
           ? 'translate-y-0 opacity-100 visible pointer-events-auto'
           : 'translate-y-full opacity-0 invisible pointer-events-none'
       }`}
     >
       {/* Map */}
-      <div className="absolute inset-0 bg-surface">
+      <div className="absolute inset-0 md:top-16 md:right-[380px] bg-surface">
         {(showFind || findInteractive) && mapBranches.length > 0 ? (
           <FindLocationMap
             branches={mapBranches}
@@ -82,8 +83,37 @@ export default function CatalogFindInStoreSheet({
         )}
       </div>
 
+      {/* Tablet/desktop: round "where am I" button on the map, like /map's — refreshes your position each tap */}
+      <button
+        type="button"
+        onClick={onLocate}
+        disabled={locating}
+        aria-label={locating ? 'Locating…' : 'Show my current location'}
+        title="Show my current location"
+        className="hidden md:flex absolute bottom-6 right-[404px] z-[1000] w-12 h-12 rounded-full bg-white border border-line shadow-lg text-ink items-center justify-center hover:bg-sunken transition-colors disabled:opacity-60 cursor-pointer"
+      >
+        <LocateIcon size={20} className={locating ? 'animate-pulse text-taupe' : userPos ? 'text-blue-600' : ''} />
+      </button>
+
+      {/* Tablet/desktop (768px+): the /map layout — header bar, full map, branch list + design on the right */}
+      <CatalogFindHeader onClose={onClose} count={mapBranches.length} />
+      <CatalogFindSidebar
+        branches={mapBranches}
+        selectedId={findSheetBranchId}
+        onSelect={setFindSheetBranchId}
+        selected={selectedFindBranch}
+        userPos={userPos}
+        onLocate={onLocate}
+        locating={locating}
+        locateError={locateError}
+        image={selectedImage}
+        itemName={itemName}
+        itemPrice={itemPrice}
+        onBook={() => (selectedFindBranch ? setShowBookConfirm(true) : setShowBranchPickModal(true))}
+      />
+
       {/* Top row */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center gap-2">
+      <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center gap-2 md:hidden">
         <button
           type="button"
           onClick={onClose}
@@ -108,7 +138,7 @@ export default function CatalogFindInStoreSheet({
 
       {/* Floating place card */}
       <div
-        className="absolute left-[10px] right-[10px] bottom-[10px] z-[1000] bg-surface rounded-none border border-line shadow-lg p-3"
+        className="absolute left-[10px] right-[10px] bottom-[10px] z-[1000] bg-surface rounded-none border border-line shadow-lg p-3 md:hidden"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <button
@@ -169,11 +199,11 @@ export default function CatalogFindInStoreSheet({
       {/* Book confirmation modal */}
       {showBookConfirm && selectedFindBranch && (
         <div
-          className="fixed inset-0 z-[2000] bg-ink/50 flex items-end justify-center"
+          className="fixed inset-0 z-[2000] bg-ink/50 flex items-end md:items-center justify-center md:p-6"
           onClick={() => setShowBookConfirm(false)}
         >
           <div
-            className="bg-surface w-full max-w-[599px] mx-auto border-x border-line rounded-t-2xl p-4"
+            className="bg-surface w-full max-w-[599px] md:max-w-md mx-auto border-x md:border border-line rounded-t-2xl md:rounded-none p-4 md:p-6"
             style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -210,11 +240,11 @@ export default function CatalogFindInStoreSheet({
       {/* Branch pick modal */}
       {showBranchPickModal && (
         <div
-          className="fixed inset-0 z-[2000] bg-ink/50 flex items-end justify-center"
+          className="fixed inset-0 z-[2000] bg-ink/50 flex items-end md:items-center justify-center md:p-6"
           onClick={() => setShowBranchPickModal(false)}
         >
           <div
-            className="bg-surface w-full max-w-[599px] mx-auto border-x border-line rounded-t-2xl p-4"
+            className="bg-surface w-full max-w-[599px] md:max-w-md mx-auto border-x md:border border-line rounded-t-2xl md:rounded-none p-4 md:p-6"
             style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
           >

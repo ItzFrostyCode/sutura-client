@@ -28,10 +28,10 @@ function LocationPageContent() {
         setActiveTab={l.setActiveTab}
       />
 
-      <main className="flex-1 max-w-lg w-full mx-auto px-4 pt-4 space-y-4">
+      <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-12 space-y-4">
         {/* Search Results */}
         {l.searchResults.length > 0 && (
-          <div className="bg-surface border border-line rounded-2xl p-3 shadow-xs space-y-1">
+          <div className="bg-surface border border-line rounded-xl p-3 shadow-xs space-y-1">
             <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint px-2 pb-1">
               Search Results
             </p>
@@ -47,7 +47,7 @@ function LocationPageContent() {
                     district: res.display_name.split(',')[1]?.trim() || 'Davao City',
                   })
                 }
-                className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-sunken text-left transition-colors cursor-pointer"
+                className="w-full flex items-start gap-3 p-2.5 rounded-lg hover:bg-sunken text-left transition-colors cursor-pointer"
               >
                 <MapPin size={17} className="text-taupe shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
@@ -63,13 +63,13 @@ function LocationPageContent() {
         )}
 
         {l.searchError && (
-          <div className="p-3 rounded-xl bg-danger/10 text-danger text-xs font-medium">
+          <div className="p-3 rounded-lg bg-danger/10 text-danger text-xs font-medium">
             {l.searchError}
           </div>
         )}
 
         {/* Location Selection Options */}
-        <section className="bg-surface border border-line rounded-2xl divide-y divide-line overflow-hidden shadow-xs">
+        <section className="bg-surface border border-line rounded-none divide-y divide-line overflow-hidden shadow-xs">
           <button
             type="button"
             onClick={l.handleUseCurrentGps}
@@ -155,16 +155,12 @@ function LocationPageContent() {
         )}
 
         {/* Need Help Section */}
-        <section className="space-y-2 pt-1">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint px-1">Need help?</p>
-          <div className="bg-surface border border-line rounded-2xl divide-y divide-line overflow-hidden shadow-xs">
-            <div className="flex items-start gap-3 p-3.5">
-              <HelpCircle size={16} className="text-ink-muted shrink-0 mt-0.5" />
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Locations are saved locally to your device. You can find stores near your{' '}
-                <strong>home address</strong> even when you&apos;re far from it — just tap <em>Use</em>.
-              </p>
-            </div>
+        <section className="pt-2 px-1">
+          <div className="flex items-start gap-2.5 text-ink">
+            <HelpCircle size={15} className="text-ink shrink-0 mt-0.5" />
+            <p className="text-xs text-ink leading-relaxed">
+              Locations are saved locally to your device. You can find stores near your home address even when you&apos;re far from it — just tap Use.
+            </p>
           </div>
         </section>
       </main>

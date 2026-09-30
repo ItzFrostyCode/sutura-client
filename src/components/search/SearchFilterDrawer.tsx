@@ -1,11 +1,27 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { X, RotateCcw, TrendingUp, TrendingDown, Star, Clock, Check, Sparkles, ChevronDown } from 'lucide-react';
+import { X, RotateCcw, TrendingUp, TrendingDown, Star, Check, Sparkles, ChevronDown } from 'lucide-react';
 import { FILTER_TABS, FilterTabKey, DISTRICTS, SearchActiveTab } from './types';
-import { SEARCH_DEPARTMENTS, getCategoryCollections } from '@/lib/navSearchCategories';
-import { PORTFOLIO_COLOR_OPTIONS } from '@/components/store-storefront/types';
-import ColorFamilyFilterSection from './ColorFamilyFilterSection';
+import { getCategoryCollections } from '@/lib/navSearchCategories';
+import {
+  DEPARTMENTS,
+  DEPARTMENT_LABELS,
+  GARMENT_STRUCTURE_LABELS,
+  GARMENT_TYPE_LABELS,
+  SERVICE_CATEGORIES,
+  SERVICE_CATEGORY_LABELS,
+  SERVICE_TYPE_LABELS,
+  SUBCATEGORY_LABELS,
+  type GarmentStructure,
+  type ServiceCategory,
+  garmentTypesFor,
+  isDepartment,
+  serviceTypesFor,
+  structuresFor,
+  subcategoriesFor,
+} from '@/lib/canonicalTaxonomy';
+import RadioFilterSection from './RadioFilterSection';
 
 interface SearchFilterDrawerProps {
   readonly isOpen: boolean;
@@ -15,10 +31,17 @@ interface SearchFilterDrawerProps {
   readonly draftSpecialization: string;
   readonly setDraftSpecialization: (val: string) => void;
   readonly department?: string;
-  readonly draftColor?: string;
-  readonly setDraftColor?: (val: string) => void;
-  readonly draftOpenNow: boolean;
-  readonly setDraftOpenNow: (val: boolean) => void;
+  readonly setDepartment?: (val: string) => void;
+  readonly draftSubcategory?: string;
+  readonly setDraftSubcategory?: (val: string) => void;
+  readonly draftStructure?: string;
+  readonly setDraftStructure?: (val: string) => void;
+  readonly draftGarmentType?: string;
+  readonly setDraftGarmentType?: (val: string) => void;
+  readonly draftServiceCategory?: string;
+  readonly setDraftServiceCategory?: (val: string) => void;
+  readonly draftServiceType?: string;
+  readonly setDraftServiceType?: (val: string) => void;
   readonly draftMinPrice: string;
   readonly setDraftMinPrice: (val: string) => void;
   readonly draftMaxPrice: string;
@@ -42,10 +65,17 @@ export default function SearchFilterDrawer({
   draftSpecialization,
   setDraftSpecialization,
   department = '',
-  draftColor = '',
-  setDraftColor,
-  draftOpenNow,
-  setDraftOpenNow,
+  setDepartment,
+  draftSubcategory = '',
+  setDraftSubcategory,
+  draftStructure = '',
+  setDraftStructure,
+  draftGarmentType = '',
+  setDraftGarmentType,
+  draftServiceCategory = '',
+  setDraftServiceCategory,
+  draftServiceType = '',
+  setDraftServiceType,
   draftMinPrice,
   setDraftMinPrice,
   draftMaxPrice,
@@ -60,32 +90,68 @@ export default function SearchFilterDrawer({
   onApply,
   activeTab = 'store',
 }: SearchFilterDrawerProps) {
-  const [activeDept, setActiveDept] = useState<string>(department || 'all');
-  const currentDept = SEARCH_DEPARTMENTS.find((d) => d.key === activeDept) ?? SEARCH_DEPARTMENTS[0];
-  const collections = getCategoryCollections(draftSpecialization);
+  const collections = getCategoryCollections(draftGarmentType || draftSpecialization);
 
-  // Same-route navigations (e.g. clicking Men/Women/Wedding/Office in the
-  // header while already on /search) don't remount this component — sync
-  // the Department selector whenever the URL-derived department changes,
-  // during render rather than an effect (avoids a cascading re-render).
-  const [prevDepartment, setPrevDepartment] = useState(department);
-  if (department && department !== prevDepartment) {
-    setPrevDepartment(department);
-    setActiveDept(department);
-  }
-  // Full color list, same as the desktop sidebar — not a curated per-category subset.
-  const categoryColors = PORTFOLIO_COLOR_OPTIONS;
+  const availableSubcategories = isDepartment(department) ? subcategoriesFor(department) : [];
+  const availableStructures = isDepartment(department) && draftSubcategory ? structuresFor(department, draftSubcategory) : [];
+  const availableGarmentTypes = isDepartment(department) && draftSubcategory && draftStructure
+    ? garmentTypesFor(department, draftSubcategory, draftStructure as GarmentStructure)
+    : [];
+
+  const availableServiceTypes = draftServiceCategory
+    ? serviceTypesFor(draftServiceCategory as ServiceCategory)
+    : [];
+
+  const departmentOptions = DEPARTMENTS.map((d) => ({ value: d, label: DEPARTMENT_LABELS[d] }));
+
+  const handleDeptClick = (deptKey: string) => {
+    const next = department === deptKey ? '' : deptKey;
+    setDepartment?.(next);
+    setDraftSubcategory?.('');
+    setDraftStructure?.('');
+    setDraftGarmentType?.('');
+    setDraftSpecialization('');
+  };
+
+  const handleSubcatClick = (subcatKey: string) => {
+    const next = draftSubcategory === subcatKey ? '' : subcatKey;
+    setDraftSubcategory?.(next);
+    setDraftStructure?.('');
+    setDraftGarmentType?.('');
+  };
+
+  const handleStructureClick = (structureKey: string) => {
+    const next = draftStructure === structureKey ? '' : structureKey;
+    setDraftStructure?.(next);
+    setDraftGarmentType?.('');
+  };
+
+  const handleGarmentTypeClick = (typeKey: string) => {
+    setDraftGarmentType?.(draftGarmentType === typeKey ? '' : typeKey);
+  };
+
+  const handleServiceCategoryClick = (catKey: string) => {
+    const next = draftServiceCategory === catKey ? '' : catKey;
+    setDraftServiceCategory?.(next);
+    setDraftServiceType?.('');
+  };
+
+  const handleServiceTypeClick = (typeKey: string) => {
+    setDraftServiceType?.(draftServiceType === typeKey ? '' : typeKey);
+  };
 
   // All sections are OPEN by default ("naka default na open lahat makita lahat")
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     department: true,
-    category: true,
+    subcategory: true,
+    structure: true,
+    garmentType: true,
+    serviceCategory: true,
+    serviceType: true,
     collections: true,
-    color: true,
     price: true,
     rating: true,
     district: true,
-    availability: true,
   });
 
   const toggleSection = (key: string) => {
@@ -94,19 +160,15 @@ export default function SearchFilterDrawer({
 
   const filterScrollRef = useRef<HTMLDivElement>(null);
   const specializationRef = useRef<HTMLDivElement>(null);
-  const colorRef = useRef<HTMLDivElement>(null);
   const priceRef = useRef<HTMLDivElement>(null);
   const ratingRef = useRef<HTMLDivElement>(null);
   const districtRef = useRef<HTMLDivElement>(null);
-  const openNowRef = useRef<HTMLDivElement>(null);
 
   const sectionRefs: Record<FilterTabKey, React.RefObject<HTMLDivElement | null>> = {
     specialization: specializationRef,
-    color: colorRef,
     price: priceRef,
     rating: ratingRef,
     district: districtRef,
-    openNow: openNowRef,
   };
 
   function sectionTopInContainer(el: HTMLDivElement, container: HTMLDivElement) {
@@ -137,19 +199,6 @@ export default function SearchFilterDrawer({
     }
     setActiveFilterTab(key);
   }
-
-  const handleDeptClick = (deptKey: string) => {
-    setActiveDept(deptKey);
-    const targetDept = SEARCH_DEPARTMENTS.find((d) => d.key === deptKey);
-    if (targetDept && deptKey !== 'all') {
-      const hasCat = targetDept.categories.some(
-        (c) => c.value.toLowerCase() === draftSpecialization.toLowerCase()
-      );
-      if (!hasCat) {
-        setDraftSpecialization('');
-      }
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -185,19 +234,14 @@ export default function SearchFilterDrawer({
         <div className="flex flex-1 min-h-0">
           {/* Left rail navigation */}
           <nav className="w-[105px] shrink-0 bg-[#F5F1EC] border-r border-[#EBE6E0] overflow-y-auto rounded-none">
-            {FILTER_TABS.filter((tab) => {
-              if (tab.key === 'color') return activeTab === 'showroom';
-              if (tab.key === 'price') return activeTab === 'showroom' || activeTab === 'services';
-              return true;
-            }).map((tab) => {
+            {FILTER_TABS.map((tab) => {
               const isActive = activeFilterTab === tab.key;
               const hasValue =
-                (tab.key === 'specialization' && !!draftSpecialization) ||
-                (tab.key === 'color' && !!draftColor) ||
+                (tab.key === 'specialization' && !!(draftSpecialization || department || draftServiceCategory || draftSubcategory || draftStructure || draftGarmentType || draftServiceType)) ||
                 (tab.key === 'price' && !!(draftMinPrice || draftMaxPrice || sortBy)) ||
                 (tab.key === 'rating' && !!draftMinRating) ||
-                (tab.key === 'district' && !!draftDistrict) ||
-                (tab.key === 'openNow' && draftOpenNow);
+                (tab.key === 'district' && !!draftDistrict);
+              const label = tab.key === 'specialization' && activeTab === 'services' ? 'Services' : tab.label;
               return (
                 <button
                   key={tab.key}
@@ -209,7 +253,7 @@ export default function SearchFilterDrawer({
                       : 'border-transparent text-[#524A44] hover:bg-[#EBE6E0]'
                   }`}
                 >
-                  {tab.label}
+                  {label}
                   {hasValue && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-none bg-[#9A8073] align-middle" />}
                 </button>
               );
@@ -218,124 +262,86 @@ export default function SearchFilterDrawer({
 
           {/* Scrollable sections */}
           <div ref={filterScrollRef} onScroll={handleFilterScroll} className="flex-1 overflow-y-auto p-4 bg-white">
-            {/* 1. Category / Department section */}
-            <div ref={specializationRef}>
-              {/* Department Dropdown Header */}
-              <div
-                onClick={() => toggleSection('department')}
-                className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border border-[#D1C7BD] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none mb-1"
-              >
-                <span>Department</span>
-                <ChevronDown
-                  size={13}
-                  className={`text-[#827A73] transition-transform duration-200 ${
-                    openSections.department ? 'rotate-180' : ''
-                  }`}
-                />
-              </div>
-              {openSections.department && (
-                <div className="border border-[#D1C7BD] divide-y divide-[#EBE6E0] rounded-none mb-4 bg-white">
-                  {SEARCH_DEPARTMENTS.map((dept) => {
-                    const isSelected = activeDept === dept.key;
-                    return (
-                      <button
-                        key={dept.key}
-                        type="button"
-                        onClick={() => handleDeptClick(dept.key)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors cursor-pointer rounded-none group ${
-                          isSelected
-                            ? 'bg-[#F0EAE3] font-bold text-[#2D2A26]'
-                            : 'hover:bg-[#FAF6F3] text-[#524A44]'
-                        }`}
-                      >
-                        <span
-                          className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected
-                              ? 'bg-[#2D2A26] border-[#2D2A26] text-white'
-                              : 'bg-white border-[#D1C7BD] group-hover:border-[#827A73]'
-                          }`}
-                        >
-                          {isSelected && <Check size={10} strokeWidth={3.5} className="text-white" />}
-                        </span>
-                        <span className="truncate">{dept.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Narrow by Category Dropdown Header */}
-              <div
-                onClick={() => toggleSection('category')}
-                className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border border-[#D1C7BD] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none mb-1"
-              >
-                <span>Narrow by Category</span>
-                <div className="flex items-center gap-2">
-                  {draftSpecialization && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDraftSpecialization('');
-                      }}
-                      className="text-[10px] font-semibold text-[#9A8073] hover:text-[#2D2A26] hover:underline cursor-pointer lowercase"
-                    >
-                      (all)
-                    </button>
-                  )}
-                  <ChevronDown
-                    size={13}
-                    className={`text-[#827A73] transition-transform duration-200 ${
-                      openSections.category ? 'rotate-180' : ''
-                    }`}
+            {/* 1. Category / Department / Services section */}
+            <div ref={specializationRef} className="space-y-4 mb-4">
+              {activeTab === 'services' ? (
+                <>
+                  <RadioFilterSection
+                    title="Service Category"
+                    sectionKey="serviceCategory"
+                    isOpen={openSections.serviceCategory}
+                    onToggle={toggleSection}
+                    options={SERVICE_CATEGORIES.map((c) => ({ value: c, label: SERVICE_CATEGORY_LABELS[c] }))}
+                    selected={draftServiceCategory}
+                    onSelect={handleServiceCategoryClick}
+                    allLabel="All Service Categories"
                   />
-                </div>
-              </div>
-              {openSections.category && (
-                <div className="border border-[#EBE6E0] divide-y divide-[#F5F1EC] rounded-none">
-                  <button
-                    type="button"
-                    onClick={() => setDraftSpecialization('')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors cursor-pointer rounded-none group ${
-                      !draftSpecialization ? 'bg-[#F0EAE3] font-bold text-[#2D2A26]' : 'hover:bg-[#FAF6F3] text-[#524A44]'
-                    }`}
-                  >
-                    <span
-                      className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center shrink-0 transition-colors ${
-                        !draftSpecialization
-                          ? 'bg-[#2D2A26] border-[#2D2A26] text-white'
-                          : 'bg-white border-[#D1C7BD] group-hover:border-[#827A73]'
-                      }`}
-                    >
-                      {!draftSpecialization && <Check size={10} strokeWidth={3.5} className="text-white" />}
-                    </span>
-                    <span>All Categories</span>
-                  </button>
-                  {currentDept.categories.map((cat) => {
-                    const isSelected = draftSpecialization.toLowerCase() === cat.value.toLowerCase();
-                    return (
-                      <button
-                        key={cat.value}
-                        type="button"
-                        onClick={() => setDraftSpecialization(isSelected ? '' : cat.value)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors cursor-pointer rounded-none group ${
-                          isSelected ? 'bg-[#F0EAE3] font-bold text-[#2D2A26]' : 'hover:bg-[#FAF6F3] text-[#524A44]'
-                        }`}
-                      >
-                        <span
-                          className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected
-                              ? 'bg-[#2D2A26] border-[#2D2A26] text-white'
-                              : 'bg-white border-[#D1C7BD] group-hover:border-[#827A73]'
-                          }`}
-                        >
-                          {isSelected && <Check size={10} strokeWidth={3.5} className="text-white" />}
-                        </span>
-                        <span>{cat.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+
+                  {draftServiceCategory && availableServiceTypes.length > 0 && (
+                    <RadioFilterSection
+                      title="Service Type"
+                      sectionKey="serviceType"
+                      isOpen={openSections.serviceType}
+                      onToggle={toggleSection}
+                      options={availableServiceTypes.map((t) => ({ value: t, label: SERVICE_TYPE_LABELS[t] ?? t }))}
+                      selected={draftServiceType}
+                      onSelect={handleServiceTypeClick}
+                      allLabel="All Service Types"
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <RadioFilterSection
+                    title="Department"
+                    sectionKey="department"
+                    isOpen={openSections.department}
+                    onToggle={toggleSection}
+                    options={departmentOptions}
+                    selected={department}
+                    onSelect={handleDeptClick}
+                    allLabel="All Departments"
+                  />
+
+                  {department && availableSubcategories.length > 0 && (
+                    <RadioFilterSection
+                      title="Subcategory"
+                      sectionKey="subcategory"
+                      isOpen={openSections.subcategory}
+                      onToggle={toggleSection}
+                      options={availableSubcategories.map((s) => ({ value: s, label: SUBCATEGORY_LABELS[s] ?? s }))}
+                      selected={draftSubcategory}
+                      onSelect={handleSubcatClick}
+                      allLabel="All Subcategories"
+                    />
+                  )}
+
+                  {draftSubcategory && availableStructures.length > 0 && (
+                    <RadioFilterSection
+                      title="Garment Structure"
+                      sectionKey="structure"
+                      isOpen={openSections.structure}
+                      onToggle={toggleSection}
+                      options={availableStructures.map((s) => ({ value: s, label: GARMENT_STRUCTURE_LABELS[s] }))}
+                      selected={draftStructure}
+                      onSelect={handleStructureClick}
+                      allLabel="All Structures"
+                    />
+                  )}
+
+                  {draftStructure && availableGarmentTypes.length > 0 && (
+                    <RadioFilterSection
+                      title="Garment Type"
+                      sectionKey="garmentType"
+                      isOpen={openSections.garmentType}
+                      onToggle={toggleSection}
+                      options={availableGarmentTypes.map((t) => ({ value: t, label: GARMENT_TYPE_LABELS[t] ?? t }))}
+                      selected={draftGarmentType}
+                      onSelect={handleGarmentTypeClick}
+                      allLabel="All Garment Types"
+                    />
+                  )}
+                </>
               )}
 
               {/* Collections & Styles — Catalog only */}
@@ -372,54 +378,13 @@ export default function SearchFilterDrawer({
               )}
             </div>
 
-            {/* 2. Color section (Collapsible Dropdown — Catalog only) */}
-            {activeTab === 'showroom' && (
-              <div ref={colorRef} className="mt-6 border border-[#EBE6E0]">
-              <div
-                onClick={() => toggleSection('color')}
-                className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
-              >
-                <span>Color</span>
-                <div className="flex items-center gap-2">
-                  {draftColor && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDraftColor?.('');
-                      }}
-                      className="text-[10px] font-semibold text-[#9A8073] hover:text-[#2D2A26] hover:underline cursor-pointer lowercase"
-                    >
-                      (clear)
-                    </button>
-                  )}
-                  <ChevronDown
-                    size={13}
-                    className={`text-[#827A73] transition-transform duration-200 ${
-                      openSections.color ? 'rotate-180' : ''
-                    }`}
-                  />
-                </div>
-              </div>
-              {openSections.color && (
-                <div className="p-3 bg-white">
-                  <ColorFamilyFilterSection
-                    selectedColor={draftColor}
-                    onColorChange={(val) => setDraftColor?.(val)}
-                  />
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* 3. Price section (Collapsible Dropdown — Catalog & Services) */}
-            {(activeTab === 'showroom' || activeTab === 'services') && (
-              <div ref={priceRef} className="mt-6 border border-[#EBE6E0]">
+            {/* 2. Price section (₱min - ₱max) */}
+            <div ref={priceRef} className="mt-6 border border-[#EBE6E0]">
               <div
                 onClick={() => toggleSection('price')}
                 className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
               >
-                <span>Price Range (₱)</span>
+                <span>Price Range</span>
                 <div className="flex items-center gap-2">
                   {(draftMinPrice || draftMaxPrice || sortBy) && (
                     <button
@@ -473,29 +438,37 @@ export default function SearchFilterDrawer({
                     </button>
                   </div>
 
-                  {/* 2nd: Min - Max Price Inputs */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={draftMinPrice}
-                      onChange={(e) => setDraftMinPrice(e.target.value)}
-                      placeholder="Min ₱"
-                      className="w-full h-8 px-2 bg-white border border-[#D1C7BD] rounded-none text-xs text-[#2D2A26] placeholder:text-[#A8A19A] focus:outline-none focus:border-[#2D2A26]"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      value={draftMaxPrice}
-                      onChange={(e) => setDraftMaxPrice(e.target.value)}
-                      placeholder="Max ₱"
-                      className="w-full h-8 px-2 bg-white border border-[#D1C7BD] rounded-none text-xs text-[#2D2A26] placeholder:text-[#A8A19A] focus:outline-none focus:border-[#2D2A26]"
-                    />
+                  {/* 2nd: ₱min - ₱max Price Inputs */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#827A73]">₱</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={draftMinPrice}
+                        onChange={(e) => setDraftMinPrice(e.target.value)}
+                        placeholder="min"
+                        aria-label="Minimum price in Pesos"
+                        className="w-full h-10 sm:h-9 pl-7 pr-2 bg-white border border-[#D1C7BD] rounded-none text-[16px] sm:text-xs text-[#2D2A26] placeholder:text-[#A8A19A] focus:outline-none focus:border-[#2D2A26]"
+                      />
+                    </div>
+                    <span className="text-sm text-[#827A73] font-bold shrink-0">—</span>
+                    <div className="relative flex-1">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#827A73]">₱</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={draftMaxPrice}
+                        onChange={(e) => setDraftMaxPrice(e.target.value)}
+                        placeholder="max"
+                        aria-label="Maximum price in Pesos"
+                        className="w-full h-10 sm:h-9 pl-7 pr-2 bg-white border border-[#D1C7BD] rounded-none text-[16px] sm:text-xs text-[#2D2A26] placeholder:text-[#A8A19A] focus:outline-none focus:border-[#2D2A26]"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-            )}
 
             {/* 4. Rating section (Collapsible Dropdown) */}
             <div ref={ratingRef} className="mt-6 border border-[#EBE6E0]">
@@ -646,42 +619,7 @@ export default function SearchFilterDrawer({
               )}
             </div>
 
-            {/* 6. Hours / Open Now section (Collapsible Dropdown) */}
-            <div ref={openNowRef} className="mt-6 border border-[#EBE6E0]">
-              <div
-                onClick={() => toggleSection('availability')}
-                className="bg-[#F5F1EC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#827A73] border-b border-[#EBE6E0] flex items-center justify-between hover:bg-[#EBE6E0] transition-colors cursor-pointer select-none"
-              >
-                <span>Availability</span>
-                <ChevronDown
-                  size={13}
-                  className={`text-[#827A73] transition-transform duration-200 ${
-                    openSections.availability ? 'rotate-180' : ''
-                  }`}
-                />
-              </div>
-              {openSections.availability && (
-                <label className="flex items-center gap-2.5 px-3 py-2.5 bg-white hover:bg-[#FAF6F3] cursor-pointer rounded-none select-none">
-                  <input
-                    type="checkbox"
-                    checked={draftOpenNow}
-                    onChange={(e) => setDraftOpenNow(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <span
-                    className={`w-3.5 h-3.5 rounded-none border flex items-center justify-center shrink-0 ${
-                      draftOpenNow ? 'bg-[#2D2A26] border-[#2D2A26] text-white' : 'bg-white border-[#D1C7BD]'
-                    }`}
-                  >
-                    {draftOpenNow && <Check size={10} strokeWidth={3.5} className="text-white" />}
-                  </span>
-                  <Clock size={14} className={draftOpenNow ? 'text-[#2D2A26]' : 'text-[#827A73]'} />
-                  <span className={`text-xs ${draftOpenNow ? 'font-bold text-[#2D2A26]' : 'font-normal text-[#524A44]'}`}>
-                    Open Now
-                  </span>
-                </label>
-              )}
-            </div>
+            {/* End of filter sections */}
 
             <div className="h-16" aria-hidden="true" />
           </div>

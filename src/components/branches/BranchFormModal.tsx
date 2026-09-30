@@ -329,12 +329,12 @@ export default function BranchFormModal({
             Storefront / Direction Guide Image (Optional)
           </label>
           <span className="block text-[11px] text-ink-muted mb-2">
-            Upload an image of your building or storefront (ideally with arrows/pointers to help customers find you).
+            Upload an image of your building or shop front (ideally with arrows/pointers to help customers find you).
           </span>
           {formData.guide_image_url ? (
             <div className="relative aspect-video max-w-sm bg-canvas border border-line rounded-lg overflow-hidden group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={formData.guide_image_url} alt="Storefront Guide" className="w-full h-full object-cover" />
+              <img src={formData.guide_image_url} alt="Store Profile Guide" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, guide_image_url: '' }))}

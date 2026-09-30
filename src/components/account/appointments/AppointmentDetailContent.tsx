@@ -2,9 +2,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   MapPin, CalendarDays, Clock, Lock, Loader2, AlertCircle, Info,
-  Wallet, FileText, Link as LinkIcon, Store, CheckCircle2,
+  Wallet, FileText, Link as LinkIcon, Store, CheckCircle2, CalendarClock,
 } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
+import { catalogCategoryPath, serviceCategoryPath } from '@/lib/canonicalTaxonomy';
 import {
   STATUS_META,
   TYPE_LABELS,
@@ -18,6 +19,23 @@ export interface AppointmentDetailData {
   scheduled_at: string;
   duration_minutes: number | null;
   service_name: string | null;
+  service?: { id: number; name: string; service_category?: string | null; service_leaf_type?: string | null } | null;
+  catalog_item?: {
+    id: number;
+    name: string;
+    department?: string | null;
+    subcategory?: string | null;
+    garment_structure?: string | null;
+    garment_type?: string | null;
+  } | null;
+  service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
+  selected_size?: string | null;
+  selected_color?: string | null;
+  // The store's own hand-off after accepting (link + photos), and the flag set when a walk-in took this slot.
+  shared_link?: string | null;
+  shared_images?: string[];
+  needs_new_time?: boolean;
+  store_branch_id?: number | null;
   payment_status: string;
   payment_method: string | null;
   notes: string | null;
@@ -32,12 +50,14 @@ interface AppointmentDetailContentProps {
   appt: AppointmentDetailData;
   cancelling: boolean;
   onCancel: () => void;
+  onReschedule: () => void;
 }
 
 export default function AppointmentDetailContent({
   appt,
   cancelling,
   onCancel,
+  onReschedule,
 }: Readonly<AppointmentDetailContentProps>) {
   const meta = STATUS_META[appt.status] ?? STATUS_META.pending;
   const StatusIcon = meta.Icon;
@@ -94,9 +114,36 @@ export default function AppointmentDetailContent({
         )}
       </div>
 
-      <h2 className="mobile-h3 font-semibold text-ink mb-3">
-        {appt.service_name ?? (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type)}
+      <h2 className="mobile-h3 font-semibold text-ink mb-1">
+        {appt.catalog_item && appt.store?.slug ? (
+          <Link href={`/store/${appt.store.slug}/catalog/${appt.catalog_item.id}`} className="hover:underline">
+            {appt.catalog_item.name}
+          </Link>
+        ) : (
+          appt.catalog_item?.name ?? appt.service_package?.name ?? appt.service_name ?? (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type)
+        )}
       </h2>
+      <div className="mb-3 space-y-0.5">
+        {appt.catalog_item && catalogCategoryPath(appt.catalog_item).length > 0 && (
+          <p className="mobile-caption text-ink-muted font-normal">{catalogCategoryPath(appt.catalog_item).join(' → ')}</p>
+        )}
+        {(appt.selected_size || appt.selected_color) && (
+          <p className="mobile-caption text-ink-body font-normal">
+            {[appt.selected_size && `Size ${appt.selected_size}`, appt.selected_color].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {appt.service_package && (appt.service_package.services?.length ?? 0) > 0 && (
+          <p className="mobile-caption text-ink-muted font-normal">Package · includes {appt.service_package.services!.map(s => s.name).join(', ')}</p>
+        )}
+        {appt.service && !appt.service_package && (
+          <p className="mobile-caption text-ink-muted font-normal">
+            {appt.catalog_item ? `Service: ${appt.service.name}` : null}
+            {serviceCategoryPath(appt.service).length > 0 && (
+              <>{appt.catalog_item ? ' · ' : ''}{serviceCategoryPath(appt.service).join(' → ')}</>
+            )}
+          </p>
+        )}
+      </div>
 
       <div className="space-y-2.5 pb-3 mb-3 border-b border-line">
         <div className="flex items-center gap-2.5 mobile-body-sm font-normal text-ink-body">
@@ -176,10 +223,51 @@ export default function AppointmentDetailContent({
         </div>
       )}
 
-      {!isPastDue && appt.status === 'pending' && (
+      {appt.needs_new_time && appt.status === 'pending' && (
+        <div className="mb-3 border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-semibold">Your time was taken by a walk-in client</p>
+          <p className="mobile-caption font-normal mt-1">
+            The shop can&apos;t use the time you asked for. Pick another one — your request stays with the store, so you don&apos;t need to start over.
+          </p>
+        </div>
+      )}
+
+      {!isPastDue && appt.status === 'pending' && !appt.needs_new_time && (
         <div className="flex items-start gap-2 mb-3 bg-sunken border border-line p-3 mobile-caption text-ink-body leading-relaxed font-normal">
           <Info size={16} className="text-ink-muted shrink-0 mt-0.5" />
           Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.
+        </div>
+      )}
+
+      {appt.status === 'pending' && (
+        <button
+          type="button"
+          onClick={onReschedule}
+          className={`w-full mb-3 h-12 flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer transition-colors ${
+            appt.needs_new_time ? 'bg-ink text-white hover:bg-ink/90' : 'border border-line-strong bg-white text-ink hover:bg-sunken'
+          }`}
+        >
+          <CalendarClock size={16} /> Pick a new time
+        </button>
+      )}
+
+      {(appt.shared_link || (appt.shared_images && appt.shared_images.length > 0)) && (
+        <div className="mb-3 border border-line p-3 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-ink">From the store</p>
+          {appt.shared_link && (
+            <a href={appt.shared_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mobile-body-sm text-taupe hover:underline break-all">
+              <LinkIcon size={16} className="shrink-0" /> {appt.shared_link}
+            </a>
+          )}
+          {appt.shared_images && appt.shared_images.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {appt.shared_images.map((url) => (
+                <a key={url} href={getMediaUrl(url)} target="_blank" rel="noopener noreferrer" className="relative block aspect-square bg-sunken border border-line overflow-hidden">
+                  <Image src={getMediaUrl(url)} alt="Shared by the store" fill sizes="120px" className="object-cover" unoptimized />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

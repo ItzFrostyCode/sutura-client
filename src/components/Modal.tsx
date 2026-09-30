@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface ModalProps {
   readonly isOpen: boolean;
@@ -34,6 +35,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
   const triggerRef = useRef<Element | null>(null);
 
   const [mounted, setMounted] = useState(false);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     setMounted(true);
@@ -42,7 +44,6 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
   useEffect(() => {
     if (!isOpen) return;
     triggerRef.current = document.activeElement;
-    document.body.style.overflow = 'hidden';
     panelRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
@@ -67,7 +68,6 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
       (triggerRef.current as HTMLElement | null)?.focus?.();
     };
   }, [isOpen, onClose]);

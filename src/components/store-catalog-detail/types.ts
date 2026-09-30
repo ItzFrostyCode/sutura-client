@@ -1,3 +1,4 @@
+
 export interface CatalogItemImage {
   id: number;
   image_url: string;
@@ -39,15 +40,21 @@ export interface CatalogItem {
   name: string;
   price: string | number;
   estimated_days?: number | null;
+  estimated_days_max?: number | null;
   description?: string;
   material?: string;
   color?: string;
   garment_type?: string;
+  department?: string | null;
+  subcategory?: string | null;
+  garment_structure?: string | null;
   sizes?: string[] | null;
   features?: string[] | { bullets: string[]; image_url: string };
   size_chart_image_url?: string | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: { size: string; values: string[] }[] | null;
+  measurement_guide?: string | null;
+  /** Owner's Appointment Configuration for this design (null = store defaults). */
   care_instructions?: string;
   images: CatalogItemImage[];
   fabric_image_url?: string | null;
@@ -56,6 +63,7 @@ export interface CatalogItem {
   reviews_avg_rating?: number | null;
   reviews_count?: number;
   saves_count?: number | null;
+  order_count?: number | null;
   store?: {
     id: number;
     name: string;

@@ -125,7 +125,7 @@ export default function MapSidebarSelectedStore({
                 district: branch.city || 'Davao City',
               })
             }
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-taupe text-white text-xs font-semibold hover:bg-taupe-hover transition-colors shadow-xs cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-none bg-ink text-white text-xs font-semibold hover:bg-ink/90 transition-colors shadow-xs cursor-pointer"
           >
             <Check size={16} /> Choose this Store Location
           </button>
@@ -133,7 +133,7 @@ export default function MapSidebarSelectedStore({
           <div className="space-y-2">
             <Link
               href={gate(`/store/${branch.storeSlug}/book`)}
-              className="w-full bg-ink hover:bg-taupe text-white font-semibold h-9 transition-colors flex items-center justify-center rounded-xl text-xs shadow-xs"
+              className="w-full bg-ink hover:bg-ink/90 text-white font-semibold h-9 transition-colors flex items-center justify-center rounded-none text-xs shadow-xs"
             >
               Book Now
             </Link>
@@ -144,7 +144,7 @@ export default function MapSidebarSelectedStore({
                 }destination=${branch.latitude},${branch.longitude}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium h-8 transition-colors flex items-center justify-center rounded-lg text-xs"
+                className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium h-8 transition-colors flex items-center justify-center rounded-none text-xs"
               >
                 Directions
               </a>
@@ -159,7 +159,7 @@ export default function MapSidebarSelectedStore({
                   })
                 }
                 title="Set as My Location"
-                className="px-3 h-8 border border-line hover:border-taupe text-taupe font-medium rounded-lg text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                className="px-3 h-8 border border-line hover:border-ink text-ink font-medium rounded-none text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer"
               >
                 <Navigation size={12} /> Set as Location
               </button>
