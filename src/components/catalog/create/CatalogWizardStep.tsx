@@ -6,10 +6,12 @@ import GalleryEditor from '../editable/editors/GalleryEditor';
 import SpecificationEditor from '../editable/editors/SpecificationEditor';
 import { InfoEditor, SizesEditor } from '../editable/editors/InfoAndSizesEditors';
 import { MeasurementGuideEditor, DescriptionEditor } from '../editable/editors/GuideEditors';
+import RequirementsEditor from '@/components/requirements/RequirementsEditor';
+import type { RequirementsDraft } from '@/components/requirements/requirementsDraft';
 import type { CatalogDraftEdit, CatalogSection } from '../editable/useCatalogSectionEdit';
 
 // The same editors the design page's boxes open — the create flow only sequences them.
-export default function CatalogWizardStep({ section, edit }: Readonly<{ section: CatalogSection; edit: CatalogDraftEdit }>) {
+export default function CatalogWizardStep({ section, edit, requirements, onRequirements }: Readonly<{ section: CatalogSection; edit: CatalogDraftEdit; requirements: RequirementsDraft; onRequirements: (r: RequirementsDraft) => void }>) {
   switch (section) {
     case 'gallery': return <GalleryEditor edit={edit} />;
     case 'info': return <InfoEditor edit={edit} />;
@@ -17,6 +19,7 @@ export default function CatalogWizardStep({ section, edit }: Readonly<{ section:
     case 'measurement': return <MeasurementGuideEditor edit={edit} />;
     case 'spec': return <SpecificationEditor edit={edit} />;
     case 'description': return <DescriptionEditor edit={edit} />;
+    case 'requirements': return <RequirementsEditor value={requirements} onChange={onRequirements} inheritLabel="Use the service / shop default" />;
     case 'sizeChart':
       return (
         <SizeChartEditor
