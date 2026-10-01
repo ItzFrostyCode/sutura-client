@@ -21,6 +21,7 @@ export interface MeasurementRecord {
   superseded_at?: string | null;
   metrics: Metrics;
   notes: string | null;
+  photo_urls?: string[] | null;
   updated_at: string;
   customer: { id: number; name: string; email: string } | null;
 }

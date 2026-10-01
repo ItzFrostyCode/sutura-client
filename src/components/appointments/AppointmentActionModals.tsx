@@ -184,7 +184,7 @@ export default function AppointmentActionModals({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Type</p>
-                <div className="mt-1"><TypeBadge type={reviewApt.appointment_type} /></div>
+                <div className="mt-1"><TypeBadge type={reviewApt.appointment_type} label={reviewApt.purpose_label} /></div>
               </div>
               <div>
                 <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Service</p>
@@ -244,11 +244,11 @@ export default function AppointmentActionModals({
             )}
 
             <div className="pt-2 flex flex-col gap-2 border-t border-line">
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-wrap gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => { setShowRescheduleModal(true); setRescheduleApt(reviewApt); setShowReviewModal(false); }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-[#6B7FA8] hover:bg-[#6B7FA8]/10 border border-[#6B7FA8]/20 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-[#6B7FA8] hover:bg-[#6B7FA8]/10 border border-[#6B7FA8]/20 transition-colors"
                 >
                   <RefreshCw size={14} /> Propose New Time
                 </button>
@@ -256,7 +256,7 @@ export default function AppointmentActionModals({
                   type="button"
                   onClick={() => setRejectOpen(true)}
                   disabled={actionLoadingId === reviewApt.id}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
                 >
                   {actionLoadingId === reviewApt.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />} Reject
                 </button>
@@ -271,7 +271,7 @@ export default function AppointmentActionModals({
                     if (ok) { setShowReviewModal(false); setReviewApt(null); }
                   }}
                   disabled={actionLoadingId === reviewApt.id}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-sage hover:bg-sage/90 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 min-h-11 rounded-lg text-sm font-semibold text-white bg-sage hover:bg-sage/90 transition-colors"
                 >
                   {actionLoadingId === reviewApt.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Confirm
                 </button>
@@ -317,8 +317,8 @@ export default function AppointmentActionModals({
               className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
               placeholder="e.g. Unavailable on original date, please come on the new date..." />
           </div>
-          <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={() => setShowRescheduleModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
+          <div className="pt-2 flex flex-wrap justify-end gap-3">
+            <button type="button" onClick={() => setShowRescheduleModal(false)} className="px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
             <button type="submit" disabled={isSubmitting} className="bg-[#6B7FA8] hover:bg-[#6B7FA8]/90 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50">
               {isSubmitting && <Loader2 size={15} className="animate-spin" />}
               <RefreshCw size={14} /> Confirm Reschedule
@@ -334,7 +334,7 @@ export default function AppointmentActionModals({
             <div className="bg-canvas border border-line rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-ink">{completeApt.customer?.name}</p>
-                <TypeBadge type={completeApt.appointment_type} />
+                <TypeBadge type={completeApt.appointment_type} label={completeApt.purpose_label} />
               </div>
               {completeApt.service && <p className="text-sm text-ink-muted">{completeApt.service.name}</p>}
               <p className="text-xs text-ink-faint">
@@ -438,8 +438,8 @@ export default function AppointmentActionModals({
                 placeholder="Any notes from the session..." />
             </div>
 
-            <div className="pt-2 flex justify-end gap-3">
-              <button type="button" onClick={() => setShowCompleteModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
+            <div className="pt-2 flex flex-wrap justify-end gap-3">
+              <button type="button" onClick={() => setShowCompleteModal(false)} className="px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
               <button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50">
                 {isSubmitting && <Loader2 size={15} className="animate-spin" />}
                 <CheckSquare size={14} /> Mark as Completed
@@ -479,13 +479,13 @@ export default function AppointmentActionModals({
               <span className="block text-xs text-ink-muted">Default is off — the customer can still book a new appointment.</span>
             </span>
           </label>
-          <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={() => setShowCancelModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Keep Appointment</button>
+          <div className="pt-2 flex flex-wrap justify-end gap-3">
+            <button type="button" onClick={() => setShowCancelModal(false)} className="px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Keep Appointment</button>
             <button
               type="button"
               onClick={() => cancelApt && cancelForm.reason.trim() && onCancelConfirm(cancelApt.id, cancelForm.reason.trim(), cancelForm.blockRebooking)}
               disabled={isSubmitting || !cancelForm.reason.trim()}
-              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
+              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 min-h-11 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
             >
               {isSubmitting && <Loader2 size={15} className="animate-spin" />} Yes, Cancel It
             </button>
@@ -503,7 +503,7 @@ export default function AppointmentActionModals({
                 <p className="text-xs text-ink-faint">{viewApt.customer?.email}</p>
               </div>
               <div className="flex flex-col gap-1 items-end">
-                <TypeBadge type={viewApt.appointment_type} />
+                <TypeBadge type={viewApt.appointment_type} label={viewApt.purpose_label} />
                 <div className="flex items-center gap-1.5">
                   <StatusBadge status={viewApt.status} scheduledAt={viewApt.scheduled_at} />
                   <CheckInBadge checkedInAt={viewApt.checked_in_at} scheduledAt={viewApt.scheduled_at} />

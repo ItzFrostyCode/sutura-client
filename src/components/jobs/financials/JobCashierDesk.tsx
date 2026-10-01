@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Banknote, CreditCard, Loader2, Upload, CheckCircle2, Printer } from 'lucide-react';
 import { Job } from '../jobTypes';
-import { ComputedFinancials } from './financialsTypes';
+import { ComputedFinancials, METHOD_CONFIG } from './financialsTypes';
 import { CashierMethodSelector } from './CashierMethodSelector';
 
 interface JobCashierDeskProps {
@@ -56,7 +56,7 @@ export function JobCashierDesk({
   onConfirmCharge,
   onCancelChargeReview,
 }: JobCashierDeskProps) {
-  const { remainingBalance, totalAmount, amountPaid, isDownpaymentMet } = financials;
+  const { remainingBalance, totalAmount, amountPaid, isDownpaymentMet, requiredDeposit, depositLabel } = financials;
   const parsedAmount = Number.parseFloat(amount) || 0;
   const parsedTendered = Number.parseFloat(cashTendered) || 0;
   const change = method === 'cash' ? Math.max(0, parsedTendered - parsedAmount) : 0;
@@ -91,7 +91,7 @@ export function JobCashierDesk({
 
         {method !== 'cash' && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            This {method === 'gcash' ? 'GCash' : 'PayMaya'} payment will be logged as <strong>Pending Verification</strong> — it won&apos;t reduce the balance until an owner or branch manager verifies the receipt.
+            This {METHOD_CONFIG[method]?.label ?? 'e-payment'} payment will be logged as <strong>Pending Verification</strong> — it won&apos;t reduce the balance until an owner or branch manager verifies the receipt.
           </div>
         )}
 
@@ -150,16 +150,16 @@ export function JobCashierDesk({
               >
                 Full Balance (₱{remainingBalance.toFixed(2)})
               </button>
-              {!isDownpaymentMet && (
+              {!isDownpaymentMet && requiredDeposit > 0 && requiredDeposit < totalAmount && (
                 <button
                   type="button"
                   onClick={() => {
-                    const dpShortfall = Math.max(0, (totalAmount * 0.5) - amountPaid);
+                    const dpShortfall = Math.max(0, requiredDeposit - amountPaid);
                     if (dpShortfall > 0) setAmount(dpShortfall.toFixed(2));
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-bold bg-sage/10 hover:bg-sage/20 border border-sage/30 text-sage transition-colors shadow-2xs cursor-pointer"
                 >
-                  50% DP (₱{(totalAmount * 0.5).toFixed(2)})
+                  {depositLabel} (₱{requiredDeposit.toFixed(2)})
                 </button>
               )}
             </div>

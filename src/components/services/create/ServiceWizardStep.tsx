@@ -4,6 +4,7 @@ import React from 'react';
 import SizeChartEditor from '@/components/shared/SizeChartEditor';
 import { ServicePhotoEditor, ServiceInfoEditor, ServiceSpecEditor, ServiceDescriptionEditor, type DraftEdit } from '../detail/ServiceEditors';
 import { ServiceBookingEditor } from '../detail/ServiceBookingEditor';
+import RequirementsEditor from '@/components/requirements/RequirementsEditor';
 import type { ServiceSection } from '../detail/serviceEditing';
 
 // Same editors as the detail page's boxes — the create flow only changes how they are sequenced.
@@ -14,6 +15,7 @@ export default function ServiceWizardStep({ section, edit }: Readonly<{ section:
     case 'spec': return <ServiceSpecEditor edit={edit} />;
     case 'description': return <ServiceDescriptionEditor edit={edit} />;
     case 'booking': return <ServiceBookingEditor edit={edit} />;
+    case 'requirements': return <RequirementsEditor value={edit.draft!.requirements} onChange={(requirements) => edit.setDraft(d => (d ? { ...d, requirements } : d))} inheritLabel="Use the shop default" />;
     case 'chart':
       return (
         <SizeChartEditor

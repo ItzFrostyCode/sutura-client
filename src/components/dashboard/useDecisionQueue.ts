@@ -4,7 +4,7 @@ import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/apiError';
 
 export interface QueueAppointment {
-  id: number; customer: string | null; what: string | null; appointment_type: string;
+  id: number; customer: string | null; what: string | null; appointment_type: string; purpose_label?: string | null;
   scheduled_at: string; branch: string | null; intake_channel: string; needs_new_time: boolean;
 }
 export interface QueuePayment {

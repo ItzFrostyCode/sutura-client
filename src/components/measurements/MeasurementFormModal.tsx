@@ -7,6 +7,7 @@ import Modal from '@/components/Modal';
 import { useAuthStore } from '@/store/useAuthStore';
 import { CustomerData } from './measurementTypes';
 import { emptyForm } from './measurementHelpers';
+import MeasurementPhotos from './MeasurementPhotos';
 import SizeChartEditor, { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
 
 interface MeasurementFormModalProps {
@@ -171,6 +172,8 @@ export default function MeasurementFormModal({
                 columnPlaceholder="e.g. Sleeve to Wrist"
               />
             </div>
+
+            <MeasurementPhotos urls={form.photo_urls} onChange={(photo_urls) => setForm(f => ({ ...f, photo_urls }))} storeId={store?.id ?? 0} />
 
             {/* Notes */}
             <div>

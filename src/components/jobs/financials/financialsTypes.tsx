@@ -1,6 +1,7 @@
 import React from 'react';
 import { CreditCard, Banknote, Smartphone } from 'lucide-react';
 import { Job, Payment } from '../jobTypes';
+import { depositFraction, paymentPolicyLabel } from '../requirements';
 
 export interface JobFinancialsCardProps {
   readonly job: Job;
@@ -24,8 +25,18 @@ export const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNod
     icon: <Smartphone size={15} className="text-blue-600" />,
     badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
+  bank_transfer: {
+    label: 'Bank transfer',
+    icon: <CreditCard size={15} className="text-violet-600" />,
+    badgeCls: 'bg-violet-50 text-violet-700 border-violet-200',
+  },
+  other: {
+    label: 'Other',
+    icon: <CreditCard size={15} className="text-stone-600" />,
+    badgeCls: 'bg-stone-50 text-stone-700 border-stone-200',
+  },
   paymaya: {
-    label: 'PayMaya',
+    label: 'Maya',
     icon: <CreditCard size={15} className="text-teal-600" />,
     badgeCls: 'bg-teal-50 text-teal-700 border-teal-200',
   },
@@ -40,6 +51,8 @@ export interface ComputedFinancials {
   jobIsCancelled: boolean;
   percentCollected: number;
   isDownpaymentMet: boolean;
+  requiredDeposit: number;
+  depositLabel: string;
   statusBadge: { label: string; cls: string };
 }
 
@@ -51,7 +64,9 @@ export function computeFinancials(job: Job): ComputedFinancials {
   const jobIsCompleted = job.status === 'completed';
   const jobIsCancelled = job.status === 'cancelled';
   const percentCollected = totalAmount > 0 ? Math.min(100, Math.round(((amountPaid + discountApplied) / totalAmount) * 100)) : 0;
-  const isDownpaymentMet = totalAmount > 0 && amountPaid >= totalAmount * 0.5;
+  const depositShare = depositFraction(job.payment_policy, job.payment_policy_percent);
+  const requiredDeposit = totalAmount * depositShare;
+  const isDownpaymentMet = totalAmount > 0 && amountPaid + 0.005 >= requiredDeposit;
 
   const paymentStatus = job.payment_status;
   const statusBadgeMap: Record<string, { label: string; cls: string }> = {
@@ -72,6 +87,8 @@ export function computeFinancials(job: Job): ComputedFinancials {
     jobIsCancelled,
     percentCollected,
     isDownpaymentMet,
+    requiredDeposit,
+    depositLabel: paymentPolicyLabel(job.payment_policy, job.payment_policy_percent),
     statusBadge,
   };
 }

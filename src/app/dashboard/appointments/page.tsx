@@ -79,6 +79,9 @@ export default function AppointmentsPage() {
     handleConfirmReview,
     handleRejectReview,
     handleAssign,
+    isPlainStaff,
+    assignedToMe,
+    setAssignedToMe,
     updateStatus,
     handleCheckIn,
     handleAccommodateEarly,
@@ -369,6 +372,19 @@ export default function AppointmentsPage() {
                       <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Mine only — staff start here; owners/managers can narrow to a person's own work too */}
+                <div className="shrink-0">
+                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Show</span>
+                  <button
+                    type="button"
+                    aria-pressed={assignedToMe ?? isPlainStaff}
+                    onClick={() => setAssignedToMe(!(assignedToMe ?? isPlainStaff))}
+                    className={`h-[44px] md:h-[38px] px-3 rounded-lg text-xs font-semibold border whitespace-nowrap cursor-pointer ${(assignedToMe ?? isPlainStaff) ? 'bg-taupe text-white border-taupe' : 'bg-surface text-ink-body border-line hover:border-taupe/50'}`}
+                  >
+                    Assigned to me
+                  </button>
                 </div>
 
                 {/* Status Selection Pills (Full horizontal row) */}

@@ -409,7 +409,7 @@ export default function AppointmentCalendarView({
                       {(apt.outcome === 'rescheduled' || apt.notes?.includes('[Rescheduled from')) && (
                         <RescheduledBadge />
                       )}
-                      <TypeBadge type={apt.appointment_type} />
+                      <TypeBadge type={apt.appointment_type} label={apt.purpose_label} />
                       <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
                       <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
                     </div>

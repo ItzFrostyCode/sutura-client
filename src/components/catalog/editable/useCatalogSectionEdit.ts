@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -9,6 +9,7 @@ import type { DetailedCatalogItem } from '../detail/detailTypes';
 import { toCatalogItemResponse } from './catalogItemMappers';
 import type { EditableBoxControl } from './EditableBox';
 import { validateCatalogSection } from './catalogSectionValidation';
+import { requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 
 export type CatalogSection =
   | 'gallery'
@@ -17,7 +18,8 @@ export type CatalogSection =
   | 'sizeChart'
   | 'measurement'
   | 'spec'
-  | 'description';
+  | 'description'
+  | 'requirements';
 
 // Which payload fields each box owns. The backend's update() keeps every
 // field that's absent from the request, so a box only ever writes its own.
@@ -31,6 +33,7 @@ const SECTION_KEYS: Record<CatalogSection, string[]> = {
   measurement: ['measurement_guide'],
   spec: ['department', 'subcategory', 'garment_structure', 'garment_type', 'service_id', 'material', 'fabric_image_url', 'features'],
   description: ['description', 'care_instructions'],
+  requirements: [],
 };
 
 const EMPTY_ITEM = { id: 0, name: '', price: 0 } as DetailedCatalogItem;
@@ -44,6 +47,10 @@ export function useCatalogSectionEdit(loadedItem: DetailedCatalogItem | null, on
   const [editing, setEditing] = useState<CatalogSection | null>(null);
   const [saving, setSaving] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  // Requirements live outside the shared form state: they are plain values the design only overrides.
+  const savedReq = useMemo(() => requirementsToDraft(loadedItem), [loadedItem]);
+  const [reqDraft, setReqDraft] = useState<RequirementsDraft>(savedReq);
+  useEffect(() => setReqDraft(savedReq), [savedReq]);
 
   // A fresh object whenever the saved item changes (or an edit is cancelled)
   // is what makes useCatalogForm re-seed its working state from the server copy.
@@ -57,7 +64,8 @@ export function useCatalogSectionEdit(loadedItem: DetailedCatalogItem | null, on
   const cancel = useCallback(() => {
     setEditing(null);
     setResetKey(k => k + 1);
-  }, []);
+    setReqDraft(savedReq);
+  }, [savedReq]);
 
   // The full payload for a given working state. The default (first) color
   // reflects photo #1, so it carries no photo of its own.
@@ -76,17 +84,19 @@ export function useCatalogSectionEdit(loadedItem: DetailedCatalogItem | null, on
 
   // True once the open section differs from what is saved — drives the
   // "unsaved changes" prompt when the owner tries to leave.
-  const isDirty = editing !== null
-    && JSON.stringify(pick(payloadFor(form), editing)) !== JSON.stringify(pick(payloadFor(initialData), editing));
+  const isDirty = editing === 'requirements'
+    ? JSON.stringify(reqDraft) !== JSON.stringify(savedReq)
+    : editing !== null
+      && JSON.stringify(pick(payloadFor(form), editing)) !== JSON.stringify(pick(payloadFor(initialData), editing));
 
   const save = async (section: CatalogSection): Promise<boolean> => {
     if (!store?.id || !loadedItem) return false;
-    const problem = validateCatalogSection(section, form);
+    const problem = section === 'requirements' ? validateRequirements(reqDraft) : validateCatalogSection(section, form);
     if (problem) {
       toast.error(problem);
       return false;
     }
-    const body = pick(payloadFor(form), section);
+    const body = section === 'requirements' ? requirementsPayload(reqDraft) : pick(payloadFor(form), section);
 
     setSaving(true);
     try {
@@ -115,9 +125,12 @@ export function useCatalogSectionEdit(loadedItem: DetailedCatalogItem | null, on
 
   return {
     form,
+    reqDraft,
+    setReqDraft,
     control,
     storeId: store?.id ?? 0,
     itemId: item.id,
+    item,
     reload: onSaved,
     isDirty,
     saving,

@@ -1,3 +1,4 @@
+import { depositFraction, paymentPolicyLabel } from './requirements';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
@@ -189,9 +190,9 @@ export function useJobDetail(jobId: string) {
         // the remaining shortfall instead of leaving that unqualified.
         const totalAmt = Number.parseFloat(String(updatedJob.total_amount)) || 0;
         const paidSoFar = totalAmt - (Number.parseFloat(String(updatedJob.balance)) || 0);
-        const requiredDp = totalAmt * 0.5;
+        const requiredDp = totalAmt * depositFraction(updatedJob.payment_policy, updatedJob.payment_policy_percent);
         if (paidSoFar < requiredDp) {
-          toast.success(`₱${amount.toFixed(2)} payment logged. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
+          toast.success(`₱${amount.toFixed(2)} payment logged. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required ${paymentPolicyLabel(updatedJob.payment_policy, updatedJob.payment_policy_percent)}.`);
         } else {
           toast.success(`₱${amount.toFixed(2)} payment logged successfully!`);
         }

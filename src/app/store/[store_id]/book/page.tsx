@@ -102,6 +102,8 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 showExistingOrderToggle={!b.refName}
                 hasExistingOrder={b.hasExistingOrder}
                 setHasExistingOrder={b.setHasExistingOrder}
+                purposeLabel={b.purposeLabel}
+                setPurposeLabel={b.setPurposeLabel}
               />
             )}
 
@@ -153,6 +155,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
 
             {b.step === 3 && (
               <BookingStep3Review
+                purposeLabel={b.purposeLabel}
                 refName={b.refName}
                 refDetailHref={b.refItemId ? `/store/${storeId}/catalog/${b.refItemId}` : null}
                 serviceDetailHref={b.selectedService ? `/store/${storeId}/service/${b.selectedService.id}` : null}
@@ -217,6 +220,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             b.setStep(b.step + 1);
           }
         }}
+        step1NextDisabled={b.step1NextDisabled}
         step2NextDisabled={b.step2NextDisabled}
         submitting={b.submitting}
         uploadingReceipt={b.uploadingReceipt}

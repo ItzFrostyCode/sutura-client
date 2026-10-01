@@ -1,4 +1,5 @@
 import React from 'react';
+import { depositFraction, type PaymentPolicy } from './requirements';
 import { Store, ShoppingBag, Scissors, Pause, Hourglass, Wrench, ShieldCheck } from 'lucide-react';
 
 // Unified with the Multi-Stage Staff Assignment stages (design/pattern_making/
@@ -118,12 +119,13 @@ export function serviceHasType(
  * downpayment when the shop turned on "Require downpayment for repairs".
  */
 export function requiresDownpayment(
-  job: Pick<Job, 'garment_category' | 'service'>,
+  job: Pick<Job, 'garment_category' | 'service' | 'payment_policy' | 'payment_policy_percent'>,
   status: string,
   repairRequiresDownpayment: boolean,
 ): boolean {
   if (!STAGES_REQUIRING_DOWNPAYMENT.has(status)) return false;
-  return isRepairOnly(job) ? repairRequiresDownpayment : true;
+  if (isRepairOnly(job) && !repairRequiresDownpayment) return false;
+  return depositFraction(job.payment_policy, job.payment_policy_percent) > 0;
 }
 
 /**
@@ -163,6 +165,8 @@ export interface Job {
   total_amount?: number | string;
   quantity?: number;
   discount_amount?: number | string | null;
+  payment_policy?: PaymentPolicy | null;
+  payment_policy_percent?: number | null;
   customer?: { name: string; suki_tag?: string | null } | null;
   service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
   service_package?: { id: number; name: string } | null;

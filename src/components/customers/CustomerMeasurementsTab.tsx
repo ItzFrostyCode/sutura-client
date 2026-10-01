@@ -65,6 +65,7 @@ export default function CustomerMeasurementsTab({
       source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: rec.metrics,
+      photo_urls: rec.photo_urls ?? [],
       notes: rec.notes || '',
     });
     setError('');
@@ -78,6 +79,7 @@ export default function CustomerMeasurementsTab({
       source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: rec.metrics,
+      photo_urls: rec.photo_urls ?? [],
       notes: rec.notes || '',
     });
     setError('');
@@ -105,6 +107,7 @@ export default function CustomerMeasurementsTab({
       source: form.source,
       profile_name: form.profile_name,
       metrics: cleanMetrics,
+      photo_urls: form.photo_urls,
       notes: form.notes || null,
     };
 

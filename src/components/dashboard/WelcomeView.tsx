@@ -62,7 +62,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     step: 'Step 7',
     title: 'Track Production in Jobs',
-    desc: 'Every order moves through the real production pipeline — Design, Pattern Making, Cutting, Sewing, Fitting, Final Adjustments, QC, Ready for Pickup — with a 50% downpayment gate before cutting starts and staff assigned per stage. Bulk orders (a team’s jersey set, a school’s uniform batch) get a roster-based override.',
+    desc: 'Every order moves through the real production pipeline — Design, Pattern Making, Cutting, Sewing, Fitting, Final Adjustments, QC, Ready for Pickup — with a configurable payment gate before cutting starts and staff assigned per stage. Bulk orders (a team’s jersey set, a school’s uniform batch) get a roster-based override.',
     icon: Scissors,
     href: '/dashboard/jobs',
   },

@@ -3,6 +3,7 @@
 import React from 'react';
 import { ChevronDown, ChevronUp, Copy, Pencil, Trash2, StickyNote, RefreshCw } from 'lucide-react';
 import { MeasurementRecord } from './measurementTypes';
+import { getMediaUrl } from '@/lib/media';
 import { MetricPill, CustomerInitial, humanizeMetricKey } from './measurementHelpers';
 
 interface MeasurementListProps {
@@ -165,6 +166,16 @@ export default function MeasurementList({
                             )}
                           </div>
                         </div>
+                        {(activeRec.photo_urls?.length ?? 0) > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {activeRec.photo_urls!.map((u, i) => (
+                              <a key={u} href={getMediaUrl(u)} target="_blank" rel="noopener noreferrer" className="w-20 h-20 border border-line bg-sunken overflow-hidden block">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={getMediaUrl(u)} alt={`Measurement sheet ${i + 1}`} className="w-full h-full object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         {activeRec.notes && (
                           <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                             <p className="text-xs text-amber-700 flex items-start gap-2">

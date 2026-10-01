@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ChevronDown, MapPin } from 'lucide-react';
 import { StoreSettings, BookingTypeOption } from '../types';
 import BookingTypeSelector from './schedule/BookingTypeSelector';
+import PurposeLabelField from '@/components/appointments/PurposeLabelField';
 
 interface BookingStep1PolicyProps {
   readonly storeSettings: StoreSettings | null;
@@ -13,6 +14,8 @@ interface BookingStep1PolicyProps {
   readonly showExistingOrderToggle: boolean;
   readonly hasExistingOrder: boolean;
   readonly setHasExistingOrder: (val: boolean) => void;
+  readonly purposeLabel: string;
+  readonly setPurposeLabel: (val: string) => void;
 }
 
 // Step 1 — purpose only. The customer is already authenticated by the time
@@ -27,6 +30,8 @@ export default function BookingStep1Policy({
   showExistingOrderToggle,
   hasExistingOrder,
   setHasExistingOrder,
+  purposeLabel,
+  setPurposeLabel,
 }: BookingStep1PolicyProps) {
   const [policyOpen, setPolicyOpen] = useState(false);
 
@@ -54,6 +59,8 @@ export default function BookingStep1Policy({
         hasExistingOrder={hasExistingOrder}
         onToggleExistingOrder={() => setHasExistingOrder(true)}
       />
+
+      {appointmentType === 'other' && <PurposeLabelField value={purposeLabel} onChange={setPurposeLabel} />}
 
       {storeSettings?.booking_policy && (
         <div className="border border-line rounded-none overflow-hidden">

@@ -3,6 +3,7 @@
 import React from 'react';
 import { CreditCard, Scissors, Store, Copy } from 'lucide-react';
 import { Job } from '../jobTypes';
+import { paymentPolicyLabel } from '../requirements';
 
 interface JobOverviewSidebarProps {
   job: Job;
@@ -26,6 +27,7 @@ export default function JobOverviewSidebar({
   isOwnerOrManager,
 }: JobOverviewSidebarProps) {
   const balance = Number.parseFloat(String(job.balance || 0));
+  const depositLabel = paymentPolicyLabel(job.payment_policy, job.payment_policy_percent);
 
   return (
     <div className="space-y-6">
@@ -81,16 +83,16 @@ export default function JobOverviewSidebar({
           </div>
         </div>
 
-        {/* 50% Downpayment Progress Meter */}
+        {/* Required-payment progress meter (from this job's payment policy) */}
         <div className="pt-2 space-y-2">
           <div className="flex justify-between text-[11px] font-bold text-ink-muted">
-            <span>50% Downpayment Policy</span>
+            <span>{depositLabel}</span>
             <span>{jobPaidSoFar >= requiredDownpayment ? '✓ Met' : `₱${jobPaidSoFar.toFixed(0)} / ₱${requiredDownpayment.toFixed(0)}`}</span>
           </div>
           <div className="w-full h-2 bg-canvas rounded-full overflow-hidden border border-line">
             <div
               className={`h-full rounded-full transition-all ${jobPaidSoFar >= requiredDownpayment ? 'bg-emerald-600' : 'bg-amber-500'}`}
-              style={{ width: `${Math.min(100, (jobPaidSoFar / requiredDownpayment) * 100)}%` }}
+              style={{ width: `${Math.min(100, requiredDownpayment > 0 ? (jobPaidSoFar / requiredDownpayment) * 100 : 100)}%` }}
             />
           </div>
           {showDownpaymentGate && (

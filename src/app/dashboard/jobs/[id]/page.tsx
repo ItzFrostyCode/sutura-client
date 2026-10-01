@@ -1,5 +1,6 @@
 'use client';
 
+import { depositFraction } from '@/components/jobs/requirements';
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
@@ -125,7 +126,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
 
   const jobTotalAmount = Number.parseFloat(String(job.total_amount)) || 0;
   const jobPaidSoFar = jobTotalAmount - (Number.parseFloat(String(job.balance)) || 0);
-  const requiredDownpayment = jobTotalAmount * 0.5;
+  const requiredDownpayment = jobTotalAmount * depositFraction(job.payment_policy, job.payment_policy_percent);
   const downpaymentShortfall = Math.max(0, requiredDownpayment - jobPaidSoFar);
   const showDownpaymentGate = job.status !== 'cancelled' && job.status !== 'completed' && downpaymentShortfall > 0;
 

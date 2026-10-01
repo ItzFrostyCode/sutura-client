@@ -47,6 +47,7 @@ interface BookingStep3ReviewProps {
   readonly selectedService: Service | null;
   readonly packageInfo: PackageInfo | null;
   readonly appointmentType: string;
+  readonly purposeLabel?: string;
   readonly date: string;
   readonly time: string;
   readonly selectedBranch: Branch | null;
@@ -102,6 +103,7 @@ export default function BookingStep3Review({
   selectedService,
   packageInfo,
   appointmentType,
+  purposeLabel,
   date,
   time,
   selectedBranch,
@@ -137,12 +139,16 @@ export default function BookingStep3Review({
     hint: 'Visit the store for your tailoring appointment.',
   };
 
+  const withLabel = appointmentType === 'other' && purposeLabel?.trim()
+    ? { label: `Other — ${purposeLabel.trim()}`, hint: 'The store will go over this with you at your visit.' }
+    : basePurpose;
+
   const purposeInfo = isDiscussion
     ? {
         label: 'Consultation / Order Discussion',
         hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the store.',
       }
-    : basePurpose;
+    : withLabel;
 
   return (
     <form id="booking-form" onSubmit={handleSubmit} className="space-y-4 animate-in fade-in slide-in-from-bottom-4">

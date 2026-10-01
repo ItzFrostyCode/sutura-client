@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X, Loader2, Upload, CheckCircle2 } from 'lucide-react';
-import { JobBalanceItem } from '../usePayments';
+import { JobBalanceItem, PaymentAccount } from '../usePayments';
 
 interface LogPaymentModalProps {
   logPaymentJob: JobBalanceItem | null;
@@ -11,6 +11,11 @@ interface LogPaymentModalProps {
   setPayAmount: (val: string) => void;
   payMethod: string;
   setPayMethod: (val: string) => void;
+  payType: string;
+  setPayType: (val: string) => void;
+  payAccountId: string;
+  setPayAccountId: (val: string) => void;
+  paymentAccounts: PaymentAccount[];
   payReference: string;
   setPayReference: (val: string) => void;
   payNotes: string;
@@ -34,6 +39,11 @@ export default function LogPaymentModal({
   setPayAmount,
   payMethod,
   setPayMethod,
+  payType,
+  setPayType,
+  payAccountId,
+  setPayAccountId,
+  paymentAccounts,
   payReference,
   setPayReference,
   payNotes,
@@ -163,17 +173,19 @@ export default function LogPaymentModal({
               {/* Payment Method */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-ink">Method</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {[
                     { id: 'cash', label: 'Cash' },
                     { id: 'gcash', label: 'GCash' },
-                    { id: 'paymaya', label: 'PayMaya' },
+                    { id: 'paymaya', label: 'Maya' },
+                    { id: 'bank_transfer', label: 'Bank' },
+                    { id: 'other', label: 'Other' },
                   ].map(m => (
                     <button
                       key={m.id}
                       type="button"
-                      onClick={() => setPayMethod(m.id)}
-                      className={`py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                      onClick={() => { setPayMethod(m.id); setPayAccountId(''); }}
+                      className={`py-2.5 min-h-11 rounded-lg border text-xs font-bold transition-all ${
                         payMethod === m.id
                           ? 'bg-taupe text-white border-taupe shadow-xs'
                           : 'bg-canvas text-ink border-line hover:bg-sunken'
@@ -183,6 +195,18 @@ export default function LogPaymentModal({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* What it is for — left on Auto it is worked out from what's already been paid */}
+              <div className="space-y-1">
+                <label htmlFor="pay-type" className="text-xs font-bold text-ink">This payment is a</label>
+                <select id="pay-type" value={payType} onChange={e => setPayType(e.target.value)} className="w-full px-3 py-2.5 min-h-11 border border-line rounded-lg text-xs bg-canvas focus:outline-none focus:border-taupe">
+                  <option value="">Auto (deposit, partial or balance)</option>
+                  <option value="deposit">Deposit</option>
+                  <option value="partial">Partial payment</option>
+                  <option value="full">Full payment</option>
+                  <option value="balance">Remaining balance</option>
+                </select>
               </div>
 
               {/* Cash Tendered & Change */}
@@ -216,8 +240,19 @@ export default function LogPaymentModal({
               )}
 
               {/* Reference # & Receipt for GCash / PayMaya */}
-              {(payMethod === 'gcash' || payMethod === 'paymaya') && (
+              {payMethod !== 'cash' && (
                 <>
+                  {paymentAccounts.filter(a => (a.kind === 'maya' ? 'paymaya' : a.kind) === payMethod).length > 0 && (
+                    <div className="space-y-1">
+                      <label htmlFor="pay-account" className="text-xs font-bold text-ink">Paid to</label>
+                      <select id="pay-account" value={payAccountId} onChange={e => setPayAccountId(e.target.value)} className="w-full px-3 py-2.5 min-h-11 border border-line rounded-lg text-xs bg-canvas focus:outline-none focus:border-taupe">
+                        <option value="">Not specified</option>
+                        {paymentAccounts.filter(a => (a.kind === 'maya' ? 'paymaya' : a.kind) === payMethod).map(a => (
+                          <option key={a.id} value={a.id}>{a.name} — {a.account_number}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     <label htmlFor="pay-reference-input" className="text-xs font-bold text-ink">Reference #</label>
                     <input

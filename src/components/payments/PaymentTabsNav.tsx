@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Receipt, CreditCard, ShoppingBag } from 'lucide-react';
+import { Receipt, CreditCard, ShoppingBag, Wallet } from 'lucide-react';
 import { Tab } from './usePayments';
 
 interface PaymentTabsNavProps {
@@ -14,6 +14,7 @@ const TAB_DEFS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'receipts', label: 'Digital Receipts', icon: Receipt },
   { id: 'job_balances', label: 'Job Balances', icon: CreditCard },
   { id: 'catalog_orders', label: 'Catalog Orders', icon: ShoppingBag },
+  { id: 'methods', label: 'Payment Methods', icon: Wallet },
 ];
 
 export default function PaymentTabsNav({

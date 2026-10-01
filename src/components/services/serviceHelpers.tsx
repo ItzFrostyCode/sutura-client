@@ -1,3 +1,4 @@
+import type { RequirementFields } from '@/components/jobs/requirements';
 import { Scissors, Users, Sparkles, Wrench, type LucideIcon } from 'lucide-react';
 import type { SizeChartRow } from '@/components/shared/SizeChartEditor';
 
@@ -47,7 +48,7 @@ export const SERVICE_TYPE_META: Record<ServiceType, { icon: LucideIcon; text: st
   alteration_repair: { icon: Wrench,   text: 'text-amber-700', bg: 'bg-amber-50',     border: 'border-amber-200' },
 };
 
-export interface Service {
+export interface Service extends RequirementFields {
   id: number;
   name: string;
   description: string;
@@ -103,7 +104,7 @@ export function deriveTiersFromService(service: Service): PricingTierInput[] {
   return (service.tags || []).map(tag => ({ label: tag, amount: '' }));
 }
 
-export interface ServicePackage {
+export interface ServicePackage extends RequirementFields {
   id: number;
   name: string;
   description: string | null;

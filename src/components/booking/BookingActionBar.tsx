@@ -6,6 +6,7 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 interface BookingActionBarProps {
   readonly step: number;
   readonly onNextStep: () => void;
+  readonly step1NextDisabled?: boolean;
   readonly step2NextDisabled: boolean;
   readonly submitting: boolean;
   readonly uploadingReceipt: boolean;
@@ -15,6 +16,7 @@ interface BookingActionBarProps {
 export default function BookingActionBar({
   step,
   onNextStep,
+  step1NextDisabled = false,
   step2NextDisabled,
   submitting,
   uploadingReceipt,
@@ -36,7 +38,8 @@ export default function BookingActionBar({
           <button
             type="button"
             onClick={onNextStep}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"
+            disabled={step1NextDisabled}
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span>{returnToReview ? 'Return to Review' : 'Continue'}</span>
             <ArrowRight size={18} />

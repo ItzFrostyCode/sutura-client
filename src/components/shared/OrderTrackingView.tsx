@@ -42,6 +42,13 @@ export interface TrackedOrder {
   // Sum of GCash/PayMaya payments submitted but not yet verified by the
   // shop — never reflected in balance/payment_status until confirmed.
   pending_payment_amount?: number;
+  store_branch_id?: number | null;
+  payment_policy?: 'none' | 'full' | 'deposit' | 'custom' | null;
+  payment_policy_percent?: number | null;
+  required_deposit?: number;
+  fitting_requirement?: 'none' | 'optional' | 'required' | null;
+  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
+  id?: number;
   created_at: string;
   updated_at?: string | null;
   // The customer's own original repair request — kept separate from any

@@ -31,6 +31,7 @@ export interface AppointmentDetailData {
   service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
   selected_size?: string | null;
   selected_color?: string | null;
+  purpose_label?: string | null;
   rejection_reason?: string | null;
   rejection_note?: string | null;
   // The store's own hand-off after accepting (link + photos), and the flag set when a walk-in took this slot.
@@ -107,7 +108,7 @@ export default function AppointmentDetailContent({
 
       <div className="flex items-center gap-1.5 mb-2">
         <span className="mobile-caption font-medium bg-sunken text-ink-muted rounded-full px-2.5 py-0.5">
-          {TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type}
+          {appt.appointment_type === 'other' && appt.purpose_label ? `Other — ${appt.purpose_label}` : (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type)}
         </span>
         {appt.intake_channel === 'walk_in' && (
           <span className="text-[10px] font-semibold bg-surface text-ink-muted border border-line rounded-full px-2.5 py-0.5">

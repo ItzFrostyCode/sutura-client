@@ -9,6 +9,7 @@ import PaymentTabsNav from '@/components/payments/PaymentTabsNav';
 import DigitalReceiptsTab from '@/components/payments/tabs/DigitalReceiptsTab';
 import JobBalancesTab from '@/components/payments/tabs/JobBalancesTab';
 import CatalogOrdersTab from '@/components/payments/tabs/CatalogOrdersTab';
+import PaymentMethodsTab from '@/components/payments/PaymentMethodsTab';
 import RejectReasonModal from '@/components/payments/modals/RejectReasonModal';
 import LogPaymentModal from '@/components/payments/modals/LogPaymentModal';
 
@@ -28,6 +29,11 @@ export default function PaymentQueuePage() {
     payAmount,
     setPayAmount,
     payMethod,
+    payType,
+    setPayType,
+    payAccountId,
+    setPayAccountId,
+    paymentAccounts,
     setPayMethod,
     payNotes,
     setPayNotes,
@@ -171,6 +177,8 @@ export default function PaymentQueuePage() {
           />
         )}
 
+        {activeTab === 'methods' && <PaymentMethodsTab />}
+
         {activeTab === 'catalog_orders' && (
           <CatalogOrdersTab
             catalogLoading={catalogLoading}
@@ -205,6 +213,11 @@ export default function PaymentQueuePage() {
         setPayAmount={setPayAmount}
         payMethod={payMethod}
         setPayMethod={setPayMethod}
+        payType={payType}
+        setPayType={setPayType}
+        payAccountId={payAccountId}
+        setPayAccountId={setPayAccountId}
+        paymentAccounts={paymentAccounts}
         payReference={payReference}
         setPayReference={setPayReference}
         payNotes={payNotes}

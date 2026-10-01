@@ -1,7 +1,7 @@
 import React from 'react';
 import { MessageSquare, Ruler, ShirtIcon, Scissors, Package, Globe, Store, RefreshCw } from 'lucide-react';
 
-export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup'] as const;
+export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup', 'other'] as const;
 export type AppointmentType = typeof APPOINTMENT_TYPES[number];
 
 /**
@@ -11,10 +11,11 @@ export type AppointmentType = typeof APPOINTMENT_TYPES[number];
  */
 export const TYPE_DEFAULT_DURATIONS: Record<AppointmentType, number> = {
   consultation: 30,
-  measurement: 45,
-  fitting: 45,
+  measurement: 60,
+  fitting: 60,
   alteration: 30,
-  pickup: 15,
+  pickup: 30,
+  other: 30,
 };
 
 /** Why a shop may decline a pending request — mirrors Appointment::REJECTION_REASONS on the server. */
@@ -62,6 +63,7 @@ export interface Appointment {
   } | null;
   selected_size?: string | null;
   selected_color?: string | null;
+  purpose_label?: string | null;
   rejection_reason_code?: string | null;
   rejection_note?: string | null;
   branch: { id: number; name: string } | null;
@@ -130,6 +132,11 @@ export const TYPE_CONFIG: Record<AppointmentType, {
     bg: 'bg-emerald-50/80', border: 'border-emerald-200/80', dot: 'bg-emerald-600',
     text: 'text-emerald-900', badgeBg: 'bg-emerald-50', badgeBorder: 'border-emerald-200', badgeText: 'text-emerald-800',
   },
+  other: {
+    label: 'Other', icon: <MessageSquare size={13} />,
+    bg: 'bg-stone-50/80', border: 'border-stone-200/80', dot: 'bg-stone-500',
+    text: 'text-stone-900', badgeBg: 'bg-stone-50', badgeBorder: 'border-stone-200', badgeText: 'text-stone-800',
+  },
 };
 
 export const STATUS_CONFIG: Record<AppointmentStatus, {
@@ -144,11 +151,11 @@ export const STATUS_CONFIG: Record<AppointmentStatus, {
   no_show:     { label: 'No Show',        dot: 'bg-stone-400', badge: 'bg-stone-100 text-stone-600 border-stone-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
 };
 
-export function TypeBadge({ type }: { readonly type: AppointmentType }) {
+export function TypeBadge({ type, label }: { readonly type: AppointmentType; readonly label?: string | null }) {
   const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.consultation;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border tracking-tight ${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText}`}>
-      {cfg.icon} <span>{cfg.label}</span>
+      {cfg.icon} <span>{type === 'other' && label ? `Other — ${label}` : cfg.label}</span>
     </span>
   );
 }

@@ -13,6 +13,7 @@ export const WIZARD_STEPS: { key: ServiceSection; title: string; hint: string; o
   { key: 'chart', title: 'Reference chart', hint: 'A size or measurement chart customers can check.', optional: true },
   { key: 'description', title: 'Description', hint: 'What it covers and what to bring.', optional: true },
   { key: 'booking', title: 'Booking form', hint: 'Extra questions customers answer when they order.', optional: true },
+  { key: 'requirements', title: 'Requirements', hint: 'Measurements, fitting and payment first. Leave on the shop default if unsure.', optional: true },
 ];
 
 // Only ever return to a dashboard page — never an arbitrary URL.

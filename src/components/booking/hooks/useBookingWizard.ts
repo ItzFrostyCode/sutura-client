@@ -17,7 +17,7 @@ import {
   BookingTypeOption,
 } from '../types';
 
-const VALID_APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup'];
+const VALID_APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup', 'other'];
 const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
 
 export function useBookingWizard(storeId: string) {
@@ -105,6 +105,8 @@ export function useBookingWizard(storeId: string) {
   const [selectedServiceId, setSelectedServiceId] = useState(serviceIdParam ?? '');
   const [customer, setCustomer] = useState<BookingCustomer>({ name: '', email: '', phone: '' });
   const [remarks, setRemarks] = useState('');
+  // What an "Other" appointment is for (shown to the shop as "Other — {label}").
+  const [purposeLabel, setPurposeLabel] = useState('');
   // Separate from remarks (general "Notes") — both fields now render on the
   // same step (2), so they need their own state or typing in one would show
   // up in the other. Only used when needsOrderReference is true (fitting/
@@ -337,7 +339,14 @@ export function useBookingWizard(storeId: string) {
     }
 
     // 3. GENERAL SHOP CONTEXT (no specific design or service chosen yet)
-    return withExisting([consultationBase, measurementBase, alterationBase]);
+    const otherBase: BookingTypeOption = {
+      value: 'other',
+      label: 'Other',
+      duration: 30,
+      icon: React.createElement(MessageSquare, { size: 18 }),
+      hint: 'Something else — fabric selection, a question, a concern. Tell the store what it is for.',
+    };
+    return withExisting([consultationBase, measurementBase, alterationBase, otherBase]);
   }, [refName, selectedService, serviceIdParam, serviceNameParam, hasExistingOrder, packageIdParam, packageInfo]);
 
   // Synchronize appointmentType if current selection is invalid for this service
@@ -368,7 +377,7 @@ export function useBookingWizard(storeId: string) {
   // (a plain "Book Appointment" from the store profile, not tied to any
   // design or service).
   const hasServiceContext = !!serviceIdParam || !!refName || !!packageIdParam;
-  const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && !!storeSettings?.services && storeSettings.services.length > 0;
+  const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && appointmentType !== 'other' && !!storeSettings?.services && storeSettings.services.length > 0;
   const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
 
   const totalSteps = 3;
@@ -450,6 +459,8 @@ export function useBookingWizard(storeId: string) {
     if (!storeSettings?.special_hours) return null;
     return storeSettings.special_hours.find((s) => dateStr >= s.start_date && dateStr <= s.end_date) || null;
   };
+
+  const step1NextDisabled = appointmentType === 'other' && purposeLabel.trim() === '';
 
   const step2NextDisabled =
     !date ||
@@ -569,6 +580,7 @@ export function useBookingWizard(storeId: string) {
         email: user ? user.email || customer.email : customer.email,
         phone: customer.phone,
         appointment_type: appointmentType,
+        purpose_label: appointmentType === 'other' ? purposeLabel.trim() : undefined,
         scheduled_at,
         notes: notesPayload.trim() || null,
         store_branch_id: selectedBranchId ? Number(selectedBranchId) : null,
@@ -663,7 +675,10 @@ export function useBookingWizard(storeId: string) {
     calendarAppointments,
     durationMinutes,
     specialHoursForDate: date ? getSpecialHoursForDate(date) : null,
+    step1NextDisabled,
     step2NextDisabled,
+    purposeLabel,
+    setPurposeLabel,
 
     // Step 3 state
     selectedService,

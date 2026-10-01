@@ -1,3 +1,4 @@
+import PurposeLabelField from './PurposeLabelField';
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, UserPlus } from 'lucide-react';
@@ -32,7 +33,7 @@ const OCCUPYING_STATUSES = new Set(['pending', 'confirmed', 'in_progress']);
 const defaultForm = {
   customer_id: '', appointment_type: 'consultation' as AppointmentType,
   store_branch_id: '', scheduled_date: '', scheduled_time: '',
-  duration_minutes: String(TYPE_DEFAULT_DURATIONS.consultation), assigned_staff_id: '', notes: '',
+  duration_minutes: String(TYPE_DEFAULT_DURATIONS.consultation), assigned_staff_id: '', notes: '', purpose_label: '',
 };
 
 export default function AppointmentCreateModal({
@@ -95,6 +96,7 @@ export default function AppointmentCreateModal({
         duration_minutes: (editingApt.duration_minutes || TYPE_DEFAULT_DURATIONS[editingApt.appointment_type]).toString(),
         assigned_staff_id: editingApt.assigned_staff_id?.toString() || '',
         notes: editingApt.notes || '',
+        purpose_label: editingApt.purpose_label || '',
       });
     } else {
       const defaultBranchId = selectedBranchId?.toString() || '';
@@ -111,7 +113,7 @@ export default function AppointmentCreateModal({
   // Job Order linking were removed (finalized later at Job Order creation, or
   // — for Fitting — auto-linked by the system when a job becomes Ready for
   // Fitting, see JobOrderController@update on the backend).
-  const step1Valid = !!formData.customer_id && !!formData.appointment_type;
+  const step1Valid = !!formData.customer_id && !!formData.appointment_type && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '');
 
   const step2Valid = !!formData.scheduled_date && !!formData.scheduled_time
     && (branches.length <= 1 || !!formData.store_branch_id);
@@ -121,6 +123,7 @@ export default function AppointmentCreateModal({
     const payload = {
       customer_id: formData.customer_id,
       appointment_type: formData.appointment_type,
+      purpose_label: formData.appointment_type === 'other' ? formData.purpose_label.trim() : null,
       scheduled_at: `${formData.scheduled_date} ${formData.scheduled_time}:00`,
       duration_minutes: Number.parseInt(formData.duration_minutes, 10) || TYPE_DEFAULT_DURATIONS[formData.appointment_type],
       notes: formData.notes || null,
@@ -180,7 +183,7 @@ export default function AppointmentCreateModal({
             (or, for Fitting, auto-linked by the system) — not captured here. */}
         <div>
           <span className="block text-sm font-medium text-ink-body mb-1">Appointment Type <span className="text-rose-500">*</span></span>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {APPOINTMENT_TYPES.map(t => {
               const tc = TYPE_CONFIG[t];
               return (
@@ -205,6 +208,9 @@ export default function AppointmentCreateModal({
               );
             })}
           </div>
+          {formData.appointment_type === 'other' && (
+            <PurposeLabelField value={formData.purpose_label} onChange={(v) => setFormData({ ...formData, purpose_label: v })} />
+          )}
         </div>
         </div>
         )}

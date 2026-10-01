@@ -35,7 +35,7 @@ export default function NeedsDecisionCard({ storeId, enabled }: Readonly<{ store
               <li key={a.id} className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-ink truncate">{a.customer ?? 'Customer'}</p>
-                  <p className="text-xs text-ink-muted truncate">{a.what ? `${a.what} · ` : ''}{TYPE[a.appointment_type] ?? a.appointment_type} · {when(a.scheduled_at)}{a.branch ? ` · ${a.branch}` : ''}{a.intake_channel === 'walk_in' ? ' · Walk-in' : ' · Online'}</p>
+                  <p className="text-xs text-ink-muted truncate">{a.what ? `${a.what} · ` : ''}{a.appointment_type === 'other' && a.purpose_label ? `Other — ${a.purpose_label}` : (TYPE[a.appointment_type] ?? a.appointment_type)} · {when(a.scheduled_at)}{a.branch ? ` · ${a.branch}` : ''}{a.intake_channel === 'walk_in' ? ' · Walk-in' : ' · Online'}</p>
                   {a.needs_new_time && <p className="text-[11px] font-semibold text-amber-700 mt-0.5">Slot was taken — needs a new time</p>}
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -85,7 +85,7 @@ export default function NeedsDecisionCard({ storeId, enabled }: Readonly<{ store
                   <p className="text-sm font-semibold text-ink truncate">{p.customer ?? 'Customer'} · {p.order_number ?? `Job #${p.job_order_id}`}</p>
                   <p className="text-xs text-ink-muted">₱{p.amount.toLocaleString()} · {p.method.toUpperCase()}</p>
                 </div>
-                <Link href="/dashboard/payments" className="h-11 px-4 border border-line-strong text-ink hover:bg-sunken text-sm font-medium flex items-center shrink-0">Review</Link>
+                <Link href={`/dashboard/jobs/${p.job_order_id}`} className="h-11 px-4 border border-line-strong text-ink hover:bg-sunken text-sm font-medium flex items-center shrink-0">Review</Link>
               </li>
             ))}
           </ul>
