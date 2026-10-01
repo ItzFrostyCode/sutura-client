@@ -28,6 +28,8 @@ export interface MyAppointment {
   needs_new_time?: boolean;
   payment_status: string;
   cancellation_reason: string | null;
+  rejection_reason?: string | null;
+  rejection_note?: string | null;
   rebooking_blocked: boolean;
   notes?: string | null;
   store: { name: string; slug: string; logo_path: string | null } | null;
@@ -40,6 +42,7 @@ export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; to
   in_progress: { label: 'In Progress', Icon: Clock, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   completed: { label: 'Completed', Icon: CheckCircle2, tone: 'text-sage bg-sage/10 border-sage/20' },
   cancelled: { label: 'Cancelled', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
+  rejected: { label: 'Rejected', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
   no_show: { label: 'No Show', Icon: Ban, tone: 'text-danger bg-danger/10 border-danger/20' },
 };
 
@@ -50,6 +53,7 @@ export const STATUS_FILTERS: { key: string; label: string }[] = [
   { key: 'in_progress', label: 'In Progress' },
   { key: 'completed', label: 'Completed' },
   { key: 'cancelled', label: 'Cancelled' },
+  { key: 'rejected', label: 'Rejected' },
   { key: 'no_show', label: 'No Show' },
 ];
 

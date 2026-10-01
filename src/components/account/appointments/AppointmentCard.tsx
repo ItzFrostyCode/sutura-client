@@ -131,6 +131,14 @@ export default function AppointmentCard({
         </div>
       )}
 
+      {appt.status === 'rejected' && (
+        <div className="mt-3 pt-3 border-t border-line">
+          <p className="mobile-caption text-ink-muted leading-relaxed font-normal">
+            <span className="font-semibold text-danger">Rejected</span>{appt.rejection_reason ? <> — {appt.rejection_reason}</> : null}{appt.rejection_note ? <>. {appt.rejection_note}</> : null}
+          </p>
+        </div>
+      )}
+
       {appt.status === 'cancelled' && (
         <div className="mt-3 pt-3 border-t border-line">
           {appt.cancellation_reason && (

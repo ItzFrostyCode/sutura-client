@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler } from 'lucide-react';
 import {
-  Appointment, JobOrderData,
+  Appointment, JobOrderData, StaffData,
   TypeBadge, StatusBadge, CheckInBadge, getLocalDateString
 } from './appointmentHelpers';
 import api from '@/lib/axios';
@@ -10,6 +10,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { serviceCategoryPath } from '@/lib/canonicalTaxonomy';
 import AppointmentSubject from './AppointmentSubject';
 import AppointmentCustomerToolkit from './AppointmentCustomerToolkit';
+import RejectAppointmentDialog from './RejectAppointmentDialog';
+import AssignStaffControl from './AssignStaffControl';
 
 interface AppointmentActionModalsProps {
   // Modal visibility & active records
@@ -46,7 +48,7 @@ interface AppointmentActionModalsProps {
 
   // Handlers
   readonly onConfirmReview: (aptId: number) => Promise<boolean>;
-  readonly onRejectReview: (aptId: number) => Promise<boolean>;
+  readonly onRejectReview: (aptId: number, reasonCode: string, note: string) => Promise<boolean>;
   readonly onRescheduleSubmit: (aptId: number, date: string, time: string, notes: string) => Promise<void>;
   readonly onCompleteSubmit: (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => Promise<void>;
   readonly onCancelConfirm: (aptId: number, reason: string, blockRebooking: boolean) => Promise<void>;
@@ -55,6 +57,9 @@ interface AppointmentActionModalsProps {
   readonly onAskToWait?: (aptId: number) => Promise<void>;
   /** Called after the shop shares something with the customer, so the list refreshes. */
   readonly onAppointmentUpdated?: () => void;
+  readonly staff: StaffData[];
+  readonly canAssign: boolean;
+  readonly onAssign: (aptId: number, staffId: number | null) => Promise<boolean>;
 }
 
 export default function AppointmentActionModals({
@@ -66,10 +71,11 @@ export default function AppointmentActionModals({
   todayStr, minTimeFor,
   isSubmitting, actionLoadingId,
   onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob,
-  onAccommodateEarly, onAskToWait, onAppointmentUpdated
+  onAccommodateEarly, onAskToWait, onAppointmentUpdated, staff, canAssign, onAssign
 }: AppointmentActionModalsProps) {
 
   const { store } = useAuthStore();
+  const [rejectOpen, setRejectOpen] = useState(false);
 
   // Local Form States
   const [rescheduleForm, setRescheduleForm] = useState({ scheduled_date: '', scheduled_time: '', notes: '' });
@@ -200,12 +206,10 @@ export default function AppointmentActionModals({
                 <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Branch</p>
                 <p className="text-ink font-medium mt-1">{reviewApt.branch?.name || 'Main Branch'}</p>
               </div>
-              {reviewApt.assigned_staff && (
-                <div>
-                  <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
-                  <p className="text-ink font-medium mt-1">{reviewApt.assigned_staff.name}</p>
-                </div>
-              )}
+              <div className="col-span-2">
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
+                <AssignStaffControl assignedStaffId={reviewApt.assigned_staff_id} assignedName={reviewApt.assigned_staff?.name} branchId={reviewApt.store_branch_id} staff={staff} canAssign={canAssign} onAssign={(id) => onAssign(reviewApt.id, id)} />
+              </div>
               {reviewApt.job_order && (
                 <div>
                   <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Linked Job Order</p>
@@ -250,10 +254,7 @@ export default function AppointmentActionModals({
                 </button>
                 <button
                   type="button"
-                  onClick={async () => {
-                    const ok = await onRejectReview(reviewApt.id);
-                    if (ok) { setShowReviewModal(false); setReviewApt(null); }
-                  }}
+                  onClick={() => setRejectOpen(true)}
                   disabled={actionLoadingId === reviewApt.id}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
                 >
@@ -279,6 +280,18 @@ export default function AppointmentActionModals({
           </div>
         )}
       </Modal>
+
+      <RejectAppointmentDialog
+        isOpen={rejectOpen && !!reviewApt}
+        busy={!!reviewApt && actionLoadingId === reviewApt.id}
+        onClose={() => setRejectOpen(false)}
+        onConfirm={async (code, note) => {
+          if (!reviewApt) return false;
+          const ok = await onRejectReview(reviewApt.id, code, note);
+          if (ok) { setShowReviewModal(false); setReviewApt(null); }
+          return ok;
+        }}
+      />
 
       {/* ── 2. Reschedule Modal ─────────────────────────────────────────────── */}
       <Modal isOpen={showRescheduleModal} onClose={() => { setShowRescheduleModal(false); setRescheduleApt(null); }} title="Propose New Schedule">
@@ -586,12 +599,10 @@ export default function AppointmentActionModals({
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Branch</p>
                 <p className="text-ink font-medium mt-0.5">{viewApt.branch?.name || 'Main Branch'}</p>
               </div>
-              {viewApt.assigned_staff && (
-                <div>
-                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
-                  <p className="text-ink font-medium mt-0.5">{viewApt.assigned_staff.name}</p>
-                </div>
-              )}
+              <div className="col-span-2">
+                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
+                <AssignStaffControl assignedStaffId={viewApt.assigned_staff_id} assignedName={viewApt.assigned_staff?.name} branchId={viewApt.store_branch_id} staff={staff} canAssign={canAssign && !['completed', 'cancelled', 'no_show', 'rejected'].includes(viewApt.status)} onAssign={(id) => onAssign(viewApt.id, id)} />
+              </div>
               {viewApt.job_order && (
                 <div>
                   <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Linked Job Order</p>

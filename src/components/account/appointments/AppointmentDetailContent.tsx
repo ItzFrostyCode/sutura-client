@@ -31,6 +31,8 @@ export interface AppointmentDetailData {
   service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
   selected_size?: string | null;
   selected_color?: string | null;
+  rejection_reason?: string | null;
+  rejection_note?: string | null;
   // The store's own hand-off after accepting (link + photos), and the flag set when a walk-in took this slot.
   shared_link?: string | null;
   shared_images?: string[];
@@ -268,6 +270,15 @@ export default function AppointmentDetailContent({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {appt.status === 'rejected' && (
+        <div className="mb-3 border border-danger/30 bg-danger/5 p-3">
+          <p className="mobile-caption font-semibold text-danger">Appointment Rejected</p>
+          {appt.rejection_reason && <p className="mobile-caption text-ink-body mt-1 font-normal"><span className="font-semibold">Reason:</span> {appt.rejection_reason}</p>}
+          {appt.rejection_note && <p className="mobile-caption text-ink-muted mt-1 font-normal">{appt.rejection_note}</p>}
+          <p className="mobile-caption text-ink-muted mt-2 font-normal">You can book a different date or time anytime.</p>
         </div>
       )}
 

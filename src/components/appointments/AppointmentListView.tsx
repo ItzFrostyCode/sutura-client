@@ -47,7 +47,7 @@ export default function AppointmentListView({
     const isConfirmed = apt.status === 'confirmed';
     const isInProgress = apt.status === 'in_progress';
     const isCompleted = apt.status === 'completed';
-    const isTerminal = ['completed', 'cancelled', 'no_show'].includes(apt.status);
+    const isTerminal = ['completed', 'cancelled', 'no_show', 'rejected'].includes(apt.status);
     const isMenuOpen = activeMenuId === apt.id;
 
     if (isLoading) {

@@ -17,7 +17,17 @@ export const TYPE_DEFAULT_DURATIONS: Record<AppointmentType, number> = {
   pickup: 15,
 };
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
+/** Why a shop may decline a pending request — mirrors Appointment::REJECTION_REASONS on the server. */
+export const REJECTION_REASONS: { code: string; label: string }[] = [
+  { code: 'schedule_unavailable', label: 'Schedule unavailable' },
+  { code: 'staff_unavailable', label: 'Staff unavailable' },
+  { code: 'service_unavailable', label: 'Service unavailable' },
+  { code: 'capacity_reached', label: 'Shop capacity reached' },
+  { code: 'cannot_accommodate', label: 'Request cannot be accommodated' },
+  { code: 'other', label: 'Other' },
+];
+
+export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show' | 'rejected';
 
 export const TYPES_REQUIRING_SERVICE = new Set<AppointmentType>(['measurement', 'alteration']);
 
@@ -52,6 +62,8 @@ export interface Appointment {
   } | null;
   selected_size?: string | null;
   selected_color?: string | null;
+  rejection_reason_code?: string | null;
+  rejection_note?: string | null;
   branch: { id: number; name: string } | null;
   scheduled_at: string;
   duration_minutes: number;
@@ -128,6 +140,7 @@ export const STATUS_CONFIG: Record<AppointmentStatus, {
   in_progress: { label: 'In Progress',    dot: 'bg-taupe', badge: 'bg-taupe/10 text-taupe border-taupe/30', opacity: 'opacity-100', borderStyle: 'border-solid' },
   completed:   { label: 'Completed',      dot: 'bg-emerald-600', badge: 'bg-emerald-50/80 text-emerald-900 border-emerald-200', opacity: 'opacity-70', borderStyle: 'border-solid' },
   cancelled:   { label: 'Cancelled',      dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
+  rejected:    { label: 'Rejected',       dot: 'bg-rose-700', badge: 'bg-rose-50 text-rose-800 border-rose-300', opacity: 'opacity-60', borderStyle: 'border-solid' },
   no_show:     { label: 'No Show',        dot: 'bg-stone-400', badge: 'bg-stone-100 text-stone-600 border-stone-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
 };
 

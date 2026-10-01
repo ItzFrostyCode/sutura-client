@@ -30,6 +30,7 @@ export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; to
   in_progress: { label: 'In Progress', Icon: Clock, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   completed: { label: 'Completed', Icon: CheckCircle2, tone: 'text-sage bg-sage/10 border-sage/20' },
   cancelled: { label: 'Cancelled', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
+  rejected: { label: 'Rejected', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
   no_show: { label: 'No Show', Icon: Ban, tone: 'text-danger bg-danger/10 border-danger/20' },
 };
 
