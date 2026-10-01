@@ -2,6 +2,7 @@
 
 import React, { Suspense, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AlertCircle, X } from 'lucide-react';
 import JobRejectModal from '@/components/jobs/JobRejectModal';
 import JobKanbanBoard from '@/components/jobs/JobKanbanBoard';
@@ -67,7 +68,8 @@ function JobOrdersPageContent() {
 
   const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [trashModalOpen, setTrashModalOpen] = useState(false);
-  const [stageFilter, setStageFilter] = useState<string>('all');
+  // Home's "Quality checks needed" card deep-links here with ?stage=qc_ironing.
+  const [stageFilter, setStageFilter] = useState<string>(useSearchParams().get('stage') || 'all');
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>(() => {

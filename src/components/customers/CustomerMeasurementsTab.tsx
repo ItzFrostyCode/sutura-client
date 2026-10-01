@@ -66,6 +66,7 @@ export default function CustomerMeasurementsTab({
       profile_name: rec.profile_name,
       metrics: rec.metrics,
       photo_urls: rec.photo_urls ?? [],
+      status: rec.status ?? 'finalized',
       notes: rec.notes || '',
     });
     setError('');
@@ -80,6 +81,7 @@ export default function CustomerMeasurementsTab({
       profile_name: rec.profile_name,
       metrics: rec.metrics,
       photo_urls: rec.photo_urls ?? [],
+      status: rec.status ?? 'finalized',
       notes: rec.notes || '',
     });
     setError('');
@@ -108,6 +110,7 @@ export default function CustomerMeasurementsTab({
       profile_name: form.profile_name,
       metrics: cleanMetrics,
       photo_urls: form.photo_urls,
+      status: form.status,
       notes: form.notes || null,
     };
 

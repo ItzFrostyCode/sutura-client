@@ -18,6 +18,7 @@ export interface MeasurementRecord {
   source?: string;
   profile_name: string;
   version?: number;
+  status?: 'finalized' | 'pending_fitting';
   superseded_at?: string | null;
   metrics: Metrics;
   notes: string | null;

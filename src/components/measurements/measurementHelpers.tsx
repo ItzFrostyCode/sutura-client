@@ -24,6 +24,7 @@ export const emptyForm = () => ({
   customer_id: '',
   source: 'store_owner',
   profile_name: '',
+  status: 'finalized' as 'finalized' | 'pending_fitting',
   metrics: emptyMetrics(),
   notes: '',
   photo_urls: [] as string[],

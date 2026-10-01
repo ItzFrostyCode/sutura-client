@@ -36,7 +36,7 @@ export function useJobs() {
   // "My Assigned Jobs" — the backend's ?assigned_staff_id already worked,
   // this was just never wired to a toggle anywhere in the UI (staff's
   // missing piece, not the API's — see CLAUDE.md).
-  const [myJobsOnly, setMyJobsOnly] = useState(false);
+  const [myJobsOnly, setMyJobsOnly] = useState(searchParams.get('mine') === '1');
 
   // Review gate state
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -59,8 +59,9 @@ export function useJobs() {
       if (search.trim()) {
         params.search = search.trim();
       }
-      if (myJobsOnly && user?.id) {
-        params.assigned_staff_id = user.id;
+      // `mine` = jobs I hold or have moved through a production stage (server-side).
+      if (myJobsOnly) {
+        params.mine = 1;
       }
       api.get(`/stores/${store.id}/jobs`, { params })
         .then(res => {

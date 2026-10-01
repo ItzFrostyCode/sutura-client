@@ -7,6 +7,8 @@ import { getErrorMessage } from '@/lib/apiError';
 import { useToast } from '@/context/ToastContext';
 import { formatDate } from '../useAdminList';
 
+const ROLE_LABEL: Record<string, string> = { store_owner: 'Owner', branch_manager: 'Branch manager', staff: 'Staff', customer: 'Customer' };
+
 interface TicketDetail {
   id: number;
   subject: string;
@@ -16,6 +18,7 @@ interface TicketDetail {
   created_at: string;
   store: { name: string } | null;
   submitted_by: { name: string; email: string } | null;
+  submitted_by_role?: string | null;
   catalog_item: { name: string; admin_hidden_at: string | null } | null;
   replies: { id: number; message: string; is_admin_reply: boolean; created_at: string; user: { name: string } | null }[];
 }
@@ -70,7 +73,7 @@ export default function TicketModal({ ticketId, onClose, onChanged }: { readonly
       {!ticket ? <p className="text-sm text-ink-muted">Loading…</p> : (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
-            <span>{ticket.store?.name ?? 'No store'} · {ticket.submitted_by?.name} · {formatDate(ticket.created_at, true)}</span>
+            <span>{ticket.store?.name ?? 'No store'} · {ticket.submitted_by?.name}{ticket.submitted_by_role ? ` (${ROLE_LABEL[ticket.submitted_by_role] ?? ticket.submitted_by_role})` : ''} · {formatDate(ticket.created_at, true)}</span>
             <select aria-label="Status" value={ticket.status} disabled={busy} onChange={(e) => setStatus(e.target.value)}
               className="min-h-11 border border-line-strong bg-surface px-3 text-base capitalize text-ink">
               {TICKET_STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}

@@ -1,5 +1,6 @@
 'use client';
 
+import StaffHome from '@/components/dashboard/staff/StaffHome';
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
@@ -252,29 +253,9 @@ function DashboardPageContent() {
       {activeTab === 'welcome' && <WelcomeView />}
 
       {activeTab === 'dashboard' && !canViewAnalytics && (
-        // Plain staff can't call GET /analytics (role:store_owner,branch_manager
-        // only) — every section below is sourced from that one response, so
-        // rendering them for staff just showed ₱0.00/empty everywhere instead
-        // of real data. Staff "cannot ... see owner-only financials" per the
-        // role model (CLAUDE.md) — give them a day-to-day quick-links view
-        // instead of a dashboard silently lying about the numbers.
-        <div className="bg-surface border border-line rounded-2xl p-8 text-center">
-          <h2 className="text-display text-lg font-semibold text-ink">Welcome back, {user?.name}</h2>
-          <p className="text-sm text-ink-muted mt-1 max-w-md mx-auto">
-            Financial and performance reporting is only visible to the store owner and branch managers. Here&apos;s where your day starts:
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-            <Link href="/dashboard/jobs" className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors">
-              <Scissors size={15} /> Orders
-            </Link>
-            <Link href="/dashboard/appointments" className="flex items-center gap-2 bg-surface border border-line hover:bg-canvas text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors">
-              <Calendar size={15} /> Appointments
-            </Link>
-            <Link href="/dashboard/customers" className="flex items-center gap-2 bg-surface border border-line hover:bg-canvas text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors">
-              <Users size={15} /> Customers
-            </Link>
-          </div>
-        </div>
+        // Plain staff can't call GET /analytics (owner/manager only), so they get their own
+        // Home built from the shop-floor endpoint — production numbers and queue, no financials.
+        <StaffHome storeId={storeId} name={user?.name} />
       )}
 
       {activeTab === 'dashboard' && canViewAnalytics && (

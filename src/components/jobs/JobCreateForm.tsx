@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useJobCreateForm } from './form/useJobCreateForm';
 import GarmentDesignSection from './form/GarmentDesignSection';
 import CustomerServiceSection from './form/CustomerServiceSection';
@@ -14,7 +15,12 @@ import PricingScheduleSection from './form/PricingScheduleSection';
 export default function JobCreateForm() {
   // Arrived from a specific page (e.g. a design's "Tailor this Design")? Back and
   // Cancel return there instead of the jobs list. Dashboard paths only.
-  const returnParam = useSearchParams().get('return');
+  const searchParams = useSearchParams();
+  const returnParam = searchParams.get('return');
+  const roleNames = useAuthStore((s) => s.user?.roles?.map((r) => r.name) ?? []);
+  const canCollectMoney = roleNames.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
+  // Staff open a job from an approved appointment, never from scratch.
+  const staffWithoutAppointment = !canCollectMoney && !searchParams.get('appointment_id');
   const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//') ? returnParam : '/dashboard/jobs';
 
   const {
@@ -73,6 +79,16 @@ export default function JobCreateForm() {
       <div className="py-12 text-center text-ink-faint animate-pulse flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-taupe" />
         <span>Loading form data...</span>
+      </div>
+    );
+  }
+
+  if (staffWithoutAppointment) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-4">
+        <h1 className="mobile-h2 font-semibold text-ink">Start from an appointment</h1>
+        <p className="mobile-body-md text-ink-muted">Staff open a job order from an approved appointment. Pick the appointment and tap Create Job Order.</p>
+        <Link href="/dashboard/appointments" className="inline-flex items-center justify-center h-[52px] px-6 bg-taupe hover:bg-taupe-hover text-white font-semibold">Go to Appointments</Link>
       </div>
     );
   }
@@ -203,6 +219,7 @@ export default function JobCreateForm() {
             setIsTotalAmountCustom={setIsTotalAmountCustom}
             setIsDueDateCustom={setIsDueDateCustom}
             isBulkOrder={isBulkOrder}
+            canCollectMoney={canCollectMoney}
           />
 
           {/* Action Buttons */}

@@ -88,6 +88,7 @@ function MeasurementsContent() {
       metrics: cleanMetrics,
       notes: form.notes || null,
       photo_urls: form.photo_urls,
+      status: form.status,
     };
     try {
       if (editingId) {
@@ -148,6 +149,7 @@ function MeasurementsContent() {
       profile_name: rec.profile_name,
       metrics: { ...emptyMetrics(), ...rec.metrics },
       photo_urls: rec.photo_urls ?? [],
+      status: rec.status ?? 'finalized',
       notes: rec.notes || '',
     });
     setError('');
@@ -162,6 +164,7 @@ function MeasurementsContent() {
       profile_name: rec.profile_name,
       metrics: { ...emptyMetrics(), ...rec.metrics },
       photo_urls: rec.photo_urls ?? [],
+      status: rec.status ?? 'finalized',
       notes: rec.notes || '',
     });
     setError('');

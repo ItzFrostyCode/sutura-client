@@ -7,6 +7,8 @@ import { FilterTabs, ListState } from '@/components/admin/ui/AdminPrimitives';
 import TicketModal from '@/components/admin/tickets/TicketModal';
 import { formatDate, useAdminList } from '@/components/admin/useAdminList';
 
+const ROLE_LABEL: Record<string, string> = { store_owner: 'Owner', branch_manager: 'Branch manager', staff: 'Staff', customer: 'Customer' };
+
 interface TicketRow {
   id: number;
   subject: string;
@@ -16,6 +18,7 @@ interface TicketRow {
   created_at: string;
   store: { name: string } | null;
   submitted_by: { name: string } | null;
+  submitted_by_role?: string | null;
 }
 
 const FILTERS = [
@@ -46,7 +49,7 @@ export default function AdminTicketsPage() {
                 <button type="button" onClick={() => setOpenId(t.id)} className="flex min-h-16 w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-left hover:bg-canvas">
                   <div className="min-w-0 flex-1 basis-60">
                     <p className="truncate font-semibold text-ink">{t.subject}</p>
-                    <p className="truncate text-sm text-ink-muted">{t.store?.name ?? 'No store'} · {t.submitted_by?.name} · {formatDate(t.created_at)}</p>
+                    <p className="truncate text-sm text-ink-muted">{t.store?.name ?? 'No store'} · {t.submitted_by?.name}{t.submitted_by_role ? ` (${ROLE_LABEL[t.submitted_by_role] ?? t.submitted_by_role})` : ''} · {formatDate(t.created_at)}</p>
                   </div>
                   <span className="flex shrink-0 flex-wrap gap-1.5">
                     {t.type === 'product_report' && <Badge variant="accent">Product report</Badge>}

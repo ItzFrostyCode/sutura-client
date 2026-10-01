@@ -1,5 +1,6 @@
 'use client';
 
+import { MeasurementStatusBadge } from './MeasurementStatus';
 import React from 'react';
 import { ChevronDown, ChevronUp, Copy, Pencil, Trash2, StickyNote, RefreshCw } from 'lucide-react';
 import { MeasurementRecord } from './measurementTypes';
@@ -90,6 +91,7 @@ export default function MeasurementList({
                             ) : (
                               <span className="text-[10px] bg-sage/10 text-sage border border-sage/20 px-2 py-0.5 rounded-full font-medium">Store Owner</span>
                             )}
+                            <MeasurementStatusBadge status={activeRec.status} />
                             <span className="text-[10px] bg-taupe/10 text-taupe border border-taupe/20 px-2 py-0.5 rounded-full font-medium">
                               {filledCount} field{filledCount === 1 ? '' : 's'}
                             </span>
