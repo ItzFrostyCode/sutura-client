@@ -197,6 +197,16 @@ Go to → **http://localhost:3000** 🎉
 | Customer (no bookings yet — use this one to test booking) | `booking.tester1@sutura.com` | `password` |
 | Customer | `jose.rizal@gmail.com` | `password` |
 
+Where the newer features show up with demo data (added by `StaffAndPaymentsDemoSeeder`):
+
+| Account | Look at |
+|---|---|
+| Staff `staff@sutura.com` | **Home** (production numbers + queue + fittings), Appointments → *Assigned to me* and *Create Job* on a confirmed appointment, Measurements (*Pending fitting* badge), Help (?) → Support tickets, the notification bell |
+| Shop Owner `maria.cruz@gmail.com` | Payments → *Payment Methods* (GCash, Maya, BPI), Appointments → *Rejected* and an *Other — Fabric shopping* visit, Services → a service's *Requirements* box (Barong/Bridal need a fitting; uniforms are paid in full first), Storefront → About → default requirements |
+| Admin `admin@sutura.com` | Support tickets — the staff ticket is tagged *(Staff)* and already has a reply |
+| Customer `maria.clara@gmail.com` | My Measurements → *Pending fitting* badge |
+| Customer `booking.tester2@sutura.com` | My Appointments → a *Rejected* request with the shop's reason |
+
 ### 🔄 Already set up? After every `git pull`
 
 ```bash
