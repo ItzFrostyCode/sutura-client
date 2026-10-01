@@ -1,3 +1,4 @@
+import { safeHref } from '@/lib/safeHref';
 import React, { useState } from 'react';
 import {
   AlertTriangle,
@@ -277,7 +278,7 @@ export default function JobProductionTimeline({
             )}
             {job.reference_link && (
               <a
-                href={job.reference_link}
+                href={safeHref(job.reference_link)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block text-xs text-taupe hover:underline mt-1 truncate max-w-full"

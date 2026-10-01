@@ -1,3 +1,4 @@
+import { safeHref } from '@/lib/safeHref';
 import React from 'react';
 import { Globe, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import EditableCard from './EditableCard';
@@ -30,7 +31,7 @@ function SocialLinksView({ links }: { readonly links: SocialLink[] }) {
           return (
             <a
               key={link.url}
-              href={link.url}
+              href={safeHref(link.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="min-h-[44px] inline-flex items-center gap-2.5 px-4 py-2 border border-line bg-canvas hover:bg-sunken text-sm font-medium text-ink transition-all active:scale-[0.98]"

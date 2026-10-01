@@ -1,3 +1,4 @@
+import { safeHref } from '@/lib/safeHref';
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler } from 'lucide-react';
@@ -663,7 +664,7 @@ export default function AppointmentActionModals({
             {viewApt.reference_link && (
               <div>
                 <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Reference Link</p>
-                <a href={viewApt.reference_link} target="_blank" rel="noopener noreferrer" className="text-[#6B7FA8] hover:underline text-xs break-all">
+                <a href={safeHref(viewApt.reference_link)} target="_blank" rel="noopener noreferrer" className="text-[#6B7FA8] hover:underline text-xs break-all">
                   {viewApt.reference_link}
                 </a>
               </div>
