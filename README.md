@@ -192,22 +192,22 @@ Go to → **http://localhost:3000** 🎉
 | Role | Email | Password |
 |------|-------|----------|
 | Shop Owner | `maria.cruz@gmail.com` | `password` |
-| Staff | `staff@sutura.com` | `password` |
-| Branch Manager | `manager@sutura.com` | `password` |
+| Staff | `juan.delacruz@sutura.com` | `password` |
+| Branch Manager | `miguel.manager@sutura.com` | `password` |
 | Admin | `admin@sutura.com` | `password` |
-| Customer | `customer@sutura.com` | `password` |
-| Customer (no bookings yet — use this one to test booking) | `booking.tester1@sutura.com` | `password` |
+| Customer | `juan.delacruz@gmail.com` | `password` |
+| Customer (no bookings yet — use this one to test booking) | `tess.tester@gmail.com` | `password` |
 | Customer | `jose.rizal@gmail.com` | `password` |
 
 Where the newer features show up with demo data (added by `StaffAndPaymentsDemoSeeder`):
 
 | Account | Look at |
 |---|---|
-| Staff `staff@sutura.com` | **Home** (production numbers + queue + fittings), Appointments → *Assigned to me* and *Create Job* on a confirmed appointment, Measurements (*Pending fitting* badge), Help (?) → Support tickets, the notification bell |
+| Staff `juan.delacruz@sutura.com` | **Home** (production numbers + queue + fittings), Appointments → *Assigned to me* and *Create Job* on a confirmed appointment, Measurements (*Pending fitting* badge), Help (?) → Support tickets, the notification bell |
 | Shop Owner `maria.cruz@gmail.com` | Payments → *Payment Methods* (GCash, Maya, BPI), Appointments → *Rejected* and an *Other — Fabric shopping* visit, Services → a service's *Requirements* box (Barong/Bridal need a fitting; uniforms are paid in full first), Storefront → About → default requirements |
 | Admin `admin@sutura.com` | Support tickets — the staff ticket is tagged *(Staff)* and already has a reply |
 | Customer `maria.clara@gmail.com` | My Measurements → *Pending fitting* badge |
-| Customer `booking.tester2@sutura.com` | My Appointments → a *Rejected* request with the shop's reason |
+| Customer `tomas.tester@gmail.com` | My Appointments → a *Rejected* request with the shop's reason |
 
 ### 🔄 Already set up? After every `git pull`
 
@@ -229,14 +229,14 @@ Sign in as the role shown; every account uses the password `password`.
 
 | # | As | Do this | You should see |
 |---|----|---------|----------------|
-| 1 | Customer `booking.tester1@sutura.com` | Book an appointment from **the store profile**, from a **Catalog Design**, from a **Service**, and from a **Combo package** ("Book this package") — one at a time (a customer may hold only one active appointment per store, so cancel the previous one from *My Appointments* first) | 3-step wizard; the Review step lists what you're booking; the appointment shows in *My Appointments* as **Pending** |
+| 1 | Customer `tess.tester@gmail.com` | Book an appointment from **the store profile**, from a **Catalog Design**, from a **Service**, and from a **Combo package** ("Book this package") — one at a time (a customer may hold only one active appointment per store, so cancel the previous one from *My Appointments* first) | 3-step wizard; the Review step lists what you're booking; the appointment shows in *My Appointments* as **Pending** |
 | 2 | Shop Owner `maria.cruz@gmail.com` | *Appointments* → open it → **Confirm** | Customer is notified; status becomes **Confirmed** |
-| 3 | Staff `staff@sutura.com` | *Appointments* → **Record measurements** on the confirmed appointment | Measurements saved and visible to the customer under *My Measurements* |
-| 4 | Owner or Branch Manager `manager@sutura.com` | On the appointment press **Job** → create the job order | One order (`ORD-…`) for the service, design or whole combo, at the right price |
+| 3 | Staff `juan.delacruz@sutura.com` | *Appointments* → **Record measurements** on the confirmed appointment | Measurements saved and visible to the customer under *My Measurements* |
+| 4 | Owner or Branch Manager `miguel.manager@sutura.com` | On the appointment press **Job** → create the job order | One order (`ORD-…`) for the service, design or whole combo, at the right price |
 | 5 | Owner / Branch Manager | *Collect Payments* → log a **50% downpayment** | Balance drops; production can now start. Plain staff **cannot** collect payments and cannot move a job past design without the downpayment |
 | 6 | Customer | *My Orders* | The order, its stage, the package contents (if a combo) and the remaining balance |
 
-Plain **Staff** (`staff@sutura.com`) is deliberately narrower than the **Branch Manager** (`manager@sutura.com`): Services/Catalog are view-only for staff and the Collect Payments, Catalog Designs, Reports and Branches menus are hidden.
+Plain **Staff** (`juan.delacruz@sutura.com`) is deliberately narrower than the **Branch Manager** (`miguel.manager@sutura.com`): Services/Catalog are view-only for staff and the Collect Payments, Catalog Designs, Reports and Branches menus are hidden.
 
 ---
 

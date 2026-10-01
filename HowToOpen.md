@@ -55,9 +55,9 @@ If this is a fresh clone, complete the one-time setup in the `sutura-server` and
 ## Demo Accounts
 
 - Shop Owner: `maria.cruz@gmail.com` / `password`
-- Staff: `staff@sutura.com` / `password`
-- Branch Manager: `manager@sutura.com` / `password`
+- Staff: `juan.delacruz@sutura.com` / `password`
+- Branch Manager: `miguel.manager@sutura.com` / `password`
 - Admin: `admin@sutura.com` / `password`
-- Customer: `jose.rizal@gmail.com` / `password` (or `customer@sutura.com` / `password`)
-- Customer with no bookings yet (use this to test booking): `booking.tester1@sutura.com` / `password`
+- Customer: `jose.rizal@gmail.com` / `password` (or `juan.delacruz@gmail.com` / `password`)
+- Customer with no bookings yet (use this to test booking): `tess.tester@gmail.com` / `password`
 
