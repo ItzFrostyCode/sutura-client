@@ -66,7 +66,7 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onReviewClick(apt)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
           >
             <Eye size={13} /> <span>Review</span>
           </button>
@@ -76,7 +76,7 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onCheckInClick(apt.id)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
           >
             <LogIn size={12} /> <span>Check In</span>
           </button>
@@ -86,7 +86,7 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onStartClick(apt.id)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-ink hover:bg-black text-white shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-ink hover:bg-black text-white shadow-2xs transition-colors"
           >
             <Play size={12} fill="currentColor" /> <span>Start</span>
           </button>
@@ -96,7 +96,7 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onCompleteClick(apt)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
           >
             <CheckSquare size={13} /> <span>Complete</span>
           </button>
@@ -107,7 +107,7 @@ export default function AppointmentListView({
           type="button"
           onClick={() => onDetailsClick(apt)}
           title="View details"
-          className="p-1.5 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg transition-colors"
+          className="p-1.5 max-[599px]:p-3 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg transition-colors"
         >
           <Eye size={15} />
         </button>
@@ -119,7 +119,7 @@ export default function AppointmentListView({
               type="button"
               onClick={() => setActiveMenuId(isMenuOpen ? null : apt.id)}
               title="More actions"
-              className="p-1.5 text-ink-faint hover:text-ink hover:bg-canvas rounded-lg transition-colors"
+              className="p-1.5 max-[599px]:p-3 text-ink-faint hover:text-ink hover:bg-canvas rounded-lg transition-colors"
             >
               <MoreHorizontal size={16} />
             </button>
@@ -200,7 +200,7 @@ export default function AppointmentListView({
   const renderTypeAndService = (apt: Appointment) => (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 flex-wrap">
-        <TypeBadge type={apt.appointment_type} />
+        <TypeBadge type={apt.appointment_type} label={apt.purpose_label} />
         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
           apt.intake_channel === 'online'
             ? 'bg-sky-50/80 text-sky-900 border-sky-200'
@@ -566,7 +566,7 @@ export default function AppointmentListView({
                     type="button"
                     onClick={() => onDetailsClick(apt)}
                     title="View Details"
-                    className="p-1.5 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg"
+                    className="p-1.5 max-[599px]:p-3 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg"
                   >
                     <Eye size={14} />
                   </button>
@@ -575,7 +575,7 @@ export default function AppointmentListView({
                       type="button"
                       onClick={() => onEditClick(apt)}
                       title="Edit"
-                      className="p-1.5 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg"
+                      className="p-1.5 max-[599px]:p-3 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg"
                     >
                       <Pencil size={14} />
                     </button>

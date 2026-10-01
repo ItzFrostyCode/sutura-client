@@ -1,8 +1,8 @@
 # SUTURA — Appointment → Job Order → Payment: gap analysis and proposed model
 
-**Status (2026-10-01): Phase 1 is built** — see §7. Phases 2–5 are still proposals.
+**Status (2026-10-01): Phases 1–5 are built** — see §7 and §8.
 
-Written 2026-10-01 as a service-management review (service request → fulfilment → verification → closure). **Proposal only — nothing in this document is built yet.** Every "today" statement below was checked against the code, not the older docs.
+Written 2026-10-01 as a service-management review (service request → fulfilment → verification → closure). §§1–6 describe the situation *before* this work (every "today" statement was checked against the code at the time); §§7–8 record what was built.
 
 ---
 
@@ -175,3 +175,13 @@ Each phase should ship behind a passing end-to-end check (as done for the bookin
 - Customer: Rejected badge, the reason and note on *My Appointments* and the detail page; a rejected request does not count as an active booking, so they can book again.
 - Owner Appointments: **Rejected** filter tab; the review dialog's Reject now asks for the reason; an **Assigned staff** picker (with Assign / Unassign) in the review and view dialogs.
 - Not in this phase (as agreed): the `other` type, staff mobile pass, payment `source`/`type`/payment-methods, configurable requirements.
+
+---
+
+## 8. Phases 2–5 — what was built (2026-10-01)
+
+- **Phase 2 — "Other".** `appointment_type = other` with a required `purpose_label` (≤ 60 chars), shown as "Other — {label}" everywhere (customer booking, owner/staff forms, follow-up, Home queue, notifications). No service is forced.
+- **Phase 3 — staff phone pass.** "Assigned to me" toggle on Appointments (`?assigned_to=me`); measurements accept photos of paper sheets (`photo_urls`) from the phone flow; 44px targets on the new actions.
+- **Phase 4 — payments.** One `payments` table gained `source`, `type`, `payment_method_id` (existing rows backfilled). Owners/managers keep a list of **Payment Methods** (name, account name/number, QR, instructions) scoped to the whole shop or one branch (Payments → Payment Methods). Walk-in = Record Payment; online = the customer opens **Pay for this order** on `/account/orders/{id}`, picks a method, pays in their own app, and sends the amount, reference and a screenshot; it stays pending until the owner/manager verifies. SUTURA never takes credentials or moves money.
+- **Phase 5 — requirements.** Measurement / final fitting / payment-first are set per service, design, combo (box "Requirements", or a step when creating a service or combo) and as shop defaults (Storefront → About → Booking flow). Precedence: design → linked service → shop default; a combo uses its own, else the shop default. Each job order **snapshots** the result at creation. Effects: the payment gate uses the job's policy (none / full / N%) instead of a fixed 50% — Kanban, job detail, cashier chips and toasts, and the customer's "Pay for this order" read the same number; fitting "none" refuses the fitting stage and "required" blocks pick-up until a fitting appointment is completed; the job overview shows a "What this order needs" checklist. Measurement is guidance only (no hard block), so bulk/repair flows are unaffected. Existing jobs were backfilled to their old behaviour.
+- Requirements are also a step in the design create wizard. **Not done on purpose:** a job's snapshot is not editable.

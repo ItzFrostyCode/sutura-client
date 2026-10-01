@@ -26,6 +26,7 @@ export const emptyForm = () => ({
   profile_name: '',
   metrics: emptyMetrics(),
   notes: '',
+  photo_urls: [] as string[],
 });
 
 // Custom fields are stored verbatim (e.g. "Sleeve to Wrist"), but legacy

@@ -17,8 +17,11 @@ export function FinancialStatementSummary({ job, financials }: FinancialStatemen
     amountPaid,
     percentCollected,
     isDownpaymentMet,
+    requiredDeposit,
+    depositLabel,
     statusBadge,
   } = financials;
+  const markerLeft = totalAmount > 0 ? Math.min(100, (requiredDeposit / totalAmount) * 100) : 0;
 
   return (
     <div className="space-y-5">
@@ -62,13 +65,15 @@ export function FinancialStatementSummary({ job, financials }: FinancialStatemen
             }`}
             style={{ width: `${percentCollected}%` }}
           />
-          {/* 50% Milestone Marker */}
-          <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-black/15 z-10" title="50% Downpayment Threshold" />
+          {/* Required-payment marker, from this job's payment policy */}
+          {requiredDeposit > 0 && markerLeft < 100 && (
+            <div className="absolute top-0 bottom-0 w-0.5 bg-black/15 z-10" style={{ left: `${markerLeft}%` }} title={`${depositLabel} threshold`} />
+          )}
         </div>
         <div className="flex justify-between items-center text-[10px] text-ink-faint pt-0.5">
           <span>Intake: ₱0.00</span>
           <span className={`font-semibold ${isDownpaymentMet ? 'text-emerald-700' : 'text-amber-700'}`}>
-            50% DP: ₱{(totalAmount * 0.5).toFixed(2)} {isDownpaymentMet ? '✓' : '(Required)'}
+            {requiredDeposit > 0 ? `${depositLabel}: ₱${requiredDeposit.toFixed(2)} ${isDownpaymentMet ? '✓' : '(Required)'}` : 'No payment needed first'}
           </span>
           <span>Total: ₱{totalAmount.toFixed(2)}</span>
         </div>

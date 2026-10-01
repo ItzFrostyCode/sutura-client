@@ -1,6 +1,7 @@
 import type { Service, ServicePackage } from '../serviceHelpers';
+import { emptyRequirementsDraft, requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 
-export type PackageSection = 'photo' | 'info' | 'services' | 'description';
+export type PackageSection = 'photo' | 'info' | 'services' | 'description' | 'requirements';
 
 export interface PackageDraft {
   name: string;
@@ -9,9 +10,10 @@ export interface PackageDraft {
   image_url: string;
   selectedIds: number[];
   service_category: string;
+  requirements: RequirementsDraft;
 }
 
-export const emptyPackageDraft = (): PackageDraft => ({ name: '', description: '', bundlePrice: '', image_url: '', selectedIds: [], service_category: '' });
+export const emptyPackageDraft = (): PackageDraft => ({ name: '', description: '', bundlePrice: '', image_url: '', selectedIds: [], service_category: '', requirements: emptyRequirementsDraft() });
 
 export const toPackageDraft = (p: ServicePackage): PackageDraft => ({
   name: p.name,
@@ -20,6 +22,7 @@ export const toPackageDraft = (p: ServicePackage): PackageDraft => ({
   image_url: p.image_url ?? '',
   selectedIds: p.services.map((s) => s.id),
   service_category: p.service_category ?? '',
+  requirements: requirementsToDraft(p),
 });
 
 export function buildPackagePayload(d: PackageDraft, isActive = true) {
@@ -31,6 +34,7 @@ export function buildPackagePayload(d: PackageDraft, isActive = true) {
     service_ids: d.selectedIds,
     bundle_price: d.bundlePrice.trim() === '' ? null : Number(d.bundlePrice),
     is_active: isActive,
+    ...requirementsPayload(d.requirements),
   };
 }
 
@@ -39,6 +43,7 @@ export function validatePackageSection(section: PackageSection, d: PackageDraft)
   if (section === 'info' && !d.name.trim()) return 'The package needs a name.';
   if (section === 'services' && d.selectedIds.length < 2) return 'Pick at least 2 services to bundle.';
   if (section === 'services' && !d.service_category) return 'Pick the category this package belongs to.';
+  if (section === 'requirements') return validateRequirements(d.requirements);
   return null;
 }
 
@@ -47,6 +52,7 @@ const SECTION_FIELDS: Record<PackageSection, (keyof PackageDraft)[]> = {
   info: ['name', 'bundlePrice'],
   services: ['selectedIds', 'service_category'],
   description: ['description'],
+  requirements: ['requirements'],
 };
 
 export const packageSectionChanged = (s: PackageSection, a: PackageDraft, b: PackageDraft) =>

@@ -1,3 +1,4 @@
+import { requirementsSummary } from '@/components/jobs/requirements';
 import React from 'react';
 import { Calendar } from 'lucide-react';
 import { StoreSettingsData } from '@/components/settings/useSettings';
@@ -43,8 +44,12 @@ export default function BookingFlowCard({ formData, onChange, setFormData, isEdi
           </span>
         </div>
         <div className="flex justify-between gap-3">
-          <span className="text-ink-muted text-xs">Repairs require 50% DP</span>
+          <span className="text-ink-muted text-xs">Repairs require a downpayment</span>
           <span className="text-ink-body font-medium">{formData.repair_requires_downpayment ? 'Yes' : 'No'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-ink-muted text-xs">Default for new orders</span>
+          <span className="text-ink-body font-medium text-right">{requirementsSummary({ measurement_requirement: formData.default_measurement_requirement, fitting_requirement: formData.default_fitting_requirement, payment_policy: formData.default_payment_policy, payment_policy_percent: formData.default_payment_percent })}</span>
         </div>
         {formData.booking_policy && (
           <p className="text-xs text-ink-muted pt-1.5 border-t border-line/60 whitespace-pre-line line-clamp-3">{formData.booking_policy}</p>

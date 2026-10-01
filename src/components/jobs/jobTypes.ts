@@ -10,6 +10,8 @@ export interface Payment {
   id: number;
   amount: string | number;
   payment_method: string;
+  source?: 'online' | 'walk_in' | null;
+  type?: 'deposit' | 'partial' | 'full' | 'balance' | null;
   reference?: string | null;
   receipt_path?: string | null;
   created_at: string;
@@ -78,6 +80,11 @@ export interface Job {
   cancellation_reason?: string | null;
   hold_reason?: string | null;
   discount_amount?: number | string | null;
+  // Snapshotted at creation from design -> service -> store defaults.
+  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
+  fitting_requirement?: 'none' | 'optional' | 'required' | null;
+  payment_policy?: 'none' | 'full' | 'deposit' | 'custom' | null;
+  payment_policy_percent?: number | null;
   customer_job_count?: number;
   adjustment_count?: number;
   first_adjustment_at?: string | null;

@@ -1,8 +1,9 @@
 import { deriveTiersFromService, type PricingTierInput, type Service, type ServiceField, type ServiceType } from '../serviceHelpers';
 import { emptySizeChart, type SizeChartValue } from '@/components/shared/SizeChartEditor';
+import { emptyRequirementsDraft, requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 import type { PublicService } from '@/components/store-storefront/types';
 
-export type ServiceSection = 'photo' | 'info' | 'spec' | 'chart' | 'description' | 'booking';
+export type ServiceSection = 'photo' | 'info' | 'spec' | 'chart' | 'description' | 'booking' | 'requirements';
 
 // Everything a section can change, held as strings / plain values while editing.
 export interface ServiceDraft {
@@ -21,6 +22,7 @@ export interface ServiceDraft {
   sizeChart: SizeChartValue;
   custom_fields: ServiceField[];
   roster_fields: ServiceField[];
+  requirements: RequirementsDraft;
 }
 
 export function toDraft(service: Service): ServiceDraft {
@@ -44,13 +46,14 @@ export function toDraft(service: Service): ServiceDraft {
     },
     custom_fields: service.custom_fields ?? [],
     roster_fields: service.roster_fields ?? [],
+    requirements: requirementsToDraft(service),
   } satisfies ServiceDraft;
 }
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
   service_category: '', service_leaf_type: '', service_types: [], tiers: [{ label: '', amount: '' }],
-  image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [],
+  image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
 
 // Shared by the edit boxes and the create steps, so "required" means the same in both.
@@ -67,6 +70,7 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
     if (!d.service_category) return 'Pick a category.';
     if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one priced item.';
   }
+  if (section === 'requirements') return validateRequirements(d.requirements);
   return null;
 }
 
@@ -99,6 +103,7 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     size_chart_columns: draft.sizeChart.columns.length > 0 ? draft.sizeChart.columns : null,
     size_chart_rows: draft.sizeChart.rows.length > 0 ? draft.sizeChart.rows : null,
     pricing_tiers: tiers,
+    ...requirementsPayload(draft.requirements),
   };
 }
 
@@ -109,6 +114,7 @@ const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   chart: ['sizeChart'],
   description: ['description'],
   booking: ['custom_fields', 'roster_fields'],
+  requirements: ['requirements'],
 };
 
 export function sectionChanged(section: ServiceSection, a: ServiceDraft, b: ServiceDraft): boolean {

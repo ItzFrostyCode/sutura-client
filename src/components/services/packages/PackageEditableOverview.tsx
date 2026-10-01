@@ -5,6 +5,8 @@ import Image from 'next/image';
 import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
 import EditableBox from '@/components/catalog/editable/EditableBox';
 import { getMediaUrl } from '@/lib/media';
+import RequirementsEditor from '@/components/requirements/RequirementsEditor';
+import RequirementsView from '@/components/requirements/RequirementsView';
 import type { ServicePackage } from '../serviceHelpers';
 import { PackagePhotoEditor, PackageInfoEditor, PackageServicesEditor, PackageDescriptionEditor } from './PackageEditors';
 import { PackageInfoView, PackageServicesView, PackageDescriptionView } from './PackageViews';
@@ -51,6 +53,9 @@ export default function PackageEditableOverview({ pkg, edit }: Readonly<{ pkg: S
         </EditableBox>
         <EditableBox control={edit.control('description')} label="description" title="Description" badge={2} view={<PackageDescriptionView pkg={pkg} />}>
           <PackageDescriptionEditor edit={edit} />
+        </EditableBox>
+        <EditableBox control={edit.control('requirements')} label="requirements" title="Requirements" badge={3} view={<RequirementsView value={pkg} />}>
+          {edit.draft && <RequirementsEditor value={edit.draft.requirements} onChange={(requirements) => edit.setDraft(d => (d ? { ...d, requirements } : d))} inheritLabel="Use the shop default" />}
         </EditableBox>
       </div>
     </div>

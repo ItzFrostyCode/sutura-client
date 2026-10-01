@@ -1,11 +1,13 @@
 'use client';
 
+import { paymentPolicyLabel } from '@/components/jobs/requirements';
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
 import OrderTrackingView, { type TrackedOrder } from '@/components/shared/OrderTrackingView';
 import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
+import PayForOrder from '@/components/account/orders/PayForOrder';
 
 export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -14,14 +16,17 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  const load = () => api.get(`/my-orders/${id}`)
+    .then((res) => setOrder(res.data.data))
+    .catch(() => setNotFound(true))
+    .finally(() => setLoading(false));
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     setNotFound(false);
-    api.get(`/my-orders/${id}`)
-      .then((res) => setOrder(res.data.data))
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   return (
@@ -43,7 +48,23 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
         </div>
       )}
 
-      {!loading && !notFound && order && <OrderTrackingView order={order} stepperLayout="vertical" />}
+      {!loading && !notFound && order && (
+        <>
+          <OrderTrackingView order={order} stepperLayout="vertical" />
+          <PayForOrder
+            orderId={Number(id)}
+            storeSlug={order.store?.slug}
+            branchId={order.store_branch_id}
+            totalAmount={order.total_amount}
+            balance={order.balance}
+            pending={order.pending_payment_amount ?? 0}
+            requiredDeposit={order.required_deposit ?? 0}
+            depositLabel={paymentPolicyLabel(order.payment_policy, order.payment_policy_percent)}
+            active={!['cancelled', 'rejected', 'completed'].includes(order.status)}
+            onSubmitted={load}
+          />
+        </>
+      )}
     </div>
   );
 }

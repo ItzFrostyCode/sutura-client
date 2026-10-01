@@ -9,14 +9,16 @@ interface CashierMethodSelectorProps {
 const CHANNELS = [
   { key: 'cash', label: 'Cash', icon: Banknote },
   { key: 'gcash', label: 'GCash', icon: Smartphone },
-  { key: 'paymaya', label: 'PayMaya', icon: CreditCard },
+  { key: 'paymaya', label: 'Maya', icon: CreditCard },
+  { key: 'bank_transfer', label: 'Bank', icon: CreditCard },
+  { key: 'other', label: 'Other', icon: CreditCard },
 ];
 
 export function CashierMethodSelector({ method, setMethod }: CashierMethodSelectorProps) {
   return (
     <div className="space-y-1.5">
       <span className="text-xs font-bold uppercase tracking-wider text-ink-muted block">Payment Channel</span>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
         {CHANNELS.map(m => {
           const isSelected = method === m.key;
           const Icon = m.icon;

@@ -1,3 +1,4 @@
+import PurposeLabelField from './PurposeLabelField';
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, CalendarPlus } from 'lucide-react';
@@ -24,7 +25,7 @@ interface FollowUpAppointmentModalProps {
 }
 
 const defaultForm = {
-  customer_id: '', appointment_type: 'fitting' as AppointmentType,
+  purpose_label: '', customer_id: '', appointment_type: 'fitting' as AppointmentType,
   store_branch_id: '', scheduled_date: '', scheduled_time: '', notes: '',
 };
 
@@ -55,7 +56,7 @@ export default function FollowUpAppointmentModal({
   }, [isOpen, presetCustomerId, todayStr, branches]);
 
   const isValid = (presetJobOrderId || !!formData.customer_id)
-    && !!formData.appointment_type && !!formData.scheduled_date && !!formData.scheduled_time
+    && !!formData.appointment_type && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '') && !!formData.scheduled_date && !!formData.scheduled_time
     && (branches.length <= 1 || !!formData.store_branch_id);
 
   const handleSubmit = (e: React.SyntheticEvent) => {
@@ -64,6 +65,7 @@ export default function FollowUpAppointmentModal({
       customer_id: formData.customer_id || undefined,
       job_order_id: presetJobOrderId || undefined,
       appointment_type: formData.appointment_type,
+      purpose_label: formData.appointment_type === 'other' ? formData.purpose_label.trim() : undefined,
       scheduled_at: `${formData.scheduled_date} ${formData.scheduled_time}:00`,
       duration_minutes: TYPE_DEFAULT_DURATIONS[formData.appointment_type],
       store_branch_id: formData.store_branch_id || undefined,
@@ -95,7 +97,7 @@ export default function FollowUpAppointmentModal({
 
         <div>
           <span className="block text-sm font-medium text-ink-body mb-1">What&apos;s this visit for? <span className="text-rose-500">*</span></span>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {APPOINTMENT_TYPES.map(t => {
               const tc = TYPE_CONFIG[t];
               return (
@@ -114,6 +116,9 @@ export default function FollowUpAppointmentModal({
               );
             })}
           </div>
+          {formData.appointment_type === 'other' && (
+            <PurposeLabelField value={formData.purpose_label} onChange={(v) => setFormData({ ...formData, purpose_label: v })} />
+          )}
         </div>
 
         {branches.length > 1 && (

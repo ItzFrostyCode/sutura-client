@@ -1,4 +1,5 @@
 import React from 'react';
+import RequirementsEditor from '@/components/requirements/RequirementsEditor';
 import { StoreSettingsData } from '@/components/settings/useSettings';
 
 const inputClass = 'w-full px-3 py-2 bg-canvas border border-line text-ink text-sm focus:outline-none focus:border-taupe';
@@ -83,8 +84,28 @@ export default function BookingFlowEditForm({ formData, onChange, setFormData }:
 
         <label className="flex items-start gap-2.5 cursor-pointer select-none text-sm text-ink-body">
           <input type="checkbox" checked={formData.repair_requires_downpayment} onChange={(e) => setFormData((prev) => ({ ...prev, repair_requires_downpayment: e.target.checked }))} className="mt-0.5" />
-          Require 50% downpayment for repairs
+          Require a downpayment for repairs
         </label>
+      </div>
+
+      <div className="space-y-3 pt-2 border-t border-line/60">
+        <h4 className="text-xs font-semibold text-ink">Default order requirements</h4>
+        <p className="text-xs text-ink-muted">Used when a design, service or combo does not set its own. Each order keeps a copy of what applied when it was created.</p>
+        <RequirementsEditor
+          value={{
+            measurement_requirement: formData.default_measurement_requirement,
+            fitting_requirement: formData.default_fitting_requirement,
+            payment_policy: formData.default_payment_policy,
+            payment_policy_percent: String(formData.default_payment_percent),
+          }}
+          onChange={(d) => setFormData((prev) => ({
+            ...prev,
+            default_measurement_requirement: (d.measurement_requirement || prev.default_measurement_requirement) as StoreSettingsData['default_measurement_requirement'],
+            default_fitting_requirement: (d.fitting_requirement || prev.default_fitting_requirement) as StoreSettingsData['default_fitting_requirement'],
+            default_payment_policy: (d.payment_policy || prev.default_payment_policy) as StoreSettingsData['default_payment_policy'],
+            default_payment_percent: Math.min(100, Math.max(1, Number.parseInt(d.payment_policy_percent, 10) || 50)),
+          }))}
+        />
       </div>
 
       <div className="space-y-2 pt-2 border-t border-line/60">

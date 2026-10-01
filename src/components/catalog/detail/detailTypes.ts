@@ -1,3 +1,5 @@
+import type { RequirementFields } from '@/components/jobs/requirements';
+
 
 export interface CatalogImage {
   id: number;
@@ -38,7 +40,7 @@ export interface OtherCatalogOption {
   images?: CatalogImage[];
 }
 
-export interface DetailedCatalogItem {
+export interface DetailedCatalogItem extends RequirementFields {
   id: number;
   name: string;
   price: string | number;

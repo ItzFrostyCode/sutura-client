@@ -1,5 +1,6 @@
 'use client';
 
+import JobRequirementsCard from './JobRequirementsCard';
 import React from 'react';
 import { X } from 'lucide-react';
 import { Job } from '../jobTypes';
@@ -85,6 +86,7 @@ export default function JobOverviewTab({
 
           {/* Right Column (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
+            <JobRequirementsCard job={job} paymentMet={downpaymentShortfall <= 0} />
             <JobOverviewSidebar
               job={job}
               jobPaidSoFar={jobPaidSoFar}

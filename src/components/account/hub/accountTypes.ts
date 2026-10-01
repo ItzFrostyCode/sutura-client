@@ -40,6 +40,7 @@ export const TYPE_LABELS: Record<string, string> = {
   fitting: 'Fitting',
   alteration: 'Alteration',
   pickup: 'Pickup',
+  other: 'Other',
 };
 
 export const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

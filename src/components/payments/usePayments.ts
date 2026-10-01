@@ -1,3 +1,4 @@
+import { depositFraction, paymentPolicyLabel, type PaymentPolicy } from '@/components/jobs/requirements';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
@@ -6,7 +7,9 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 
-export type Tab = 'receipts' | 'job_balances' | 'catalog_orders';
+export type Tab = 'receipts' | 'job_balances' | 'catalog_orders' | 'methods';
+
+export interface PaymentAccount { id: number; kind: string; name: string; account_name: string; account_number: string; qr_path?: string | null; instructions?: string | null; is_active: boolean; store_branch_id?: number | null; branch?: { id: number; name: string } | null }
 
 export interface ReceiptItem {
   id: number;
@@ -32,6 +35,8 @@ export interface JobBalanceItem {
   discount_amount: number;
   payment_status: string;
   status: string;
+  payment_policy?: PaymentPolicy | null;
+  payment_policy_percent?: number | null;
 }
 
 export interface CatalogOrderItem {
@@ -82,7 +87,7 @@ interface RawJobData {
   status: string;
 }
 
-const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders'];
+const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders', 'methods'];
 
 export function usePayments() {
   const { store } = useAuthStore();
@@ -109,6 +114,10 @@ export function usePayments() {
   const [logPaymentJob, setLogPaymentJob] = useState<JobBalanceItem | null>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
+  // What the payment is for ('' = let the server work it out) and which of the shop's accounts it went to.
+  const [payType, setPayType] = useState('');
+  const [payAccountId, setPayAccountId] = useState('');
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
   const [payNotes, setPayNotes] = useState('');
   const [payReference, setPayReference] = useState('');
   const [payReceiptPath, setPayReceiptPath] = useState('');
@@ -243,6 +252,12 @@ export function usePayments() {
     return () => clearTimeout(timer);
   }, [store, fetchReceipts, fetchJobBalances, fetchCatalogOrders]);
 
+  // The shop's own payment accounts (for the walk-in dialog's "which account" picker).
+  useEffect(() => {
+    if (!store) return;
+    api.get(`/stores/${store.id}/payment-methods`).then(r => setPaymentAccounts((r.data?.data ?? []).filter((m: PaymentAccount) => m.is_active))).catch(() => setPaymentAccounts([]));
+  }, [store]);
+
   // Verify receipt
   const handleVerify = async (item: ReceiptItem, status: 'paid' | 'pending' | 'rejected') => {
     if (!store) return;
@@ -289,6 +304,9 @@ export function usePayments() {
       await api.post(`/stores/${store.id}/jobs/${logPaymentJob.id}/pay`, {
         amount: amt,
         payment_method: payMethod,
+        source: 'walk_in',
+        type: payType || undefined,
+        payment_method_id: payMethod !== 'cash' && payAccountId ? Number(payAccountId) : undefined,
         reference: payReference || undefined,
         notes: payNotes || undefined,
         receipt_path: payReceiptPath || undefined,
@@ -302,9 +320,9 @@ export function usePayments() {
         // toward it, but shouldn't read as an unqualified "done".
         const totalAmt = Number.parseFloat(String(logPaymentJob.total_amount)) || 0;
         const paidSoFar = (totalAmt - (Number.parseFloat(String(logPaymentJob.balance)) || 0)) + amt;
-        const requiredDp = totalAmt * 0.5;
+        const requiredDp = totalAmt * depositFraction(logPaymentJob.payment_policy, logPaymentJob.payment_policy_percent);
         if (paidSoFar < requiredDp) {
-          toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required 50% downpayment.`);
+          toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}. ₱${(requiredDp - paidSoFar).toFixed(2)} more is needed to reach the required ${paymentPolicyLabel(logPaymentJob.payment_policy, logPaymentJob.payment_policy_percent)}.`);
         } else {
           toast.success(`₱${amt.toFixed(2)} payment logged for ${logPaymentJob.order_number}`);
         }
@@ -349,6 +367,11 @@ export function usePayments() {
     payAmount,
     setPayAmount,
     payMethod,
+    payType,
+    setPayType,
+    payAccountId,
+    setPayAccountId,
+    paymentAccounts,
     setPayMethod,
     payNotes,
     setPayNotes,

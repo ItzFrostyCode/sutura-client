@@ -22,6 +22,8 @@ export function useAppointments() {
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
   const [typeFilter, setTypeFilter]     = useState<AppointmentType | 'all'>('all');
   const [search, setSearch]             = useState('');
+  // Plain staff start on "assigned to me" — their own work first; anyone can flip it.
+  const [assignedToMe, setAssignedToMe]  = useState<boolean | null>(null);
   const [currentDate, setCurrentDate]   = useState(new Date());
   const [selectedDay, setSelectedDay]   = useState<Date | null>(null);
   const [hoveredAptId, setHoveredAptId] = useState<number | null>(null);
@@ -100,6 +102,7 @@ export function useAppointments() {
 
   const userRoles: string[] = user?.roles?.map(r => r.name) ?? [];
   const isOwnerOrManager = userRoles.some(r => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
+  const isPlainStaff = !isOwnerOrManager && userRoles.includes('staff');
 
   // Confirm / Reject Review
   const handleConfirmReview = async (id: number): Promise<boolean> => {
@@ -347,6 +350,8 @@ export function useAppointments() {
     return appointments.filter(a => {
       const matchStatus = statusFilter === 'all' || a.status === statusFilter;
       const matchType   = typeFilter   === 'all' || a.appointment_type === typeFilter;
+      const mineOnly = assignedToMe ?? isPlainStaff;
+      if (mineOnly && a.assigned_staff_id !== user?.id) return false;
       if (!matchStatus || !matchType) return false;
       if (!q) return true;
 
@@ -364,7 +369,7 @@ export function useAppointments() {
     })
       // Requests whose slot a walk-in took go to the top so they are not missed (stable: the rest keep their order).
       .sort((x, y) => Number(needsNewTime(y)) - Number(needsNewTime(x)));
-  }, [appointments, statusFilter, typeFilter, search]);
+  }, [appointments, statusFilter, typeFilter, search, assignedToMe, isPlainStaff, user?.id]);
 
   // Operational metrics
   const stats = useMemo(() => {
@@ -464,6 +469,9 @@ export function useAppointments() {
     todayStr,
     minTimeFor,
     isOwnerOrManager,
+    isPlainStaff,
+    assignedToMe,
+    setAssignedToMe,
     handleConfirmReview,
     handleRejectReview,
     handleAssign,

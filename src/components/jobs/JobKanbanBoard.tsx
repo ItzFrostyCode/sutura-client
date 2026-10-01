@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, type LucideIcon } from 'lucide-react';
+import { depositFraction } from './requirements';
 import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import CancellationReasonModal from './CancellationReasonModal';
@@ -67,8 +68,9 @@ export default function JobKanbanBoard({
 
   const handleStatusChange = (job: JobItem, newStatus: string) => {
     // Derived downpayment = total_amount minus current balance.
-    // Policy is 50% down, not just "something" — a ₱1 payment on a ₱10,000
-    // job shouldn't be enough to unlock production.
+    // The job's own snapshotted payment policy decides how much must be paid
+    // (none / full / a percent) — a ₱1 payment on a ₱10,000 job shouldn't
+    // unlock production.
     // A discount lowers balance, not total, so subtract it or it would count
     // as cash paid (same formula as JobOrderController@update).
     const total = Number.parseFloat(String(job.total_amount ?? '0'));
@@ -76,7 +78,7 @@ export default function JobKanbanBoard({
     const discount = Number.parseFloat(String(job.discount_amount ?? '0'));
     const amountDue = total - discount;
     const paidSoFar = total - balance - discount;
-    const noDownpayment = amountDue > 0 && paidSoFar < amountDue * 0.5;
+    const noDownpayment = amountDue > 0 && paidSoFar + 0.005 < amountDue * depositFraction(job.payment_policy, job.payment_policy_percent);
 
     if (requiresDownpayment(job, newStatus, repairRequiresDownpayment) && noDownpayment) {
       // Block the move — show flash warning on the card

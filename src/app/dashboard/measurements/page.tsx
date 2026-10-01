@@ -87,6 +87,7 @@ function MeasurementsContent() {
       profile_name: form.profile_name,
       metrics: cleanMetrics,
       notes: form.notes || null,
+      photo_urls: form.photo_urls,
     };
     try {
       if (editingId) {
@@ -146,6 +147,7 @@ function MeasurementsContent() {
       source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: { ...emptyMetrics(), ...rec.metrics },
+      photo_urls: rec.photo_urls ?? [],
       notes: rec.notes || '',
     });
     setError('');
@@ -159,6 +161,7 @@ function MeasurementsContent() {
       source: rec.source ?? 'store_owner',
       profile_name: rec.profile_name,
       metrics: { ...emptyMetrics(), ...rec.metrics },
+      photo_urls: rec.photo_urls ?? [],
       notes: rec.notes || '',
     });
     setError('');

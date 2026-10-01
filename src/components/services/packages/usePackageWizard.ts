@@ -12,6 +12,7 @@ export const PACKAGE_STEPS: { key: PackageSection; title: string; hint: string; 
   { key: 'info', title: 'Basics', hint: 'Name the set and give it one flat price.' },
   { key: 'services', title: 'Included services', hint: 'Pick the services customers get in this set.' },
   { key: 'description', title: 'Description', hint: 'What it includes and who it is for.', optional: true },
+  { key: 'requirements', title: 'Requirements', hint: 'Measurements, fitting and payment first. Leave on the shop default if unsure.', optional: true },
 ];
 
 export function usePackageWizard() {

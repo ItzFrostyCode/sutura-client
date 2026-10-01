@@ -28,6 +28,7 @@ export interface MyAppointment {
   needs_new_time?: boolean;
   payment_status: string;
   cancellation_reason: string | null;
+  purpose_label?: string | null;
   rejection_reason?: string | null;
   rejection_note?: string | null;
   rebooking_blocked: boolean;
@@ -63,6 +64,7 @@ export const TYPE_LABELS: Record<string, string> = {
   fitting: 'Fitting',
   alteration: 'Alteration',
   pickup: 'Pickup',
+  other: 'Other',
 };
 
 export const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

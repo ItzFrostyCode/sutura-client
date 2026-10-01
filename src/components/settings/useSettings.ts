@@ -36,6 +36,11 @@ export interface StoreSettingsData {
   fitting_limit: number;
   fitting_limit_policy: 'fee' | 'block';
   repair_requires_downpayment: boolean;
+  // Shop-wide defaults for new orders; designs, services and combos can override them.
+  default_measurement_requirement: 'none' | 'existing' | 'shop';
+  default_fitting_requirement: 'none' | 'optional' | 'required';
+  default_payment_policy: 'none' | 'full' | 'deposit' | 'custom';
+  default_payment_percent: number;
   specializations: string[];
   is_featured: boolean;
   is_hidden: boolean;
@@ -95,6 +100,10 @@ export function useSettings() {
     fitting_limit: 3,
     fitting_limit_policy: 'fee' as 'fee' | 'block',
     repair_requires_downpayment: false,
+    default_measurement_requirement: 'shop' as 'none' | 'existing' | 'shop',
+    default_fitting_requirement: 'optional' as 'none' | 'optional' | 'required',
+    default_payment_policy: 'deposit' as 'none' | 'full' | 'deposit' | 'custom',
+    default_payment_percent: 50,
     specializations: [] as string[],
     is_featured: false,
     is_hidden: false,
@@ -154,6 +163,10 @@ export function useSettings() {
             fitting_limit: s.fitting_limit ?? 3,
             fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
             repair_requires_downpayment: !!s.repair_requires_downpayment,
+            default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
+            default_fitting_requirement: s.default_fitting_requirement ?? 'optional',
+            default_payment_policy: s.default_payment_policy ?? 'deposit',
+            default_payment_percent: s.default_payment_percent ?? 50,
             specializations: Array.isArray(s.specializations) ? s.specializations : [],
             is_featured: !!s.is_featured,
             is_hidden: !!s.is_hidden,

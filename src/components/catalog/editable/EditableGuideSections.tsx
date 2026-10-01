@@ -5,6 +5,8 @@ import { SizeChartBlock, MeasurementGuideBlock, hasMeasurementGuide } from '@/co
 import { CatalogSpecTable, CatalogDescriptionBlock } from '@/components/store-catalog-detail/CatalogSpecAndDescription';
 import type { CatalogItem as StorefrontItem } from '@/components/store-catalog-detail/types';
 import SizeChartEditor from '@/components/shared/SizeChartEditor';
+import RequirementsEditor from '@/components/requirements/RequirementsEditor';
+import RequirementsView from '@/components/requirements/RequirementsView';
 import EditableBox from './EditableBox';
 import { MeasurementGuideEditor, DescriptionEditor } from './editors/GuideEditors';
 import SpecificationEditor from './editors/SpecificationEditor';
@@ -60,6 +62,10 @@ export default function EditableGuideSections({ edit, sf }: Readonly<EditableGui
 
       <EditableBox control={edit.control('description')} label="description" title="Description" badge={3} view={<CatalogDescriptionBlock item={sf} />}>
         <DescriptionEditor edit={edit} />
+      </EditableBox>
+
+      <EditableBox control={edit.control('requirements')} label="requirements" title="Requirements" badge={4} view={<RequirementsView value={edit.item} fallback="Uses the service or shop default" />}>
+        <RequirementsEditor value={edit.reqDraft} onChange={edit.setReqDraft} inheritLabel="Use the service / shop default" />
       </EditableBox>
     </div>
   );

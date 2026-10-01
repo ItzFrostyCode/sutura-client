@@ -21,7 +21,7 @@ export default function NewCatalogItemPage() {
           <p className="text-base text-ink-muted mt-2">{w.current.hint}</p>
         </div>
         <div className="border-y max-[599px]:border-x-0 min-[600px]:border border-line bg-white p-4 min-[600px]:p-6">
-          <CatalogWizardStep section={w.current.key} edit={{ form: w.form, storeId: w.storeId, itemId: 0 }} />
+          <CatalogWizardStep section={w.current.key} edit={{ form: w.form, storeId: w.storeId, itemId: 0 }} requirements={w.requirements} onRequirements={w.setRequirements} />
           <ServiceWizardBar step={w.step} total={CATALOG_STEPS.length} last={w.last} saving={w.saving} optional={w.current.optional} finishLabel="Publish design" onBack={w.back} onNext={w.next} />
         </div>
       </div>

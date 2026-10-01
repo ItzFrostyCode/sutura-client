@@ -75,6 +75,11 @@ export function PaymentItemRow({
             {cfg.icon}
             {cfg.label}
           </span>
+          {payment.type && (
+            <span className="text-[10px] font-semibold uppercase tracking-wider bg-sunken text-ink-body border border-line px-2 py-0.5 rounded-full">
+              {payment.type === 'partial' ? 'Partial' : payment.type === 'balance' ? 'Balance' : payment.type === 'full' ? 'Full' : 'Deposit'}{payment.source ? ` · ${payment.source === 'online' ? 'Online' : 'Walk-in'}` : ''}
+            </span>
+          )}
           {payment.rejected_at && (
             <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full">
               Rejected
@@ -222,7 +227,7 @@ export function PaymentItemRow({
       {!payment.rejected_at && payment.status === 'pending_verification' && isOwnerOrManager && (
         <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-amber-200 bg-amber-50/50 p-2.5 rounded-lg">
           <p className="text-[11px] text-amber-800">
-            Confirm the {payment.payment_method === 'gcash' ? 'GCash' : 'PayMaya'} receipt before this counts toward the balance.
+            Confirm the {cfg.label} receipt before this counts toward the balance.
           </p>
           <button
             type="button"
