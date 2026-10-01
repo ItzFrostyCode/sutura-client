@@ -187,6 +187,8 @@ Go to → **http://localhost:3000** 🎉
 
 ## 🔑 Default Login Accounts
 
+> **Full account map** (admin → shop → branch → manager/staff → customers, with IDs and what each account has): [`docs/TEST-ACCOUNTS.md`](docs/TEST-ACCOUNTS.md)
+
 | Role | Email | Password |
 |------|-------|----------|
 | Shop Owner | `maria.cruz@gmail.com` | `password` |
