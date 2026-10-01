@@ -275,3 +275,11 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 - `DEADLINE.md` — deployment timeline and the MySQL → Postgres migration plan, including a known bug to fix in `FileUploadController.php` when switching off local disk storage.
 - `ShopOwnerSubscription.md` — actor/entity breakdown for Shop Owner responsibilities.
 - `Activity-Diagram.md`, `BPMN.md`, `Sequence-Diagram.md`, `Usecase-Diagram.md` — supplementary design diagrams (Sequence-Diagram.md has real renderable Mermaid syntax). **Same caveat as the ERD above applies**: these capture the *originally proposed* design approved at proposal defense — treat them as design intent/reference, not as a live spec. Where they conflict with the actual code (e.g. class/entity names, stage counts), the code wins. Don't regenerate features straight from these diagrams without checking `app/Models/` and the routes first.
+
+## Staff module — thesis alignment (2026-10-01)
+
+- **Staff Home** (`components/dashboard/staff/*`) replaces the old quick-links card; its cards deep-link to `/dashboard/jobs?stage=qc_ironing` and `?mine=1`.
+- **Staff create jobs from an approved appointment** (Appointments → Create Job). `JobCreateForm` hides discount/downpayment for non-owner/manager (the server ignores them) and, without an `appointment_id`, tells staff to start from an appointment. The `/catalog` fetch there is tolerant because designs are owner/manager-only to read.
+- **Support tickets for all shop roles** (Help panel → Support tickets); only the Audit log link stays owner-only. The admin portal shows who filed a ticket (Owner / Branch manager / Staff).
+- **Measurement status** (Finalized / Pending fitting): picker in the measurement form, badge on shop and customer views.
+- **My Jobs** toggle on Orders now uses `?mine=1` (jobs I hold or moved through a stage); **My customers** toggle on Customers for staff.

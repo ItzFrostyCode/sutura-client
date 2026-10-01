@@ -9,6 +9,10 @@ interface CustomerFilterBarProps {
   readonly totalCount: number;
   readonly onlineCount: number;
   readonly walkinCount: number;
+  // Staff can narrow the book to the customers they personally work with.
+  readonly showMineToggle?: boolean;
+  readonly mineOnly?: boolean;
+  readonly setMineOnly?: (val: boolean) => void;
 }
 
 export default function CustomerFilterBar({
@@ -19,6 +23,9 @@ export default function CustomerFilterBar({
   totalCount,
   onlineCount,
   walkinCount,
+  showMineToggle = false,
+  mineOnly = false,
+  setMineOnly,
 }: CustomerFilterBarProps) {
   const tabs = [
     { id: 'all' as const, label: 'All Clients', count: totalCount },
@@ -54,6 +61,16 @@ export default function CustomerFilterBar({
             </button>
           );
         })}
+        {showMineToggle && setMineOnly && (
+          <button
+            type="button"
+            aria-pressed={mineOnly}
+            onClick={() => setMineOnly(!mineOnly)}
+            className={`px-3 min-h-11 md:min-h-0 md:py-1.5 rounded-xl font-bold text-xs shrink-0 cursor-pointer border ${mineOnly ? 'bg-ink text-white border-ink' : 'bg-surface border-line text-ink-muted hover:text-ink hover:bg-canvas'}`}
+          >
+            My customers
+          </button>
+        )}
       </div>
 
       {/* Search Box */}

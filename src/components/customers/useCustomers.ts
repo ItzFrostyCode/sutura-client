@@ -24,6 +24,10 @@ export function useCustomers() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [error, setError] = useState('');
+  // "My customers": only those with an appointment assigned to me or a job I'm on (staff).
+  const [mineOnly, setMineOnly] = useState(false);
+  const roleNames = user?.roles?.map((r) => r.name) ?? [];
+  const isPlainStaff = roleNames.includes('staff') && !roleNames.some((r) => ['store_owner', 'branch_manager'].includes(r));
   const [filterType, setFilterType] = useState<'all' | 'online' | 'walkin' | 'b2b_suki' | 'reseller' | 'walk_in_retail'>('all');
 
   useEffect(() => {
@@ -33,7 +37,7 @@ export function useCustomers() {
     }
 
     let active = true;
-    api.get(`/stores/${store.id}/customers`)
+    api.get(`/stores/${store.id}/customers`, { params: mineOnly ? { mine: 1 } : {} })
       .then(res => {
         if (active) {
           setCustomers(res.data.data);
@@ -50,7 +54,7 @@ export function useCustomers() {
     return () => {
       active = false;
     };
-  }, [store, user]);
+  }, [store, user, mineOnly]);
 
   const handleAddCustomer = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -153,6 +157,9 @@ export function useCustomers() {
 
   return {
     router,
+    mineOnly,
+    setMineOnly,
+    isPlainStaff,
     customers,
     loading,
     search,

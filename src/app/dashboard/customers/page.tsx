@@ -17,6 +17,9 @@ import { isWalkInCustomer } from '@/components/customers/customerHelpers';
 export default function CustomersPage() {
   const {
     router,
+    mineOnly,
+    setMineOnly,
+    isPlainStaff,
     customers,
     loading,
     search,
@@ -91,6 +94,9 @@ export default function CustomersPage() {
           totalCount={customers.length}
           onlineCount={onlineCount}
           walkinCount={walkinCount}
+          showMineToggle={isPlainStaff}
+          mineOnly={mineOnly}
+          setMineOnly={setMineOnly}
         />
 
         {loading ? (

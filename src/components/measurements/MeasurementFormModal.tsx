@@ -1,5 +1,6 @@
 'use client';
 
+import { MeasurementStatusField } from './MeasurementStatus';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { User, Ruler, Loader2, Eye, Pencil } from 'lucide-react';
@@ -172,6 +173,8 @@ export default function MeasurementFormModal({
                 columnPlaceholder="e.g. Sleeve to Wrist"
               />
             </div>
+
+            <MeasurementStatusField value={form.status} onChange={(status) => setForm(f => ({ ...f, status }))} />
 
             <MeasurementPhotos urls={form.photo_urls} onChange={(photo_urls) => setForm(f => ({ ...f, photo_urls }))} storeId={store?.id ?? 0} />
 

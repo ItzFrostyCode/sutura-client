@@ -9,17 +9,13 @@ import {
 interface HelpPanelProps {
   readonly open: boolean;
   readonly onClose: () => void;
-  // Support Tickets (SupportTicketController's dashboard routes) and Audit
-  // Logs are both role:store_owner-only on the backend — the sidebar nav
-  // already hides "Audit Log" from anyone but the owner (dashboard/
-  // layout.tsx), but this panel showed both links to every role regardless,
-  // so a branch manager or staff account opening a support ticket or the
-  // audit log from here got a 403/empty page instead of the sidebar's
-  // correct behavior. Defaults to false so a missing prop fails closed.
+  // The audit log is role:store_owner-only on the backend, so only the owner sees that link.
+  // Support tickets are open to every shop account (owner, branch manager, staff): a non-owner
+  // reaches the SUTURA admin team too, but only ever sees their own tickets.
   readonly isStoreOwner?: boolean;
 }
 
-const OWNER_ONLY_LINK_HREFS = ['/dashboard/support', '/dashboard/audit-log'];
+const OWNER_ONLY_LINK_HREFS = ['/dashboard/audit-log'];
 
 const LINKS = [
   {

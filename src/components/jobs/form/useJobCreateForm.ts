@@ -164,7 +164,8 @@ export function useJobCreateForm() {
       Promise.all([
         api.get(`/stores/${store.id}/customers`),
         api.get(`/stores/${store.id}/services`),
-        api.get(`/stores/${store.id}/catalog`),
+        // Designs are owner/manager-only to read; staff opening a job from an appointment just go without the picker.
+        api.get(`/stores/${store.id}/catalog`).catch(() => ({ data: { data: [] } })),
       ])
         .then(([resCustomers, resServices, resCatalog]) => {
           const custs = Array.isArray(resCustomers.data?.data) ? resCustomers.data.data : [];

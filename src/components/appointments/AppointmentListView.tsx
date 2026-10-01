@@ -112,6 +112,16 @@ export default function AppointmentListView({
           <Eye size={15} />
         </button>
 
+        {!isOwnerOrManager && isConfirmed && !apt.job_order_id && (
+          <button
+            type="button"
+            onClick={() => onCreateJobClick(apt)}
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-surface border border-line hover:bg-canvas text-ink transition-colors"
+          >
+            <Scissors size={13} /> <span>Create Job</span>
+          </button>
+        )}
+
         {/* 3-Dots Action Dropdown Menu (Secondary management actions) */}
         {isOwnerOrManager && !isTerminal && (
           <div className="relative inline-block text-left">
@@ -550,7 +560,7 @@ export default function AppointmentListView({
                       Complete
                     </button>
                   )}
-                  {isConfirmed && isOwnerOrManager && !apt.job_order_id && (
+                  {isConfirmed && !apt.job_order_id && (
                     <button
                       type="button"
                       onClick={() => onCreateJobClick(apt)}

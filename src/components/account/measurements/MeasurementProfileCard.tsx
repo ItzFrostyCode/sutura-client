@@ -1,5 +1,6 @@
 'use client';
 
+import { MeasurementStatusBadge } from '@/components/measurements/MeasurementStatus';
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -64,7 +65,10 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
 
       <div className="flex items-center gap-2 mb-1">
         <Ruler size={16} className="text-taupe shrink-0" />
-        <h3 className="mobile-h4 font-semibold text-ink leading-snug">{group.profileName}</h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="mobile-h4 font-semibold text-ink leading-snug">{group.profileName}</h3>
+          <MeasurementStatusBadge status={active.status} />
+        </div>
       </div>
 
       {active.source && (

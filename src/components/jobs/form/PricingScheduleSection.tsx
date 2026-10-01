@@ -14,6 +14,8 @@ interface PricingScheduleSectionProps {
   readonly setIsTotalAmountCustom: (custom: boolean) => void;
   readonly setIsDueDateCustom: (custom: boolean) => void;
   readonly isBulkOrder: boolean;
+  // Only owners and branch managers take payments or give discounts; staff open the order unpaid.
+  readonly canCollectMoney?: boolean;
 }
 
 const DISCOUNT_PRESETS = [
@@ -32,6 +34,7 @@ export default function PricingScheduleSection({
   setIsTotalAmountCustom,
   setIsDueDateCustom,
   isBulkOrder,
+  canCollectMoney = true,
 }: PricingScheduleSectionProps) {
   const [showDiscount, setShowDiscount] = useState(() => Number(formData.discount_amount || '0') > 0);
   const [discountMode, setDiscountMode] = useState<'fixed' | 'percent'>('fixed');
@@ -236,6 +239,7 @@ export default function PricingScheduleSection({
       </div>
 
       {/* ── Customer Discount / Tawad / Suki Privileges Panel ── */}
+      {canCollectMoney && (
       <div className="mt-4 p-4 rounded-xl bg-canvas/40 border border-line space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -396,6 +400,7 @@ export default function PricingScheduleSection({
           </div>
         )}
       </div>
+      )}
 
       {/* Financial Invoice Box */}
       <div className="space-y-4 mt-2">
@@ -469,6 +474,7 @@ export default function PricingScheduleSection({
           </div>
 
           {/* Downpayment Input */}
+          {canCollectMoney && (
           <div>
             <div className="flex items-center justify-between mb-1">
               <label
@@ -526,6 +532,7 @@ export default function PricingScheduleSection({
               </p>
             )}
           </div>
+          )}
 
           {/* Remaining Balance card */}
           <div>

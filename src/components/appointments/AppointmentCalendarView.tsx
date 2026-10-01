@@ -485,7 +485,7 @@ export default function AppointmentCalendarView({
                       Complete
                     </button>
                   )}
-                  {isConfirmed && isOwnerOrManager && !apt.job_order_id && (
+                  {isConfirmed && !apt.job_order_id && (
                     <button
                       type="button"
                       onClick={() => onCreateJobClick(apt)}
