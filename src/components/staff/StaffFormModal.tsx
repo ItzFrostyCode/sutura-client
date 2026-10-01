@@ -189,7 +189,7 @@ export default function StaffFormModal({
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="staff@sutura.com"
+                    placeholder="firstname.lastname@sutura.com"
                     className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs"
                   />
                 </div>
