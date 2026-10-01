@@ -78,6 +78,7 @@ export default function AppointmentsPage() {
     isOwnerOrManager,
     handleConfirmReview,
     handleRejectReview,
+    handleAssign,
     updateStatus,
     handleCheckIn,
     handleAccommodateEarly,
@@ -376,7 +377,7 @@ export default function AppointmentsPage() {
                     Booking Status
                   </label>
                   <div className="flex items-center gap-1.5 flex-wrap xl:flex-nowrap">
-                    {(['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'] as const).map(s => {
+                    {(['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rejected', 'no_show'] as const).map(s => {
                       let tabLabel = '';
                       let count = 0;
                       if (s === 'all') {
@@ -394,6 +395,7 @@ export default function AppointmentsPage() {
                         if (s === 'confirmed') count = stats.confirmedCount;
                         if (s === 'completed') count = stats.completedCount;
                         if (s === 'cancelled') count = stats.cancelledCount;
+                        if (s === 'rejected') count = stats.rejectedCount;
                       }
 
                       const isActive = statusFilter === s;
@@ -528,6 +530,9 @@ export default function AppointmentsPage() {
         actionLoadingId={actionLoadingId}
         onConfirmReview={handleConfirmReview}
         onRejectReview={handleRejectReview}
+        staff={staff}
+        canAssign={isOwnerOrManager}
+        onAssign={handleAssign}
         onRescheduleSubmit={handleRescheduleSubmit}
         onCompleteSubmit={handleCompleteSubmit}
         onCancelConfirm={handleCancelConfirm}

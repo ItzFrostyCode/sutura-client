@@ -118,11 +118,11 @@ export function useAppointments() {
     }
   };
 
-  const handleRejectReview = async (id: number): Promise<boolean> => {
+  const handleRejectReview = async (id: number, reasonCode: string, note: string): Promise<boolean> => {
     if (!store) return false;
     setActionLoadingId(id);
     try {
-      await api.put(`/stores/${store.id}/appointments/${id}`, { status: 'cancelled' });
+      await api.post(`/stores/${store.id}/appointments/${id}/reject`, { reason_code: reasonCode, note: note || null });
       toast.success('Appointment rejected.');
       fetchAppointments();
       return true;
@@ -131,6 +131,23 @@ export function useAppointments() {
       return false;
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  // Who handles this appointment. null unassigns. The server notifies the staff member.
+  const handleAssign = async (id: number, staffId: number | null): Promise<boolean> => {
+    if (!store) return false;
+    try {
+      const res = await api.put(`/stores/${store.id}/appointments/${id}/assign`, { staff_id: staffId });
+      toast.success(staffId ? 'Staff assigned — they were notified.' : 'Staff unassigned.');
+      const updated = res.data?.data;
+      setViewApt(prev => (prev && prev.id === id ? { ...prev, assigned_staff_id: staffId, assigned_staff: updated?.assigned_staff ?? null } : prev));
+      setReviewApt(prev => (prev && prev.id === id ? { ...prev, assigned_staff_id: staffId, assigned_staff: updated?.assigned_staff ?? null } : prev));
+      fetchAppointments();
+      return true;
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not assign staff.'));
+      return false;
     }
   };
 
@@ -358,6 +375,7 @@ export function useAppointments() {
     let inProgressCount = 0;
     let completedCount = 0;
     let cancelledCount = 0;
+    let rejectedCount = 0;
     let noShowCount = 0;
 
     for (const a of appointments) {
@@ -370,6 +388,7 @@ export function useAppointments() {
       else if (a.status === 'in_progress') inProgressCount++;
       else if (a.status === 'completed') completedCount++;
       else if (a.status === 'cancelled') cancelledCount++;
+      else if (a.status === 'rejected') rejectedCount++;
       else if (a.status === 'no_show') noShowCount++;
     }
 
@@ -381,6 +400,7 @@ export function useAppointments() {
       activeCount: confirmedCount + inProgressCount,
       completedCount,
       cancelledCount,
+      rejectedCount,
       noShowCount,
       totalCount: appointments.length,
     };
@@ -446,6 +466,7 @@ export function useAppointments() {
     isOwnerOrManager,
     handleConfirmReview,
     handleRejectReview,
+    handleAssign,
     handleCreateCustomer,
     updateStatus,
     handleCheckIn,

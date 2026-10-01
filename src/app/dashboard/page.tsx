@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { AnalyticsData, JobItem, StaffPresence } from '@/components/dashboard/dashboardHelpers';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ActionQueue from '@/components/dashboard/ActionQueue';
+import NeedsDecisionCard from '@/components/dashboard/NeedsDecisionCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import StaffOnline from '@/components/dashboard/StaffOnline';
 import NewsView from '@/components/dashboard/NewsView';
@@ -278,6 +279,9 @@ function DashboardPageContent() {
 
       {activeTab === 'dashboard' && canViewAnalytics && (
         <>
+      {/* ── Section 1b: what needs a decision before anything else ───────── */}
+      <NeedsDecisionCard storeId={storeId} enabled={canViewAnalytics} />
+
       {/* ── Section 2: Financial Snapshot + Metric Chips ─────────────────── */}
       <section>
         <h2 className="text-eyebrow-accent mb-3">Financial Snapshot</h2>
