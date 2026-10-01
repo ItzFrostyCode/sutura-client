@@ -1,5 +1,6 @@
 'use client';
 
+import { safeHref } from '@/lib/safeHref';
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -83,7 +84,7 @@ export default function CatalogStoreProfileCard({ item, gate }: CatalogStoreProf
       {item.external_gallery_url && (
         <div className="border-t border-line px-4 py-2.5">
           <a
-            href={item.external_gallery_url}
+            href={safeHref(item.external_gallery_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full border border-line-strong hover:border-ink hover:bg-canvas text-ink-body font-medium tracking-wide py-2 transition-colors flex items-center justify-center gap-2 text-xs uppercase"

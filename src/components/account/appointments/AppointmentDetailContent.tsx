@@ -1,3 +1,4 @@
+import { safeHref } from '@/lib/safeHref';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -258,7 +259,7 @@ export default function AppointmentDetailContent({
         <div className="mb-3 border border-line p-3 space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-ink">From the store</p>
           {appt.shared_link && (
-            <a href={appt.shared_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mobile-body-sm text-taupe hover:underline break-all">
+            <a href={safeHref(appt.shared_link)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mobile-body-sm text-taupe hover:underline break-all">
               <LinkIcon size={16} className="shrink-0" /> {appt.shared_link}
             </a>
           )}
