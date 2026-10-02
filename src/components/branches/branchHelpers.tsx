@@ -1,3 +1,4 @@
+import { formatAddress } from '@/lib/formatAddress';
 import React from 'react';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
@@ -21,6 +22,7 @@ export interface StoreBranch {
   name: string;
   address: string;
   landmark?: string | null;
+  barangay?: string | null;
   city: string;
   district?: string | null;
   contact_number?: string | null;
@@ -42,6 +44,7 @@ export interface BranchFormData {
   name: string;
   address: string;
   landmark: string;
+  barangay: string;
   city: string;
   district: string;
   contact_number: string;
@@ -57,6 +60,7 @@ export const EMPTY_FORM: BranchFormData = {
   name: '',
   address: '',
   landmark: '',
+  barangay: '',
   city: '',
   district: '',
   contact_number: '',
@@ -95,6 +99,6 @@ export const getMapUrl = (branch: StoreBranch) => {
     return `https://www.google.com/maps?q=${branch.latitude},${branch.longitude}`;
   }
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${branch.address}, ${branch.city}`
+    formatAddress(branch)
   )}`;
 };

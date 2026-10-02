@@ -1,3 +1,4 @@
+import { formatAddress } from '@/lib/formatAddress';
 import React, { useState, useMemo } from 'react';
 import { MapPin, Search, X, Check } from 'lucide-react';
 import { Branch, StoreSettings } from '../../types';
@@ -189,8 +190,7 @@ export default function BookingBranchSelector({
                         </div>
                         {b.address && (
                           <p className="mobile-caption text-ink-faint mt-0.5 font-normal line-clamp-1">
-                            {b.address}
-                            {b.city ? `, ${b.city}` : ''}
+                            {formatAddress(b)}
                           </p>
                         )}
                       </div>

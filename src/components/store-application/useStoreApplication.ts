@@ -64,6 +64,7 @@ export function useStoreApplication() {
     Object.entries(owner).forEach(([key, value]) => { if (value) form.append(key, value); });
     form.append('store_name', shop.store_name);
     form.append('address', shop.address);
+    if (shop.barangay.trim()) form.append('barangay', shop.barangay.trim());
     form.append('city', shop.city);
     form.append('province', shop.province);
     form.append('district', shop.location.district);

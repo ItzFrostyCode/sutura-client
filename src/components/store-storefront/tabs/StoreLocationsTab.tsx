@@ -1,5 +1,6 @@
 'use client';
 
+import { formatAddress } from '@/lib/formatAddress';
 import React from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -175,8 +176,7 @@ export default function StoreLocationsTab({
                     <p className="text-xs text-ink-body flex items-start gap-1.5 pt-1">
                       <MapPin size={14} className="shrink-0 text-taupe mt-0.5" />
                       <span>
-                        {branch.address}
-                        {branch.district ? `, ${branch.district}` : ''}, {branch.city}
+                        {formatAddress(branch)}
                       </span>
                     </p>
 
