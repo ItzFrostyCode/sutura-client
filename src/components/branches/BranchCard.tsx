@@ -58,6 +58,12 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
             </div>
             <StatusBadge status={branch.status} />
           </div>
+          {branch.verification_status === 'pending' && (
+            <p className="mb-3 border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">Awaiting location check. Hidden from the map and booking until the admin verifies it.</p>
+          )}
+          {branch.verification_status === 'rejected' && (
+            <p className="mb-3 border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">Location sent back: {branch.verification_note}. Fix it and save to send it again.</p>
+          )}
 
           <div className="space-y-2 mt-4">
             <div className="flex items-start gap-2 text-sm text-ink-body">

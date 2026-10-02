@@ -14,6 +14,7 @@ interface Overview {
   stores: Record<string, number>;
   active_subscriptions: number;
   open_tickets: number;
+  pending_branches: number;
   recent_applications: { id: number; name: string; city: string; created_at: string; owner: { name: string; email: string; contact_email: string | null } | null }[];
 }
 
@@ -33,8 +34,11 @@ export default function AdminOverviewPage() {
 
       {!data ? <ListState loading={!error} error={error} empty={false} emptyText="" /> : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard label="Pending applications" value={pending} hint={pending ? 'Waiting for your review' : 'All caught up'} />
+            <Link href="/admin/branches" className="block hover:bg-canvas">
+              <StatCard label="Branches to check" value={data.pending_branches} hint={data.pending_branches ? 'Pins waiting for verification' : 'All caught up'} />
+            </Link>
             <StatCard label="Live stores" value={data.stores.approved ?? 0} hint={`${data.stores.rejected ?? 0} rejected`} />
             <StatCard label="Active subscriptions" value={data.active_subscriptions} />
             <StatCard label="Accounts" value={data.users.total} hint={`${data.users.customers} customers · ${data.users.store_owners} owners`} />
