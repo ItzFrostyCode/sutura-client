@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 
-export type Tab = 'receipts' | 'job_balances' | 'catalog_orders' | 'methods';
+export type Tab = 'receipts' | 'job_balances' | 'catalog_orders' | 'methods' | 'statements';
 
 export interface PaymentAccount { id: number; kind: string; name: string; account_name: string; account_number: string; qr_path?: string | null; instructions?: string | null; is_active: boolean; store_branch_id?: number | null; branch?: { id: number; name: string } | null }
 
@@ -87,7 +87,7 @@ interface RawJobData {
   status: string;
 }
 
-const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders', 'methods'];
+const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders', 'methods', 'statements'];
 
 export function usePayments() {
   const { store } = useAuthStore();
