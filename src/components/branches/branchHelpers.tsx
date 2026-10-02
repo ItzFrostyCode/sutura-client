@@ -31,6 +31,8 @@ export interface StoreBranch {
   longitude?: string | null;
   operating_hours?: string | null;
   status?: string;
+  verification_status?: 'pending' | 'verified' | 'rejected';
+  verification_note?: string | null;
   staff_profiles_count?: number;
   job_orders_count?: number;
   guide_image_url?: string | null;

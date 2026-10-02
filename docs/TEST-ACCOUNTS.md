@@ -16,7 +16,7 @@ Everything below is account-based: pick the row, open that account, and check it
 |---|---|---|---|---|
 | 1 | System Admin | `admin@sutura.com` | `password` | `/admin/login` |
 
-Check: shop applications and approvals, subscription plans and upgrades, support tickets (each ticket is tagged with who filed it — Owner / Branch manager / Staff), platform activity.
+Check: shop applications and approvals, subscription plans and upgrades, support tickets (each ticket is tagged with who filed it — Owner / Branch manager / Staff), platform activity, and **Branch locations** — the demo shop has one second branch (*Ubalde Branch (Agdao)*) waiting for verification; verify or reject it, then look at the owner's Branches page (`maria.cruz@gmail.com`) to see the badge change.
 
 ---
 
@@ -82,7 +82,7 @@ A customer can hold only one active appointment at a time — that is why `booki
 
 | I want to test… | Open |
 |---|---|
-| Shop approvals, plans, platform tickets | `admin@sutura.com` |
+| Shop approvals, plans, platform tickets, **verify a new branch's map pin** | `admin@sutura.com` |
 | Approve / reject / assign appointments, **Needs your decision** on Home | `maria.cruz@gmail.com` or `miguel.manager@sutura.com` |
 | Payment Methods, verify an e-payment, Requirements (service / design / combo / shop defaults) | `maria.cruz@gmail.com` |
 | Staff Home, production queue, Assigned to me, Create Job from an appointment (phone: 320–599px) | `juan.delacruz@sutura.com` |

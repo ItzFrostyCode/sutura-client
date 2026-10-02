@@ -1,4 +1,4 @@
-import { Banknote, CreditCard, FileCheck2, LayoutDashboard, LifeBuoy, ScrollText, Store, Users, type LucideIcon } from 'lucide-react';
+import { Banknote, CreditCard, MapPin, FileCheck2, LayoutDashboard, LifeBuoy, ScrollText, Store, Users, type LucideIcon } from 'lucide-react';
 
 export interface AdminNavItem {
   name: string;
@@ -6,14 +6,15 @@ export interface AdminNavItem {
   icon: LucideIcon;
 }
 
-// sutura2's admin views, mapped onto this app. Apparel Categories and
-// Branch Map Validation aren't here: specializations now come from the
-// fixed canonical taxonomy (nothing free-text to approve), and branches are
-// pinned on a map by the owner rather than queued for admin validation.
+// sutura2's admin views, mapped onto this app. Apparel Categories isn't here:
+// specializations come from the fixed canonical taxonomy (nothing free-text
+// to approve). Branch locations is the map-validation queue: a branch an owner
+// adds or moves waits here before it goes on the public map.
 export const ADMIN_NAV: AdminNavItem[] = [
   { name: 'Overview', path: '/admin', icon: LayoutDashboard },
   { name: 'Applications', path: '/admin/applications', icon: FileCheck2 },
   { name: 'Stores', path: '/admin/stores', icon: Store },
+  { name: 'Branch locations', path: '/admin/branches', icon: MapPin },
   { name: 'Accounts', path: '/admin/accounts', icon: Users },
   { name: 'Plans', path: '/admin/plans', icon: CreditCard },
   { name: 'Plan Payments', path: '/admin/upgrades', icon: Banknote },

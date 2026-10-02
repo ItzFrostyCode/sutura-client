@@ -96,6 +96,7 @@ Use the accounts in `TEST-ACCOUNTS.md` (password `password`).
 | Owner | **Text Messages** | drafts, a "Test mode" banner |
 | Staff `juan.delacruz@sutura.com` | **Home**, then **Create Job** on a confirmed appointment | numbers + queue; the form has no discount/downpayment |
 | Admin `admin@sutura.com` at `/admin/login` | open a shop application and its documents | the documents open (proves the private bucket works) |
+| Admin `admin@sutura.com` | **Branch locations** → open the pin of the waiting branch → **Verify** | the owner's branch loses its "Awaiting location check" note and appears in search |
 | Anyone | tracking page with a real tracking code | the order status |
 | Railway shell | `php artisan app:backup-database` | a new file in the `sutura-private` bucket under `backups/` |
 
@@ -106,6 +107,7 @@ Use the accounts in `TEST-ACCOUNTS.md` (password `password`).
 ## Step 6 — The week of the defense
 
 - [ ] Open the Supabase project every few days (free projects sleep after about 7 days idle). Open it the day before the demo.
+- [ ] Open **Admin → Branch locations** and verify every real branch (a new or moved branch stays off the map until you do; approving a shop verifies its main branch automatically).
 - [ ] Change the admin password. Make sure `ALLOW_DEMO_SEED` is **not** set.
 - [ ] Log in once as each role on the live site.
 - [ ] **Security updates** (on a branch, not the day before): `npm audit fix` in `sutura-client` (Next.js has an advisory in a feature we do not use) and `composer update league/commonmark` in `sutura-server` when a patched version is installable. Re-run Step 5 afterwards.

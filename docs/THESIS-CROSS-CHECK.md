@@ -1,6 +1,6 @@
 # Thesis cross-check — SUTURA (2026-10-02)
 
-> **Update, later the same day — closed since the first version of this report:** durable backups (set `BACKUP_DISK`), appointment confirmations / changes now go by **email**, the word "forecasts" is gone, shop reviews now require a completed order or appointment, Reports-only analytics and exports are **refused by the server** on lower plans (not just locked in the browser), and **SMS** is built (review-before-send, test mode, see below). Still open: the three Admin gaps (custom apparel categories, new-branch verification, system-health panel). Where a table row below still shows the old status, this note wins.
+> **Update, later the same day — closed since the first version of this report:** durable backups (set `BACKUP_DISK`), appointment confirmations / changes now go by **email**, the word "forecasts" is gone, shop reviews now require a completed order or appointment, Reports-only analytics and exports are **refused by the server** on lower plans (not just locked in the browser), and **SMS** is built (review-before-send, test mode, see below). **New-branch verification is now built** (a branch is hidden from the map, search and booking until the System Admin verifies its pin). Still open: two Admin gaps (custom apparel categories, system-health panel). Where a table row below still shows the old status, this note wins.
 
 Source: `suturathesisapproved.txt` and `Title&Objectives.md` (title, general objective, six specific objectives, scope, limitations, requirements analysis, use cases, BPMN process models, data model, technical background). The Figma UI design section is excluded, as requested.
 
@@ -11,7 +11,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 | Part of the thesis | Result |
 |---|---|
 | Title / general objective | ✅ |
-| Objective 1 — Administrative Dashboard | 🟡 approvals, accounts, plans, activity done; **category validation, branch-location verification, "system performance"** missing |
+| Objective 1 — Administrative Dashboard | 🟡 approvals, accounts, plans, activity done; **category validation and "system performance"** missing (branch-location verification is done) |
 | Objective 2 — Subscription & Account Management | ✅ plans, staff limits, expiry, roles; 🟡 feature gating is mostly UI-only |
 | Objective 3 — Shop Discovery & Map | ✅ (map is Leaflet, not Google Maps ➖); 🟡 reviews are not purchase-verified |
 | Objective 4 — Tailoring Shop Dashboard | ✅ |
@@ -35,7 +35,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 | Manage shop registration approvals | ✅ | `/admin/applications`: review documents, approve / reject with reason; approval issues the shop login and emails the temporary credentials |
 | Verify business credentials | ✅ | uploaded documents are viewable only by the admin |
 | Validate apparel categories | 🟡 | Categories are a fixed list in code (`CanonicalTaxonomy`), so they are "pre-validated". There is an `others` free-text safety valve and **no admin screen to approve a custom category** |
-| Verify branch map locations | 🟡 | The admin sees a Maps link while reviewing the application. **Branches added later go live immediately** (`status = active`), with no admin check |
+| Verify branch map locations | ✅ | Every branch needs a map pin and barangay. A new or moved branch is `pending` and hidden from the public map, search and booking until the admin verifies it in **Admin → Branch locations** (or rejects it with a reason the owner sees). Approving a shop verifies its main branch |
 | Oversee platform-wide activity | ✅ | Activity (audit log), accounts (suspend / reactivate), support tickets, moderation (hide a shop or a design) |
 | System performance | ❌ | The admin dashboard shows counts and estimated MRR, **no uptime / latency / error indicators** |
 | Monitor subscriptions, manage plans | ✅ | Upgrade requests with receipts, subscription report, create / edit plans |
@@ -151,7 +151,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 | 3 | Remove the word **"forecasts"** from the Premium "Advanced dashboard" text | Contradicts the Limitations | 5 min |
 | 4 | Reviews only after a completed order / appointment | Thesis calls them "verified customer reviews" | 1 h |
 | 5 | Server-side plan gating (analytics, gallery, exports, notifications) | Tier enforcement is only a UI lock today | 2 h |
-| 6 | Admin: verify **new branches** before they show on the map | Objective 1: "verify branch map locations" | ½ day |
+| 6 | ~~Admin: verify **new branches** before they show on the map~~ — **done** | Objective 1: "verify branch map locations" | ½ day |
 | 7 | Admin: approve / reject **custom apparel categories** | Objective 1: "validate apparel categories" | ½ day |
 | 8 | Admin "system health" panel (database ping, last backup, error count) | Objective 1: "system performance" | 2–3 h |
 | 9 | **SMS** notifications | Scope and use cases say "SMS or email"; needs a provider account (Semaphore, Twilio, …) and money | provider-dependent |
