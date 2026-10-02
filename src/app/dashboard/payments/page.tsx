@@ -10,6 +10,7 @@ import DigitalReceiptsTab from '@/components/payments/tabs/DigitalReceiptsTab';
 import JobBalancesTab from '@/components/payments/tabs/JobBalancesTab';
 import CatalogOrdersTab from '@/components/payments/tabs/CatalogOrdersTab';
 import PaymentMethodsTab from '@/components/payments/PaymentMethodsTab';
+import StatementsTab from '@/components/payments/statements/StatementsTab';
 import RejectReasonModal from '@/components/payments/modals/RejectReasonModal';
 import LogPaymentModal from '@/components/payments/modals/LogPaymentModal';
 
@@ -178,6 +179,8 @@ export default function PaymentQueuePage() {
         )}
 
         {activeTab === 'methods' && <PaymentMethodsTab />}
+
+        {activeTab === 'statements' && <StatementsTab />}
 
         {activeTab === 'catalog_orders' && (
           <CatalogOrdersTab
