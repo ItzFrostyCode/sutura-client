@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import {
+import { MessageSquare,
   LayoutDashboard, Scissors, UserCog, Package, Users, Building2,
   Calendar, Home, CreditCard,
   Sparkles, ScrollText, X, HelpCircle, LayoutGrid,
@@ -146,6 +146,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       items: [
         { name: 'Orders', path: '/dashboard/jobs', icon: Scissors },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
+        // Texts wait for the shop to check the number and wording before they are sent.
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Text Messages', path: '/dashboard/sms', icon: MessageSquare }] : []),
       ],
     },
     {
