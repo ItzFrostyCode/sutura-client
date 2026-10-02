@@ -36,7 +36,7 @@ Service from the `sutura-server` repo. Region: Asia-Pacific (Singapore). Variabl
 | `DB_CONNECTION` `DB_HOST` `DB_PORT` `DB_DATABASE` `DB_USERNAME` `DB_PASSWORD` `DB_SSLMODE` | as in step 0 |
 | `SANCTUM_TOKEN_EXPIRATION` | optional, minutes (default 10080 = 7 days) |
 | `MAIL_*` | real SMTP credentials (otherwise reset-password and approval emails fail) |
-| R2 / S3 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION=auto`, `AWS_BUCKET`, `AWS_ENDPOINT`, `AWS_USE_PATH_STYLE_ENDPOINT=true`, `AWS_URL` — and switch `UPLOAD_DISK` to `s3` (see `DEADLINE.md`) |
+| Files (R2) | `UPLOAD_DISK=s3`, `PRIVATE_DISK=s3_private`, `BACKUP_DISK=s3_private`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION=auto`, `AWS_ENDPOINT`, `AWS_USE_PATH_STYLE_ENDPOINT=true`, `AWS_BUCKET` (public bucket) + `AWS_URL` (its public domain), `AWS_PRIVATE_BUCKET` (a **private** bucket for shop documents, subscription receipts and backups) |
 
 Deploy/release commands: `composer install --no-dev --optimize-autoloader`, then `php artisan migrate --force`, then `php artisan config:cache && php artisan route:cache`.
 
@@ -47,7 +47,7 @@ Deploy/release commands: `composer install --no-dev --optimize-autoloader`, then
 - **Scheduler.** The daily jobs (database backup, subscription expiry, reminders, overdue alerts) only run if something calls `php artisan schedule:run` every minute. On Railway add a second service from the same repo with the start command `php artisan schedule:work`.
 - **Backups.** `app:backup-database` needs `pg_dump` (install `postgresql-client` in the image) and an off-server disk: set `BACKUP_DISK=s3` plus the R2 `AWS_*` variables. Without it the dump stays on the container's disk and disappears on every redeploy.
 - **Text messages.** Leave `SMS_DRIVER=log` (test mode: nothing is delivered) until you have a provider account. To send for real: `SMS_DRIVER=semaphore`, `SEMAPHORE_API_KEY`, optionally `SEMAPHORE_SENDER_NAME`, and `SMS_DAILY_CAP`. Outside production a real driver only texts numbers on `SMS_TEST_ALLOWLIST` — set it to your own numbers while testing. Never put real customers' numbers in a test database.
-- **Receipts.** Uploaded files are served from the `public` disk; when you switch uploads to R2 (`UPLOAD_DISK`), the Statements export reads them from the `s3` disk automatically.
+- **Files.** The disk is chosen by `UPLOAD_DISK` (public photos / receipts) and `PRIVATE_DISK` (documents, upgrade receipts) — no code change needed. The Statements export follows `UPLOAD_DISK` automatically. Files already uploaded to the old local disk are not moved; the demo seed regenerates its sample receipts.
 
 ## 2. Vercel (Next.js)
 
