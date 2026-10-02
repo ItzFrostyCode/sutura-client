@@ -187,6 +187,8 @@ Go to → **http://localhost:3000** 🎉
 
 ## 🔑 Default Login Accounts
 
+> **Going live (Vercel + Railway + Supabase + R2), step by step for the leader:** [`docs/LEADER-GO-LIVE-STEPS.md`](docs/LEADER-GO-LIVE-STEPS.md)
+
 > **Full account map** (admin → shop → branch → manager/staff → customers, with IDs and what each account has): [`docs/TEST-ACCOUNTS.md`](docs/TEST-ACCOUNTS.md)
 
 | Role | Email | Password |
