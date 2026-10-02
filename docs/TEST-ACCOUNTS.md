@@ -68,6 +68,7 @@ What each one has in their history:
 | 9 | Andres Bonifacio | `andres.b@gmail.com` | `password` | 1 (completed) | 3: ORD-0003, 0006, 0009 (ready for pickup, mass cutting, completed) | 1 (wedding-gown fitting) | 1 review |
 | 10 | Maria Clara | `maria.clara@gmail.com` | `password` | — | — | 1 — **Pending fitting** | — |
 | 11 | Tess Tester | `tess.tester@gmail.com` | `password` | — | — | — | **Clean account to test booking** (no appointments) |
+| — | Pia Santos | `pia.santos@gmail.com` | `password` | — | 8 completed past orders (ORD-H001 … H008) over the last ~8 months | — | **16 receipt images** (GCash / Maya / bank) — use her records with the owner's *Payments → Statements* |
 | 12 | Tomas Tester | `tomas.tester@gmail.com` | `password` | 1 — **Rejected** (with the shop's reason) | — | — | Can book again |
 | 13 | Liza Fernandez | `liza.fernandez@example.com` | `password` | 1 pending (pays by GCash/bank — receipt waiting) | — | — | 1 catalog order |
 | 14 | Mark Villanueva | `mark.villanueva@example.com` | `password` | 1 pending (receipt waiting) | — | — | — |
@@ -91,9 +92,13 @@ A customer can hold only one active appointment at a time — that is why `booki
 | A rejected request | `tomas.tester@gmail.com` |
 | Track an order, pay for it ("Pay for this order"), see its stages | `jose.rizal@gmail.com` (e.g. ORD-0002) |
 | A completed order, reviews, history | `juan.delacruz@gmail.com`, `andres.b@gmail.com` |
+| Download receipts by week / 2 weeks / month / year / all time (ZIP, CSV, print) | `maria.cruz@gmail.com` → Payments → **Statements** (needs the Premium plan for bulk download; a fresh seed is Premium) |
+| Review a text message before it is sent; fix a wrong number | `maria.cruz@gmail.com` → **Text Messages** (test mode: nothing is delivered). A customer turns texts off at *Me → Settings → Text messages* |
 | Receipts waiting for the owner to verify | owner side: `maria.cruz@gmail.com` → Collect Payments; customers `liza.fernandez@…`, `mark.villanueva@…`, `cristina.ramos@…` |
 
 ---
+
+> **Phone numbers.** Demo customers have made-up mobile numbers (`0900 000 00NN` — the 0900 prefix is not an assigned mobile prefix) and the SMS driver is in **test mode**, so no text can reach a real person. Cristina Ramos deliberately has a broken number so the "fix the number" step can be seen.
 
 ## 5. Old generic logins were renamed
 

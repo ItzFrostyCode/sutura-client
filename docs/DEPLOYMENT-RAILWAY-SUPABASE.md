@@ -42,6 +42,13 @@ Deploy/release commands: `composer install --no-dev --optimize-autoloader`, then
 
 **Demo data for the defense.** In production `php artisan db:seed --force` creates roles and subscription plans only. To load the demo shop (accounts in `docs/TEST-ACCOUNTS.md`, all with password `password`) set `ALLOW_DEMO_SEED=true` for that single run, then remove it. Change the admin password afterwards and do not leave demo accounts on a real, public system.
 
+### 1b. Scheduler, backups and text messages (Railway)
+
+- **Scheduler.** The daily jobs (database backup, subscription expiry, reminders, overdue alerts) only run if something calls `php artisan schedule:run` every minute. On Railway add a second service from the same repo with the start command `php artisan schedule:work`.
+- **Backups.** `app:backup-database` needs `pg_dump` (install `postgresql-client` in the image) and an off-server disk: set `BACKUP_DISK=s3` plus the R2 `AWS_*` variables. Without it the dump stays on the container's disk and disappears on every redeploy.
+- **Text messages.** Leave `SMS_DRIVER=log` (test mode: nothing is delivered) until you have a provider account. To send for real: `SMS_DRIVER=semaphore`, `SEMAPHORE_API_KEY`, optionally `SEMAPHORE_SENDER_NAME`, and `SMS_DAILY_CAP`. Outside production a real driver only texts numbers on `SMS_TEST_ALLOWLIST` — set it to your own numbers while testing. Never put real customers' numbers in a test database.
+- **Receipts.** Uploaded files are served from the `public` disk; when you switch uploads to R2 (`UPLOAD_DISK`), the Statements export reads them from the `s3` disk automatically.
+
 ## 2. Vercel (Next.js)
 
 Project from the `sutura-client` repo. One variable: `NEXT_PUBLIC_API_URL=https://<railway-url>/api/v1`. Commit `package-lock.json` so Vercel builds the same versions you tested.

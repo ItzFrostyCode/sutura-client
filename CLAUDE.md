@@ -283,3 +283,9 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 - **Support tickets for all shop roles** (Help panel → Support tickets); only the Audit log link stays owner-only. The admin portal shows who filed a ticket (Owner / Branch manager / Staff).
 - **Measurement status** (Finalized / Pending fitting): picker in the measurement form, badge on shop and customer views.
 - **My Jobs** toggle on Orders now uses `?mine=1` (jobs I hold or moved through a stage); **My customers** toggle on Customers for staff.
+
+## Statements and Text messages (2026-10-02)
+
+- **Payments → Statements** (`components/payments/statements/*`, print view at `/print/payments`): period presets (weekly / bi-weekly / monthly / yearly / all time from the first record), per-row and bulk download. Downloads use axios `responseType: 'blob'`; error bodies are blobs too (`errorText()` reads the message out).
+- **Text Messages** (`/dashboard/sms`, `components/sms/*`, owner + branch manager): drafts wait for the shop to fix the number / wording, then send; test-mode banner; settings for when to send and which events. Customers manage their number and opt-out at `/account/settings/notifications`.
+

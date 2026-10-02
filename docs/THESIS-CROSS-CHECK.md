@@ -1,5 +1,7 @@
 # Thesis cross-check — SUTURA (2026-10-02)
 
+> **Update, later the same day — closed since the first version of this report:** durable backups (set `BACKUP_DISK`), appointment confirmations / changes now go by **email**, the word "forecasts" is gone, shop reviews now require a completed order or appointment, Reports-only analytics and exports are **refused by the server** on lower plans (not just locked in the browser), and **SMS** is built (review-before-send, test mode, see below). Still open: the three Admin gaps (custom apparel categories, new-branch verification, system-health panel). Where a table row below still shows the old status, this note wins.
+
 Source: `suturathesisapproved.txt` and `Title&Objectives.md` (title, general objective, six specific objectives, scope, limitations, requirements analysis, use cases, BPMN process models, data model, technical background). The Figma UI design section is excluded, as requested.
 
 Compared against the real code (Laravel API + Next.js client, the four roles: System Admin, Shop Owner / Branch Manager, Tailoring Staff, Customer) and, where it mattered, against a live database. **Legend:** ✅ met · 🟡 partly met · ❌ not built · ➖ intentionally different from the thesis (explained in section 7).
@@ -127,6 +129,18 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 4. **Database:** thesis says MySQL on PlanetScale; the code runs on MySQL locally and targets **Supabase (Postgres)** for deployment (`DEADLINE.md`).
 5. **Materials allocation / inventory** — excluded by the thesis scope; only labor (stage) attribution exists.
 6. **Appointment-level and job-level assignment are separate** by design; job attribution happens automatically when staff move a job into a stage.
+
+## 8a. Done on 2026-10-02
+
+| Gap | Now |
+|---|---|
+| Backups lost on redeploy | `app:backup-database` uploads to the `BACKUP_DISK` disk (e.g. Cloudflare R2) and removes the local copy; the scheduler must be running (cron / `schedule:work`) |
+| Appointment confirmation only in-app | Email too, for confirmed / rejected / rescheduled / cancelled (walk-ins excluded) |
+| "Forecasts" wording | Removed from the Premium "Advanced dashboard" text |
+| Reviews not verified | A shop can be reviewed only after a completed order or appointment with it |
+| Plan gating UI-only | `PlanGate`: staff / branch analytics and bulk exports return `403 plan_required` below Premium |
+| No SMS | **Text messages**: each text lands in an outbox first and waits for the shop to check the number and wording (or auto-sends if the owner chooses). Only 5 moments are texted by default (reschedule, shop cancellation, day-before reminder, ready for fitting, ready for pick-up); every text is one 160-character SMS. Test mode by default — nothing is delivered. Real delivery needs a provider account (Semaphore driver included, untested live) |
+| Receipts could not be downloaded in bulk | Payments → **Statements**: one receipt, the ones you tick, or a whole period (week / 2 weeks / half-month / month / year / all time from the first record) as ZIP of images + CSV, plus a printable statement |
 
 ## 8. Gaps to close, ranked
 
