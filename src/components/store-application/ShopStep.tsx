@@ -59,7 +59,8 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
       </fieldset>
 
       <div className="space-y-5 border-t border-line pt-5">
-        <TextField id="app-address" label="Street Address" required placeholder="Unit, building, street, barangay" value={shop.address} onChange={(e) => setShop({ ...shop, address: e.target.value })} />
+        <TextField id="app-address" label="Street Address" required placeholder="Unit, building, street (e.g. Jasmin St)" value={shop.address} onChange={(e) => setShop({ ...shop, address: e.target.value })} />
+        <TextField id="app-barangay" label="Barangay" placeholder="e.g. Ubalde" value={shop.barangay} onChange={(e) => setShop({ ...shop, barangay: e.target.value })} />
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField id="app-city" label="City" required value={shop.city} onChange={(e) => setShop({ ...shop, city: e.target.value })} />
           <TextField id="app-province" label="Province" required value={shop.province} onChange={(e) => setShop({ ...shop, province: e.target.value })} />

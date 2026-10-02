@@ -87,6 +87,7 @@ export default function BranchesPage() {
       name: branch.name,
       address: branch.address,
       landmark: branch.landmark || '',
+      barangay: branch.barangay || '',
       city: branch.city,
       district: branch.district || '',
       contact_number: branch.contact_number || '',
@@ -104,6 +105,12 @@ export default function BranchesPage() {
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!store) return;
+
+    // The pin is what puts a branch on the map and in "near me" — it cannot be left out.
+    if (!Number.isFinite(Number.parseFloat(formData.latitude)) || !Number.isFinite(Number.parseFloat(formData.longitude))) {
+      setErrorMsg('Set the branch location first: paste its Google Maps link or pick the spot on the map.');
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMsg('');

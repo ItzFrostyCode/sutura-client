@@ -115,15 +115,30 @@ export default function BranchFormModal({
         {/* Address */}
         <div>
           <label htmlFor="branch-address" className="block text-sm font-medium text-ink-body mb-1">
-            Street Address <span className="text-red-400">*</span>
+            Street Address <span className="text-red-400">*</span> <span className="text-ink-faint font-normal">(house / building / street)</span>
           </label>
           <input
             id="branch-address"
             required
             type="text"
-            placeholder="e.g. 123 JP Laurel Avenue"
+            placeholder="e.g. Jasmin St"
             value={formData.address}
             onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
+            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+          />
+        </div>
+
+        {/* Barangay */}
+        <div>
+          <label htmlFor="branch-barangay" className="block text-sm font-medium text-ink-body mb-1">
+            Barangay <span className="text-ink-faint font-normal">(optional — customers can search by it)</span>
+          </label>
+          <input
+            id="branch-barangay"
+            type="text"
+            placeholder="e.g. Ubalde"
+            value={formData.barangay ?? ''}
+            onChange={e => setFormData(prev => ({ ...prev, barangay: e.target.value }))}
             className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
           />
         </div>
@@ -281,7 +296,7 @@ export default function BranchFormModal({
           )}
           <p className="text-xs text-ink-faint mt-1.5 flex items-start gap-1.5">
             <Info size={13} className="mt-0.5 shrink-0" />
-            <span>Coordinates are optional to type by hand — pasting the Maps link or picking on the map above is easier.</span>
+            <span>The location pin is required — without it the branch can&apos;t appear on the map. Pasting the Maps link or picking on the map above is easier than typing coordinates.</span>
           </p>
         </div>
 

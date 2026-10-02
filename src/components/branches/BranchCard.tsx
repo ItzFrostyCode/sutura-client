@@ -1,3 +1,4 @@
+import { formatAddress } from '@/lib/formatAddress';
 import React from 'react';
 import {
   Building2,
@@ -62,7 +63,7 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
             <div className="flex items-start gap-2 text-sm text-ink-body">
               <MapPin className="w-4 h-4 text-ink-faint shrink-0 mt-0.5" />
               <span>
-                {branch.address}, {branch.city}
+                {formatAddress(branch)}
               </span>
             </div>
             {branch.landmark && (

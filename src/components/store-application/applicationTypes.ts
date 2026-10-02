@@ -34,6 +34,7 @@ export interface OwnerFields {
 export interface ShopFields {
   store_name: string;
   address: string;
+  barangay: string;
   city: string;
   province: string;
   specializations: string[];
@@ -66,7 +67,7 @@ export const EMPTY_OWNER: OwnerFields = {
 };
 
 export const EMPTY_SHOP: ShopFields = {
-  store_name: '', address: '', city: 'Davao City', province: 'Davao del Sur',
+  store_name: '', address: '', barangay: '', city: 'Davao City', province: 'Davao del Sur',
   specializations: [], location: null,
 };
 
