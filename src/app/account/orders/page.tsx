@@ -85,7 +85,7 @@ function MyOrdersPageContent() {
           </p>
           {orders.length === 0 && (
             <Link
-              href="/stores"
+              href="/map"
               className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
             >
               Browse Stores →

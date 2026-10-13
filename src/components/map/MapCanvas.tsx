@@ -1,7 +1,9 @@
 import dynamic from 'next/dynamic';
-import { LocateFixed, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import ActiveNavigationPanel from './ActiveNavigationPanel';
+import type { ActiveRoute } from './useDirections';
 
 const DiscoveryMap = dynamic(() => import('@/components/discovery/DiscoveryMap'), {
   ssr: false,
@@ -20,10 +22,12 @@ interface MapCanvasProps {
   isSelectMode: boolean;
   onMoveEnd: (lat: number, lng: number) => void;
   mapRef: React.MutableRefObject<LeafletMap | null>;
-  onNearMe: () => void;
-  locating: boolean;
+  selectedBranch: DiscoveryMapBranch | null;
   locationError: string;
   onDismissLocationError: () => void;
+  route: ActiveRoute | null;
+  routeLoading: boolean;
+  onCancelRoute: () => void;
 }
 
 export default function MapCanvas({
@@ -34,13 +38,15 @@ export default function MapCanvas({
   isSelectMode,
   onMoveEnd,
   mapRef,
-  onNearMe,
-  locating,
+  selectedBranch,
   locationError,
   onDismissLocationError,
+  route,
+  routeLoading,
+  onCancelRoute,
 }: MapCanvasProps) {
   return (
-    <div className="flex-1 relative overflow-hidden z-0">
+    <div className="absolute inset-0 overflow-hidden z-0">
       {loading ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-ink-muted">
           Loading stores…
@@ -49,8 +55,11 @@ export default function MapCanvas({
         <DiscoveryMap
           fullScreen
           branches={filteredBranches}
-          userLocation={userLocation}
+          userLocation={userLocation ?? route?.origin ?? null}
           onSelectBranch={onSelectBranch}
+          routePath={route?.path ?? null}
+          cluster={!isSelectMode}
+          selectedBranch={selectedBranch}
           selectable={isSelectMode}
           onMoveEnd={isSelectMode ? onMoveEnd : undefined}
           mapRef={mapRef}
@@ -58,19 +67,10 @@ export default function MapCanvas({
         />
       )}
 
-      {/* GPS Quick Button on bottom-right of map */}
-      <button
-        type="button"
-        onClick={onNearMe}
-        disabled={locating}
-        className="absolute bottom-3 right-3 z-[400] w-10 h-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-md hover:bg-sunken disabled:opacity-60 cursor-pointer"
-        aria-label="Use my current location"
-      >
-        <LocateFixed size={18} className={locating ? 'animate-pulse' : ''} />
-      </button>
+      <ActiveNavigationPanel route={route} loading={routeLoading} onCancel={onCancelRoute} />
 
       {locationError && (
-        <div className="absolute top-2 left-2 right-2 z-[1000] flex items-start gap-2 text-xs text-danger bg-surface shadow-lg rounded-xl px-3 py-2 border border-danger/20">
+        <div role="alert" className="absolute top-3 left-1/2 -translate-x-1/2 w-[min(92%,26rem)] z-[1200] flex items-start gap-2 text-xs text-danger bg-surface shadow-lg rounded-xl px-3 py-2 border border-danger/20">
           <span className="flex-1">{locationError}</span>
           <button
             type="button"

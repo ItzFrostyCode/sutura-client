@@ -22,7 +22,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status ?? error.code ?? 'NETWORK_ERROR';
-    console.error(`[AxiosError] ${status} on ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
+    // 4xx is an answer the calling form already shows (wrong password,
+    // validation) — a warning, not console.error, which Next's dev overlay
+    // turns into a red "Issue". Server errors and network failures stay errors.
+    const expected = typeof error.response?.status === 'number' && error.response.status < 500;
+    (expected ? console.warn : console.error)(`[AxiosError] ${status} on ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
     if (error.response?.status === 401) {
       if (globalThis.window !== undefined) {
         // Clear invalid auth credentials from storage

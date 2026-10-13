@@ -12,6 +12,8 @@ export interface StoreResult {
   banner_path: string | null;
   reviews_count: number;
   reviews_avg_rating: number | null;
+  /** Set by the API when the request carries lat/lng (nearest branch, km). */
+  distance_km?: number | string | null;
   branches: { city: string | null; name: string }[];
   operating_hours?: OperatingHours | null;
   specializations?: string[] | null;

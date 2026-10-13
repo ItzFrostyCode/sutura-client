@@ -17,6 +17,7 @@ import StatBand from '@/components/shared/StatBand';
 import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { garmentTypesForDepartment, type Department } from '@/lib/canonicalTaxonomy';
+import { apparelReviewBadge } from './ApparelReviewNotice';
 
 // Same card style every customer-facing catalog grid uses (search, store
 // profile, landing showroom) — reused here instead of a second, differently
@@ -197,6 +198,7 @@ export default function CatalogGridView() {
                     hideLocation
                     hrefOverride={`/dashboard/catalog/${item.id}`}
                     isPaused={item.is_active === false}
+                    reviewBadge={apparelReviewBadge(item.apparel_review)}
                   />
                 ))}
               </div>

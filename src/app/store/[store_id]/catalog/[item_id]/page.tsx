@@ -18,6 +18,7 @@ import CatalogRecommendationsSection from '@/components/store-catalog-detail/Cat
 import CatalogBottomActionBar from '@/components/store-catalog-detail/CatalogBottomActionBar';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogFindInStoreSheet from '@/components/store-catalog-detail/CatalogFindInStoreSheet';
+import { isStoreOpen } from '@/lib/storeStatus';
 import BulkOrderSheet from '@/components/store-catalog-detail/BulkOrderSheet';
 import CatalogDetailBreadcrumb from '@/components/store-catalog-detail/CatalogDetailBreadcrumb';
 
@@ -291,6 +292,9 @@ export default function PublicProductDetailPage({
         selectedImage={selectedImage}
         itemName={item.name}
         itemPrice={item.price}
+        storeName={item.store?.name ?? ''}
+        storeLogoPath={item.store?.logo_path ?? null}
+        storeIsOpen={isStoreOpen(item.store?.operating_hours)}
         showBookConfirm={showBookConfirm}
         setShowBookConfirm={setShowBookConfirm}
         selectedDistanceKm={selectedDistanceKm}

@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Plus, Map as MapIcon, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
+import { Lock, Plus, Map as MapIcon, LayoutGrid } from 'lucide-react';
+import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import { StoreBranch, EMPTY_FORM } from '@/components/branches/branchHelpers';
 import BranchFormModal from '@/components/branches/BranchFormModal';
 import BranchDeleteModal from '@/components/branches/BranchDeleteModal';
@@ -34,6 +36,12 @@ export default function BranchesPage() {
   const myBranchId = staffProfile?.store_branch_id ?? null;
   const [branches, setBranches] = useState<StoreBranch[]>([]);
   const [loading, setLoading] = useState(true);
+  // Same rule as StoreBranchController::store(): the plan's branch limit,
+  // set on the admin Plans page (-1 = unlimited). Lock the add buttons up
+  // front instead of letting the owner fill in the whole form to hit a 403.
+  const { maxBranches, loading: tierLoading } = useSubscriptionTier();
+  const addLocked = isStoreOwner && !tierLoading && maxBranches !== -1 && branches.length >= maxBranches;
+  const limitText = `Your plan allows ${maxBranches === 1 ? '1 branch' : `up to ${maxBranches} branches`}`;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -256,7 +264,16 @@ export default function BranchesPage() {
                 <MapIcon size={15} /> Map
               </button>
             </div>
-            {isStoreOwner && (
+            {isStoreOwner && (addLocked ? (
+              <Link
+                href="/dashboard/billing"
+                title={`${limitText}. Upgrade to add more.`}
+                className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+              >
+                <Lock size={16} />
+                Branch limit reached · Upgrade
+              </Link>
+            ) : (
               <button
                 type="button"
                 onClick={openAddModal}
@@ -265,7 +282,7 @@ export default function BranchesPage() {
                 <Plus size={17} />
                 Add Branch
               </button>
-            )}
+            ))}
           </>
         }
       />
@@ -275,7 +292,9 @@ export default function BranchesPage() {
       ) : (
         <BranchListView
           branches={branches}
-          onAddClick={openAddModal}
+          onAddClick={isStoreOwner ? openAddModal : undefined}
+          addLocked={addLocked}
+          lockedText={`${limitText}.`}
           onEdit={handleEditClickGated}
           onDelete={isStoreOwner ? handleDeleteClick : undefined}
           onSetMain={isStoreOwner ? handleSetMain : undefined}

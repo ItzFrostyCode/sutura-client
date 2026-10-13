@@ -227,11 +227,9 @@ export default function StoreHeroHeader({
             )}
           </div>
 
-          {/* ⚡ 3. Centered Action Buttons Row — the sticky StoreOwnerTopBar
-              (page.tsx) also carries Dashboard/Edit + the notification/
-              account menu so they're reachable without scrolling back up;
-              these stay here too since they read as this page's own primary
-              call-to-action, not just page-chrome. */}
+          {/* ⚡ 3. Centered Action Buttons Row — the only Dashboard/Edit on
+              the page; the sticky StoreOwnerTopBar (page.tsx) carries just
+              the notification/account menu. */}
           <div className="flex items-center justify-center gap-2 mt-4 max-w-md w-full">
             {isOwnerViewingOwnStore ? (
               <>

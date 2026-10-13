@@ -14,6 +14,8 @@ import HomeAboutSection from '@/components/home/HomeAboutSection';
 import HomeFooter from '@/components/home/HomeFooter';
 export default function HomePage() {
   const {
+    location,
+    locationStatus,
     items,
     loading,
     stores,
@@ -39,6 +41,8 @@ export default function HomePage() {
         heroSearch={heroSearch}
         onSearchChange={setHeroSearch}
         onSubmit={handleHeroSearch}
+        locationStatus={locationStatus}
+        location={location}
       />
 
       <main className="flex-1 w-full">
@@ -47,10 +51,10 @@ export default function HomePage() {
           trendingItems={trendingItems}
           loading={storesLoading || trendingLoading}
         />
+        <HomeStoresGrid location={location} />
         <HomeCategoryGrid items={items} />
         <HomeShowroomCarousel items={items} loading={loading} />
         <HomeHowItWorks />
-        <HomeStoresGrid stores={stores} storesLoading={storesLoading} />
         <HomeMapBanner />
       </main>
 

@@ -44,7 +44,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
               </span>
               {plan.description && <span className="mobile-body-sm mt-2 text-ink-muted">{plan.description}</span>}
               <ul className="mt-3 space-y-1.5">
-                {(plan.features ?? []).slice(0, 5).map((f) => (
+                {(plan.display_features ?? plan.features ?? []).slice(0, 5).map((f) => (
                   <li key={f} className="flex gap-2 mobile-caption text-ink-body"><Check size={13} className="mt-0.5 shrink-0 text-sage" />{f}</li>
                 ))}
               </ul>

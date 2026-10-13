@@ -3,7 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
-import { getSavedLocation, requestCurrentLocation } from '@/lib/customerLocation';
+import {
+  checkLocationPermission,
+  getSavedLocation,
+  LOCATION_CHANGED_EVENT,
+  requestCurrentLocation,
+  type SavedLocation,
+} from '@/lib/customerLocation';
+
+export type LocationStatus = 'locating' | 'ready' | 'denied';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import type { StoreResult } from './homeTypes';
 
@@ -21,10 +29,44 @@ export function useHomeData() {
   const [trendingItems, setTrendingItems] = useState<CatalogItemResult[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
 
+  // Detect the visitor's location on arrival (adviser request, after
+  // tarakape.cc): the browser's own permission prompt appears on the first
+  // visit; afterwards a saved spot is reused and an "allowed" device just
+  // refreshes silently. Declined → we say so and offer the manual picker.
+  const [location, setLocation] = useState<SavedLocation | null>(null);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('locating');
+
   useEffect(() => {
-    // Default sort already orders by is_featured then rating/created_at —
-    // the first result doubles as an honest "featured store" pick, no
-    // separate curation flag needed.
+    const saved = getSavedLocation();
+    if (saved) {
+      setLocation(saved);
+      setLocationStatus('ready');
+    } else {
+      checkLocationPermission().then((permission) => {
+        if (permission === 'denied') {
+          setLocationStatus('denied');
+          return;
+        }
+        requestCurrentLocation(
+          (loc) => { setLocation(loc); setLocationStatus('ready'); },
+          () => setLocationStatus('denied'),
+        );
+      });
+    }
+
+    // Picked again elsewhere (the /location page, the search picker).
+    const onChange = (e: Event) => {
+      const loc = (e as CustomEvent<SavedLocation>).detail;
+      if (loc) { setLocation(loc); setLocationStatus('ready'); }
+    };
+    window.addEventListener(LOCATION_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
+  }, []);
+
+  useEffect(() => {
+    // Featured spotlight: the server's default order (featured first, then
+    // ratings) — deliberately not distance. "Stores near you" (HomeStoresGrid)
+    // runs its own location + filter query.
     api.get('/public/stores', { params: { per_page: 8 } })
       .then((res) => setStores(res.data.data ?? []))
       .catch(() => setStores([]))
@@ -56,6 +98,8 @@ export function useHomeData() {
   };
 
   return {
+    location,
+    locationStatus,
     items,
     loading,
     stores,

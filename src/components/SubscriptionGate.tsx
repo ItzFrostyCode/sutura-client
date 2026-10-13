@@ -19,22 +19,22 @@ const FEATURE_LABELS: Record<GatedFeature, string> = {
   notifications:      'SMS/Email Notifications',
   inquiry:            'Direct Customer Inquiries',
   boosted_visibility: 'Boosted Search Visibility',
-  reports:            'Sales Reports & Exports',
+  reports:            'Sales & Staff Reports',
   featured_visibility:'Featured Store Visibility',
   custom_branding:    'Custom Branding',
-  advanced_dashboard: 'Advanced Dashboard',
+  advanced_dashboard: 'Branch Comparison Reports',
 };
 
 // ── Which plan unlocks each feature ──────────────────────────────────────────
 const REQUIRED_PLAN: Record<GatedFeature, 'Pro' | 'Premium'> = {
   catalog:            'Pro',
   portfolio:          'Pro',
-  staff:              'Pro',
+  staff:              'Pro', // unused: staff is open to every plan up to max_staff
   analytics:          'Pro',
   notifications:      'Pro',
   inquiry:            'Pro',
   boosted_visibility: 'Pro',
-  reports:            'Premium',
+  reports:            'Pro',
   featured_visibility:'Premium',
   custom_branding:    'Premium',
   advanced_dashboard: 'Premium',
@@ -49,10 +49,10 @@ const FEATURE_DESC: Record<GatedFeature, string> = {
   notifications:      "Automatically send SMS or email updates to customers when their order status changes.",
   inquiry:            "Let customers send direct messages to your store from your public profile.",
   boosted_visibility: "Appear higher in search results than Basic stores for your garment specializations.",
-  reports:            "Download detailed income and order reports to track monthly sales performance.",
+  reports:            "See monthly sales, outstanding balances and each staff member’s productivity in one place.",
   featured_visibility:"Get pinned as a \u201cFeatured Store\u201d at the top of relevant search results.",
   custom_branding:    "Apply your own store colors, logo, and identity across your public store profile.",
-  advanced_dashboard: "Access in-depth analytics: staff productivity, branch comparison, and revenue trends.",
+  advanced_dashboard: "Compare revenue, orders and workload across all of your branches side by side.",
 };
 
 export default function SubscriptionGate({ feature, children }: Readonly<SubscriptionGateProps>) {

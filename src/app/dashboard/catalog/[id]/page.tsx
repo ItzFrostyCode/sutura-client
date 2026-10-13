@@ -19,6 +19,7 @@ import PauseDesignModal from '@/components/catalog/detail/PauseDesignModal';
 import CatalogOverviewTab from '@/components/catalog/detail/CatalogOverviewTab';
 import CatalogOrdersTab from '@/components/catalog/detail/CatalogOrdersTab';
 import CatalogReviewsTab from '@/components/catalog/detail/CatalogReviewsTab';
+import ApparelReviewNotice from '@/components/catalog/ApparelReviewNotice';
 
 // Same side padding the customer page gives its content blocks on phones
 // (the hero photo alone runs edge-to-edge).
@@ -180,6 +181,7 @@ export default function CatalogItemDetailPage({
         onBack={() => guard(() => router.push('/dashboard/catalog'))}
         showActions={activeTab === 'overview' && canManage}
       />
+      {item.apparel_review && <div className="mt-3"><ApparelReviewNotice review={item.apparel_review} /></div>}
       </div>
 
       <div className={PAD}>

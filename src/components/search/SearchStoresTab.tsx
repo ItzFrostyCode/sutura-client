@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Store, Star, ChevronRight, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
-import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import { specializationLabel } from '@/lib/storeSpecializations';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import SearchServiceCard from './SearchServiceCard';
@@ -233,7 +233,7 @@ export default function SearchStoresTab({
                         <div className="flex items-center gap-1 flex-wrap pt-0.5">
                           {store.specializations.slice(0, 2).map((id) => (
                             <span key={id} className="px-1.5 py-0.5 text-[9px] font-semibold bg-canvas border border-line text-ink-muted">
-                              {STORE_SPECIALIZATIONS.find((s) => s.value === id)?.label || id}
+                              {specializationLabel(id)}
                             </span>
                           ))}
                           {store.specializations.length > 2 && (

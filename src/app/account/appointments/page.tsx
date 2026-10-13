@@ -98,7 +98,7 @@ export default function MyAppointmentsPage() {
             Book a fitting or consultation with a store to see it here.
           </p>
           <Link
-            href="/stores"
+            href="/map"
             className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
           >
             Browse Stores →
