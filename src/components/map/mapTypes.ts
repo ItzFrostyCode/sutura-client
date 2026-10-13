@@ -18,6 +18,10 @@ export interface StoreApiResult {
   slug: string;
   name: string;
   logo_path: string | null;
+  banner_path?: string | null;
+  reviews_avg_rating?: number | string | null;
+  reviews_count?: number;
+  specializations?: string[] | null;
   operating_hours?: OperatingHours | string | null;
   branches: StoreApiBranch[];
 }

@@ -124,6 +124,7 @@ export function CatalogCategoryFields({ formData, onChange, setFormData, only }:
               value={formData.garment_type}
               onChange={onChange}
               placeholder="e.g. Barong, Gown, Suit"
+              aria-describedby="catalog-garment-review"
               className="w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-ink placeholder-[#A8A19A] focus:outline-none focus:border-taupe text-sm"
             />
           ) : (
@@ -140,6 +141,11 @@ export function CatalogCategoryFields({ formData, onChange, setFormData, only }:
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
+          )}
+          {showGarmentTypeFreeText && (
+            <p id="catalog-garment-review" className="mt-1.5 text-xs text-ink-muted">
+              A typed-in apparel name is checked by SUTURA first — the design shows to customers once it is approved.
+            </p>
           )}
         </div>
         </>

@@ -12,6 +12,7 @@ interface MapSidebarSelectedStoreProps {
   isSelectMode: boolean;
   userLocation: { lat: number; lng: number } | null;
   onConfirmLocation: (loc?: SavedLocation) => void;
+  onDirections: (branch: DiscoveryMapBranch) => void;
 }
 
 export default function MapSidebarSelectedStore({
@@ -20,6 +21,7 @@ export default function MapSidebarSelectedStore({
   isSelectMode,
   userLocation,
   onConfirmLocation,
+  onDirections,
 }: MapSidebarSelectedStoreProps) {
   const gate = useGuestGatedHref();
 
@@ -138,16 +140,14 @@ export default function MapSidebarSelectedStore({
               Book Now
             </Link>
             <div className="flex items-center gap-2">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&${
-                  userLocation ? `origin=${userLocation.lat},${userLocation.lng}&` : ''
-                }destination=${branch.latitude},${branch.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium h-8 transition-colors flex items-center justify-center rounded-none text-xs"
+              {/* Draws the route on our own map (useDirections) instead of leaving for Google Maps. */}
+              <button
+                type="button"
+                onClick={() => onDirections(branch)}
+                className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium h-8 transition-colors flex items-center justify-center rounded-none text-xs cursor-pointer"
               >
                 Directions
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() =>

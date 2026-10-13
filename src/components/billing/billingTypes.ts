@@ -8,8 +8,12 @@ export interface Plan {
   price_monthly: number;
   price_yearly?: number | string | null;
   description: string;
-  features: string;
+  features: string[] | string | null;
+  /** Server-built: the staff/branch limits, then the admin's feature lines. */
+  display_features?: string[];
   max_staff: number;
+  /** -1 = unlimited; set on the admin Plans page. */
+  max_branches?: number | null;
   max_services: number;
 }
 
@@ -65,14 +69,23 @@ export const BRANCH_LIMITS: Record<string, number | null> = {
   premium: null,
 };
 
+// Every row must match what the server actually enforces — this table is a
+// promise to the shop. Staff Accounts and Branches are rendered separately
+// from each plan's live max_staff / max_branches (PlanComparisonSection).
+// Sources: sales & staff reports —
+// AnalyticsController::staffProductivity (pro); branch comparison —
+// AnalyticsController::branchComparison (premium); export —
+// ReceiptExportController (premium); SMS — SmsOutbox (pro); featured —
+// SubscriptionSwitcher / StoreController (premium).
 export const COMPARE_ROWS = [
-  { label: 'Branches', basic: '1', pro: '1', premium: 'Unlimited' },
-  { label: 'Gallery Photos', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
-  { label: 'Service Packages', basic: 'Up to 3', pro: 'Unlimited', premium: 'Unlimited' },
-  { label: 'Analytics & Reports', basic: 'Basic', pro: 'Advanced', premium: 'Full Suite' },
-  { label: 'SMS Notifications', basic: '—', pro: 'Included', premium: 'Included' },
-  { label: 'Featured Visibility', basic: '—', pro: '—', premium: 'Included' },
-  { label: 'Priority Support', basic: '—', pro: '—', premium: 'Included' },
+  { label: 'Catalog Designs & Gallery Photos', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Services & Combo Packages', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Dashboard Analytics', basic: 'Included', pro: 'Included', premium: 'Included' },
+  { label: 'Sales & Staff Reports', basic: '—', pro: 'Included', premium: 'Included' },
+  { label: 'Branch Comparison Reports', basic: '—', pro: '—', premium: 'Included' },
+  { label: 'Receipt & Statement Export (CSV/ZIP)', basic: '—', pro: '—', premium: 'Included' },
+  { label: 'SMS Notifications to Customers', basic: '—', pro: 'Included', premium: 'Included' },
+  { label: 'Featured Visibility (Top Placement)', basic: '—', pro: '—', premium: 'Included' },
 ];
 
 export interface UpgradeRequest {

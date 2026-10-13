@@ -3,7 +3,7 @@
 import { use, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Loader2, MapPin, Search, X, SlidersHorizontal } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
@@ -18,15 +18,12 @@ import PublicNav from '@/components/shared/PublicNav';
 import { useShopViewingOwnStore } from '@/hooks/useShopAccount';
 import StoreHeroHeader from '@/components/store-storefront/header/StoreHeroHeader';
 import StoreOwnerTopBar from '@/components/store-storefront/header/StoreOwnerTopBar';
-import StoreCatalogTab from '@/components/store-storefront/tabs/StoreCatalogTab';
-import StoreCatalogFilterSidebar from '@/components/store-storefront/catalog/StoreCatalogFilterSidebar';
 import StoreServicesTab from '@/components/store-storefront/tabs/StoreServicesTab';
 import StoreAboutTab from '@/components/store-storefront/tabs/StoreAboutTab';
 import StoreHoursTab from '@/components/store-storefront/tabs/StoreHoursTab';
 import StoreLocationsTab from '@/components/store-storefront/tabs/StoreLocationsTab';
 import StoreWorkTab from '@/components/store-storefront/tabs/StoreWorkTab';
 import StoreReviewsTab from '@/components/store-storefront/tabs/StoreReviewsTab';
-import PortfolioFilterSheet from '@/components/store-storefront/modals/PortfolioFilterSheet';
 import RatingModal from '@/components/store-storefront/modals/RatingModal';
 
 
@@ -65,12 +62,9 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
     <div className="flex-1 flex flex-col bg-surface text-ink selection:bg-sunken selection:text-indigo-900 relative">
       {/* Header — same PublicNav used on the landing page for customers;
           the owner/manager/staff viewing their own store gets a sticky
-          Dashboard + Edit + notifications/account bar instead. */}
+          notifications/account bar instead (Dashboard/Edit are in the hero). */}
       {isShopView ? (
-        <StoreOwnerTopBar
-          canEditProfile={s.isOwnerViewingOwnStore}
-          onEditProfile={() => s.setActiveTab('about')}
-        />
+        <StoreOwnerTopBar />
       ) : (
         <PublicNav />
       )}
@@ -101,140 +95,12 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
 
       {/* Main Tab Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
-        {/* Search + Location + Filter — lives above the Catalog/Services
-            content itself now (mobile, tablet, desktop alike), not faded
-            into the header on scroll. */}
-        {(s.activeTab === 'catalog' || s.activeTab === 'services') && (
-          <div className="mb-4 space-y-2">
-            <p className="flex items-center gap-1.5 text-xs text-ink-muted">
-              <MapPin size={12} className="text-taupe shrink-0" />
-              {s.activeBranch
-                ? `${s.activeBranch.name}, ${s.activeBranch.city}`
-                : `${s.store.branches?.[0]?.district || s.store.district || s.store.city || 'Poblacion District'}, Davao City`}
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 h-11 px-3.5 border border-line bg-surface">
-                <Search size={18} className="text-taupe shrink-0" />
-                <input
-                  type="text"
-                  placeholder={
-                    s.activeTab === 'services'
-                      ? 'Search services & packages...'
-                      : 'Search this collection... e.g. barong, gown'
-                  }
-                  value={s.activeTab === 'services' ? s.serviceSearch : s.catalogSearch}
-                  onChange={(e) => {
-                    if (s.activeTab === 'services') {
-                      s.setServiceSearch(e.target.value);
-                    } else {
-                      s.setCatalogSearch(e.target.value);
-                    }
-                  }}
-                  className="flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
-                />
-                {(s.activeTab === 'services' ? s.serviceSearch : s.catalogSearch) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (s.activeTab === 'services') {
-                        s.setServiceSearch('');
-                      } else {
-                        s.setCatalogSearch('');
-                      }
-                    }}
-                    aria-label="Clear search"
-                    className="w-7 h-7 flex items-center justify-center shrink-0 text-ink-faint hover:text-ink cursor-pointer"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </div>
-
-              {/* sm+ already has the persistent StoreCatalogFilterSidebar on
-                  the right — this trigger is mobile-only so there isn't a
-                  redundant second way to open filters on tablet/desktop. */}
-              {s.activeTab === 'catalog' && (
-                <button
-                  type="button"
-                  onClick={s.openFilterPanel}
-                  className={`sm:hidden h-11 px-3.5 border transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
-                    s.activeFilterCount > 0
-                      ? 'bg-ink text-white border-ink'
-                      : 'bg-surface text-ink-body border-line hover:bg-sunken'
-                  }`}
-                  title="Filter collection"
-                >
-                  <SlidersHorizontal size={16} />
-                  <span>Filter</span>
-                  {s.activeFilterCount > 0 && (
-                    <span className="w-5 h-5 bg-white/20 text-white text-[10px] font-bold flex items-center justify-center">
-                      {s.activeFilterCount}
-                    </span>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {s.activeTab === 'catalog' && (
-          <div className="flex items-start gap-8">
-            <div className="flex-1 min-w-0">
-              <StoreCatalogTab
-                catalogLoading={s.catalogLoading}
-                catalogItems={s.catalogItems}
-                catalogSearch={s.catalogSearch}
-                catalogGarmentTypeFilters={s.catalogGarmentTypeFilters}
-                toggleGarmentType={s.toggleGarmentType}
-                departmentFilter={s.catalogDepartmentFilter}
-                setDepartmentFilter={s.setCatalogDepartmentFilter}
-                minPrice={s.minPrice}
-                setMinPrice={s.setMinPrice}
-                maxPrice={s.maxPrice}
-                setMaxPrice={s.setMaxPrice}
-                priceSort={s.priceSort}
-                setPriceSort={s.setPriceSort}
-                ratingFilter={s.ratingFilter}
-                setRatingFilter={s.setRatingFilter}
-                resetFilterPanel={s.resetFilterPanel}
-                highlightedItemId={s.highlightedItemId}
-                storeId={storeId}
-                store={s.store}
-                isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
-                onDeleteItem={(id) => {
-                  s.setDeletingCatalogItemId(id);
-                  s.setIsCatalogDeleteOpen(true);
-                }}
-              />
-            </div>
-
-            {/* Persistent filter sidebar — hidden on mobile, right side on sm+ */}
-            <div className="hidden sm:block">
-              <StoreCatalogFilterSidebar
-                activeFilterCount={s.activeFilterCount}
-                priceSort={s.priceSort}
-                setPriceSort={s.setPriceSort}
-                minPrice={s.minPrice}
-                setMinPrice={s.setMinPrice}
-                maxPrice={s.maxPrice}
-                setMaxPrice={s.setMaxPrice}
-                ratingFilter={s.ratingFilter}
-                setRatingFilter={s.setRatingFilter}
-                garmentTypeTally={s.garmentTypeTally}
-                garmentTypeFilters={s.catalogGarmentTypeFilters}
-                toggleGarmentType={s.toggleGarmentType}
-                departmentFilter={s.catalogDepartmentFilter}
-                setDepartmentFilter={s.setCatalogDepartmentFilter}
-                onReset={s.resetFilterPanel}
-              />
-            </div>
-          </div>
-        )}
-
         {s.activeTab === 'services' && (
           <StoreServicesTab
             services={s.services}
             packages={s.packages}
+            catalogItems={s.catalogItems}
+            catalogLoading={s.catalogLoading}
             storeId={storeId}
             expandedServiceId={s.expandedServiceId}
             highlightedServiceId={s.highlightedServiceId}
@@ -246,6 +112,10 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
             onDeleteService={(id) => {
               s.setDeletingServiceId(id);
               s.setIsServiceDeleteOpen(true);
+            }}
+            onDeleteDesign={(id) => {
+              s.setDeletingCatalogItemId(id);
+              s.setIsCatalogDeleteOpen(true);
             }}
             user={s.user}
             store={s.store}
@@ -331,28 +201,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
           />
         )}
       </main>
-
-      {/* Filter Bottom Sheet Modal */}
-      <PortfolioFilterSheet
-        isOpen={s.isPortfolioFilterOpen}
-        mounted={s.mounted}
-        onClose={() => s.setIsPortfolioFilterOpen(false)}
-        activeFilterCount={s.activeFilterCount}
-        draftPriceSort={s.draftPriceSort}
-        setDraftPriceSort={s.setDraftPriceSort}
-        draftMinPrice={s.draftMinPrice}
-        setDraftMinPrice={s.setDraftMinPrice}
-        draftMaxPrice={s.draftMaxPrice}
-        setDraftMaxPrice={s.setDraftMaxPrice}
-        draftRatingFilter={s.draftRatingFilter}
-        setDraftRatingFilter={s.setDraftRatingFilter}
-        garmentTypeOptions={s.garmentTypeOptions}
-        draftGarmentTypeFilters={s.draftGarmentTypeFilters}
-        setDraftGarmentTypeFilters={s.setDraftGarmentTypeFilters}
-        garmentTypeTally={s.garmentTypeTally}
-        onReset={s.resetFilterPanel}
-        onApply={s.applyFilterPanel}
-      />
 
       {/* Store Rating Modal */}
       <RatingModal

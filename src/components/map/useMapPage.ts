@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Map as LeafletMap } from 'leaflet';
 import api from '@/lib/axios';
-import { getSavedLocation, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
+import { getSavedLocation, haversineKm, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
 import { isStoreOpen } from '@/lib/storeStatus';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
@@ -231,6 +231,10 @@ export function useMapPage() {
                 latitude: Number(b.latitude),
                 longitude: Number(b.longitude),
                 isOpen: open,
+                storeBannerPath: store.banner_path ?? null,
+                rating: store.reviews_avg_rating != null ? Number(store.reviews_avg_rating) : null,
+                reviewsCount: store.reviews_count ?? 0,
+                specializations: store.specializations ?? [],
               }));
           });
           setBranches(pins);
@@ -242,13 +246,21 @@ export function useMapPage() {
     return () => clearTimeout(handle);
   }, [q, district, userLocation]);
 
+  // Distance per branch from wherever the customer is (saved or located) —
+  // the list cards show it, and it orders the list nearest-first.
   const filteredBranches = useMemo(() => {
-    return branches.filter((b) => {
-      if (statusFilter === 'online' && !b.isOpen) return false;
-      if (statusFilter === 'offline' && b.isOpen) return false;
-      return true;
-    });
-  }, [branches, statusFilter]);
+    const list = branches
+      .filter((b) => {
+        if (statusFilter === 'online' && !b.isOpen) return false;
+        if (statusFilter === 'offline' && b.isOpen) return false;
+        return true;
+      })
+      .map((b) => ({
+        ...b,
+        distanceKm: userLocation ? haversineKm(userLocation.lat, userLocation.lng, b.latitude, b.longitude) : null,
+      }));
+    return userLocation ? list.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0)) : list;
+  }, [branches, statusFilter, userLocation]);
 
   const hasActiveFilters = Boolean((district && district !== 'all') || statusFilter !== 'all' || userLocation);
 

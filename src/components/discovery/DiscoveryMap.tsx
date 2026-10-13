@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import RouteLayer from '@/components/map/RouteLayer';
 import type { Map as LeafletMap } from 'leaflet';
 import L from '@/lib/leafletSafe';
 import 'leaflet/dist/leaflet.css';
@@ -20,15 +21,16 @@ const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 // unreadable; a recognizable logo lets a visitor tell stores apart at a
 // glance the way real map apps (Google/Waze business pins) do. A crisp dark ring
 // + "MAIN" badge marks a store's main branch versus a satellite branch.
-export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean): L.DivIcon {
-  const ringColor = '#2D2A26';
+// `selected` (Find a Branch's chosen branch): taupe ring, drawn a size up.
+export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false): L.DivIcon {
+  const ringColor = selected ? '#9A8073' : '#2D2A26';
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
   const logoHtml = logoPath
     ? `<img src="${getMediaUrl(logoPath)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`
     : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`;
 
   const html = `
-    <div style="position:relative;width:40px;height:52px;">
+    <div style="position:relative;width:40px;height:52px;transform-origin:50% 100%;transform:scale(${selected ? 1.15 : 1});">
       <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};box-shadow:0 2px 6px rgba(45,42,38,0.45);background:#fff;">
         ${logoHtml}
       </div>
@@ -52,7 +54,7 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
 
 // Distinct "you are here" marker — a solid pulsing dot, not another pin, so
 // it never reads as just another store branch on the map.
-const userLocationIcon = L.divIcon({
+export const userLocationIcon = L.divIcon({
   className: '',
   html: '<span style="position:relative;display:block;width:16px;height:16px;"><span style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;opacity:0.35;animation:sutura-pulse 1.8s ease-out infinite;"></span><span style="position:absolute;inset:3px;border-radius:9999px;background:#3B82F6;border:2px solid white;"></span></span><style>@keyframes sutura-pulse{0%{transform:scale(0.6);opacity:0.6;}100%{transform:scale(2.2);opacity:0;}}</style>',
   iconSize: [16, 16],
@@ -86,6 +88,98 @@ function FitBounds({ points, disable }: { readonly points: [number, number][]; r
     }
   }, [map, points, pointsKey, disable]);
   return null;
+}
+
+// Count bubble for a group of nearby branches (Tailor Locator clustering).
+function buildClusterIcon(count: number): L.DivIcon {
+  const size = count < 5 ? 40 : count < 20 ? 46 : 54;
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#6B4E3E;border:3px solid #fff;box-shadow:0 3px 10px rgba(45,42,38,0.35);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${count < 100 ? 15 : 13}px;font-family:inherit;">${count}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+const CLUSTER_CELL_PX = 64;
+const CLUSTER_UNTIL_ZOOM = 17;
+
+/**
+ * Groups branches that sit within one ~64px screen cell at the current zoom
+ * into a numbered bubble; tapping a bubble zooms in until they split. The
+ * selected branch is never folded into a bubble. Zoom 17+ shows every pin.
+ */
+function ClusteredBranchMarkers({ branches, selectedKey, onSelect }: {
+  readonly branches: DiscoveryMapBranch[];
+  readonly selectedKey: string | null;
+  readonly onSelect: (branch: DiscoveryMapBranch) => void;
+}) {
+  const map = useMap();
+  const [viewTick, setViewTick] = useState(0);
+  useMapEvents({ zoomend: () => setViewTick((t) => t + 1), moveend: () => setViewTick((t) => t + 1) });
+
+  const groups = useMemo(() => {
+    const zoom = map.getZoom();
+    const free = branches.filter((b) => `${b.storeSlug}-${b.branchId}` !== selectedKey);
+    if (zoom >= CLUSTER_UNTIL_ZOOM) return free.map((b) => [b]);
+    const cells = new Map<string, DiscoveryMapBranch[]>();
+    free.forEach((b) => {
+      const p = map.project([b.latitude, b.longitude], zoom);
+      const key = `${Math.floor(p.x / CLUSTER_CELL_PX)}:${Math.floor(p.y / CLUSTER_CELL_PX)}`;
+      cells.set(key, [...(cells.get(key) ?? []), b]);
+    });
+    return [...cells.values()];
+    // viewTick re-runs this on every zoom/pan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branches, selectedKey, map, viewTick]);
+
+  const selected = branches.find((b) => `${b.storeSlug}-${b.branchId}` === selectedKey) ?? null;
+
+  return (
+    <>
+      {groups.map((group) => {
+        if (group.length === 1) {
+          const b = group[0];
+          return (
+            <Marker
+              key={`${b.storeSlug}-${b.branchId}`}
+              position={[b.latitude, b.longitude]}
+              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
+              title={b.storeName}
+              eventHandlers={{ click: () => onSelect(b) }}
+            />
+          );
+        }
+        const lat = group.reduce((s, b) => s + b.latitude, 0) / group.length;
+        const lng = group.reduce((s, b) => s + b.longitude, 0) / group.length;
+        const bounds = L.latLngBounds(group.map((b) => [b.latitude, b.longitude] as [number, number]));
+        return (
+          <Marker
+            key={`cluster-${group.map((b) => b.branchId).join('-')}`}
+            position={[lat, lng]}
+            icon={buildClusterIcon(group.length)}
+            title={`${group.length} shops here — tap to zoom in`}
+            eventHandlers={{
+              click: () => {
+                // All at one spot (same building): jump straight to street level.
+                if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView([lat, lng], CLUSTER_UNTIL_ZOOM + 1);
+                else map.fitBounds(bounds, { padding: [80, 80], maxZoom: CLUSTER_UNTIL_ZOOM + 1 });
+              },
+            }}
+          />
+        );
+      })}
+      {selected && (
+        <Marker
+          position={[selected.latitude, selected.longitude]}
+          zIndexOffset={1000}
+          icon={buildStorePinIcon(selected.storeLogoPath, selected.isMain, selected.isOpen, true)}
+          title={selected.storeName}
+          eventHandlers={{ click: () => onSelect(selected) }}
+        />
+      )}
+    </>
+  );
 }
 
 function MapEventsHandler({
@@ -144,6 +238,12 @@ export interface DiscoveryMapBranch {
   latitude: number;
   longitude: number;
   isOpen?: boolean;
+  /** Tailor Locator list cards: photo, rating, specialties, distance. */
+  storeBannerPath?: string | null;
+  rating?: number | null;
+  reviewsCount?: number;
+  specializations?: string[];
+  distanceKm?: number | null;
 }
 
 interface DiscoveryMapProps {
@@ -155,6 +255,12 @@ interface DiscoveryMapProps {
   readonly onMoveEnd?: (lat: number, lng: number) => void;
   readonly mapRef?: React.MutableRefObject<LeafletMap | null>;
   readonly disableFitBounds?: boolean;
+  /** Active directions route as [lat, lng] points; null when not navigating. */
+  readonly routePath?: [number, number][] | null;
+  /** Group nearby pins into numbered bubbles (Tailor Locator). Needs onSelectBranch. */
+  readonly cluster?: boolean;
+  /** Drawn larger with a taupe ring and never clustered. */
+  readonly selectedBranch?: DiscoveryMapBranch | null;
 }
 
 export default function DiscoveryMap({
@@ -166,6 +272,9 @@ export default function DiscoveryMap({
   onMoveEnd,
   mapRef,
   disableFitBounds,
+  routePath,
+  cluster = false,
+  selectedBranch = null,
 }: DiscoveryMapProps) {
   const gate = useGuestGatedHref();
   const hasNoResults = branches.length === 0 && !userLocation && !selectable;
@@ -194,13 +303,22 @@ export default function DiscoveryMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         <MapEventsHandler onMoveEnd={onMoveEnd} mapRef={mapRef} enabled={selectable} />
-        <FitBounds points={boundsPoints} disable={disableFitBounds} />
+        {/* While a route is shown it owns the viewport; fitting to every pin would yank it away. */}
+        <FitBounds points={boundsPoints} disable={disableFitBounds || !!routePath} />
+        {routePath && <RouteLayer path={routePath} />}
         {userLocation && (
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
             <Popup>You are here</Popup>
           </Marker>
         )}
-        {branches.map((b) => {
+        {cluster && onSelectBranch && (
+          <ClusteredBranchMarkers
+            branches={branches}
+            selectedKey={selectedBranch ? `${selectedBranch.storeSlug}-${selectedBranch.branchId}` : null}
+            onSelect={onSelectBranch}
+          />
+        )}
+        {!(cluster && onSelectBranch) && branches.map((b) => {
           const key = `${b.storeSlug}-${b.branchId}`;
           return (
             <Marker

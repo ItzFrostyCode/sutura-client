@@ -333,8 +333,16 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
 
   const mapBranches: MapBranch[] = branches
     .filter(b => b.latitude && b.longitude)
-    .map(b => ({ id: b.id, name: b.name, slug: b.slug, latitude: Number(b.latitude), longitude: Number(b.longitude) }));
+    .map(b => ({ id: b.id, name: b.name, slug: b.slug, latitude: Number(b.latitude), longitude: Number(b.longitude), isMain: !!b.is_main }));
   const selectedFindBranch = mapBranches.find(b => b.id === findSheetBranchId) ?? null;
+
+  // A shop with a single mapped branch: pick it as soon as Find a Branch
+  // opens, so Direction / Book a Fitting work straight away instead of
+  // sitting greyed out until the customer taps the only row in the list.
+  const onlyBranchId = mapBranches.length === 1 ? mapBranches[0].id : null;
+  useEffect(() => {
+    if (showFind && onlyBranchId !== null && findSheetBranchId === null) setFindSheetBranchId(onlyBranchId);
+  }, [showFind, onlyBranchId, findSheetBranchId]);
 
   const selectedDistanceKm = userPos && selectedFindBranch
     ? haversineKm(userPos.lat, userPos.lng, selectedFindBranch.latitude, selectedFindBranch.longitude)

@@ -74,7 +74,7 @@ export default function MyMeasurementsPage() {
             A store&apos;s staff records this during a fitting appointment.
           </p>
           <Link
-            href="/stores"
+            href="/map"
             className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
           >
             Browse Stores →

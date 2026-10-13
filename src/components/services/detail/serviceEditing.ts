@@ -15,6 +15,8 @@ export interface ServiceDraft {
   turnaround_depends: boolean;
   min_order_qty: string;
   service_category: string;
+  /** The storefront "Service Categories" chip it sits under (lib/serviceShowcase). */
+  showcase_category: string;
   service_leaf_type: string;
   service_types: ServiceType[];
   tiers: PricingTierInput[];
@@ -35,6 +37,7 @@ export function toDraft(service: Service): ServiceDraft {
     turnaround_depends: service.estimated_days == null,
     min_order_qty: service.min_order_qty != null ? String(service.min_order_qty) : '1',
     service_category: service.service_category ?? '',
+    showcase_category: service.showcase_category ?? '',
     service_leaf_type: service.service_leaf_type ?? '',
     service_types: service.service_types ?? [],
     tiers: deriveTiersFromService(service),
@@ -52,7 +55,7 @@ export function toDraft(service: Service): ServiceDraft {
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
-  service_category: '', service_leaf_type: '', service_types: [], tiers: [{ label: '', amount: '' }],
+  service_category: '', showcase_category: '', service_leaf_type: '', service_types: [], tiers: [{ label: '', amount: '' }],
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
 
@@ -68,6 +71,7 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
   }
   if (section === 'spec') {
     if (!d.service_category) return 'Pick a category.';
+    if (!d.showcase_category) return 'Pick where it shows on your shop page.';
     if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one priced item.';
   }
   if (section === 'requirements') return validateRequirements(d.requirements);
@@ -90,6 +94,7 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     categories: service?.categories ?? [],
     service_types: draft.service_types,
     service_category: draft.service_category || null,
+    showcase_category: draft.showcase_category || null,
     service_leaf_type: draft.service_leaf_type || null,
     base_price: draft.base_price.trim() === '' ? null : Number.parseFloat(draft.base_price),
     estimated_days: draft.turnaround_depends || draft.estimated_days.trim() === '' ? null : Number.parseInt(draft.estimated_days, 10),
@@ -110,7 +115,7 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
 const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   photo: ['image_url'],
   info: ['name', 'base_price', 'estimated_days', 'estimated_days_max', 'turnaround_depends', 'min_order_qty'],
-  spec: ['service_category', 'service_leaf_type', 'service_types', 'tiers'],
+  spec: ['service_category', 'showcase_category', 'service_leaf_type', 'service_types', 'tiers'],
   chart: ['sizeChart'],
   description: ['description'],
   booking: ['custom_fields', 'roster_fields'],

@@ -42,7 +42,7 @@ export default function AccountHistoryPage() {
           <p className="mobile-body-sm text-ink-muted mb-6 font-normal space-headline-para">
             Your orders, appointments, and measurements will show up here once you have some.
           </p>
-          <Link href="/stores" className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto">
+          <Link href="/map" className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto">
             Browse Stores →
           </Link>
         </div>

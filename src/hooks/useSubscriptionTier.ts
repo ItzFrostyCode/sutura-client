@@ -8,9 +8,9 @@ export type SubscriptionTier = 'basic' | 'pro' | 'premium';
 /**
  * Feature keys and which minimum tier unlocks them:
  *
- * BASIC:   customer_management | appointments | order_tracking | measurements
- * PRO:     portfolio | staff | analytics | notifications | inquiry | boosted_visibility
- * PREMIUM: reports | featured_visibility | custom_branding | advanced_dashboard
+ * BASIC:   customer_management | appointments | order_tracking | measurements | staff (up to max_staff)
+ * PRO:     portfolio | analytics | notifications | inquiry | boosted_visibility | reports (sales & staff)
+ * PREMIUM: featured_visibility | custom_branding | advanced_dashboard (branch comparison)
  */
 export type GatedFeature =
   | 'catalog'
@@ -43,6 +43,8 @@ function tierFromSlug(planSlug: string): SubscriptionTier {
  */
 interface SubscriptionStore {
   tier: SubscriptionTier;
+  /** The plan's branch limit from the admin Plans page (-1 = unlimited). */
+  maxBranches: number;
   loading: boolean;
   lastStoreId: number | null;
   setTier: (tier: SubscriptionTier) => void;
@@ -52,6 +54,7 @@ interface SubscriptionStore {
 const useSubscriptionStore = create<SubscriptionStore>((set) => ({
   // Default to 'premium' so no features are prematurely gated during load
   tier: 'premium',
+  maxBranches: -1,
   loading: true,
   lastStoreId: null,
   setTier: (tier) => set({ tier }),
@@ -62,10 +65,13 @@ const useSubscriptionStore = create<SubscriptionStore>((set) => ({
       const sub = res.data.data;
       const planSlug: string = sub?.plan?.slug || sub?.plan?.name || '';
       // No active subscription — treat as Basic
-      set({ tier: planSlug ? tierFromSlug(planSlug) : 'basic', loading: false });
+      const tier = planSlug ? tierFromSlug(planSlug) : 'basic';
+      const rawMax = sub?.plan?.max_branches;
+      const maxBranches = rawMax === null || rawMax === undefined ? (tier === 'premium' ? -1 : 1) : Number(rawMax);
+      set({ tier, maxBranches, loading: false });
     } catch {
       // On API error, default to premium to avoid accidental lockout during dev
-      set({ tier: 'premium', loading: false });
+      set({ tier: 'premium', maxBranches: -1, loading: false });
     }
   },
 }));
@@ -77,13 +83,14 @@ export function refreshSubscriptionTier(storeId: number) {
 
 export interface UseSubscriptionTierReturn {
   tier: SubscriptionTier;
+  maxBranches: number;
   loading: boolean;
   isGated: (feature: GatedFeature) => boolean;
 }
 
 export function useSubscriptionTier(): UseSubscriptionTierReturn {
   const { store, user } = useAuthStore();
-  const { tier, loading, lastStoreId, fetchTier } = useSubscriptionStore();
+  const { tier, maxBranches, loading, lastStoreId, fetchTier } = useSubscriptionStore();
   // Billing is an owner-only concern (matches the store_owner-only
   // /stores/{store}/subscription route) — staff/branch managers share this
   // dashboard now, and shouldn't 403 fetching a plan they don't manage.
@@ -113,20 +120,23 @@ export function useSubscriptionTier(): UseSubscriptionTierReturn {
     if (loading) return false;
     if (tier === 'premium') return false;
 
-    // Features that require at least PRO
+    // Features that require at least PRO. 'staff' isn't here: every plan can
+    // add staff up to its own max_staff (Basic 2), which StaffController::store
+    // enforces with an upgrade message once the cap is reached.
     const proFeatures = new Set<GatedFeature>([
       'catalog',
       'portfolio',
-      'staff',
       'analytics',
       'notifications',
       'inquiry',
       'boosted_visibility',
+      // The Reports page (sales & staff) — AnalyticsController::staffProductivity requires 'pro'.
+      'reports',
     ]);
 
-    // Features that require PREMIUM
+    // Features that require PREMIUM. advanced_dashboard = branch comparison
+    // (AnalyticsController::branchComparison requires 'premium').
     const premiumFeatures = new Set<GatedFeature>([
-      'reports',
       'featured_visibility',
       'custom_branding',
       'advanced_dashboard',
@@ -145,5 +155,5 @@ export function useSubscriptionTier(): UseSubscriptionTierReturn {
     return false;
   };
 
-  return { tier, loading, isGated };
+  return { tier, maxBranches, loading, isGated };
 }

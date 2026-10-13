@@ -57,6 +57,8 @@ export interface Service extends RequirementFields {
   // New canonical taxonomy fields (src/lib/canonicalTaxonomy.ts) — additive,
   // do not replace the free-text `categories` or the operational `service_types` above.
   service_category?: string | null;
+  /** Storefront "Service Categories" chip (lib/serviceShowcase). */
+  showcase_category?: string | null;
   service_leaf_type?: string | null;
   base_price: string | null;
   sale_price?: string | number | null;

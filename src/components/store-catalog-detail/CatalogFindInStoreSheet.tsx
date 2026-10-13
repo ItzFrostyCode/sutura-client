@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,8 @@ import { ArrowLeft, Locate as LocateIcon } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { MapBranch } from './types';
 import CatalogFindSidebar, { CatalogFindHeader } from './CatalogFindSidebar';
+import ActiveNavigationPanel from '@/components/map/ActiveNavigationPanel';
+import { useDirections } from '@/components/map/useDirections';
 
 const FindLocationMap = dynamic(() => import('@/components/profile/FindLocationMap'), { ssr: false });
 
@@ -26,6 +28,11 @@ interface CatalogFindInStoreSheetProps {
   selectedImage: string;
   itemName: string;
   itemPrice: string | number;
+  /** Shown on the in-app directions card. */
+  storeName: string;
+  /** The shop's logo + open-now state, for the map pins (same as /map). */
+  storeLogoPath: string | null;
+  storeIsOpen: boolean;
   showBookConfirm: boolean;
   setShowBookConfirm: (show: boolean) => void;
   selectedDistanceKm: number | null;
@@ -50,6 +57,9 @@ export default function CatalogFindInStoreSheet({
   selectedImage,
   itemName,
   itemPrice,
+  storeName,
+  storeLogoPath,
+  storeIsOpen,
   showBookConfirm,
   setShowBookConfirm,
   selectedDistanceKm,
@@ -58,6 +68,20 @@ export default function CatalogFindInStoreSheet({
   setShowBranchPickModal,
   bookConfirmHref,
 }: CatalogFindInStoreSheetProps) {
+  // Direction draws the road route on this map (same as the Tailor Locator)
+  // instead of leaving for Google Maps; Google stays one tap away on the card.
+  const directions = useDirections();
+  const { cancel } = directions;
+  const showDirections = () => {
+    if (!selectedFindBranch) return;
+    directions.start(
+      { latitude: selectedFindBranch.latitude, longitude: selectedFindBranch.longitude, storeName: storeName || selectedFindBranch.name, branchName: storeName ? selectedFindBranch.name : undefined },
+      userPos,
+    );
+  };
+  // A route only makes sense for the branch it was drawn to, and not after closing.
+  useEffect(() => { cancel(); }, [findSheetBranchId, showFind, cancel]);
+
   return (
     <div
       className={`fixed inset-0 z-50 transition-all duration-300 ease-out bg-surface max-w-[599px] sm:max-w-2xl md:max-w-none mx-auto border-x md:border-x-0 border-line ${
@@ -73,13 +97,27 @@ export default function CatalogFindInStoreSheet({
             branches={mapBranches}
             selectedBranchId={findSheetBranchId}
             onSelectBranch={setFindSheetBranchId}
-            userPosition={userPos}
+            userPosition={userPos ?? directions.route?.origin ?? null}
+            routePath={directions.route?.path ?? null}
+            logoPath={storeLogoPath}
+            isOpen={storeIsOpen}
             className="w-full h-full"
           />
         ) : (
           <div className="w-full h-full bg-sunken flex items-center justify-center text-sm text-ink-faint">
             {mapBranches.length > 0 ? 'Loading map…' : 'Location not available'}
           </div>
+        )}
+        <ActiveNavigationPanel
+          route={directions.route}
+          loading={directions.loading}
+          onCancel={cancel}
+          className="absolute top-16 left-3 right-3 md:top-3 md:left-auto md:right-3 md:w-[22rem] z-[1000]"
+        />
+        {directions.error && (
+          <p role="alert" className="absolute top-16 md:top-3 left-3 right-3 md:left-auto md:w-[22rem] z-[1000] border border-danger/30 bg-surface px-4 py-3 text-xs text-danger shadow-lg">
+            {directions.error}
+          </p>
         )}
       </div>
 
@@ -109,6 +147,8 @@ export default function CatalogFindInStoreSheet({
         image={selectedImage}
         itemName={itemName}
         itemPrice={itemPrice}
+        onDirections={showDirections}
+        directionsLoading={directions.loading}
         onBook={() => (selectedFindBranch ? setShowBookConfirm(true) : setShowBranchPickModal(true))}
       />
 
@@ -165,14 +205,14 @@ export default function CatalogFindInStoreSheet({
 
         <div className="flex items-center gap-2 mt-3">
           {selectedFindBranch ? (
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&${userPos ? `origin=${userPos.lat},${userPos.lng}&` : ''}destination=${selectedFindBranch.latitude},${selectedFindBranch.longitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium py-2.5 transition-colors flex items-center justify-center rounded-none text-xs"
+            <button
+              type="button"
+              onClick={showDirections}
+              disabled={directions.loading}
+              className="flex-1 border border-line-strong hover:border-ink text-ink-body font-medium py-2.5 transition-colors flex items-center justify-center rounded-none text-xs cursor-pointer disabled:opacity-60"
             >
-              Direction
-            </a>
+              {directions.loading ? 'Finding route…' : 'Direction'}
+            </button>
           ) : (
             <button
               type="button"

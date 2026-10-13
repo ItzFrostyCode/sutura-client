@@ -27,6 +27,7 @@ export default function CatalogItemCard({
   hideLocation,
   hrefOverride,
   isPaused,
+  reviewBadge,
 }: {
   readonly item: CatalogItemResult;
   readonly userCoords?: { lat: number; lng: number } | null;
@@ -39,6 +40,8 @@ export default function CatalogItemCard({
   readonly hrefOverride?: string;
   /** Owner-only: this item is currently paused (is_active === false). */
   readonly isPaused?: boolean;
+  /** Owner-only: the design's typed-in apparel name is in SUTURA review ("In review" / "Not approved"). */
+  readonly reviewBadge?: string;
 }) {
   const [imgError, setImgError] = useState(false);
   const primaryImage = item.images.find((img) => img.is_primary)?.image_url ?? item.images[0]?.image_url;
@@ -83,9 +86,14 @@ export default function CatalogItemCard({
       >
       {/* 1. Image Thumbnail */}
       <div className="aspect-3/4 bg-sunken relative overflow-hidden shrink-0">
-        {isPaused && (
-          <div className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 bg-ink/85 text-white text-[9px] font-bold uppercase tracking-wider">
-            Paused
+        {(isPaused || reviewBadge) && (
+          <div className="absolute top-1.5 left-1.5 z-10 flex flex-col items-start gap-1">
+            {isPaused && (
+              <span className="px-2 py-0.5 bg-ink/85 text-white text-[9px] font-bold uppercase tracking-wider">Paused</span>
+            )}
+            {reviewBadge && (
+              <span className="px-2 py-0.5 bg-taupe text-white text-[9px] font-bold uppercase tracking-wider">{reviewBadge}</span>
+            )}
           </div>
         )}
         {displayImage ? (

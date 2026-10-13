@@ -1,13 +1,12 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useMapPage } from '@/components/map/useMapPage';
-import MapHeaderBar from '@/components/map/MapHeaderBar';
-import MapFilterDropdown from '@/components/map/MapFilterDropdown';
 import MapCanvas from '@/components/map/MapCanvas';
-import SelectedBranchCard from '@/components/map/SelectedBranchCard';
-import MapSelectFooter from '@/components/map/MapSelectFooter';
-import MapRightSidebar from '@/components/map/MapRightSidebar';
+import MapControls from '@/components/map/MapControls';
+import MapExplorePanel from '@/components/map/MapExplorePanel';
+import { useDirections } from '@/components/map/useDirections';
+import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 
 export default function MapPage() {
   return (
@@ -23,130 +22,60 @@ export default function MapPage() {
   );
 }
 
+/**
+ * Tailor Locator: a full-screen map with clustered shop pins, a floating
+ * explore panel (search · Open · filters · shop list) on the left — a bottom
+ * sheet on phones — and round locate / zoom controls on the right.
+ */
 function MapPageContent() {
-  const {
-    isSelectMode,
-    mapRef,
-    handleBack,
-    q,
-    setQ,
-    district,
-    setDistrict,
-    statusFilter,
-    setStatusFilter,
-    showFilterDropdown,
-    setShowFilterDropdown,
-    filteredBranches,
-    hasActiveFilters,
-    loading,
-    selectedBranch,
-    setSelectedBranch,
-    userLocation,
-    locating,
-    locationError,
-    setLocationError,
-    pickedAddress,
-    reverseLoading,
-    handleMapMoveEnd,
-    handleSearchSubmit,
-    handleNearMe,
-    handleSelectBranch,
-    handleResetFilters,
-    handleConfirmPickedLocation,
-  } = useMapPage();
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // When sidebar toggles open/close, force Leaflet to recalculate container bounds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      mapRef.current?.invalidateSize();
-    }, 60);
-    return () => clearTimeout(timer);
-  }, [isSidebarOpen, mapRef]);
+  const m = useMapPage();
+  const directions = useDirections();
+  const showDirections = (branch: DiscoveryMapBranch) => directions.start(branch, m.userLocation);
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden bg-canvas relative">
-      <MapHeaderBar
-        onBack={handleBack}
-        q={q}
-        onQueryChange={setQ}
-        onSubmitSearch={() => void handleSearchSubmit()}
-        isSelectMode={isSelectMode}
-        hasActiveFilters={hasActiveFilters}
-        onToggleFilter={() => setShowFilterDropdown((prev) => !prev)}
-        storeCount={filteredBranches.length}
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+    <div className="relative h-full min-h-dvh w-full overflow-hidden bg-canvas">
+      <MapCanvas
+        loading={m.loading}
+        filteredBranches={m.filteredBranches}
+        userLocation={m.userLocation}
+        onSelectBranch={m.handleSelectBranch}
+        isSelectMode={m.isSelectMode}
+        onMoveEnd={m.handleMapMoveEnd}
+        mapRef={m.mapRef as unknown as React.MutableRefObject<any>}
+        selectedBranch={m.selectedBranch}
+        locationError={m.locationError || directions.error}
+        onDismissLocationError={() => { m.setLocationError(''); directions.dismissError(); }}
+        route={directions.route}
+        routeLoading={directions.loading}
+        onCancelRoute={directions.cancel}
       />
 
-      <div className="flex-1 flex overflow-hidden relative">
-        <MapCanvas
-          loading={loading}
-          filteredBranches={filteredBranches}
-          userLocation={userLocation}
-          onSelectBranch={handleSelectBranch}
-          isSelectMode={isSelectMode}
-          onMoveEnd={handleMapMoveEnd}
-          mapRef={mapRef as unknown as React.MutableRefObject<any>}
-          onNearMe={handleNearMe}
-          locating={locating}
-          locationError={locationError}
-          onDismissLocationError={() => setLocationError('')}
-        />
-
-        {isSidebarOpen && (
-          <MapRightSidebar
-            district={district}
-            onDistrictChange={setDistrict}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            userLocation={userLocation}
-            locating={locating}
-            onNearMe={handleNearMe}
-            hasActiveFilters={hasActiveFilters}
-            onResetFilters={handleResetFilters}
-            branches={filteredBranches}
-            selectedBranch={selectedBranch}
-            onSelectBranch={handleSelectBranch}
-            loading={loading}
-            isSelectMode={isSelectMode}
-            onConfirmLocation={handleConfirmPickedLocation}
-            pickedAddress={pickedAddress}
-            reverseLoading={reverseLoading}
-          />
-        )}
-      </div>
-
-      <MapFilterDropdown
-        isOpen={showFilterDropdown}
-        onClose={() => setShowFilterDropdown(false)}
-        district={district}
-        onDistrictChange={setDistrict}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        userLocation={userLocation}
-        locating={locating}
-        onNearMe={handleNearMe}
-        hasActiveFilters={hasActiveFilters}
-        onResetFilters={handleResetFilters}
+      <MapExplorePanel
+        isSelectMode={m.isSelectMode}
+        onBack={m.handleBack}
+        q={m.q}
+        onQueryChange={m.setQ}
+        onSubmitSearch={() => void m.handleSearchSubmit()}
+        openOnly={m.statusFilter === 'online'}
+        onToggleOpenOnly={() => m.setStatusFilter(m.statusFilter === 'online' ? 'all' : 'online')}
+        district={m.district}
+        onDistrictChange={m.setDistrict}
+        userLocation={m.userLocation}
+        locating={m.locating}
+        onNearMe={m.handleNearMe}
+        hasActiveFilters={m.hasActiveFilters}
+        onResetFilters={m.handleResetFilters}
+        branches={m.filteredBranches}
+        loading={m.loading}
+        selectedBranch={m.selectedBranch}
+        onSelectBranch={m.handleSelectBranch}
+        onConfirmLocation={m.handleConfirmPickedLocation}
+        onDirections={showDirections}
+        pickedAddress={m.pickedAddress}
+        reverseLoading={m.reverseLoading}
       />
 
-      <SelectedBranchCard
-        branch={selectedBranch}
-        onClose={() => setSelectedBranch(null)}
-        isSelectMode={isSelectMode}
-        userLocation={userLocation}
-        onConfirmLocation={handleConfirmPickedLocation}
-      />
-
-      <MapSelectFooter
-        isSelectMode={isSelectMode}
-        hasSelectedBranch={!!selectedBranch}
-        reverseLoading={reverseLoading}
-        pickedAddress={pickedAddress}
-        onConfirmPickedLocation={() => handleConfirmPickedLocation()}
-      />
+      <MapControls mapRef={m.mapRef} onLocate={m.handleNearMe} locating={m.locating} located={!!m.userLocation} />
     </div>
   );
 }
