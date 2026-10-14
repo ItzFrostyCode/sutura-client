@@ -3,7 +3,7 @@ import AskSutura from '@/components/ask/AskSutura';
 
 export const metadata: Metadata = {
   title: 'Ask SUTURA',
-  description: 'Describe what you need sewn, mended or fitted and find verified tailoring shops in Davao City.',
+  description: 'Tap a question and get answers from SUTURA’s live data: verified Davao tailoring shops, your orders and your appointments.',
 };
 
 export default function AskPage() {

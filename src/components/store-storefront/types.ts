@@ -54,6 +54,11 @@ export interface PublicService {
   // Dress Alteration ₱300) — always present alongside base_price, never a
   // replacement for it; base_price stays the "starting at" headline figure.
   pricing?: { id: number; label: string; amount: string | number }[];
+  min_order_qty?: number | null;
+  /** Garments it works on (garmentTaxonomy slugs); empty on alterations / customization = any garment. */
+  garment_types?: string[] | null;
+  /** Tasks it offers (capability slugs of its service group). */
+  capabilities?: string[] | null;
   custom_fields?: {
     name: string;
     label: string;

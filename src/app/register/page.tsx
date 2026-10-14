@@ -7,6 +7,7 @@ import api from '@/lib/axios';
 import { Check, X } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
+import AuthBrand from '@/components/auth/AuthBrand';
 import { PASSWORD_RULES } from '@/lib/passwordRules';
 
 export default function RegisterPage() {
@@ -76,9 +77,8 @@ function RegisterPageContent() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      {/* Reuses the site's own header instead of rebuilding the
-          reference's — the user's explicit call: "meron na tayung header
-          just use that." */}
+      {/* The site's own nav, never a rebuilt one ("meron na tayung header just use that"). Sign Up is reached from
+          the Profile tab, so it has no header bar, only the bottom navigation (bottomNavPaths' AUTH_PATHS, 2026-10-15). */}
       <PublicNav />
 
       {/* Hero banner mirrors the reference's structure (full-bleed photo +
@@ -115,6 +115,7 @@ function RegisterPageContent() {
           forms feel like the same product at any width. */}
       <div className="flex-1 px-[10px] py-6 md:flex md:items-start md:justify-center md:px-4 md:py-12">
         <div className="md:w-full md:max-w-md md:bg-surface md:border md:border-line md:shadow-sm md:p-8">
+        <AuthBrand className="mb-8" />
         <h1 className="text-display text-2xl text-ink mb-6">Create Account</h1>
 
         {error && (

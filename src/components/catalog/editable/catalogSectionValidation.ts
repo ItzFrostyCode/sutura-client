@@ -6,7 +6,9 @@ import type { CatalogSection } from './useCatalogSectionEdit';
 export function validateCatalogSection(section: CatalogSection, form: ReturnType<typeof useCatalogForm>): string | null {
   const { formData, images, colorItems } = form;
   if (section === 'info') {
-    if (!formData.name.trim() || formData.price === '') return 'Design name and price are required.';
+    if (!formData.name.trim()) return 'Enter the design name.';
+    if (!formData.service_id && formData.price === '') return 'Pick the service this design is made under, or enter its own price.';
+    if (formData.service_id && formData.pricing_mode === 'extra' && !(Number(formData.extra_charge) > 0)) return 'Enter the extra charge for this design.';
     if (!formData.estimated_days || Number(formData.estimated_days) < 1) return 'Enter the production time (from days).';
     const from = Number(formData.estimated_days);
     const to = Number(formData.estimated_days_max);

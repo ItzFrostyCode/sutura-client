@@ -1,85 +1,34 @@
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { type EditableField } from './useAccountDetail';
 
 interface AccountRowsListProps {
   user: {
     name: string;
-    email: string;
     phone?: string | null;
   };
-  uploadingAvatar: boolean;
-  onAvatarClick: () => void;
   onOpenSheet: (field: EditableField) => void;
 }
 
-export default function AccountRowsList({
-  user,
-  uploadingAvatar,
-  onAvatarClick,
-  onOpenSheet,
-}: Readonly<AccountRowsListProps>) {
+function Row({ label, value, onClick }: { readonly label: string; readonly value?: string; readonly onClick: () => void }) {
   return (
-    <div>
-      <p className="mobile-overline text-ink-faint mb-2 ml-1">Account</p>
-      <div className="bg-surface border border-line overflow-hidden divide-y divide-line">
-        {/* My Profile */}
-        <button
-          type="button"
-          onClick={onAvatarClick}
-          disabled={uploadingAvatar}
-          className="mobile-nav-row w-full flex items-center gap-3 px-4 hover:bg-canvas transition-colors text-left"
-        >
-          <span className="flex-1 mobile-body-md font-normal text-ink">My Profile</span>
-          {uploadingAvatar ? (
-            <Loader2 size={16} className="text-ink-faint animate-spin" />
-          ) : (
-            <ChevronRight size={16} className="text-ink-faint" />
-          )}
-        </button>
+    <button type="button" onClick={onClick} className="flex min-h-14 w-full items-center gap-3 px-4 text-left transition-colors active:bg-sunken">
+      <span className="mobile-body-md flex-1 text-ink">{label}</span>
+      {value && <span className="mobile-body-sm max-w-[55%] truncate text-ink-muted">{value}</span>}
+      <ChevronRight size={18} className="shrink-0 text-ink-faint" />
+    </button>
+  );
+}
 
-        {/* Name */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('name')}
-          className="mobile-nav-row w-full flex items-center gap-3 px-4 hover:bg-canvas transition-colors text-left"
-        >
-          <span className="flex-1 mobile-body-md font-normal text-ink">Name</span>
-          <span className="mobile-body-sm text-ink-muted font-normal">{user.name}</span>
-          <ChevronRight size={16} className="text-ink-faint" />
-        </button>
-
-        {/* Phone */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('phone')}
-          className="mobile-nav-row w-full flex items-center gap-3 px-4 hover:bg-canvas transition-colors text-left"
-        >
-          <span className="flex-1 mobile-body-md font-normal text-ink">Phone</span>
-          <span className="mobile-body-sm text-ink-muted font-normal">{user.phone || 'Not set'}</span>
-          <ChevronRight size={16} className="text-ink-faint" />
-        </button>
-
-        {/* Email */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('email')}
-          className="mobile-nav-row w-full flex items-center gap-3 px-4 hover:bg-canvas transition-colors text-left"
-        >
-          <span className="flex-1 mobile-body-md font-normal text-ink">Email</span>
-          <span className="mobile-body-sm text-ink-muted truncate max-w-[140px] font-normal">{user.email}</span>
-          <ChevronRight size={16} className="text-ink-faint" />
-        </button>
-
-        {/* Change Password */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('password')}
-          className="mobile-nav-row w-full flex items-center gap-3 px-4 hover:bg-canvas transition-colors text-left"
-        >
-          <span className="flex-1 mobile-body-md font-normal text-ink">Change Password</span>
-          <ChevronRight size={16} className="text-ink-faint" />
-        </button>
+/** What can be changed: name, phone number and password. The email is the login and is not editable here. */
+export default function AccountRowsList({ user, onOpenSheet }: Readonly<AccountRowsListProps>) {
+  return (
+    <section>
+      <h2 className="mobile-overline mb-2 ml-4 text-ink-faint">Account</h2>
+      <div className="card-soft overflow-hidden">
+        <Row label="Name" value={user.name} onClick={() => onOpenSheet('name')} />
+        <Row label="Phone" value={user.phone || 'Not set'} onClick={() => onOpenSheet('phone')} />
+        <Row label="Change Password" onClick={() => onOpenSheet('password')} />
       </div>
-    </div>
+    </section>
   );
 }

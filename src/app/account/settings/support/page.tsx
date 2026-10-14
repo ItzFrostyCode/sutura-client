@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { LifeBuoy, ChevronRight, Store, Loader2 } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
+import EmptyState from '@/components/account/EmptyState';
 import { getMediaUrl } from '@/lib/media';
 import api from '@/lib/axios';
 
@@ -56,57 +57,33 @@ export default function SupportTicketListPage() {
     <div>
       <AccountHeader title="Support Ticket" backHref="/account/settings" />
 
-      {tickets === null && (
-        <div className="min-h-[50vh] flex items-center justify-center bg-white">
-          <Loader2 size={28} className="animate-spin text-ink-faint" />
-        </div>
-      )}
+      {tickets === null && <div className="flex min-h-[50vh] items-center justify-center"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}
 
       {tickets !== null && tickets.length === 0 && (
-        <div className="bg-surface border border-line p-8 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-full bg-sunken flex items-center justify-center mb-4">
-            <LifeBuoy size={24} className="text-ink-faint" />
-          </div>
-          <p className="text-sm font-semibold text-ink mb-1">No support tickets yet</p>
-          <p className="text-xs text-ink-muted leading-relaxed max-w-[260px]">
-            Tickets you submit — like reporting a product — will show up here.
-          </p>
-        </div>
+        <EmptyState Icon={LifeBuoy} title="No support tickets yet" message="Tickets you submit — like reporting a product — will show up here." />
       )}
 
       {tickets !== null && tickets.length > 0 && (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {tickets.map((t) => {
             const meta = STATUS_META[t.status] ?? STATUS_META.open;
             return (
-              <Link
-                key={t.id}
-                href={`/account/settings/support/${t.id}`}
-                className="flex items-start gap-3 bg-surface border border-line px-4 py-3.5 hover:border-line-strong transition-colors"
-              >
-                <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden bg-sunken mt-0.5">
-                  {t.store?.logo_path ? (
-                    <Image src={getMediaUrl(t.store.logo_path)} alt="" fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Store size={15} className="text-ink-faint" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
+              <Link key={t.id} href={`/account/settings/support/${t.id}`} className="card-soft flex items-start gap-3 px-4 py-3.5 transition-opacity active:opacity-80">
+                <span className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-sunken">
+                  {t.store?.logo_path ? <Image src={getMediaUrl(t.store.logo_path)} alt="" fill className="object-cover" /> : <Store size={15} className="text-ink-faint" />}
+                </span>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-ink truncate">{t.subject}</p>
-                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${meta.tone}`}>
-                      {meta.label}
-                    </span>
+                    <p className="mobile-body-md truncate font-medium text-ink">{t.subject}</p>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.tone}`}>{meta.label}</span>
                   </div>
-                  <p className="text-xs text-ink-muted leading-snug mt-1 line-clamp-2">{t.message}</p>
-                  <p className="text-[11px] text-ink-faint mt-1.5">
+                  <p className="mobile-caption mt-1 line-clamp-2 text-ink-muted">{t.message}</p>
+                  <p className="mobile-caption mt-1.5 text-ink-faint">
                     {t.store?.name ?? 'SUTURA'} · {relativeTime(t.created_at)}
                     {t.replies.length > 0 && ` · ${t.replies.length} repl${t.replies.length === 1 ? 'y' : 'ies'}`}
                   </p>
                 </div>
-                <ChevronRight size={16} className="text-ink-faint shrink-0 mt-1" />
+                <ChevronRight size={18} className="mt-1 shrink-0 text-ink-faint" />
               </Link>
             );
           })}

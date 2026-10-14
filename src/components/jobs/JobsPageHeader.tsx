@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { Plus, Trash2, Zap } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 
 interface JobsPageHeaderProps {
   jobsCount: number;
   onOpenTrash: () => void;
-  onOpenQuickJob: () => void;
   // POST /jobs (create), POST /jobs/{id}/restore, and DELETE /jobs/{id} are
   // all role:store_owner,branch_manager-only in routes/api.php (grouped with
   // pay/discount/reject as supervisory actions) — these three actions used
@@ -17,7 +16,6 @@ interface JobsPageHeaderProps {
 export default function JobsPageHeader({
   jobsCount,
   onOpenTrash,
-  onOpenQuickJob,
   isOwnerOrManager,
 }: JobsPageHeaderProps) {
   return (
@@ -36,14 +34,6 @@ export default function JobsPageHeader({
               className="flex items-center justify-center w-10 h-10 rounded-lg bg-surface border border-line text-ink-muted hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
             >
               <Trash2 size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={onOpenQuickJob}
-              className="flex items-center gap-1.5 bg-surface border border-line hover:border-taupe text-ink-body hover:text-taupe px-3.5 py-2 rounded-lg font-semibold text-xs transition-colors h-10 cursor-pointer"
-            >
-              <Zap size={14} className="text-taupe" />
-              <span>Quick Walk-in</span>
             </button>
             <Link
               href="/dashboard/jobs/new"

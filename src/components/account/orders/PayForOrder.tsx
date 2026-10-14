@@ -28,23 +28,23 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
 
   if (!active || pay.loading || balance <= 0) return null;
   if (outstanding <= 0) {
-    return <p className="mobile-caption text-ink-muted font-normal mt-4">Your payment was sent and is waiting for the shop to verify it.</p>;
+    return <p className="mobile-caption mt-4 text-ink-muted md:mx-auto md:max-w-3xl">Your payment was sent and is waiting for the shop to verify it.</p>;
   }
   if (pay.methods.length === 0) return null;
 
   return (
-    <section className="bg-surface border border-line p-4 mt-4" aria-label="Pay for this order">
-      <h2 className="mobile-h4 font-semibold text-ink">Pay for this order</h2>
-      <p className="mobile-body-sm text-ink-muted font-normal mt-1">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
+    <section className="card-soft mt-4 p-4 md:mx-auto md:max-w-3xl" aria-label="Pay for this order">
+      <h2 className="mobile-h4 text-ink">Pay for this order</h2>
+      <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
       {requiredDeposit > 0 && totalAmount - balance + 0.005 < requiredDeposit && (
-        <p className="mobile-body-sm text-ink font-normal mt-1">The shop needs {depositLabel.toLowerCase()} (₱{requiredDeposit.toLocaleString()}) before it starts making your order.</p>
+        <p className="mobile-body-sm mt-1 text-ink">The shop needs {depositLabel.toLowerCase()} (₱{requiredDeposit.toLocaleString()}) before it starts making your order.</p>
       )}
       <ul className="grid grid-cols-1 min-[600px]:grid-cols-2 gap-3 mt-3">
         {pay.methods.map((m) => {
           const Icon = ICON[m.kind] ?? Wallet;
           return (
             <li key={m.id}>
-              <button type="button" onClick={() => setChosen(m)} className="w-full min-h-16 border border-line-strong bg-white hover:bg-sunken p-3 flex items-center gap-3 text-left cursor-pointer">
+              <button type="button" onClick={() => setChosen(m)} className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-2xl bg-sunken p-3 text-left transition-opacity active:opacity-70">
                 <Icon size={20} className="text-taupe shrink-0" />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-ink truncate">{m.name}</span>

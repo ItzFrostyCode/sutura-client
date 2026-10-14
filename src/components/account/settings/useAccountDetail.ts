@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 
-export type EditableField = 'name' | 'phone' | 'password' | 'email';
+export type EditableField = 'name' | 'phone' | 'password';
 
 export function useAccountDetail() {
   const { user, token, setAuth } = useAuthStore();

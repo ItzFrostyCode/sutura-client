@@ -25,6 +25,8 @@ import {
   SearchActiveTab,
 } from '../types';
 import { useToast } from '@/context/ToastContext';
+import { isStoreOpen } from '@/lib/storeStatus';
+import { parseRadiusKm, parseStatusFilter, type AllFilters } from '@/components/home/homeFilters';
 
 export function useSearchData() {
   const router = useRouter();
@@ -73,6 +75,12 @@ export function useSearchData() {
   const [district, setDistrict] = useState(searchParams.get('district') ?? '');
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? '');
   const [page, setPage] = useState(1);
+  // Distance (null = Auto) and Open / Closed live in the URL so tab changes and shared links keep them.
+  const radiusKm = parseRadiusKm(searchParams.get('radius_km'));
+  // Barangay and street / landmark (filter pop-up, FilterPlace) are read straight from the URL, like the distance.
+  const barangay = searchParams.get('barangay') ?? '';
+  const area = searchParams.get('area') ?? '';
+  const openStatus = parseStatusFilter(searchParams.get('open'));
 
   useEffect(() => {
     const nextQ = searchParams.get('q') ?? searchParams.get('search') ?? '';
@@ -384,7 +392,7 @@ export function useSearchData() {
   // Reset to page 1 on filter changes
   useEffect(() => {
     setPage(1);
-  }, [effectiveQ, specialization, minPrice, maxPrice, minRating, district, sortBy]);
+  }, [effectiveQ, specialization, minPrice, maxPrice, minRating, district, barangay, area, sortBy, radiusKm, openStatus]);
 
   // Catalog items fetch
   useEffect(() => {
@@ -400,18 +408,18 @@ export function useSearchData() {
       } else if (specialization) {
         applyCategoryFilter(params, specialization);
       }
-      if (subcategory) params.subcategory = subcategory;
-      if (structure) params.garment_structure = structure;
-      if (department && department.toLowerCase() !== 'services' && department.toLowerCase() !== 'service') {
-        params.department = department;
-      }
+      // Men / Women / Kids and top/bottom are no longer filters (2-level taxonomy, 2026-10-14): an old link
+      // that still carries them is ignored rather than silently narrowing the results.
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
       if (minRating) params.min_rating = minRating;
       if (district) params.district = district;
+      if (barangay) params.barangay = barangay;
+      if (area) params.area = area;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
+        if (radiusKm) params.radius_km = radiusKm;
       }
       if (sortBy) params.sort_by = sortBy;
 
@@ -431,33 +439,41 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, specialization, garmentType, subcategory, structure, department, minPrice, maxPrice, minRating, district, sortBy, page, userCoords]);
+  }, [effectiveQ, specialization, garmentType, subcategory, structure, department, minPrice, maxPrice, minRating, district, barangay, area, sortBy, page, userCoords, radiusKm]);
 
   // Nearby stores fetch (aligned with /stores filter logic)
   useEffect(() => {
     setStoresLoading(true);
     const handle = setTimeout(() => {
-      const params: Record<string, string | number> = { per_page: 30 };
+      // Closed shops cannot be asked of the server, so that view takes a longer nearest-first list and picks them out.
+      const params: Record<string, string | number> = { per_page: openStatus === 'closed' ? 60 : 30 };
       if (effectiveQ.trim()) params.q = effectiveQ.trim();
       if (district) params.district = district;
-      if (specialization) params.specialization = specialization;
+      if (barangay) params.barangay = barangay;
+      if (area) params.area = area;
+      // A garment type or service category from a link narrows the shops to those that carry it.
+      const carries = specialization || garmentType || serviceCategory;
+      if (carries) params.specialization = carries;
+      if (openStatus === 'open') params.open_now = 1;
       // Header nav's MEN/WOMEN/KIDS/SERVICES axis — 'services' is a real,
       // valid value here (unlike the catalog fetch's `department`, Store
       // has no department column of its own; the backend interprets
       // 'services' as "has any active service" instead of a garment tag).
-      if (department) params.department = department;
+      if (department && ['services', 'service'].includes(department.toLowerCase())) params.department = department;
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
         params.sort_by = 'distance';
+        if (radiusKm) params.radius_km = radiusKm;
       }
 
       api
         .get('/public/stores', { params })
         .then((res) => {
           let list: RelatedStore[] = res.data.data ?? [];
+          if (openStatus === 'closed') list = list.filter((s) => !isStoreOpen(s.operating_hours));
           if (userCoords) {
             list = list.map((store) => {
               if (store.distance_km != null) return store;
@@ -483,7 +499,7 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, department, userCoords, minPrice, maxPrice]);
+  }, [effectiveQ, district, barangay, area, specialization, garmentType, serviceCategory, department, userCoords, minPrice, maxPrice, radiusKm, openStatus]);
 
   // Services fetch
   useEffect(() => {
@@ -499,11 +515,11 @@ export function useSearchData() {
       ].filter(Boolean).join(' ');
       if (qSearch) params.q = qSearch;
       if (serviceCategory) params.service_category = serviceCategory;
-      if (serviceType) params.service_leaf_type = serviceType;
-      if (department && department.toLowerCase() !== 'services' && department.toLowerCase() !== 'service') {
-        params.department = department;
-      }
+      // service_type in the URL is now a capability (a task the service ticked, e.g. zipper_replacement).
+      if (serviceType) params.capability = serviceType;
       if (district) params.district = district;
+      if (barangay) params.barangay = barangay;
+      if (area) params.area = area;
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
       if (userCoords) {
@@ -514,7 +530,7 @@ export function useSearchData() {
 
       // Combo packages ride along with services: same text, category and district filters.
       api
-        .get('/public/service-packages', { params: { q: params.q, service_category: params.service_category, district: params.district } })
+        .get('/public/service-packages', { params: { q: params.q, service_category: params.service_category, district: params.district, barangay: params.barangay, area: params.area } })
         .then((res) => setPackages(res.data.data ?? []))
         .catch(() => setPackages([]));
 
@@ -532,11 +548,51 @@ export function useSearchData() {
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [effectiveQ, district, specialization, serviceCategory, serviceType, department, userCoords, sortBy, activeTab, minPrice, maxPrice]);
+  }, [effectiveQ, district, barangay, area, specialization, serviceCategory, serviceType, department, userCoords, sortBy, activeTab, minPrice, maxPrice]);
+
+  // Applying the filter pop-up sets every filter and rewrites the URL, keeping the typed text and the current tab.
+  function applyAllFilters(next: AllFilters) {
+    setMinPrice(next.minPrice);
+    setMaxPrice(next.maxPrice);
+    setMinRating(next.minRating);
+    setDistrict(next.district);
+    setSortBy(next.sortBy);
+    const params = new URLSearchParams(searchParams.toString());
+    const trimmed = q.trim();
+    const entries: [string, string][] = [
+      ['q', trimmed],
+      ['radius_km', next.radiusKm !== null ? String(next.radiusKm) : ''],
+      ['open', next.status !== 'all' ? next.status : ''],
+      ['minPrice', next.minPrice],
+      ['maxPrice', next.maxPrice],
+      ['minRating', next.minRating],
+      ['district', next.district],
+      ['barangay', next.district ? next.barangay : ''],
+      ['area', next.district ? next.area : ''],
+      ['sortBy', next.sortBy],
+    ];
+    for (const [key, value] of entries) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    setPage(1);
+    router.replace(`/search?${params.toString()}`, { scroll: false });
+  }
+
+  // Drops the Men / Women / Suits-style context that arrived through the link, keeping text and filters.
+  function clearContext() {
+    const params = new URLSearchParams(searchParams.toString());
+    ['department', 'subcategory', 'structure', 'garment_type', 'service_category', 'service_type', 'specialization', 'category', 'qlabel'].forEach((k) => params.delete(k));
+    const trimmed = q.trim();
+    if (trimmed) params.set('q', trimmed);
+    else params.delete('q');
+    setPage(1);
+    router.replace(`/search?${params.toString()}`, { scroll: false });
+  }
 
   const activeFilterCount = [
     specialization, garmentType, subcategory, structure, serviceCategory, serviceType,
-    minPrice || maxPrice, minRating, district,
+    minPrice || maxPrice, minRating, district || barangay || area,
   ].filter(Boolean).length;
 
   return {
@@ -573,6 +629,8 @@ export function useSearchData() {
     setMinRating,
     district,
     setDistrict,
+    barangay,
+    area,
     sortBy,
     setSortBy,
     page,
@@ -630,5 +688,9 @@ export function useSearchData() {
     resetFilterPanel,
     activeFilterCount,
     saveLocation,
+    radiusKm,
+    openStatus,
+    applyAllFilters,
+    clearContext,
   };
 }

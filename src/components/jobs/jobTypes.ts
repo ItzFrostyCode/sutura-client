@@ -86,6 +86,11 @@ export interface Job {
   payment_policy?: 'none' | 'full' | 'deposit' | 'custom' | null;
   payment_policy_percent?: number | null;
   customer_job_count?: number;
+  // Ordering flow (server-derived).
+  uses_confirmation_flow?: boolean;
+  quotation_status?: 'estimate' | 'final' | null;
+  confirmed_at?: string | null;
+  production_started_at?: string | null;
   adjustment_count?: number;
   first_adjustment_at?: string | null;
   garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;

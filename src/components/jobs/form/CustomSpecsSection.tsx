@@ -280,7 +280,7 @@ export default function CustomSpecsSection({
             className="rounded border-line text-taupe focus:ring-taupe"
           />
           <span className="text-sm font-semibold text-ink-body">
-            Include Team Roster / Size Sheet (For Bulk Sublimation / Uniforms)
+            Include Team Roster / Size Sheet (for bulk team orders and uniforms)
           </span>
         </label>
 

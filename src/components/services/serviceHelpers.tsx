@@ -1,6 +1,7 @@
 import type { RequirementFields } from '@/components/jobs/requirements';
 import { Scissors, Users, Sparkles, Wrench, type LucideIcon } from 'lucide-react';
 import type { SizeChartRow } from '@/components/shared/SizeChartEditor';
+import { categoryOfGarment } from '@/lib/garmentTaxonomy';
 
 export type { SizeChartRow };
 
@@ -23,21 +24,24 @@ export type ServiceType = 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bri
 
 export const SERVICE_TYPES: { value: ServiceType; label: string; hint: string }[] = [
   { value: 'custom_tailoring', label: 'Custom Tailoring & Bespoke', hint: 'Measurement-driven made-to-order garments' },
-  { value: 'bulk_sublimation', label: 'Bulk / Sublimation Printing', hint: 'Team jerseys, corporate & school uniforms — enables team roster ordering' },
+  { value: 'bulk_sublimation', label: 'Bulk / Team Orders', hint: 'Team jerseys, corporate & school uniforms — enables team roster ordering' },
   { value: 'fashion_bridal', label: 'Fashion & Bridal', hint: 'Gowns, barong, Filipiniana — supports two-fitting scheduling' },
   { value: 'alteration_repair', label: 'Alterations & Repairs', hint: 'Resizing, repairs, hemming — requires pre-existing damage notes' },
 ];
 
-// What each canonical category means for order handling. The category already says
-// what the service is, so the "how it works" flag is derived from it, not asked twice.
-export const CATEGORY_HANDLING: Record<string, { types: ServiceType[]; note: string }> = {
-  custom_tailoring:        { types: ['custom_tailoring'],  note: 'Made to measure — customers are measured and fitted before the garment is finished.' },
-  alterations_repairs:     { types: ['alteration_repair'], note: 'Repairs and resizing — customers describe the damage or the change they need when ordering.' },
-  uniform_production:      { types: ['bulk_sublimation'],  note: 'Bulk order — customers can submit a team roster with sizes.' },
-  printing_sublimation:    { types: ['bulk_sublimation'],  note: 'Bulk order — customers can submit a team roster with sizes.' },
-  custom_costume_creation: { types: ['custom_tailoring'],  note: 'Made to measure — customers are measured and fitted before the garment is finished.' },
-  others:                  { types: ['custom_tailoring'],  note: 'Handled as a made-to-measure order.' },
-};
+// The order types (which job-order screens apply) follow from what the service is — the same rule as the
+// server's Service::deriveOrderTypes (2026-10-14), so the form can show the bulk fields as soon as the owner ticks
+// "Bulk / Batch Orders". Alterations → repair flow; uniforms with bulk orders → team roster; custom tailoring of
+// barong, Filipiniana or gowns → two fittings; anything else → custom tailoring.
+const BRIDAL_CATEGORIES = ['barong', 'traditional', 'dresses_gowns'];
+export function deriveOrderTypes(group: string, capabilities: string[], garments: string[]): ServiceType[] {
+  if (group === 'alterations_repairs') return ['alteration_repair'];
+  if (group === 'uniform_production') return [capabilities.includes('bulk_orders') ? 'bulk_sublimation' : 'custom_tailoring'];
+  if (group === 'custom_tailoring') {
+    return [garments.some((g) => BRIDAL_CATEGORIES.includes(categoryOfGarment(g) ?? '')) ? 'fashion_bridal' : 'custom_tailoring'];
+  }
+  return ['custom_tailoring'];
+}
 
 // Shared icon + color per service_type, reused by both the Services catalog and Job
 // Creation's conditional fields so a type reads the same everywhere in the app.
@@ -60,6 +64,10 @@ export interface Service extends RequirementFields {
   /** Storefront "Service Categories" chip (lib/serviceShowcase). */
   showcase_category?: string | null;
   service_leaf_type?: string | null;
+  /** Garments it works on (src/lib/garmentTaxonomy.ts); empty on an alteration / customization service = any garment. */
+  garment_types?: string[] | null;
+  /** Tasks it offers — capability slugs of its service group. */
+  capabilities?: string[] | null;
   base_price: string | null;
   sale_price?: string | number | null;
   sale_starts_at?: string | null;

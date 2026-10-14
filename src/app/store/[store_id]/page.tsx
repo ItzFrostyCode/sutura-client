@@ -1,10 +1,8 @@
 'use client';
 
 import { use, Suspense } from 'react';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import Modal from '@/components/Modal';
 import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
@@ -14,7 +12,6 @@ import { getSocialUrl } from '@/components/store-storefront/storeStorefrontHelpe
 
 import { PublicStoreProfilePageProps } from '@/components/store-storefront/types';
 import { useStoreStorefront } from '@/components/store-storefront/hooks/useStoreStorefront';
-import PublicNav from '@/components/shared/PublicNav';
 import { useShopViewingOwnStore } from '@/hooks/useShopAccount';
 import StoreHeroHeader from '@/components/store-storefront/header/StoreHeroHeader';
 import StoreOwnerTopBar from '@/components/store-storefront/header/StoreOwnerTopBar';
@@ -28,19 +25,12 @@ import RatingModal from '@/components/store-storefront/modals/RatingModal';
 
 
 
-const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-canvas border border-line rounded-2xl p-10 text-center text-sm text-ink-muted" style={{ height: 400 }}>
-      Loading Davao City branch map…
-    </div>
-  ),
-});
-
 function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePageProps>) {
   const { store_id: storeId } = use(params);
   const s = useStoreStorefront(storeId);
   const router = useRouter();
+  // ?embed=1: the page is shown inside the map panel, which supplies its own header (Back, name, address).
+  const embedded = useSearchParams().get('embed') === '1';
   // Owner / branch manager / staff looking at their own Store Profile: no
   // customer header or back arrow — the hero's Dashboard button is their
   // way back, and ShopRouteGuard blocks the customer pages anyway.
@@ -60,13 +50,13 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
 
   return (
     <div className="flex-1 flex flex-col bg-surface text-ink selection:bg-sunken selection:text-indigo-900 relative">
-      {/* Header — same PublicNav used on the landing page for customers;
-          the owner/manager/staff viewing their own store gets a sticky
-          notifications/account bar instead (Dashboard/Edit are in the hero). */}
-      {isShopView ? (
+      {/* Inside the map panel this page is an iframe, and in development Next adds its round "N" button to every page — so
+          the parent's and the iframe's would show together. Hide the iframe's (it does not exist in production). */}
+      {embedded && <style>{'nextjs-portal{display:none!important}'}</style>}
+      {/* No site header for customers: the hero below has its own Back arrow (and inside the map panel the panel has it).
+          The owner / manager / staff viewing their own store get the sticky notifications / account bar. */}
+      {isShopView && !embedded && (
         <StoreOwnerTopBar />
-      ) : (
-        <PublicNav />
       )}
 
       {/* Hero Banner, Avatar, Details & Tab Bar */}
@@ -77,6 +67,8 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         activeBranch={s.activeBranch}
         isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
         isShopViewingOwnStore={isShopView}
+        embedded={embedded}
+        altersRepairs={s.services.some((svc) => svc.service_category === 'alterations_repairs')}
         onEditProfile={() => s.setActiveTab('about')}
         myReview={s.myReview}
         isBookmarked={s.isBookmarked}
@@ -89,7 +81,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         activeTab={s.activeTab}
         setActiveTab={s.setActiveTab}
         tabBarRef={s.tabBarRef}
-        onOpenMap={() => s.setIsAllBranchesMapOpen(true)}
         onImagesSaved={s.fetchStore}
       />
 
@@ -118,6 +109,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
               s.setIsCatalogDeleteOpen(true);
             }}
             user={s.user}
+            embedded={embedded}
             store={s.store}
           />
         )}
@@ -146,6 +138,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
             branches={s.store.branches}
             selectedBranchSlug={s.selectedBranchSlug}
             isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
+            embedded={embedded}
             onSelectBranch={(branch) => {
               s.router.push(`/store/${storeId}?branch=${branch.slug}`);
             }}
@@ -252,34 +245,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         isOpen={s.lightboxImages !== null}
         onClose={() => s.setLightboxImages(null)}
       />
-
-      {/* Pinpointed Branches Map Modal */}
-      <Modal
-        isOpen={s.isAllBranchesMapOpen}
-        onClose={() => s.setIsAllBranchesMapOpen(false)}
-        title={`${s.store.name} — Davao City Branch Locations`}
-      >
-        {s.store.branches && s.store.branches.length > 0 ? (
-          <div className="p-1 space-y-3">
-            <p className="text-xs text-ink-muted">
-              Pinpointed physical branches across Davao City. Click any location pin to view details or switch to that branch profile.
-            </p>
-            <BranchesMap
-              branches={s.store.branches as any}
-              initialSelectedId={s.activeBranch?.id ?? null}
-              onSelectBranch={(branch) => {
-                s.setIsAllBranchesMapOpen(false);
-                s.router.push(`/store/${storeId}?branch=${branch.slug}`);
-              }}
-              height={400}
-            />
-          </div>
-        ) : (
-          <div className="py-8 text-center text-sm text-ink-muted">
-            No branch locations available for this store.
-          </div>
-        )}
-      </Modal>
 
       {/* Owner Inline Management Modals */}
       {s.isOwnerViewingOwnStore && (

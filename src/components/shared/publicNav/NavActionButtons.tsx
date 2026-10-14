@@ -57,9 +57,9 @@ export default function NavActionButtons({
         aria-label={trackOrderTitle}
         title={trackOrderTitle}
         onClick={onActionClick}
-        className="shrink-0 w-10 h-10 flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
+        className="shrink-0 w-11 h-11 sm:w-10 sm:h-10 flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
       >
-        <Package size={19} />
+        <Package size={20} />
       </Link>
 
       {/* 2. Notifications: red badge only shown when unreadCount > 0 (strictly 0 for guests) */}
@@ -68,7 +68,7 @@ export default function NavActionButtons({
         aria-label={notificationsTitle}
         title={notificationsTitle}
         onClick={onActionClick}
-        className="relative shrink-0 w-10 h-10 flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
+        className="relative shrink-0 w-10 h-10 hidden sm:flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
       >
         <Bell size={19} />
         {unreadCount > 0 && (
@@ -84,7 +84,7 @@ export default function NavActionButtons({
         aria-label={isGuest ? 'Login / Register' : userTitle}
         title={isGuest ? 'Login / Register' : userTitle}
         onClick={handleAccountClick}
-        className={`shrink-0 h-10 flex items-center justify-center gap-2 text-ink hover:bg-sunken rounded-full transition-colors ${isGuest ? 'min-w-10 lg:px-3' : 'w-10'}`}
+        className={`shrink-0 h-10 hidden sm:flex items-center justify-center gap-2 text-ink hover:bg-sunken rounded-full transition-colors ${isGuest ? 'min-w-10 lg:px-3' : 'w-10'}`}
       >
         {isAuthenticated && user ? (
           user.profile_picture ? (

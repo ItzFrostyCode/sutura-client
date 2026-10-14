@@ -1,7 +1,7 @@
 'use client';
 
 import { depositFraction } from '@/components/jobs/requirements';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import JobFulfillmentCard from '@/components/jobs/JobFulfillmentCard';
@@ -14,6 +14,7 @@ import JobOverviewTab from '@/components/jobs/detail/JobOverviewTab';
 import JobProductionTab from '@/components/jobs/detail/JobProductionTab';
 import JobPrintWorkTicket from '@/components/jobs/detail/JobPrintWorkTicket';
 import JobDeleteModal from '@/components/jobs/detail/JobDeleteModal';
+import OrderReadinessTab from '@/components/jobs/readiness/OrderReadinessTab';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
 import { BranchData, getLocalDateString, minTimeForDate, getErrorMessage } from '@/components/appointments/appointmentHelpers';
 import { useToast } from '@/context/ToastContext';
@@ -38,7 +39,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   // In-page tabs — lazy initialized from URL hash (e.g. #financials from dashboard quick actions)
   const [activeTab, setActiveTab] = useState<JobDetailTabKey>(() => {
     if (typeof window === 'undefined') return 'overview';
-    const validTabs = ['overview', 'production', 'fulfillment', 'financials'] as const;
+    const validTabs = ['readiness', 'overview', 'production', 'fulfillment', 'financials'] as const;
     const hash = window.location.hash.replace('#', '');
     if ((validTabs as readonly string[]).includes(hash)) {
       return hash as JobDetailTabKey;
@@ -81,6 +82,18 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     dirtyTabs,
     handleResetChanges,
   } = useJobDetail(id);
+
+  // Orders that use the ordering flow open on their steps (set-up, then delivery) until they are closed
+  // (unless the link names a tab, e.g. #financials from a dashboard shortcut).
+  const openedOnce = useRef(false);
+  useEffect(() => {
+    if (!job || openedOnce.current) return;
+    openedOnce.current = true;
+    if (!window.location.hash && job.uses_confirmation_flow && !['completed', 'cancelled', 'rejected'].includes(job.status)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab('readiness');
+    }
+  }, [job]);
 
   useEffect(() => {
     if (activeTab === 'financials' && user && !isOwnerOrManager) {
@@ -152,7 +165,19 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           onSelectTab={setActiveTab}
           dirtyTabs={dirtyTabs}
           showFinancials={isOwnerOrManager}
+          showReadiness={Boolean(job.uses_confirmation_flow)}
         />
+
+        {activeTab === 'readiness' && store && (
+          <OrderReadinessTab
+            storeId={store.id}
+            jobId={job.id}
+            currentTotal={jobTotalAmount}
+            onChanged={refreshJob}
+            onStarted={() => setActiveTab('production')}
+            onGoToFinancials={isOwnerOrManager ? () => setActiveTab('financials') : undefined}
+          />
+        )}
 
         {activeTab === 'overview' && (
           <JobOverviewTab
@@ -207,6 +232,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               onUpdatePayment={handleUpdatePayment}
               onRejectPayment={handleRejectPayment}
               onVerifyPayment={handleVerifyPayment}
+              onRefresh={refreshJob}
             />
           </div>
         )}

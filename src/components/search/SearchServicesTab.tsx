@@ -50,7 +50,7 @@ export default function SearchServicesTab({
       {!servicesLoading && packages.length > 0 && (
         <div className="mb-5">
           <p className="text-[11px] font-bold text-ink mb-2 px-1">Combo packages ({packages.length})</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {packages.map((p) => <SearchPackageCard key={p.id} pkg={p} gate={gate} />)}
           </div>
         </div>

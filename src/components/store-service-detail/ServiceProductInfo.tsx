@@ -25,6 +25,9 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
       })
     : null;
   const hasPrice = service.base_price !== null && service.base_price !== undefined && service.base_price !== '';
+  // Bulk orders (team jerseys, school uniforms) show how many pieces the shop takes at least.
+  const bulk = (service.capabilities ?? []).includes('bulk_orders') || (service.service_types ?? []).includes('bulk_sublimation');
+  const minOrder = bulk && service.min_order_qty && service.min_order_qty > 1 ? service.min_order_qty : null;
 
   return (
     <div className="space-y-0">
@@ -52,10 +55,17 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
             <span className="line-through text-ink-faint text-base">₱{sale.original.toLocaleString()}</span>
           </p>
         ) : hasPrice ? (
-          <p className="text-3xl font-bold text-taupe leading-none">₱{Number(service.base_price).toLocaleString()}</p>
+          <p className="flex items-baseline gap-2 leading-none">
+            <span className="text-sm text-ink-muted">From</span>
+            <span className="text-3xl font-bold text-taupe">₱{Number(service.base_price).toLocaleString()}</span>
+          </p>
         ) : (
-          <p className="text-3xl font-bold text-taupe leading-none">Custom Quote</p>
+          <>
+            <p className="text-2xl font-bold text-taupe leading-none">Depends on the item</p>
+            <p className="text-xs text-ink-muted mt-2 leading-snug">Get a quotation, or walk in with the item. The shop confirms the price before any work starts.</p>
+          </>
         )}
+        {minOrder && <p className="text-sm text-ink-body mt-3">Minimum order: <span className="font-semibold">{minOrder} pieces</span></p>}
       </div>
 
       {(

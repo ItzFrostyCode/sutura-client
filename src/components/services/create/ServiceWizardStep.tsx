@@ -4,6 +4,7 @@ import React from 'react';
 import SizeChartEditor from '@/components/shared/SizeChartEditor';
 import { ServicePhotoEditor, ServiceInfoEditor, ServiceSpecEditor, ServiceDescriptionEditor, type DraftEdit } from '../detail/ServiceEditors';
 import { ServiceBookingEditor } from '../detail/ServiceBookingEditor';
+import { ServiceCapabilitiesEditor, ServiceGarmentsEditor, ServiceTypeEditor, ServiceWorkEditor } from '../detail/ServiceWorkEditors';
 import RequirementsEditor from '@/components/requirements/RequirementsEditor';
 import type { ServiceSection } from '../detail/serviceEditing';
 
@@ -12,6 +13,10 @@ export default function ServiceWizardStep({ section, edit }: Readonly<{ section:
   switch (section) {
     case 'photo': return <ServicePhotoEditor edit={edit} />;
     case 'info': return <ServiceInfoEditor edit={edit} />;
+    case 'type': return <ServiceTypeEditor edit={edit} />;
+    case 'garments': return <ServiceGarmentsEditor edit={edit} />;
+    case 'capabilities': return <ServiceCapabilitiesEditor edit={edit} />;
+    case 'work': return <ServiceWorkEditor edit={edit} />;
     case 'spec': return <ServiceSpecEditor edit={edit} />;
     case 'description': return <ServiceDescriptionEditor edit={edit} />;
     case 'booking': return <ServiceBookingEditor edit={edit} />;

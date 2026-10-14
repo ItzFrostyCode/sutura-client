@@ -27,7 +27,8 @@ interface CatalogFindInStoreSheetProps {
   locateError: string;
   selectedImage: string;
   itemName: string;
-  itemPrice: string | number;
+  /** Already worded (lib/designPricing), e.g. "From ₱1,500". */
+  itemPrice: string;
   /** Shown on the in-app directions card. */
   storeName: string;
   /** The shop's logo + open-now state, for the map pins (same as /map). */
@@ -198,7 +199,7 @@ export default function CatalogFindInStoreSheet({
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-base font-bold text-ink">₱{Number(itemPrice).toLocaleString()}</p>
+            <p className="text-base font-bold text-ink">{itemPrice}</p>
             <p className="text-sm font-semibold text-ink-body truncate">{itemName}</p>
           </div>
         </div>

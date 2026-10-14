@@ -10,6 +10,8 @@ import GarmentDesignSection from './form/GarmentDesignSection';
 import CustomerServiceSection from './form/CustomerServiceSection';
 import CustomSpecsSection from './form/CustomSpecsSection';
 import ProductionFulfillmentSection from './form/ProductionFulfillmentSection';
+import AssignStaffSection from './form/AssignStaffSection';
+import { useBranch } from '@/context/BranchContext';
 import PricingScheduleSection from './form/PricingScheduleSection';
 
 export default function JobCreateForm() {
@@ -20,6 +22,7 @@ export default function JobCreateForm() {
   const roleNames = useAuthStore((s) => s.user?.roles?.map((r) => r.name) ?? []);
   const canCollectMoney = roleNames.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
   // Staff open a job from an approved appointment, never from scratch.
+  const { selectedBranchId } = useBranch();
   const staffWithoutAppointment = !canCollectMoney && !searchParams.get('appointment_id');
   const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//') ? returnParam : '/dashboard/jobs';
 
@@ -40,6 +43,8 @@ export default function JobCreateForm() {
     setStandardSize,
     appointmentId,
     setAppointmentId,
+    assignees,
+    setAssignees,
     servicePackage,
     effectiveIntakeChannel,
     referenceImages,
@@ -206,10 +211,15 @@ export default function JobCreateForm() {
             sectionTwoMeta={sectionTwoMeta}
           />
 
-          {/* Section 4: Production & Fulfillment */}
+          {/* Section 4: who works on it (shop / branch decide; staff just move it along) */}
+          {canCollectMoney && store && (
+            <AssignStaffSection storeId={store.id} branchId={selectedBranchId ?? null} assignees={assignees} setAssignees={setAssignees} />
+          )}
+
+          {/* Section 5: Production & Fulfillment */}
           <ProductionFulfillmentSection />
 
-          {/* Section 5: Pricing & Schedule */}
+          {/* Section 6: Pricing & Schedule */}
           <PricingScheduleSection
             formData={formData}
             setFormData={setFormData}

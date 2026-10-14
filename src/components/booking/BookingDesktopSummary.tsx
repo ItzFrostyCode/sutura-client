@@ -64,7 +64,7 @@ export default function BookingDesktopSummary({
               <Sparkles size={13} className="text-taupe" /> Design
             </span>
             <p className="text-sm font-medium text-ink">{refName}</p>
-            {refPrice && <p className="text-sm font-semibold text-taupe">₱{Number(refPrice).toLocaleString()}</p>}
+            {refPrice && <p className="text-sm font-semibold text-taupe">From ₱{Number(refPrice).toLocaleString()}</p>}
           </div>
         )}
 

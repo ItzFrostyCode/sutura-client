@@ -1,4 +1,4 @@
-import { ArrowLeft, Search as SearchIcon, SlidersHorizontal, X, Clock } from 'lucide-react';
+import { ArrowLeft, Search as SearchIcon, X, Clock } from 'lucide-react';
 import type { RecentLocation } from '@/lib/customerLocation';
 
 interface LocationPickerHeaderProps {
@@ -7,9 +7,6 @@ interface LocationPickerHeaderProps {
   searching: boolean;
   onSearchSubmit: () => void;
   onClose: () => void;
-  showFilterDropdown: boolean;
-  setShowFilterDropdown: (fn: (prev: boolean) => boolean) => void;
-  hasActiveFilters: boolean;
   suggestionsVisible: boolean;
   searchResults: { lat: number; lng: number; display_name: string }[];
   recents: RecentLocation[];
@@ -25,9 +22,6 @@ export default function LocationPickerHeader({
   searching,
   onSearchSubmit,
   onClose,
-  showFilterDropdown,
-  setShowFilterDropdown,
-  hasActiveFilters,
   suggestionsVisible,
   searchResults,
   recents,
@@ -66,7 +60,7 @@ export default function LocationPickerHeader({
             }}
             onFocus={onInputFocus}
             onBlur={onInputBlur}
-            placeholder="Search address, store, or link"
+            placeholder="Search address or link"
             className="w-full h-10 bg-sunken border border-line rounded-full pl-10 pr-9 text-base text-ink placeholder:text-ink-faint placeholder:text-base font-normal focus:outline-none focus:border-taupe"
           />
           {query && (
@@ -80,22 +74,6 @@ export default function LocationPickerHeader({
             </button>
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowFilterDropdown((prev) => !prev)}
-          aria-label="Filter stores and districts"
-          className={`btn-icon-mobile touch-target-48 relative border transition-colors ${
-            hasActiveFilters
-              ? 'bg-taupe text-white border-taupe shadow-xs'
-              : 'bg-surface text-ink-muted border-line hover:border-taupe'
-          }`}
-        >
-          <SlidersHorizontal size={20} />
-          {hasActiveFilters && (
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-canvas" />
-          )}
-        </button>
       </header>
 
       {/* Suggestions Dropdown */}

@@ -1,81 +1,33 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useMapPage } from '@/components/map/useMapPage';
-import MapCanvas from '@/components/map/MapCanvas';
-import MapControls from '@/components/map/MapControls';
-import MapExplorePanel from '@/components/map/MapExplorePanel';
-import { useDirections } from '@/components/map/useDirections';
-import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import ChooseLocationScreen from '@/components/map/ChooseLocationScreen';
 
 export default function MapPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-dvh flex items-center justify-center text-sm text-ink-muted">
-          Loading map…
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex min-h-dvh items-center justify-center text-sm text-ink-muted">Loading map…</div>}>
       <MapPageContent />
     </Suspense>
   );
 }
 
-/**
- * Tailor Locator: a full-screen map with clustered shop pins, a floating
- * explore panel (search · Open · filters · shop list) on the left — a bottom
- * sheet on phones — and round locate / zoom controls on the right.
- */
+// `/map?select=1` is the "Choose on map" screen (choose a place). Browsing shops on a map is /search, so every other /map link goes there.
 function MapPageContent() {
-  const m = useMapPage();
-  const directions = useDirections();
-  const showDirections = (branch: DiscoveryMapBranch) => directions.start(branch, m.userLocation);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isSelectMode = searchParams.get('select') === '1' || searchParams.get('mode') === 'select' || searchParams.get('mode') === 'map';
 
-  return (
-    <div className="relative h-full min-h-dvh w-full overflow-hidden bg-canvas">
-      <MapCanvas
-        loading={m.loading}
-        filteredBranches={m.filteredBranches}
-        userLocation={m.userLocation}
-        onSelectBranch={m.handleSelectBranch}
-        isSelectMode={m.isSelectMode}
-        onMoveEnd={m.handleMapMoveEnd}
-        mapRef={m.mapRef as unknown as React.MutableRefObject<any>}
-        selectedBranch={m.selectedBranch}
-        locationError={m.locationError || directions.error}
-        onDismissLocationError={() => { m.setLocationError(''); directions.dismissError(); }}
-        route={directions.route}
-        routeLoading={directions.loading}
-        onCancelRoute={directions.cancel}
-      />
+  useEffect(() => {
+    if (isSelectMode) return;
+    const params = new URLSearchParams();
+    const text = searchParams.get('q');
+    const district = searchParams.get('district');
+    if (text) params.set('q', text);
+    if (district) params.set('district', district);
+    router.replace(params.toString() ? `/search?${params.toString()}` : '/search');
+  }, [isSelectMode, router, searchParams]);
 
-      <MapExplorePanel
-        isSelectMode={m.isSelectMode}
-        onBack={m.handleBack}
-        q={m.q}
-        onQueryChange={m.setQ}
-        onSubmitSearch={() => void m.handleSearchSubmit()}
-        openOnly={m.statusFilter === 'online'}
-        onToggleOpenOnly={() => m.setStatusFilter(m.statusFilter === 'online' ? 'all' : 'online')}
-        district={m.district}
-        onDistrictChange={m.setDistrict}
-        userLocation={m.userLocation}
-        locating={m.locating}
-        onNearMe={m.handleNearMe}
-        hasActiveFilters={m.hasActiveFilters}
-        onResetFilters={m.handleResetFilters}
-        branches={m.filteredBranches}
-        loading={m.loading}
-        selectedBranch={m.selectedBranch}
-        onSelectBranch={m.handleSelectBranch}
-        onConfirmLocation={m.handleConfirmPickedLocation}
-        onDirections={showDirections}
-        pickedAddress={m.pickedAddress}
-        reverseLoading={m.reverseLoading}
-      />
-
-      <MapControls mapRef={m.mapRef} onLocate={m.handleNearMe} locating={m.locating} located={!!m.userLocation} />
-    </div>
-  );
+  if (!isSelectMode) return <div className="flex min-h-dvh items-center justify-center text-sm text-ink-muted">Opening map…</div>;
+  return <ChooseLocationScreen />;
 }

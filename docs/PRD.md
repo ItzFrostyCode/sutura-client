@@ -1,0 +1,67 @@
+# SUTURA — Product Requirements (PRD)
+
+> Distilled from the approved thesis (`suturathesisapproved.txt`, `Title&Objectives.md`) and checked against the code on **2026-10-10**. If this file and the code disagree, **the code wins** — then fix this file. Full thesis-vs-code audit: [`THESIS-CROSS-CHECK.md`](THESIS-CROSS-CHECK.md).
+
+**SUTURA: A Web-Based Tailoring Shop Tracker System** — BSIT capstone, STI College Davao. A subscription-tiered (Basic / Pro / Premium), multi-branch platform for tailoring shops in **Davao City**: customers find a shop by garment type and map location, book a fitting, and track production; shops run appointments, job orders, measurements, payments and analytics.
+
+## Roles
+
+Role strings are exactly what `RoleSeeder` creates and what `role:` middleware checks.
+
+| Role | Who | Can (from `routes/api.php`) | Cannot |
+| --- | --- | --- | --- |
+| `admin` | System Admin (`/admin/login`) | Approve/reject shop applications, suspend/reactivate accounts, verify branch map pins, manage plans + upgrade requests, support tickets, moderation (warn → hide design → hide shop), platform audit log | — |
+| `store_owner` | Shop owner | Everything for their own store(s): profile, branches, staff, catalog/services/packages, payments, analytics (incl. branch comparison, staff productivity), audit log, special hours, posts, billing | Other stores' data |
+| `branch_manager` | Manager of one branch | Staff (own branch, never promote to manager), jobs, payment verify/reject/discount, appointments (create/reject/assign), services/catalog/packages (store-wide), edit own branch, store `/analytics`, SMS, statements | Audit log, cross-branch analytics, billing, add/delete branches, special hours, posts |
+| `staff` | Tailoring staff | Measurements, view + progress jobs (stage/status, photos), create a job **only from an approved appointment**, appointments (view/status/follow-up), customers, walk-in catalog orders, services read-only, support tickets | Pay / discount / verify / reject / delete jobs, analytics, owner financials |
+| `customer` | Any signed-in user | My orders / appointments / measurements, reviews (after a completed order or appointment), saves, support tickets, notifications, send payment proof | Any role-gated shop-dashboard route (`role:` groups under `/stores/{store}/…`) |
+| *guest* | No login | Browse/search/map, public storefronts, track an order by tracking code (`/track/{code}`), booking endpoint (throttled) | Everything else |
+
+There is **no separate staff portal** — owner, manager and staff share `/dashboard`, gated by role. Do not rebuild one.
+
+## Objectives (thesis, 7 bullets in `Title&Objectives.md`)
+
+1. **Administrative Dashboard** — shop registration approvals, apparel-category validation, branch map-location verification, platform oversight.
+2. **Subscription & Account Management** — Basic/Pro/Premium enrollment, role-based staff access, keep subscription valid for visibility.
+3. **Shop Discovery & Search** — filter by garment type, location, specialization; full shop profiles.
+4. **Map-Based Interface** — verified branches on a Davao City map, filter by area, directions.
+5. **Tailoring Shop Dashboard** — profile, service catalog, itemized pricing, appointment schedule, public visibility.
+6. **Order Tracking & Measurement** — staff record measurements and move production stages; customers follow progress from placement to pickup; automated notifications.
+7. **Interactive Analytics** — admin: subscription activity, total shops, platform revenue; owner: monthly sales, outstanding balances, staff productivity, completion rates.
+
+## Explicitly OUT of scope
+
+From the thesis *Limitations of the Study* (lines 195–205 of `suturathesisapproved.txt`) plus later team decisions. If a request touches one of these, **name it as scope creep and stop** — do not build it.
+
+| Out of scope | Source |
+| --- | --- |
+| Hardware integration (machinery, body scanners, RFID, digital measuring tools) — measurements are always typed in by authorized users | Thesis |
+| Offline mode / background sync — internet is required | Thesis |
+| Native payment-gateway integration; external reconciliation. Payments are **tracked** (customer pays outside SUTURA, sends proof, owner verifies) | Thesis |
+| Predictive analytics, AI forecasting, advanced BI — reports are descriptive only (so no "forecasts" wording either) | Thesis |
+| Utility-cost / equipment-maintenance tracking | Thesis |
+| Payroll, salary or attendance-based wages | Thesis |
+| Inventory, fabric/material stock monitoring, purchase orders, supplier and procurement processes — materials are only a ready / waiting check (see difference 5) | Thesis |
+| Tax-filing automation, business-permit validation | Thesis |
+| Logistics, courier routing, delivery management | Thesis |
+| Rental lifecycle (available → rented → returned → cleaning) — appears in interview research only | Team decision |
+| Per-order material lists (needed / bought / cost / supplier) — built 2026-10-10, **removed the same day** after an audit against the Limitations (also removed earlier on 2026-09-27) | Team decision |
+| Per-staff revenue — productivity shows work output only (jobs, completion rate, rework), never money per person | Team decision |
+| Subcontracting / outsourced jobs (`is_outsourced`, `partner_store_name`, `outsourcing_cost`) — removed 2026-09-27 | Team decision |
+| Duplicate service, service sale price, service trash/restore, owner replies to design reviews, per-design appointment config — removed 2026-09-30 | Team decision |
+
+## Intentional differences from the thesis (be ready to explain at defense)
+
+1. Shared `/dashboard` instead of a dedicated staff portal.
+2. Map is **Leaflet / OpenStreetMap**; "Directions" hands off to Google Maps (thesis shows Google Maps API).
+3. No payment gateway: "Process Payment" / "automatic refund" become *record → verify → reconcile manually*.
+4. Database: thesis says MySQL on PlanetScale; code runs MySQL locally and targets **Supabase (Postgres)** for deployment.
+5. **Materials are a yes/no check, not a record.** The ordering flow asks "are the materials ready?" (ready / waiting, with a note) and, when the customer brings their own fabric, "is it suitable?" before the price is final. There is no material list, supplier, cost, stock or purchase record. Refunds use an amount the owner enters ("costs already spent that cannot be recovered"). Labor is attributed by stage plus optional planned tailors.
+6. Appointment assignment and job-order production attribution are separate by design (attribution is automatic when staff move a job into a stage).
+7. No `CustomerProfile` table (customers are `User` + `customer` role); feedback is split across `StoreReview`, `CatalogItemReview`, `ServiceReview`, `ServicePackageReview` instead of one `feedback` table.
+
+## Working rules for AI agents
+
+- Check this file's out-of-scope table before proposing any "nice to have".
+- Match the **narrowest** role set that needs an endpoint; copy the reasoning comments already in `routes/api.php`.
+- Customer-facing UI follows `AGENTS.md` (mobile 320–599 px, tablet 600–1023 px); shop dashboards are desktop-first.

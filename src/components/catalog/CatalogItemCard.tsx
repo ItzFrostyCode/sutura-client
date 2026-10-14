@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Pencil, Trash2, Heart, Eye, Star, Image as ImageIcon, Clock, Scissors } from 'lucide-react';
 import { CatalogItem, formatCatalogPrice } from './catalogHelpers';
+import { designPriceLabel } from '@/lib/designPricing';
 import Badge from '@/components/shared/Badge';
 import { getMediaUrl } from '@/lib/media';
 interface CatalogItemCardProps {
@@ -44,7 +45,7 @@ export default function CatalogItemCard({
           </div>
         )}
         <div className="absolute top-3 right-3 px-2.5 py-1 bg-white rounded-lg text-xs font-bold border border-line flex items-center gap-1.5 shadow-2xs">
-          <span className="text-ink">{formatCatalogPrice(item.price)}</span>
+          <span className="text-ink">{item.pricing ? designPriceLabel(item.pricing) : formatCatalogPrice(item.price)}</span>
         </div>
 
         <div className="absolute top-3 left-3 flex gap-2 z-20">

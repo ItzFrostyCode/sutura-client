@@ -40,8 +40,6 @@ export interface StoreBranch {
   manager_id?: number | null;
 }
 
-export const DAVAO_DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
-
 export interface BranchFormData {
   name: string;
   address: string;

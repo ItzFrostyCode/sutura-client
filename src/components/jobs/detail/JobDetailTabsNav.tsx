@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { LayoutGrid, Scissors, Store, CreditCard } from 'lucide-react';
+import { LayoutGrid, Scissors, Store, CreditCard, ClipboardCheck } from 'lucide-react';
 
-export type JobDetailTabKey = 'overview' | 'production' | 'fulfillment' | 'financials';
+export type JobDetailTabKey = 'readiness' | 'overview' | 'production' | 'fulfillment' | 'financials';
 
 interface JobDetailTabsNavProps {
   activeTab: JobDetailTabKey;
@@ -14,9 +14,12 @@ interface JobDetailTabsNavProps {
   // (PAYMENT-WORKFLOW.md Part B). Staff's read-only view of balance/paid-
   // so-far already lives on the Overview tab's Financial Breakdown card.
   showFinancials: boolean;
+  // Orders that use the ordering flow get an extra first tab with the steps to confirm and start them.
+  showReadiness?: boolean;
 }
 
 const TABS = [
+  { key: 'readiness', label: 'Order Steps', icon: ClipboardCheck },
   { key: 'overview', label: 'Overview', icon: LayoutGrid },
   { key: 'production', label: 'Production', icon: Scissors },
   { key: 'fulfillment', label: 'Fulfillment', icon: Store },
@@ -28,10 +31,11 @@ export default function JobDetailTabsNav({
   onSelectTab,
   dirtyTabs,
   showFinancials,
+  showReadiness = false,
 }: JobDetailTabsNavProps) {
   return (
     <div className="flex items-center gap-1 border-b border-line overflow-x-auto hide-scrollbar">
-      {TABS.filter(tab => tab.key !== 'financials' || showFinancials).map(tab => {
+      {TABS.filter(tab => (tab.key !== 'financials' || showFinancials) && (tab.key !== 'readiness' || showReadiness)).map(tab => {
         const TabIcon = tab.icon;
         const active = activeTab === tab.key;
         const isTabDirty = Boolean(dirtyTabs[tab.key]);

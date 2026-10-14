@@ -1,3 +1,5 @@
+import { GARMENT_CATEGORIES, GARMENTS, SERVICE_GROUPS, canonicalGarment } from './garmentTaxonomy';
+
 // The single source of truth for SUTURA's apparel + services taxonomy,
 // transcribed directly from Mocked Layout/Categories.md and Services.md.
 // Mirrors app/Support/CanonicalTaxonomy.php on the backend exactly (same
@@ -49,7 +51,7 @@ export const SUBCATEGORY_LABELS: Record<string, string> = {
   others: 'Others',
 };
 
-export const GARMENT_TYPE_LABELS: Record<string, string> = {
+const OLD_GARMENT_TYPE_LABELS: Record<string, string> = {
   // Men — Formal Wear
   dress_shirts: 'Dress Shirts', formal_shirts: 'Formal Shirts', formal_vests: 'Formal Vests',
   formal_trousers: 'Formal Trousers', dress_pants: 'Dress Pants', pleated_trousers: 'Pleated Trousers',
@@ -101,18 +103,29 @@ export const GARMENT_TYPE_LABELS: Record<string, string> = {
   school_uniform_skirts: 'School Uniform Skirts', corporate_skirts: 'Corporate Skirts',
 };
 
+// Old 4-level slugs plus the 2-level garments (src/lib/garmentTaxonomy.ts), so a design saved under either shows its name.
+export const GARMENT_TYPE_LABELS: Record<string, string> = {
+  ...OLD_GARMENT_TYPE_LABELS,
+  ...Object.fromEntries(Object.entries(GARMENTS).map(([slug, g]) => [slug, g.label])),
+};
+
 export const SERVICE_CATEGORIES = [
   'custom_tailoring', 'alterations_repairs', 'uniform_production', 'printing_sublimation', 'custom_costume_creation', 'others',
+  // The 4th approved service (2026-10-14, see garmentTaxonomy.ts). The two old ones above go in phase 5.
+  'garment_customization',
 ] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
+// The 4 approved services take their names from garmentTaxonomy (SERVICE_GROUPS); the two retired ones keep
+// theirs only so an old record still reads properly.
 export const SERVICE_CATEGORY_LABELS: Record<ServiceCategory, string> = {
-  custom_tailoring: 'Custom Tailoring',
-  alterations_repairs: 'Alterations & Repairs',
-  uniform_production: 'Uniform Production',
+  custom_tailoring: SERVICE_GROUPS.custom_tailoring.label,
+  alterations_repairs: SERVICE_GROUPS.alterations_repairs.label,
+  uniform_production: SERVICE_GROUPS.uniform_production.label,
   printing_sublimation: 'Printing & Sublimation',
   custom_costume_creation: 'Custom Costume Creation',
   others: 'Others',
+  garment_customization: SERVICE_GROUPS.garment_customization.label,
 };
 
 export const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -131,6 +144,7 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   cosplay_costumes: 'Cosplay Costumes', stage_theater_costumes: 'Stage & Theater Costumes',
   event_costumes: 'Event Costumes', character_costumes: 'Character Costumes',
   cultural_dance_costumes: 'Cultural & Dance Costumes',
+  ...Object.fromEntries(Object.entries(SERVICE_GROUPS.garment_customization.capabilities).map(([slug, c]) => [slug, c.label])),
 };
 
 type StructureMap = Partial<Record<GarmentStructure, string[]>>;
@@ -254,6 +268,7 @@ export const SERVICES_TREE: Record<ServiceCategory, string[]> = {
     'character_costumes', 'cultural_dance_costumes',
   ],
   others: [],
+  garment_customization: Object.keys(SERVICE_GROUPS.garment_customization.capabilities),
 };
 
 export function subcategoriesFor(department: Department): string[] {
@@ -318,9 +333,9 @@ export function allServiceTypeSlugs(): string[] {
 }
 
 /**
- * Department → Subcategory → Garment Structure → Garment Type labels for a
- * catalog design, e.g. ["Men's Apparel", "Traditional Wear", "Top Wear",
- * "Barong Tagalog"]. Only goes as deep as the item's own data does.
+ * Garment Category → Garment for a catalog design, e.g. ["Barong", "Barong Tagalog"] (2-level taxonomy,
+ * 2026-10-14 — no Men / Women / Kids, no top/bottom). An old 4-level slug resolves to the garment it was merged
+ * into; a typed-in name shows under "Other Garments". The other fields are accepted only so callers need not change.
  */
 export function catalogCategoryPath(item: {
   department?: string | null;
@@ -328,28 +343,23 @@ export function catalogCategoryPath(item: {
   garment_structure?: string | null;
   garment_type?: string | null;
 }): string[] {
-  if (!item.department || !isDepartment(item.department)) return [];
-  const path = [DEPARTMENT_LABELS[item.department]];
-  if (!item.subcategory) return path;
-  path.push(SUBCATEGORY_LABELS[item.subcategory] ?? item.subcategory);
-  if (item.garment_structure) {
-    path.push(GARMENT_STRUCTURE_LABELS[item.garment_structure as GarmentStructure] ?? item.garment_structure);
-  }
-  if (item.garment_type) path.push(GARMENT_TYPE_LABELS[item.garment_type] ?? item.garment_type);
-  return path;
+  if (!item.garment_type) return [];
+  const slug = canonicalGarment(item.garment_type);
+  if (!slug) return [GARMENT_CATEGORIES.other.label, item.garment_type];
+  return [GARMENT_CATEGORIES[GARMENTS[slug].category].label, GARMENTS[slug].label];
 }
 
-/** Service Category → Service Type labels, e.g. ["Custom Tailoring", "Bespoke Tailoring"]. */
+/** "Services" → the service, e.g. ["Services", "Alterations & Repairs"]. */
 export function serviceCategoryPath(service: {
   service_category?: string | null;
   service_leaf_type?: string | null;
 }): string[] {
-  const category = service.service_category as ServiceCategory | null | undefined;
-  if (!category || !SERVICE_CATEGORY_LABELS[category]) return [];
-  // Starts at "Services", the way an apparel path starts at its department (Men's / Women's / Children's).
-  const path = ['Services', SERVICE_CATEGORY_LABELS[category]];
-  if (service.service_leaf_type) path.push(SERVICE_TYPE_LABELS[service.service_leaf_type] ?? service.service_leaf_type);
-  return path;
+  const key = service.service_category;
+  if (!key) return [];
+  const label = key in SERVICE_GROUPS
+    ? SERVICE_GROUPS[key as keyof typeof SERVICE_GROUPS].label
+    : SERVICE_CATEGORY_LABELS[key as ServiceCategory];
+  return label ? ['Services', label] : [];
 }
 
 /** Builds the /search URL for a garment-type leaf link in the mega-menu. */

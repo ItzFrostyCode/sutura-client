@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { User, Calendar, Scissors, Check, X, Loader2, AlertTriangle, Lock, Pause, Star, Store, Eye, Sparkles, Shirt, type LucideIcon } from 'lucide-react';
-import { depositFraction } from './requirements';
-import { Job as JobItem, columnsForJobs, getDueStatus, TypeBadge, ColumnIcon, requiresDownpayment, ON_HOLD_COLUMN } from './jobHelpers';
+import React, { useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Job as JobItem, columnsForJobs, requiresDownpayment, ON_HOLD_COLUMN } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
-import { getMediaUrl } from '@/lib/media';
+import KanbanCard from './kanban/KanbanCard';
+import KanbanColumn from './kanban/KanbanColumn';
+import KanbanSwimlanes from './kanban/KanbanSwimlanes';
+import MobileStageNav from './kanban/MobileStageNav';
+import DragPreview from './kanban/DragPreview';
+import { WIP_UNLIMITED, phaseOf, wipLimitFor } from './kanban/kanbanConfig';
+import { useKanbanDrag } from './kanban/useKanbanDrag';
+import { useJobMove } from './kanban/useJobMove';
+import type { KanbanPrefs } from './kanban/useKanbanPrefs';
 
 interface JobKanbanBoardProps {
   readonly groupedJobs: Record<string, JobItem[]>;
@@ -18,431 +24,124 @@ interface JobKanbanBoardProps {
   readonly onReject: (id: number) => void;
   readonly highlightedJobId?: number | null;
   readonly stageFilter?: string;
+  readonly prefs: KanbanPrefs;
+  /** Orders per stage across the whole shop — what the WIP limits count. */
+  readonly statusCounts: Record<string, number>;
 }
 
-const SUKI_TAG_CONFIG: Record<string, { label: string; cls: string; Icon: LucideIcon }> = {
-  b2b_suki:       { label: 'B2B',      cls: 'bg-amber-50 text-amber-700 border-amber-200', Icon: Star },
-  reseller:       { label: 'Reseller', cls: 'bg-purple-50 text-purple-700 border-purple-200', Icon: Store },
-  walk_in_retail: { label: 'Walk-in',  cls: 'bg-sunken text-ink-muted border-line', Icon: User },
-};
+// Completed piles up forever; the newest few are enough on the live board.
+const COMPLETED_CAP = 5;
 
-// Completed piles up forever (unlike in-progress stages, which naturally
-// drain as jobs move on) — capping it to the most recent few, with a manual
-// expand, keeps the board scannable without hiding or deleting any job
-// order. Full history for a specific customer/date range is what the
-// Custom Jobs search bar is for; this is just about the live board view.
-const COMPLETED_COLLAPSE_AT = 5;
+const num = (v: unknown) => Number.parseFloat(String(v ?? '0')) || 0;
 
 export default function JobKanbanBoard({
-  groupedJobs,
-  activeColumns,
-  onHoldJobs,
-  actionLoadingId,
-  onUpdateStatus,
-  onApprove,
-  onReject,
-  highlightedJobId,
-  stageFilter,
+  groupedJobs, activeColumns, onHoldJobs, actionLoadingId, onUpdateStatus, onApprove, onReject,
+  highlightedJobId, stageFilter, prefs, statusCounts,
 }: JobKanbanBoardProps) {
-  const repairRequiresDownpayment = Boolean(useAuthStore((s) => s.store?.repair_requires_downpayment));
-  // POST .../jobs/{id}/reject is role:store_owner,branch_manager-only in
-  // routes/api.php (grouped with pay/discount/destroy as a supervisory
-  // action) — Approve is a plain PUT status update staff can already make,
-  // but Reject was shown to every role and 403'd for plain staff.
-  const isOwnerOrManager = Boolean(
-    useAuthStore((s) => s.user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)))
-  );
-  // DP gate: tracks which job card just triggered the block (shows flash warning)
-  const [dpGateJobId, setDpGateJobId] = useState<number | null>(null);
-  // Balance gate: "No Balance, No Claim" — blocks marking a job Completed/Claimed
-  // while money is still owed, so revenue can't quietly slip through the cracks.
-  const [balanceGateJobId, setBalanceGateJobId] = useState<number | null>(null);
-  const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({});
-  // The backend requires a cancellation_reason (enum) whenever status is set
-  // to 'cancelled' — the dropdown below has no field for that, so selecting
-  // "Cancelled" needs to open the same reason modal the Job Detail page's
-  // own status dropdown already uses, instead of firing the update directly
-  // like every other option does.
-  const [cancelTargetJob, setCancelTargetJob] = useState<JobItem | null>(null);
-  const [holdTargetJob, setHoldTargetJob] = useState<JobItem | null>(null);
+  const router = useRouter();
+  const boardRef = useRef<HTMLDivElement>(null);
+  // POST .../jobs/{id}/reject is owner/branch-manager only; Approve is a plain status update staff may make.
+  const canReject = Boolean(useAuthStore((s) => s.user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))));
+  const move = useJobMove(onUpdateStatus);
 
-  const handleStatusChange = (job: JobItem, newStatus: string) => {
-    // Derived downpayment = total_amount minus current balance.
-    // The job's own snapshotted payment policy decides how much must be paid
-    // (none / full / a percent) — a ₱1 payment on a ₱10,000 job shouldn't
-    // unlock production.
-    // A discount lowers balance, not total, so subtract it or it would count
-    // as cash paid (same formula as JobOrderController@update).
-    const total = Number.parseFloat(String(job.total_amount ?? '0'));
-    const balance = Number.parseFloat(String(job.balance ?? '0'));
-    const discount = Number.parseFloat(String(job.discount_amount ?? '0'));
-    const amountDue = total - discount;
-    const paidSoFar = total - balance - discount;
-    const noDownpayment = amountDue > 0 && paidSoFar + 0.005 < amountDue * depositFraction(job.payment_policy, job.payment_policy_percent);
-
-    if (requiresDownpayment(job, newStatus, repairRequiresDownpayment) && noDownpayment) {
-      // Block the move — show flash warning on the card
-      setDpGateJobId(job.id);
-      setTimeout(() => setDpGateJobId(null), 3500);
-      return;
-    }
-
-    if (newStatus === 'completed' && balance > 0) {
-      setBalanceGateJobId(job.id);
-      setTimeout(() => setBalanceGateJobId(null), 3500);
-      return;
-    }
-
-    if (newStatus === 'cancelled') {
-      setCancelTargetJob(job);
-      return;
-    }
-
-    if (newStatus === 'on_hold') {
-      setHoldTargetJob(job);
-      return;
-    }
-    onUpdateStatus(job.id, newStatus);
-  };
-
-  // Approving a pending job moves it into 'design' — the first pipeline
-  // stage, exempt from the DP gate (no fabric/material is committed yet).
-  // No downpayment pre-check needed here anymore; the gate only kicks in
-  // once the job actually tries to enter a production stage.
-  const handleApprove = (job: JobItem) => {
-    onApprove(job.id);
-  };
-  // Shown first, ahead of the sequential production stages, so a held job
-  // isn't buried — kept out of `activeColumns` itself (see ON_HOLD_COLUMN)
-  // so the "A → B → C" flow banner elsewhere on the page stays accurate.
+  // On Hold goes first so a paused order isn't buried; it stays out of activeColumns so the
+  // "A → B → C" flow banner on the page stays accurate.
   const baseColumns = onHoldJobs.length > 0 ? [ON_HOLD_COLUMN, ...activeColumns] : activeColumns;
-  const boardColumns = stageFilter && stageFilter !== 'all'
-    ? baseColumns.filter(c => c.id === stageFilter)
-    : baseColumns;
+  const columns = stageFilter && stageFilter !== 'all' ? baseColumns.filter((c) => c.id === stageFilter) : baseColumns;
+  const allJobs = [...Object.values(groupedJobs).flat(), ...onHoldJobs];
+  // Consecutive columns in the same phase sit under one label, so the board reads in the workflow's order.
+  const phases = columns.reduce<{ phase: string; cols: typeof columns }[]>((acc, col) => {
+    const phase = phaseOf(col.id);
+    const last = acc[acc.length - 1];
+    if (last && last.phase === phase) last.cols.push(col);
+    else acc.push({ phase, cols: [col] });
+    return acc;
+  }, []);
+
+  const { drag, hover, shakeKey, previewEl, cardHandlers } = useKanbanDrag({
+    isFull: (colId) => {
+      const limit = wipLimitFor(colId);
+      return limit < WIP_UNLIMITED && (statusCounts[colId] ?? 0) >= limit;
+    },
+    onDrop: move.requestMove,
+    onOpen: (job) => router.push(`/dashboard/jobs/${job.id}`),
+    boardRef,
+  });
+
+  const renderCard = (job: JobItem) => (
+    <KanbanCard
+      job={job}
+      ghost={drag?.job.id === job.id}
+      handlers={cardHandlers(job, job.status)}
+      canReject={canReject}
+      loading={actionLoadingId === job.id}
+      dpLocked={requiresDownpayment(job, job.status, move.repairRequiresDownpayment) && job.payment_status === 'unpaid'}
+      highlighted={highlightedJobId === job.id}
+      onApprove={onApprove}
+      onReject={onReject}
+      onMove={move.requestMove}
+    />
+  );
+
+  const renderColumn = (col: { id: string; title: string }, laneId: string, jobs: JobItem[]) => (
+    <KanbanColumn
+      key={`${laneId}-${col.id}`}
+      col={col}
+      laneId={laneId}
+      jobs={jobs}
+      totalCount={statusCounts[col.id] ?? jobs.length}
+      limit={wipLimitFor(col.id)}
+      collapsed={prefs.collapsedColumns.includes(col.id)}
+      onToggle={() => prefs.toggleColumn(col.id)}
+      hover={hover}
+      dragJobId={drag?.job.id ?? null}
+      dragHeight={drag?.h ?? 76}
+      shaking={shakeKey === `${laneId}:${col.id}`}
+      capAt={col.id === 'completed' ? COMPLETED_CAP : undefined}
+      renderCard={renderCard}
+    />
+  );
 
   return (
     <>
-    <div className="flex gap-3.5 overflow-x-auto pb-4 items-start" style={{ minHeight: 'calc(100vh - 270px)' }}>
-      {boardColumns.map(col => {
-        const colJobs = col.id === 'on_hold' ? onHoldJobs : (groupedJobs[col.id] ?? []);
-        const isCollapsible = col.id === 'completed' && colJobs.length > COMPLETED_COLLAPSE_AT;
-        const isExpanded = expandedColumns[col.id] ?? false;
-        const visibleJobs = isCollapsible && !isExpanded ? colJobs.slice(0, COMPLETED_COLLAPSE_AT) : colJobs;
-        return (
-        <div
-          key={col.id}
-          id={`kanban-col-${col.id}`}
-          className="flex-none w-72 sm:w-[300px] bg-canvas/30 border border-line rounded-2xl flex flex-col shadow-2xs overflow-hidden"
-          style={{ maxHeight: 'calc(100vh - 270px)' }}
-        >
-          {/* Column Header */}
-          <div className="px-3.5 py-2.5 border-b border-line flex items-center justify-between bg-surface">
-            <div className="flex items-center gap-2">
-              <ColumnIcon id={col.id} />
-              <h3 className="font-bold text-ink text-xs sm:text-sm">{col.title}</h3>
+      <MobileStageNav columns={columns} counts={statusCounts} />
+
+      {prefs.view === 'swimlanes' ? (
+        <KanbanSwimlanes columns={columns} jobs={allJobs} collapsedLanes={prefs.collapsedLanes} onToggleLane={prefs.toggleLane} renderColumn={renderColumn} />
+      ) : (
+        <div ref={boardRef} className="flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-4 sm:snap-none" style={{ minHeight: 'calc(100vh - 300px)' }}>
+          {phases.map((g, i) => (
+            <div key={`${g.phase}-${i}`} className="flex shrink-0 flex-col gap-1.5">
+              <p className="px-1 text-[10px] font-bold uppercase tracking-widest text-ink-muted">{g.phase || 'On hold'}</p>
+              <div className="flex items-start gap-2.5">
+                {g.cols.map((col) => renderColumn(col, 'unified', col.id === 'on_hold' ? onHoldJobs : (groupedJobs[col.id] ?? [])))}
+              </div>
             </div>
-            <span className="bg-sunken text-ink text-[11px] px-2 py-0.5 rounded-full font-black tabular-nums border border-line/60">
-              {colJobs.length}
-            </span>
-          </div>
-
-          {/* Cards */}
-          <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1 hide-scrollbar">
-            {visibleJobs.map(job => (
-              <div key={job.id} id={`job-card-${job.id}`}>
-                <div className={`bg-white border p-3.5 rounded-xl transition-all group relative ${
-                  highlightedJobId === job.id
-                    ? 'ring-2 ring-amber-500 ring-offset-2 scale-[1.02] shadow-md bg-amber-50/40 duration-300'
-                    : job.status === 'pending'
-                    ? 'border-amber-200 hover:border-amber-300'
-                    : job.status === 'on_hold'
-                    ? 'border-amber-300 hover:border-amber-400'
-                    : 'border-line-strong hover:border-taupe/50'
-                }`}>
-                  <div className="flex justify-between items-start mb-2 gap-1.5">
-                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap min-w-0">
-                      <Link href={`/dashboard/jobs/${job.id}`} className="text-xs font-bold text-ink hover:underline truncate">
-                        {job.order_number || `#${job.id}`}
-                      </Link>
-                      <TypeBadge type={job.intake_channel} />
-                    </div>
-
-                    {/* Header Actions: View button + Stage changer/Pending badge */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Link
-                        href={`/dashboard/jobs/${job.id}`}
-                        title={`View ${job.order_number || 'Job Details'}`}
-                        className="h-6 w-6 rounded-md bg-canvas hover:bg-surface text-ink-muted hover:text-ink border border-line flex items-center justify-center transition-colors shadow-2xs active:scale-95"
-                      >
-                        <Eye size={12} />
-                      </Link>
-
-                      {job.status === 'pending' ? (
-                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 shrink-0 flex items-center gap-1">
-                          <AlertTriangle size={9} className="text-amber-700" />
-                          <span>Pending</span>
-                        </span>
-                      ) : (
-                        <select
-                          value={job.status}
-                          onChange={(e) => handleStatusChange(job, e.target.value)}
-                          title="Change stage"
-                          className="text-[10px] font-bold bg-canvas text-ink-body border border-line rounded-md px-1.5 py-0.5 hover:border-taupe/70 focus:border-taupe transition-colors focus:outline-none cursor-pointer shrink-0"
-                        >
-                          {columnsForJobs([job]).map(c => (
-                            <option key={c.id} value={c.id}>{c.title}</option>
-                          ))}
-                          <option value="on_hold">On Hold</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                      )}
-                    </div>
-                  </div>
-
-                  {job.status === 'on_hold' && job.hold_reason && (
-                    <div className="mb-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
-                      <Pause size={11} className="text-amber-600 mt-0.5 shrink-0" />
-                      <p className="text-[10px] text-amber-700 leading-snug">{job.hold_reason}</p>
-                    </div>
-                  )}
-
-                  <Link href={`/dashboard/jobs/${job.id}`} className="block space-y-1.5">
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-ink text-sm truncate">{job.customer?.name || 'Walk-in'}</h4>
-                        {job.customer?.suki_tag && SUKI_TAG_CONFIG[job.customer.suki_tag] && (
-                          <span className={`inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded border mt-0.5 ${SUKI_TAG_CONFIG[job.customer.suki_tag].cls}`}>
-                            {(() => {
-                              const TagIcon = SUKI_TAG_CONFIG[job.customer.suki_tag].Icon;
-                              return <TagIcon size={8} />;
-                            })()}
-                            {SUKI_TAG_CONFIG[job.customer.suki_tag].label}
-                          </span>
-                        )}
-                      </div>
-                      {(() => {
-                        let payBadge = 'bg-rose-50 text-rose-700 border-rose-200';
-                        if (job.payment_status === 'paid') payBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                        else if (job.payment_status === 'partial') payBadge = 'bg-amber-50 text-amber-800 border-amber-200';
-                        return (
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase shrink-0 ${payBadge}`}>
-                            {job.payment_status}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    
-                    {/* Visual Anchor: Design Thumbnail & Details */}
-                    {(() => {
-                      const catalogImage =
-                        job.catalog_item?.images?.find((i: { is_primary?: boolean | number; image_url: string }) => Boolean(i.is_primary))?.image_url ||
-                        job.catalog_item?.images?.[0]?.image_url ||
-                        job.catalog_item?.fabric_image_url;
-                      const refImage =
-                        catalogImage ||
-                        (job.reference_images && job.reference_images.length > 0 ? job.reference_images[0] : null);
-                      const standardSize = (job.custom_order_data as Record<string, unknown> | null | undefined)?.standard_size;
-
-                      return (
-                        <div className="flex items-center gap-2.5 my-2 p-1.5 rounded-lg bg-canvas/40 border border-line/60">
-                          {refImage ? (
-                            <div className="relative w-10 h-10 rounded-md overflow-hidden bg-sunken shrink-0 border border-line">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={getMediaUrl(refImage)}
-                                alt="Design Preview"
-                                className="w-full h-full object-cover"
-                              />
-                              {(job.reference_images?.length ?? 0) > 0 && (
-                                <span
-                                  title={`${job.reference_images!.length} customer reference photo(s)`}
-                                  className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] font-bold leading-none px-1 py-0.5 rounded-tl"
-                                >
-                                  +{job.reference_images!.length}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="w-10 h-10 rounded-md bg-sunken flex items-center justify-center text-ink-faint shrink-0 border border-line">
-                              <Shirt size={16} />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            {job.catalog_item ? (
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-taupe truncate">
-                                <Sparkles size={10} className="shrink-0" />
-                                <span className="truncate">{job.catalog_item.name}</span>
-                                {(job.quantity ?? 1) > 1 && <span className="shrink-0 text-ink-muted">×{job.quantity}</span>}
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-ink-muted truncate">
-                                <span className="truncate">{job.garment_category ? job.garment_category.toUpperCase() : (job.service?.name || 'Custom Garment')}</span>
-                                {(job.quantity ?? 1) > 1 && <span className="shrink-0">×{job.quantity}</span>}
-                              </div>
-                            )}
-                            <div className="flex items-center gap-1 text-[10px] text-ink-muted mt-0.5">
-                              {typeof standardSize === 'string' && standardSize ? (
-                                <span className="px-1 py-0.2 rounded bg-surface border border-line font-bold text-[9px] text-ink">
-                                  Size {standardSize}
-                                </span>
-                              ) : null}
-                              <span className="truncate">{job.service_package?.name || job.service?.name || 'Tailored'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {Number.parseFloat(job.balance as string || '0') > 0 && (
-                      <div className="text-[10px] font-bold text-rose-600 mt-1">
-                        Bal: ₱{Number.parseFloat(job.balance as string).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-line">
-                    <div className="flex items-center gap-1 text-xs text-ink-faint">
-                      <User size={11} />
-                      <span className="truncate max-w-[100px]">{job.assigned_staff?.name || 'Not yet touched'}</span>
-                    </div>
-                    {job.due_date && (
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <div className="flex items-center gap-1 text-xs text-ink-muted">
-                          <Calendar size={11} />
-                          {new Date(job.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        </div>
-                        {(() => {
-                          const dueStatus = getDueStatus(job.due_date, job.status);
-                          if (!dueStatus) return null;
-                          return (
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${dueStatus.className}`}>
-                              {dueStatus.label}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* DP Gate Hard Block — flashes when owner tries to skip DP */}
-                  {dpGateJobId === job.id && (
-                    <div className="mt-3 pt-2.5 border-t border-red-100 animate-pulse">
-                      <div className="flex items-start gap-2 bg-red-50 border border-red-300 rounded-lg px-3 py-2">
-                        <Lock size={12} className="text-red-600 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-[10px] font-bold text-red-700 uppercase tracking-wide">No DP - Move Blocked!</p>
-                          <p className="text-[10px] text-red-600 mt-0.5">50% downpayment must be collected before production starts. Log DP first.</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Balance Gate Hard Block — flashes when owner tries to complete/claim with money still owed */}
-                  {balanceGateJobId === job.id && (
-                    <div className="mt-3 pt-2.5 border-t border-red-100 animate-pulse">
-                      <div className="flex items-start gap-2 bg-red-50 border border-red-300 rounded-lg px-3 py-2">
-                        <Lock size={12} className="text-red-600 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-[10px] font-bold text-red-700 uppercase tracking-wide">Balance Unpaid - Move Blocked!</p>
-                          <p className="text-[10px] text-red-600 mt-0.5">Full balance must be settled before marking as Completed/Claimed. Log payment first.</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Passive DP warning — already in a production stage but unpaid */}
-                  {requiresDownpayment(job, job.status, repairRequiresDownpayment) && job.payment_status === 'unpaid' && dpGateJobId !== job.id && (
-                    <div className="mt-3 pt-2.5 border-t border-amber-100">
-                      <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                        <Lock size={12} className="text-amber-600 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wide">DP Gate: Collect Now</p>
-                          <p className="text-[10px] text-amber-600 mt-0.5">No downpayment on record. Log DP in the financials tab.</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Feasibility Review Gate (Pending only) */}
-                  {job.status === 'pending' && (
-                    <div className="mt-3 pt-2.5 border-t border-amber-100 flex items-center gap-2">
-                      {actionLoadingId === job.id ? (
-                        <div className="flex-1 flex justify-center"><Loader2 size={14} className="animate-spin text-amber-500" /></div>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            onClick={e => { e.preventDefault(); e.stopPropagation(); handleApprove(job); }}
-                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
-                          >
-                            <Check size={13} /> <span>Approve</span>
-                          </button>
-                          {isOwnerOrManager && (
-                            <button
-                              type="button"
-                              onClick={e => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
-                              className="flex-none flex items-center justify-center gap-1 text-xs font-semibold py-2 px-3 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors"
-                            >
-                              <X size={13} /> <span>Reject</span>
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                </div>
-              </div>
-            ))}
-
-            {isCollapsible && (
-              <button
-                type="button"
-                onClick={() => setExpandedColumns(prev => ({ ...prev, [col.id]: !isExpanded }))}
-                className="w-full text-center py-2 text-xs font-semibold text-taupe hover:underline"
-              >
-                {isExpanded ? 'Show less' : `Show all ${colJobs.length} completed`}
-              </button>
-            )}
-
-            {colJobs.length === 0 && (
-              <div className="text-center py-6 text-ink-faint border border-dashed border-line/80 rounded-xl bg-surface/40 flex flex-col items-center justify-center">
-                <span className="text-[11px] font-medium">No orders in this stage</span>
-              </div>
-            )}
-          </div>
+          ))}
         </div>
-        );
-      })}
-    </div>
+      )}
 
-    <CancellationReasonModal
-      isOpen={cancelTargetJob !== null}
-      onClose={() => setCancelTargetJob(null)}
-      onConfirm={(reason) => {
-        if (cancelTargetJob) {
-          onUpdateStatus(cancelTargetJob.id, 'cancelled', reason);
-        }
-        setCancelTargetJob(null);
-      }}
-      // Same discount-vs-real-payment fix as the job detail page's own
-      // cancellation flow — applyDiscount reduces balance directly, so
-      // total_amount - balance alone overstates cash actually received.
-      collectedAmount={cancelTargetJob
-        ? Number.parseFloat(String(cancelTargetJob.total_amount ?? '0')) - Number.parseFloat(String(cancelTargetJob.balance ?? '0')) - Number.parseFloat(String(cancelTargetJob.discount_amount ?? '0'))
-        : 0}
-    />
+      <DragPreview drag={drag} previewRef={previewEl} />
 
-    <HoldReasonModal
-      isOpen={holdTargetJob !== null}
-      onClose={() => setHoldTargetJob(null)}
-      onConfirm={(reason) => {
-        if (holdTargetJob) {
-          onUpdateStatus(holdTargetJob.id, 'on_hold', reason);
-        }
-        setHoldTargetJob(null);
-      }}
-    />
+      <CancellationReasonModal
+        isOpen={move.cancelTarget !== null}
+        onClose={() => move.setCancelTarget(null)}
+        onConfirm={(reason) => {
+          if (move.cancelTarget) onUpdateStatus(move.cancelTarget.id, 'cancelled', reason);
+          move.setCancelTarget(null);
+        }}
+        // A discount lowers the balance, not the total, so total - balance alone overstates cash received.
+        collectedAmount={move.cancelTarget ? num(move.cancelTarget.total_amount) - num(move.cancelTarget.balance) - num(move.cancelTarget.discount_amount) : 0}
+      />
+
+      <HoldReasonModal
+        isOpen={move.holdTarget !== null}
+        onClose={() => move.setHoldTarget(null)}
+        onConfirm={(reason) => {
+          if (move.holdTarget) onUpdateStatus(move.holdTarget.id, 'on_hold', reason);
+          move.setHoldTarget(null);
+        }}
+      />
     </>
   );
 }

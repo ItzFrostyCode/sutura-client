@@ -1,16 +1,12 @@
 import {
-  type Department,
-  type ServiceCategory,
-  GARMENT_STRUCTURE_LABELS,
-  GARMENT_TYPE_LABELS,
-  SERVICE_TYPE_LABELS,
-  garmentSearchHref,
-  garmentTypesFor,
-  isDepartment,
-  serviceSearchHref,
-  serviceTypesFor,
-  structuresFor,
-} from '@/lib/canonicalTaxonomy';
+  GARMENT_CATEGORIES,
+  GARMENTS,
+  SERVICE_GROUPS,
+  garmentsInCategory,
+  type GarmentCategory,
+  type ServiceGroupKey,
+} from '@/lib/garmentTaxonomy';
+import { categoryHref, garmentHref, serviceHref } from '@/components/categories/categoriesDirectoryData';
 import type { CategoryLeaf } from './navTypes';
 
 export interface NavItem {
@@ -28,94 +24,40 @@ export interface NavColumn {
   items: NavItem[];
 }
 
-/**
- * Mega-menu columns for a Men/Women/Children subcategory — one column per
- * garment structure (Top Wear/Bottom Wear/Sets/One-Piece) present under
- * that subcategory, each item linking straight to /search with the full
- * department/subcategory/structure/garment_type filter chain. Where
- * Categories.md defines no leaf garment types yet (e.g. Children's Apparel,
- * Women's Costumes & Performance), the column falls back to a single
- * "Browse All {Structure}" link instead of rendering empty.
- *
- * No COLOR column here — color isn't part of the canonical taxonomy
- * (Categories.md explicitly keeps it a per-item attribute/filter, not a
- * category), and it's already free text the shop owner sets per catalog
- * item, not a fixed palette worth baking into the nav.
- */
-export function getTaxonomyColumns(department: Department, subcategoryKey: string): NavColumn[] {
-  const structures = structuresFor(department, subcategoryKey);
-
-  // When NONE of this subcategory's structures have real leaf data yet
-  // (Kids' subcategories, Women's Costumes & Performance), rendering one
-  // near-empty "Browse All {Structure}" column per structure looked sparse
-  // and broken next to Men/Women's richly-populated columns — collapse to
-  // a single tidy column instead.
-  const allEmpty = structures.every((s) => garmentTypesFor(department, subcategoryKey, s).length === 0);
-  if (allEmpty) {
-    return [{
-      key: 'browse',
-      title: 'BROWSE',
-      items: structures.map((structure) => ({
-        label: `Browse All ${GARMENT_STRUCTURE_LABELS[structure]}`,
-        href: garmentSearchHref(department, subcategoryKey, structure),
-      })),
-    }];
-  }
-
-  return structures.map((structure) => {
-    const types = garmentTypesFor(department, subcategoryKey, structure);
-    const structureLabel = GARMENT_STRUCTURE_LABELS[structure];
-
-    return {
-      key: structure,
-      title: structureLabel.toUpperCase(),
-      items: types.length > 0
-        ? types.map((type) => ({
-            label: GARMENT_TYPE_LABELS[type] ?? type,
-            href: garmentSearchHref(department, subcategoryKey, structure, type),
-          }))
-        : [{
-            label: `Browse All ${structureLabel}`,
-            href: garmentSearchHref(department, subcategoryKey, structure),
-          }],
-    };
-  });
-}
-
-/**
- * Mega-menu columns for a Services category — leaf service types split
- * across 3 columns (rather than one long single column, which left the
- * rest of the mega-menu's width empty) linking to /search?tab=services
- * with the service_category/service_type filter chain.
- */
-export function getServiceColumns(serviceCategoryKey: ServiceCategory): NavColumn[] {
-  const types = serviceTypesFor(serviceCategoryKey);
-  const items = [
-    { label: 'Browse All', href: serviceSearchHref(serviceCategoryKey) },
-    ...types.map((type) => ({
-      label: SERVICE_TYPE_LABELS[type] ?? type,
-      href: serviceSearchHref(serviceCategoryKey, type),
-    })),
-  ];
-
-  const columnCount = 3;
-  const perColumn = Math.ceil(items.length / columnCount);
-
-  return Array.from({ length: columnCount }, (_, i) => items.slice(i * perColumn, (i + 1) * perColumn))
+/** Splits a list into up to `count` columns of nearly equal length. */
+function toColumns(items: NavItem[], count: number, title: string, keyPrefix: string): NavColumn[] {
+  const per = Math.ceil(items.length / count);
+  return Array.from({ length: count }, (_, i) => items.slice(i * per, (i + 1) * per))
     .filter((chunk) => chunk.length > 0)
-    .map((chunk, i) => ({ key: `service-col-${i}`, title: i === 0 ? 'SERVICE TYPES' : '', items: chunk }));
+    .map((chunk, i) => ({ key: `${keyPrefix}-${i}`, title: i === 0 ? title : '', items: chunk }));
+}
+
+/** A garment category's mega-menu: "Browse all" then every garment in it (2-level taxonomy). */
+export function getGarmentColumns(category: GarmentCategory): NavColumn[] {
+  const items: NavItem[] = [
+    { label: `Browse All ${GARMENT_CATEGORIES[category].label}`, href: categoryHref(category) },
+    ...garmentsInCategory(category).map((slug) => ({ label: GARMENTS[slug].label, href: garmentHref(slug) })),
+  ];
+  return toColumns(items, items.length > 6 ? 2 : 1, 'GARMENTS', `garment-${category}`);
+}
+
+/** A service's mega-menu: "Browse all" then the tasks shops can tick for it. */
+export function getServiceColumns(group: ServiceGroupKey): NavColumn[] {
+  const items: NavItem[] = [
+    { label: 'Browse All', href: serviceHref(group) },
+    ...Object.entries(SERVICE_GROUPS[group].capabilities).map(([slug, cap]) => ({ label: cap.label, href: serviceHref(group, slug) })),
+  ];
+  return toColumns(items, items.length > 6 ? 2 : 1, 'WHAT THEY DO', `service-${group}`);
 }
 
 /**
- * Single dispatch point WebHoverNav/NavMenuDrawer call — keyed on the
- * TopGroup's own `key` (men/women/children/services/discover), routing to
- * the right generator above instead of the old per-category-label
- * if/else chain.
+ * Single dispatch point WebHoverNav/NavMenuDrawer call — keyed on the TopGroup's own `key`
+ * (garments/services/discover).
  */
 export function getCategoryColumns(groupKey: string, cat?: CategoryLeaf): NavColumn[] {
   if (groupKey === 'discover') return getDiscoverColumns();
-  if (groupKey === 'services') return cat?.key ? getServiceColumns(cat.key as ServiceCategory) : [];
-  if (isDepartment(groupKey) && cat?.key) return getTaxonomyColumns(groupKey, cat.key);
+  if (groupKey === 'services' && cat?.key && cat.key in SERVICE_GROUPS) return getServiceColumns(cat.key as ServiceGroupKey);
+  if (groupKey === 'garments' && cat?.key && cat.key in GARMENT_CATEGORIES) return getGarmentColumns(cat.key as GarmentCategory);
   return [];
 }
 
@@ -132,8 +74,8 @@ export function getDiscoverColumns(): NavColumn[] {
       title: 'EXPLORE SUTURA',
       items: [
         { label: 'Browse Tailor Map', href: '/map' },
-        { label: 'About Sutura', href: '/#about' },
-        { label: 'Alterations & Repairs', href: '/search?q=Alterations&category=alteration_repair' },
+        { label: 'About Sutura', href: '/about' },
+        { label: 'Alterations & Repairs', href: '/search?tab=services&service_category=alterations_repairs' },
         { label: 'All Categories Directory', href: '/categories' },
       ],
     },

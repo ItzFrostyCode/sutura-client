@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
+import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import HomeFooter from '@/components/home/HomeFooter';
 import CategoriesShowcaseGrid from '@/components/categories/CategoriesShowcaseGrid';
 import CategoriesServicesSection from '@/components/categories/CategoriesServicesSection';
@@ -26,6 +27,7 @@ export default function CategoriesPage() {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-6 sm:py-8">
+        <PageBrandRow className="mb-2" />
         <nav aria-label="Breadcrumb" className="mobile-caption text-ink-muted flex items-center gap-1.5 mb-4">
           <Link href="/" className="hover:text-ink">SUTURA</Link>
           <span>&gt;</span>
@@ -34,9 +36,8 @@ export default function CategoriesPage() {
 
         <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">All Categories</h1>
         <p className="mobile-body-md text-ink-muted max-w-2xl mb-6">
-          Browse every apparel category and service SUTURA tailors offer — Men&apos;s, Women&apos;s, and
-          Children&apos;s Apparel, plus Custom Tailoring, Alterations, Uniforms, Printing &amp; Sublimation,
-          and Costume services.
+          Browse every garment SUTURA tailors work on, by category — then the work they do: made-to-measure,
+          uniforms and jerseys, alterations and repairs, and embroidery.
         </p>
 
         <form onSubmit={handleSearchSubmit} className="relative mb-8">

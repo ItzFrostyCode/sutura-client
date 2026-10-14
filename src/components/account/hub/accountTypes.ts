@@ -51,7 +51,7 @@ export function dayKey(d: Date): string {
 
 export const IN_PRODUCTION = new Set([
   'pending', 'design', 'pattern_making', 'mass_cutting_printing', 'cutting',
-  'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'on_hold',
+  'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'balance_handover', 'on_hold',
 ]);
 
 export const GUEST_MENU_ITEMS = [

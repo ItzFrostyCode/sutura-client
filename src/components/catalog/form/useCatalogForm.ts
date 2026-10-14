@@ -17,6 +17,8 @@ export function useCatalogForm({
   const [formData, setFormData] = useState<CatalogFormData>({
     name: '',
     price: '',
+    pricing_mode: 'same',
+    extra_charge: '',
     service_id: '',
     estimated_days: '',
     estimated_days_max: '',
@@ -134,7 +136,8 @@ export function useCatalogForm({
     }
   };
 
-  const saveDisabled = submitting || !formData.name || !formData.price || images.every(i => !i.url) || images.some(i => i.uploading);
+  // A design under a service takes its price from it; only a design with no service needs its own.
+  const saveDisabled = submitting || !formData.name || (!formData.service_id && !formData.price) || images.every(i => !i.url) || images.some(i => i.uploading);
 
   const handleFormSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();

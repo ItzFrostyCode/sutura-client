@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import Image from 'next/image';
 import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
 import ServiceProductInfo from '@/components/store-service-detail/ServiceProductInfo';
-import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart } from '@/components/store-service-detail/ServiceDetailBlocks';
+import { ServiceWorkBlock, ServicePricesBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart } from '@/components/store-service-detail/ServiceDetailBlocks';
 import EditableBox from '@/components/catalog/editable/EditableBox';
 import SizeChartEditor from '@/components/shared/SizeChartEditor';
 import { getMediaUrl } from '@/lib/media';
@@ -12,6 +12,7 @@ import type { Service } from '../serviceHelpers';
 import { toPublicService } from './serviceEditing';
 import { ServicePhotoEditor, ServiceInfoEditor, ServiceSpecEditor, ServiceDescriptionEditor } from './ServiceEditors';
 import { ServiceBookingEditor, ServiceBookingView } from './ServiceBookingEditor';
+import { ServiceWorkEditor } from './ServiceWorkEditors';
 import RequirementsEditor from '@/components/requirements/RequirementsEditor';
 import RequirementsView from '@/components/requirements/RequirementsView';
 import type { ServiceSectionEdit } from './useServiceSectionEdit';
@@ -69,7 +70,11 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
       />
 
       <div className={`space-y-4 ${PAD}`}>
-        <EditableBox control={edit.control('spec')} label="specification" title="Specification" badge={1} view={<ServiceSpecBlock service={ps} />}>
+        <EditableBox control={edit.control('work')} label="what you do" title="What You Do" badge={1} view={<ServiceWorkBlock service={ps} />}>
+          <ServiceWorkEditor edit={edit} />
+        </EditableBox>
+
+        <EditableBox control={edit.control('spec')} label="prices and add-ons" title="Prices & Add-ons" badge={2} view={<ServicePricesBlock service={ps} />}>
           <ServiceSpecEditor edit={edit} />
         </EditableBox>
 
@@ -77,7 +82,7 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
           control={edit.control('chart')}
           label="reference chart"
           title="Reference Chart"
-          badge={2}
+          badge={3}
           view={chart ? <ServiceChartBlock service={ps} /> : <p className="text-sm text-ink-faint">Not added yet — a size or measurement chart customers can check.</p>}
         >
           {edit.draft && (
@@ -92,15 +97,15 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
           )}
         </EditableBox>
 
-        <EditableBox control={edit.control('description')} label="description" title="Description" badge={3} view={<ServiceDescriptionBlock service={ps} />}>
+        <EditableBox control={edit.control('description')} label="description" title="Description" badge={4} view={<ServiceDescriptionBlock service={ps} />}>
           <ServiceDescriptionEditor edit={edit} />
         </EditableBox>
 
-        <EditableBox control={edit.control('booking')} label="booking form" title="Booking Form" badge={4} view={<ServiceBookingView customFields={service.custom_fields} rosterFields={service.roster_fields} />}>
+        <EditableBox control={edit.control('booking')} label="booking form" title="Booking Form" badge={5} view={<ServiceBookingView customFields={service.custom_fields} rosterFields={service.roster_fields} />}>
           <ServiceBookingEditor edit={edit} />
         </EditableBox>
 
-        <EditableBox control={edit.control('requirements')} label="requirements" title="Requirements" badge={5} view={<RequirementsView value={service} />}>
+        <EditableBox control={edit.control('requirements')} label="requirements" title="Requirements" badge={6} view={<RequirementsView value={service} />}>
           {edit.draft && <RequirementsEditor value={edit.draft.requirements} onChange={(requirements) => edit.setDraft(d => (d ? { ...d, requirements } : d))} inheritLabel="Use the shop default" />}
         </EditableBox>
       </div>

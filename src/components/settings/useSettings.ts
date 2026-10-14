@@ -36,6 +36,8 @@ export interface StoreSettingsData {
   fitting_limit: number;
   fitting_limit_policy: 'fee' | 'block';
   repair_requires_downpayment: boolean;
+  // Shown to the customer before they approve a quotation; empty = the built-in default text.
+  cancellation_policy: string;
   // Shop-wide defaults for new orders; designs, services and combos can override them.
   default_measurement_requirement: 'none' | 'existing' | 'shop';
   default_fitting_requirement: 'none' | 'optional' | 'required';
@@ -100,6 +102,7 @@ export function useSettings() {
     fitting_limit: 3,
     fitting_limit_policy: 'fee' as 'fee' | 'block',
     repair_requires_downpayment: false,
+    cancellation_policy: '',
     default_measurement_requirement: 'shop' as 'none' | 'existing' | 'shop',
     default_fitting_requirement: 'optional' as 'none' | 'optional' | 'required',
     default_payment_policy: 'deposit' as 'none' | 'full' | 'deposit' | 'custom',
@@ -163,6 +166,7 @@ export function useSettings() {
             fitting_limit: s.fitting_limit ?? 3,
             fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
             repair_requires_downpayment: !!s.repair_requires_downpayment,
+            cancellation_policy: s.cancellation_policy || '',
             default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
             default_fitting_requirement: s.default_fitting_requirement ?? 'optional',
             default_payment_policy: s.default_payment_policy ?? 'deposit',

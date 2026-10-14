@@ -1,6 +1,6 @@
 import React from 'react';
 import { CatalogFormData } from '../catalogTypes';
-import { CatalogCategoryFields } from './CatalogCategoryFields';
+import { GarmentPicker } from './GarmentPicker';
 import { StoreServiceOption } from './formTypes';
 import { FabricTextureUpload } from './FabricTextureUpload';
 import { AvailableSizesField } from './AvailableSizesField';
@@ -94,7 +94,7 @@ export function BasicInfoSection({
           />
         </div>
 
-        <CatalogCategoryFields formData={formData} onChange={onChange} setFormData={setFormData} />
+        <GarmentPicker formData={formData} setFormData={setFormData} />
       </div>
 
       <div>
@@ -111,7 +111,7 @@ export function BasicInfoSection({
           <option value="">No linked service</option>
           {storeServices.map(s => (
             <option key={s.id} value={s.id}>
-              {s.name}{(s.service_types ?? []).includes('bulk_sublimation') ? ' (Bulk Sublimation)' : ''}
+              {s.name}{(s.service_types ?? []).includes('bulk_sublimation') ? ' (Bulk orders)' : ''}
             </option>
           ))}
         </select>

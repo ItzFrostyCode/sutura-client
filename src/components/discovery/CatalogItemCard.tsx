@@ -7,6 +7,7 @@ import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemDistanceInfo } from '@/lib/customerLocation';
 import { formatEstimatedTurnaround } from '@/lib/turnaroundHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
+import { designPriceLabel } from '@/lib/designPricing';
 
 /**
  * The single catalog-item card style every customer-facing browse surface
@@ -129,9 +130,7 @@ export default function CatalogItemCard({
 
           {/* 3. Price */}
           <p className="text-sm font-bold text-ink">
-            {item.price !== null && item.price !== undefined
-              ? `₱${Number(item.price).toLocaleString()}`
-              : 'Custom Quote'}
+            {designPriceLabel(item.pricing, item.price)}
           </p>
 
           {/* 4. Star (Average Rating) | (count) sold */}

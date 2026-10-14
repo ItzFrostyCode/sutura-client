@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { PublicService } from '@/components/store-storefront/types';
-import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart } from './ServiceDetailBlocks';
+import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart, type AlsoAlters } from './ServiceDetailBlocks';
 
 interface ServiceAccordionSectionsProps {
   service: PublicService;
+  /** The same shop's alteration service that takes this garment, if any. */
+  alsoAlters?: AlsoAlters | null;
 }
 
 function SectionCard({ number, title, open, onToggle, children }: Readonly<{ number: number; title: string; open: boolean; onToggle: () => void; children: React.ReactNode }>) {
@@ -26,7 +28,7 @@ function SectionCard({ number, title, open, onToggle, children }: Readonly<{ num
 
 // Same numbered-card system as the Catalog Design page (1 Specification,
 // 2 Reference Chart when the shop added one, then Description).
-export default function ServiceAccordionSections({ service }: ServiceAccordionSectionsProps) {
+export default function ServiceAccordionSections({ service, alsoAlters }: ServiceAccordionSectionsProps) {
   const [showSpecs, setShowSpecs] = useState(true);
   const [showChart, setShowChart] = useState(true);
   const [showDesc, setShowDesc] = useState(true);
@@ -34,8 +36,8 @@ export default function ServiceAccordionSections({ service }: ServiceAccordionSe
 
   return (
     <div className="mt-4 space-y-3">
-      <SectionCard number={1} title="Specification" open={showSpecs} onToggle={() => setShowSpecs((v) => !v)}>
-        <ServiceSpecBlock service={service} />
+      <SectionCard number={1} title="What they do & prices" open={showSpecs} onToggle={() => setShowSpecs((v) => !v)}>
+        <ServiceSpecBlock service={service} alsoAlters={alsoAlters} />
       </SectionCard>
 
       {chart && (

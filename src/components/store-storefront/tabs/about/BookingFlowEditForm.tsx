@@ -108,6 +108,16 @@ export default function BookingFlowEditForm({ formData, onChange, setFormData }:
         />
       </div>
 
+      <div className="space-y-1 pt-2 border-t border-line/60">
+        <label htmlFor="cancellation-policy" className={labelClass}>Order cancellation &amp; refund policy</label>
+        <p className="text-xs text-ink-muted">Shown to the customer when they approve a quotation, and kept with the order. Leave blank for the standard policy.</p>
+        <textarea
+          id="cancellation-policy" name="cancellation_policy" value={formData.cancellation_policy || ''} onChange={onChange} rows={4} maxLength={2000}
+          placeholder="Standard: full refund if no materials were bought and no work started; otherwise what was paid minus costs the supplier will not take back. After production starts, the owner assesses the work done."
+          className={inputClass}
+        />
+      </div>
+
       <div className="space-y-2 pt-2 border-t border-line/60">
         <div className="flex items-center justify-between">
           <span className={labelClass}>Custom Booking Questions</span>

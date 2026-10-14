@@ -5,7 +5,7 @@ import { Search, X } from 'lucide-react';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
 import type { Service } from '../serviceHelpers';
 import ImageUploadField from '../detail/ImageUploadField';
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_LABELS } from '@/lib/canonicalTaxonomy';
+import { SERVICE_GROUPS, SERVICE_GROUP_KEYS } from '@/lib/garmentTaxonomy';
 import { pricedTotal, suggestPackageCategory, type PackageDraft } from './packageEditing';
 
 export interface PackageDraftEdit {
@@ -62,7 +62,7 @@ export function PackageServicesEditor({ edit }: Readonly<{ edit: PackageDraftEdi
             {chosen.map(s => (
               <li key={s.id} className="flex items-center gap-2 pl-3 min-h-12">
                 <span className="flex-1 min-w-0 truncate text-sm text-ink">{s.name}</span>
-                <span className="text-xs text-ink-muted shrink-0">{s.base_price != null ? `₱${Number(s.base_price).toLocaleString()}` : 'Custom quote'}</span>
+                <span className="text-xs text-ink-muted shrink-0">{s.base_price != null ? `₱${Number(s.base_price).toLocaleString()}` : 'Depends'}</span>
                 <button type="button" onClick={() => setIds(d.selectedIds.filter(i => i !== s.id))} aria-label={`Remove ${s.name}`} className="w-11 h-12 shrink-0 flex items-center justify-center text-ink-faint hover:text-danger cursor-pointer"><X size={18} /></button>
               </li>
             ))}
@@ -76,7 +76,7 @@ export function PackageServicesEditor({ edit }: Readonly<{ edit: PackageDraftEdi
         <label htmlFor="pkg-cat" className={LABEL}>Category <span className="text-red-600">*</span></label>
         <select id="pkg-cat" value={d.service_category} onChange={e => patch({ service_category: e.target.value })} className={FIELD}>
           <option value="">Select a category…</option>
-          {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{SERVICE_CATEGORY_LABELS[c]}</option>)}
+          {SERVICE_GROUP_KEYS.map(c => <option key={c} value={c}>{SERVICE_GROUPS[c].label}</option>)}
         </select>
         <p className="text-[11px] text-ink-faint mt-1.5">Filled in from the services you pick — change it if the set belongs somewhere else.</p>
       </div>

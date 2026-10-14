@@ -33,14 +33,12 @@ export default function WelcomeGuidePage() {
 
       <div className="space-y-3">
         {STEPS.map((step, i) => (
-          <div key={step.title} className="bg-surface border border-line p-4 flex gap-3">
-            <div className="w-10 h-10 rounded-full bg-sunken flex items-center justify-center shrink-0">
-              <step.Icon size={18} className="text-taupe" />
-            </div>
+          <div key={step.title} className="card-soft flex gap-3 p-4">
+            <step.Icon size={22} className="mt-0.5 w-8 shrink-0 text-taupe" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-ink-faint mb-0.5">Step {i + 1}</p>
-              <p className="text-sm font-bold text-ink mb-1">{step.title}</p>
-              <p className="text-xs text-ink-muted leading-relaxed">{step.body}</p>
+              <p className="mobile-overline text-ink-faint">Step {i + 1}</p>
+              <p className="mobile-h4 mt-0.5 text-ink">{step.title}</p>
+              <p className="mobile-body-sm mt-1 text-ink-muted">{step.body}</p>
             </div>
           </div>
         ))}

@@ -8,6 +8,7 @@ import { FinancialStatementSummary } from './financials/FinancialStatementSummar
 import { FinancialDiscountForm } from './financials/FinancialDiscountForm';
 import { PaymentAuditLedger } from './financials/PaymentAuditLedger';
 import { JobCashierDesk } from './financials/JobCashierDesk';
+import { DepositWaiverControl } from './financials/DepositWaiverControl';
 
 export default function JobFinancialsCard({
   job,
@@ -18,6 +19,7 @@ export default function JobFinancialsCard({
   onUpdatePayment,
   onRejectPayment,
   onVerifyPayment,
+  onRefresh,
 }: JobFinancialsCardProps) {
   const financials = computeFinancials(job);
   const {
@@ -102,6 +104,7 @@ export default function JobFinancialsCard({
               applyingDiscount={applyingDiscount}
               onApplyDiscountSubmit={handleApplyDiscountSubmit}
             />
+            {onRefresh && <DepositWaiverControl job={job} onChanged={onRefresh} />}
           </div>
 
           <PaymentAuditLedger

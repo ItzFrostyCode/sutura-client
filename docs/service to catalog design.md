@@ -4,6 +4,8 @@
 **Target Systems:** `sutura-server` (Laravel 11 REST API) & `sutura-client` (Next.js 14 App Router)
 **Primary Store Reference:** Store 1 (`Thread & Needle Tailoring`)
 
+> **Pricing changed on 2026-10-14 — §5.1 and Q3 below are rewritten; older price statements elsewhere in this file ("design reference price", the Reference Price columns) describe the old behaviour.** A design no longer has its own base price. It costs what its **service** costs, unless the shop sets an **extra charge** for it or marks it **quote**. See `App\Support\DesignPricing` (server) and `src/lib/designPricing.ts` (client). The old `catalog_items.price` is kept only for designs with no service.
+
 ---
 
 ## 1. Executive Summary & Core Architectural Taxonomy
@@ -212,25 +214,19 @@ Four services in Store 1 deliberately have no linked catalog items. This is a de
 
 ## 5. Customer Reflection & UI/UX Principles
 
-### 5.1 The Price Separation Principle
+### 5.1 One price: the service's (updated 2026-10-14)
 
-A critical usability rule in SUTURA is that **Catalog Design price** and **Service base price** must never be presented as additive:
+A design is a style the shop makes under a service, not a separate product. Its price comes from the service. The shop picks one of three options per design (`catalog_items.pricing_mode`):
 
-```
-❌ WRONG (Additive Confusion):
-   Catalog Item: ₱4,500
-   Service Base: ₱1,500
-   Total Displayed: ₱6,000 (Customer assumes double charge!)
+| Option | Customer sees (Barong service ₱1,500) | Order starts at |
+|---|---|---|
+| Same as the service (default) | From ₱1,500 | ₱1,500 |
+| Extra charge (e.g. ₱500, `extra_charge`) | From ₱2,000 — "₱1,500 for the service + ₱500 for this design" | ₱2,000 |
+| Ask for a quote | Price on quotation | ₱0, the shop quotes it |
 
-✅ CORRECT (SUTURA Standard):
-   Primary Display: ₱4,500 (Design Reference Price)
-   Service Label: "Service: Barong Tagalog Tailoring"
-   Transactional Pricing: Established in Job Order based on final fabric & customization
-```
-
-- In `CatalogProductInfo.tsx`, only the specific design reference price (`item.price`) is displayed prominently with the title, fabric, and color tags.
-- In `StoreServicesTab.tsx`, service cards display their starting labor rate (e.g., *"Starting at ₱1,500"*).
-- The Job Order binds the design price, custom specs, rush fees, and material source into the final binding amount.
+- Service prices are **starting prices**. The **confirmed** price is the order's quotation (estimate → final), which the customer approves before the deposit and production (`OrderQuotation`, `OrderReadiness::confirmationBlockers`).
+- The price is never added twice: design pages, cards, search, the Find sheet, Bulk Order and Made to Order, and the owner's job form all use the same worked price (`pricing` on every design in the API).
+- A design with **no service** keeps its own stored price (there is nothing to inherit).
 
 ### 5.2 Dynamic Action Buttons by Functional Service Type
 
@@ -331,9 +327,9 @@ Notes: Please prepare collar style samples.
 
 > **Defense:** "Catalog items in SUTURA represent made-to-order garments produced from raw materials. Alterations and repairs are corrective labor services performed on garments the customer already owns. Displaying finished catalog designs for alterations would mislead customers into expecting a new garment rather than a garment adjustment."
 
-### Q3: "If a customer chooses a Barong design priced at ₱4,500 and the service says Starting at ₱1,500, what is the customer billed?"
+### Q3: "If a customer chooses a Barong design and the service says Starting at ₱1,500, what is the customer billed?"
 
-> **Defense:** "The customer is not billed ₱6,000. SUTURA enforces strict price separation: the ₱1,500 is a baseline shop labor indicator on the service directory, while the ₱4,500 is the reference price for that specific Barong design. The final binding transaction is codified when staff issues the Job Order, accounting for custom measurements, fabric choices, and add-ons."
+> **Defense (updated 2026-10-14):** "A design has no separate price. Choosing a Barong design under the ₱1,500 Barong service starts the order at ₱1,500. If the shop charges more for that design, it sets an extra charge, and the customer sees 'From ₱2,000 — ₱1,500 for the service + ₱500 for this design'. If the price depends on the request, the design says 'Price on quotation'. In every case, the shop finalizes a quotation and the customer approves it before any deposit is required or production starts."
 
 ### Q4: "How does the system ensure a customer booking from a design doesn't accidentally book an Alteration appointment?"
 

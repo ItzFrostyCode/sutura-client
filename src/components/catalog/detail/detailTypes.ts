@@ -1,3 +1,4 @@
+import type { DesignPricing } from '@/lib/designPricing';
 import type { RequirementFields } from '@/components/jobs/requirements';
 import type { ApparelReview } from '@/components/catalog/catalogTypes';
 
@@ -58,6 +59,11 @@ export interface DetailedCatalogItem extends RequirementFields {
   garment_structure?: string | null;
   measurement_guide?: string | null;
   /** Owner's Appointment Configuration for this design (null = store defaults). */
+  /** How the design is priced against its service (lib/designPricing); null = same as the service. */
+  pricing_mode?: 'same' | 'extra' | 'quote' | null;
+  extra_charge?: string | number | null;
+  /** Server-worked price (lib/designPricing). */
+  pricing?: DesignPricing;
   service_id?: number | null;
   service?: { id: number; name: string } | null;
   listing_type?: string;

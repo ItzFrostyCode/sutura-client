@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 import LoginForm from '@/components/auth/LoginForm';
+import AuthBrand from '@/components/auth/AuthBrand';
 
 export default function LoginPage() {
   return (
@@ -42,18 +43,16 @@ function LoginFormContent() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      {/* PublicNav only on tablet/desktop — on mobile the form's own
-          Sign In/X header is the only chrome this page needs, and having
-          both stacked read as redundant. */}
-      <div className="hidden md:block">
-        <PublicNav />
-      </div>
+      {/* No header bar here at any size (bottomNavPaths' AUTH_PATHS) — PublicNav only brings the bottom
+          navigation, so Log In keeps the same layout as the Profile tab it was opened from. */}
+      <PublicNav />
 
       {/* Mobile (below md): full page, edge-to-edge. Tablet/desktop normally
           get LoginModal over the current page instead; this card layout only
           shows when someone lands on /login directly (e.g. a ?redirect link). */}
       <div className="flex-1 px-[10px] py-6 md:flex md:items-start md:justify-center md:px-4 md:py-16">
         <div className="md:w-full md:max-w-md md:bg-surface md:border md:border-line md:shadow-sm md:p-8">
+          <AuthBrand className="mb-8" />
           <LoginForm
             customerRedirect={redirectPath || '/'}
             staffRedirect={redirectPath || '/dashboard'}

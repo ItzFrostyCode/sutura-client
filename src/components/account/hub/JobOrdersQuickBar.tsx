@@ -19,38 +19,26 @@ export default function JobOrdersQuickBar({
   ];
 
   return (
-    <div className="bg-surface border border-line p-4 mb-3">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="mobile-h3 font-semibold text-ink">Job Orders</h2>
-        <Link
-          href="/account/orders"
-          className="btn-text-mobile text-xs font-semibold text-taupe hover:text-taupe-hover gap-1 -mr-2"
-        >
-          View All <ChevronRight size={14} />
+    <section aria-labelledby="hub-orders-title" className="card-soft p-4">
+      <div className="flex items-center justify-between">
+        <h2 id="hub-orders-title" className="mobile-h4 text-ink">Job Orders</h2>
+        <Link href="/account/orders" className="-mr-2 flex min-h-11 items-center gap-0.5 px-2 text-sm text-taupe transition-opacity active:opacity-70">
+          View all <ChevronRight size={16} />
         </Link>
       </div>
 
+      {/* Three tiles like iOS widgets: the icon and the number on top, what it counts underneath. */}
       <div className="grid grid-cols-3 gap-2">
         {orderShortcuts.map(({ href, label, Icon, count }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex flex-col items-center justify-center gap-1.5 min-h-[56px] py-1 hover:bg-canvas transition-colors"
-          >
-            <span className="relative">
-              <Icon size={24} className="text-ink-muted" />
-              {count > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-taupe text-white text-[10px] font-bold rounded-full">
-                  {count > 9 ? '9+' : count}
-                </span>
-              )}
+          <Link key={href} href={href} className="flex min-h-[84px] flex-col justify-between rounded-2xl bg-sunken p-3 transition-opacity active:opacity-70">
+            <span className="flex items-center justify-between">
+              <Icon size={20} className="text-taupe" />
+              <span className="text-xl font-semibold leading-none text-ink">{count}</span>
             </span>
-            <span className="mobile-caption text-center leading-tight text-ink-muted font-normal">
-              {label}
-            </span>
+            <span className="mobile-caption leading-tight text-ink-muted">{label}</span>
           </Link>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

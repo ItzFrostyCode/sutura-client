@@ -4,6 +4,8 @@
 **Target Systems:** `sutura-server` (Laravel 11 REST API) & `sutura-client` (Next.js 14 App Router)  
 **Companion Architecture:** `service to catalog design.md`  
 
+> **Pricing changed on 2026-10-14.** A design costs what its service costs (default), or the service price plus an extra charge, or a quotation (`catalog_items.pricing_mode` / `extra_charge`, worked out by `App\Support\DesignPricing`). The "price separation" rule below that showed the design's own price is replaced; the rows marked *(updated)* say what is true now.
+
 ---
 
 ## 1. Executive Purpose & Architectural Principles
@@ -13,7 +15,7 @@ This document defines the actionable implementation tasks, technical data contra
 ### Fundamental Rules
 1. **Source of Truth Rule:** Use existing database schemas, API routes, and React components. Do not invent non-existent database tables, redundant columns, or hypothetical order subsystems.
 2. **Entity Boundary Rule:**
-   - **Catalog Design (`catalog_items`)**: Visual garment artifact & design reference price.
+   - **Catalog Design (`catalog_items`)**: Visual garment style under a service. *(updated)* No base price of its own: same as the service, an extra charge, or a quote.
    - **Service (`services`)**: Shop capability, functional taxonomy, & base labor rate.
    - **Order Context**: Ephemeral transaction parameter (`Individual/Custom`, `Bulk/Team`, `Entourage`) specified at checkout or booking.
    - **Job Order (`job_orders`)**: Final binding production contract establishing true total amount, balance, and deadlines.
@@ -35,8 +37,8 @@ The lifecycle of a tailoring engagement flows across four core modules:
 ┌──────────────────────────────────▼─────────────────────────────────────┐
 │ 2. CUSTOMER DISCOVERY & STOREFRONT                                     │
 │    • Search & Showroom queries join `catalog_items` with `services`     │
-│    • Catalog Detail renders design price (₱4,500) and Service Name     │
-│    • Price Separation: Does NOT add service base labor to design price │
+│    • (updated) Design shows its service's price (From ₱1,500), plus   │
+│      an extra charge if the shop set one, or "Price on quotation"    │
 │    • CTA toggles: "Bulk Order" (if bulk_sublimation) vs "Book Fitting" │
 └──────────────────────────────────┬─────────────────────────────────────┘
                                    │ Context parameters in URL (?ref, ?service_id)
@@ -84,7 +86,7 @@ The following matrix documents the exact technical state of the SUTURA codebase:
 | Screen / Component | File Path | Implementation Status | Technical Details |
 | :--- | :--- | :---: | :--- |
 | **Catalog Detail Hook** | `src/components/store-catalog-detail/hooks/useCatalogItemDetail.ts` | **Active / Verified** | • Detects bulk: `isBulkItem = service.service_types.includes('bulk_sublimation')`<br>• Constructs `bookHref`: `/store/${storeId}/book?ref=...&service_id=...&ref_price=...`<br>• Controls `BulkOrderSheet` for team rosters. |
-| **Catalog Product Info** | `src/components/store-catalog-detail/CatalogProductInfo.tsx` | **Active / Verified** | Enforces **Price Separation Principle**: Displays `item.price` prominently; does not display additive service base labor. |
+| **Catalog Product Info** | `src/components/store-catalog-detail/CatalogProductInfo.tsx` | **Active / Verified** | *(updated)* Shows the worked price from `item.pricing` (`lib/designPricing.ts`) with one plain sentence: same as the service, service + extra, or price on quotation. |
 | **Booking Wizard Hook** | `src/components/booking/hooks/useBookingWizard.ts` | **Active / Verified** | • Auth gate redirects unauthenticated guests before Step 1.<br>• Purpose gating: restricts purposes to `Consultation` & `Measurement` for catalog designs.<br>• `hasServiceContext = !!serviceIdParam || !!refName`.<br>• `needsServicePicker = false` when context is known. |
 | **Step 1: Purpose** | `src/components/booking/steps/BookingStep1Purpose.tsx` | **Active / Verified** | Renders context-gated cards (`consultation`, `measurement`, `alteration`, `fitting`, `pickup`). |
 | **Step 2: Schedule** | `src/components/booking/steps/BookingStep2Schedule.tsx` | **Active / Verified** | Branch selector with distance, date/time picker, material source (`own` vs `shop`), and quantity. |
@@ -163,10 +165,10 @@ To ensure complete production integrity, future developers and AI agents must fo
 
 ---
 
-### Task 2: Validate Price Separation Across Customer Views
-- **Action:** Verify that no customer-facing view adds `catalog_items.price` and `services.base_price`.
+### Task 2: Validate One Price Across Customer Views *(updated 2026-10-14)*
+- **Action:** Verify that every view shows the design's worked price (`pricing`), never `catalog_items.price` for a design that has a service.
 - **Verification Rule:**
-  - Catalog Detail Page must display only `item.price` as the primary garment price.
+  - Catalog Detail Page shows the service's price, plus the design's extra charge if set, or "Price on quotation".
   - The linked service name must appear as descriptive metadata (e.g., *"Service: Barong Tagalog Tailoring"*).
   - Service directory cards display *"Starting at ₱X,XXX"*.
   - Final binding total is determined exclusively in the Job Order contract.

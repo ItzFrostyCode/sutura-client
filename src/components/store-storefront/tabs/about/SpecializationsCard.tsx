@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
 import SpecializationsSelector from '@/components/settings/SpecializationsSelector';
-import { specializationLabel } from '@/lib/storeSpecializations';
+import { specializationLabel, visibleSpecializations } from '@/lib/storeSpecializations';
 import EditableCard from './EditableCard';
 
 interface SpecializationsCardProps {
@@ -15,7 +15,8 @@ interface SpecializationsCardProps {
 }
 
 export default function SpecializationsCard({ specializations, onChange, isEditing, saving, onEdit, onCancel, onSave }: SpecializationsCardProps) {
-  const labels = specializations.map(specializationLabel);
+  // Old Men / Women / Kids tags stay saved but are not shown (2026-10-14).
+  const labels = visibleSpecializations(specializations).map(specializationLabel);
 
   return (
     <EditableCard

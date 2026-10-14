@@ -2,6 +2,7 @@ import React from 'react';
 import { Star } from 'lucide-react';
 import { CatalogItem } from './types';
 import { formatTurnaround } from '@/lib/formatTurnaround';
+import { designPriceDetail } from '@/lib/designPricing';
 
 interface CatalogProductInfoProps {
   item: CatalogItem;
@@ -13,6 +14,8 @@ interface CatalogProductInfoProps {
 export default function CatalogProductInfo({ item, hideStats }: CatalogProductInfoProps) {
   const avgRating = item.reviews_avg_rating ?? 0;
   const reviewsCount = item.reviews_count ?? 0;
+  // A design is priced by its service; the shop may add an extra charge or ask for a quote (lib/designPricing).
+  const price = item.pricing ? designPriceDetail(item.pricing, item.service?.name) : null;
 
   return (
     <div className="space-y-0">
@@ -43,9 +46,17 @@ export default function CatalogProductInfo({ item, hideStats }: CatalogProductIn
 
       {/* 3. Price Banner Box — light bg, stands alone */}
       <div className="bg-[#fafafa] border border-line px-4 py-4 my-0">
-        <p className="text-3xl font-bold text-taupe leading-none">
-          ₱{Number(item.price).toLocaleString()}
-        </p>
+        {price ? (
+          <>
+            <p className="text-3xl font-bold text-taupe leading-none">
+              {price.main}
+              {price.struck && <span className="ml-2 align-middle text-base font-normal text-ink-faint line-through">{price.struck}</span>}
+            </p>
+            <p className="mobile-caption mt-2 text-ink-muted">{price.note}</p>
+          </>
+        ) : (
+          <p className="text-3xl font-bold text-taupe leading-none">₱{Number(item.price).toLocaleString()}</p>
+        )}
       </div>
 
       {/* 4. Production Estimate Row */}

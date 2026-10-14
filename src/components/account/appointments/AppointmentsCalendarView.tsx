@@ -10,6 +10,8 @@ interface AppointmentsCalendarViewProps {
   cells: DayCell[];
 }
 
+const arrow = 'relative flex h-8 w-11 items-center justify-center text-ink-muted transition-opacity before:absolute before:inset-x-0 before:-inset-y-1.5 active:opacity-60';
+
 export default function AppointmentsCalendarView({
   monthLabel,
   calMonth,
@@ -18,50 +20,27 @@ export default function AppointmentsCalendarView({
   setSelectedDay,
   cells,
 }: Readonly<AppointmentsCalendarViewProps>) {
-  const handlePrevMonth = () => {
+  const goToMonth = (offset: number) => {
     const d = new Date(calMonth);
-    d.setMonth(d.getMonth() - 1);
-    setCalMonth(d);
-    setSelectedDay(null);
-  };
-
-  const handleNextMonth = () => {
-    const d = new Date(calMonth);
-    d.setMonth(d.getMonth() + 1);
+    d.setMonth(d.getMonth() + offset);
     setCalMonth(d);
     setSelectedDay(null);
   };
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-3">
-        <p className="mobile-h3 font-semibold text-ink">{monthLabel}</p>
-        <div className="flex border border-line overflow-hidden">
-          <button
-            type="button"
-            onClick={handlePrevMonth}
-            className="touch-target-44 w-10 h-9 flex items-center justify-center text-ink-muted border-r border-line hover:bg-sunken transition-colors"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={handleNextMonth}
-            className="touch-target-44 w-10 h-9 flex items-center justify-center text-ink-muted hover:bg-sunken transition-colors"
-            aria-label="Next month"
-          >
-            <ChevronRight size={16} />
-          </button>
+    <div className="mt-3 mb-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="mobile-h4 text-ink">{monthLabel}</p>
+        <div className="flex rounded-full bg-sunken">
+          <button type="button" onClick={() => goToMonth(-1)} className={arrow} aria-label="Previous month"><ChevronLeft size={18} /></button>
+          <button type="button" onClick={() => goToMonth(1)} className={arrow} aria-label="Next month"><ChevronRight size={18} /></button>
         </div>
       </div>
 
-      <div className="border border-line overflow-hidden bg-surface">
-        <div className="grid grid-cols-7 bg-canvas">
+      <div className="card-soft p-2">
+        <div className="grid grid-cols-7">
           {WEEKDAYS.map((w, i) => (
-            <div key={`${w}-${i}`} className="text-center text-[10px] font-semibold tracking-wide text-ink-faint py-2">
-              {w}
-            </div>
+            <div key={`${w}-${i}`} className="py-2 text-center text-[10px] font-semibold tracking-wide text-ink-faint">{w}</div>
           ))}
         </div>
         <div className="grid grid-cols-7">
@@ -71,28 +50,20 @@ export default function AppointmentsCalendarView({
               type="button"
               disabled={!c.num}
               onClick={() => c.num && setSelectedDay(c.key === selectedDay ? null : c.key)}
-              className={`h-12 flex flex-col items-center justify-center border-t border-line transition-colors ${
-                c.isToday ? 'bg-amber-50/50' : c.isPast ? 'bg-canvas/40' : 'bg-surface'
-              } ${selectedDay === c.key ? 'ring-2 ring-inset ring-taupe' : ''}`}
+              className={`flex h-12 flex-col items-center justify-center rounded-xl transition-colors ${selectedDay === c.key ? 'bg-sunken' : ''}`}
             >
               {c.num && (
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-normal ${
-                  c.isToday ? 'bg-taupe text-white font-semibold' : c.isPast ? 'text-ink-faint' : 'text-ink'
-                }`}>
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] ${c.isToday ? 'bg-taupe font-semibold text-white' : c.isPast ? 'text-ink-faint' : 'text-ink'}`}>
                   {c.num}
                 </span>
               )}
-              {c.count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-taupe mt-0.5" />}
+              {c.count > 0 && <span className="mt-0.5 h-1 w-1 rounded-full bg-taupe" />}
             </button>
           ))}
         </div>
       </div>
 
-      {!selectedDay && (
-        <p className="mobile-caption text-ink-faint text-center mt-3 font-normal">
-          Tap a day to see your appointments.
-        </p>
-      )}
+      {!selectedDay && <p className="mobile-caption mt-3 text-center text-ink-faint">Tap a day to see your appointments.</p>}
     </div>
   );
 }

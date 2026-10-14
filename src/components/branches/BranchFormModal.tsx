@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Info, Loader2, X, Lock, MapPinned, MapPin, CheckCircle2 } from 'lucide-react';
+import { Info, Loader2, X, Lock } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
 import api from '@/lib/axios';
-import { DAVAO_DISTRICTS, BranchFormData } from '@/components/branches/branchHelpers';
+import { BranchFormData } from '@/components/branches/branchHelpers';
+import BranchPlaceFields from '@/components/branches/BranchPlaceFields';
+import PinPaste from '@/components/shared/PinPaste';
 import type { SavedLocation } from '@/lib/customerLocation';
 import { getErrorMessage } from '@/lib/apiError';
 
@@ -36,27 +38,10 @@ export default function BranchFormModal({
   const [uploading, setUploading] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [staffList, setStaffList] = useState<Array<{ id: number; role: string; user?: { name: string; email: string } }>>([]);
-  const [mapsLinkInput, setMapsLinkInput] = useState('');
-  const [resolvingMapsLink, setResolvingMapsLink] = useState(false);
-  const [mapsLinkError, setMapsLinkError] = useState('');
-  const [mapsLinkResolved, setMapsLinkResolved] = useState(false);
-  const [showManualCoords, setShowManualCoords] = useState(false);
-
-  const handleResolveMapsLink = async () => {
-    if (!storeId || !mapsLinkInput.trim()) return;
-    setResolvingMapsLink(true);
-    setMapsLinkError('');
-    setMapsLinkResolved(false);
-    try {
-      const res = await api.post(`/stores/${storeId}/branches/resolve-maps-link`, { url: mapsLinkInput.trim() });
-      const { latitude, longitude } = res.data.data;
-      setFormData(prev => ({ ...prev, latitude: String(latitude), longitude: String(longitude) }));
-      setMapsLinkResolved(true);
-    } catch (err) {
-      setMapsLinkError(getErrorMessage(err, "Couldn't read a location from that link."));
-    } finally {
-      setResolvingMapsLink(false);
-    }
+  // Reads a Google Maps share link into a pin (server side: it follows the short link).
+  const resolveMapsLink = async (url: string) => {
+    const res = await api.post(`/stores/${storeId}/branches/resolve-maps-link`, { url });
+    return { lat: Number(res.data.data.latitude), lng: Number(res.data.data.longitude) };
   };
 
   const parsedLat = parseFloat(formData.latitude);
@@ -128,20 +113,8 @@ export default function BranchFormModal({
           />
         </div>
 
-        {/* Barangay */}
-        <div>
-          <label htmlFor="branch-barangay" className="block text-sm font-medium text-ink-body mb-1">
-            Barangay <span className="text-ink-faint font-normal">(optional — customers can search by it)</span>
-          </label>
-          <input
-            id="branch-barangay"
-            type="text"
-            placeholder="e.g. Ubalde"
-            value={formData.barangay ?? ''}
-            onChange={e => setFormData(prev => ({ ...prev, barangay: e.target.value }))}
-            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-          />
-        </div>
+        {/* District & Barangay (Davao City's official list) */}
+        <BranchPlaceFields formData={formData} setFormData={setFormData} />
 
         {/* Landmark */}
         <div>
@@ -158,38 +131,20 @@ export default function BranchFormModal({
           />
         </div>
 
-        {/* City & District */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="branch-city" className="block text-sm font-medium text-ink-body mb-1">
-              City <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="branch-city"
-              required
-              type="text"
-              placeholder="e.g. Davao City"
-              value={formData.city}
-              onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
-              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="branch-district" className="block text-sm font-medium text-ink-body mb-1">
-              District <span className="text-ink-faint font-normal">(for customer search)</span>
-            </label>
-            <select
-              id="branch-district"
-              value={formData.district ?? ''}
-              onChange={e => setFormData(prev => ({ ...prev, district: e.target.value }))}
-              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-            >
-              <option value="">Not set</option>
-              {DAVAO_DISTRICTS.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
+        {/* City */}
+        <div>
+          <label htmlFor="branch-city" className="block text-sm font-medium text-ink-body mb-1">
+            City <span className="text-red-400">*</span>
+          </label>
+          <input
+            id="branch-city"
+            required
+            type="text"
+            placeholder="e.g. Davao City"
+            value={formData.city}
+            onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
+            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
+          />
         </div>
 
         {/* Contact */}
@@ -218,85 +173,21 @@ export default function BranchFormModal({
           />
         </div>
 
-        {/* Map Location */}
+        {/* Map Location — paste from Google Maps, the phone's GPS, or the map (PinPaste). */}
         <div>
-          <label htmlFor="branch-maps-link" className="block text-sm font-medium text-ink-body mb-1">
+          <p className="block text-sm font-medium text-ink-body mb-1">
             Branch Location{' '}
             <span className="text-ink-faint font-normal ml-1">(required for map discovery)</span>
-          </label>
-          <p className="text-xs text-ink-muted mb-2">
-            Open Google Maps, find your branch, tap <strong>Share</strong>, then paste the link here.
           </p>
-          <div className="flex gap-2">
-            <input
-              id="branch-maps-link"
-              type="text"
-              placeholder="Paste Google Maps link (e.g. https://maps.app.goo.gl/...)"
-              value={mapsLinkInput}
-              onChange={e => { setMapsLinkInput(e.target.value); setMapsLinkResolved(false); setMapsLinkError(''); }}
-              className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-taupe"
-            />
-            <button
-              type="button"
-              onClick={handleResolveMapsLink}
-              disabled={resolvingMapsLink || !mapsLinkInput.trim()}
-              className="shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-taupe hover:bg-taupe/90 disabled:opacity-50 text-white text-sm font-semibold"
-            >
-              {resolvingMapsLink ? <Loader2 size={15} className="animate-spin" /> : <MapPin size={15} />}
-              Use Link
-            </button>
-          </div>
-          {mapsLinkError && (
-            <p className="text-xs text-danger mt-1.5">{mapsLinkError}</p>
-          )}
-          {mapsLinkResolved && !mapsLinkError && (
-            <p className="text-xs text-emerald-700 mt-1.5 flex items-center gap-1.5">
-              <CheckCircle2 size={13} /> Location set from your link.
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowLocationPicker(true)}
-            className="mt-2 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-taupe text-taupe text-sm font-semibold"
-          >
-            <MapPinned size={15} /> Pick on Map Instead
-          </button>
-
-          {(formData.latitude || formData.longitude) && (
-            <p className="text-xs text-ink-faint mt-2">
-              Current coordinates: {formData.latitude || '—'}, {formData.longitude || '—'}
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowManualCoords(v => !v)}
-            className="text-xs text-ink-faint hover:text-ink-muted underline mt-2"
-          >
-            {showManualCoords ? 'Hide manual coordinate entry' : 'Have exact coordinates already? Enter them manually'}
-          </button>
-          {showManualCoords && (
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <input
-                type="text"
-                placeholder="Latitude (e.g. 7.1907)"
-                value={formData.latitude}
-                onChange={e => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-taupe"
-              />
-              <input
-                type="text"
-                placeholder="Longitude (e.g. 125.4553)"
-                value={formData.longitude}
-                onChange={e => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink text-sm focus:outline-none focus:border-taupe"
-              />
-            </div>
-          )}
-          <p className="text-xs text-ink-faint mt-1.5 flex items-start gap-1.5">
+          <PinPaste
+            current={pickerInitial ? { lat: pickerInitial.lat, lng: pickerInitial.lng } : null}
+            onPin={(pin) => setFormData(prev => ({ ...prev, latitude: String(pin.lat), longitude: String(pin.lng) }))}
+            onPickOnMap={() => setShowLocationPicker(true)}
+            resolveLink={storeId ? resolveMapsLink : undefined}
+          />
+          <p className="text-xs text-ink-faint mt-2 flex items-start gap-1.5">
             <Info size={13} className="mt-0.5 shrink-0" />
-            <span>The location pin is required — without it the branch can&apos;t appear on the map. Pasting the Maps link or picking on the map above is easier than typing coordinates.</span>
+            <span>Without a pin the branch can&apos;t appear on the map. A new or moved pin is checked by SUTURA before the branch shows on the map search.</span>
           </p>
         </div>
 

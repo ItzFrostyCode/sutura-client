@@ -3,11 +3,14 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { BulletItem, ImageItem, ColorItem, CatalogFormData, CatalogItemResponse, type ApparelReview } from './catalogTypes';
 import type { SizeChartValue } from '@/components/shared/SizeChartEditor';
+import type { DesignPricing } from '@/lib/designPricing';
 
 export interface CatalogItem {
   id: number;
   name: string;
   price: string;
+  /** Server-worked price (lib/designPricing). */
+  pricing?: DesignPricing;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
   material: string;
@@ -139,7 +142,9 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
 
   const form = {
     name: item.name,
-    price: item.price.toString(),
+    price: item.price != null ? item.price.toString() : '',
+    pricing_mode: item.pricing_mode ?? 'same',
+    extra_charge: item.extra_charge != null ? String(item.extra_charge) : '',
     service_id: item.service_id != null ? String(item.service_id) : '',
     estimated_days: item.estimated_days != null ? String(item.estimated_days) : '',
     estimated_days_max: item.estimated_days_max != null ? String(item.estimated_days_max) : '',

@@ -16,6 +16,8 @@ import CatalogRatingsSection from '@/components/store-catalog-detail/CatalogRati
 import CatalogStoreProfileCard from '@/components/store-catalog-detail/CatalogStoreProfileCard';
 import CatalogRecommendationsSection from '@/components/store-catalog-detail/CatalogRecommendationsSection';
 import CatalogBottomActionBar from '@/components/store-catalog-detail/CatalogBottomActionBar';
+import { useEmbedded } from '@/hooks/useEmbedded';
+import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogFindInStoreSheet from '@/components/store-catalog-detail/CatalogFindInStoreSheet';
 import { isStoreOpen } from '@/lib/storeStatus';
@@ -27,6 +29,8 @@ export default function PublicProductDetailPage({
 }: Readonly<{ params: Promise<{ store_id: string; item_id: string }> }>) {
   const { store_id: storeId, item_id: itemId } = use(params);
   const router = useRouter();
+  // Inside the map panel the shop is already open around this page: no Shop button, no shop card.
+  const embedded = useEmbedded();
 
   const {
     item,
@@ -116,6 +120,8 @@ export default function PublicProductDetailPage({
 
   return (
     <div ref={pageRef} className="min-h-full flex flex-col bg-canvas">
+      {/* Inside the map panel (an iframe) Next's dev button would show twice; hide this page's copy (it doesn't exist in production). */}
+      {embedded && <style>{'nextjs-portal{display:none!important}'}</style>}
       {/* Header — desktop minimal / mobile floating overlay */}
       <div className="hidden min-[600px]:block">
         <CatalogDesktopHeader onBack={handleBackClick} onReport={handleReportClick} />
@@ -233,9 +239,11 @@ export default function PublicProductDetailPage({
         {/* ──────────────────────────────────────────────────────
             SECTION 4: Shop Profile
         ────────────────────────────────────────────────────── */}
-        <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <CatalogStoreProfileCard item={item} gate={gate} />
-        </div>
+        {!embedded && (
+          <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
+            <CatalogStoreProfileCard item={item} gate={gate} />
+          </div>
+        )}
 
         {/* ──────────────────────────────────────────────────────
             SECTION 5 & 6: From the Same Shop + You May Also Like
@@ -254,6 +262,7 @@ export default function PublicProductDetailPage({
         onOpenFind={() => setShowFind(true)}
         bookHref={bookHref}
         storeSlug={item.store?.slug}
+        showShop={!embedded}
         orderAction={isBulkItem ? 'bulk' : null}
         onOrder={isBulkItem ? openBulkSheet : undefined}
       />
@@ -291,7 +300,7 @@ export default function PublicProductDetailPage({
         locateError={locateError}
         selectedImage={selectedImage}
         itemName={item.name}
-        itemPrice={item.price}
+        itemPrice={designPriceLabel(item.pricing, item.price)}
         storeName={item.store?.name ?? ''}
         storeLogoPath={item.store?.logo_path ?? null}
         storeIsOpen={isStoreOpen(item.store?.operating_hours)}

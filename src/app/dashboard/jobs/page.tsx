@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import { AlertCircle, X } from 'lucide-react';
 import JobRejectModal from '@/components/jobs/JobRejectModal';
 import JobKanbanBoard from '@/components/jobs/JobKanbanBoard';
-import QuickJobModal from '@/components/jobs/QuickJobModal';
 import JobTrashModal from '@/components/jobs/JobTrashModal';
 import { useJobs } from '@/components/jobs/useJobs';
 import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
@@ -19,6 +18,7 @@ import {
 import StageNotifSettingsModal from '@/components/jobs/StageNotifSettingsModal';
 import JobsPageHeader from '@/components/jobs/JobsPageHeader';
 import JobsPageToolbar from '@/components/jobs/JobsPageToolbar';
+import { useKanbanPrefs } from '@/components/jobs/kanban/useKanbanPrefs';
 
 export default function JobOrdersPage() {
   return (
@@ -61,12 +61,17 @@ function JobOrdersPageContent() {
     garmentCategoryFilter,
     designOriginFilter,
     setDesignOriginFilter,
+    deptFilter,
+    setDeptFilter,
+    deptCounts,
+    statusCounts,
     catalogJobsCount,
     customBespokeCount,
     alterationJobsCount,
   } = useJobs();
+  // View mode and collapsed columns/lanes, remembered per browser.
+  const prefs = useKanbanPrefs();
 
-  const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [trashModalOpen, setTrashModalOpen] = useState(false);
   // Home's "Quality checks needed" card deep-links here with ?stage=qc_ironing.
   const [stageFilter, setStageFilter] = useState<string>(useSearchParams().get('stage') || 'all');
@@ -112,7 +117,6 @@ function JobOrdersPageContent() {
       <JobsPageHeader
         jobsCount={jobs.length}
         onOpenTrash={() => setTrashModalOpen(true)}
-        onOpenQuickJob={() => setQuickModalOpen(true)}
         isOwnerOrManager={isOwnerOrManager}
       />
 
@@ -159,6 +163,11 @@ function JobOrdersPageContent() {
           search={search}
           setSearch={setSearch}
           activeColumns={activeColumns}
+          deptFilter={deptFilter}
+          setDeptFilter={setDeptFilter}
+          deptCounts={deptCounts}
+          statusCounts={statusCounts}
+          prefs={prefs}
         />
 
         <div className="p-3 sm:p-4 flex-1 overflow-hidden">
@@ -175,6 +184,8 @@ function JobOrdersPageContent() {
               onReject={openRejectModal}
               highlightedJobId={null}
               stageFilter={stageFilter}
+              prefs={prefs}
+              statusCounts={statusCounts}
             />
           )}
         </div>
@@ -198,12 +209,6 @@ function JobOrdersPageContent() {
         onClose={() => setRejectModalOpen(false)}
         onConfirm={handleConfirmReject}
         actionLoading={actionLoadingId !== null}
-      />
-
-      <QuickJobModal
-        isOpen={quickModalOpen}
-        onClose={() => setQuickModalOpen(false)}
-        onCreated={() => { if (fetchJobs) fetchJobs(); }}
       />
 
       {store && (

@@ -43,18 +43,18 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
           const isCurrent = idx === currentIdx;
           const isDone = idx < currentIdx || (isCurrent && idx === stages.length - 1);
 
-          let iconClass = 'bg-sunken border-line text-ink-faint';
+          let iconClass = 'bg-sunken text-ink-faint';
           if (isDone) {
-            iconClass = 'bg-sage border-sage text-white';
+            iconClass = 'bg-sage text-white';
           } else if (isCurrent) {
-            iconClass = 'bg-taupe border-taupe text-white ring-2 ring-taupe/25';
+            iconClass = 'bg-taupe text-white ring-4 ring-taupe/15';
           }
 
           let labelColor = 'text-ink-faint';
           if (isCurrent) {
-            labelColor = 'text-taupe font-bold';
+            labelColor = 'text-taupe-dark font-semibold';
           } else if (isDone) {
-            labelColor = 'text-sage font-semibold';
+            labelColor = 'text-sage';
           }
 
           const StageIcon = isDone ? Check : stage.Icon;
@@ -64,7 +64,7 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
           return (
             <div key={stage.key} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors border-2 shrink-0 ${iconClass}`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors shrink-0 ${iconClass}`}>
                   <StageIcon size={15} strokeWidth={2.4} />
                 </div>
                 {!isLast && <div className={`w-0.5 flex-1 min-h-[20px] ${idx < currentIdx ? 'bg-sage' : 'bg-line'}`} />}

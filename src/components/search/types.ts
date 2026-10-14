@@ -1,4 +1,6 @@
 import type { OperatingHours } from '@/lib/storeStatus';
+import { DAVAO_DISTRICTS } from '@/lib/davaoLocations';
+import type { DesignPricing } from '@/lib/designPricing';
 
 export interface RelatedStore {
   id: number;
@@ -27,6 +29,8 @@ export interface RelatedStore {
     id: number;
     name: string;
     price: string | number;
+    /** Server-worked price (lib/designPricing). */
+    pricing?: DesignPricing | null;
     material?: string | null;
     garment_type?: string | null;
     fabric_image_url?: string | null;
@@ -44,6 +48,10 @@ export interface RelatedStore {
     category?: string | null;
     service_type?: string | null;
     service_types?: string[] | null;
+    /** One of the 4 services (garmentTaxonomy SERVICE_GROUPS) — "alterations_repairs" = the shop alters & repairs. */
+    service_category?: string | null;
+    garment_types?: string[] | null;
+    capabilities?: string[] | null;
     reviews_count?: number | null;
     reviews_avg_rating?: number | null;
     orders_count?: number | null;
@@ -51,6 +59,8 @@ export interface RelatedStore {
   matching_items_count?: number | null;
   catalog_items_count?: number | null;
   services_count?: number | null;
+  /** Only with a search: the shop's services the search is about (the service or one of its designs matches). */
+  matching_service_ids?: number[];
 }
 
 export interface SearchServiceResult {
@@ -92,16 +102,8 @@ export interface SearchServiceResult {
   } | null;
 }
 
-export const DISTRICTS = [
-  'Poblacion',
-  'Talomo',
-  'Buhangin',
-  'Agdao',
-  'Toril',
-  'Bunawan',
-  'Calinan',
-  'Tugbok',
-];
+// All 11 Davao City districts — one list for the whole app (src/lib/davaoLocations.ts).
+export const DISTRICTS: string[] = [...DAVAO_DISTRICTS];
 
 export const FILTER_TABS = [
   { key: 'specialization', label: 'Specialty' },

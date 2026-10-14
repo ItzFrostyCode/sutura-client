@@ -8,6 +8,7 @@ export interface StaffQueueJob {
 export interface StaffFitting { id: number; customer: string | null; order_number: string | null; scheduled_at: string; status: string; is_mine: boolean }
 export interface StaffOverview {
   orders_in_production: number; quality_checks_needed: number; pending_fittings: number; my_jobs: number;
+  to_set_up: number; ready_to_start: number;
   queue: StaffQueueJob[]; fittings: StaffFitting[];
 }
 

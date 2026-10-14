@@ -16,10 +16,10 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
   const metricEntries = Object.entries(active.metrics || {}).filter(([, v]) => v);
 
   return (
-    <div className="bg-surface border border-line p-4">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-sunken overflow-hidden relative shrink-0">
+    <div className="card-soft p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-sunken">
             {group.storeLogo ? (
               <Image
                 src={getMediaUrl(group.storeLogo)}
@@ -36,12 +36,12 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
           {group.storeSlug ? (
             <Link
               href={`/store/${group.storeSlug}`}
-              className="mobile-caption font-semibold text-ink-muted hover:text-taupe truncate"
+              className="mobile-caption truncate text-ink-muted hover:text-taupe"
             >
               {group.storeName}
             </Link>
           ) : (
-            <span className="mobile-caption font-semibold text-ink-muted truncate">{group.storeName}</span>
+            <span className="mobile-caption truncate text-ink-muted">{group.storeName}</span>
           )}
         </div>
 
@@ -50,7 +50,7 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
             <select
               value={selectedId}
               onChange={(e) => setSelectedId(Number(e.target.value))}
-              className="appearance-none pl-2.5 pr-7 h-9 bg-canvas border border-line text-xs font-semibold text-ink-muted focus:outline-none focus:border-taupe"
+              className="h-9 appearance-none rounded-full bg-sunken pl-3.5 pr-8 text-xs font-semibold text-ink-muted focus:outline-none focus:ring-2 focus:ring-line-strong"
             >
               {group.versions.map((v, idx) => (
                 <option key={v.id} value={v.id}>
@@ -58,7 +58,7 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
                 </option>
               ))}
             </select>
-            <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+            <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           </div>
         )}
       </div>
@@ -88,7 +88,7 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
       )}
 
       {active.notes && (
-        <p className="mobile-caption text-ink-muted mt-3 pt-3 border-t border-line italic font-normal">
+        <p className="mobile-caption mt-3 rounded-xl bg-sunken px-3 py-2.5 italic text-ink-muted">
           &ldquo;{active.notes}&rdquo;
         </p>
       )}

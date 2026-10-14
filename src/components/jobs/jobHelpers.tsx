@@ -1,6 +1,6 @@
 import React from 'react';
 import { depositFraction, type PaymentPolicy } from './requirements';
-import { Store, ShoppingBag, Scissors, Pause, Hourglass, Wrench, ShieldCheck } from 'lucide-react';
+import { Store, ShoppingBag, Scissors, Pause, Hourglass, Wrench, ShieldCheck, BadgeCheck, PackageOpen, HandCoins } from 'lucide-react';
 
 // Unified with the Multi-Stage Staff Assignment stages (design/pattern_making/
 // cutting/sewing/qc_ironing) so the customer-facing timeline and the internal
@@ -15,6 +15,11 @@ import { Store, ShoppingBag, Scissors, Pause, Hourglass, Wrench, ShieldCheck } f
 // actually relevant to the jobs on the board.
 export const ALL_COLUMNS = [
   { id: 'pending',                title: 'Pending',                color: 'bg-line/50',   border: 'border-line-strong' },
+  // Ordering flow (Flow 2): approved quotation + verified deposit -> Confirmed; Awaiting
+  // Materials while any material line is still being bought. Only shown when the board
+  // actually holds an order that uses the flow (see columnsForJobs()).
+  { id: 'confirmed',              title: 'Confirmed',              color: 'bg-teal-50/50',      border: 'border-teal-200/50' },
+  { id: 'awaiting_materials',     title: 'Awaiting Materials',     color: 'bg-yellow-50/50',    border: 'border-yellow-200/50' },
   // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the
   // backend; a job whose garment_category/service is alteration_repair runs
   // through these three instead of Design..QC & Ironing below. Hidden by
@@ -24,13 +29,17 @@ export const ALL_COLUMNS = [
   { id: 'qc_check',               title: 'QC Check',               color: 'bg-lime-50/50',      border: 'border-lime-200/50' },
   { id: 'design',                 title: 'Design',                 color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
   { id: 'pattern_making',         title: 'Pattern Making',         color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
-  { id: 'mass_cutting_printing',  title: 'Mass Cutting & Printing', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
+  { id: 'mass_cutting_printing',  title: 'Mass Cutting', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
   { id: 'cutting',                title: 'Cutting',                color: 'bg-amber-50/50',     border: 'border-amber-200/50' },
   { id: 'sewing',                 title: 'Sewing / Assembly',      color: 'bg-orange-50/50',    border: 'border-orange-200/50' },
-  { id: 'ready_for_fitting',      title: 'Ready for Fitting',      color: 'bg-violet-50/50',    border: 'border-violet-200/50' },
-  { id: 'final_adjustments',      title: 'Final Adjustments',      color: 'bg-rose-50/50',      border: 'border-rose-200/50' },
-  { id: 'qc_ironing',             title: 'QC & Ironing',           color: 'bg-fuchsia-50/50',   border: 'border-fuchsia-200/50' },
-  { id: 'ready_for_pickup',       title: 'Ready for Pickup',       color: 'bg-emerald-50/50',   border: 'border-emerald-200/50' },
+  // Workflow sequence after production: Quality Check -> Ready for Final Fitting / Collection ->
+  // Customer Fitting / Inspection -> Adjustment / Correction (back to Quality Check) -> Balance Payment &
+  // Handover -> Completed. (Older orders keep the earlier meaning of Ready for Fitting.)
+  { id: 'qc_ironing',             title: 'Quality Check',          color: 'bg-fuchsia-50/50',   border: 'border-fuchsia-200/50' },
+  { id: 'ready_for_pickup',       title: 'Ready for Final Fitting / Collection', color: 'bg-emerald-50/50', border: 'border-emerald-200/50' },
+  { id: 'ready_for_fitting',      title: 'Customer Fitting / Inspection', color: 'bg-violet-50/50', border: 'border-violet-200/50' },
+  { id: 'final_adjustments',      title: 'Adjustment / Correction', color: 'bg-rose-50/50',     border: 'border-rose-200/50' },
+  { id: 'balance_handover',       title: 'Balance Payment & Handover', color: 'bg-teal-50/50',  border: 'border-teal-200/50' },
   { id: 'completed',              title: 'Completed',              color: 'bg-taupe/10',    border: 'border-taupe/30' },
 ];
 
@@ -58,7 +67,7 @@ export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-ambe
  */
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
   'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
-  'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup',
+  'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup', 'balance_handover',
   // Repair Override pipeline — same rule, once repair work actually starts
   // (not at 'pending'/'queued'). Mirrors JobOrder::STAGES_REQUIRING_DOWNPAYMENT.
   'in_repair', 'qc_check',
@@ -129,8 +138,8 @@ export function requiresDownpayment(
 }
 
 /**
- * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting &
- * Printing isn't relevant to the jobs actually on the board (most stores
+ * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting
+ * isn't relevant to the jobs actually on the board (most stores
  * only ever use one of the two paths), and hides the Repair Override lane
  * (Queued for Repair / In Repair / QC Check) unless a repair job is
  * actually on the board — same reasoning, applied to a second alternate
@@ -142,7 +151,10 @@ export function columnsForJobs(jobs: Job[] = []) {
   const hasRepairOrders = jobs.some(isRepairOnly);
   const hasNonRepairOrders = jobs.some(j => !isRepairOnly(j));
 
+  const usesFlow = jobs.some(j => j.uses_confirmation_flow || j.status === 'confirmed' || j.status === 'awaiting_materials' || j.status === 'balance_handover');
+
   return ALL_COLUMNS.filter(c => {
+    if (c.id === 'confirmed' || c.id === 'awaiting_materials' || c.id === 'balance_handover') return usesFlow;
     if (c.id === 'mass_cutting_printing') return hasBulkOrders;
     if (c.id === 'pattern_making') return hasStandardOrders || !hasBulkOrders;
     if (['queued', 'in_repair', 'qc_check'].includes(c.id)) return hasRepairOrders;
@@ -168,7 +180,7 @@ export interface Job {
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
   customer?: { name: string; suki_tag?: string | null } | null;
-  service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
+  service?: { name: string; service_type?: string | null; service_types?: string[] | null; department?: string | null } | null;
   service_package?: { id: number; name: string } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
@@ -177,11 +189,21 @@ export interface Job {
   hold_reason?: string | null;
   garment_category?: string | null;
   catalog_item_id?: number | null;
+  tracking_code?: string | null;
+  is_rush?: boolean;
+  // Ordering flow (server-derived). Orders created before the flow have uses_confirmation_flow = false.
+  uses_confirmation_flow?: boolean;
+  quotation_status?: 'estimate' | 'final' | null;
+  specs_approved_at?: string | null;
+  customer_approved_at?: string | null;
+  confirmed_at?: string | null;
+  production_started_at?: string | null;
   catalog_item?: {
     id: number;
     name: string;
     category?: string | null;
     garment_type?: string | null;
+    department?: string | null;
     price?: number | string | null;
     fabric_image_url?: string | null;
     images?: Array<{ id?: number; image_url: string; is_primary?: boolean | number }>;
@@ -260,6 +282,12 @@ export function ColumnIcon({ id }: { readonly id: string }) {
       return <Scissors size={14} className="text-taupe" />;
     case 'on_hold':
       return <Pause size={14} className="text-amber-600" />;
+    case 'confirmed':
+      return <BadgeCheck size={14} className="text-teal-600" />;
+    case 'awaiting_materials':
+      return <PackageOpen size={14} className="text-yellow-600" />;
+    case 'balance_handover':
+      return <HandCoins size={14} className="text-teal-600" />;
     case 'queued':
       return <Hourglass size={14} className="text-slate-500" />;
     case 'in_repair':

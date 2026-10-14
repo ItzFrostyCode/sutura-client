@@ -43,17 +43,13 @@ export default function AccountDetailPage() {
       <AccountAvatarCard
         user={user}
         uploadingAvatar={uploadingAvatar}
+        error={profileMessage?.type === 'error' && !openField ? profileMessage.text : null}
         fileInputRef={fileInputRef}
         onAvatarClick={handleAvatarClick}
         onAvatarChange={handleAvatarChange}
       />
 
-      <AccountRowsList
-        user={user}
-        uploadingAvatar={uploadingAvatar}
-        onAvatarClick={handleAvatarClick}
-        onOpenSheet={openSheet}
-      />
+      <AccountRowsList user={user} onOpenSheet={openSheet} />
 
       {openField && (
         <AccountEditSheet

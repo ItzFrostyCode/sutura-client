@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import type { CatalogDraftEdit } from '../useCatalogSectionEdit';
 import { FIELD, LABEL } from './fieldStyles';
+import DesignPriceFields from './DesignPriceFields';
 
 export function InfoEditor({ edit }: Readonly<{ edit: CatalogDraftEdit }>) {
   const { formData, handleChange, setFormData } = edit.form;
@@ -15,10 +16,7 @@ export function InfoEditor({ edit }: Readonly<{ edit: CatalogDraftEdit }>) {
         <label htmlFor="edit-name" className={LABEL}>Design name <span className="text-red-600">*</span></label>
         <input id="edit-name" name="name" value={formData.name} onChange={handleChange} className={FIELD} />
       </div>
-      <div className="sm:col-span-2">
-        <label htmlFor="edit-price" className={LABEL}>Starting price (PHP) <span className="text-red-600">*</span></label>
-        <input id="edit-price" name="price" type="number" min="0" value={formData.price} onChange={handleChange} className={FIELD} />
-      </div>
+      <DesignPriceFields edit={edit} />
       <div>
         <label htmlFor="edit-days" className={LABEL}>Production time — from (days) <span className="text-red-600">*</span></label>
         <input

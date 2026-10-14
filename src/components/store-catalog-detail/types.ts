@@ -1,4 +1,5 @@
 import type { OperatingHours } from '@/lib/storeStatus';
+import type { DesignPricing } from '@/lib/designPricing';
 
 
 export interface CatalogItemImage {
@@ -42,6 +43,11 @@ export interface CatalogItem {
   id: number;
   name: string;
   price: string | number;
+  /** How the design is priced against its service (owner's choice; null = same as the service). */
+  pricing_mode?: 'same' | 'extra' | 'quote' | null;
+  extra_charge?: string | number | null;
+  /** Server-worked price (lib/designPricing). */
+  pricing?: DesignPricing;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
   description?: string;
@@ -84,6 +90,11 @@ export interface CatalogItem {
     name: string;
     service_types?: string[];
     min_order_qty?: number;
+    /** The service's own price — a design is priced by its service. */
+    base_price?: string | number | null;
+    sale_price?: string | number | null;
+    sale_starts_at?: string | null;
+    sale_ends_at?: string | null;
     // Extra per-person roster columns (e.g. "Jersey Number") the shop owner
     // defined for this bulk service — same shape as ServiceField.
     roster_fields?: { id: string; label: string; type: 'text' | 'number' | 'select' | 'radio' | 'checkbox'; required: boolean; options?: string[] }[] | null;

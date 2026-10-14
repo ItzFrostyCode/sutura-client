@@ -35,11 +35,9 @@ interface AccountWebSidebarProps {
 const SETTINGS_CHILDREN = [
   { href: '/account/settings/account', label: 'Profile' },
   { href: '/account/settings/location', label: 'My Location' },
-  { href: '/account/settings/orders', label: 'Order Settings' },
   { href: '/account/settings/notifications', label: 'Notification Settings' },
   { href: '/account/settings/support', label: 'Support Ticket' },
   { href: '/account/settings/guide', label: 'Welcome Guide' },
-  { href: '/account/settings/about', label: 'About' },
 ];
 
 const TOP_LINKS = [
@@ -68,18 +66,18 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
   const settingsSectionActive = pathname.startsWith('/account/settings');
 
   const navItemClass = (isActive: boolean) =>
-    `flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${
-      isActive ? 'bg-taupe text-white' : 'text-ink-body hover:bg-sunken hover:text-ink'
+    `flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm transition-colors ${
+      isActive ? 'bg-taupe/15 font-semibold text-taupe-dark' : 'text-ink-body hover:bg-sunken hover:text-ink'
     }`;
 
   return (
-    <aside className="w-64 shrink-0 bg-surface border border-line sticky top-20 self-start space-y-6 p-5">
+    <aside className="card-soft sticky top-20 w-64 shrink-0 space-y-4 self-start p-4">
       {/* Profile summary — links straight to Account Settings > Profile */}
       <Link
         href="/account/settings/account"
-        className="flex items-center gap-3.5 pb-4 border-b border-line hover:opacity-80 transition-opacity cursor-pointer"
+        className="flex cursor-pointer items-center gap-3.5 pb-2 transition-opacity hover:opacity-80"
       >
-        <div className="w-12 h-12 rounded-full bg-sunken overflow-hidden relative shrink-0 border border-line">
+        <div className="w-12 h-12 rounded-full bg-sunken overflow-hidden relative shrink-0 border border-line-strong">
           {user.profile_picture ? (
             <Image
               src={getMediaUrl(user.profile_picture)}
@@ -96,7 +94,7 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-ink truncate leading-snug">{user.name}</p>
           <p className="text-xs text-ink-muted truncate font-normal">{user.email}</p>
-          <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-sunken text-taupe">
+          <span className="mt-1 inline-block rounded-full bg-sunken px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-taupe">
             Customer
           </span>
         </div>
@@ -109,7 +107,7 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} className={navItemClass(isActive)}>
-              <Icon size={16} className={isActive ? 'text-white' : 'text-taupe'} />
+              <Icon size={16} className={'text-taupe'} />
               <span>{item.label}</span>
             </Link>
           );
@@ -122,19 +120,19 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
           href="/account/settings"
           className={navItemClass(pathname === '/account/settings')}
         >
-          <Settings size={16} className={settingsSectionActive ? 'text-white' : 'text-taupe'} />
+          <Settings size={16} className={'text-taupe'} />
           <span>Account Settings</span>
         </Link>
         {settingsSectionActive && (
-          <div className="ml-4 pl-3 border-l border-line space-y-0.5">
+          <div className="ml-9 space-y-0.5">
             {SETTINGS_CHILDREN.map((child) => {
               const isActive = isPathActive(pathname, child.href);
               return (
                 <Link
                   key={child.href}
                   href={child.href}
-                  className={`block px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
-                    isActive ? 'text-taupe font-bold' : 'text-ink-muted hover:text-ink'
+                  className={`block cursor-pointer rounded-lg px-3 py-2 text-sm transition-colors ${
+                    isActive ? 'font-semibold text-taupe-dark' : 'text-ink-muted hover:text-ink'
                   }`}
                 >
                   {child.label}
@@ -149,7 +147,7 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} className={navItemClass(isActive)}>
-              <Icon size={16} className={isActive ? 'text-white' : 'text-taupe'} />
+              <Icon size={16} className={'text-taupe'} />
               <span>{item.label}</span>
             </Link>
           );
@@ -157,11 +155,11 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
       </nav>
 
       {/* Sign out */}
-      <div className="pt-4 border-t border-line">
+      <div className="pt-2">
         <button
           type="button"
           onClick={() => logout()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold text-danger hover:bg-danger/5 transition-colors cursor-pointer"
+          className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm font-semibold text-danger transition-colors hover:bg-danger/5"
         >
           <LogOut size={16} />
           <span>Sign Out</span>

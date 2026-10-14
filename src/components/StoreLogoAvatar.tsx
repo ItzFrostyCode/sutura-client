@@ -48,7 +48,7 @@ export default function StoreLogoAvatar({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#FAF6F3] to-[#F0EAE3]">
+          <div className="w-full h-full flex items-center justify-center bg-sunken">
             {initial ? (
               <span className={textClassName}>{initial}</span>
             ) : (

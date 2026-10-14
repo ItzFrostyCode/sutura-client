@@ -1,11 +1,12 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Package, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
+import FilterChips from '@/components/account/FilterChips';
+import EmptyState from '@/components/account/EmptyState';
 import OrderCard from '@/components/account/orders/OrderCard';
 import { type MyOrder, TABS } from '@/components/account/orders/ordersTypes';
 
@@ -47,50 +48,23 @@ function MyOrdersPageContent() {
     <div className="w-full">
       <AccountHeader title="My Job Orders" backHref="/account" />
 
-      {/* Tabs Row */}
-      <div className="flex items-center gap-1 mb-4 border-b border-line overflow-x-auto hide-scrollbar">
-        {TABS.map((tab) => {
-          const count = orders.filter((o) => tab.match(o.status)).length;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`touch-target-44 shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-                activeTab === tab.key
-                  ? 'border-taupe text-taupe'
-                  : 'border-transparent text-ink-muted hover:text-ink'
-              }`}
-            >
-              {tab.label} {!loading && <span className="text-ink-faint font-normal">({count})</span>}
-            </button>
-          );
-        })}
-      </div>
+      <FilterChips
+        label="Order status"
+        active={activeTab}
+        onChange={setActiveTab}
+        options={TABS.map((tab) => ({ key: tab.key, label: tab.label, count: loading ? undefined : orders.filter((o) => tab.match(o.status)).length }))}
+      />
 
-      {loading && (
-        <div className="text-center py-16 mobile-body-sm text-ink-muted">Loading your orders…</div>
-      )}
+      {loading && <div className="py-16 text-center mobile-body-sm text-ink-muted">Loading your orders…</div>}
 
       {!loading && filteredOrders.length === 0 && (
-        <div className="bg-surface border border-line p-8 text-center">
-          <Package size={28} className="text-ink-faint mx-auto mb-3" />
-          <h2 className="mobile-h3 font-semibold text-ink mb-1">
-            {orders.length === 0 ? 'No orders yet' : 'Nothing in this tab yet'}
-          </h2>
-          <p className="mobile-body-sm text-ink-muted mb-6 font-normal space-headline-para">
-            {orders.length === 0
-              ? 'Once you book a fitting or place an order, it’ll show up here.'
-              : 'Try a different tab.'}
-          </p>
-          {orders.length === 0 && (
-            <Link
-              href="/map"
-              className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
-            >
-              Browse Stores →
-            </Link>
-          )}
+        <div className="mt-3">
+          <EmptyState
+            Icon={Package}
+            title={orders.length === 0 ? 'No orders yet' : 'Nothing in this tab yet'}
+            message={orders.length === 0 ? 'Once you book a fitting or place an order, it’ll show up here.' : 'Try a different tab.'}
+            action={orders.length === 0 ? { href: '/search', label: 'Browse Stores' } : undefined}
+          />
         </div>
       )}
 
@@ -99,7 +73,7 @@ function MyOrdersPageContent() {
         // AccountLayout content area doesn't stretch each card into a thin,
         // mostly-empty full-width row — OrderCard's own layout (avatar left,
         // info right) already works fine inside a grid cell as-is.
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filteredOrders.map((order) => (
             <OrderCard key={order.id} order={order} />
           ))}

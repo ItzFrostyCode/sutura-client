@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { SERVICE_CATEGORY_LABELS, SERVICE_TYPE_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
+import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
+import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
+import { serviceHref } from '@/components/categories/categoriesDirectoryData';
 
 interface BreadcrumbItem {
   name: string;
@@ -8,11 +10,8 @@ interface BreadcrumbItem {
 }
 
 /**
- * Home > Search > Services > {Service Category} > {Service Type} > {Service Name} —
- * mirrors CatalogDetailBreadcrumb.tsx's exact pattern, using the Services
- * taxonomy (2 levels: category → type) instead of the apparel one (4
- * levels). Falls back to just Home > Search for a service saved before
- * this taxonomy existed, rather than showing a wrong or invented trail.
+ * Home > Search > Services > {Service} > {Service name} — the 4 approved services (2026-10-14). A service with no
+ * approved group shows its old category name if it has one, else just Home > Search > Services.
  */
 export default function ServiceDetailBreadcrumb({ service }: Readonly<{ service: BreadcrumbItem }>) {
   const crumbs: { label: string; href: string }[] = [
@@ -20,19 +19,11 @@ export default function ServiceDetailBreadcrumb({ service }: Readonly<{ service:
     { label: 'Search', href: '/search?tab=services' },
     { label: 'Services', href: '/search?tab=services' },
   ];
-
-  const category = service.service_category as ServiceCategory | null | undefined;
-  if (category && SERVICE_CATEGORY_LABELS[category]) {
-    const params = new URLSearchParams({ tab: 'services', service_category: category });
-    crumbs.push({ label: SERVICE_CATEGORY_LABELS[category], href: `/search?${params.toString()}` });
-
-    if (service.service_leaf_type) {
-      params.set('service_type', service.service_leaf_type);
-      crumbs.push({
-        label: SERVICE_TYPE_LABELS[service.service_leaf_type] ?? service.service_leaf_type,
-        href: `/search?${params.toString()}`,
-      });
-    }
+  const key = service.service_category;
+  if (key && key in SERVICE_GROUPS) {
+    crumbs.push({ label: SERVICE_GROUPS[key as ServiceGroupKey].label, href: serviceHref(key as ServiceGroupKey) });
+  } else if (key && SERVICE_CATEGORY_LABELS[key as ServiceCategory]) {
+    crumbs.push({ label: SERVICE_CATEGORY_LABELS[key as ServiceCategory], href: `/search?tab=services&service_category=${key}` });
   }
 
   return (

@@ -5,9 +5,7 @@ import GuestAccountHub from '@/components/account/hub/GuestAccountHub';
 import AccountProfileHeader from '@/components/account/hub/AccountProfileHeader';
 import JobOrdersQuickBar from '@/components/account/hub/JobOrdersQuickBar';
 import AppointmentsPreviewCard from '@/components/account/hub/AppointmentsPreviewCard';
-import MeasurementsQuickCard from '@/components/account/hub/MeasurementsQuickCard';
-import AccountMoreActivitiesCard from '@/components/account/hub/AccountMoreActivitiesCard';
-import AccountSupportCard from '@/components/account/hub/AccountSupportCard';
+import AccountActivityGroups from '@/components/account/hub/AccountActivityGroups';
 import { useAccountHub } from '@/components/account/hub/useAccountHub';
 
 export default function AccountHubPage() {
@@ -31,7 +29,7 @@ export default function AccountHubPage() {
   if (!user) return null;
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       {/* Mobile Profile Header (hidden on md+ — the layout's persistent
           sidebar already shows the profile summary there) */}
       <div className="md:hidden">
@@ -44,7 +42,7 @@ export default function AccountHubPage() {
         completed={completed}
       />
 
-      <div className="sm:grid sm:grid-cols-2 sm:gap-4 items-start">
+      <div className="flex flex-col gap-4 sm:grid sm:grid-cols-2 sm:items-start">
         <AppointmentsPreviewCard
           appointments={appointments}
           apptView={apptView}
@@ -53,12 +51,10 @@ export default function AccountHubPage() {
           previewAppt={previewAppt}
           calCells={calCells}
         />
-        <div className="flex flex-col">
-          <MeasurementsQuickCard measurementCount={measurementCount} />
-          <AccountMoreActivitiesCard />
-          <AccountSupportCard />
+        <div className="flex flex-col gap-4">
+          <AccountActivityGroups measurementCount={measurementCount} />
         </div>
       </div>
-    </>
+    </div>
   );
 }

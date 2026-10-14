@@ -1,5 +1,5 @@
 import { depositFraction, paymentPolicyLabel } from './requirements';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -23,6 +23,9 @@ export function useJobDetail(jobId: string) {
   const toast = useToast();
   
   const [job, setJob] = useState<Job | null>(null);
+  // The job as last rendered, so a refresh can tell an untouched form field from a draft the person typed.
+  const jobRef = useRef<Job | null>(null);
+  jobRef.current = job;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -80,7 +83,15 @@ export function useJobDetail(jobId: string) {
     if (!store) return;
     try {
       const res = await api.get(`/stores/${store.id}/jobs/${jobId}`);
-      setJob(res.data.data);
+      const fresh = res.data.data;
+      const prev = jobRef.current;
+      setJob(fresh);
+      // The server decides status, payment status and balance (e.g. when an order moves through its
+      // delivery stages). Follow it unless the person has an unsaved draft of that field -- otherwise the
+      // untouched form copy would look like a change and "Save" would put the old status back.
+      setStatus((cur) => (prev && cur !== prev.status ? cur : fresh.status));
+      setPaymentStatus((cur) => (prev && cur !== prev.payment_status ? cur : fresh.payment_status));
+      setBalance((cur) => (prev && String(cur) !== String(prev.balance) ? cur : fresh.balance));
     } catch (err) {
       console.error('Failed to refresh job', err);
     }

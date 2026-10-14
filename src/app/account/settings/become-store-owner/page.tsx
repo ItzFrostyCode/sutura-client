@@ -11,17 +11,16 @@ export default function BecomeStoreOwnerPage() {
   return (
     <div>
       <AccountHeader title="Become a Store Owner" backHref="/account" />
-      <p className="mobile-body-md text-ink-body">
-        Apply to open your tailoring shop on SUTURA. You&apos;ll upload your business documents and choose a plan, and
-        our team will review your application before your shop goes live.
-      </p>
-      <p className="mobile-body-sm text-ink-muted mt-4">
-        Your shop gets its own sign-in, so use a business email that isn&apos;t already linked to this customer account.
-      </p>
-      <Link
-        href="/register/store"
-        className="btn-primary-mobile rounded-none! mt-8 flex w-full items-center justify-center bg-ink text-white uppercase tracking-widest"
-      >
+      <div className="card-soft p-5">
+        <p className="mobile-body-md text-ink-body">
+          Apply to open your tailoring shop on SUTURA. You&apos;ll upload your business documents and choose a plan, and
+          our team will review your application before your shop goes live.
+        </p>
+        <p className="mobile-body-sm mt-4 text-ink-muted">
+          Your shop gets its own sign-in, so use a business email that isn&apos;t already linked to this customer account.
+        </p>
+      </div>
+      <Link href="/register/store" className="mt-6 flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-base font-semibold text-white transition-opacity active:opacity-80">
         Start Application
       </Link>
     </div>

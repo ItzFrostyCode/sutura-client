@@ -2,8 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, User as UserIcon } from 'lucide-react';
 import { GUEST_MENU_ITEMS } from './accountTypes';
+import HubGroup from './HubGroup';
+import HubRow from './HubRow';
 
 export default function GuestAccountHub() {
   const router = useRouter();
@@ -22,7 +24,7 @@ export default function GuestAccountHub() {
           account layout) already has its own back-to-browsing affordance
           and profile icon on md+, so this second back+title bar was pure
           redundant chrome on tablet/desktop. */}
-      <div className="md:hidden -mx-4 sm:-mx-6 -mt-4 bg-surface border-b border-line px-2 sm:px-4 h-[52px] sm:h-[56px] flex items-center justify-between mb-4">
+      <div className="md:hidden -mx-4 sm:-mx-6 -mt-4 bg-surface px-2 sm:px-4 h-[52px] sm:h-[56px] flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={handleBack}
@@ -36,46 +38,28 @@ export default function GuestAccountHub() {
       </div>
 
       {/* Guest Welcome Card */}
-      <div className="bg-surface border border-line p-6 mb-4 text-center">
-        <div className="w-12 h-12 rounded-full bg-sunken flex items-center justify-center mx-auto mb-3">
-          <UserIcon size={24} className="text-ink-faint" />
-        </div>
-        <h2 className="mobile-h3 font-semibold text-ink mb-1">You&apos;re browsing as a guest</h2>
-        <p className="mobile-body-sm font-normal text-ink-muted mb-6 max-w-xs mx-auto space-headline-para">
+      <div className="card-soft mb-4 px-6 py-8 text-center">
+        <UserIcon size={28} className="mx-auto mb-3 text-ink-faint" />
+        <h2 className="mobile-h4 text-ink">You&apos;re browsing as a guest</h2>
+        <p className="mobile-body-sm mx-auto mt-1 max-w-xs text-ink-muted">
           Log in or sign up to book appointments, place orders, and track your garment.
         </p>
-        <div className="flex items-center justify-center gap-3">
-          <Link
-            href="/login"
-            className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white flex-1 max-w-[140px]"
-          >
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <Link href="/login" className="flex h-12 max-w-[140px] flex-1 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white transition-opacity active:opacity-80">
             Log In
           </Link>
-          <Link
-            href="/register"
-            className="btn-secondary-mobile border border-line bg-surface text-ink hover:bg-sunken flex-1 max-w-[140px]"
-          >
+          <Link href="/register" className="flex h-12 max-w-[140px] flex-1 items-center justify-center rounded-full bg-sunken text-sm font-semibold text-ink transition-opacity active:opacity-70">
             Sign Up
           </Link>
         </div>
       </div>
 
-      {/* Guest Navigation Rows */}
-      <div className="bg-surface border border-line overflow-hidden divide-y divide-line">
+      {/* Guest Navigation Rows — every one asks to log in */}
+      <HubGroup>
         {GUEST_MENU_ITEMS.map(({ label, Icon }) => (
-          <Link
-            key={label}
-            href="/login"
-            className="mobile-nav-row flex items-center gap-3.5 px-4 hover:bg-canvas transition-colors"
-          >
-            <div className="w-9 h-9 rounded-full bg-sunken flex items-center justify-center shrink-0">
-              <Icon size={18} className="text-taupe" />
-            </div>
-            <p className="flex-1 text-base font-normal text-ink">{label}</p>
-            <ChevronRight size={18} className="text-ink-faint shrink-0" />
-          </Link>
+          <HubRow key={label} href="/login" Icon={Icon} title={label} />
         ))}
-      </div>
+      </HubGroup>
     </div>
   );
 }

@@ -44,7 +44,7 @@ export default function BookingReferenceCard({
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">Design Reference</span>
               {refPrice && (
-                <span className="text-xs font-bold text-ink">₱{Number(refPrice).toLocaleString()}</span>
+                <span className="text-xs font-bold text-ink">From ₱{Number(refPrice).toLocaleString()}</span>
               )}
             </div>
             <h3 className="font-semibold text-xs text-ink truncate mt-0.5">{refName}</h3>

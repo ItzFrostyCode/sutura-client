@@ -1,15 +1,14 @@
 import {
-  DEPARTMENT_LABELS,
-  GARMENT_STRUCTURE_LABELS,
-  GARMENT_TYPE_LABELS,
-  SERVICE_CATEGORY_LABELS,
-  SERVICE_TYPE_LABELS,
-  SUBCATEGORY_LABELS,
-  SERVICES_TREE,
-  TAXONOMY_TREE,
-  type Department,
-  type ServiceCategory,
-} from '@/lib/canonicalTaxonomy';
+  GARMENT_CATEGORIES,
+  GARMENTS,
+  SERVICE_GROUPS,
+  SERVICE_GROUP_KEYS,
+  type GarmentCategory,
+  type ServiceGroupKey,
+} from '@/lib/garmentTaxonomy';
+
+// All Categories data, 2-level (2026-10-14): Garment Category → Garment, and the 4 services with their tasks.
+// No Men / Women / Kids and no top/bottom levels, so every garment appears once.
 
 export interface DirectoryEntry {
   letter: string;
@@ -18,55 +17,37 @@ export interface DirectoryEntry {
   href: string;
 }
 
-function garmentEntries(department: Department): DirectoryEntry[] {
-  const entries: DirectoryEntry[] = [];
-  for (const [subcat, structures] of Object.entries(TAXONOMY_TREE[department])) {
-    for (const [structure, types] of Object.entries(structures)) {
-      for (const type of types ?? []) {
-        const label = GARMENT_TYPE_LABELS[type] ?? type;
-        entries.push({
-          letter: label.charAt(0).toUpperCase(),
-          label,
-          breadcrumb: `${DEPARTMENT_LABELS[department]} / ${SUBCATEGORY_LABELS[subcat] ?? subcat} / ${GARMENT_STRUCTURE_LABELS[structure as keyof typeof GARMENT_STRUCTURE_LABELS] ?? structure}`,
-          href: `/search?tab=catalog&department=${department}&subcategory=${subcat}&structure=${structure}&garment_type=${type}`,
-        });
-      }
-    }
-  }
-  return entries;
-}
+/** Searching a garment shows the shops that make it, the ones that alter or fix it, and its designs. */
+export const garmentHref = (slug: string) => `/search?q=${encodeURIComponent(GARMENTS[slug].label.split(' / ')[0])}`;
 
-function serviceEntries(): DirectoryEntry[] {
-  const entries: DirectoryEntry[] = [];
-  for (const [cat, types] of Object.entries(SERVICES_TREE) as [ServiceCategory, string[]][]) {
-    for (const type of types) {
-      const label = SERVICE_TYPE_LABELS[type] ?? type;
-      entries.push({
-        letter: label.charAt(0).toUpperCase(),
-        label,
-        breadcrumb: `Services / ${SERVICE_CATEGORY_LABELS[cat]}`,
-        href: `/search?tab=services&service_category=${cat}&service_type=${type}`,
-      });
-    }
-  }
-  return entries;
-}
+/** A category searches by its own name (its first alias, e.g. "barong", "uniform", "pants"). */
+export const categoryHref = (cat: GarmentCategory) =>
+  `/search?q=${encodeURIComponent(GARMENT_CATEGORIES[cat].aliases[0] ?? GARMENT_CATEGORIES[cat].label)}`;
 
-// Apparel only (Men/Women/Children) — Services get their own dedicated
-// section (CategoriesServicesSection.tsx) instead of being folded into this
-// alphabetical list, since a service is a different kind of thing than a
-// garment and mixing them here made Services impossible to browse as a
-// group on their own.
+/** The Services tab, limited to one service — and to the services that ticked one task. */
+export const serviceHref = (group: ServiceGroupKey, capability?: string) =>
+  `/search?tab=services&service_category=${group}${capability ? `&service_type=${capability}` : ''}`;
+
+/** The A–Z directory: the 54 garments, each once, with "Category > Garment". */
 export function buildDirectoryEntries(): DirectoryEntry[] {
-  const entries = [
-    ...garmentEntries('men'),
-    ...garmentEntries('women'),
-    ...garmentEntries('children'),
-  ];
-  return entries.sort((a, b) => a.label.localeCompare(b.label));
+  return Object.entries(GARMENTS)
+    .map(([slug, g]) => ({
+      letter: g.label.charAt(0).toUpperCase(),
+      label: g.label,
+      breadcrumb: `${GARMENT_CATEGORIES[g.category].label} > ${g.label}`,
+      href: garmentHref(slug),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-export { serviceEntries };
+export function serviceEntries(): { group: ServiceGroupKey; label: string; description: string; capabilities: { slug: string; label: string }[] }[] {
+  return SERVICE_GROUP_KEYS.map((group) => ({
+    group,
+    label: SERVICE_GROUPS[group].label,
+    description: SERVICE_GROUPS[group].description,
+    capabilities: Object.entries(SERVICE_GROUPS[group].capabilities).map(([slug, c]) => ({ slug, label: c.label })),
+  }));
+}
 
 export function groupByLetter(entries: DirectoryEntry[]): Map<string, DirectoryEntry[]> {
   const map = new Map<string, DirectoryEntry[]>();

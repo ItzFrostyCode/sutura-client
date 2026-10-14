@@ -1,5 +1,5 @@
 import {
-  Layers, AlertTriangle, Palette, Ruler, Printer, Scissors,
+  Layers, AlertTriangle, Palette, Ruler, Scissors,
   Shirt, UserCheck, CheckCircle2, Store, CheckCheck, Pause,
   type LucideIcon,
 } from 'lucide-react';
@@ -62,10 +62,10 @@ export const STAGE_NOTIF_ITEMS: StageNotifItem[] = [
   },
   {
     key: 'mass_cutting_printing',
-    title: 'Mass Cutting & Printing',
-    desc: 'Sublimation printing, embroidery & bulk cutting',
+    title: 'Mass Cutting',
+    desc: 'Cutting all the pieces of a bulk order before sewing',
     dot: 'bg-cyan-500',
-    icon: Printer,
+    icon: Scissors,
     iconCls: 'text-cyan-600',
   },
   {
@@ -157,8 +157,8 @@ export function buildStageIconFilters(
     },
     {
       id: 'mass_cutting_printing',
-      title: 'Mass Cutting & Printing',
-      icon: Printer,
+      title: 'Mass Cutting',
+      icon: Scissors,
       dotColor: notifPrefs.mass_cutting_printing && (groupedJobs['mass_cutting_printing']?.length || 0) > 0 ? 'bg-cyan-500 ring-white' : null,
       iconColor: notifPrefs.mass_cutting_printing && (groupedJobs['mass_cutting_printing']?.length || 0) > 0 ? 'text-cyan-600' : '',
     },

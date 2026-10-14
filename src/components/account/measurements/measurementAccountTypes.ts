@@ -1,8 +1,28 @@
 import type { MeasurementRecord } from '@/components/measurements/measurementTypes';
 
+/** A job order of the customer that was made with a given version of their measurements (job_orders.measurement_id). */
+export interface MeasurementOrder {
+  id: number;
+  order_number: string;
+  status: string;
+  garment_category: string | null;
+  due_date: string | null;
+  created_at: string;
+  catalog_item: { id: number; name: string } | null;
+  service: { id: number; name: string } | null;
+}
+
 export interface MyMeasurement extends MeasurementRecord {
   store_id: number;
   store: { id: number; name: string; slug: string; logo_path: string | null } | null;
+  job_orders?: MeasurementOrder[];
+}
+
+/** Every order with the measurements it was made with, newest first — My Measurements is read order by order. */
+export function ordersWithMeasurements(records: MyMeasurement[]): { order: MeasurementOrder; measurement: MyMeasurement }[] {
+  return records
+    .flatMap((m) => (m.job_orders ?? []).map((order) => ({ order, measurement: m })))
+    .sort((a, b) => new Date(b.order.created_at).getTime() - new Date(a.order.created_at).getTime());
 }
 
 export interface ProfileGroup {

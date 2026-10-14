@@ -3,6 +3,7 @@
 import React from 'react';
 import { Home, Plus } from 'lucide-react';
 import type { HomeLocation, SavedLocation } from '@/lib/customerLocation';
+import LocationRow from './LocationRow';
 
 interface HomeLocationCardProps {
   readonly homeLocation: HomeLocation | null;
@@ -12,73 +13,33 @@ interface HomeLocationCardProps {
   readonly getDistanceLabel: (lat: number, lng: number) => string;
 }
 
-export default function HomeLocationCard({
-  homeLocation,
-  onOpenSetHome,
-  onSelectLocation,
-  onRemoveHome,
-  getDistanceLabel,
-}: HomeLocationCardProps) {
+export default function HomeLocationCard({ homeLocation, onOpenSetHome, onSelectLocation, onRemoveHome, getDistanceLabel }: HomeLocationCardProps) {
   return (
-    <section className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint">Home Address</p>
+    <section>
+      <div className="mb-2 flex items-center justify-between px-1">
+        <p className="text-sm font-medium text-ink-muted">Home address</p>
         {homeLocation && (
-          <button
-            type="button"
-            onClick={onOpenSetHome}
-            className="text-[11px] font-semibold text-taupe hover:underline cursor-pointer"
-          >
-            Edit
-          </button>
+          <button type="button" onClick={onOpenSetHome} className="-my-3 min-h-[44px] px-1 text-sm text-taupe transition-colors hover:text-taupe-hover">Edit</button>
         )}
       </div>
 
       {homeLocation ? (
-        <div className="bg-surface border border-line rounded-none overflow-hidden shadow-xs">
-          <div className="flex items-start gap-3.5 p-3.5">
-            <div className="w-9 h-9 rounded-full bg-taupe/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Home size={17} className="text-taupe" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-ink">{homeLocation.label}</p>
-              <p className="text-xs text-ink-muted line-clamp-2 mt-0.5">{homeLocation.address}</p>
-              <p className="text-[11px] font-semibold text-taupe mt-1">
-                {getDistanceLabel(homeLocation.lat, homeLocation.lng)} from current
-              </p>
-            </div>
-            <div className="flex flex-col gap-1.5 shrink-0 self-center">
-              <button
-                type="button"
-                onClick={() => onSelectLocation(homeLocation)}
-                className="px-3.5 py-1.5 bg-taupe text-white text-[11px] font-bold rounded-none hover:bg-taupe-hover transition-colors cursor-pointer"
-              >
-                Use
-              </button>
-              <button
-                type="button"
-                onClick={onRemoveHome}
-                className="px-3.5 py-1.5 text-danger text-[11px] font-semibold rounded-none hover:bg-danger/10 transition-colors border border-danger/30 cursor-pointer"
-              >
-                Remove
-              </button>
-            </div>
+        <div className="card-soft flex items-center gap-4 p-4">
+          <Home size={22} className="shrink-0 text-taupe" />
+          <div className="min-w-0 flex-1">
+            <p className="mobile-body-md font-medium text-ink">{homeLocation.label}</p>
+            <p className="mobile-body-sm mt-0.5 line-clamp-2 text-ink-muted">{homeLocation.address}</p>
+            <p className="mobile-caption mt-1 text-taupe">{getDistanceLabel(homeLocation.lat, homeLocation.lng)} from current</p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <button type="button" onClick={() => onSelectLocation(homeLocation)} className="h-11 rounded-full bg-ink px-5 text-sm font-semibold text-white transition-colors hover:bg-taupe">Use</button>
+            <button type="button" onClick={onRemoveHome} className="h-11 px-3 text-sm text-danger transition-opacity hover:opacity-70">Remove</button>
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={onOpenSetHome}
-          className="w-full flex items-center gap-3 p-3.5 bg-surface border border-line border-dashed rounded-none hover:border-taupe hover:bg-taupe/5 transition-all text-left cursor-pointer"
-        >
-          <div className="w-9 h-9 rounded-full bg-sunken flex items-center justify-center shrink-0">
-            <Plus size={17} className="text-taupe" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-ink">Set a home address</p>
-            <p className="text-xs text-ink-muted mt-0.5">Find nearby stores even when you&apos;re far away</p>
-          </div>
-        </button>
+        <div className="card-soft p-2">
+          <LocationRow icon={<Plus size={22} />} title="Set a home address" subtitle="Find nearby stores even when you’re far away" onClick={onOpenSetHome} />
+        </div>
       )}
     </section>
   );

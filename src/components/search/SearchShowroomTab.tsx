@@ -91,7 +91,7 @@ export default function SearchShowroomTab({
           (aspect-3/4 image, 2-line name, price, rating|sold, clock turnaround, location) so nothing
           shifts size when the real cards swap in. */}
       {loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
+        <div className="grid grid-cols-2 gap-2.5">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="bg-surface border border-line overflow-hidden">
               <div className="aspect-3/4 bg-sunken animate-pulse" />
@@ -118,7 +118,7 @@ export default function SearchShowroomTab({
 
       {!loading && items.length > 0 && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
+          <div className="grid grid-cols-2 gap-2.5">
             {items.map((item) => (
               <CatalogItemCard key={item.id} item={item} userCoords={userCoords} />
             ))}

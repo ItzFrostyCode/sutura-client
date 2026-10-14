@@ -226,7 +226,7 @@ export default function CatalogRatingsSection({
           </div>
 
           {/* Right: filter pills — All, 5★, 4★, 3★, 2★, 1★ */}
-          <div className="flex flex-wrap gap-2 sm:pl-2">
+          <div className="hide-scrollbar flex flex-nowrap gap-1.5 overflow-x-auto sm:pl-2">
             {FILTER_TABS.map((tab) => {
               const count =
                 tab === 'All'
@@ -237,7 +237,7 @@ export default function CatalogRatingsSection({
                   key={tab}
                   type="button"
                   onClick={() => handleFilterChange(tab)}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 border text-xs font-medium transition-all ${
+                  className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap px-2.5 py-1.5 border text-xs font-medium transition-all ${
                     activeFilter === tab
                       ? 'bg-taupe text-white border-taupe'
                       : 'bg-white text-ink border-line-strong hover:border-taupe hover:text-taupe'

@@ -16,6 +16,7 @@ import {
   Clock,
   Phone,
   LayoutDashboard,
+  Wrench,
 } from 'lucide-react';
 import { StoreProfile, StoreBranch, StorefrontTab } from '../types';
 import { getMediaUrl } from '@/lib/media';
@@ -30,6 +31,10 @@ interface StoreHeroHeaderProps {
   readonly isOwnerViewingOwnStore: boolean;
   /** Owner, branch manager, or staff on their own Store Profile (hides back, shows Dashboard). */
   readonly isShopViewingOwnStore?: boolean;
+  /** Shown inside the map panel: the panel's own header carries the Back, the name and the address, so they are left out here. */
+  readonly embedded?: boolean;
+  /** The shop has an Alterations & Repairs service — shown under its name (owner's rule, 2026-10-14). */
+  readonly altersRepairs?: boolean;
   readonly onEditProfile: () => void;
   readonly tabList: { id: StorefrontTab; label: string }[];
   readonly activeTab: StorefrontTab;
@@ -39,7 +44,6 @@ interface StoreHeroHeaderProps {
   readonly onOpenRatingModal: () => void;
   readonly isBookmarked: boolean;
   readonly setIsBookmarked: React.Dispatch<React.SetStateAction<boolean>>;
-  readonly onOpenMap?: () => void;
   /** Refreshes the storefront's own `store` state after the logo/banner is replaced. */
   readonly onImagesSaved?: () => void;
 }
@@ -75,6 +79,8 @@ export default function StoreHeroHeader({
   activeBranch,
   isOwnerViewingOwnStore,
   isShopViewingOwnStore = false,
+  embedded = false,
+  altersRepairs = false,
   onEditProfile,
   tabList,
   activeTab,
@@ -84,7 +90,6 @@ export default function StoreHeroHeader({
   onOpenRatingModal,
   isBookmarked,
   setIsBookmarked,
-  onOpenMap,
   onImagesSaved,
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
@@ -101,7 +106,7 @@ export default function StoreHeroHeader({
               state/query exactly since this is real browser-history back,
               not a hardcoded destination. Overlaid on the banner so it's
               reachable without scrolling on every breakpoint. */}
-          {!isShopViewingOwnStore && (
+          {!isShopViewingOwnStore && !embedded && (
             <button
               type="button"
               onClick={() => router.back()}
@@ -199,9 +204,11 @@ export default function StoreHeroHeader({
           </div>
 
           {/* Main Store Name */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
-            {store.name}
-          </h1>
+          {!embedded && (
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
+              {store.name}
+            </h1>
+          )}
 
           {/* Subtitle Metadata (Branch, Owner, Ratings) */}
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
@@ -224,6 +231,14 @@ export default function StoreHeroHeader({
               </span>
             ) : (
               <span className="text-ink-faint font-normal">No ratings yet</span>
+            )}
+            {altersRepairs && (
+              <>
+                <span className="text-ink-faint">·</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-ink-body">
+                  <Wrench size={12} className="text-taupe shrink-0" /> Alters &amp; repairs
+                </span>
+              </>
             )}
           </div>
 
@@ -288,18 +303,6 @@ export default function StoreHeroHeader({
                 >
                   <Bookmark size={17} className={isBookmarked ? 'fill-current text-taupe' : ''} />
                 </button>
-
-                {onOpenMap && (
-                  <button
-                    type="button"
-                    onClick={onOpenMap}
-                    aria-label="View branch locations on map"
-                    title="View branch locations on map"
-                    className="min-h-[46px] w-12 h-12 flex items-center justify-center bg-sunken hover:bg-line text-ink border border-line transition-colors cursor-pointer shrink-0"
-                  >
-                    <MapPin size={17} className="text-taupe" />
-                  </button>
-                )}
               </>
             )}
           </div>
@@ -314,10 +317,12 @@ export default function StoreHeroHeader({
           {/* 📌 5. Centered Key Details Row (with icons like Facebook profile info) */}
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-ink-muted text-center mt-3 pt-2.5 border-t border-line/60 w-full max-w-2xl px-2">
             {/* Location (Clean, deduplicated) */}
-            <div className="flex items-center gap-1.5 text-ink-body">
-              <MapPin size={14} className="text-taupe shrink-0" />
-              <span>{cleanAddress}</span>
-            </div>
+            {!embedded && (
+              <div className="flex items-center gap-1.5 text-ink-body">
+                <MapPin size={14} className="text-taupe shrink-0" />
+                <span>{cleanAddress}</span>
+              </div>
+            )}
 
             {/* Open / Closed Status */}
             <div className="flex items-center gap-1.5">
