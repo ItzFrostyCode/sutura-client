@@ -27,15 +27,18 @@ export interface MyOrder {
 
 export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; tone: string }> = {
   pending: { label: 'Pending', Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
+  confirmed: { label: 'Confirmed', Icon: Flag, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  awaiting_materials: { label: 'Waiting for materials', Icon: Clock, tone: 'text-amber-700 bg-amber-50 border-amber-200' },
   design: { label: 'Design', Icon: Palette, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   pattern_making: { label: 'Pattern Making', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   mass_cutting_printing: { label: 'Cutting & Printing', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   cutting: { label: 'Cutting', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   sewing: { label: 'Sewing', Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  ready_for_fitting: { label: 'Ready for Fitting', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  final_adjustments: { label: 'Final Adjustments', Icon: Wrench, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  qc_ironing: { label: 'QC & Ironing', Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  ready_for_pickup: { label: 'Ready for Pickup', Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
+  ready_for_fitting: { label: 'Fitting / Inspection', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  final_adjustments: { label: 'Adjustment / Correction', Icon: Wrench, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  qc_ironing: { label: 'Quality Check', Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  ready_for_pickup: { label: 'Ready for Fitting / Collection', Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
+  balance_handover: { label: 'Payment & Handover', Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
   completed: { label: 'Completed', Icon: Flag, tone: 'text-sage bg-sage/10 border-sage/20' },
   cancelled: { label: 'Cancelled', Icon: Ban, tone: 'text-danger bg-danger/10 border-danger/20' },
   rejected: { label: 'Rejected', Icon: AlertCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
@@ -43,8 +46,8 @@ export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; to
 };
 
 export const IN_PRODUCTION = new Set([
-  'pending', 'design', 'pattern_making', 'mass_cutting_printing', 'cutting',
-  'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'on_hold',
+  'pending', 'confirmed', 'awaiting_materials', 'design', 'pattern_making', 'mass_cutting_printing', 'cutting',
+  'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'balance_handover', 'on_hold',
 ]);
 
 /**
@@ -56,6 +59,12 @@ export const IN_PRODUCTION = new Set([
  */
 const PHASE_TONE: Record<string, { Icon: typeof Clock; tone: string }> = {
   'Order Received': { Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
+  'Order Confirmed': { Icon: Flag, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  'Quality Check': { Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  'Ready for Fitting / Collection': { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
+  'Fitting / Inspection': { Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  'Adjustment / Correction': { Icon: Wrench, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  'Payment & Handover': { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
   'In Production': { Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   'Fitting / Adjustment': { Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   Finalizing: { Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },

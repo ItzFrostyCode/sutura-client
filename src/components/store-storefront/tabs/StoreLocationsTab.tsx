@@ -27,6 +27,8 @@ interface StoreLocationsTabProps {
   readonly branches: StoreBranch[];
   readonly selectedBranchSlug: string | null;
   readonly isOwnerViewingOwnStore: boolean;
+  /** Shown inside the map panel: the map screen already shows every branch pin, so the branch map is left out. */
+  readonly embedded?: boolean;
   readonly onSelectBranch: (branch: StoreBranch) => void;
 }
 
@@ -35,6 +37,7 @@ export default function StoreLocationsTab({
   branches,
   selectedBranchSlug,
   isOwnerViewingOwnStore,
+  embedded = false,
   onSelectBranch,
 }: StoreLocationsTabProps) {
   if (!branches || branches.length === 0) {
@@ -75,16 +78,17 @@ export default function StoreLocationsTab({
         )}
       </div>
 
-      {/* Pinpointed Davao City Map — Single Clean Card without nested borders */}
-      {/* Pinpointed Davao City Map — Single Clean Card without nested borders */}
-      <div className="-mx-4 sm:mx-0">
-        <BranchesMap
-          branches={branches}
-          initialSelectedId={activeBranch?.id ?? null}
-          onSelectBranch={(b) => onSelectBranch(b)}
-          height={420}
-        />
-      </div>
+      {/* Pinpointed Davao City map — only for several branches, and not inside the map panel (which already shows the pins) */}
+      {!embedded && (
+        <div className="-mx-4 sm:mx-0">
+          <BranchesMap
+            branches={branches}
+            initialSelectedId={activeBranch?.id ?? null}
+            onSelectBranch={(b) => onSelectBranch(b)}
+            height={420}
+          />
+        </div>
+      )}
 
       {/* Branch Cards Grid */}
       <div>

@@ -12,7 +12,11 @@ export interface StoreResult {
   banner_path: string | null;
   reviews_count: number;
   reviews_avg_rating: number | null;
-  branches: { city: string | null; name: string }[];
+  /** Set by the shop's plan ("Featured Store Visibility"), never by the owner. */
+  is_featured?: boolean;
+  /** Km to the nearest live branch; only present when the request carried lat/lng. */
+  distance_km?: number | string | null;
+  branches: { city: string | null; name: string; district?: string | null }[];
   operating_hours?: OperatingHours | null;
   specializations?: string[] | null;
   catalog_items?: {

@@ -51,16 +51,16 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
         />
 
         <div
-          className="relative bg-surface rounded-none shadow-2xl flex flex-col w-[calc(100%-32px)] max-w-[420px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 border border-line p-5 space-y-4 touch-auto"
+          className="relative z-10 flex w-[calc(100%-32px)] max-w-[420px] touch-auto flex-col space-y-5 overflow-hidden rounded-[28px] bg-surface p-6 shadow-2xl animate-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between pb-2 border-b border-line/60">
-            <h2 className="mobile-h3 font-bold text-ink">{existing ? 'Edit Home Address' : 'Set Home Address'}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="mobile-h3 text-ink">{existing ? 'Edit Home Address' : 'Set Home Address'}</h2>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="w-10 h-10 -mr-1 flex items-center justify-center rounded-none text-ink-muted hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
+              className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken hover:text-ink"
             >
               <X size={18} />
             </button>
@@ -74,7 +74,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. My Home, Office, School"
-              className="w-full bg-sunken border border-line rounded-none px-3.5 py-3 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-taupe"
+              className="h-14 w-full rounded-2xl bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong"
             />
           </div>
 
@@ -83,12 +83,10 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
             {chosen ? (
               <div
                 onClick={() => setShowPicker(true)}
-                className="w-full flex items-start justify-between gap-3 p-3 bg-sunken border border-line rounded-none hover:border-taupe cursor-pointer transition-all text-left group min-h-[56px]"
+                className="group flex min-h-[56px] w-full cursor-pointer items-start justify-between gap-3 rounded-2xl bg-sunken p-4 text-left transition-colors hover:bg-sunken-hover"
               >
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-full bg-taupe/10 flex items-center justify-center shrink-0 mt-0.5 text-taupe">
-                    <MapPin size={16} />
-                  </div>
+                  <MapPin size={20} className="mt-0.5 shrink-0 text-taupe" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-ink truncate">{chosen.address.split(',')[0]}</p>
                     <p className="mobile-caption text-ink-muted line-clamp-2 mt-0.5">{chosen.address}</p>
@@ -100,7 +98,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
                     e.stopPropagation();
                     setShowPicker(true);
                   }}
-                  className="shrink-0 text-xs font-semibold text-taupe hover:underline flex items-center gap-1 self-center pl-1 py-1 cursor-pointer"
+                  className="flex min-h-[44px] shrink-0 items-center gap-1 self-center pl-1 text-sm text-taupe transition-colors hover:text-taupe-hover"
                 >
                   <MapIcon size={14} />
                   Change
@@ -110,12 +108,10 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               <button
                 type="button"
                 onClick={() => setShowPicker(true)}
-                className="w-full flex items-center justify-between gap-3 p-3.5 bg-sunken border border-line rounded-none hover:border-taupe hover:bg-taupe/5 transition-all text-left cursor-pointer min-h-[56px]"
+                className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-2xl bg-sunken p-4 text-left transition-colors hover:bg-sunken-hover"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-full bg-taupe/10 flex items-center justify-center shrink-0 text-taupe">
-                    <MapIcon size={16} />
-                  </div>
+                  <MapIcon size={20} className="shrink-0 text-taupe" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-ink truncate">Choose on Map</p>
                     <p className="mobile-caption text-ink-muted truncate">Pin your address on map</p>
@@ -133,7 +129,7 @@ export default function SetHomeModal({ existing, onClose, onSave }: SetHomeModal
               if (!chosen) return;
               onSave({ ...chosen, label: label.trim() || 'My Home' });
             }}
-            className="w-full btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-[0.99]"
+            className="h-[52px] w-full rounded-full bg-ink text-base font-semibold text-white transition-colors hover:bg-taupe disabled:cursor-not-allowed disabled:opacity-40"
           >
             Save Home Address
           </button>

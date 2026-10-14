@@ -1,61 +1,83 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import PublicNav from '@/components/shared/PublicNav';
 import UpcomingAppointmentBar from '@/components/home/UpcomingAppointmentBar';
-import { useHomeData } from '@/components/home/useHomeData';
-import HomeHero from '@/components/home/HomeHero';
+import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
+import LocationLine from '@/components/home/LocationLine';
+import SearchPill from '@/components/home/SearchPill';
+import HomeFilterSheet from '@/components/home/HomeFilterSheet';
 import HomeFeaturedSpotlight from '@/components/home/HomeFeaturedSpotlight';
-import HomeCategoryGrid from '@/components/home/HomeCategoryGrid';
-import HomeShowroomCarousel from '@/components/home/HomeShowroomCarousel';
-import HomeHowItWorks from '@/components/home/HomeHowItWorks';
-import HomeStoresGrid from '@/components/home/HomeStoresGrid';
-import HomeMapBanner from '@/components/home/HomeMapBanner';
-import HomeAboutSection from '@/components/home/HomeAboutSection';
+import HomeCategories from '@/components/home/HomeCategories';
+import HomeNearShops from '@/components/home/HomeNearShops';
+import HomeServices from '@/components/home/HomeServices';
 import HomeFooter from '@/components/home/HomeFooter';
+import { useHomeLocation } from '@/components/home/useHomeLocation';
+import { useDiscoverData } from '@/components/home/useDiscoverData';
+import { DEFAULT_NEAR_FILTERS, activeFilterCount, type NearFilters } from '@/components/home/homeFilters';
+
 export default function HomePage() {
-  const {
-    items,
-    loading,
-    stores,
-    storesLoading,
-    trendingItems,
-    trendingLoading,
-    heroSearch,
-    setHeroSearch,
-    handleHeroSearch,
-  } = useHomeData();
+  const router = useRouter();
+  const place = useHomeLocation();
+  const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState<NearFilters>(DEFAULT_NEAR_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const data = useDiscoverData(place.location, filters);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (query.trim()) params.set('q', query.trim());
+    if (filters.radiusKm !== null) params.set('radius_km', String(filters.radiusKm));
+    if (filters.status !== 'all') params.set('open', filters.status);
+    const qs = params.toString();
+    router.push(qs ? `/search?${qs}` : '/search');
+  };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
-      {/* Both stacked inside one sticky wrapper — UpcomingAppointmentBar is
-          not sticky on its own, so the two pin together as a single unit
-          instead of each fighting over its own independent `top: 0`. */}
+    <div className="flex min-h-dvh flex-col bg-canvas">
+      {/* Both stacked inside one sticky wrapper so the reminder bar and the header pin together. */}
       <div className="sticky top-0 z-50">
         <UpcomingAppointmentBar />
         <PublicNav isSticky={false} />
       </div>
 
-      <HomeHero
-        heroSearch={heroSearch}
-        onSearchChange={setHeroSearch}
-        onSubmit={handleHeroSearch}
-      />
-
-      <main className="flex-1 w-full">
-        <HomeFeaturedSpotlight
-          stores={stores}
-          trendingItems={trendingItems}
-          loading={storesLoading || trendingLoading}
+      <main className="mx-auto w-full max-w-[960px] flex-1 space-y-12 px-6 pb-6 pt-1 sm:space-y-16 sm:px-12 sm:pb-10 sm:pt-3 lg:px-0">
+        <h1 className="sr-only">Find a tailor in Davao City</h1>
+        <div>
+          <PageBrandRow />
+          <LocationLine location={place.location} changeHref="/location?returnTo=/" />
+          <div className="mt-4">
+            <SearchPill
+              large
+              value={query}
+              onChange={setQuery}
+              onSubmit={handleSearch}
+              onOpenFilter={() => setFilterOpen(true)}
+              activeFilterCount={activeFilterCount(filters)}
+            />
+          </div>
+        </div>
+        {/* Only shops whose plan gives them top placement; the section is simply absent when there are none. */}
+        {data.featured.length > 0 && <HomeFeaturedSpotlight stores={data.featured} trendingItems={data.trending} />}
+        <HomeCategories />
+        <HomeNearShops
+          location={place.location}
+          denied={place.denied}
+          locating={place.locating}
+          stores={data.near}
+          loading={data.nearLoading}
+          filters={filters}
+          onRequestLocation={place.request}
+          onResetDistance={() => setFilters({ ...filters, radiusKm: null })}
         />
-        <HomeCategoryGrid items={items} />
-        <HomeShowroomCarousel items={items} loading={loading} />
-        <HomeHowItWorks />
-        <HomeStoresGrid stores={stores} storesLoading={storesLoading} />
-        <HomeMapBanner />
+        <HomeServices services={data.services} loading={data.servicesLoading} />
       </main>
 
-      <HomeAboutSection />
-      <HomeFooter />
+      <HomeFooter narrow />
+
+      <HomeFilterSheet isOpen={filterOpen} onClose={() => setFilterOpen(false)} value={filters} onApply={(f) => setFilters({ radiusKm: f.radiusKm, status: f.status })} />
     </div>
   );
 }

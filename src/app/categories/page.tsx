@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
+import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import HomeFooter from '@/components/home/HomeFooter';
 import CategoriesShowcaseGrid from '@/components/categories/CategoriesShowcaseGrid';
 import CategoriesServicesSection from '@/components/categories/CategoriesServicesSection';
@@ -26,6 +27,7 @@ export default function CategoriesPage() {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-6 sm:py-8">
+        <PageBrandRow className="mb-2" />
         <nav aria-label="Breadcrumb" className="mobile-caption text-ink-muted flex items-center gap-1.5 mb-4">
           <Link href="/" className="hover:text-ink">SUTURA</Link>
           <span>&gt;</span>

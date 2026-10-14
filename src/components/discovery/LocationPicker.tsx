@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import '@/lib/leafletSafe';
 import 'leaflet/dist/leaflet.css';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, Minus, Plus } from 'lucide-react';
 import type { SavedLocation } from '@/lib/customerLocation';
-import { buildStorePinIcon } from '@/components/discovery/DiscoveryMap';
 import LocationPickerHeader from './location-picker/LocationPickerHeader';
-import LocationFilterDropdown from './location-picker/LocationFilterDropdown';
 import LocationPickerFooter from './location-picker/LocationPickerFooter';
 import { useLocationPickerState } from './location-picker/useLocationPickerState';
+
+const zoomButton = 'flex h-12 w-12 items-center justify-center rounded-full bg-surface text-ink shadow-[0_2px_12px_rgba(45,42,38,0.18)] transition-opacity hover:opacity-90 active:opacity-70 disabled:opacity-60';
 
 function MapRefSetter({ mapRef }: { readonly mapRef: React.MutableRefObject<LeafletMap | null> }) {
   const map = useMap();
@@ -81,9 +81,6 @@ export default function LocationPicker({
           searching={state.searching}
           onSearchSubmit={() => void state.handleSearchSubmit()}
           onClose={onClose}
-          showFilterDropdown={state.showFilterDropdown}
-          setShowFilterDropdown={state.setShowFilterDropdown}
-          hasActiveFilters={state.selectedDistrict !== 'all' || state.statusFilter !== 'all'}
           suggestionsVisible={state.suggestionsVisible}
           searchResults={state.searchResults}
           recents={state.recents}
@@ -93,18 +90,8 @@ export default function LocationPicker({
           onInputBlur={state.handleInputBlur}
         />
 
-        {state.showFilterDropdown && (
-          <LocationFilterDropdown
-            selectedDistrict={state.selectedDistrict}
-            setSelectedDistrict={state.setSelectedDistrict}
-            statusFilter={state.statusFilter}
-            setStatusFilter={state.setStatusFilter}
-            onClose={() => state.setShowFilterDropdown(false)}
-          />
-        )}
-
         <div className="flex-1 min-h-0 relative">
-          <MapContainer center={state.position} zoom={16} className="w-full h-full" zoomControl={false}>
+          <MapContainer center={state.position} zoom={16} className="w-full h-full" zoomControl={false} scrollWheelZoom="center" touchZoom="center" doubleClickZoom="center">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -112,16 +99,6 @@ export default function LocationPicker({
             <MapRefSetter mapRef={state.mapRef} />
             <MapCenterTracker onMoveEnd={state.handleMapMoveEnd} />
 
-            {state.filteredStores.map((st) => (
-              <Marker
-                key={`store-${st.id}-${st.slug}`}
-                position={[st.latitude, st.longitude]}
-                icon={buildStorePinIcon(st.logoPath, st.isMain, st.isOpen)}
-                eventHandlers={{
-                  click: () => state.handleSelectStore(st),
-                }}
-              />
-            ))}
           </MapContainer>
 
           {/* Center pin */}
@@ -132,22 +109,18 @@ export default function LocationPicker({
             </svg>
           </div>
 
-          {/* Current Location button */}
-          <button
-            type="button"
-            onClick={state.handleUseCurrentLocation}
-            disabled={state.locating}
-            className="absolute bottom-3 right-3 z-[400] w-11 h-11 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-md touch-target-48 disabled:opacity-60"
-            aria-label="Use my current location"
-          >
-            <LocateFixed size={20} className={state.locating ? 'animate-pulse' : ''} />
-          </button>
+          {/* My location, zoom in, zoom out — zooming goes around the pin */}
+          <div role="group" aria-label="Map controls" className="absolute bottom-3 right-3 z-[400] flex flex-col gap-2">
+            <button type="button" onClick={state.handleUseCurrentLocation} disabled={state.locating} className={zoomButton} aria-label="Use my current location">
+              <LocateFixed size={20} className={state.locating ? 'animate-pulse' : ''} />
+            </button>
+            <button type="button" onClick={() => state.mapRef.current?.zoomIn()} className={zoomButton} aria-label="Zoom in"><Plus size={20} /></button>
+            <button type="button" onClick={() => state.mapRef.current?.zoomOut()} className={zoomButton} aria-label="Zoom out"><Minus size={20} /></button>
+          </div>
         </div>
 
         <LocationPickerFooter
           error={state.error}
-          selectedStore={state.selectedStore}
-          onDeselectStore={() => state.setSelectedStore(null)}
           reverseLoading={state.reverseLoading}
           address={state.address}
           confirmLabel={confirmLabel}

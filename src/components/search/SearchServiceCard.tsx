@@ -18,6 +18,8 @@ interface SearchServiceCardProps {
   readonly hideLocation?: boolean;
   /** Fills its grid cell instead of the carousel's fixed width. */
   readonly fluid?: boolean;
+  /** Landing look: soft white card with a rounded edge and a light lift. */
+  readonly soft?: boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ export default function SearchServiceCard({
   isPaused,
   hideLocation,
   fluid,
+  soft,
 }: SearchServiceCardProps) {
   const turnaroundText = (service.estimated_days ? 'Est. ' : '') + formatServiceTurnaround(service.estimated_days, service.estimated_days_max);
   const branch = service.store?.branches?.[0];
@@ -60,7 +63,7 @@ export default function SearchServiceCard({
   return (
     <Link
       href={serviceHref}
-      className={`${fluid ? 'w-full h-full' : 'snap-start shrink-0 w-[70%] min-w-[220px] max-w-[270px] sm:w-[250px] md:w-[270px]'} bg-surface border border-line hover:border-taupe transition-all duration-300 flex flex-col justify-between overflow-hidden group active:scale-[0.98]`}
+      className={`${fluid ? 'w-full h-full' : 'snap-start shrink-0 w-[70%] min-w-[220px] max-w-[270px] sm:w-[250px] md:w-[270px]'} ${soft ? 'card-soft' : 'bg-surface border border-line hover:border-taupe'} transition-all duration-300 flex flex-col justify-between overflow-hidden group active:scale-[0.98]`}
     >
       {/* 1. Image Thumbnail */}
       <div className="aspect-4/3 w-full bg-sunken relative overflow-hidden shrink-0 border-b border-line">

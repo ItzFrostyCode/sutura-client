@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Package } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
+import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 
 export default function TrackLandingPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function TrackLandingPage() {
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
       <PublicNav />
+      <PageBrandRow standalone />
       <main className="flex-1 flex items-center justify-center mobile-screen-margins py-10 sm:py-16">
         <div className="w-full max-w-sm sm:max-w-md text-center">
           <div className="w-14 h-14 border border-line flex items-center justify-center mx-auto mb-4">

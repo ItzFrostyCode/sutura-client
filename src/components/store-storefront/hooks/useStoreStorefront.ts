@@ -105,7 +105,6 @@ export function useStoreStorefront(storeId: string) {
 
   // Map Modal
   const [mapModalBranch, setMapModalBranch] = useState<StoreBranch | null>(null);
-  const [isAllBranchesMapOpen, setIsAllBranchesMapOpen] = useState(false);
 
   // Helper to parse tab from query param
   const resolveTabFromParam = useCallback((tabParam: string | null): StorefrontTab => {
@@ -865,10 +864,15 @@ export function useStoreStorefront(storeId: string) {
     { id: 'services', label: 'Service' },
     { id: 'about', label: 'About' },
   ];
-  if (store?.branches && store.branches.length > 0) {
+  // One branch (or none) leaves nothing to choose between — its address, phone and hours are already in the header and About.
+  const hasBranchTab = (store?.branches?.length ?? 0) > 1;
+  if (hasBranchTab) {
     tabList.push({ id: 'locations', label: 'Branch' });
   }
   tabList.push({ id: 'reviews', label: 'Ratings' });
+
+  // A link or refresh with ?tab=branch on a store that has no Branch tab opens the first tab instead of an empty page.
+  const shownTab: StorefrontTab = activeTab === 'locations' && !hasBranchTab ? 'catalog' : activeTab;
 
   return {
     router,
@@ -878,7 +882,7 @@ export function useStoreStorefront(storeId: string) {
     store,
     loading,
     isOwnerViewingOwnStore,
-    activeTab,
+    activeTab: shownTab,
     setActiveTab,
     tabList,
     selectedBranchSlug,
@@ -1026,8 +1030,6 @@ export function useStoreStorefront(storeId: string) {
     // Map modal
     mapModalBranch,
     setMapModalBranch,
-    isAllBranchesMapOpen,
-    setIsAllBranchesMapOpen,
 
     // Hydration safe flag
     mounted,

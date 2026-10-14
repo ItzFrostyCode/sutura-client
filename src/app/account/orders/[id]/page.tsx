@@ -2,12 +2,13 @@
 
 import { paymentPolicyLabel } from '@/components/jobs/requirements';
 import { use, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
 import OrderTrackingView, { type TrackedOrder } from '@/components/shared/OrderTrackingView';
 import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
+import EmptyState from '@/components/account/EmptyState';
 import PayForOrder from '@/components/account/orders/PayForOrder';
+import QuotationApprovalCard from '@/components/shared/QuotationApprovalCard';
 
 export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -38,18 +39,14 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
       )}
 
       {!loading && notFound && (
-        <div className="bg-surface border border-line p-8 text-center">
-          <AlertCircle size={28} className="text-danger mx-auto mb-3" />
-          <h1 className="text-base font-bold text-ink mb-1">Order not found</h1>
-          <p className="text-sm text-ink-muted mb-6">This order doesn&apos;t exist or doesn&apos;t belong to your account.</p>
-          <Link href="/account/orders" className="text-sm font-medium text-taupe hover:text-taupe-hover">
-            Back to My Job Orders
-          </Link>
-        </div>
+        <EmptyState Icon={AlertCircle} title="Order not found" message="This order doesn't exist or doesn't belong to your account." action={{ href: '/account/orders', label: 'Back to My Job Orders' }} />
       )}
 
       {!loading && !notFound && order && (
         <>
+          {order.quotation_flow && (
+            <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
+          )}
           <OrderTrackingView order={order} stepperLayout="vertical" />
           <PayForOrder
             orderId={Number(id)}
@@ -60,7 +57,8 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
             pending={order.pending_payment_amount ?? 0}
             requiredDeposit={order.required_deposit ?? 0}
             depositLabel={paymentPolicyLabel(order.payment_policy, order.payment_policy_percent)}
-            active={!['cancelled', 'rejected', 'completed'].includes(order.status)}
+            // On the ordering flow the deposit comes after the customer approves the quotation.
+            active={!['cancelled', 'rejected', 'completed'].includes(order.status) && !(order.quotation_flow && order.status === 'pending' && !order.quotation_flow.approved_at)}
             onSubmitted={load}
           />
         </>

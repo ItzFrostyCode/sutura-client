@@ -84,7 +84,7 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
           <p className="text-xs text-ink-muted">
             {job.material_source === 'customer_supplied'
               ? 'Customer dropped off fabric material'
-              : 'In-house fabric & sublimation inventory'}
+              : 'Fabric supplied by the shop'}
           </p>
         </div>
 

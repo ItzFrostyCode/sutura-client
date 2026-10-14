@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import L from '@/lib/leafletSafe';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
+import YouMarker from './YouMarker';
+import { focusOn } from '@/lib/mapFocus';
 
 // Generic fallback pin — same inline store SVG used when a store has no
 // logo on file, kept visually close to BranchesMap.tsx's own pin so it
@@ -50,19 +52,27 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
   });
 }
 
-// Distinct "you are here" marker — a solid pulsing dot, not another pin, so
-// it never reads as just another store branch on the map.
-const userLocationIcon = L.divIcon({
-  className: '',
-  html: '<span style="position:relative;display:block;width:16px;height:16px;"><span style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;opacity:0.35;animation:sutura-pulse 1.8s ease-out infinite;"></span><span style="position:absolute;inset:3px;border-radius:9999px;background:#3B82F6;border:2px solid white;"></span></span><style>@keyframes sutura-pulse{0%{transform:scale(0.6);opacity:0.6;}100%{transform:scale(2.2);opacity:0;}}</style>',
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
+// Leaflet re-creates a pin whenever its icon object changes, and the live navigation re-renders the map about once a second,
+// so an icon is built once per look (logo, main, open) and reused.
+const pinIcons = new Map<string, L.DivIcon>();
+function pinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean): L.DivIcon {
+  const key = `${logoPath ?? ''}|${isMain}|${isOpen}`;
+  let icon = pinIcons.get(key);
+  if (!icon) {
+    icon = buildStorePinIcon(logoPath, isMain, isOpen);
+    pinIcons.set(key, icon);
+  }
+  return icon;
+}
 
-function FitBounds({ points, disable }: { readonly points: [number, number][]; readonly disable?: boolean }) {
+export interface FitPadding { readonly top?: number; readonly left?: number; readonly bottom?: number }
+
+function FitBounds({ points, disable, pad }: { readonly points: [number, number][]; readonly disable?: boolean; readonly pad?: FitPadding }) {
   const map = useMap();
   const prevKeyRef = useRef<string>('');
   const pointsKey = points.map((p) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join('|');
+  // The free area changes when a panel or sheet moves, so the fit is redone for a new padding as well.
+  const padKey = `${pad?.top ?? 0}|${pad?.left ?? 0}|${pad?.bottom ?? 0}`;
 
   useEffect(() => {
     return () => {
@@ -75,16 +85,65 @@ function FitBounds({ points, disable }: { readonly points: [number, number][]; r
   }, [map]);
 
   useEffect(() => {
-    if (disable || !pointsKey) return;
-    if (prevKeyRef.current === pointsKey) return;
-    prevKeyRef.current = pointsKey;
+    if (!pointsKey) return;
+    const fitKey = `${pointsKey}#${padKey}`;
+    if (prevKeyRef.current === fitKey) return;
+    // A fit that is switched off still counts as seen, so switching it back on does not suddenly zoom out to the pins.
+    prevKeyRef.current = fitKey;
+    if (disable) return;
 
+    const top = pad?.top ?? 0;
+    const left = pad?.left ?? 0;
+    const bottom = pad?.bottom ?? 0;
     if (points.length === 1) {
-      map.setView(points[0], 14);
+      // One place: zoom in to it (street level), in the part of the map that is not covered.
+      focusOn(map, points[0][0], points[0][1], { left, top, bottom }, false);
     } else if (points.length > 1) {
-      map.fitBounds(points, { padding: [40, 40] });
+      map.fitBounds(points, { paddingTopLeft: [40 + left, 40 + top], paddingBottomRight: [40, 40 + bottom] });
     }
-  }, [map, points, pointsKey, disable]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the pins or the free area change
+  }, [map, points, pointsKey, padKey, disable]);
+  return null;
+}
+
+/** "Focus on me": the map stays centred on the person at street level (in the part not under a panel or sheet) until they drag it. */
+function FocusOnUser({ position, pad, active }: { readonly position: { lat: number; lng: number } | null; readonly pad?: FitPadding; readonly active: boolean }) {
+  const map = useMap();
+  const left = pad?.left ?? 0;
+  const top = pad?.top ?? 0;
+  const bottom = pad?.bottom ?? 0;
+  const lat = position?.lat;
+  const lng = position?.lng;
+  useEffect(() => {
+    if (!active || lat === undefined || lng === undefined) return;
+    focusOn(map, lat, lng, { left, top, bottom });
+  }, [map, active, lat, lng, left, top, bottom]);
+  return null;
+}
+
+/**
+ * Keeps a moving person in view during navigation: when they get near the edge of the free part of the map (the part not
+ * covered by the panel or sheet), the map glides so they are back in the middle of it. Dragging the map is the person's way to stop it.
+ */
+function FollowUser({ position, pad, onUserPan }: { readonly position: { lat: number; lng: number } | null; readonly pad?: FitPadding; readonly onUserPan?: () => void }) {
+  const map = useMap();
+  const left = pad?.left ?? 0;
+  const top = pad?.top ?? 0;
+  const bottom = pad?.bottom ?? 0;
+  const lat = position?.lat;
+  const lng = position?.lng;
+  useMapEvents({ dragstart: () => onUserPan?.() });
+
+  useEffect(() => {
+    if (lat === undefined || lng === undefined) return;
+    const size = map.getSize();
+    const at = map.latLngToContainerPoint([lat, lng]);
+    const edge = 72;
+    const inside = at.x > left + edge && at.x < size.x - edge && at.y > top + edge && at.y < size.y - bottom - edge;
+    if (inside) return;
+    const middle = L.point(left + (size.x - left) / 2, top + (size.y - top - bottom) / 2);
+    map.panBy(at.subtract(middle), { animate: true, duration: 0.6 });
+  }, [map, lat, lng, left, top, bottom]);
   return null;
 }
 
@@ -155,6 +214,22 @@ interface DiscoveryMapProps {
   readonly onMoveEnd?: (lat: number, lng: number) => void;
   readonly mapRef?: React.MutableRefObject<LeafletMap | null>;
   readonly disableFitBounds?: boolean;
+  /** Room to leave free when fitting pins into view (a side panel or bottom sheet covers part of the map). */
+  readonly fitPadding?: FitPadding;
+  /** A road route to draw ([lat, lng] pairs); the map then fits the route instead of the pins. */
+  readonly route?: [number, number][] | null;
+  /** The whole route to fit the map to; unlike `route` it does not shrink as the person moves along it. */
+  readonly routeFit?: [number, number][] | null;
+  /** Where the map opens (instead of fitting the pins), e.g. a saved place at street level. */
+  readonly initialView?: { lat: number; lng: number; zoom: number };
+  /** While true, the map is held on the person (street level) instead of fitting all the pins; dragging the map ends it via `onUserPan`. */
+  readonly focusUser?: boolean;
+  /** Direction of travel in degrees from the GPS while moving fast; the "You" beam otherwise follows the phone's compass. */
+  readonly userCourse?: number | null;
+  /** While set, the map follows this moving position. */
+  readonly followPosition?: { lat: number; lng: number } | null;
+  /** The person dragged the map: stop following. */
+  readonly onUserPan?: () => void;
 }
 
 export default function DiscoveryMap({
@@ -166,6 +241,14 @@ export default function DiscoveryMap({
   onMoveEnd,
   mapRef,
   disableFitBounds,
+  fitPadding,
+  route,
+  routeFit,
+  userCourse,
+  initialView,
+  focusUser,
+  followPosition,
+  onUserPan,
 }: DiscoveryMapProps) {
   const gate = useGuestGatedHref();
   const hasNoResults = branches.length === 0 && !userLocation && !selectable;
@@ -174,9 +257,16 @@ export default function DiscoveryMap({
     () => branches.map((b) => [b.latitude, b.longitude] as [number, number]),
     [branches]
   );
+  // Fitting needs only a sample of a long road line, and always both ends.
+  const routeBounds = useMemo(() => {
+    const line = routeFit ?? route;
+    if (!line || line.length < 2) return null;
+    const step = Math.max(1, Math.floor(line.length / 40));
+    return [...line.filter((_, i) => i % step === 0), line[line.length - 1]];
+  }, [routeFit, route]);
   const boundsPoints = useMemo(
-    () => (userLocation ? [...points, [userLocation.lat, userLocation.lng] as [number, number]] : points),
-    [points, userLocation]
+    () => routeBounds ?? (userLocation ? [...points, [userLocation.lat, userLocation.lng] as [number, number]] : points),
+    [routeBounds, points, userLocation],
   );
   const center = useMemo(
     () => boundsPoints[0] ?? [7.0731, 125.6128], // Davao City fallback
@@ -188,25 +278,32 @@ export default function DiscoveryMap({
       className={fullScreen ? 'absolute inset-0' : 'relative rounded-2xl overflow-hidden border border-line'}
       style={fullScreen ? undefined : { height: 520 }}
     >
-      <MapContainer center={center} zoom={14} scrollWheelZoom zoomControl={false} style={{ height: '100%', width: '100%' }}>
+      <MapContainer
+        center={initialView ? [initialView.lat, initialView.lng] : center}
+        zoom={initialView?.zoom ?? 14}
+        // Choosing a place: the pin is fixed in the middle, so zooming (wheel, trackpad pinch, fingers, double tap) goes around the pin
+        // and the place under it stays put; only dragging moves it.
+        scrollWheelZoom={selectable ? 'center' : true}
+        touchZoom={selectable ? 'center' : true}
+        doubleClickZoom={selectable ? 'center' : true}
+        zoomControl={false} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         <MapEventsHandler onMoveEnd={onMoveEnd} mapRef={mapRef} enabled={selectable} />
-        <FitBounds points={boundsPoints} disable={disableFitBounds} />
-        {userLocation && (
-          <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-            <Popup>You are here</Popup>
-          </Marker>
-        )}
+        <FitBounds points={boundsPoints} disable={disableFitBounds} pad={fitPadding} />
+        <FocusOnUser position={userLocation ?? null} pad={fitPadding} active={Boolean(focusUser)} />
+        <FollowUser position={followPosition ?? null} pad={fitPadding} onUserPan={onUserPan} />
+        {route && route.length > 1 && <Polyline positions={route} pathOptions={{ color: '#6B4E3E', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} />}
+        {userLocation && <YouMarker position={userLocation} course={userCourse} />}
         {branches.map((b) => {
           const key = `${b.storeSlug}-${b.branchId}`;
           return (
             <Marker
               key={key}
               position={[b.latitude, b.longitude]}
-              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
+              icon={pinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
               eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b) } : undefined}
             >
               {!onSelectBranch && (

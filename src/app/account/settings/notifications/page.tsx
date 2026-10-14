@@ -8,7 +8,8 @@ import { useToast } from '@/context/ToastContext';
 import AccountHeader from '@/components/account/AccountHeader';
 
 // Where to text you, and whether to text you at all. We only text for things you can't afford to miss
-// (a time change, a reminder, "your order is ready") — everything else stays in the app and your email.
+// (a time change, a reminder, "your order is ready") — everything else stays in the app's own notifications. SUTURA does not send real
+// emails to customers: its channels are SMS (this page) and the in-app notifications, so no wording here should promise an email.
 export default function NotificationSettingsPage() {
   const toast = useToast();
   const [phone, setPhone] = useState('');
@@ -37,23 +38,23 @@ export default function NotificationSettingsPage() {
 
   return (
     <div>
-      <AccountHeader title="Text messages" backHref="/account/settings" />
-      <div className="bg-surface border border-line p-4 space-y-5">
-        <p className="mobile-body-sm text-ink-muted font-normal">Shops text you only for things you can&apos;t afford to miss: a changed appointment time, a reminder the day before, and when your order is ready. Everything else stays in the app and your email.</p>
+      <AccountHeader title="Notification Settings" backHref="/account/settings" />
+      <div className="card-soft space-y-5 p-4">
+        <p className="mobile-body-sm text-ink-muted">Shops send you a text message (SMS) only for things you can&apos;t afford to miss: a changed appointment time, a reminder the day before, and when your order is ready. Everything else comes to you as a notification in the app.</p>
         {loading ? (
-          <p className="text-sm text-ink-muted flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Loading…</p>
+          <p className="mobile-body-sm flex items-center gap-2 text-ink-muted"><Loader2 size={16} className="animate-spin" /> Loading…</p>
         ) : (
           <>
             <div>
-              <label htmlFor="mobile" className="block text-xs font-bold uppercase tracking-wider text-ink mb-2">Mobile number</label>
-              <input id="mobile" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0917 123 4567" className="w-full h-12 px-3.5 bg-surface border border-line text-base text-ink focus:outline-none focus:border-taupe" />
-              <p className="text-xs text-ink-muted mt-1.5">Philippine mobile numbers only. Double-check it — this is where the texts go.</p>
+              <label htmlFor="mobile" className="mobile-overline mb-2 block text-ink-faint">Mobile number for SMS</label>
+              <input id="mobile" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0917 123 4567" className="h-12 w-full rounded-xl bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong" />
+              <p className="mobile-caption mt-1.5 text-ink-muted">Philippine mobile numbers only. Double-check it — this is where the texts go.</p>
             </div>
-            <label className="flex items-start gap-3 min-h-11 cursor-pointer">
-              <input type="checkbox" checked={optOut} onChange={(e) => setOptOut(e.target.checked)} className="w-5 h-5 mt-0.5 accent-[#6B5346]" />
-              <span className="text-sm text-ink">Don&apos;t text me. (You&apos;ll still get emails and app notifications.)</span>
+            <label className="flex min-h-11 cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={optOut} onChange={(e) => setOptOut(e.target.checked)} className="mt-0.5 h-5 w-5 accent-[#6B5346]" />
+              <span className="mobile-body-sm text-ink">Don&apos;t send me text messages (SMS). (You&apos;ll still get notifications in the app.)</span>
             </label>
-            <button type="button" onClick={save} disabled={saving} className="btn-primary-mobile w-full bg-taupe hover:bg-taupe-hover text-white text-base font-semibold disabled:opacity-60">{saving ? 'Saving…' : 'Save'}</button>
+            <button type="button" onClick={save} disabled={saving} className="flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-60">{saving ? 'Saving…' : 'Save'}</button>
           </>
         )}
       </div>

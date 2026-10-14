@@ -5,6 +5,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
 import type { CategoryLeaf, MenuScreen, TopGroup } from './navTypes';
+import { useTrackOrderLink } from './useTrackOrderLink';
 
 const NON_CUSTOMER_ROLES = new Set(['store_owner', 'staff', 'branch_manager', 'admin']);
 
@@ -19,21 +20,8 @@ export function usePublicNav() {
   const isNonCustomer = isAuth && (user?.roles?.some((r) => NON_CUSTOMER_ROLES.has(r.name)) ?? false);
   const isCustomer = isAuth && !isNonCustomer;
 
-  // Track Order:
-  // - Customer Profile: routes to their personal Job Orders & garment progress list
-  // - Tailor / Staff: routes to store dashboard jobs
-  // - Guest Account: routes to receipt code tracking page (/track)
-  const trackOrderHref = isAuth
-    ? (isCustomer ? '/account/orders' : '/dashboard/jobs')
-    : '/track';
-
-  const trackOrderTitle = isAuth
-    ? (isCustomer ? 'My Orders & Tracking' : 'Track Job Orders')
-    : 'Track Order with Code';
-
-  const trackOrderLabel = isAuth
-    ? (isCustomer ? 'My Orders' : 'Track Jobs')
-    : 'Track Order';
+  // Track Order: the code page for guests, My Orders for customers, the jobs list for shop roles.
+  const { href: trackOrderHref, title: trackOrderTitle, label: trackOrderLabel } = useTrackOrderLink();
 
   // Notifications:
   // - Customer Profile: routes to /notifications (fetches customer notifications)
@@ -83,6 +71,12 @@ export function usePublicNav() {
       isMounted = false;
     };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const onChange = (e: Event) => setUnreadCount(Number((e as CustomEvent<number>).detail) || 0);
+    window.addEventListener('sutura:unread_changed', onChange);
+    return () => window.removeEventListener('sutura:unread_changed', onChange);
+  }, []);
 
   const effectiveUnreadCount = isAuth ? unreadCount : 0;
   const notificationsTitle = effectiveUnreadCount > 0

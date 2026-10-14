@@ -516,7 +516,7 @@ export default function GarmentDesignSection({
       <div className="mb-6 space-y-1.5">
         <span className="text-sm font-medium text-ink-body">Fabric / Material Source</span>
         <p className="text-[11px] text-ink-faint">
-          Some walk-ins bring their own fabric or an existing garment instead of using store stock — flagging it here keeps it from getting mixed up with other jobs during cutting.
+          Some walk-ins bring their own fabric or an existing garment instead of the shop's fabric — flagging it here keeps it from getting mixed up with other jobs during cutting.
         </p>
         <div className="flex gap-2 mt-1">
           <button

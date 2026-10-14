@@ -32,31 +32,30 @@ export default function RecentItemMenu({ onUse, onDelete }: RecentItemMenuProps)
           setOpen((v) => !v);
         }}
         aria-label="More options"
-        className="w-8 h-8 flex items-center justify-center rounded-full text-ink-muted hover:bg-sunken active:opacity-60 transition-colors cursor-pointer"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken active:opacity-60"
       >
         <MoreVertical size={16} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-line rounded-none shadow-lg z-50 overflow-hidden">
+        <div className="card-soft absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden p-1">
           <button
             type="button"
             onClick={() => {
               setOpen(false);
               onUse();
             }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-ink hover:bg-sunken transition-colors cursor-pointer"
+            className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3.5 text-sm text-ink transition-colors hover:bg-sunken"
           >
             <Navigation size={14} className="text-taupe" /> Use this
           </button>
-          <div className="h-px bg-line" />
           <button
             type="button"
             onClick={() => {
               setOpen(false);
               onDelete();
             }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-danger hover:bg-danger/5 transition-colors cursor-pointer"
+            className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3.5 text-sm text-danger transition-colors hover:bg-danger/5"
           >
             <Trash2 size={14} /> Remove
           </button>

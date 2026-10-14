@@ -19,6 +19,9 @@ import {
   Wrench,
   Hourglass,
   ShieldCheck,
+  BadgeCheck,
+  PackageOpen,
+  HandCoins,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -136,16 +139,24 @@ export default function JobProductionTimeline({
     { key: 'completed',            label: 'Completed',             Icon: Flag },
   ] : [
     { key: 'pending',              label: 'Pending',               Icon: Clock },
+    // Orders on the ordering flow are confirmed (and may wait for materials) before any work starts.
+    ...(job.uses_confirmation_flow ? [
+      { key: 'confirmed',          label: 'Confirmed',             Icon: BadgeCheck },
+      { key: 'awaiting_materials', label: 'Awaiting Materials',    Icon: PackageOpen },
+    ] : []),
     { key: 'design',               label: 'Design',                Icon: Palette },
     isBulkOrder
       ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
       : { key: 'pattern_making',        label: 'Pattern Making',          Icon: Ruler },
     { key: 'cutting',              label: 'Cutting',               Icon: Scissors },
     { key: 'sewing',               label: 'Sewing / Assembly',     Icon: Shirt },
-    { key: 'ready_for_fitting',    label: 'Ready for Fitting',     Icon: Ruler },
-    { key: 'final_adjustments',    label: 'Final Adjustments',     Icon: Wrench },
-    { key: 'qc_ironing',           label: 'QC & Ironing',          Icon: Sparkles },
-    { key: 'ready_for_pickup',     label: 'Ready',                 Icon: Package },
+    // Workflow sequence: Quality Check, then Ready for Final Fitting / Collection, the customer fitting,
+    // corrections (which go back through Quality Check), and the balance & handover.
+    { key: 'qc_ironing',           label: 'Quality Check',         Icon: Sparkles },
+    { key: 'ready_for_pickup',     label: 'Ready for Final Fitting / Collection', Icon: Package },
+    { key: 'ready_for_fitting',    label: 'Customer Fitting / Inspection', Icon: Ruler },
+    { key: 'final_adjustments',    label: 'Adjustment / Correction', Icon: Wrench },
+    ...(job.uses_confirmation_flow ? [{ key: 'balance_handover', label: 'Balance Payment & Handover', Icon: HandCoins }] : []),
     { key: 'completed',            label: 'Completed',             Icon: Flag },
   ];
 
@@ -219,6 +230,12 @@ export default function JobProductionTimeline({
               className="flex-1 h-10 px-4 bg-canvas border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             >
               <option value="pending">Pending</option>
+              {job.uses_confirmation_flow && !isRepair && (
+                <>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="awaiting_materials">Awaiting Materials</option>
+                </>
+              )}
               {isRepair ? (
                 <>
                   <option value="queued">Queued for Repair</option>
@@ -235,12 +252,14 @@ export default function JobProductionTimeline({
                   )}
                   <option value="cutting">Cutting</option>
                   <option value="sewing">Sewing / Assembly</option>
-                  <option value="ready_for_fitting">Ready for Fitting</option>
-                  <option value="final_adjustments">Final Adjustments</option>
-                  <option value="qc_ironing">QC & Ironing</option>
+                  <option value="qc_ironing">Quality Check</option>
+                  <option value="ready_for_pickup">Ready for Final Fitting / Collection</option>
+                  <option value="ready_for_fitting">Customer Fitting / Inspection</option>
+                  <option value="final_adjustments">Adjustment / Correction</option>
+                  {job.uses_confirmation_flow && <option value="balance_handover">Balance Payment & Handover</option>}
                 </>
               )}
-              <option value="ready_for_pickup">Ready for Pickup</option>
+              {isRepair && <option value="ready_for_pickup">Ready for Pickup</option>}
               <option value="completed">Completed</option>
               <option value="on_hold">On Hold</option>
               <option value="cancelled">Cancelled</option>
@@ -252,7 +271,7 @@ export default function JobProductionTimeline({
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-amber-900">
             <AlertTriangle size={16} className="text-amber-700 shrink-0" />
             <p className="text-xs font-bold uppercase tracking-wide">
-              Customer-supplied fabric/garment — do not cut from store stock
+              Customer-supplied fabric/garment — keep it separate from the shop's own fabric
             </p>
           </div>
         )}

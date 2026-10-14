@@ -3,10 +3,9 @@ import type { Map as LeafletMap } from 'leaflet';
 import type { SavedLocation, RecentLocation } from '@/lib/customerLocation';
 import { getRecentLocations, addRecentLocation } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
-import api from '@/lib/axios';
-import { isStoreOpen } from '@/lib/storeStatus';
-import { type StoreMapPin, DAVAO_CENTER } from './locationPickerTypes';
+import { DAVAO_CENTER } from './locationPickerTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
+import { focusOn } from '@/lib/mapFocus';
 
 export function useLocationPickerState(
   initial: SavedLocation | null,
@@ -29,12 +28,6 @@ export function useLocationPickerState(
   const mapRef = useRef<LeafletMap | null>(null);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [stores, setStores] = useState<StoreMapPin[]>([]);
-  const [selectedStore, setSelectedStore] = useState<StoreMapPin | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
-  const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
-
   useEffect(() => {
     setRecents(getRecentLocations());
     return () => {
@@ -45,60 +38,6 @@ export function useLocationPickerState(
       }
     };
   }, []);
-
-  useEffect(() => {
-    api.get('/public/stores', { params: { per_page: 50 } })
-      .then((res) => {
-        const list: StoreMapPin[] = [];
-        const raw = res.data?.data ?? [];
-        for (const s of raw) {
-          const open = isStoreOpen(s.operating_hours);
-          if (Array.isArray(s.branches)) {
-            for (const b of s.branches) {
-              if (
-                b.latitude != null &&
-                b.longitude != null &&
-                !Number.isNaN(Number(b.latitude)) &&
-                !Number.isNaN(Number(b.longitude))
-              ) {
-                list.push({
-                  id: b.id,
-                  slug: s.slug,
-                  name: s.name,
-                  branchName: b.name,
-                  isMain: !!b.is_main,
-                  logoPath: s.logo_path,
-                  district: s.district || b.city || null,
-                  address: b.address || s.address || null,
-                  latitude: Number(b.latitude),
-                  longitude: Number(b.longitude),
-                  isOpen: open,
-                });
-              }
-            }
-          }
-        }
-        setStores(list);
-      })
-      .catch(() => setStores([]));
-  }, []);
-
-  const filteredStores = stores.filter((st) => {
-    if (selectedDistrict !== 'all' && st.district && !st.district.toLowerCase().includes(selectedDistrict.toLowerCase())) {
-      return false;
-    }
-    if (statusFilter === 'online' && !st.isOpen) return false;
-    if (statusFilter === 'offline' && st.isOpen) return false;
-    return true;
-  });
-
-  function handleSelectStore(st: StoreMapPin) {
-    setSelectedStore(st);
-    setPosition([st.latitude, st.longitude]);
-    setAddress(`${st.name} (${st.branchName}) - ${st.address || st.district || 'Davao City'}`);
-    if (st.district) setDistrict(st.district);
-    mapRef.current?.flyTo([st.latitude, st.longitude], 16, { animate: true });
-  }
 
   function reverseGeocode(lat: number, lng: number) {
     const requestId = ++geocodeRequestId.current;
@@ -120,19 +59,12 @@ export function useLocationPickerState(
 
   function handleMapMoveEnd(lat: number, lng: number) {
     setPosition([lat, lng]);
-    if (selectedStore) {
-      const dLat = Math.abs(lat - selectedStore.latitude);
-      const dLng = Math.abs(lng - selectedStore.longitude);
-      if (dLat > 0.001 || dLng > 0.001) {
-        setSelectedStore(null);
-      }
-    }
     reverseGeocode(lat, lng);
   }
 
   function jumpTo(lat: number, lng: number) {
     setPosition([lat, lng]);
-    mapRef.current?.flyTo([lat, lng], 16);
+    if (mapRef.current) focusOn(mapRef.current, lat, lng);
   }
 
   function handleUseCurrentLocation() {
@@ -245,17 +177,7 @@ export function useLocationPickerState(
     searchResults,
     error,
     mapRef,
-    selectedStore,
-    setSelectedStore,
-    selectedDistrict,
-    setSelectedDistrict,
-    statusFilter,
-    setStatusFilter,
-    showFilterDropdown,
-    setShowFilterDropdown,
-    filteredStores,
     suggestionsVisible,
-    handleSelectStore,
     handleMapMoveEnd,
     handleUseCurrentLocation,
     handleSearchSubmit,

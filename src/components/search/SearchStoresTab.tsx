@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, ChevronRight, MapPin } from 'lucide-react';
+import { Store, Star, ChevronRight, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
-import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import SearchServiceCard from './SearchServiceCard';
@@ -64,6 +63,9 @@ interface SearchStoresTabProps {
   readonly gate: (href: string) => string;
   readonly userCoords?: { lat: number; lng: number } | null;
   readonly department?: string;
+  /** In the map panel: tapping a shop opens its profile there (false when it has no pin) and its designs / services drop down. */
+  readonly onShowOnMap?: (slug: string) => boolean;
+  readonly inPanel?: boolean;
 }
 
 export default function SearchStoresTab({
@@ -77,7 +79,12 @@ export default function SearchStoresTab({
   gate,
   userCoords,
   department = '',
+  onShowOnMap,
+  inPanel = false,
 }: SearchStoresTabProps) {
+  // Shops whose designs / services are dropped down (only used in the map panel; elsewhere they are always shown).
+  const [openIds, setOpenIds] = useState<number[]>([]);
+
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3 px-1">
@@ -177,6 +184,10 @@ export default function SearchStoresTab({
             const matchedServicesCount = effectiveQ.trim() ? storeServices.length : store.services_count ?? storeServices.length;
             const showServicesCarousel = isServicesFilter || (storeCarouselItems.length === 0 && storeServices.length > 0);
 
+            const hasPin = (store.branches ?? []).some((b) => b.latitude && b.longitude);
+            const hasCarousel = (showServicesCarousel && storeServices.length > 0) || storeCarouselItems.length > 0;
+            const dropped = !inPanel || openIds.includes(store.id);
+
             const storeHref = gate(
               showServicesCarousel && storeServices.length > 0
                 ? `/store/${store.slug}?tab=services${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
@@ -186,10 +197,9 @@ export default function SearchStoresTab({
             return (
               <div key={store.id} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-2.5">
                 {/* Store Header Row */}
-                <Link
-                  href={storeHref}
-                  className="flex items-center justify-between gap-3 group active:opacity-80"
-                >
+                <div className="flex items-center gap-2">
+                  {onShowOnMap && hasPin ? (
+                    <button type="button" onClick={() => onShowOnMap(store.slug)} className="group min-w-0 flex-1 text-left active:opacity-80">
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     <StoreLogoAvatar
                       src={imageSrc}
@@ -229,23 +239,73 @@ export default function SearchStoresTab({
                       <p className="text-[11px] text-ink-faint truncate">
                         {districtText} · Davao City
                       </p>
-                      {store.specializations && store.specializations.length > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                          {store.specializations.slice(0, 2).map((id) => (
-                            <span key={id} className="px-1.5 py-0.5 text-[9px] font-semibold bg-canvas border border-line text-ink-muted">
-                              {STORE_SPECIALIZATIONS.find((s) => s.value === id)?.label || id}
-                            </span>
-                          ))}
-                          {store.specializations.length > 2 && (
-                            <span className="text-[9px] font-semibold text-ink-faint">+{store.specializations.length - 2}</span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
-                  <ChevronRight size={18} className="text-ink-faint group-hover:text-ink transition-colors shrink-0" />
-                </Link>
+                    </button>
+                  ) : (
+                    <Link href={storeHref} className="group min-w-0 flex-1 active:opacity-80">
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    <StoreLogoAvatar
+                      src={imageSrc}
+                      name={store.name}
+                      isOpen={isStoreOpen(store.operating_hours)}
+                      className="w-14 h-14 rounded-full border border-line bg-sunken"
+                      textClassName="text-base font-bold text-taupe"
+                    />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {distKm != null ? (
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                            {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
+                          </span>
+                        ) : store.subscription_plan === 'premium' || store.is_featured ? (
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                            ★ FEATURED STORE
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                            DAVAO CITY
+                          </span>
+                        )}
+                        {store.reviews_avg_rating ? (
+                          <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
+                            <Star size={10} className="fill-current text-taupe" />
+                            {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
+                          </span>
+                        ) : null}
+                      </div>
+                      <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
+                        {store.name}
+                      </h3>
+                      <p className="text-[11px] text-ink-muted truncate">
+                        {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
+                      </p>
+                      <p className="text-[11px] text-ink-faint truncate">
+                        {districtText} · Davao City
+                      </p>
+                    </div>
+                  </div>
+                    </Link>
+                  )}
+                  {inPanel ? (
+                    hasCarousel && (
+                      <button
+                        type="button"
+                        onClick={() => setOpenIds((ids) => (ids.includes(store.id) ? ids.filter((i) => i !== store.id) : [...ids, store.id]))}
+                        aria-expanded={dropped}
+                        aria-label={dropped ? 'Hide designs and services' : 'Show designs and services'}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken"
+                      >
+                        {dropped ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </button>
+                    )
+                  ) : (
+                    <ChevronRight size={18} className="text-ink-faint shrink-0" />
+                  )}
+                </div>
 
+                {dropped && (
+                  <>
                 {/* Carousel Header */}
                 {showServicesCarousel && storeServices.length > 0 ? (
                   <div className="px-0.5 pt-0.5">
@@ -309,20 +369,22 @@ export default function SearchStoresTab({
                     ))}
                   </div>
                 ) : null}
+                  </>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {activeTab === 'store' && userCoords && stores.length > 0 && (
+      {!inPanel && activeTab === 'store' && userCoords && stores.length > 0 && (
         <div className="mt-3 py-2.5 px-0 flex items-center gap-2.5 text-ink-muted text-xs border-b border-line/60">
           <MapPin size={14} className="text-taupe shrink-0" />
           <span>Distances are ordered from your current location in Davao City.</span>
         </div>
       )}
 
-      {activeTab === 'store' && (total > 0 || items.length > 0) && (
+      {!inPanel && activeTab === 'store' && (total > 0 || items.length > 0) && (
         <p className="text-center mt-6 mb-2">
           <button
             type="button"

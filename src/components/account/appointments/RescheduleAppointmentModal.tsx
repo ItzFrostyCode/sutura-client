@@ -93,10 +93,10 @@ export default function RescheduleAppointmentModal({
       maxWidth="max-w-lg"
       footer={
         <>
-          <button type="button" onClick={onClose} disabled={saving} className="h-11 px-5 border border-line-strong bg-white text-sm font-medium text-ink hover:bg-sunken cursor-pointer disabled:opacity-50">
+          <button type="button" onClick={onClose} disabled={saving} className="h-11 cursor-pointer rounded-full bg-sunken px-5 text-sm font-semibold text-ink active:opacity-70 disabled:opacity-50">
             Cancel
           </button>
-          <button type="button" onClick={save} disabled={saving || !date || !time} className="h-11 px-5 bg-taupe hover:bg-taupe/90 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50">
+          <button type="button" onClick={save} disabled={saving || !date || !time} className="flex h-11 cursor-pointer items-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-white active:opacity-80 disabled:opacity-50">
             {saving && <Loader2 size={16} className="animate-spin" />} Move my request
           </button>
         </>

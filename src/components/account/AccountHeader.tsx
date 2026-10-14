@@ -1,21 +1,22 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 
 interface AccountHeaderProps {
   readonly title: string;
   readonly backHref: string;
 }
 
-// The one back-arrow + title header every /account/* sub-page (except the
-// Me hub itself, which has its own profile-row header) should use — a
-// white sticky bar, flush edge-to-edge (negative margins cancel
-// AccountLayout's padding), title left-aligned right after the back arrow.
-// Hidden at md+ — that's where AccountLayout's persistent sidebar takes
-// over as the section's real navigation, making this back-arrow redundant.
+// The one back-arrow + title row every /account/* sub-page (except the Me hub itself, which has the SUTURA row) uses: it sticks to the
+// top and sits where the hub's SUTURA row sits, so every screen of the profile has the same margins. Hidden at md+ — that's where
+// AccountLayout's persistent sidebar takes over as the section's real navigation, making this back-arrow redundant.
 export default function AccountHeader({ title, backHref }: AccountHeaderProps) {
   const router = useRouter();
+  // Settings is a hierarchy (profile → settings → one setting), and leaving it for /location or the map and coming back leaves those
+  // screens in the browser history, so a history "back" from Settings landed on them instead of the profile. Under /account/settings
+  // Back always goes to the parent screen.
+  const parentOnly = usePathname().startsWith('/account/settings');
 
   // A "literal" back — return to wherever the user actually came from
   // (e.g. a notification thread, a search result) instead of always
@@ -23,24 +24,28 @@ export default function AccountHeader({ title, backHref }: AccountHeaderProps) {
   // the fallback for when there's genuinely no app history to go back to
   // (page opened directly via URL/refresh/new tab).
   const handleBack = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
+    if (!parentOnly && typeof window !== 'undefined' && window.history.length > 1) {
       router.back();
     } else {
       router.push(backHref);
     }
   };
 
+  // Same place as the SUTURA row of the profile page (16px from the top, a 32px row, 8px under it), so the first card starts at the same
+  // height and with the same side margins whichever screen of the profile is open. The 44px tap area is drawn outside the 32px row.
   return (
-    <div className="md:hidden -mx-4 sm:-mx-6 -mt-4 sticky top-[52px] sm:top-[64px] z-40 bg-surface border-b border-line px-1 sm:px-3 h-[52px] sm:h-[56px] flex items-center gap-1 mb-4">
-      <button
-        type="button"
-        onClick={handleBack}
-        aria-label="Back"
-        className="btn-icon-mobile text-ink hover:text-taupe touch-target-48"
-      >
-        <ArrowLeft size={24} />
-      </button>
-      <h1 className="mobile-h4 font-semibold text-ink">{title}</h1>
+    <div className="sticky top-0 z-40 -mt-4 bg-canvas pb-2 pt-4 md:hidden">
+      <div className="flex h-8 items-center gap-1">
+        <button
+          type="button"
+          onClick={handleBack}
+          aria-label="Back"
+          className="relative -ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink transition-colors before:absolute before:-inset-2 hover:bg-sunken active:bg-sunken"
+        >
+          <ChevronLeft size={26} />
+        </button>
+        <h1 className="mobile-h4 min-w-0 truncate text-ink">{title}</h1>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
+import { useToast } from '@/context/ToastContext';
 import { FileText } from 'lucide-react';
 import { SERVICE_TYPE_META } from '@/components/services/serviceHelpers';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
@@ -98,6 +99,9 @@ export function useJobCreateForm() {
 
   const [customerMeasurements, setCustomerMeasurements] = useState<CustomerMeasurement[]>([]);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  // Staff picked on the form (user id -> role); saved as the order's planned staff once it exists.
+  const [assignees, setAssignees] = useState<Record<number, string>>({});
+  const toast = useToast();
   // The combo package this order is for (one job order for the whole set).
   const [servicePackage, setServicePackage] = useState<{ id: number; name: string; bundle_price?: string | null; services?: { id: number; name: string; base_price?: string | null }[] } | null>(null);
   const [linkedAppointmentChannel, setLinkedAppointmentChannel] = useState<'walk_in' | 'online' | null>(null);
@@ -448,7 +452,7 @@ export function useJobCreateForm() {
     const balance = totalAmt - appliedDownPay;
 
     try {
-      await api.post(`/stores/${store.id}/jobs`, {
+      const created = await api.post(`/stores/${store.id}/jobs`, {
         intake_channel: effectiveIntakeChannel,
         fulfillment_type: 'pickup',
         customer_id: formData.customer_id,
@@ -487,7 +491,18 @@ export function useJobCreateForm() {
         is_rush: formData.is_rush,
         rush_fee: formData.is_rush ? Number(formData.rush_fee) : 0,
       });
-      router.push('/dashboard/jobs');
+      const newJobId = created.data?.data?.id;
+      const planned = Object.entries(assignees).map(([id, role]) => ({ user_id: Number(id), role }));
+      if (newJobId && planned.length > 0) {
+        try {
+          await api.put(`/stores/${store.id}/jobs/${newJobId}/assignees`, { assignees: planned });
+        } catch {
+          // The order exists already; planning can be redone from its Order Steps tab.
+          toast.error('The order was created, but its staff could not be saved. Assign them from Order Steps.');
+        }
+      }
+      // Land on the new order (its Order Steps tab) instead of the list, so the next step is right there.
+      router.push(newJobId ? `/dashboard/jobs/${newJobId}` : '/dashboard/jobs');
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } } };
       setError(errorResponse.response?.data?.message || 'Failed to create job order.');
@@ -527,6 +542,8 @@ export function useJobCreateForm() {
     setStandardSize,
     appointmentId,
     setAppointmentId,
+    assignees,
+    setAssignees,
     servicePackage,
     effectiveIntakeChannel,
     referenceImages,

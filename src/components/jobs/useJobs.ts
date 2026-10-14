@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import { Job, Tab, columnsForJobs, getDueStatus } from './jobHelpers';
+import { departmentOf, type DeptKey } from './kanban/kanbanConfig';
 
 export function useJobs() {
   const { store, user } = useAuthStore();
@@ -33,6 +34,8 @@ export function useJobs() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
   const [designOriginFilter, setDesignOriginFilter] = useState<'all' | 'catalog' | 'custom' | 'alteration'>('all');
+  // MEN / WOMEN / KIDS / SERVICE tabs on the board.
+  const [deptFilter, setDeptFilter] = useState<'all' | DeptKey>('all');
   // "My Assigned Jobs" — the backend's ?assigned_staff_id already worked,
   // this was just never wired to a toggle anywhere in the UI (staff's
   // missing piece, not the API's — see CLAUDE.md).
@@ -222,8 +225,21 @@ export function useJobs() {
         : designOriginFilter === 'alteration'
         ? j.garment_category === 'alteration_repair'
         : (!((j as unknown as { catalog_item_id?: number }).catalog_item_id) && !j.catalog_item && j.garment_category !== 'alteration_repair');
-    return matchType && matchSearch && matchOverdue && matchGarment && matchOrigin;
+    const matchDept = deptFilter === 'all' || departmentOf(j) === deptFilter;
+    return matchType && matchSearch && matchOverdue && matchGarment && matchOrigin && matchDept;
   });
+
+  // Whole-shop numbers for the department tabs and the per-stage WIP limits — taken from every
+  // order fetched, not from what the filters happen to be showing.
+  const deptCounts = jobs.reduce((acc, j) => {
+    const d = departmentOf(j);
+    acc[d] = (acc[d] ?? 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const statusCounts = jobs.reduce((acc, j) => {
+    acc[j.status] = (acc[j.status] ?? 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   const catalogJobsCount = jobs.filter(j => Boolean((j as unknown as { catalog_item_id?: number }).catalog_item_id || j.catalog_item)).length;
   const customBespokeCount = jobs.filter(j => !((j as unknown as { catalog_item_id?: number }).catalog_item_id) && !j.catalog_item && j.garment_category !== 'alteration_repair').length;
@@ -283,6 +299,10 @@ export function useJobs() {
     garmentCategoryFilter,
     designOriginFilter,
     setDesignOriginFilter,
+    deptFilter,
+    setDeptFilter,
+    deptCounts,
+    statusCounts,
     catalogJobsCount,
     customBespokeCount,
     alterationJobsCount,

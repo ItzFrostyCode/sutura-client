@@ -3,6 +3,7 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 import type { RecentLocation, SavedLocation } from '@/lib/customerLocation';
+import LocationRow from './LocationRow';
 import RecentItemMenu from './RecentItemMenu';
 
 interface RecentLocationsListProps {
@@ -13,64 +14,38 @@ interface RecentLocationsListProps {
   readonly getDistanceLabel: (lat: number, lng: number) => string;
 }
 
-export default function RecentLocationsList({
-  recents,
-  onClearAll,
-  onSelectLocation,
-  onDeleteRecent,
-  getDistanceLabel,
-}: RecentLocationsListProps) {
+export default function RecentLocationsList({ recents, onClearAll, onSelectLocation, onDeleteRecent, getDistanceLabel }: RecentLocationsListProps) {
   return (
-    <section className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint">Recent Places</p>
+    <section>
+      <div className="mb-2 flex items-center justify-between px-1">
+        <p className="text-sm font-medium text-ink-muted">Recent places</p>
         {recents.length > 0 && (
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="text-[11px] font-semibold text-ink-muted hover:text-danger transition-colors cursor-pointer"
-          >
-            Clear all
-          </button>
+          <button type="button" onClick={onClearAll} className="-my-3 min-h-[44px] px-1 text-sm text-ink-muted transition-colors hover:text-danger">Clear all</button>
         )}
       </div>
 
       {recents.length > 0 ? (
-        <div className="bg-surface border border-line rounded-none divide-y divide-line overflow-hidden shadow-xs">
+        <div className="card-soft p-2">
           {recents.map((loc, idx) => (
-            <div
-              key={`${loc.lat}-${loc.lng}-${idx}`}
-              className="flex items-center gap-3.5 px-3.5 hover:bg-sunken transition-colors"
-            >
-              <button
-                type="button"
-                onClick={() => onSelectLocation(loc)}
-                className="flex items-start gap-3.5 py-3.5 flex-1 min-w-0 text-left cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-full bg-sunken flex items-center justify-center shrink-0 mt-0.5 text-ink-muted">
-                  <Clock size={16} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-ink line-clamp-1">{loc.address.split(',')[0]}</p>
-                  <p className="text-xs text-ink-muted line-clamp-1 mt-0.5">
-                    <span className="font-semibold text-taupe">{getDistanceLabel(loc.lat, loc.lng)}</span>
-                    {' · '}
-                    {loc.address}
-                  </p>
-                </div>
-              </button>
-              <RecentItemMenu
-                onUse={() => onSelectLocation(loc)}
-                onDelete={() => onDeleteRecent(loc.lat, loc.lng)}
-              />
+            <div key={`${loc.lat}-${loc.lng}-${idx}`} className="flex items-center">
+              <div className="min-w-0 flex-1">
+                <LocationRow
+                  icon={<Clock size={22} />}
+                  title={loc.address.split(',')[0]}
+                  subtitle={<><span className="text-taupe">{getDistanceLabel(loc.lat, loc.lng)}</span>{' · '}{loc.address}</>}
+                  onClick={() => onSelectLocation(loc)}
+                  chevron={false}
+                />
+              </div>
+              <RecentItemMenu onUse={() => onSelectLocation(loc)} onDelete={() => onDeleteRecent(loc.lat, loc.lng)} />
             </div>
           ))}
         </div>
       ) : (
-        <div className="bg-surface border border-line rounded-none p-7 text-center">
-          <Clock size={26} className="mx-auto text-ink-faint mb-2" />
-          <p className="text-xs font-medium text-ink-muted">No recent locations yet.</p>
-          <p className="text-[11px] text-ink-faint mt-0.5">Pick a suggested place or choose on the map.</p>
+        <div className="card-soft px-6 py-8 text-center">
+          <Clock size={26} className="mx-auto mb-2 text-ink-faint" />
+          <p className="mobile-body-md text-ink-muted">No recent locations yet.</p>
+          <p className="mobile-body-sm mt-0.5 text-ink-faint">Pick a suggested place or choose on the map.</p>
         </div>
       )}
     </section>

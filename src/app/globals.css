@@ -597,3 +597,31 @@ textarea:-webkit-autofill:focus {
   font-weight: 600;
   background: rgba(255,255,255,0.15);
 }
+
+/* Kanban: a full column refuses a dropped card with a short shake (components/jobs/kanban). */
+@keyframes kanban-shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-5px); }
+  30%, 60%, 90% { transform: translateX(5px); }
+}
+.animate-kanban-shake { animation: kanban-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-kanban-shake { animation: none; }
+}
+
+/* PublicBottomNav is fixed to the bottom edge; this keeps the end of the page reachable. */
+body.has-bottom-nav { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* Landing "soft card": white, hairline edge, a very light lift and a generous radius. No gradients. */
+.card-soft {
+  background: var(--card-bg);
+  border: 1px solid rgba(235, 230, 224, 0.7);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(45, 42, 38, 0.04), 0 8px 24px rgba(45, 42, 38, 0.05);
+}
+
+/* Room the floating bottom navigation takes at the bottom of the screen, for screens that draw under it (the map). */
+:root { --bottom-nav-space: calc(64px + max(12px, env(safe-area-inset-bottom))); }
+
+/* One column width shared by the phone/tablet sheet, the map buttons and the floating bottom navigation. */
+:root { --col-w: 640px; }

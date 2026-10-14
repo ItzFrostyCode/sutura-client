@@ -132,7 +132,7 @@ export function getDiscoverColumns(): NavColumn[] {
       title: 'EXPLORE SUTURA',
       items: [
         { label: 'Browse Tailor Map', href: '/map' },
-        { label: 'About Sutura', href: '/#about' },
+        { label: 'About Sutura', href: '/about' },
         { label: 'Alterations & Repairs', href: '/search?q=Alterations&category=alteration_repair' },
         { label: 'All Categories Directory', href: '/categories' },
       ],

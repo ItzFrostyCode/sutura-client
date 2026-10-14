@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { ToastProvider } from '@/context/ToastContext';
 import api from '@/lib/axios';
 import PublicNav from '@/components/shared/PublicNav';
+import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import AccountWebSidebar from '@/components/account/hub/AccountWebSidebar';
 
 // A thin auth-guard shell — one hydration-guard/redirect/refetch bootstrap
@@ -85,6 +86,7 @@ export default function AccountLayout({ children }: { readonly children: React.R
       <div className="min-h-dvh flex flex-col bg-canvas">
         <PublicNav />
         <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-4 md:py-6">
+          <PageBrandRow className="mb-2" />
           {showSidebar ? (
             <div className="flex flex-col md:flex-row md:items-start md:gap-8">
               <div className="hidden md:block">

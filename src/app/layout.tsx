@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Outfit, Playfair_Display } from "next/font/google";
 import "./globals.css";
@@ -8,6 +9,7 @@ import LoginModal from "@/components/auth/LoginModal";
 import SignInFromQuery from "@/components/auth/SignInFromQuery";
 import ShopRouteGuard from "@/components/auth/ShopRouteGuard";
 import { ToastProvider } from "@/context/ToastContext";
+import LastPageTracker from "@/components/shared/LastPageTracker";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -38,6 +40,7 @@ export default function RootLayout({
         <ToastProvider>
           <NetworkGuard>
             <AuthHydrator />
+            <Suspense fallback={null}><LastPageTracker /></Suspense>
             <MobileFrame>
               <ShopRouteGuard>{children}</ShopRouteGuard>
             </MobileFrame>

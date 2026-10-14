@@ -1,8 +1,15 @@
-import {
-  Store, ShoppingBag, SlidersHorizontal, Sparkles, Scissors, Shirt, Truck, UserCheck,
-} from 'lucide-react';
+import { Scissors, SlidersHorizontal, Truck, UserCheck } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import type { StageIconFilter } from './stageIconFilters';
+import ChannelTabs from './kanban/ChannelTabs';
+import DeptTabs from './kanban/DeptTabs';
+import BoardControls from './kanban/BoardControls';
+import OriginFilter from './kanban/OriginFilter';
+import StageIconStrip from './kanban/StageIconStrip';
+import type { DeptKey } from './kanban/kanbanConfig';
+import type { KanbanPrefs } from './kanban/useKanbanPrefs';
+
+type Origin = 'all' | 'catalog' | 'custom' | 'alteration';
 
 interface JobsPageToolbarProps {
   tab: 'all' | 'walk_in' | 'online';
@@ -11,13 +18,13 @@ interface JobsPageToolbarProps {
   walkInCount: number;
   onlineCount: number;
   onOpenSettings: () => void;
-  // "My Assigned Jobs" — shown only for staff, who aren't looking at the
-  // whole store's production board, just what they personally need to work.
+  // "My Assigned Jobs" — shown only for staff, who aren't looking at the whole
+  // store's production board, just what they personally need to work.
   showMyJobsToggle?: boolean;
   myJobsOnly?: boolean;
   setMyJobsOnly?: (val: boolean) => void;
-  designOriginFilter: 'all' | 'catalog' | 'custom' | 'alteration';
-  setDesignOriginFilter: (val: 'all' | 'catalog' | 'custom' | 'alteration') => void;
+  designOriginFilter: Origin;
+  setDesignOriginFilter: (val: Origin) => void;
   catalogJobsCount: number;
   customBespokeCount: number;
   alterationJobsCount: number;
@@ -27,210 +34,70 @@ interface JobsPageToolbarProps {
   search: string;
   setSearch: (val: string) => void;
   activeColumns: { id: string; title: string }[];
+  deptFilter: 'all' | DeptKey;
+  setDeptFilter: (val: 'all' | DeptKey) => void;
+  deptCounts: Record<string, number>;
+  statusCounts: Record<string, number>;
+  prefs: KanbanPrefs;
 }
 
-export default function JobsPageToolbar({
-  tab,
-  setTab,
-  totalJobsCount,
-  walkInCount,
-  onlineCount,
-  onOpenSettings,
-  showMyJobsToggle = false,
-  myJobsOnly = false,
-  setMyJobsOnly,
-  designOriginFilter,
-  setDesignOriginFilter,
-  catalogJobsCount,
-  customBespokeCount,
-  alterationJobsCount,
-  stageFilter,
-  setStageFilter,
-  stageIconFilters,
-  search,
-  setSearch,
-  activeColumns,
-}: JobsPageToolbarProps) {
+export default function JobsPageToolbar(p: JobsPageToolbarProps) {
+  const flowHint = p.tab === 'online' ? 'Online' : p.tab === 'walk_in' ? 'Walk-in' : null;
+
   return (
     <>
-      <div className="p-3 sm:p-3.5 border-b border-line bg-canvas/20 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
-          {/* Channel Tabs + Settings Button Group */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-            <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0">
+      <div className="flex flex-col gap-2.5 border-b border-line bg-canvas/20 p-3 sm:p-3.5">
+        {/* Row 1: departments + intake channel */}
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+          <DeptTabs value={p.deptFilter} onChange={p.setDeptFilter} counts={p.deptCounts} total={p.totalJobsCount} />
+          <div className="flex items-center gap-2">
+            <ChannelTabs tab={p.tab} setTab={p.setTab} total={p.totalJobsCount} walkIn={p.walkInCount} online={p.onlineCount} />
+            {p.showMyJobsToggle && p.setMyJobsOnly && (
               <button
                 type="button"
-                onClick={() => setTab('all')}
-                className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === 'all'
-                    ? 'bg-surface text-ink shadow-xs border border-line/80'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-              >
-                <span>All Orders</span>
-                <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{totalJobsCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('walk_in')}
-                className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === 'walk_in'
-                    ? 'bg-surface text-ink shadow-xs border border-line/80'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-              >
-                <Store size={12} />
-                <span>Walk-in</span>
-                <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{walkInCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('online')}
-                className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === 'online'
-                    ? 'bg-surface text-ink shadow-xs border border-line/80'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-              >
-                <ShoppingBag size={12} />
-                <span>Online</span>
-                <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{onlineCount}</span>
-              </button>
-            </div>
-
-            {showMyJobsToggle && setMyJobsOnly && (
-              <button
-                type="button"
-                onClick={() => setMyJobsOnly(!myJobsOnly)}
+                onClick={() => p.setMyJobsOnly?.(!p.myJobsOnly)}
                 title="Show only jobs assigned to me"
-                className={`h-9.5 px-3 rounded-lg border text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                  myJobsOnly
-                    ? 'bg-taupe text-white border-taupe'
-                    : 'bg-canvas border-line text-ink-muted hover:text-ink hover:bg-surface'
+                aria-pressed={p.myJobsOnly}
+                className={`flex h-9.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-xs font-bold transition-all ${
+                  p.myJobsOnly ? 'border-taupe bg-taupe text-white' : 'border-line bg-canvas text-ink-muted hover:bg-surface hover:text-ink'
                 }`}
               >
                 <UserCheck size={14} />
                 <span>My Jobs</span>
               </button>
             )}
-
-            {/* Settings Button */}
             <button
               type="button"
-              onClick={onOpenSettings}
+              onClick={p.onOpenSettings}
               title="Stage Notification Dot Settings"
-              className="h-9.5 w-9.5 rounded-lg bg-canvas border border-line text-ink-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-all shadow-2xs shrink-0 active:scale-95 cursor-pointer"
+              className="flex h-9.5 w-9.5 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-canvas text-ink-muted shadow-2xs transition-all hover:bg-surface hover:text-ink active:scale-95"
             >
               <SlidersHorizontal size={15} />
             </button>
           </div>
-
-          {/* Design Origin Filters */}
-          <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0 overflow-x-auto hide-scrollbar">
-            <button
-              type="button"
-              onClick={() => setDesignOriginFilter('all')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
-                designOriginFilter === 'all'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <span>All</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{totalJobsCount}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDesignOriginFilter('catalog')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
-                designOriginFilter === 'catalog'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <Sparkles size={11} className="text-taupe" />
-              <span>Catalog</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{catalogJobsCount}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDesignOriginFilter('custom')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
-                designOriginFilter === 'custom'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <Scissors size={11} />
-              <span>Custom</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{customBespokeCount}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setDesignOriginFilter('alteration')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
-                designOriginFilter === 'alteration'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              <Shirt size={11} />
-              <span>Alterations</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{alterationJobsCount}</span>
-            </button>
-          </div>
-
-          {/* Icon-Only Stage Filters */}
-          <div className="h-11 sm:h-9.5 flex items-center gap-1.5 sm:gap-1 p-1 bg-canvas border border-line rounded-xl sm:rounded-lg overflow-x-auto hide-scrollbar w-full sm:w-auto touch-pan-x">
-            {stageIconFilters.map((stage) => {
-              const Icon = stage.icon;
-              const isSelected = stageFilter === stage.id;
-
-              return (
-                <button
-                  key={stage.id}
-                  type="button"
-                  onClick={() => {
-                    setStageFilter(stage.id);
-                    if (stage.id !== 'all') {
-                      const el = document.getElementById(`kanban-col-${stage.id}`);
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    }
-                  }}
-                  title={stage.title}
-                  className={`relative min-w-[38px] h-9 sm:min-w-8 sm:h-7 rounded-lg sm:rounded-md flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer ${
-                    isSelected
-                      ? 'bg-surface text-ink shadow-xs border border-line/90 font-bold'
-                      : 'text-ink-muted hover:text-ink hover:bg-surface/50'
-                  }`}
-                >
-                  <Icon size={16} className={`transition-colors ${stage.iconColor ?? ''}`} />
-                  {stage.dotColor && (
-                    <span className={`absolute top-1 right-1 w-2 h-2 sm:w-1.5 sm:h-1.5 rounded-full ${stage.dotColor} ring-1.5 ring-white`} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
-        {/* Search Input */}
-        <div className="w-full lg:w-60 shrink-0">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-full" />
+        {/* Row 2: board controls, origin + stage filters, search */}
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <BoardControls prefs={p.prefs} columns={p.activeColumns} counts={p.statusCounts} />
+            <OriginFilter
+              value={p.designOriginFilter}
+              onChange={p.setDesignOriginFilter}
+              counts={{ all: p.totalJobsCount, catalog: p.catalogJobsCount, custom: p.customBespokeCount, alteration: p.alterationJobsCount }}
+            />
+            <StageIconStrip filters={p.stageIconFilters} value={p.stageFilter} onChange={p.setStageFilter} />
+          </div>
+          <div className="w-full shrink-0 lg:w-60">
+            <SearchInput value={p.search} onChange={p.setSearch} placeholder="Search order or customer..." className="w-full" />
+          </div>
         </div>
       </div>
 
-      {tab === 'online' && (
-        <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
-          <Truck size={13} />
-          <span>Online production flow: <strong>{activeColumns.map((c) => c.title).join(' → ')}</strong>.</span>
-        </div>
-      )}
-
-      {tab === 'walk_in' && (
-        <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
-          <Scissors size={13} />
-          <span>Walk-in production flow: <strong>{activeColumns.map((c) => c.title).join(' → ')}</strong>.</span>
+      {flowHint && (
+        <div className="flex items-center gap-2 border-b border-line bg-canvas/40 px-4 py-2 text-xs text-ink-muted">
+          {p.tab === 'online' ? <Truck size={13} /> : <Scissors size={13} />}
+          <span>{flowHint} production flow: <strong>{p.activeColumns.map((c) => c.title).join(' → ')}</strong>.</span>
         </div>
       )}
     </>

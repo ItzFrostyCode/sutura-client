@@ -1,14 +1,7 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { MapPin } from 'lucide-react';
-import ComingSoon from '@/components/account/ComingSoon';
-
+// "My Location" is the real /location screen (current location, choose on map, home address, recent places) — the old
+// "coming soon" page said a saved address was not built, which stopped being true. Old links and the desktop sidebar land there.
 export default function MyLocationPage() {
-  return (
-    <ComingSoon
-      title="My Location"
-      Icon={MapPin}
-      message="Saving a home address so stores can estimate delivery/pickup distance isn't built yet — check back soon."
-    />
-  );
+  redirect(`/location?returnTo=${encodeURIComponent('/account/settings')}`);
 }

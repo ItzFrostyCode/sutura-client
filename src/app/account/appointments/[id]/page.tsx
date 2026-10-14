@@ -2,12 +2,12 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useToast } from '@/context/ToastContext';
 import RescheduleAppointmentModal from '@/components/account/appointments/RescheduleAppointmentModal';
 import AccountHeader from '@/components/account/AccountHeader';
+import EmptyState from '@/components/account/EmptyState';
 import AppointmentDetailContent, { type AppointmentDetailData } from '@/components/account/appointments/AppointmentDetailContent';
 
 export default function AppointmentDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
@@ -62,19 +62,7 @@ export default function AppointmentDetailPage({ params }: Readonly<{ params: Pro
       )}
 
       {!loading && notFound && (
-        <div className="bg-surface border border-line p-8 text-center">
-          <AlertCircle size={28} className="text-danger mx-auto mb-3" />
-          <h2 className="mobile-h3 font-semibold text-ink mb-1">Appointment not found</h2>
-          <p className="mobile-body-sm text-ink-muted mb-6 font-normal space-headline-para">
-            This appointment doesn&apos;t exist or doesn&apos;t belong to your account.
-          </p>
-          <Link
-            href="/account/appointments"
-            className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[220px] mx-auto"
-          >
-            Back to My Appointments →
-          </Link>
-        </div>
+        <EmptyState Icon={AlertCircle} title="Appointment not found" message="This appointment doesn't exist or doesn't belong to your account." action={{ href: '/account/appointments', label: 'Back to My Appointments' }} />
       )}
 
       {!loading && appt && (

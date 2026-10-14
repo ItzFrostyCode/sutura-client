@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import api from '@/lib/axios';
 import type { SavedLocation, RecentLocation, HomeLocation } from '@/lib/customerLocation';
 import {
   getSavedLocation,
@@ -17,14 +16,16 @@ import {
 } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
-import { SuggestedHub, DAVAO_LANDMARKS } from '../types';
+import { withFocusParam } from '@/lib/mapFocus';
 
 export function useLocationPageState() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const outgoingQ = searchParams.get('q') ?? '';
+  // Where to go after a place is picked (e.g. the landing page). Same-site paths only.
+  const rawReturnTo = searchParams.get('returnTo') ?? '';
+  const returnTo = rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '';
 
-  const [activeTab, setActiveTab] = useState<'recent' | 'suggested'>('recent');
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{ lat: number; lng: number; display_name: string }[]>([]);
@@ -35,10 +36,6 @@ export function useLocationPageState() {
   const [homeLocation, setHomeLocation] = useState<HomeLocation | null>(null);
   const [locatingCurrent, setLocatingCurrent] = useState(false);
   const [currentAddressPreview, setCurrentAddressPreview] = useState('');
-
-  const [storeHubs, setStoreHubs] = useState<SuggestedHub[]>([]);
-  const [loadingStores, setLoadingStores] = useState(false);
-  const [hubCategory, setHubCategory] = useState<'all' | 'stores' | 'malls' | 'districts'>('all');
 
   const [showSetHome, setShowSetHome] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -65,81 +62,10 @@ export function useLocationPageState() {
     refreshData();
   }, [refreshData]);
 
-  useEffect(() => {
-    setLoadingStores(true);
-    api
-      .get('/public/stores')
-      .then((res) => {
-        const stores = res.data?.data ?? [];
-        const hubs: SuggestedHub[] = [];
-        stores.forEach(
-          (store: {
-            name: string;
-            address?: string;
-            city?: string;
-            branches?: Array<{
-              name?: string;
-              address?: string;
-              district?: string;
-              latitude?: string | number;
-              longitude?: string | number;
-            }>;
-          }) => {
-            if (Array.isArray(store.branches)) {
-              store.branches.forEach((b) => {
-                const lat = typeof b.latitude === 'string' ? parseFloat(b.latitude) : Number(b.latitude);
-                const lng = typeof b.longitude === 'string' ? parseFloat(b.longitude) : Number(b.longitude);
-                if (
-                  lat != null &&
-                  lng != null &&
-                  !isNaN(lat) &&
-                  !isNaN(lng) &&
-                  lat >= 6.85 &&
-                  lat <= 7.4 &&
-                  lng >= 125.3 &&
-                  lng <= 125.8
-                ) {
-                  hubs.push({
-                    name: `${store.name}${b.name ? ` (${b.name})` : ''}`,
-                    address: `${b.address || store.address || ''}, ${b.district || 'Davao City'}`.replace(/^,\s*/, ''),
-                    district: b.district || store.city || 'Davao City',
-                    lat,
-                    lng,
-                    type: 'tailor_store',
-                  });
-                }
-              });
-            }
-          }
-        );
-        setStoreHubs(hubs);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingStores(false));
-  }, []);
-
-  const dynamicSuggested = useMemo(() => {
-    const combined = [...storeHubs, ...DAVAO_LANDMARKS];
-    const refLat = savedLocation?.lat ?? 7.0731;
-    const refLng = savedLocation?.lng ?? 125.6128;
-
-    const filtered = combined.filter((item) => {
-      if (hubCategory === 'stores') return item.type === 'tailor_store';
-      if (hubCategory === 'malls') return item.type === 'mall';
-      if (hubCategory === 'districts') return item.type === 'district' || item.type === 'landmark';
-      return true;
-    });
-
-    return filtered.sort((a, b) => {
-      const distA = haversineKm(refLat, refLng, a.lat, a.lng);
-      const distB = haversineKm(refLat, refLng, b.lat, b.lng);
-      return distA - distB;
-    });
-  }, [storeHubs, savedLocation, hubCategory]);
-
   function handleSelectLocation(loc: SavedLocation) {
     saveLocationWithHistory(loc);
-    router.push(outgoingQ ? `/search?q=${encodeURIComponent(outgoingQ)}` : '/search');
+    const target = returnTo || (outgoingQ ? `/search?q=${encodeURIComponent(outgoingQ)}` : '/search');
+    router.replace(withFocusParam(target));
   }
 
   function handleUseCurrentGps() {
@@ -240,8 +166,7 @@ export function useLocationPageState() {
   return {
     router,
     outgoingQ,
-    activeTab,
-    setActiveTab,
+    returnTo,
     searchQuery,
     setSearchQuery,
     searching,
@@ -255,10 +180,6 @@ export function useLocationPageState() {
     setHomeLocation,
     locatingCurrent,
     currentAddressPreview,
-    storeHubs,
-    loadingStores,
-    hubCategory,
-    setHubCategory,
     showSetHome,
     setShowSetHome,
     searchInputRef,
@@ -268,7 +189,6 @@ export function useLocationPageState() {
     getDistanceLabel,
     handleDeleteRecent,
     handleClearAllRecents,
-    dynamicSuggested,
     saveHomeLocation,
     removeHomeLocation,
   };
