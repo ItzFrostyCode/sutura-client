@@ -10,9 +10,11 @@ type SearchData = ReturnType<typeof useSearchData>;
 interface SearchPanelBodyProps {
   readonly s: SearchData;
   readonly onOpenFilter: () => void;
-  readonly onShowOnMap: (slug: string) => boolean;
+  readonly onShowOnMap: (slug: string, path?: string) => boolean;
   /** The shop whose pin is selected: when there is one, the panel shows it instead of the list. */
   readonly selected: DiscoveryMapBranch | null;
+  /** A page of the open shop to show instead of its storefront (e.g. "/service/3"). */
+  readonly shopPath?: string | null;
   readonly onBack: () => void;
   readonly inputRef?: Ref<HTMLInputElement>;
   readonly compact?: boolean;
@@ -22,7 +24,7 @@ interface SearchPanelBodyProps {
  * What goes inside the panel: the search and the shops, or one shop opened. The list stays mounted (just hidden) while a
  * shop is open, so going back returns to the same place in it — there is a single level, so one Back is always enough.
  */
-export default function SearchPanelBody({ s, onOpenFilter, onShowOnMap, selected, onBack, inputRef, compact }: SearchPanelBodyProps) {
+export default function SearchPanelBody({ s, onOpenFilter, onShowOnMap, selected, shopPath = null, onBack, inputRef, compact }: SearchPanelBodyProps) {
   const store = selected ? s.stores.find((st) => st.slug === selected.storeSlug) : undefined;
   const detail = Boolean(selected && store);
 
@@ -34,7 +36,7 @@ export default function SearchPanelBody({ s, onOpenFilter, onShowOnMap, selected
         </div>
         <SearchResults s={s} onShowOnMap={onShowOnMap} className="flex-1" />
       </div>
-      {selected && store && <ShopDetail store={store} branch={selected} onBack={onBack} />}
+      {selected && store && <ShopDetail store={store} branch={selected} path={shopPath} onBack={onBack} />}
     </>
   );
 }

@@ -64,7 +64,8 @@ interface SearchStoresTabProps {
   readonly userCoords?: { lat: number; lng: number } | null;
   readonly department?: string;
   /** In the map panel: tapping a shop opens its profile there (false when it has no pin) and its designs / services drop down. */
-  readonly onShowOnMap?: (slug: string) => boolean;
+  /** Opens the shop inside the map panel; `path` (e.g. "/service/3") opens one of its pages there. False when it has no pin. */
+  readonly onShowOnMap?: (slug: string, path?: string) => boolean;
   readonly inPanel?: boolean;
 }
 
@@ -182,7 +183,11 @@ export default function SearchStoresTab({
             // search query has narrowed the visible array down from the
             // store's real total — services_count is the uncapped figure.
             const matchedServicesCount = effectiveQ.trim() ? storeServices.length : store.services_count ?? storeServices.length;
-            const showServicesCarousel = isServicesFilter || (storeCarouselItems.length === 0 && storeServices.length > 0);
+            // In the map panel a shop drops down its services (designs live inside a service and are browsed from there); the
+            // design carousel is only a fallback for a shop that matched on a design but has no matching service.
+            const showServicesCarousel = inPanel
+              ? storeServices.length > 0
+              : isServicesFilter || (storeCarouselItems.length === 0 && storeServices.length > 0);
 
             const hasPin = (store.branches ?? []).some((b) => b.latitude && b.longitude);
             const hasCarousel = (showServicesCarousel && storeServices.length > 0) || storeCarouselItems.length > 0;
@@ -293,7 +298,7 @@ export default function SearchStoresTab({
                         type="button"
                         onClick={() => setOpenIds((ids) => (ids.includes(store.id) ? ids.filter((i) => i !== store.id) : [...ids, store.id]))}
                         aria-expanded={dropped}
-                        aria-label={dropped ? 'Hide designs and services' : 'Show designs and services'}
+                        aria-label={dropped ? 'Hide services' : 'Show services'}
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken"
                       >
                         {dropped ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -329,8 +334,13 @@ export default function SearchStoresTab({
                 {showServicesCarousel && storeServices.length > 0 ? (
                   <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory">
                     {storeServices.map((svc) => (
-                      <SearchServiceCard
+                      // In the map panel a service opens inside the panel (its page in the shop's frame) instead of leaving the map.
+                      <div
                         key={svc.id}
+                        className="contents"
+                        onClickCapture={inPanel && onShowOnMap && hasPin ? (e) => { if (onShowOnMap(store.slug, `/service/${svc.id}`)) e.preventDefault(); } : undefined}
+                      >
+                      <SearchServiceCard
                         service={{
                           id: svc.id,
                           name: svc.name,
@@ -355,6 +365,7 @@ export default function SearchStoresTab({
                         storeSlug={store.slug}
                         gate={gate}
                       />
+                      </div>
                     ))}
                   </div>
                 ) : storeCarouselItems.length > 0 ? (

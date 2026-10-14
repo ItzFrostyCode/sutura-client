@@ -11,7 +11,7 @@ const note = 'mobile-body-sm rounded-2xl bg-sunken px-4 py-3 text-ink-muted';
 interface SearchResultsProps {
   readonly s: SearchData;
   /** Tapping a shop opens its profile in the panel. Returns false when it has no pin. */
-  readonly onShowOnMap: (slug: string) => boolean;
+  readonly onShowOnMap: (slug: string, path?: string) => boolean;
   readonly className?: string;
 }
 

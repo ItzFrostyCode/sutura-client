@@ -17,6 +17,8 @@ import ServiceProductInfo from '@/components/store-service-detail/ServiceProduct
 import ServiceHeroBar from '@/components/store-service-detail/ServiceHeroBar';
 import { ServiceInlineActions, ServiceBottomBar } from '@/components/store-service-detail/ServiceActionButtons';
 import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
+import ServiceDesignsGrid from '@/components/store-service-detail/ServiceDesignsGrid';
+import { useEmbedded } from '@/hooks/useEmbedded';
 import ServiceAccordionSections from '@/components/store-service-detail/ServiceAccordionSections';
 import ServiceStoreProfileCard from '@/components/store-service-detail/ServiceStoreProfileCard';
 import ServiceRecommendationsSection from '@/components/store-service-detail/ServiceRecommendationsSection';
@@ -34,6 +36,8 @@ export default function ServiceDetailPage({
 }: Readonly<{ params: Promise<{ store_id: string; service_id: string }> }>) {
   const { store_id: storeId, service_id: serviceId } = use(params);
   const router = useRouter();
+  // Inside the map panel the shop is already open around this page: no Shop button, no shop card.
+  const embedded = useEmbedded();
   const toast = useToast();
   const { user, store: authStore } = useAuthStore();
   const gate = useGuestGatedHref();
@@ -261,6 +265,8 @@ export default function ServiceDetailPage({
 
   return (
     <div className="min-h-full flex flex-col bg-canvas">
+      {/* Inside the map panel (an iframe) Next's dev button would show twice; hide this page's copy (it doesn't exist in production). */}
+      {embedded && <style>{'nextjs-portal{display:none!important}'}</style>}
       {/* Desktop/tablet: normal in-flow sticky bar — mirrors
           CatalogDesktopHeader.tsx exactly (same 600px switch as the
           catalog item detail page). */}
@@ -495,15 +501,22 @@ export default function ServiceDetailPage({
           <ServiceAccordionSections service={service} />
         </div>
 
+        {/* Every design made under this service, two columns — after the service's own details. */}
+        <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0">
+          <ServiceDesignsGrid storeId={storeId} serviceId={service.id} embedded={embedded} />
+        </div>
+
         {/* Ratings — below the specification, like the Catalog Design page */}
         <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
           <ServiceRatingsSection service={service} />
         </div>
 
-        {/* Shop card */}
-        <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <ServiceStoreProfileCard store={store} gate={gate} />
-        </div>
+        {/* Shop card — not inside the map panel, which already is the shop */}
+        {!embedded && (
+          <div className="mt-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
+            <ServiceStoreProfileCard store={store} gate={gate} />
+          </div>
+        )}
 
         {/* From the Same Shop + You May Also Like */}
         <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0 space-y-4">
@@ -516,7 +529,7 @@ export default function ServiceDetailPage({
         </div>
       </main>
 
-      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} storeHref={`/store/${storeId}`} />
+      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} storeHref={`/store/${storeId}`} showShop={!embedded} />
     </div>
   );
 }

@@ -10,6 +10,8 @@ interface ShopDetailProps {
   readonly branch: DiscoveryMapBranch;
   /** One step back: to the list. There is only ever this one level, so one tap always returns. */
   readonly onBack: () => void;
+  /** One of the shop's pages (e.g. "/service/3") instead of its storefront. */
+  readonly path?: string | null;
 }
 
 /**
@@ -17,7 +19,8 @@ interface ShopDetailProps {
  * (/store/[slug]?embed=1, the same layout, just without its own Back / name / address), which lays itself out for
  * the panel's width. One Back returns to the list.
  */
-export default function ShopDetail({ store, branch, onBack }: ShopDetailProps) {
+export default function ShopDetail({ store, branch, onBack, path = null }: ShopDetailProps) {
+  const src = `/store/${store.slug}${path ?? ''}?embed=1`;
   const [loaded, setLoaded] = useState(false);
   const address = branch.address || [branch.district, branch.city].filter(Boolean).join(', ');
 
@@ -38,8 +41,8 @@ export default function ShopDetail({ store, branch, onBack }: ShopDetailProps) {
           <div className="absolute inset-0 flex items-center justify-center text-ink-faint"><Loader2 size={24} className="animate-spin" /></div>
         )}
         <iframe
-          key={store.slug}
-          src={`/store/${store.slug}?embed=1`}
+          key={src}
+          src={src}
           title={store.name}
           onLoad={() => setLoaded(true)}
           className="h-full w-full border-0 bg-surface"

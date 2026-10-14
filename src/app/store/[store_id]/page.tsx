@@ -108,6 +108,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
               s.setIsCatalogDeleteOpen(true);
             }}
             user={s.user}
+            embedded={embedded}
             store={s.store}
           />
         )}

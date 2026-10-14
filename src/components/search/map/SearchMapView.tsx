@@ -71,10 +71,14 @@ export default function SearchMapView() {
     if (sheet.snap === 'peek') sheet.setSnap('half');
   };
   const choose = (branch: Parameters<typeof map.selectPin>[0]) => {
+    setShopPath(null);
     map.selectPin(branch);
     if (branch) grow();
   };
-  const showOnMap = (slug: string) => {
+  // Which page of the open shop the panel shows (null = its storefront), e.g. a service tapped in the list.
+  const [shopPath, setShopPath] = useState<string | null>(null);
+  const showOnMap = (slug: string, path?: string) => {
+    setShopPath(path ?? null);
     const found = map.selectStore(slug);
     if (found) grow();
     return found;
@@ -109,7 +113,8 @@ export default function SearchMapView() {
           onOpenFilter={openFilter}
           onShowOnMap={showOnMap}
           selected={map.selected}
-          onBack={() => map.selectPin(null)}
+          onBack={() => { setShopPath(null); map.selectPin(null); }}
+          shopPath={shopPath}
           inputRef={s.searchInputRef}
         />
       </aside>
@@ -140,7 +145,8 @@ export default function SearchMapView() {
             onOpenFilter={openFilter}
             onShowOnMap={showOnMap}
             selected={map.selected}
-            onBack={() => map.selectPin(null)}
+            onBack={() => { setShopPath(null); map.selectPin(null); }}
+          shopPath={shopPath}
             compact
           />
         </section>

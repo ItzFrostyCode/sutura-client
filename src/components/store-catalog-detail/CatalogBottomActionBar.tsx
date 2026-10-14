@@ -7,6 +7,8 @@ interface CatalogBottomActionBarProps {
   onOpenFind: () => void;
   bookHref: string;
   storeSlug?: string;
+  /** False inside the map panel (the shop is already open). */
+  showShop?: boolean;
   orderAction?: 'bulk' | null;
   onOrder?: () => void;
   orderSubmitting?: boolean;
@@ -17,6 +19,7 @@ export default function CatalogBottomActionBar({
   onOpenFind,
   bookHref,
   storeSlug,
+  showShop = true,
   orderAction,
   onOrder,
   orderSubmitting,
@@ -29,7 +32,7 @@ export default function CatalogBottomActionBar({
       <div className="flex items-stretch h-14">
         {/* Left: Shop icon + Categories icon */}
         <div className="flex items-stretch border-r border-line">
-          <Link
+          {showShop && <Link
             href={storeSlug ? `/store/${storeSlug}` : '/search?tab=store'}
             className="flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors"
           >
@@ -38,11 +41,11 @@ export default function CatalogBottomActionBar({
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             <span className="text-[10px] font-semibold">Shop</span>
-          </Link>
+          </Link>}
           <button
             type="button"
             onClick={onOpenFind}
-            className="flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors border-l border-line"
+            className={`flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors ${showShop ? 'border-l border-line' : ''}`}
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="7" height="7" />
@@ -54,15 +57,8 @@ export default function CatalogBottomActionBar({
           </button>
         </div>
 
-        {/* Right: Add to Cart + Book Appointment */}
+        {/* Right: Book an Appointment (or Bulk Order) — same as the service page's bar */}
         <div className="flex flex-1 items-stretch">
-          <button
-            type="button"
-            onClick={onOpenFind}
-            className="flex-1 flex items-center justify-center text-sm font-semibold text-taupe border-r border-line hover:bg-canvas transition-colors"
-          >
-            Add To Cart
-          </button>
           {orderAction && onOrder ? (
             <button
               type="button"
