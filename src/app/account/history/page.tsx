@@ -26,7 +26,7 @@ export default function AccountHistoryPage() {
 
       {loading && <div className="py-16 text-center mobile-body-sm text-ink-muted">Loading your history…</div>}
 
-      {empty && <EmptyState Icon={Layers} title="Nothing here yet" message="Your orders, appointments, and measurements will show up here once you have some." action={{ href: '/stores', label: 'Browse Stores' }} />}
+      {empty && <EmptyState Icon={Layers} title="Nothing here yet" message="Your orders, appointments, and measurements will show up here once you have some." action={{ href: '/search', label: 'Browse Stores' }} />}
 
       {!loading && !empty && (
         <div className="space-y-4">

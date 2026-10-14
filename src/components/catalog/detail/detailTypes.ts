@@ -1,4 +1,5 @@
 import type { RequirementFields } from '@/components/jobs/requirements';
+import type { ApparelReview } from '@/components/catalog/catalogTypes';
 
 
 export interface CatalogImage {
@@ -61,6 +62,7 @@ export interface DetailedCatalogItem extends RequirementFields {
   service?: { id: number; name: string } | null;
   listing_type?: string;
   is_active?: boolean;
+  apparel_review?: ApparelReview | null;
   images?: CatalogImage[];
   views_count?: number;
   saves_count?: number;

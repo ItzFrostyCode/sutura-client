@@ -1,3 +1,5 @@
+import type { OperatingHours } from '@/lib/storeStatus';
+
 
 export interface CatalogItemImage {
   id: number;
@@ -33,6 +35,7 @@ export interface StoreBranch {
   city: string | null;
   latitude: string | number | null;
   longitude: string | number | null;
+  is_main?: boolean | number;
 }
 
 export interface CatalogItem {
@@ -69,6 +72,7 @@ export interface CatalogItem {
     name: string;
     slug: string;
     logo_path: string | null;
+    operating_hours?: OperatingHours | null;
     reviews_avg_rating?: number | null;
     reviews_count?: number;
     catalog_items_count?: number;
@@ -93,4 +97,5 @@ export interface MapBranch {
   slug: string;
   latitude: number;
   longitude: number;
+  isMain?: boolean;
 }

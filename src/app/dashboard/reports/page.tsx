@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import SubscriptionGate from '@/components/SubscriptionGate';
+import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import { AnalyticsData, STATUS_LABELS, GARMENT_CATEGORY_LABELS } from '@/components/reports/reportHelpers';
 import ReportKpiCards from '@/components/reports/ReportKpiCards';
 import ReportCharts from '@/components/reports/ReportCharts';
@@ -20,6 +21,11 @@ export default function ReportsPage() {
   const { store, user } = useAuthStore();
   const { selectedBranchId, branches } = useBranch();
   const isStoreOwner = user?.roles?.[0]?.name === 'store_owner';
+  // Staff reports are Pro, branch comparison Premium (PlanGate on the server).
+  // Locked sections show the upgrade panel; don't call the API just to be 403'd.
+  const { loading: tierLoading, isGated } = useSubscriptionTier();
+  const canLoadStaffReports = !tierLoading && !isGated('reports');
+  const canLoadBranchComparison = !tierLoading && !isGated('advanced_dashboard');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('all_time');
@@ -156,7 +162,7 @@ export default function ReportsPage() {
   // Branch performance comparison — owner-only strategic view, only worth
   // fetching once there's actually more than one branch to compare.
   useEffect(() => {
-    if (!store?.id || !isStoreOwner || branches.length < 2) return;
+    if (!store?.id || !isStoreOwner || !canLoadBranchComparison || branches.length < 2) return;
 
     async function fetchBranchComparison() {
       setBranchComparisonLoading(true);
@@ -179,11 +185,11 @@ export default function ReportsPage() {
 
     fetchBranchComparison();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store?.id, period, isStoreOwner, branches.length]);
+  }, [store?.id, period, isStoreOwner, canLoadBranchComparison, branches.length]);
 
   // Individual staff productivity — owner-only strategic view.
   useEffect(() => {
-    if (!store?.id || !isStoreOwner) return;
+    if (!store?.id || !isStoreOwner || !canLoadStaffReports) return;
 
     async function fetchStaffProductivity() {
       setStaffProductivityLoading(true);
@@ -208,7 +214,7 @@ export default function ReportsPage() {
     }
 
     fetchStaffProductivity();
-  }, [store?.id, period, isStoreOwner, selectedBranchId]);
+  }, [store?.id, period, isStoreOwner, canLoadStaffReports, selectedBranchId]);
 
   // Subscription activity (Objective 7) — owner-only strategic view, same
   // gate as staff productivity above.

@@ -108,15 +108,17 @@ export function useStoreStorefront(storeId: string) {
 
   // Helper to parse tab from query param
   const resolveTabFromParam = useCallback((tabParam: string | null): StorefrontTab => {
-    if (!tabParam) return 'catalog';
-    if (tabParam === 'catalog' || tabParam === 'portfolio' || tabParam === 'showroom') return 'catalog';
+    // Designs live inside Services now (no separate Catalog tab), so old
+    // ?tab=catalog/portfolio/showroom links land on Services.
+    if (!tabParam) return 'services';
+    if (tabParam === 'catalog' || tabParam === 'portfolio' || tabParam === 'showroom') return 'services';
     if (tabParam === 'branch' || tabParam === 'locations') return 'locations';
     if (tabParam === 'review' || tabParam === 'reviews' || tabParam === 'rating' || tabParam === 'ratings') return 'reviews';
     if (tabParam === 'service' || tabParam === 'services') return 'services';
     if (tabParam === 'about') return 'about';
     if (tabParam === 'hours') return 'hours';
     if (tabParam === 'work') return 'work';
-    return 'catalog';
+    return 'services';
   }, []);
 
   // Active Tab
@@ -222,13 +224,8 @@ export function useStoreStorefront(storeId: string) {
   if (currentQParam !== prevQParam) {
     setPrevQParam(currentQParam);
     if (currentQParam) {
-      if (resolveTabFromParam(searchParams.get('tab')) === 'services') {
-        setServiceSearch(currentQParam);
-        setActiveTab('services');
-      } else {
-        setCatalogSearch(currentQParam);
-        setActiveTab('catalog');
-      }
+      setServiceSearch(currentQParam);
+      setActiveTab('services');
     }
   }
 
@@ -860,7 +857,6 @@ export function useStoreStorefront(storeId: string) {
   };
 
   const tabList: { id: StorefrontTab; label: string }[] = [
-    { id: 'catalog', label: 'Catalog' },
     { id: 'services', label: 'Service' },
     { id: 'about', label: 'About' },
   ];
@@ -871,8 +867,8 @@ export function useStoreStorefront(storeId: string) {
   }
   tabList.push({ id: 'reviews', label: 'Ratings' });
 
-  // A link or refresh with ?tab=branch on a store that has no Branch tab opens the first tab instead of an empty page.
-  const shownTab: StorefrontTab = activeTab === 'locations' && !hasBranchTab ? 'catalog' : activeTab;
+  // A link or refresh with ?tab=branch on a store that has no Branch tab opens Services (the first tab) instead of an empty page.
+  const shownTab: StorefrontTab = activeTab === 'locations' && !hasBranchTab ? 'services' : activeTab;
 
   return {
     router,

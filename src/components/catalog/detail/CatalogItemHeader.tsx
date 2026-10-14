@@ -29,6 +29,12 @@ export default function CatalogItemHeader({
   showActions = true,
 }: CatalogItemHeaderProps) {
   const isActive = item.is_active !== false;
+  // While SUTURA is checking (or refused) the design's typed-in apparel name it
+  // can't be shown to customers either way, so Pause/Activate would do nothing.
+  const lockedByReview = !!item.apparel_review;
+  const toggleTitle = lockedByReview
+    ? 'Available once SUTURA approves the apparel name'
+    : isActive ? 'Pause listing' : 'Activate listing';
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -62,10 +68,10 @@ export default function CatalogItemHeader({
         <button
           type="button"
           onClick={onToggleStatus}
-          disabled={togglingStatus}
-          aria-label={isActive ? 'Pause listing' : 'Activate listing'}
-          title={isActive ? 'Pause listing' : 'Activate listing'}
-          className={`${ICON_BTN} disabled:opacity-50`}
+          disabled={togglingStatus || lockedByReview}
+          aria-label={toggleTitle}
+          title={toggleTitle}
+          className={`${ICON_BTN} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white`}
         >
           {togglingStatus ? (
             <Loader2 size={16} className="animate-spin" />

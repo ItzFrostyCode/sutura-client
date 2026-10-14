@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import RouteLayer from '@/components/map/RouteLayer';
+// Same logo pins + "you are here" dot as the Tailor Locator (/map).
+import { buildStorePinIcon, userLocationIcon } from '@/components/discovery/DiscoveryMap';
 
 const FOCUSED_ZOOM = 17;
 const OVERVIEW_ZOOM = 14;
@@ -12,6 +15,8 @@ export interface BranchPin {
   readonly name: string;
   readonly latitude: number;
   readonly longitude: number;
+  /** Shows the MAIN badge on its pin. */
+  readonly isMain?: boolean;
 }
 
 // Drives the map's zoom from outside the MapContainer — react-leaflet's
@@ -39,10 +44,11 @@ function FlyToController({ branches, selectedId }: { readonly branches: readonly
 // fits every branch AND the shopper, then close back in on the shopper —
 // so it's visibly "looking for you" before settling on your position,
 // instead of a blue dot just silently appearing.
-function LocateFlyController({ userPosition, branches }: { readonly userPosition: { lat: number; lng: number } | null; readonly branches: readonly BranchPin[] }) {
+function LocateFlyController({ userPosition, branches, paused }: { readonly userPosition: { lat: number; lng: number } | null; readonly branches: readonly BranchPin[]; readonly paused: boolean }) {
   const map = useMap();
   useEffect(() => {
-    if (!userPosition || branches.length === 0) return;
+    // While a route is shown it owns the view (RouteLayer frames it).
+    if (paused || !userPosition || branches.length === 0) return;
     const userLatLng: [number, number] = [userPosition.lat, userPosition.lng];
     const bounds: [number, number][] = [userLatLng, ...branches.map(b => [b.latitude, b.longitude] as [number, number])];
     map.flyToBounds(bounds, { padding: [60, 60], duration: 0.9 });
@@ -66,16 +72,22 @@ interface FindLocationMapProps {
   /** The shopper's own live position, from the Find sheet's Locate button —
       rendered as a second, distinctly-colored marker once set. */
   readonly userPosition?: { lat: number; lng: number } | null;
+  /** In-app directions route as [lat, lng] points (useDirections); null when not navigating. */
+  readonly routePath?: [number, number][] | null;
+  /** The shop's logo, drawn inside every pin (all branches are the same shop). */
+  readonly logoPath?: string | null;
+  /** Open right now — the green/red dot on each pin. */
+  readonly isOpen?: boolean;
   readonly className?: string;
   /** Only needed when the wrapper isn't already sized by className (e.g.
       w-full h-full inside an absolutely-positioned parent). */
   readonly height?: number;
 }
 
-// A lighter-weight sibling of SingleBranchMap for the "Find" sheet: plain
-// round markers (one per branch) instead of a fixed pin + popup, and a
-// selected marker reads as filled/larger versus the rest as outlined.
-export default function FindLocationMap({ branches, selectedBranchId, onSelectBranch, userPosition, className, height }: Readonly<FindLocationMapProps>) {
+// The "Find a Branch" map: the shop's logo pins (one per branch, same as
+// /map) with the chosen branch drawn larger in taupe, plus the route line
+// while in-app directions are shown.
+export default function FindLocationMap({ branches, selectedBranchId, onSelectBranch, userPosition, routePath, logoPath = null, isOpen, className, height }: Readonly<FindLocationMapProps>) {
   if (branches.length === 0) return null;
   const initialCenter: [number, number] = [branches[0].latitude, branches[0].longitude];
 
@@ -95,29 +107,20 @@ export default function FindLocationMap({ branches, selectedBranchId, onSelectBr
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         <FlyToController branches={branches} selectedId={selectedBranchId} />
-        <LocateFlyController userPosition={userPosition ?? null} branches={branches} />
-        {branches.map(b => {
-          const isSelected = selectedBranchId === b.id;
-          return (
-            <CircleMarker
-              key={b.id}
-              center={[b.latitude, b.longitude]}
-              radius={isSelected ? 11 : 9}
-              pathOptions={
-                isSelected
-                  ? { color: '#2D2A26', weight: 3, fillColor: '#2D2A26', fillOpacity: 1 }
-                  : { color: '#2D2A26', weight: 2, fillColor: '#FFFFFF', fillOpacity: 1 }
-              }
-              eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b.id) } : undefined}
-            />
-          );
-        })}
-        {userPosition && (
-          <CircleMarker
-            center={[userPosition.lat, userPosition.lng]}
-            radius={7}
-            pathOptions={{ color: '#2563EB', weight: 2, fillColor: '#3B82F6', fillOpacity: 1 }}
+        <LocateFlyController userPosition={userPosition ?? null} branches={branches} paused={!!routePath} />
+        {routePath && <RouteLayer path={routePath} />}
+        {branches.map(b => (
+          <Marker
+            key={b.id}
+            position={[b.latitude, b.longitude]}
+            icon={buildStorePinIcon(logoPath, !!b.isMain, isOpen, selectedBranchId === b.id)}
+            title={b.name}
+            zIndexOffset={selectedBranchId === b.id ? 1000 : 0}
+            eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b.id) } : undefined}
           />
+        ))}
+        {userPosition && (
+          <Marker position={[userPosition.lat, userPosition.lng]} icon={userLocationIcon} title="You are here" />
         )}
       </MapContainer>
     </div>

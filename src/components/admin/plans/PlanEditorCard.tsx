@@ -14,6 +14,7 @@ export interface AdminPlan {
   price_monthly: string;
   price_yearly: string;
   max_staff: number;
+  max_branches: number | null;
   max_services: number;
   max_appointments_per_month: number;
   features: string[] | null;
@@ -23,7 +24,7 @@ export interface AdminPlan {
 const FIELD = 'w-full min-h-11 border border-line-strong bg-surface px-3 text-base text-ink focus:border-ink focus:outline-none';
 const NUMBERS = [
   ['price_monthly', 'Monthly (₱)'], ['price_yearly', 'Yearly (₱)'], ['max_staff', 'Max staff'],
-  ['max_services', 'Max services'], ['max_appointments_per_month', 'Appointments / mo'],
+  ['max_branches', 'Max branches'], ['max_services', 'Max services'], ['max_appointments_per_month', 'Appointments / mo'],
 ] as const;
 
 export default function PlanEditorCard({ plan, onSaved }: { readonly plan: AdminPlan; readonly onSaved: (plan: AdminPlan) => void }) {
@@ -61,12 +62,12 @@ export default function PlanEditorCard({ plan, onSaved }: { readonly plan: Admin
         {NUMBERS.map(([key, label]) => (
           <label key={key} className="text-sm text-ink-muted">
             {label}
-            <input type="number" min={key.startsWith('price') ? 0 : -1} step={key.startsWith('price') ? '0.01' : '1'} required value={draft[key]}
+            <input type="number" min={key.startsWith('price') ? 0 : -1} step={key.startsWith('price') ? '0.01' : '1'} required value={draft[key] ?? ''}
               onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} className={`${FIELD} mt-1`} />
           </label>
         ))}
       </div>
-      <p className="mt-2 text-xs text-ink-faint">-1 means unlimited.</p>
+      <p className="mt-2 text-xs text-ink-faint">-1 means unlimited. Max staff and max branches are shown to shops automatically (e.g. “Up to 2 staff accounts”, “1 branch”) — no need to add them as perks. Branches can’t be 0: every shop has at least its main branch.</p>
 
       <label className="mt-4 block text-sm text-ink-muted">
         Perks (one per line)

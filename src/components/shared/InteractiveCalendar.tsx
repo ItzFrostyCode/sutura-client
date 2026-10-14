@@ -19,6 +19,12 @@ export interface SpecialHour {
   special_close_time: string | null;
 }
 
+/** Online bookings must be at least this far ahead — mirrors Appointment::MIN_BOOKING_LEAD_MINUTES on the server. */
+export const MIN_BOOKING_LEAD_MINUTES = 120;
+
+/** Why a time can't be picked even though nobody has booked it. */
+type SlotBlock = 'past' | 'too_soon' | null;
+
 export interface AppointmentSlot {
   scheduled_at: string; // ISO string
   duration_minutes: number;
@@ -143,7 +149,7 @@ export default function InteractiveCalendar({
     const [startH, startM] = openTime.split(':').map(Number);
     const [endH, endM] = closeTime.split(':').map(Number);
 
-    const slots: { time: string; isBooked: boolean; hasPendingOnly: boolean }[] = [];
+    const slots: { time: string; isBooked: boolean; hasPendingOnly: boolean; blocked: SlotBlock }[] = [];
     let currentMins = startH * 60 + (startM || 0);
     const endMins = endH * 60 + (endM || 0);
 
@@ -187,16 +193,23 @@ export default function InteractiveCalendar({
         }
       }
 
-      const isPastSlot = isToday && currentMins <= currentDayMins;
+      // Shown greyed out rather than hidden, so the day's full schedule stays
+      // readable. Online bookings also need MIN_BOOKING_LEAD_MINUTES of notice
+      // (server: Appointment::MIN_BOOKING_LEAD_MINUTES); a walk-in is at the
+      // counter already, so only times that have passed are blocked for it.
+      let blocked: SlotBlock = null;
+      if (isToday && currentMins <= currentDayMins) {
+        blocked = 'past';
+      } else if (isToday && mode === 'public' && currentMins < currentDayMins + MIN_BOOKING_LEAD_MINUTES) {
+        blocked = 'too_soon';
+      }
 
       // In walk_in mode, a walk-in is only blocked by confirmed/in_progress appointments!
       // Slots with only pending appointments can be claimed by the walk-in ("kung sino ang makauna")
       const isBooked = mode === 'walk_in' ? isConfirmedOverlap : (isConfirmedOverlap || isPendingOverlap);
       const hasPendingOnly = mode === 'walk_in' && !isConfirmedOverlap && isPendingOverlap;
 
-      if (!isPastSlot) {
-        slots.push({ time: slotStr, isBooked, hasPendingOnly });
-      }
+      slots.push({ time: slotStr, isBooked, hasPendingOnly, blocked });
 
       currentMins += 30; // 30-min slot intervals
     }
@@ -349,20 +362,32 @@ export default function InteractiveCalendar({
       );
     }
 
-    const hasAnyOpen = availableSlots.some(s => !s.isBooked);
+    const hasAnyOpen = availableSlots.some(s => !s.isBooked && !s.blocked);
+    const onlyTimeBlocked = !hasAnyOpen && availableSlots.some(s => s.blocked && !s.isBooked);
 
     return (
       <div className="space-y-3">
         {!hasAnyOpen && (
           <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-3 py-2 rounded-lg font-medium flex items-center gap-2">
             <AlertCircle size={14} className="text-amber-600 shrink-0" />
-            <span>All slots for this day are currently booked. Please choose another date.</span>
+            <span>
+              {onlyTimeBlocked
+                ? `No more times available today${mode === 'public' ? ' — appointments need at least 2 hours’ notice' : ''}. Please choose another date.`
+                : 'All slots for this day are currently booked. Please choose another date.'}
+            </span>
           </div>
         )}
+        {hasAnyOpen && mode === 'public' && selectedDate === todayStr && (
+          <p className="text-xs text-ink-muted">Same-day appointments need at least 2 hours’ notice.</p>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {availableSlots.map(({ time: slot, isBooked, hasPendingOnly }) => {
+          {availableSlots.map(({ time: slot, isBooked: booked, hasPendingOnly, blocked }) => {
+            // A passed / too-soon time is greyed out exactly like a booked one.
+            const isBooked = booked || blocked !== null;
             let slotClass = 'border-line text-ink-body hover:border-taupe/50 hover:bg-canvas cursor-pointer';
-            if (isBooked) {
+            if (blocked && !booked) {
+              slotClass = 'bg-sunken border-line/60 text-ink-faint cursor-not-allowed opacity-50';
+            } else if (isBooked) {
               slotClass = 'bg-canvas/40 border-line/60 text-ink-faint cursor-not-allowed opacity-60';
             } else if (selectedTime === slot) {
               slotClass = 'border-taupe bg-taupe text-white cursor-pointer shadow-2xs';
@@ -377,16 +402,21 @@ export default function InteractiveCalendar({
                 disabled={isBooked}
                 onClick={() => !isBooked && onTimeChange(slot)}
                 title={
-                  isBooked
+                  blocked === 'past' && !booked
+                    ? 'This time has already passed'
+                    : blocked === 'too_soon' && !booked
+                    ? 'Appointments need at least 2 hours’ notice'
+                    : isBooked
                     ? 'This slot is already confirmed'
                     : hasPendingOnly
                     ? 'Pending online inquiry — walk-in at counter takes priority'
                     : undefined
                 }
+                aria-label={blocked && !booked ? `${formatSlotLabel(slot)} — unavailable` : undefined}
                 className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-between gap-1.5 ${slotClass}`}
               >
-                <span className={isBooked ? 'line-through' : ''}>{formatSlotLabel(slot)}</span>
-                {isBooked && (
+                <span className={booked ? 'line-through' : ''}>{formatSlotLabel(slot)}</span>
+                {booked && (
                   <span className="text-[9px] font-bold uppercase no-underline tracking-wider bg-canvas border border-line px-1 rounded text-ink-faint">
                     Booked
                   </span>

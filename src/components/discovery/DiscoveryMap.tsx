@@ -22,15 +22,16 @@ const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 // unreadable; a recognizable logo lets a visitor tell stores apart at a
 // glance the way real map apps (Google/Waze business pins) do. A crisp dark ring
 // + "MAIN" badge marks a store's main branch versus a satellite branch.
-export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean): L.DivIcon {
-  const ringColor = '#2D2A26';
+// `selected` (the branch picked on the catalog item's Find-in-store map): a taupe ring and a little larger.
+export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false): L.DivIcon {
+  const ringColor = selected ? '#9A8073' : '#2D2A26';
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
   const logoHtml = logoPath
     ? `<img src="${getMediaUrl(logoPath)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`
     : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`;
 
   const html = `
-    <div style="position:relative;width:40px;height:52px;">
+    <div style="position:relative;width:40px;height:52px;transform-origin:50% 100%;transform:scale(${selected ? 1.15 : 1});">
       <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};box-shadow:0 2px 6px rgba(45,42,38,0.45);background:#fff;">
         ${logoHtml}
       </div>
@@ -51,6 +52,14 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
     popupAnchor: [0, -48],
   });
 }
+
+/** A small "you are here" dot, for maps without the full You marker (the catalog item's Find-in-store map). */
+export const userLocationIcon = L.divIcon({
+  className: '',
+  html: '<span style="position:relative;display:block;width:16px;height:16px;"><span style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;opacity:0.35;animation:sutura-pulse 1.8s ease-out infinite;"></span><span style="position:absolute;inset:3px;border-radius:9999px;background:#3B82F6;border:2px solid white;"></span></span><style>@keyframes sutura-pulse{0%{transform:scale(0.6);opacity:0.6;}100%{transform:scale(2.2);opacity:0;}}</style>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
 
 // Leaflet re-creates a pin whenever its icon object changes, and the live navigation re-renders the map about once a second,
 // so an icon is built once per look (logo, main, open) and reused.

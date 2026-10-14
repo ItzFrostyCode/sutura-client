@@ -38,11 +38,18 @@ export default function PlanCardsSection({
           const meta = getPlanMeta(plan.slug);
           const Icon = meta.icon;
           const isActive = activePlanId === plan.id;
+          // The API sends an array; JSON.parse on it threw and left every card empty.
           let features: string[] = [];
-          try {
-            features = JSON.parse(plan.features || '[]');
-          } catch {
-            features = [];
+          if (plan.display_features) {
+            features = plan.display_features;
+          } else if (Array.isArray(plan.features)) {
+            features = plan.features;
+          } else {
+            try {
+              features = JSON.parse((plan.features as string | null) || '[]');
+            } catch {
+              features = [];
+            }
           }
 
           return (

@@ -1,3 +1,13 @@
+/**
+ * Set when the design uses a typed-in apparel name the System Admin hasn't
+ * approved — the design stays hidden from customers until it is (null once approved).
+ */
+export interface ApparelReview {
+  status: 'pending' | 'rejected';
+  label: string;
+  reason: string | null;
+}
+
 export interface CatalogItemResponse {
   id: number;
   name: string;
@@ -23,6 +33,7 @@ export interface CatalogItemResponse {
   images: { id: number; image_url: string; view_angle?: string; is_primary: number }[];
   external_gallery_url?: string;
   is_active?: boolean;
+  apparel_review?: ApparelReview | null;
 }
 
 // One extra Specification row: `text` is the first column (label), `value`

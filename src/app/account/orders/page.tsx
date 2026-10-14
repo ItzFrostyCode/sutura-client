@@ -63,7 +63,7 @@ function MyOrdersPageContent() {
             Icon={Package}
             title={orders.length === 0 ? 'No orders yet' : 'Nothing in this tab yet'}
             message={orders.length === 0 ? 'Once you book a fitting or place an order, it’ll show up here.' : 'Try a different tab.'}
-            action={orders.length === 0 ? { href: '/stores', label: 'Browse Stores' } : undefined}
+            action={orders.length === 0 ? { href: '/search', label: 'Browse Stores' } : undefined}
           />
         </div>
       )}

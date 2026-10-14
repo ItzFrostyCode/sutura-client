@@ -11,8 +11,9 @@ interface AuditLogEntry {
   id: number;
   user: { id: number; name: string } | null;
   action: string;
-  model_type: string;
-  model_id: number;
+  // Null for entries with no subject record (sign-in / sign-out).
+  model_type: string | null;
+  model_id: number | null;
   payload: Record<string, unknown> | null;
   ip_address: string | null;
   created_at: string;
@@ -35,9 +36,10 @@ const ACTION_META: Record<string, { label: string; icon: typeof Tag; color: stri
 
 // Model class names come back fully-qualified (App\Models\JobOrder) — strip
 // the namespace and split CamelCase into readable words for display.
-const modelLabel = (modelType: string) => {
+const modelLabel = (modelType: string | null, modelId: number | null) => {
+  if (!modelType) return '—';
   const short = modelType.split('\\').pop() || modelType;
-  return short.replace(/([a-z])([A-Z])/g, '$1 $2');
+  return `${short.replace(/([a-z])([A-Z])/g, '$1 $2')}${modelId ? ` #${modelId}` : ''}`;
 };
 
 const formatPayload = (action: string, rawPayload: Record<string, unknown> | string | null): string => {
@@ -162,7 +164,7 @@ export default function AuditLogPage() {
                           <Icon size={12} /> {meta.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-ink-muted whitespace-nowrap">{modelLabel(entry.model_type)} #{entry.model_id}</td>
+                      <td className="px-5 py-3 text-ink-muted whitespace-nowrap">{modelLabel(entry.model_type, entry.model_id)}</td>
                       <td className="px-5 py-3 text-ink-body">{formatPayload(entry.action, entry.payload)}</td>
                     </tr>
                   );

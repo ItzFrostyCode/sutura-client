@@ -20,8 +20,18 @@ function MapRefSetter({ mapRef }: { readonly mapRef: React.MutableRefObject<Leaf
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 150);
+    // The map is flex-1 inside the picker, so its height changes whenever the
+    // footer's address line or an error message grows/shrinks. Without
+    // re-measuring, Leaflet keeps its old size: flyTo() and getCenter() then
+    // disagree with the CSS center pin, and the saved spot drifts away from
+    // the searched place. pan:false keeps the current center while resizing.
+    const observer = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => map.invalidateSize({ pan: false }))
+      : null;
+    observer?.observe(map.getContainer());
     return () => {
       clearTimeout(timer);
+      observer?.disconnect();
       try {
         map.stop();
       } catch {

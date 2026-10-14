@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
-import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import { specializationLabel } from '@/lib/storeSpecializations';
 
 interface SpecializationBadgesProps {
   readonly specializations?: string[];
@@ -13,7 +13,7 @@ interface SpecializationBadgesProps {
 export default function SpecializationBadges({ specializations }: SpecializationBadgesProps) {
   if (!specializations || specializations.length === 0) return null;
 
-  const labels = specializations.map((id) => STORE_SPECIALIZATIONS.find((s) => s.value === id)?.label || id);
+  const labels = specializations.map(specializationLabel);
 
   return (
     <div className="bg-surface border border-line p-3.5 flex flex-wrap items-center gap-2">

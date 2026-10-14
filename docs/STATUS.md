@@ -1,6 +1,6 @@
 # SUTURA — Status (keep this short)
 
-> **Last checked: 2026-10-10.** Items marked ✔ were re-verified against code that day (routes, pages, models, scheduler). Items marked *(10-02)* are carried over from [`THESIS-CROSS-CHECK.md`](THESIS-CROSS-CHECK.md) and **not** re-verified — confirm in code before relying on them. Update this file when something ships or a claim turns out wrong; don't let it grow into a changelog.
+> **Last checked: 2026-10-14** (merge section below); the rest **2026-10-10**. Items marked ✔ were re-verified against code that day (routes, pages, models, scheduler). Items marked *(10-02)* are carried over from [`THESIS-CROSS-CHECK.md`](THESIS-CROSS-CHECK.md) and **not** re-verified — confirm in code before relying on them. Update this file when something ships or a claim turns out wrong; don't let it grow into a changelog.
 
 **Defense / deployment date:** `CLAUDE.md` and `DEADLINE.md` say "first week of October 2026". **TBC — confirm the real date and write it here.**
 
@@ -8,7 +8,7 @@
 
 | Objective | State |
 | --- | --- |
-| 1. Administrative Dashboard | 🟡 approvals, accounts, plans/upgrades, tickets, moderation, activity ✔; branch-location verification ✔ (`/admin/branches`); **custom apparel category approval ✔ still missing** (no admin route); **system-health panel ✔ still missing** (no admin route) |
+| 1. Administrative Dashboard | 🟡 approvals, accounts, plans/upgrades, tickets, moderation, activity ✔; branch-location verification ✔ (`/admin/branches`); custom apparel approval ✔ (`/admin/apparel`, leader 10-13); reports ✔ (`/admin/reports`); **system-health panel still missing** (no admin route) |
 | 2. Subscription & Accounts | ✅ plans, staff limits, expiry, roles; plan gating now server-side via `PlanGate` ✔ |
 | 3–4. Discovery + Map | ✅ `/search`, `/map`, `/stores` ✔; reviews require a completed order/appointment *(10-02)* |
 | 5. Shop Dashboard | ✅ |
@@ -20,15 +20,31 @@
 
 Flows 2 and 3 of the workflow specification are built and API-tested; see [`ORDER-FLOW.md`](ORDER-FLOW.md). A scope audit the same day **removed** the per-order material/supplier/cost tracking (thesis Limitations). Still open: Scenario D (linked follow-up order), a workload view, and a browser check of the delivery panel on a phone.
 
+## Merge of 2026-10-14 (branch `feature/ordering-flow`, both repos)
+
+The leader's 10-13 update (`origin/main`, PRs #31 client / #33 server) is merged into `feature/ordering-flow` on top of Joshua's ordering-flow + customer work. Server merged with no conflicts (5 migrations run locally). Client conflicts were settled like this:
+
+| Area | Kept | Notes |
+| --- | --- | --- |
+| Server, System Admin (apparel approval, reports, activity log, plan `max_branches` / billing cycle), shop CRUD (`services.showcase_category`, apparel review notice) | **Leader** | as merged |
+| Storefront Services tab: designs live **inside** their service (`ServiceShowcaseCard`, `ShowcaseCarousel`), Catalog tab removed, `?tab=catalog` → Services | **Leader** | plus Joshua's embed mode (`?embed=1`) and Branch tab only with >1 branch |
+| Location picker | **both** | leader's fixes (keep the chosen place's name, street-first search, resize-safe map) + Joshua's "no shops while choosing a place" |
+| `/map` | **Joshua** | Choose-on-map only; the leader's Tailor Locator files (`MapExplorePanel`, `MapShopCard`, `components/map/MapControls`) were unused and deleted. His `useDirections` / `RouteLayer` / `ActiveNavigationPanel` stay (catalog item "Find in store"). |
+| Landing, `/search`, account pages, header / bottom nav, notifications | **Joshua** | account empty states now point to `/search` (leader had changed `/stores` → `/map`) |
+| Ordering flow: job order / production / delivery screens | **Joshua** | untouched by the leader — keep as the base for online orders |
+
+**Leader's next tasks (agreed 10-14):** (1) Order Tracking — Objective 6 → 5 (adviser's last item); (2) Categories on real data, connected to Services — replace the landing's Men / Women / Kids / Services chips with traditional names (Barong, Formal, …); category is not a filter in `/search`; (3) **Online order** with the same flow as walk-in, on top of the ordering flow (`docs/ORDER-FLOW.md`); (4) staff and branch-manager views. **Don't overwrite:** `components/search/map/*`, `components/map/Choose*`, `components/account/*`, `components/notifications/inbox/*`, the ordering-flow screens.
+
+**Joshua's next customer change (not done yet):** in the map panel's Nearby Stores show the shop with its **services** (not catalog designs); tapping a service shows its designs in a carousel; *See all* → the service page with its picture, full details, then a 2-column grid of its designs (no price) and the shop's custom designs for it, Back at top left.
+
 ## Open work, ranked
 
 1. **Deployment proof** — Vercel + Railway + Supabase + R2 never run end-to-end. `DEPLOYMENT-RAILWAY-SUPABASE.md` (10-01): code reviewed for Postgres, **not yet run against a real Postgres**. Dry run on a throwaway Supabase project is step 0. *(unverified today — ask the leader whether any of it was done)*
 2. **Durable backups** — `app:backup-database` ✔ exists and is scheduled daily; it only survives redeploys if `BACKUP_DISK` points at R2 and the scheduler is running.
-3. **Admin: custom apparel category approval** (~½ day) — thesis Objective 1 says "validate apparel categories"; today categories are a fixed list in `CanonicalTaxonomy` plus an `others` free-text escape hatch.
-4. **Admin: system-health panel** (2–3 h) — DB ping, last backup, error count; thesis says "system performance".
-5. **Live SMS** — needs a provider account (Semaphore driver included, untested live). Defensible as "third-party dependent" per the Limitations if no provider is available.
-6. **Usability testing (SUS)** — thesis non-functional requirement; nothing recorded yet *(10-02)*.
-7. **Phone-width check** of the newest screens (Statements, Text Messages, Payment Methods, service Requirements box, staff Home) — `LEADER-GO-LIVE-STEPS.md` says these were only type-checked, not seen in a browser *(10-01)*.
+3. **Admin: system-health panel** (2–3 h) — DB ping, last backup, error count; thesis says "system performance".
+4. **Live SMS** — needs a provider account (Semaphore driver included, untested live). Defensible as "third-party dependent" per the Limitations if no provider is available.
+5. **Usability testing (SUS)** — thesis non-functional requirement; nothing recorded yet *(10-02)*.
+6. **Phone-width check** of the newest screens (Statements, Text Messages, Payment Methods, service Requirements box, staff Home) — `LEADER-GO-LIVE-STEPS.md` says these were only type-checked, not seen in a browser *(10-01)*.
 
 ## Documentation debt (found 2026-10-10 — all ✔ verified against code)
 

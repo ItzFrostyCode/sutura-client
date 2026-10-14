@@ -18,15 +18,15 @@ interface CatalogFindSidebarProps {
   readonly image: string;
   readonly itemName: string;
   readonly itemPrice: string | number;
+  /** Draws the route on this map (useDirections) — no longer leaves for Google Maps. */
+  readonly onDirections: () => void;
+  readonly directionsLoading: boolean;
   readonly onBook: () => void;
 }
 
-const dirHref = (b: MapBranch, pos: { lat: number; lng: number } | null) =>
-  `https://www.google.com/maps/dir/?api=1&${pos ? `origin=${pos.lat},${pos.lng}&` : ''}destination=${b.latitude},${b.longitude}`;
-
 // Tablet/desktop (768px+) side panel of Find a Branch — same shape as the /map page:
 // branches to choose from on top, the design and its actions pinned at the bottom.
-export default function CatalogFindSidebar({ branches, selectedId, onSelect, selected, userPos, onLocate, locating, locateError, image, itemName, itemPrice, onBook }: Readonly<CatalogFindSidebarProps>) {
+export default function CatalogFindSidebar({ branches, selectedId, onSelect, selected, userPos, onLocate, locating, locateError, image, itemName, itemPrice, onDirections, directionsLoading, onBook }: Readonly<CatalogFindSidebarProps>) {
   return (
     <aside className="hidden md:flex absolute top-16 right-0 bottom-0 w-[380px] z-[1000] flex-col bg-canvas border-l border-line">
       <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3">
@@ -76,7 +76,7 @@ export default function CatalogFindSidebar({ branches, selectedId, onSelect, sel
         </div>
         <div className="flex gap-3">
           {selected ? (
-            <a href={dirHref(selected, userPos)} target="_blank" rel="noopener noreferrer" className="flex-1 h-12 border border-line-strong hover:border-ink text-ink-body text-sm font-medium flex items-center justify-center">Direction</a>
+            <button type="button" onClick={onDirections} disabled={directionsLoading} className="flex-1 h-12 border border-line-strong hover:border-ink text-ink-body text-sm font-medium flex items-center justify-center cursor-pointer disabled:opacity-60">{directionsLoading ? 'Finding route…' : 'Direction'}</button>
           ) : (
             <button type="button" disabled title="Choose a branch first" className="flex-1 h-12 bg-sunken text-ink-faint text-sm font-medium cursor-not-allowed">Direction</button>
           )}

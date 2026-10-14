@@ -4,6 +4,11 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Check, MapPin } from 'lucide-react';
 import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+
+// Registration asks only what services the shop offers (the apparel
+// departments come from its catalog later). Still saved as specializations[],
+// so search/map filtering works unchanged.
+const SERVICE_OPTIONS = STORE_SPECIALIZATIONS.filter((s) => s.group === 'Services');
 import { StepActions, TextField } from './ApplicationFields';
 import type { StoreApplicationState } from './useStoreApplication';
 
@@ -27,7 +32,7 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (shop.specializations.length === 0) return setError('Pick at least one thing your shop specializes in.');
+    if (shop.specializations.length === 0) return setError('Pick at least one service your shop offers.');
     if (!shop.location) return setError('Pin your shop on the map so customers can find it.');
     goTo(3);
   };
@@ -37,10 +42,10 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
       <TextField id="app-store-name" label="Shop Name" required placeholder="e.g. Dela Cruz Tailoring" value={shop.store_name} onChange={(e) => setShop({ ...shop, store_name: e.target.value })} />
 
       <fieldset>
-        <legend className="text-sm text-ink mb-1">Specializations<span className="text-danger">*</span></legend>
-        <p className="mobile-caption text-ink-muted mb-3">Customers filter shops by these on search and the map.</p>
+        <legend className="text-sm text-ink mb-1">Services<span className="text-danger">*</span></legend>
+        <p className="mobile-caption text-ink-muted mb-3">What your shop offers. Customers filter shops by these on search and the map.</p>
         <div className="flex flex-wrap gap-2">
-          {STORE_SPECIALIZATIONS.map((spec) => {
+          {SERVICE_OPTIONS.map((spec) => {
             const on = shop.specializations.includes(spec.value);
             return (
               <button
@@ -60,11 +65,9 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
       <div className="space-y-5 border-t border-line pt-5">
         <TextField id="app-address" label="Street Address" required placeholder="Unit, building, street (e.g. Jasmin St)" value={shop.address} onChange={(e) => setShop({ ...shop, address: e.target.value })} />
-        <TextField id="app-barangay" label="Barangay" placeholder="e.g. Ubalde" value={shop.barangay} onChange={(e) => setShop({ ...shop, barangay: e.target.value })} />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField id="app-city" label="City" required value={shop.city} onChange={(e) => setShop({ ...shop, city: e.target.value })} />
-          <TextField id="app-province" label="Province" required value={shop.province} onChange={(e) => setShop({ ...shop, province: e.target.value })} />
-        </div>
+        {/* City / province aren't asked: SUTURA only covers Davao City, so the
+            form sends its defaults (Davao City, Davao del Sur — see
+            EMPTY_SHOP in applicationTypes.ts), which the server requires. */}
 
         <div>
           <p className="text-sm text-ink mb-2">Map Pin<span className="text-danger">*</span></p>

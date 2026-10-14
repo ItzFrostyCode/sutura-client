@@ -46,26 +46,29 @@ export default function PlanComparisonSection({
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            <tr className="hover:bg-canvas/50 transition-colors">
-              <td className="px-5 py-3.5 text-ink-body font-medium">Staff Accounts</td>
-              {(['basic', 'pro', 'premium'] as const).map((slug) => {
-                const planMaxStaff = plans.find((p) => p.slug === slug)?.max_staff;
-                const label =
-                  planMaxStaff === -1 || planMaxStaff == null
-                    ? 'Unlimited'
-                    : `Up to ${planMaxStaff}`;
-                return (
-                  <td
-                    key={slug}
-                    className={`px-5 py-3.5 text-center ${
-                      activePlanSlug === slug ? 'text-ink font-semibold' : 'text-ink-muted'
-                    }`}
-                  >
-                    {label}
-                  </td>
-                );
-              })}
-            </tr>
+            {/* Live limits from each plan (admin-editable on the Plans page). */}
+            {([
+              ['Staff Accounts', (p?: Plan) => p?.max_staff],
+              ['Branches', (p?: Plan) => p?.max_branches ?? (p?.slug === 'premium' ? -1 : 1)],
+            ] as const).map(([label, limitOf]) => (
+              <tr key={label} className="hover:bg-canvas/50 transition-colors">
+                <td className="px-5 py-3.5 text-ink-body font-medium">{label}</td>
+                {(['basic', 'pro', 'premium'] as const).map((slug) => {
+                  const limit = limitOf(plans.find((p) => p.slug === slug));
+                  const text = limit === -1 || limit == null ? 'Unlimited' : limit === 1 && label === 'Branches' ? '1' : `Up to ${limit}`;
+                  return (
+                    <td
+                      key={slug}
+                      className={`px-5 py-3.5 text-center ${
+                        activePlanSlug === slug ? 'text-ink font-semibold' : 'text-ink-muted'
+                      }`}
+                    >
+                      {text}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
             {COMPARE_ROWS.map((row, i) => (
               <tr key={i} className="hover:bg-canvas/50 transition-colors">
                 <td className="px-5 py-3.5 text-ink-body font-medium">{row.label}</td>

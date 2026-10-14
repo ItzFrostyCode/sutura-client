@@ -55,7 +55,7 @@ export default function MyAppointmentsPage() {
 
       {!loading && appointments.length === 0 && (
         <div className="mt-3">
-          <EmptyState Icon={CalendarClock} title="No appointments yet" message="Book a fitting or consultation with a store to see it here." action={{ href: '/stores', label: 'Browse Stores' }} />
+          <EmptyState Icon={CalendarClock} title="No appointments yet" message="Book a fitting or consultation with a store to see it here." action={{ href: '/search', label: 'Browse Stores' }} />
         </div>
       )}
 

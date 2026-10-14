@@ -1,7 +1,7 @@
 import React from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
-import { BulletItem, ImageItem, ColorItem, CatalogFormData, CatalogItemResponse } from './catalogTypes';
+import { BulletItem, ImageItem, ColorItem, CatalogFormData, CatalogItemResponse, type ApparelReview } from './catalogTypes';
 import type { SizeChartValue } from '@/components/shared/SizeChartEditor';
 
 export interface CatalogItem {
@@ -33,6 +33,7 @@ export interface CatalogItem {
   total_revenue?: number;
   order_count?: number;
   is_active?: boolean;
+  apparel_review?: ApparelReview | null;
 }
 
 /** Made-to-order only — the price is the real tailoring price, not a sale price. */

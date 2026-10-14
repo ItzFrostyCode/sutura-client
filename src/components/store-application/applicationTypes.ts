@@ -19,6 +19,8 @@ export interface PublicPlan {
   price_monthly: string;
   price_yearly: string;
   features: string[] | null;
+  /** Server-built: the staff limit from max_staff, then the admin's feature lines. */
+  display_features?: string[];
 }
 
 export interface OwnerFields {

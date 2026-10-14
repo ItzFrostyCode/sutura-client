@@ -1,6 +1,9 @@
 import React from 'react';
-import { Baby, Printer, Ruler, Scissors, Shirt, Sparkles, Theater, Users, type LucideIcon } from 'lucide-react';
-import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import {
+  Anchor, Baby, Briefcase, Flower2, Gem, GraduationCap, Ruler, Scissors, Shirt, Sparkles, Stethoscope, Sun, Trophy, X,
+  type LucideIcon,
+} from 'lucide-react';
+import { STORE_SPECIALIZATIONS, specializationLabel } from '@/lib/storeSpecializations';
 
 interface SpecializationsSelectorProps {
   readonly specializations: string[];
@@ -13,22 +16,31 @@ const ICONS: Record<string, LucideIcon> = {
   children: Baby,
   custom_tailoring: Ruler,
   alterations_repairs: Scissors,
-  uniform_production: Users,
-  printing_sublimation: Printer,
-  custom_costume_creation: Theater,
+  formal: Gem,
+  casual: Sun,
+  office: Briefcase,
+  school: GraduationCap,
+  maritime: Anchor,
+  medical: Stethoscope,
+  sports: Trophy,
+  embroidery: Flower2,
 };
 
 const OPTIONS = STORE_SPECIALIZATIONS.map((s) => ({ id: s.value, label: s.label, Icon: ICONS[s.value] ?? Scissors }));
+const OPTION_IDS = new Set(OPTIONS.map((o) => o.id));
 
 export default function SpecializationsSelector({ specializations, onChange }: SpecializationsSelectorProps) {
   const toggle = (id: string) => {
     onChange(specializations.includes(id) ? specializations.filter((s) => s !== id) : [...specializations, id]);
   };
+  // Saved earlier from a list that has since changed (e.g. "Others") — still
+  // shown so the owner can see and remove them.
+  const retired = specializations.filter((id) => !OPTION_IDS.has(id));
 
   return (
     <div className="space-y-2">
       <p className="text-xs text-ink-muted">
-        The same Men / Women / Kids and Services categories customers browse from the site header.
+        Men / Women / Kids plus the services your shop offers. Customers filter shops by these on search and the map.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {OPTIONS.map((spec) => {
@@ -56,6 +68,25 @@ export default function SpecializationsSelector({ specializations, onChange }: S
           );
         })}
       </div>
+      {retired.length > 0 && (
+        <div className="space-y-1.5 border-t border-line pt-2">
+          <p className="text-xs text-ink-muted">No longer offered as a choice — remove these and pick from the list above:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {retired.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => toggle(id)}
+                aria-label={`Remove ${specializationLabel(id)}`}
+                className="inline-flex min-h-8 items-center gap-1 border border-line bg-sunken px-2 text-xs text-ink-body hover:border-danger/40 hover:text-danger cursor-pointer"
+              >
+                {specializationLabel(id)}
+                <X size={12} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

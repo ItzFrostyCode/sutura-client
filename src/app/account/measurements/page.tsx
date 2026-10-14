@@ -70,7 +70,7 @@ export default function MyMeasurementsPage() {
       )}
 
       {!loading && records.length === 0 && (
-        <EmptyState Icon={Ruler} title="No measurements on file yet" message="A store's staff records this during a fitting appointment." action={{ href: '/stores', label: 'Browse Stores' }} />
+        <EmptyState Icon={Ruler} title="No measurements on file yet" message="A store's staff records this during a fitting appointment." action={{ href: '/search', label: 'Browse Stores' }} />
       )}
 
       {!loading && records.length > 0 && filteredOrders.length === 0 && filteredGroups.length === 0 && (

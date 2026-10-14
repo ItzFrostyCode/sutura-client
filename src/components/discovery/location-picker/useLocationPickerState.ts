@@ -7,6 +7,28 @@ import { DAVAO_CENTER } from './locationPickerTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
 import { focusOn } from '@/lib/mapFocus';
 
+/** "A. Pichon St" vs "A. Pichon Street": same place once abbreviations and punctuation are evened out. */
+function normalizePlaceName(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[.,'’]/g, ' ')
+    .replace(/\bst\b/g, 'street')
+    .replace(/\bave?\b/g, 'avenue')
+    .replace(/\bblvd\b/g, 'boulevard')
+    .replace(/\brd\b/g, 'road')
+    .replace(/\bext\b/g, 'extension')
+    .replace(/\bbrgy\b/g, 'barangay')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function samePlaceName(resultName: string, typed: string): boolean {
+  // Spaces dropped too, so initials match however they're written ("J.P." / "JP").
+  const a = normalizePlaceName(resultName).replace(/ /g, '');
+  const b = normalizePlaceName(typed).replace(/ /g, '');
+  return a.length > 0 && b.length > 0 && a === b;
+}
+
 export function useLocationPickerState(
   initial: SavedLocation | null,
   onConfirm: (loc: SavedLocation) => void,
@@ -27,6 +49,10 @@ export function useLocationPickerState(
   const geocodeRequestId = useRef(0);
   const mapRef = useRef<LeafletMap | null>(null);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A spot the user chose by name (search result or recent). When the
+  // map finishes flying there, keep that name instead of replacing it with
+  // whatever building reverse-geocoding finds nearest the pin.
+  const keepLabelAt = useRef<[number, number] | null>(null);
 
   useEffect(() => {
     setRecents(getRecentLocations());
@@ -39,17 +65,17 @@ export function useLocationPickerState(
     };
   }, []);
 
-  function reverseGeocode(lat: number, lng: number) {
+  function reverseGeocode(lat: number, lng: number, keepAddress = false) {
     const requestId = ++geocodeRequestId.current;
     setReverseLoading(true);
     reverseGeocodeCoords(lat, lng)
       .then((res) => {
         if (requestId !== geocodeRequestId.current) return;
-        setAddress(res.address);
+        if (!keepAddress) setAddress(res.address);
         if (res.district) setDistrict(res.district);
       })
       .catch(() => {
-        if (requestId !== geocodeRequestId.current) return;
+        if (requestId !== geocodeRequestId.current || keepAddress) return;
         setAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
       })
       .finally(() => {
@@ -59,10 +85,18 @@ export function useLocationPickerState(
 
   function handleMapMoveEnd(lat: number, lng: number) {
     setPosition([lat, lng]);
-    reverseGeocode(lat, lng);
+    const kept = keepLabelAt.current;
+    keepLabelAt.current = null;
+    // ~30 m: the user did not drag the pin away from the named place.
+    // Still look up the district (the shop application saves it), just not the address text.
+    const keepName = kept !== null && Math.abs(kept[0] - lat) < 0.0003 && Math.abs(kept[1] - lng) < 0.0003;
+    reverseGeocode(lat, lng, keepName);
   }
 
-  function jumpTo(lat: number, lng: number) {
+  function jumpTo(lat: number, lng: number, keepLabel = false) {
+    keepLabelAt.current = keepLabel ? [lat, lng] : null;
+    // A pending reverse-geocode for the old spot must not land on top of the new name.
+    if (keepLabel) geocodeRequestId.current++;
     setPosition([lat, lng]);
     if (mapRef.current) focusOn(mapRef.current, lat, lng);
   }
@@ -108,18 +142,28 @@ export function useLocationPickerState(
 
     setSearching(true);
     try {
-      let data = await searchPlacesAroundDavao(cleaned);
+      // Search the street / place part first. With the whole address
+      // ("A. Pichon St, Poblacion District, Davao City, Davao del Sur") the
+      // geocoder latches onto "Davao City" and returns City Hall offices
+      // instead of the street; the barangay/city parts add nothing anyway,
+      // since every search is already biased to Davao City.
       const firstSegment = cleaned.split(',')[0].trim();
-      if (data.length === 0 && firstSegment && firstSegment !== cleaned) {
-        data = await searchPlacesAroundDavao(firstSegment);
+      let data = firstSegment && firstSegment !== cleaned ? await searchPlacesAroundDavao(firstSegment) : [];
+      if (data.length === 0) {
+        data = await searchPlacesAroundDavao(cleaned);
       }
+
+      // Exactly what was typed is the top hit → go straight there instead of
+      // making the user pick it from a list.
+      const best = data[0];
+      const exact = best && firstSegment && samePlaceName(best.display_name.split(',')[0], firstSegment);
 
       if (data.length === 0) {
         setError("Couldn't find that place. Try pasting the full Google Maps link, or a more specific address.");
         setShowSuggestions(false);
-      } else if (data.length === 1) {
+      } else if (data.length === 1 || exact) {
         const { lat, lng, display_name } = data[0];
-        jumpTo(lat, lng);
+        jumpTo(lat, lng, true);
         setAddress(display_name ?? cleaned);
         setShowSuggestions(false);
       } else {
@@ -135,14 +179,14 @@ export function useLocationPickerState(
   }
 
   function handlePickSearchResult(r: { lat: number; lng: number; display_name: string }) {
-    jumpTo(r.lat, r.lng);
+    jumpTo(r.lat, r.lng, true);
     setAddress(r.display_name);
     setSearchResults([]);
     setShowSuggestions(false);
   }
 
   function handlePickRecent(loc: RecentLocation) {
-    jumpTo(loc.lat, loc.lng);
+    jumpTo(loc.lat, loc.lng, true);
     setAddress(loc.address);
     setDistrict(loc.district);
     setShowSuggestions(false);

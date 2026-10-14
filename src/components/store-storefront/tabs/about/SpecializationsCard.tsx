@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
 import SpecializationsSelector from '@/components/settings/SpecializationsSelector';
-import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import { specializationLabel } from '@/lib/storeSpecializations';
 import EditableCard from './EditableCard';
 
 interface SpecializationsCardProps {
@@ -15,7 +15,7 @@ interface SpecializationsCardProps {
 }
 
 export default function SpecializationsCard({ specializations, onChange, isEditing, saving, onEdit, onCancel, onSave }: SpecializationsCardProps) {
-  const labels = specializations.map((id) => STORE_SPECIALIZATIONS.find((s) => s.value === id)?.label || id);
+  const labels = specializations.map(specializationLabel);
 
   return (
     <EditableCard
