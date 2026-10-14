@@ -2,9 +2,7 @@ import React from 'react';
 import { Star } from 'lucide-react';
 import { CatalogItem } from './types';
 import { formatTurnaround } from '@/lib/formatTurnaround';
-import { getActiveSale } from '@/lib/salePricing';
-
-const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
+import { designPriceDetail } from '@/lib/designPricing';
 
 interface CatalogProductInfoProps {
   item: CatalogItem;
@@ -16,10 +14,8 @@ interface CatalogProductInfoProps {
 export default function CatalogProductInfo({ item, hideStats }: CatalogProductInfoProps) {
   const avgRating = item.reviews_avg_rating ?? 0;
   const reviewsCount = item.reviews_count ?? 0;
-  // A design is priced by its service (the price only changes for custom work or add-ons); a design with no service keeps its own.
-  const svc = item.service;
-  const svcBase = svc?.base_price != null ? Number(svc.base_price) : null;
-  const svcSale = svc && svcBase ? getActiveSale({ price: svc.base_price as string | number, sale_price: svc.sale_price ?? null, sale_starts_at: svc.sale_starts_at ?? null, sale_ends_at: svc.sale_ends_at ?? null }) : null;
+  // A design is priced by its service; the shop may add an extra charge or ask for a quote (lib/designPricing).
+  const price = item.pricing ? designPriceDetail(item.pricing, item.service?.name) : null;
 
   return (
     <div className="space-y-0">
@@ -50,12 +46,13 @@ export default function CatalogProductInfo({ item, hideStats }: CatalogProductIn
 
       {/* 3. Price Banner Box — light bg, stands alone */}
       <div className="bg-[#fafafa] border border-line px-4 py-4 my-0">
-        {svc ? (
+        {price ? (
           <>
             <p className="text-3xl font-bold text-taupe leading-none">
-              {svcBase && svcBase > 0 ? <>{svcSale ? peso(svcSale.sale) : peso(svcBase)}{svcSale && <span className="ml-2 align-middle text-base font-normal text-ink-faint line-through">{peso(svcBase)}</span>}</> : 'Price on consultation'}
+              {price.main}
+              {price.struck && <span className="ml-2 align-middle text-base font-normal text-ink-faint line-through">{price.struck}</span>}
             </p>
-            <p className="mobile-caption mt-2 text-ink-muted">Price of the {svc.name} service — it only changes for custom work or add-ons.</p>
+            <p className="mobile-caption mt-2 text-ink-muted">{price.note}</p>
           </>
         ) : (
           <p className="text-3xl font-bold text-taupe leading-none">₱{Number(item.price).toLocaleString()}</p>

@@ -3,39 +3,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import {
-  DEPARTMENTS,
-  DEPARTMENT_LABELS,
-  SUBCATEGORY_LABELS,
-  SERVICE_CATEGORIES,
-  SERVICE_CATEGORY_LABELS,
-  subcategoriesFor,
-  serviceSearchHref,
-  type Department,
-} from '@/lib/canonicalTaxonomy';
+import { GARMENT_CATEGORIES, GARMENT_CATEGORY_KEYS, SERVICE_GROUPS, SERVICE_GROUP_KEYS } from '@/lib/garmentTaxonomy';
+import { categoryHref, serviceHref } from '@/components/categories/categoriesDirectoryData';
 import HomeCarouselRow from './HomeCarouselRow';
 import HomeCategoryCard from './HomeCategoryCard';
-import { getCategoryVisual, getServiceCategoryVisual } from './homeCategoryData';
+import { getGarmentCategoryVisual, getServiceCategoryVisual } from './homeCategoryData';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 
 interface HomeCategoryGridProps {
   readonly items?: CatalogItemResult[];
 }
 
-type ActiveTab = Department | 'services';
+// Garments (the 10 garment categories) and Services (the 4 approved services) — no Men / Women / Kids (2026-10-14).
+type ActiveTab = 'garments' | 'services';
 const TABS: { key: ActiveTab; label: string }[] = [
-  ...DEPARTMENTS.map((d) => ({ key: d as ActiveTab, label: DEPARTMENT_LABELS[d] })),
+  { key: 'garments', label: 'Garments' },
   { key: 'services', label: 'Services' },
 ];
-
-// 'others' is every department's safety-valve catch-all subcategory (see
-// canonicalTaxonomy.ts), not a real browsable category — excluded the same
-// way this grid already deliberately excludes Accessories below.
-function subcategoryTilesFor(department: Department) {
-  return subcategoriesFor(department)
-    .filter((sub) => sub !== 'others')
-    .map((sub) => ({ value: sub, label: SUBCATEGORY_LABELS[sub] ?? sub }));
-}
 
 export default function HomeCategoryGrid({}: HomeCategoryGridProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>(TABS[0].key);
@@ -55,7 +39,7 @@ export default function HomeCategoryGrid({}: HomeCategoryGridProps) {
         </p>
       </div>
 
-      {/* Category Tabs — Men's/Women's/Children's Apparel + Services */}
+      {/* Category Tabs — Garments + Services */}
       <div className="flex items-center justify-start sm:justify-center gap-2 mb-6 overflow-x-auto hide-scrollbar pb-1 px-1">
         {TABS.map((tab) => {
           const isActive = tab.key === activeTab;
@@ -76,33 +60,27 @@ export default function HomeCategoryGrid({}: HomeCategoryGridProps) {
         })}
       </div>
 
-      {/* Carousel of High-Definition Category Visual Cards — one per
-          subcategory under the active department, or one per service
-          category when the Services tab is active. */}
+      {/* Carousel of category cards — one per garment category, or one per service on the Services tab. */}
       <HomeCarouselRow className="pb-4">
         {activeTab === 'services'
-          ? SERVICE_CATEGORIES.filter((cat) => cat !== 'others').map((cat, idx) => (
+          ? SERVICE_GROUP_KEYS.map((group, idx) => (
               <HomeCategoryCard
-                key={`services-${cat}`}
-                href={serviceSearchHref(cat)}
-                category={{ value: cat, label: SERVICE_CATEGORY_LABELS[cat] }}
-                visual={getServiceCategoryVisual(cat)}
+                key={`services-${group}`}
+                href={serviceHref(group)}
+                category={{ value: group, label: SERVICE_GROUPS[group].label }}
+                visual={getServiceCategoryVisual(group)}
                 isPriority={idx < 3}
               />
             ))
-          : subcategoryTilesFor(activeTab).map((sub, idx) => {
-              const visual = getCategoryVisual(activeTab, sub.value);
-
-              return (
-                <HomeCategoryCard
-                  key={`${activeTab}-${sub.value}`}
-                  href={`/search?tab=catalog&department=${encodeURIComponent(activeTab)}&subcategory=${encodeURIComponent(sub.value)}`}
-                  category={sub}
-                  visual={visual}
-                  isPriority={idx < 3}
-                />
-              );
-            })}
+          : GARMENT_CATEGORY_KEYS.filter((cat) => cat !== 'other').map((cat, idx) => (
+              <HomeCategoryCard
+                key={`garments-${cat}`}
+                href={categoryHref(cat)}
+                category={{ value: cat, label: GARMENT_CATEGORIES[cat].label }}
+                visual={getGarmentCategoryVisual(cat)}
+                isPriority={idx < 3}
+              />
+            ))}
       </HomeCarouselRow>
 
       <div className="text-center mt-2">

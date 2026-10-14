@@ -19,7 +19,7 @@ interface SearchPanelTopProps {
 export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact }: SearchPanelTopProps) {
   const here = `/search${s.searchParams.toString() ? `?${s.searchParams.toString()}` : ''}`;
   const changeHref = `/location?returnTo=${encodeURIComponent(here)}`;
-  const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, sortBy: s.sortBy };
+  const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy };
 
   return (
     <div>

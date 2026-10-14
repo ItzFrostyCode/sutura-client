@@ -1,47 +1,31 @@
 import Link from 'next/link';
-import {
-  DEPARTMENT_LABELS,
-  SUBCATEGORY_LABELS,
-  TAXONOMY_TREE,
-  type Department,
-} from '@/lib/canonicalTaxonomy';
+import { GARMENT_CATEGORIES, GARMENT_CATEGORY_KEYS, GARMENTS, garmentsInCategory } from '@/lib/garmentTaxonomy';
+import { categoryHref, garmentHref } from './categoriesDirectoryData';
 
-interface ShowcaseTile {
-  title: string;
-  subtitle: string;
-  href: string;
-}
-
-function departmentTiles(department: Department): ShowcaseTile[] {
-  return Object.keys(TAXONOMY_TREE[department]).map((subcat) => ({
-    title: SUBCATEGORY_LABELS[subcat] ?? subcat,
-    subtitle: DEPARTMENT_LABELS[department],
-    href: `/search?tab=catalog&department=${department}&subcategory=${subcat}`,
-  }));
-}
-
-// Apparel only — Services have their own dedicated section
-// (CategoriesServicesSection.tsx), not mixed into this grid.
-const ALL_TILES: ShowcaseTile[] = [
-  ...departmentTiles('men'),
-  ...departmentTiles('women'),
-  ...departmentTiles('children'),
-];
-
+// Browse by Garment Category: the 10 categories, each with its garments as tags (2 levels — no Men / Women / Kids,
+// no top/bottom). "Other Garments" has no fixed list, so it is not a tile.
 export default function CategoriesShowcaseGrid() {
   return (
     <section>
-      <h2 className="mobile-h2 sm:tablet-h2 text-ink mb-3">Browse Apparel by Category</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {ALL_TILES.map((tile) => (
-          <Link
-            key={`${tile.subtitle}-${tile.title}`}
-            href={tile.href}
-            className="min-h-[72px] flex flex-col justify-center gap-0.5 px-4 py-3 bg-surface border border-line hover:border-taupe transition-colors rounded-none"
-          >
-            <span className="mobile-overline text-ink-faint">{tile.subtitle}</span>
-            <span className="mobile-body-md font-semibold text-ink truncate">{tile.title}</span>
-          </Link>
+      <h2 className="mobile-h2 sm:tablet-h2 text-ink mb-3">Browse by Garment Category</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {GARMENT_CATEGORY_KEYS.filter((c) => c !== 'other').map((cat) => (
+          <div key={cat} className="bg-surface border border-line p-4">
+            <Link href={categoryHref(cat)} className="mobile-h4 text-ink hover:text-taupe transition-colors">
+              {GARMENT_CATEGORIES[cat].label}
+            </Link>
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {garmentsInCategory(cat).map((slug) => (
+                <Link
+                  key={slug}
+                  href={garmentHref(slug)}
+                  className="mobile-caption min-h-8 inline-flex items-center px-2.5 py-1 bg-canvas border border-line hover:border-taupe hover:text-taupe transition-colors text-ink-muted"
+                >
+                  {GARMENTS[slug].label}
+                </Link>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </section>

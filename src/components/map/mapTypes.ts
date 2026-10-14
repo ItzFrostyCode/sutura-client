@@ -1,6 +1,8 @@
 import type { OperatingHours } from '@/lib/storeStatus';
+import { DAVAO_DISTRICTS } from '@/lib/davaoLocations';
 
-export const DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
+// All 11 Davao City districts — one list for the whole app (src/lib/davaoLocations.ts).
+export const DISTRICTS: string[] = [...DAVAO_DISTRICTS];
 export const DAVAO_CENTER: [number, number] = [7.0731, 125.6128];
 
 export interface StoreApiBranch {

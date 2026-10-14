@@ -29,7 +29,7 @@ export const ALL_COLUMNS = [
   { id: 'qc_check',               title: 'QC Check',               color: 'bg-lime-50/50',      border: 'border-lime-200/50' },
   { id: 'design',                 title: 'Design',                 color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
   { id: 'pattern_making',         title: 'Pattern Making',         color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
-  { id: 'mass_cutting_printing',  title: 'Mass Cutting & Printing', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
+  { id: 'mass_cutting_printing',  title: 'Mass Cutting', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
   { id: 'cutting',                title: 'Cutting',                color: 'bg-amber-50/50',     border: 'border-amber-200/50' },
   { id: 'sewing',                 title: 'Sewing / Assembly',      color: 'bg-orange-50/50',    border: 'border-orange-200/50' },
   // Workflow sequence after production: Quality Check -> Ready for Final Fitting / Collection ->
@@ -138,8 +138,8 @@ export function requiresDownpayment(
 }
 
 /**
- * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting &
- * Printing isn't relevant to the jobs actually on the board (most stores
+ * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting
+ * isn't relevant to the jobs actually on the board (most stores
  * only ever use one of the two paths), and hides the Repair Override lane
  * (Queued for Repair / In Repair / QC Check) unless a repair job is
  * actually on the board — same reasoning, applied to a second alternate

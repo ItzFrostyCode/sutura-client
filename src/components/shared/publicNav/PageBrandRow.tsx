@@ -7,6 +7,7 @@ import { BOTTOM_NAV_PATHS, usesBottomNav } from './bottomNavPaths';
 import { useTrackOrderLink } from './useTrackOrderLink';
 import { usePublicNav } from './usePublicNav';
 import NotificationsPopover from '@/components/notifications/inbox/NotificationsPopover';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 
 interface PageBrandRowProps {
   /** Adds the page side margins, for placing it outside a margined container. */
@@ -15,7 +16,7 @@ interface PageBrandRowProps {
 }
 
 /**
- * The SUTURA name, then Notifications (with the unread count, as on Facebook) beside Order Tracking, at the top of the page content,
+ * The SUTURA logo, then Notifications (with the unread count, as on Facebook) beside Order Tracking, at the top of the page content,
  * in place of a header bar.
  * The row is only as tall as its content (32px); the 44px+ tap areas are drawn outside it so they add no space.
  */
@@ -30,7 +31,7 @@ export default function PageBrandRow({ standalone = false, className = '' }: Pag
   return (
     <div className={`flex h-8 items-center justify-between ${standalone ? 'mobile-screen-margins mt-3' : ''} ${main ? '' : 'max-md:hidden'} ${className}`}>
       <Link href="/" aria-label="SUTURA home" className="relative flex items-center before:absolute before:-inset-x-2 before:-inset-y-3">
-        <span className="font-serif text-[21px] font-bold leading-none tracking-widest text-taupe-dark">SUTURA</span>
+        <SuturaLogo className="h-8 w-auto text-espresso" />
       </Link>
       <div className="flex items-center gap-3">
       {notificationsHref === '/notifications' ? (

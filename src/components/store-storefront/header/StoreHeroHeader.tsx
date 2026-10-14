@@ -16,6 +16,7 @@ import {
   Clock,
   Phone,
   LayoutDashboard,
+  Wrench,
 } from 'lucide-react';
 import { StoreProfile, StoreBranch, StorefrontTab } from '../types';
 import { getMediaUrl } from '@/lib/media';
@@ -32,6 +33,8 @@ interface StoreHeroHeaderProps {
   readonly isShopViewingOwnStore?: boolean;
   /** Shown inside the map panel: the panel's own header carries the Back, the name and the address, so they are left out here. */
   readonly embedded?: boolean;
+  /** The shop has an Alterations & Repairs service — shown under its name (owner's rule, 2026-10-14). */
+  readonly altersRepairs?: boolean;
   readonly onEditProfile: () => void;
   readonly tabList: { id: StorefrontTab; label: string }[];
   readonly activeTab: StorefrontTab;
@@ -77,6 +80,7 @@ export default function StoreHeroHeader({
   isOwnerViewingOwnStore,
   isShopViewingOwnStore = false,
   embedded = false,
+  altersRepairs = false,
   onEditProfile,
   tabList,
   activeTab,
@@ -227,6 +231,14 @@ export default function StoreHeroHeader({
               </span>
             ) : (
               <span className="text-ink-faint font-normal">No ratings yet</span>
+            )}
+            {altersRepairs && (
+              <>
+                <span className="text-ink-faint">·</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-ink-body">
+                  <Wrench size={12} className="text-taupe shrink-0" /> Alters &amp; repairs
+                </span>
+              </>
             )}
           </div>
 

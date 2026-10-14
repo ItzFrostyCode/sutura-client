@@ -1,9 +1,12 @@
-import { deriveTiersFromService, type PricingTierInput, type Service, type ServiceField, type ServiceType } from '../serviceHelpers';
+import { deriveOrderTypes, deriveTiersFromService, type PricingTierInput, type Service, type ServiceField, type ServiceType } from '../serviceHelpers';
+import { canonicalGarment } from '@/lib/garmentTaxonomy';
 import { emptySizeChart, type SizeChartValue } from '@/components/shared/SizeChartEditor';
 import { emptyRequirementsDraft, requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 import type { PublicService } from '@/components/store-storefront/types';
 
-export type ServiceSection = 'photo' | 'info' | 'spec' | 'chart' | 'description' | 'booking' | 'requirements';
+// 'type' / 'garments' / 'capabilities' are the create steps for "what you do"; the detail page edits all three
+// together as 'work'. 'spec' is the prices & add-ons box (and where it shows on the shop page).
+export type ServiceSection = 'photo' | 'info' | 'type' | 'garments' | 'capabilities' | 'work' | 'spec' | 'chart' | 'description' | 'booking' | 'requirements';
 
 // Everything a section can change, held as strings / plain values while editing.
 export interface ServiceDraft {
@@ -18,7 +21,12 @@ export interface ServiceDraft {
   /** The storefront "Service Categories" chip it sits under (lib/serviceShowcase). */
   showcase_category: string;
   service_leaf_type: string;
+  /** Worked out from the service type, capabilities and garments (deriveOrderTypes) — never ticked. */
   service_types: ServiceType[];
+  /** Garments it works on (current slugs). */
+  garment_types: string[];
+  /** Tasks it offers (capabilities of the service type). */
+  capabilities: string[];
   tiers: PricingTierInput[];
   image_url: string;
   sizeChart: SizeChartValue;
@@ -40,6 +48,8 @@ export function toDraft(service: Service): ServiceDraft {
     showcase_category: service.showcase_category ?? '',
     service_leaf_type: service.service_leaf_type ?? '',
     service_types: service.service_types ?? [],
+    garment_types: Array.from(new Set((service.garment_types ?? []).map((g) => canonicalGarment(g)).filter(Boolean) as string[])),
+    capabilities: service.capabilities ?? [],
     tiers: deriveTiersFromService(service),
     image_url: service.image_url ?? '',
     sizeChart: {
@@ -55,7 +65,8 @@ export function toDraft(service: Service): ServiceDraft {
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
-  service_category: '', showcase_category: '', service_leaf_type: '', service_types: [], tiers: [{ label: '', amount: '' }],
+  service_category: '', showcase_category: '', service_leaf_type: '', service_types: [], garment_types: [], capabilities: [],
+  tiers: [{ label: '', amount: '' }],
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
 
@@ -69,16 +80,26 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
       if (d.estimated_days_max !== '' && Number(d.estimated_days_max) <= from) return `The "to" days must be ${from + 1} or higher — or leave it blank.`;
     }
   }
+  if (section === 'type' || section === 'work') {
+    if (!d.service_category) return 'Pick the kind of work this service is.';
+  }
+  if ((section === 'capabilities' || section === 'work') && d.capabilities.includes('bulk_orders')) {
+    if (!d.min_order_qty || Number(d.min_order_qty) < 1) return 'Enter the minimum order for bulk orders.';
+  }
   if (section === 'spec') {
-    if (!d.service_category) return 'Pick a category.';
     if (!d.showcase_category) return 'Pick where it shows on your shop page.';
-    if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one priced item.';
+    if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one price or add-on.';
   }
   if (section === 'requirements') return validateRequirements(d.requirements);
   return null;
 }
 
 export const emptyDraftChart = emptySizeChart;
+
+/** The order types this draft adds up to (same rule as the server). */
+export function orderTypesOf(d: ServiceDraft): ServiceType[] {
+  return d.service_category ? deriveOrderTypes(d.service_category, d.capabilities, d.garment_types) : d.service_types;
+}
 
 // The update endpoint validates the whole service, so every save sends the
 // full record: what this section changed (from the draft) on top of what is
@@ -92,8 +113,11 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     name: draft.name.trim(),
     description: draft.description || null,
     categories: service?.categories ?? [],
-    service_types: draft.service_types,
+    // Worked out again on the server from the same three fields (Service::deriveOrderTypes).
+    service_types: orderTypesOf(draft),
     service_category: draft.service_category || null,
+    garment_types: draft.garment_types,
+    capabilities: draft.capabilities,
     showcase_category: draft.showcase_category || null,
     service_leaf_type: draft.service_leaf_type || null,
     base_price: draft.base_price.trim() === '' ? null : Number.parseFloat(draft.base_price),
@@ -101,7 +125,7 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     estimated_days_max: draft.turnaround_depends || draft.estimated_days_max.trim() === '' ? null : Number.parseInt(draft.estimated_days_max, 10),
     min_order_qty: Number.parseInt(draft.min_order_qty, 10) || 1,
     custom_fields: draft.custom_fields.filter((f) => f.label.trim() !== ''),
-    roster_fields: draft.service_types.includes('bulk_sublimation') ? draft.roster_fields : [],
+    roster_fields: orderTypesOf(draft).includes('bulk_sublimation') ? draft.roster_fields : [],
     is_active: isActive,
     image_url: draft.image_url || null,
     size_chart_image_url: draft.sizeChart.image_url,
@@ -114,8 +138,12 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
 
 const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   photo: ['image_url'],
-  info: ['name', 'base_price', 'estimated_days', 'estimated_days_max', 'turnaround_depends', 'min_order_qty'],
-  spec: ['service_category', 'showcase_category', 'service_leaf_type', 'service_types', 'tiers'],
+  info: ['name', 'base_price', 'estimated_days', 'estimated_days_max', 'turnaround_depends'],
+  type: ['service_category'],
+  garments: ['garment_types'],
+  capabilities: ['capabilities', 'min_order_qty'],
+  work: ['service_category', 'garment_types', 'capabilities', 'min_order_qty'],
+  spec: ['showcase_category', 'tiers'],
   chart: ['sizeChart'],
   description: ['description'],
   booking: ['custom_fields', 'roster_fields'],

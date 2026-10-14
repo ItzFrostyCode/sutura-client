@@ -12,6 +12,8 @@ export interface JobFinancialsCardProps {
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;
   readonly onRejectPayment: (paymentId: number, reason: string) => Promise<void>;
   readonly onVerifyPayment: (paymentId: number) => Promise<void>;
+  /** Reloads the job after a change made outside these handlers (the downpayment waiver). */
+  readonly onRefresh?: () => Promise<void>;
 }
 
 export const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeCls: string }> = {

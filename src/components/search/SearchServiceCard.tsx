@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { Scissors, Star, Clock, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
-import { SERVICE_TYPE_LABELS } from '@/lib/canonicalTaxonomy';
+import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
 import { SearchServiceResult } from './types';
 
 interface SearchServiceCardProps {
@@ -53,8 +53,9 @@ export default function SearchServiceCard({
   // service_type/category fields — matches ServiceCardItem.tsx/
   // ServiceAccordionSections.tsx's own Category row so the badge shown here
   // and on the service's own detail page agree.
-  const rawType = service.service_leaf_type
-    ? SERVICE_TYPE_LABELS[service.service_leaf_type] ?? service.service_leaf_type
+  // The service's kind of work (one of the 4 approved services); older records fall back to their own words.
+  const rawType = service.service_category && service.service_category in SERVICE_GROUPS
+    ? SERVICE_GROUPS[service.service_category as ServiceGroupKey].label
     : service.service_type || service.category || 'Tailoring Service';
   const serviceTypeDisplay = rawType.replace(/_/g, ' ');
   const soldCount = service.orders_count ?? service.reviews_count ?? 0;
@@ -109,11 +110,12 @@ export default function SearchServiceCard({
                 </span>
               </div>
             ) : service.base_price !== null && service.base_price !== undefined ? (
+              // A service price is a starting price — the shop confirms the final one (same wording as the service page).
               <p className="text-xs font-bold text-ink">
-                ₱{Number(service.base_price).toLocaleString()}
+                <span className="font-normal text-ink-muted">From </span>₱{Number(service.base_price).toLocaleString()}
               </p>
             ) : (
-              <p className="text-xs font-bold text-ink">Custom Quote</p>
+              <p className="text-xs font-bold text-ink">Depends on the item</p>
             )}
           </div>
 

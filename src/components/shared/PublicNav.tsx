@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 import { usePathname } from 'next/navigation';
 import { usePublicNav } from './publicNav/usePublicNav';
 import NavActionButtons from './publicNav/NavActionButtons';
@@ -40,7 +41,7 @@ export default function PublicNav({
       <header className={`${isSticky ? 'sticky top-0' : 'relative'} z-50 w-full shrink-0 border-b border-line bg-surface text-ink ${bottomNavLayout ? 'hidden' : ''} ${className}`}>
         <div className="relative mx-auto flex h-[52px] max-w-7xl items-center justify-between px-4 sm:h-[60px] sm:px-6 lg:px-8">
           <Link href="/" aria-label="SUTURA home" className="flex min-h-11 shrink-0 items-center">
-            <span className="font-serif text-[20px] font-bold leading-none tracking-widest text-ink sm:text-[24px]">SUTURA</span>
+            <SuturaLogo halo="var(--card-bg)" className="h-7 w-auto text-espresso sm:h-8" />
           </Link>
 
           <PublicTopLinks />

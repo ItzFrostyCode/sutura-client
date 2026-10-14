@@ -1,4 +1,5 @@
 import type { OperatingHours } from '@/lib/storeStatus';
+import type { DesignPricing } from '@/lib/designPricing';
 
 
 export interface CatalogItemImage {
@@ -42,6 +43,11 @@ export interface CatalogItem {
   id: number;
   name: string;
   price: string | number;
+  /** How the design is priced against its service (owner's choice; null = same as the service). */
+  pricing_mode?: 'same' | 'extra' | 'quote' | null;
+  extra_charge?: string | number | null;
+  /** Server-worked price (lib/designPricing). */
+  pricing?: DesignPricing;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
   description?: string;

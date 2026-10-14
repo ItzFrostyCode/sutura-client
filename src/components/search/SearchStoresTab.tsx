@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, ChevronRight, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { Store, Star, ChevronRight, ChevronDown, ChevronUp, MapPin, Wrench } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
@@ -27,6 +27,7 @@ function toCatalogItemResult(item: CatalogItemResult | LeanCatalogItem, store: R
     name: item.name,
     garment_type: item.garment_type ?? '',
     price: item.price != null ? Number(item.price) : null,
+    pricing: item.pricing ?? null,
     material: item.material ?? null,
     color: maybeFull.color ?? null,
     estimated_days: maybeFull.estimated_days ?? null,
@@ -177,7 +178,12 @@ export default function SearchStoresTab({
               : store.catalog_items_count ?? store.catalog_items?.length ?? storeCarouselItems.length;
 
             const isServicesFilter = department?.toLowerCase() === 'services' || department?.toLowerCase() === 'service';
-            const storeServices = store.services ?? [];
+            // With a search, only the services it is about (the server says which); a shop that matched on its name
+            // or place has none, so all of its services show.
+            const matchIds = qLower ? store.matching_service_ids ?? [] : [];
+            const storeServices = matchIds.length > 0
+              ? (store.services ?? []).filter((svc) => matchIds.includes(svc.id))
+              : store.services ?? [];
             // Unlike catalog_items, the services relation isn't capped
             // server-side, so storeServices.length is only wrong when a
             // search query has narrowed the visible array down from the
@@ -190,6 +196,8 @@ export default function SearchStoresTab({
               : isServicesFilter || (storeCarouselItems.length === 0 && storeServices.length > 0);
 
             const hasPin = (store.branches ?? []).some((b) => b.latitude && b.longitude);
+            // Every shop says whether it alters & repairs at all (owner's rule, 2026-10-14).
+            const altersRepairs = (store.services ?? []).some((svc) => svc.service_category === 'alterations_repairs');
             const hasCarousel = (showServicesCarousel && storeServices.length > 0) || storeCarouselItems.length > 0;
             const dropped = !inPanel || openIds.includes(store.id);
 
@@ -234,6 +242,11 @@ export default function SearchStoresTab({
                             {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
                           </span>
                         ) : null}
+                        {altersRepairs && (
+                          <span className="text-[10px] font-bold text-ink-muted inline-flex items-center gap-0.5">
+                            <Wrench size={10} className="text-taupe" /> Alters &amp; repairs
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
                         {store.name}
@@ -278,6 +291,11 @@ export default function SearchStoresTab({
                             {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
                           </span>
                         ) : null}
+                        {altersRepairs && (
+                          <span className="text-[10px] font-bold text-ink-muted inline-flex items-center gap-0.5">
+                            <Wrench size={10} className="text-taupe" /> Alters &amp; repairs
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
                         {store.name}

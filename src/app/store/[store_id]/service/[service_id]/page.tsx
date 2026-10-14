@@ -18,7 +18,8 @@ import ServiceHeroBar from '@/components/store-service-detail/ServiceHeroBar';
 import { ServiceInlineActions, ServiceBottomBar } from '@/components/store-service-detail/ServiceActionButtons';
 import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
 import ServiceDesignsGrid from '@/components/store-service-detail/ServiceDesignsGrid';
-import { useEmbedded } from '@/hooks/useEmbedded';
+import { useEmbedded, embedSuffix } from '@/hooks/useEmbedded';
+import { canonicalGarment } from '@/lib/garmentTaxonomy';
 import ServiceAccordionSections from '@/components/store-service-detail/ServiceAccordionSections';
 import ServiceStoreProfileCard from '@/components/store-service-detail/ServiceStoreProfileCard';
 import ServiceRecommendationsSection from '@/components/store-service-detail/ServiceRecommendationsSection';
@@ -31,6 +32,22 @@ import type { SearchServiceResult } from '@/components/search/types';
 // responsive image-left/detail-right layout system as the Catalog Item
 // Detail page (same 600px breakpoint tiers, same flat-design rules)
 // instead of the old single-column rounded-corner card.
+/**
+ * The shop's alteration / repair service that works on this service's garments — any garment when it ticked none.
+ * None when this service is itself the alteration service.
+ */
+function alterationFor(service: PublicService, list: PublicService[]): PublicService | null {
+  if (service.service_category === 'alterations_repairs') return null;
+  const mine = new Set((service.garment_types ?? []).map((g) => canonicalGarment(g)).filter(Boolean) as string[]);
+  return (
+    list.find((s) => {
+      if (s.id === service.id || s.service_category !== 'alterations_repairs') return false;
+      const theirs = s.garment_types ?? [];
+      return theirs.length === 0 || mine.size === 0 || theirs.some((g) => mine.has(canonicalGarment(g) ?? ''));
+    }) ?? null
+  );
+}
+
 export default function ServiceDetailPage({
   params,
 }: Readonly<{ params: Promise<{ store_id: string; service_id: string }> }>) {
@@ -45,6 +62,8 @@ export default function ServiceDetailPage({
   const [store, setStore] = useState<StoreProfile | null>(null);
   const [service, setService] = useState<PublicService | null>(null);
   const [fromSameShop, setFromSameShop] = useState<SearchServiceResult[]>([]);
+  // The same shop's alteration service, when it takes this kind of garment ("This shop also alters & repairs it").
+  const [alterationService, setAlterationService] = useState<PublicService | null>(null);
   const [moreLikeThis, setMoreLikeThis] = useState<SearchServiceResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [headerOpacity, setHeaderOpacity] = useState(0);
@@ -79,6 +98,7 @@ export default function ServiceDetailPage({
         // already everything that section needs to show, just minus the
         // service currently being viewed.
         setFromSameShop((list as unknown as SearchServiceResult[]).filter((s) => s.id !== Number(serviceId)));
+        setAlterationService(found ? alterationFor(found, list) : null);
       })
       .catch(() => {
         setStore(null);
@@ -498,7 +518,10 @@ export default function ServiceDetailPage({
         {/* Specification · Description — same numbered-card system as the
             Catalog Item Detail page's Size Guide/Specification/Description. */}
         <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <ServiceAccordionSections service={service} />
+          <ServiceAccordionSections
+            service={service}
+            alsoAlters={alterationService ? { href: `/store/${storeId}/service/${alterationService.id}${embedSuffix(embedded)}`, name: alterationService.name } : null}
+          />
         </div>
 
         {/* Every design made under this service, two columns — after the service's own details. */}

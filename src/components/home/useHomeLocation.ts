@@ -19,10 +19,13 @@ export function useHomeLocation() {
   const [location, setLocation] = useState<SavedLocation | null>(null);
   const [locating, setLocating] = useState(false);
   const [denied, setDenied] = useState(false);
+  // The last ask ended without a place (prompt closed, blocked, or the device could not find itself).
+  const [failed, setFailed] = useState(false);
   const askedRef = useRef(false);
 
   const request = useCallback(() => {
     setLocating(true);
+    setFailed(false);
     requestCurrentLocation(
       (loc) => {
         setLocation(loc);
@@ -31,6 +34,7 @@ export function useHomeLocation() {
       },
       () => {
         setLocating(false);
+        setFailed(true);
         // Closing the browser's prompt also reports an error; only a real block should hide "Use my location".
         void checkLocationPermission().then((state) => setDenied(state === 'denied'));
       },
@@ -60,5 +64,5 @@ export function useHomeLocation() {
     return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
   }, []);
 
-  return { location, locating, denied, request };
+  return { location, locating, denied, failed, request };
 }

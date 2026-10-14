@@ -21,6 +21,7 @@ import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
 import SearchableCombobox, { ComboboxOption } from '@/components/shared/SearchableCombobox';
 import { JobCreateFormData } from './types';
+import { designPriceLabel } from '@/lib/designPricing';
 
 const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] as const;
 
@@ -111,7 +112,6 @@ export default function GarmentDesignSection({
         item.images?.find((img) => img.is_primary)?.image_url ||
         item.images?.[0]?.image_url ||
         item.fabric_image_url;
-      const numPrice = Number(item.price);
       return {
         id: item.id.toString(),
         label: item.name,
@@ -120,7 +120,8 @@ export default function GarmentDesignSection({
           : item.category ? item.category.toUpperCase() : undefined,
         badge: item.category,
         badgeColor: 'bg-taupe/10 text-taupe border-taupe/20',
-        price: numPrice > 0 ? `₱${numPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : undefined,
+        // The design's price comes from its service (plus any extra charge), not its old stored price.
+        price: designPriceLabel(item.pricing, item.price),
         imageUrl: primaryImage ? getMediaUrl(primaryImage) : null,
         raw: item,
       };
@@ -321,7 +322,6 @@ export default function GarmentDesignSection({
                     item.images?.find((img) => img.is_primary)?.image_url ||
                     item.images?.[0]?.image_url ||
                     item.fabric_image_url;
-                  const itemPrice = Number(item.price);
                   return (
                     <button
                       key={item.id}
@@ -356,7 +356,7 @@ export default function GarmentDesignSection({
                           {item.name}
                         </div>
                         <div className="text-[11px] font-mono font-bold text-taupe mt-0.5">
-                          {itemPrice > 0 ? `₱${itemPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Custom Price'}
+                          {designPriceLabel(item.pricing, item.price)}
                         </div>
                       </div>
                     </button>
@@ -398,7 +398,7 @@ export default function GarmentDesignSection({
                     {selectedCatalogItem.estimated_days ? ` • Est. ${selectedCatalogItem.estimated_days} days` : ''}
                   </p>
                   <div className="text-xs font-mono font-bold text-taupe mt-1">
-                    Base: ₱{Number(selectedCatalogItem.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {designPriceLabel(selectedCatalogItem.pricing, selectedCatalogItem.price)}
                   </div>
                 </div>
               </div>

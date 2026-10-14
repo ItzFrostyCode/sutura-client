@@ -35,11 +35,15 @@ export interface MoreFilters {
   maxPrice: string;
   minRating: string;
   district: string;
+  /** An official barangay of `district` (davaoLocations.ts). */
+  barangay: string;
+  /** A street / landmark of `district`: its `match` spellings (davaoAreas.ts), searched in the shops' addresses. */
+  area: string;
   /** price_asc | price_desc | '' */
   sortBy: string;
 }
 
-export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', district: '', sortBy: '' };
+export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: '' };
 
 export type AllFilters = NearFilters & MoreFilters;
 
@@ -47,5 +51,5 @@ export const DEFAULT_ALL_FILTERS: AllFilters = { ...DEFAULT_NEAR_FILTERS, ...DEF
 
 /** How many filters are on, for the dot on the filter icon. */
 export function countAllFilters(f: NearFilters & Partial<MoreFilters>): number {
-  return activeFilterCount(f) + (f.minPrice || f.maxPrice || f.sortBy ? 1 : 0) + (f.minRating ? 1 : 0) + (f.district ? 1 : 0);
+  return activeFilterCount(f) + (f.minPrice || f.maxPrice || f.sortBy ? 1 : 0) + (f.minRating ? 1 : 0) + (f.district || f.barangay || f.area ? 1 : 0);
 }

@@ -1,4 +1,5 @@
 import { type OperatingHours } from '@/lib/storeStatus';
+import { DAVAO_DISTRICTS } from '@/lib/davaoLocations';
 
 export interface StoreResult {
   id: number;
@@ -19,7 +20,8 @@ export const SORT_OPTIONS = [
 ];
 
 // Davao City's 8 administrative districts
-export const DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
+// All 11 Davao City districts — one list for the whole app (src/lib/davaoLocations.ts).
+export const DISTRICTS: string[] = [...DAVAO_DISTRICTS];
 
 export function groupStoresByLetter(stores: StoreResult[]): [string, StoreResult[]][] {
   const groups = new Map<string, StoreResult[]>();

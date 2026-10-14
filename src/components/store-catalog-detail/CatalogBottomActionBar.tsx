@@ -7,7 +7,7 @@ interface CatalogBottomActionBarProps {
   onOpenFind: () => void;
   bookHref: string;
   storeSlug?: string;
-  /** False inside the map panel (the shop is already open). */
+  /** False inside the map panel (the shop is already open, the map is right behind): no Shop, no Find — the same bar as the service's. */
   showShop?: boolean;
   orderAction?: 'bulk' | null;
   onOrder?: () => void;
@@ -31,7 +31,7 @@ export default function CatalogBottomActionBar({
     >
       <div className="flex items-stretch h-14">
         {/* Left: Shop icon + Categories icon */}
-        <div className="flex items-stretch border-r border-line">
+        <div className={`flex items-stretch ${showShop ? 'border-r border-line' : ''}`}>
           {showShop && <Link
             href={storeSlug ? `/store/${storeSlug}` : '/search?tab=store'}
             className="flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors"
@@ -42,7 +42,7 @@ export default function CatalogBottomActionBar({
             </svg>
             <span className="text-[10px] font-semibold">Shop</span>
           </Link>}
-          <button
+          {showShop && <button
             type="button"
             onClick={onOpenFind}
             className={`flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors ${showShop ? 'border-l border-line' : ''}`}
@@ -54,7 +54,7 @@ export default function CatalogBottomActionBar({
               <rect x="3" y="14" width="7" height="7" />
             </svg>
             <span className="text-[10px] font-semibold">Find</span>
-          </button>
+          </button>}
         </div>
 
         {/* Right: Book an Appointment (or Bulk Order) — same as the service page's bar */}

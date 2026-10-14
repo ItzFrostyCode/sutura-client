@@ -17,6 +17,7 @@ import CatalogStoreProfileCard from '@/components/store-catalog-detail/CatalogSt
 import CatalogRecommendationsSection from '@/components/store-catalog-detail/CatalogRecommendationsSection';
 import CatalogBottomActionBar from '@/components/store-catalog-detail/CatalogBottomActionBar';
 import { useEmbedded } from '@/hooks/useEmbedded';
+import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogFindInStoreSheet from '@/components/store-catalog-detail/CatalogFindInStoreSheet';
 import { isStoreOpen } from '@/lib/storeStatus';
@@ -299,7 +300,7 @@ export default function PublicProductDetailPage({
         locateError={locateError}
         selectedImage={selectedImage}
         itemName={item.name}
-        itemPrice={item.price}
+        itemPrice={designPriceLabel(item.pricing, item.price)}
         storeName={item.store?.name ?? ''}
         storeLogoPath={item.store?.logo_path ?? null}
         storeIsOpen={isStoreOpen(item.store?.operating_hours)}

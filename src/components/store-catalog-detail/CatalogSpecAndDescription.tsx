@@ -1,6 +1,6 @@
 import React from 'react';
 import { getFabricLabel } from '@/lib/fabricHelper';
-import { GARMENT_TYPE_LABELS, catalogCategoryPath } from '@/lib/canonicalTaxonomy';
+import { catalogCategoryPath } from '@/lib/canonicalTaxonomy';
 import { CatalogItem } from './types';
 import GuideImage from '@/components/shared/GuideImage';
 import { parseTextAndImage } from './CatalogGuideBlocks';
@@ -37,8 +37,9 @@ export function CatalogSpecTable({ item }: Readonly<{ item: CatalogItem }>) {
   const { rows: extraRows, imageUrl } = parseFeatures(item);
 
   const rows: [string, string][] = [];
-  if (categoryPath.length > 0) rows.push(['Category', categoryPath.join(' → ')]);
-  if (item.garment_type) rows.push(['Garment Type', GARMENT_TYPE_LABELS[item.garment_type] ?? item.garment_type]);
+  // Garment Category → Garment (2-level taxonomy): "Barong" then "Barong Tagalog".
+  if (categoryPath.length > 0) rows.push(['Category', categoryPath[0]]);
+  if (categoryPath.length > 1) rows.push(['Garment', categoryPath[1]]);
   if (item.service?.name) rows.push(['Service', item.service.name]);
   rows.push(['Fabric', getFabricLabel(item)]);
   if (item.material) rows.push(['Material', item.material]);

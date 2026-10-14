@@ -2,16 +2,12 @@ import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
 import { CatalogItem } from './catalogHelpers';
-import { DEPARTMENT_LABELS, type Department } from '@/lib/canonicalTaxonomy';
+import { GARMENT_CATEGORIES, categoryOfGarment, type GarmentCategory } from '@/lib/garmentTaxonomy';
 
-// Fixed categorical order (never cycled/reassigned as data changes),
-// validated for CVD/contrast — see dataviz skill's validate_palette.js.
-const DEPT_COLORS: Record<string, string> = {
-  men: '#2a78d6',
-  women: '#eb6834',
-  children: '#1baf7a',
-  other: '#eda100',
-};
+// The same validated 4-colour set as before (CVD/contrast checked), for the four garment categories that earn the
+// most; the rest share one neutral "Other categories" slice so the pie never needs more colours than it can tell apart.
+const SLICE_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'];
+const REST_COLOR = '#9a938c';
 
 interface CatalogRevenueByCategoryChartProps {
   readonly items: CatalogItem[];
@@ -33,18 +29,19 @@ function PieLabel({ cx = 0, cy = 0, midAngle = 0, outerRadius = 0, percent = 0 }
 
 export default function CatalogRevenueByCategoryChart({ items }: CatalogRevenueByCategoryChartProps) {
   const data = useMemo(() => {
-    const byDept = new Map<string, number>();
+    const byCategory = new Map<GarmentCategory, number>();
     for (const item of items) {
-      const dept = item.department || 'other';
-      byDept.set(dept, (byDept.get(dept) || 0) + Number(item.total_revenue || 0));
+      const cat: GarmentCategory = item.garment_type ? (categoryOfGarment(item.garment_type) ?? 'other') : 'other';
+      byCategory.set(cat, (byCategory.get(cat) || 0) + Number(item.total_revenue || 0));
     }
-    return Array.from(byDept.entries())
-      .filter(([, revenue]) => revenue > 0)
-      .map(([dept, revenue]) => ({
-        name: DEPARTMENT_LABELS[dept as Department] ?? 'Other',
-        value: revenue,
-        color: DEPT_COLORS[dept] ?? DEPT_COLORS.other,
-      }));
+    const ranked = Array.from(byCategory.entries()).filter(([, revenue]) => revenue > 0).sort((a, b) => b[1] - a[1]);
+    const top = ranked.slice(0, SLICE_COLORS.length).map(([cat, revenue], i) => ({
+      name: GARMENT_CATEGORIES[cat].label,
+      value: revenue,
+      color: SLICE_COLORS[i],
+    }));
+    const rest = ranked.slice(SLICE_COLORS.length).reduce((sum, [, revenue]) => sum + revenue, 0);
+    return rest > 0 ? [...top, { name: 'Other categories', value: rest, color: REST_COLOR }] : top;
   }, [items]);
 
   const total = data.reduce((sum, d) => sum + d.value, 0);

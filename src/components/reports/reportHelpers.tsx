@@ -87,7 +87,7 @@ export const STATUS_LABELS: Record<string, string> = {
   pending:                 'Pending',
   design:                  'Design',
   pattern_making:          'Pattern Making',
-  mass_cutting_printing:   'Mass Cutting & Printing',
+  mass_cutting_printing:   'Mass Cutting',
   cutting:                 'Cutting',
   sewing:                  'Sewing',
   ready_for_fitting:       'Customer Fitting',

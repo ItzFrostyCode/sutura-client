@@ -58,8 +58,8 @@ export default function SearchMapView() {
   const [focusMe, setFocusMe] = useState(() => s.searchParams.get('focus') === 'me');
 
   const filters = useMemo<AllFilters>(
-    () => ({ radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, sortBy: s.sortBy }),
-    [s.radiusKm, s.openStatus, s.minPrice, s.maxPrice, s.minRating, s.district, s.sortBy],
+    () => ({ radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy }),
+    [s.radiusKm, s.openStatus, s.minPrice, s.maxPrice, s.minRating, s.district, s.barangay, s.area, s.sortBy],
   );
   const openFilter = () => setFilterOpen(true);
   const sheetPx = panelOpen ? sheet.height : 0;

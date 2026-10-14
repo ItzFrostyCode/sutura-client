@@ -2,7 +2,7 @@ import StatusStepper, { type StepperStage } from '@/components/shared/StatusStep
 import OrderSummaryCard from '@/components/shared/orderTracking/OrderSummaryCard';
 import OrderAppointmentsCard from '@/components/shared/orderTracking/OrderAppointmentsCard';
 import {
-  Clock, Palette, Printer, Ruler, Scissors, Shirt, Wrench, Sparkles, Package, Flag,
+  Clock, Palette, Ruler, Scissors, Shirt, Wrench, Sparkles, Package, Flag,
   Ban, AlertCircle, PauseCircle, Wallet, BadgeCheck,
 } from 'lucide-react';
 
@@ -180,12 +180,12 @@ export function buildStages(
   const stages: StepperStage[] = [
     { key: 'pending', label: 'Pending', Icon: Clock },
     { key: 'design', label: 'Design', Icon: Palette },
-    // A bulk (sublimation) order always uses Mass Cutting & Printing, never
+    // A bulk (sublimation) order always uses Mass Cutting, never
     // Pattern Making — show that label from the very first render, not just
     // once the job actually reaches that exact status. Falls back to the
     // status check alone for an older response with no `pipeline` field.
     (pipeline === 'bulk' || status === 'mass_cutting_printing')
-      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
+      ? { key: 'mass_cutting_printing', label: 'Mass Cutting', Icon: Scissors }
       : { key: 'pattern_making', label: 'Pattern Making', Icon: Ruler },
     { key: 'cutting', label: 'Cutting', Icon: Scissors },
     { key: 'sewing', label: 'Sewing / Assembly', Icon: Shirt },

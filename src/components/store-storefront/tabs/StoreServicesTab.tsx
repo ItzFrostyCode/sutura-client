@@ -68,16 +68,27 @@ export default function StoreServicesTab({
     }
   }, [expandedServiceId, storeId, router]);
 
+  const designsByService = useMemo(() => {
+    const map = new Map<number, CatalogListItem[]>();
+    catalogItems.forEach((item) => {
+      if (item.service_id == null) return;
+      map.set(item.service_id, [...(map.get(item.service_id) ?? []), item]);
+    });
+    return map;
+  }, [catalogItems]);
+
+  // Same rule as the search list (the server's matching_service_ids): the service's own name or category, or one of
+  // its designs ("tuxedo" finds Bespoke Suit). Not the description, so a broad service that only mentions the word
+  // is not offered as a match.
   const q = serviceSearch.toLowerCase().trim();
   const filteredServices = useMemo(() => services.filter((s) => {
     if (!q) return true;
     return (
       s.name.toLowerCase().includes(q) ||
       s.category?.toLowerCase().includes(q) ||
-      s.service_type?.toLowerCase().includes(q) ||
-      s.description?.toLowerCase().includes(q)
+      (designsByService.get(s.id) ?? []).some((d) => d.name.toLowerCase().includes(q) || d.garment_type?.toLowerCase().includes(q))
     );
-  }), [services, q]);
+  }), [services, q, designsByService]);
 
   const filteredPackages = packages.filter((pkg) => {
     if (!q) return true;
@@ -97,14 +108,6 @@ export default function StoreServicesTab({
   const group = groups.find((g) => g.value === activeGroup) ?? groups[0] ?? null;
   const groupServices = group ? filteredServices.filter((s) => groupOf(s) === group.value) : [];
 
-  const designsByService = useMemo(() => {
-    const map = new Map<number, CatalogListItem[]>();
-    catalogItems.forEach((item) => {
-      if (item.service_id == null) return;
-      map.set(item.service_id, [...(map.get(item.service_id) ?? []), item]);
-    });
-    return map;
-  }, [catalogItems]);
   const serviceIds = useMemo(() => new Set(services.map((s) => s.id)), [services]);
   const looseDesigns = catalogItems.filter((i) => i.service_id == null || !serviceIds.has(i.service_id));
 
@@ -160,7 +163,7 @@ export default function StoreServicesTab({
           <FilterChips label="Service categories" active={group.value} onChange={pickGroup} options={groups.map((g) => ({ key: g.value, label: g.label }))} />
           <h2 id="service-group-title" className="mobile-h3 mt-4 text-ink">{group.label}</h2>
           <p className="mobile-caption text-ink-muted">{group.blurb}</p>
-          <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:gap-x-8">
+          <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-8">
             {groupServices.map((service) => (
               <ServiceRow
                 key={service.id}

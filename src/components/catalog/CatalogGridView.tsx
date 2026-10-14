@@ -16,19 +16,28 @@ import { DEFAULT_CATALOG_SORT, isPriceSort, type CatalogSortOption } from '@/com
 import StatBand from '@/components/shared/StatBand';
 import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import type { CatalogItemResult } from '@/types/publicCatalog';
-import { garmentTypesForDepartment, type Department } from '@/lib/canonicalTaxonomy';
+import { GARMENT_CATEGORY_KEYS, canonicalGarment, categoryOfGarment, type GarmentCategory } from '@/lib/garmentTaxonomy';
 import { apparelReviewBadge } from './ApparelReviewNotice';
 
 // Same card style every customer-facing catalog grid uses (search, store
 // profile, landing showroom) — reused here instead of a second, differently
 // designed card, so the owner sees their own catalog exactly as customers
 // do. Location is dropped (every item here is obviously this store's own).
+// Garment Category → Garment, from the shop's own designs (an old slug counts as the garment it was merged
+// into). A typed-in garment name sits under "Other Garments".
+const garmentOf = (item: CatalogItem) => canonicalGarment(item.garment_type);
+const categoryOf = (item: CatalogItem): GarmentCategory | null =>
+  item.garment_type ? (categoryOfGarment(item.garment_type) ?? 'other') : null;
+
+const customerPrice = (item: CatalogItem) => (item.pricing ? item.pricing.amount ?? 0 : Number(item.price) || 0);
+
 function toCatalogItemResult(item: CatalogItem): CatalogItemResult {
   return {
     id: item.id,
     name: item.name,
     garment_type: item.garment_type ?? '',
     price: item.price != null ? Number(item.price) : null,
+    pricing: item.pricing ?? null,
     material: item.material ?? null,
     color: item.color ?? null,
     estimated_days: item.estimated_days ?? null,
@@ -47,7 +56,7 @@ export default function CatalogGridView() {
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState<'' | Department>('');
+  const [categoryFilter, setCategoryFilter] = useState<'' | GarmentCategory>('');
   const [garmentTypeFilter, setGarmentTypeFilter] = useState('');
   const [sortOrder, setSortOrder] = useState<CatalogSortOption>(DEFAULT_CATALOG_SORT)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -73,48 +82,49 @@ export default function CatalogGridView() {
     fetchItems();
   }, [fetchItems]);
 
-  // Category options narrow to the selected Department, same relationship
-  // the customer search page's own filter uses — picking "Men" only offers
-  // Men's categories, not the whole store's mixed list.
+  const categoryOptions = useMemo(() => {
+    const inStock = new Set(items.map(categoryOf).filter(Boolean) as GarmentCategory[]);
+    return GARMENT_CATEGORY_KEYS.filter(c => inStock.has(c));
+  }, [items]);
+
   const garmentTypeOptions = useMemo(() => {
-    const inStock = new Set(items.map(i => i.garment_type).filter(Boolean) as string[]);
-    if (!departmentFilter) return Array.from(inStock);
-    const deptTypes = new Set(garmentTypesForDepartment(departmentFilter));
-    return Array.from(inStock).filter(gt => deptTypes.has(gt));
-  }, [items, departmentFilter]);
+    if (!categoryFilter) return [];
+    return Array.from(new Set(items.filter(i => categoryOf(i) === categoryFilter).map(garmentOf).filter(Boolean) as string[]));
+  }, [items, categoryFilter]);
 
   const filteredItems = useMemo(() => {
-    const deptTypes = departmentFilter ? new Set(garmentTypesForDepartment(departmentFilter)) : null;
     return items
       .filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesDept = !deptTypes || (item.garment_type ? deptTypes.has(item.garment_type) : false);
-        const matchesType = !garmentTypeFilter || item.garment_type === garmentTypeFilter;
-        return matchesSearch && matchesDept && matchesType;
+        const matchesCategory = !categoryFilter || categoryOf(item) === categoryFilter;
+        const matchesType = !garmentTypeFilter || garmentOf(item) === garmentTypeFilter;
+        return matchesSearch && matchesCategory && matchesType;
       })
       .sort((a, b) => {
         switch (sortOrder) {
-          case 'price_asc': return Number(a.price) - Number(b.price);
-          case 'price_desc': return Number(b.price) - Number(a.price);
+          // By what customers actually see (the service's price, plus any extra); a quote sorts as 0.
+          case 'price_asc': return customerPrice(a) - customerPrice(b);
+          case 'price_desc': return customerPrice(b) - customerPrice(a);
           case 'best_selling': return (b.order_count ?? 0) - (a.order_count ?? 0);
           case 'top_rated': return Number(b.reviews_avg_rating ?? 0) - Number(a.reviews_avg_rating ?? 0);
           case 'most_viewed': return (b.views_count ?? 0) - (a.views_count ?? 0);
           default: return Number(b.order_count ?? 0) - Number(a.order_count ?? 0);
         }
       });
-  }, [items, searchQuery, departmentFilter, garmentTypeFilter, sortOrder]);
+  }, [items, searchQuery, categoryFilter, garmentTypeFilter, sortOrder]);
 
-  const activeFiltersCount = (departmentFilter ? 1 : 0) + (garmentTypeFilter ? 1 : 0) + (isPriceSort(sortOrder) ? 1 : 0);
+  const activeFiltersCount = (categoryFilter ? 1 : 0) + (garmentTypeFilter ? 1 : 0) + (isPriceSort(sortOrder) ? 1 : 0);
 
   const resetAllFilters = () => {
-    setDepartmentFilter('');
+    setCategoryFilter('');
     setGarmentTypeFilter('');
     setSortOrder(DEFAULT_CATALOG_SORT);
   };
 
   const filterProps = {
-    departmentFilter,
-    setDepartmentFilter,
+    categoryOptions,
+    categoryFilter,
+    setCategoryFilter,
     garmentTypeFilter,
     setGarmentTypeFilter,
     garmentTypeOptions,

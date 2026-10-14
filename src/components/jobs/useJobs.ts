@@ -153,7 +153,7 @@ export function useJobs() {
     // Moves a pending job into 'design' — the first stage of the 3-Phase
     // Tailoring Tracker pipeline, exempt from the DP gate (no fabric/material
     // is committed yet). Approving no longer jumps straight to 'cutting',
-    // which used to skip Design/Pattern Making (or Mass Cutting & Printing
+    // which used to skip Design/Pattern Making (or Mass Cutting
     // for bulk orders) entirely.
     setJobs(jobs.map(j => j.id === jobId ? { ...j, status: 'design' } : j));
     try {
@@ -245,7 +245,7 @@ export function useJobs() {
   const customBespokeCount = jobs.filter(j => !((j as unknown as { catalog_item_id?: number }).catalog_item_id) && !j.catalog_item && j.garment_category !== 'alteration_repair').length;
   const alterationJobsCount = jobs.filter(j => j.garment_category === 'alteration_repair').length;
 
-  // Only shows whichever of Pattern Making / Mass Cutting & Printing is
+  // Only shows whichever of Pattern Making / Mass Cutting is
   // actually relevant to the jobs currently on the board (bulk vs. standard
   // orders), instead of always showing both columns.
   const activeColumns = columnsForJobs(filteredJobs);

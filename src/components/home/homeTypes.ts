@@ -3,6 +3,7 @@ import {
   ScanSearch, CalendarCheck2, Activity, PackageCheck,
 } from 'lucide-react';
 import type { OperatingHours } from '@/lib/storeStatus';
+import type { DesignPricing } from '@/lib/designPricing';
 
 export interface StoreResult {
   id: number;
@@ -19,10 +20,14 @@ export interface StoreResult {
   branches: { city: string | null; name: string; district?: string | null }[];
   operating_hours?: OperatingHours | null;
   specializations?: string[] | null;
+  /** The shop's active services (from /public/stores) — what it does and the garments it works on. */
+  services?: { id: number; name: string; service_category?: string | null; garment_types?: string[] | null }[];
   catalog_items?: {
     id: number;
     name: string;
     price?: number | string | null;
+    /** Server-worked price (lib/designPricing). */
+    pricing?: DesignPricing | null;
     garment_type?: string | null;
     images?: { image_url: string; is_primary?: boolean | number }[];
   }[];

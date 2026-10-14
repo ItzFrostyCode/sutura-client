@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Loader2, MapPin } from 'lucide-react';
 import HomeSectionHeader from './HomeSectionHeader';
+import { ShopCardSkeleton, SkeletonRow } from './HomeSkeletons';
 import type { SavedLocation } from '@/lib/customerLocation';
 import HomeCarouselRow from './HomeCarouselRow';
 import HomeShopCard from './HomeShopCard';
@@ -44,9 +45,7 @@ export default function HomeNearShops({ location, denied, locating, stores, load
     );
   } else if (loading) {
     body = (
-      <div className="flex gap-3 overflow-hidden">
-        {[0, 1, 2].map((i) => <div key={i} className="h-48 w-[250px] shrink-0 animate-pulse rounded-[20px] bg-sunken" />)}
-      </div>
+      <SkeletonRow>{(i) => <ShopCardSkeleton key={i} />}</SkeletonRow>
     );
   } else if (stores.length === 0) {
     body = (

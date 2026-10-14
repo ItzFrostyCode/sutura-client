@@ -42,5 +42,7 @@ export interface CatalogFormProps {
 export interface StoreServiceOption {
   id: number;
   name: string;
+  /** The service's price — a design under it costs this by default. */
+  base_price?: string | number | null;
   service_types?: string[];
 }

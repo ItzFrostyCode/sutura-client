@@ -1,4 +1,5 @@
 import HomeSectionHeader from './HomeSectionHeader';
+import { ServiceCardSkeleton, SkeletonRow } from './HomeSkeletons';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import SearchServiceCard from '@/components/search/SearchServiceCard';
 import ServiceCarouselRow from '@/components/search/ServiceCarouselRow';
@@ -18,9 +19,7 @@ export default function HomeServices({ services, loading }: HomeServicesProps) {
     <section aria-labelledby="home-services-title">
       <HomeSectionHeader id="home-services-title" title="Services" href="/search?tab=services" />
       {loading ? (
-        <div className="flex gap-3 overflow-hidden">
-          {[0, 1, 2].map((i) => <div key={i} className="h-60 w-[250px] shrink-0 animate-pulse rounded-[20px] bg-sunken" />)}
-        </div>
+        <SkeletonRow>{(i) => <ServiceCardSkeleton key={i} />}</SkeletonRow>
       ) : offered.length === 0 ? (
         <p className="mobile-body-md card-soft px-6 py-8 text-center text-ink-muted">No services are listed yet.</p>
       ) : (

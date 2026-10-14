@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 
 const COLUMNS = [
   { title: 'Discover', links: [{ href: '/search', label: 'Search stores' }, { href: '/search', label: 'Browse map' }, { href: '/track', label: 'Track an order' }] },
@@ -14,7 +15,7 @@ export default function HomeFooter({ narrow = false }: { readonly narrow?: boole
   return (
     <footer className="mt-16 border-t border-line">
       <div className={narrow ? 'mx-auto max-w-[960px] px-6 py-10 sm:px-12 lg:px-0' : 'mx-auto max-w-7xl py-10 mobile-screen-margins'}>
-        <span className="font-serif text-xl font-bold tracking-widest text-ink">SUTURA</span>
+        <SuturaLogo className="h-8 w-auto text-espresso" />
         <p className="mobile-body-sm mb-8 mt-1.5 text-ink-muted">A web-based tailoring store tracker for Davao City.</p>
 
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
-import { specializationLabel } from '@/lib/storeSpecializations';
+import { specializationLabel, visibleSpecializations } from '@/lib/storeSpecializations';
 
 interface SpecializationBadgesProps {
   readonly specializations?: string[];
@@ -11,9 +11,10 @@ interface SpecializationBadgesProps {
 // at all. Surfacing them here is what actually answers "what does this shop
 // specialize in" for a visitor, not just for the owner editing it.
 export default function SpecializationBadges({ specializations }: SpecializationBadgesProps) {
-  if (!specializations || specializations.length === 0) return null;
+  const shown = visibleSpecializations(specializations);
+  if (shown.length === 0) return null;
 
-  const labels = specializations.map(specializationLabel);
+  const labels = shown.map(specializationLabel);
 
   return (
     <div className="bg-surface border border-line p-3.5 flex flex-wrap items-center gap-2">

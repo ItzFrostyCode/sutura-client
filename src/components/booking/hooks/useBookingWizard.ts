@@ -550,7 +550,7 @@ export function useBookingWizard(storeId: string) {
     // staff views can show its real title and category.
     let notesPayload = '';
     if (refName && !refItemId) {
-      notesPayload += `[Design Reference: ${refName}${refPrice ? ` (₱${Number(refPrice).toLocaleString()})` : ''}${
+      notesPayload += `[Design Reference: ${refName}${refPrice ? ` (from ₱${Number(refPrice).toLocaleString()})` : ''}${
         refSize ? ` — Size ${refSize}` : ''
       }${refColor ? ` — ${refColor}` : ''}]\n`;
     }

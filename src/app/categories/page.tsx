@@ -36,9 +36,8 @@ export default function CategoriesPage() {
 
         <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">All Categories</h1>
         <p className="mobile-body-md text-ink-muted max-w-2xl mb-6">
-          Browse every apparel category and service SUTURA tailors offer — Men&apos;s, Women&apos;s, and
-          Children&apos;s Apparel, plus Custom Tailoring, Alterations, Uniforms, Printing &amp; Sublimation,
-          and Costume services.
+          Browse every garment SUTURA tailors work on, by category — then the work they do: made-to-measure,
+          uniforms and jerseys, alterations and repairs, and embroidery.
         </p>
 
         <form onSubmit={handleSearchSubmit} className="relative mb-8">

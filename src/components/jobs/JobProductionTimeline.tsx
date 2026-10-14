@@ -10,7 +10,6 @@ import {
   Package,
   Palette,
   Pause,
-  Printer,
   RotateCcw,
   Ruler,
   Scissors,
@@ -146,7 +145,7 @@ export default function JobProductionTimeline({
     ] : []),
     { key: 'design',               label: 'Design',                Icon: Palette },
     isBulkOrder
-      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
+      ? { key: 'mass_cutting_printing', label: 'Mass Cutting', Icon: Scissors }
       : { key: 'pattern_making',        label: 'Pattern Making',          Icon: Ruler },
     { key: 'cutting',              label: 'Cutting',               Icon: Scissors },
     { key: 'sewing',               label: 'Sewing / Assembly',     Icon: Shirt },
@@ -246,7 +245,7 @@ export default function JobProductionTimeline({
                 <>
                   <option value="design">Design</option>
                   {isBulkOrder ? (
-                    <option value="mass_cutting_printing">Mass Cutting & Printing</option>
+                    <option value="mass_cutting_printing">Mass Cutting</option>
                   ) : (
                     <option value="pattern_making">Pattern Making</option>
                   )}

@@ -1,6 +1,6 @@
-import { DISTRICTS } from '@/components/search/types';
 import type { MoreFilters } from '../homeFilters';
 import { chip } from './filterUi';
+import FilterPlace from './FilterPlace';
 
 interface FilterMoreProps {
   readonly value: MoreFilters;
@@ -12,7 +12,7 @@ const SORTS = [{ v: 'price_asc', t: 'Low to high' }, { v: 'price_desc', t: 'High
 const field = 'h-12 min-w-0 flex-1 rounded-2xl bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong';
 const title = 'mobile-h4 mb-3 text-ink';
 
-/** Price (range and order), rating and district. */
+/** Price (range and order), rating and place (district → barangay, streets and landmarks). */
 export default function FilterMore({ value, onChange }: FilterMoreProps) {
   const set = (patch: Partial<MoreFilters>) => onChange({ ...value, ...patch });
 
@@ -40,14 +40,7 @@ export default function FilterMore({ value, onChange }: FilterMoreProps) {
         </div>
       </section>
 
-      <section className="mt-6">
-        <h3 className={title}>District</h3>
-        <div className="flex flex-wrap gap-2">
-          {['', ...DISTRICTS].map((d) => (
-            <button key={d || 'all'} type="button" aria-pressed={value.district === d} onClick={() => set({ district: d })} className={chip(value.district === d)}>{d || 'All'}</button>
-          ))}
-        </div>
-      </section>
+      <FilterPlace value={value} onChange={set} />
     </>
   );
 }

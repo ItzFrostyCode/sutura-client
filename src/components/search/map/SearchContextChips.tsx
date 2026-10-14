@@ -1,8 +1,6 @@
 import { X } from 'lucide-react';
-import {
-  DEPARTMENT_LABELS, GARMENT_TYPE_LABELS, SERVICE_CATEGORY_LABELS, SERVICE_TYPE_LABELS, SUBCATEGORY_LABELS,
-  type Department, type ServiceCategory,
-} from '@/lib/canonicalTaxonomy';
+import { GARMENT_TYPE_LABELS, SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
+import { SERVICE_GROUPS, capabilityLabel, garmentLabel, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
 
 interface SearchContextChipsProps {
   readonly department: string;
@@ -13,14 +11,16 @@ interface SearchContextChipsProps {
   readonly onClear: () => void;
 }
 
-/** Where the person came from (Men › Formal Wear › Suits, or a service). Shown so it is never an invisible filter. */
-export default function SearchContextChips({ department, subcategory, garmentType, serviceCategory, serviceType, onClear }: SearchContextChipsProps) {
+/**
+ * Where the person came from (a garment, a service, a task). Shown so it is never an invisible filter. Men / Women /
+ * Kids and subcategories from an old link are not filters any more, so they are not shown either.
+ */
+export default function SearchContextChips({ garmentType, serviceCategory, serviceType, onClear }: SearchContextChipsProps) {
+  const group = serviceCategory in SERVICE_GROUPS ? SERVICE_GROUPS[serviceCategory as ServiceGroupKey].label : null;
   const parts = [
-    department && (DEPARTMENT_LABELS[department.toLowerCase() as Department] ?? department),
-    subcategory && (SUBCATEGORY_LABELS[subcategory] ?? subcategory),
-    garmentType && (GARMENT_TYPE_LABELS[garmentType] ?? garmentType),
-    serviceCategory && (SERVICE_CATEGORY_LABELS[serviceCategory as ServiceCategory] ?? serviceCategory),
-    serviceType && (SERVICE_TYPE_LABELS[serviceType] ?? serviceType),
+    garmentType && (garmentLabel(garmentType) ?? GARMENT_TYPE_LABELS[garmentType] ?? garmentType),
+    serviceCategory && (group ?? SERVICE_CATEGORY_LABELS[serviceCategory as ServiceCategory] ?? serviceCategory),
+    serviceType && capabilityLabel(serviceCategory, serviceType),
   ].filter(Boolean);
 
   if (parts.length === 0) return null;

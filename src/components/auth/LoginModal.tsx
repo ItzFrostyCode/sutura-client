@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLoginModalStore } from '@/store/useLoginModalStore';
 import LoginForm from './LoginForm';
+import AuthBrand from './AuthBrand';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import { useScrollLock } from '@/hooks/useScrollLock';
 
@@ -52,6 +53,7 @@ export default function LoginModal() {
             aria-labelledby="login-modal-title"
             className="relative w-full px-[10px] py-6 sm:max-w-md sm:bg-surface sm:border sm:border-line sm:shadow-xl sm:p-8 sm:animate-scale-up"
           >
+            <AuthBrand className="mb-8" />
             <LoginForm
               customerRedirect={redirectTo}
               registerHref={`/register?redirect=${encodeURIComponent(redirectTo || pathname || '/')}`}

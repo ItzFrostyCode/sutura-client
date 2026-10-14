@@ -383,9 +383,16 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
       ? item.color.trim()
       : (isRealVariationLabel ? selectedVariation : (selectedImage ? colorFromFilename(selectedImage) : '')));
 
+  // The design's worked price (its service's price, plus any extra charge) — never its old stored price.
+  // A design that needs a quote sends none, so the booking shows no price for it.
+  const refPriceParam = (it: CatalogItem) => {
+    const amount = it.pricing ? it.pricing.amount : Number(it.price) || null;
+    return amount ? `&ref_price=${encodeURIComponent(String(amount))}` : '';
+  };
+
   const buildBookHref = (branchSlug?: string | null) => {
     if (!item) return '#';
-    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}&ref_item_id=${item.id}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}&ref_price=${encodeURIComponent(String(item.price))}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
+    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}&ref_item_id=${item.id}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}${refPriceParam(item)}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
   };
 
   return {

@@ -4,6 +4,7 @@ import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
 import type { ServiceField } from '../serviceHelpers';
+import { orderTypesOf } from './serviceEditing';
 import type { DraftEdit } from './ServiceEditors';
 
 const ROSTER_PRESETS = ['Jersey Number', 'Position', 'Department', 'Section/Grade'];
@@ -18,7 +19,8 @@ const newId = () => `f_${Date.now().toString(36)}${Math.random().toString(36).sl
 export function ServiceBookingEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   const d = edit.draft!;
   const patch = (p: Partial<typeof d>) => edit.setDraft(prev => (prev ? { ...prev, ...p } : prev));
-  const bulk = d.service_types.includes('bulk_sublimation');
+  // Worked out from the kind of work + "Bulk / Batch Orders" (same rule as the server), not a ticked flag.
+  const bulk = orderTypesOf(d).includes('bulk_sublimation');
   const setQ = (i: number, p: Partial<ServiceField>) => patch({ custom_fields: d.custom_fields.map((f, idx) => (idx === i ? { ...f, ...p } : f)) });
   const addRoster = (label: string) => {
     const l = label.trim();

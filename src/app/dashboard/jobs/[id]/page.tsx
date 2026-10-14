@@ -232,6 +232,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
               onUpdatePayment={handleUpdatePayment}
               onRejectPayment={handleRejectPayment}
               onVerifyPayment={handleVerifyPayment}
+              onRefresh={refreshJob}
             />
           </div>
         )}

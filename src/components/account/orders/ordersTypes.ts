@@ -31,7 +31,7 @@ export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; to
   awaiting_materials: { label: 'Waiting for materials', Icon: Clock, tone: 'text-amber-700 bg-amber-50 border-amber-200' },
   design: { label: 'Design', Icon: Palette, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   pattern_making: { label: 'Pattern Making', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  mass_cutting_printing: { label: 'Cutting & Printing', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  mass_cutting_printing: { label: 'Mass Cutting', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   cutting: { label: 'Cutting', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   sewing: { label: 'Sewing', Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   ready_for_fitting: { label: 'Fitting / Inspection', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },

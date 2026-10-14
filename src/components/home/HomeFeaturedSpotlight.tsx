@@ -10,6 +10,7 @@ import FeaturedDetails from './FeaturedDetails';
 import HomeSectionHeader from './HomeSectionHeader';
 import { getStoreThumbnails, type ThumbnailItem } from './featuredThumbnails';
 import type { StoreResult } from './homeTypes';
+import { designPriceLabel } from '@/lib/designPricing';
 
 interface HomeFeaturedSpotlightProps {
   readonly stores: StoreResult[];
@@ -63,7 +64,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems }: HomeFea
             </Link>
             {hovered && (
               <p className="absolute left-3 top-3 max-w-[80%] truncate rounded-full bg-surface px-3 py-1.5 text-xs text-ink shadow-[0_2px_10px_rgba(45,42,38,0.15)]">
-                {hovered.name}{hovered.price ? ` · ₱${Number(hovered.price).toLocaleString()}` : ''}
+                {hovered.name} · {designPriceLabel(hovered.pricing, hovered.price)}
               </p>
             )}
             {canCycle && (

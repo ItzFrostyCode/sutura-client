@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Check, MapPin } from 'lucide-react';
+import { Check } from 'lucide-react';
+import PinPaste from '@/components/shared/PinPaste';
 import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 
 // Registration asks only what services the shop offers (the apparel
@@ -71,17 +72,12 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
         <div>
           <p className="text-sm text-ink mb-2">Map Pin<span className="text-danger">*</span></p>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className={`flex w-full min-h-14 items-center gap-3 border px-4 py-3 text-left transition-colors hover:bg-sunken ${shop.location ? 'border-sage bg-sage/5' : 'border-dashed border-line-strong bg-surface'}`}
-          >
-            <MapPin size={20} className={shop.location ? 'shrink-0 text-sage' : 'shrink-0 text-ink-muted'} />
-            <span className="min-w-0 flex-1 text-sm text-ink">
-              {shop.location ? shop.location.address || `${shop.location.lat.toFixed(5)}, ${shop.location.lng.toFixed(5)}` : 'Pin your shop on the map'}
-            </span>
-            <span className="shrink-0 text-sm underline underline-offset-2">{shop.location ? 'Change' : 'Open map'}</span>
-          </button>
+          {/* Paste the coordinates from Google Maps, use the phone's GPS in the shop, or pick on the map. */}
+          <PinPaste
+            current={shop.location ? { lat: shop.location.lat, lng: shop.location.lng } : null}
+            onPin={(pin) => { setError(''); setShop({ ...shop, location: { lat: pin.lat, lng: pin.lng, address: shop.address, district: shop.location?.district ?? '' } }); }}
+            onPickOnMap={() => setPickerOpen(true)}
+          />
         </div>
       </div>
 

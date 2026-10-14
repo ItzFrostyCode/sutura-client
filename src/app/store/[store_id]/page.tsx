@@ -68,6 +68,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         isOwnerViewingOwnStore={s.isOwnerViewingOwnStore}
         isShopViewingOwnStore={isShopView}
         embedded={embedded}
+        altersRepairs={s.services.some((svc) => svc.service_category === 'alterations_repairs')}
         onEditProfile={() => s.setActiveTab('about')}
         myReview={s.myReview}
         isBookmarked={s.isBookmarked}

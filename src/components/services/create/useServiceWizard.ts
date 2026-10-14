@@ -9,7 +9,10 @@ import { buildServicePayload, emptyServiceDraft, validateSection, type ServiceDr
 export const WIZARD_STEPS: { key: ServiceSection; title: string; hint: string; optional?: boolean }[] = [
   { key: 'photo', title: 'Photo', hint: 'The first thing customers see.', optional: true },
   { key: 'info', title: 'Basics', hint: 'Name, starting price and how long it takes.' },
-  { key: 'spec', title: 'Specification', hint: 'What kind of service it is and what you charge.' },
+  { key: 'type', title: 'Kind of work', hint: 'Make, uniforms & jerseys, alter & repair, or embroider.' },
+  { key: 'garments', title: 'Garments', hint: 'The clothing you work on, by category.' },
+  { key: 'capabilities', title: 'What you do', hint: 'Tick only the tasks you offer. Customers are matched to these.' },
+  { key: 'spec', title: 'Prices & add-ons', hint: 'What you charge, add-ons, and where it shows on your shop page.' },
   { key: 'chart', title: 'Reference chart', hint: 'A size or measurement chart customers can check.', optional: true },
   { key: 'description', title: 'Description', hint: 'What it covers and what to bring.', optional: true },
   { key: 'booking', title: 'Booking form', hint: 'Extra questions customers answer when they order.', optional: true },

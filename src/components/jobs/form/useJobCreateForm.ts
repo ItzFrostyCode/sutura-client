@@ -47,6 +47,14 @@ function sanitizeServiceCustomFields(servicesRaw: unknown[]): ServiceData[] {
   });
 }
 
+// What a picked design costs per piece: its service's price plus any extra charge for the design
+// (lib/designPricing) — never its old stored price. null = the shop has to quote it.
+function designUnitPrice(picked: CatalogItem): number | null {
+  if (picked.pricing) return picked.pricing.amount;
+  const own = Number(picked.price);
+  return own > 0 ? own : null;
+}
+
 function matchServiceForCatalogItem(
   picked: CatalogItem,
   serviceList: ServiceData[]
@@ -205,7 +213,7 @@ export function useJobCreateForm() {
               setFormData((prev) => ({
                 ...prev,
                 service_id: prev.service_id || (matchedService ? matchedService.id.toString() : prev.service_id),
-                total_amount: Number(picked.price) > 0 ? String(picked.price) : prev.total_amount,
+                total_amount: designUnitPrice(picked) ? String(designUnitPrice(picked)) : prev.total_amount,
                 garment_category: (picked.category as typeof prev.garment_category) || prev.garment_category,
                 due_date: picked.estimated_days
                   ? (() => {
@@ -337,7 +345,13 @@ export function useJobCreateForm() {
     if (!isTotalAmountCustom && formData.service_id) {
       const selected = services.find((s) => s.id.toString() === formData.service_id);
       if (selected) {
-        const basePrice = Number.parseFloat(selected.base_price?.toString() || '0');
+        // A picked design under this service may add an extra charge, or need a quote (then no total yet).
+        const picked = catalogItemId ? catalogItems.find((c) => c.id.toString() === catalogItemId) : undefined;
+        const pickedServiceId = (picked as { service_id?: number | string } | undefined)?.service_id;
+        const designHere = picked?.pricing && picked.pricing.mode !== 'own' && String(pickedServiceId) === formData.service_id;
+        const basePrice = designHere
+          ? picked.pricing?.amount ?? 0
+          : Number.parseFloat(selected.base_price?.toString() || '0');
         const qty = Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
         const rushFee = formData.is_rush ? (Number.parseFloat(formData.rush_fee) || 0) : 0;
         const suggested = basePrice * qty + rushFee;
@@ -349,7 +363,7 @@ export function useJobCreateForm() {
         });
       }
     }
-  }, [formData.service_id, formData.quantity, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
+  }, [formData.service_id, formData.quantity, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom, catalogItemId, catalogItems]);
 
   // Auto-suggest a due date from turnaround
   useEffect(() => {
@@ -383,8 +397,8 @@ export function useJobCreateForm() {
         ...prev,
         service_id: matchedService ? matchedService.id.toString() : prev.service_id,
         total_amount:
-          (!isTotalAmountCustom || !prev.total_amount) && Number(picked.price) > 0
-            ? String(picked.price)
+          (!isTotalAmountCustom || !prev.total_amount) && designUnitPrice(picked)
+            ? String(designUnitPrice(picked))
             : prev.total_amount,
         garment_category: (picked.category as typeof prev.garment_category) || prev.garment_category,
         due_date:
