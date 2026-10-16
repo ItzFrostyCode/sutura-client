@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function ServiceCarouselRow({
@@ -9,36 +9,70 @@ export default function ServiceCarouselRow({
   readonly children: React.ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [checkScroll]);
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' });
+    const amount = el.clientWidth * 0.75;
+    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    setTimeout(checkScroll, 350);
   };
 
   return (
     <div className="relative group/carousel">
+      {/* Scrollable Row */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory"
+        onScroll={checkScroll}
+        className="flex gap-3 overflow-x-auto hide-scrollbar py-2 scroll-smooth snap-x snap-mandatory"
       >
         {children}
       </div>
+
+      {/* Left Carousel Arrow Button */}
       <button
         type="button"
         onClick={() => scroll('left')}
+        disabled={!canScrollLeft}
         aria-label="Scroll left"
-        className="hidden sm:flex absolute -left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full items-center justify-center bg-surface border border-line shadow-md hover:border-ink text-ink opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
+        className={`absolute -left-3 sm:-left-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-surface border border-line shadow-md text-ink transition-all z-20 ${
+          canScrollLeft
+            ? 'opacity-100 cursor-pointer hover:bg-canvas hover:border-ink active:scale-95'
+            : 'opacity-40 cursor-not-allowed pointer-events-none'
+        }`}
       >
-        <ChevronLeft size={16} />
+        <ChevronLeft size={20} />
       </button>
+
+      {/* Right Carousel Arrow Button */}
       <button
         type="button"
         onClick={() => scroll('right')}
+        disabled={!canScrollRight}
         aria-label="Scroll right"
-        className="hidden sm:flex absolute -right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full items-center justify-center bg-surface border border-line shadow-md hover:border-ink text-ink opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
+        className={`absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-surface border border-line shadow-md text-ink transition-all z-20 ${
+          canScrollRight
+            ? 'opacity-100 cursor-pointer hover:bg-canvas hover:border-ink active:scale-95'
+            : 'opacity-40 cursor-not-allowed pointer-events-none'
+        }`}
       >
-        <ChevronRight size={16} />
+        <ChevronRight size={20} />
       </button>
     </div>
   );

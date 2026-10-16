@@ -11,7 +11,7 @@ const CYCLES: { value: BillingCycle; label: string }[] = [
   { value: 'yearly', label: 'Yearly' },
 ];
 const METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'gcash', label: 'GCash' },
+  { value: 'gcash', label: 'QR Ph (GCash / Maya)' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
 ];
 

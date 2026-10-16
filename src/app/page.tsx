@@ -12,19 +12,18 @@ import HomeFeaturedSpotlight from '@/components/home/HomeFeaturedSpotlight';
 import { FeaturedSkeleton } from '@/components/home/HomeSkeletons';
 import HomeCategories from '@/components/home/HomeCategories';
 import HomeNearShops from '@/components/home/HomeNearShops';
-import HomeServices from '@/components/home/HomeServices';
 import HomeFooter from '@/components/home/HomeFooter';
 import { useHomeLocation } from '@/components/home/useHomeLocation';
 import { useDiscoverData } from '@/components/home/useDiscoverData';
 import LocationGate from '@/components/home/gate/LocationGate';
 import { useLocationGate } from '@/components/home/gate/useLocationGate';
-import { DEFAULT_NEAR_FILTERS, activeFilterCount, type NearFilters } from '@/components/home/homeFilters';
+import { DEFAULT_ALL_FILTERS, countAllFilters, type AllFilters } from '@/components/home/homeFilters';
 
 export default function HomePage() {
   const router = useRouter();
   const place = useHomeLocation();
   const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState<NearFilters>(DEFAULT_NEAR_FILTERS);
+  const [filters, setFilters] = useState<AllFilters>(DEFAULT_ALL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const data = useDiscoverData(place.location, filters);
   // Opening sequence (pinpoint → find shops → page). The sections keep loading behind it.
@@ -36,6 +35,10 @@ export default function HomePage() {
     if (query.trim()) params.set('q', query.trim());
     if (filters.radiusKm !== null) params.set('radius_km', String(filters.radiusKm));
     if (filters.status !== 'all') params.set('open', filters.status);
+    if (filters.minPrice) params.set('min_price', filters.minPrice);
+    if (filters.maxPrice) params.set('max_price', filters.maxPrice);
+    if (filters.minRating) params.set('min_rating', filters.minRating);
+    if (filters.sortBy) params.set('sort_by', filters.sortBy);
     const qs = params.toString();
     router.push(qs ? `/search?${qs}` : '/search');
   };
@@ -52,28 +55,30 @@ export default function HomePage() {
         <LocationGate phase={gate.phase} denied={gate.denied} farKm={gate.farKm} onRetry={gate.retry} onEnter={gate.enter} />
       ) : (
         <>
-          <main className="mx-auto w-full max-w-[960px] flex-1 space-y-12 px-6 pb-6 pt-1 sm:space-y-16 sm:px-12 sm:pb-10 sm:pt-3 lg:px-0">
+          <main className="mx-auto w-full max-w-[960px] flex-1 space-y-7 px-6 pb-6 pt-6 sm:space-y-9 sm:px-12 sm:pb-10 sm:pt-8 lg:px-0">
             <h1 className="sr-only">Find a tailor in Davao City</h1>
             <div>
-              <PageBrandRow />
+              <PageBrandRow className="mb-2" />
               <LocationLine location={place.location} changeHref="/location?returnTo=/" />
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <SearchPill
                   large
                   value={query}
                   onChange={setQuery}
                   onSubmit={handleSearch}
                   onOpenFilter={() => setFilterOpen(true)}
-                  activeFilterCount={activeFilterCount(filters)}
+                  activeFilterCount={countAllFilters(filters)}
                 />
               </div>
             </div>
             {/* Only shops whose plan gives them top placement; a placeholder while loading, absent when there are none. */}
-            {data.featuredLoading ? (
-              <FeaturedSkeleton />
-            ) : (
-              data.featured.length > 0 && <HomeFeaturedSpotlight stores={data.featured} trendingItems={data.trending} />
-            )}
+            <div className="-mt-1 sm:-mt-2">
+              {data.featuredLoading ? (
+                <FeaturedSkeleton />
+              ) : (
+                data.featured.length > 0 && <HomeFeaturedSpotlight stores={data.featured} trendingItems={data.trending} />
+              )}
+            </div>
             <HomeCategories />
             <HomeNearShops
               location={place.location}
@@ -85,14 +90,13 @@ export default function HomePage() {
               onRequestLocation={place.request}
               onResetDistance={() => setFilters({ ...filters, radiusKm: null })}
             />
-            <HomeServices services={data.services} loading={data.servicesLoading} />
           </main>
 
           <HomeFooter narrow />
         </>
       )}
 
-      <HomeFilterSheet isOpen={filterOpen} onClose={() => setFilterOpen(false)} value={filters} onApply={(f) => setFilters({ radiusKm: f.radiusKm, status: f.status })} />
+      <HomeFilterSheet isOpen={filterOpen} onClose={() => setFilterOpen(false)} value={filters} showMore onApply={setFilters} />
     </div>
   );
 }

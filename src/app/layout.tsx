@@ -10,6 +10,7 @@ import SignInFromQuery from "@/components/auth/SignInFromQuery";
 import ShopRouteGuard from "@/components/auth/ShopRouteGuard";
 import { ToastProvider } from "@/context/ToastContext";
 import LastPageTracker from "@/components/shared/LastPageTracker";
+import PublicBottomNav from "@/components/shared/publicNav/PublicBottomNav";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -46,6 +47,7 @@ export default function RootLayout({
             </MobileFrame>
             <LoginModal />
             <SignInFromQuery />
+            <PublicBottomNav />
           </NetworkGuard>
         </ToastProvider>
       </body>

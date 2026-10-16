@@ -52,7 +52,7 @@ export default function ServiceRow({ service, storeId, designs, designsLoading, 
             {service.image_url ? <Image src={getMediaUrl(service.image_url)} alt="" fill sizes="72px" className="object-cover" /> : <Scissors size={22} />}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="mobile-h4 line-clamp-2 block text-ink">{service.name}</span>
+            <span className="mobile-h4 line-clamp-2 text-ink">{service.name}</span>
             <span className="mobile-body-sm mt-0.5 block text-ink-body">
               {Number.isFinite(base) && base > 0 ? (
                 sale ? (

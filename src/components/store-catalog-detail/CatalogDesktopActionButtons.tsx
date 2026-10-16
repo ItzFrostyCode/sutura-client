@@ -4,35 +4,19 @@ import React from 'react';
 import Link from 'next/link';
 
 interface CatalogDesktopActionButtonsProps {
-  onOpenFind: () => void;
   bookHref: string;
 }
 
 // 600px+ inline action buttons in the buy zone column.
-// Matches mocked layout: Find a Branch (outline) | Book an Appointment (filled).
 export default function CatalogDesktopActionButtons({
-  onOpenFind,
   bookHref,
 }: CatalogDesktopActionButtonsProps) {
   return (
     <div className="hidden min-[600px]:flex items-center gap-2 pt-4">
-      {/* Find a Branch — outline button */}
-      <button
-        type="button"
-        onClick={onOpenFind}
-        className="flex-1 h-12 flex items-center justify-center gap-1.5 border border-taupe text-taupe text-xs min-[900px]:text-sm font-semibold hover:bg-taupe/5 transition-colors whitespace-nowrap px-2"
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
-        Find a Branch
-      </button>
-
       {/* Book an Appointment — filled button */}
       <Link
         href={bookHref}
-        className="flex-1 h-12 flex items-center justify-center gap-1.5 bg-taupe hover:bg-ink text-white text-xs min-[900px]:text-sm font-semibold transition-colors text-center whitespace-nowrap px-2"
+        className="w-full h-12 flex items-center justify-center gap-2 bg-taupe hover:bg-ink text-white text-xs min-[900px]:text-sm font-semibold transition-colors text-center whitespace-nowrap px-4"
       >
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

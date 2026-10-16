@@ -214,6 +214,29 @@ export interface DiscoveryMapBranch {
   isOpen?: boolean;
 }
 
+/** Locks all map panning and zooming when interactive is false (e.g. when panel is expanded). */
+function MapInteractionLock({ interactive = true }: { readonly interactive?: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!interactive) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+    }
+  }, [map, interactive]);
+  return null;
+}
+
 interface DiscoveryMapProps {
   readonly branches: DiscoveryMapBranch[];
   readonly userLocation?: { lat: number; lng: number } | null;
@@ -239,6 +262,8 @@ interface DiscoveryMapProps {
   readonly followPosition?: { lat: number; lng: number } | null;
   /** The person dragged the map: stop following. */
   readonly onUserPan?: () => void;
+  /** When false, all map dragging, zooming, and pointer interactions are disabled. */
+  readonly interactive?: boolean;
 }
 
 export default function DiscoveryMap({
@@ -258,6 +283,7 @@ export default function DiscoveryMap({
   focusUser,
   followPosition,
   onUserPan,
+  interactive = true,
 }: DiscoveryMapProps) {
   const gate = useGuestGatedHref();
   const hasNoResults = branches.length === 0 && !userLocation && !selectable;
@@ -284,21 +310,26 @@ export default function DiscoveryMap({
 
   return (
     <div
-      className={fullScreen ? 'absolute inset-0' : 'relative rounded-2xl overflow-hidden border border-line'}
+      className={`${fullScreen ? 'absolute inset-0' : 'relative rounded-2xl overflow-hidden border border-line'} ${interactive === false ? 'pointer-events-none select-none' : ''}`}
       style={fullScreen ? undefined : { height: 520 }}
     >
       <MapContainer
         center={initialView ? [initialView.lat, initialView.lng] : center}
         zoom={initialView?.zoom ?? 14}
+        maxZoom={21}
+        minZoom={3}
         // Choosing a place: the pin is fixed in the middle, so zooming (wheel, trackpad pinch, fingers, double tap) goes around the pin
         // and the place under it stays put; only dragging moves it.
         scrollWheelZoom={selectable ? 'center' : true}
         touchZoom={selectable ? 'center' : true}
         doubleClickZoom={selectable ? 'center' : true}
         zoomControl={false} style={{ height: '100%', width: '100%' }}>
+        <MapInteractionLock interactive={interactive} />
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          maxZoom={21}
+          maxNativeZoom={19}
         />
         <MapEventsHandler onMoveEnd={onMoveEnd} mapRef={mapRef} enabled={selectable} />
         <FitBounds points={boundsPoints} disable={disableFitBounds} pad={fitPadding} />

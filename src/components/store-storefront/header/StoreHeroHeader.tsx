@@ -101,20 +101,33 @@ export default function StoreHeroHeader({
 
   return (
     <>
+      {/* Desktop & Tablet Back button (width >= 600px) — Cleanly placed above the banner, NOT on the background image */}
+      {!isShopViewingOwnStore && !embedded && canGoBack && (
+        <div className="hidden min-[600px]:block w-full max-w-7xl mx-auto px-4 sm:px-8 pt-3 pb-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Back"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer group"
+          >
+            <div className="w-8 h-8 rounded-full bg-sunken border border-line/60 flex items-center justify-center text-ink group-hover:bg-sunken-hover transition-colors">
+              <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" />
+            </div>
+            <span>Back</span>
+          </button>
+        </div>
+      )}
+
       {/* 📸 1. Cover Banner Image */}
       <div className="h-48 sm:h-64 md:h-72 w-full max-w-7xl mx-auto bg-surface px-0 sm:px-8">
-        <div className="relative w-full h-full overflow-hidden">
-          {/* Back — returns to wherever the customer came from (search
-              results, map, a catalog item, etc.), preserving that page's own
-              state/query exactly since this is real browser-history back,
-              not a hardcoded destination. Overlaid on the banner so it's
-              reachable without scrolling on every breakpoint. */}
+        <div className="relative w-full h-full overflow-hidden sm:rounded-2xl">
+          {/* Mobile Back button (width <= 599px, i.e. 320px - 599px) — Overlaid on banner image for compact mobile screens */}
           {!isShopViewingOwnStore && !embedded && canGoBack && (
             <button
               type="button"
               onClick={() => router.back()}
               aria-label="Back"
-              className="absolute top-4 left-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-ink/70 transition-colors cursor-pointer"
+              className="min-[600px]:hidden absolute top-4 left-4 z-20 w-9 h-9 rounded-full bg-ink/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-ink/80 transition-colors cursor-pointer active:scale-95"
             >
               <ArrowLeft size={18} />
             </button>
@@ -213,7 +226,7 @@ export default function StoreHeroHeader({
             </h1>
           )}
 
-          {/* Subtitle Metadata (Branch, Owner, Ratings) */}
+          {/* Subtitle Metadata (Branch, Ratings, Services) */}
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
             {activeBranch && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
@@ -222,28 +235,17 @@ export default function StoreHeroHeader({
                 {Boolean(activeBranch.is_main) ? ' · Main HQ' : ''}
               </span>
             )}
-            <span className="text-ink-faint">·</span>
-            <span>
-              Store Owner · <strong className="font-semibold text-ink-body">{store.owner?.name || 'Store Owner'}</strong>
-            </span>
-            <span className="text-ink-faint">·</span>
-            {store.reviews_count && store.reviews_count > 0 ? (
-              <span className="inline-flex items-center gap-1 font-semibold text-ink-body">
-                <Star size={13} className="fill-amber-400 text-amber-500 shrink-0" />
-                {Number(store.reviews_avg_rating ?? 0).toFixed(1)}
-                <span className="text-ink-faint font-normal">({store.reviews_count})</span>
-              </span>
-            ) : (
-              <span className="text-ink-faint font-normal">No ratings yet</span>
-            )}
-            {altersRepairs && (
+            {Boolean(store.reviews_count && store.reviews_count > 0) && (
               <>
-                <span className="text-ink-faint">·</span>
+                {activeBranch && <span className="text-ink-faint">·</span>}
                 <span className="inline-flex items-center gap-1 font-semibold text-ink-body">
-                  <Wrench size={12} className="text-taupe shrink-0" /> Alters &amp; repairs
+                  <Star size={13} className="fill-amber-400 text-amber-500 shrink-0" />
+                  {Number(store.reviews_avg_rating ?? 0).toFixed(1)}
+                  <span className="text-ink-faint font-normal">({store.reviews_count})</span>
                 </span>
               </>
             )}
+
           </div>
 
           {/* ⚡ 3. Centered Action Buttons Row — the only Dashboard/Edit on

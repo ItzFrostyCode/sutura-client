@@ -26,6 +26,7 @@ export function useHomeLocation() {
   const request = useCallback(() => {
     setLocating(true);
     setFailed(false);
+    setDenied(false);
     requestCurrentLocation(
       (loc) => {
         setLocation(loc);

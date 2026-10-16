@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { X } from 'lucide-react';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 import PublicNav from '@/components/shared/PublicNav';
 import ApplicationStepper from '@/components/store-application/ApplicationStepper';
 import OwnerStep from '@/components/store-application/OwnerStep';
@@ -29,12 +31,32 @@ export default function StoreApplicationPage() {
     <div className="min-h-dvh flex flex-col bg-canvas">
       <PublicNav />
 
-      <main className="flex-1 mobile-screen-margins py-8 sm:py-12">
+      <main className="flex-1 mobile-screen-margins py-8 sm:py-12 pb-24">
         <div className="mx-auto w-full max-w-2xl sm:border sm:border-line sm:bg-surface sm:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/" aria-label="SUTURA home" className="flex items-center">
+              <SuturaLogo className="h-7 w-auto text-espresso sm:h-8" />
+            </Link>
+            <Link
+              href="/"
+              aria-label="Close"
+              className="text-ink-muted hover:text-ink transition-colors p-1"
+            >
+              <X size={20} />
+            </Link>
+          </div>
+
           <p className="mobile-overline text-taupe">Open a Shop</p>
           <h1 className="mobile-h1 text-ink mt-2">Register your tailoring shop</h1>
 
-          {app.submittedTo ? <ApplicationSubmitted email={app.submittedTo} /> : (
+
+          {app.submittedTo ? (
+            <ApplicationSubmitted
+              email={app.submittedTo}
+              storeId={app.submittedStoreId}
+              storeName={app.submittedStoreName || app.shop.store_name}
+            />
+          ) : (
           <>
           <div className="mt-6">
             <ApplicationStepper current={app.step} />

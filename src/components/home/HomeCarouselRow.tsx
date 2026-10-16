@@ -1,13 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Shared horizontal-scroll-with-arrows shell — the one interaction pattern
-// Steam's whole storefront repeats across every row (Discounts & Events,
-// Top New Releases, Under ₱400, etc.). Mobile keeps native touch-scroll
-// (arrows hidden, same as Steam's own mobile site); sm+ shows hover arrows
-// that scroll by one viewport-width at a time.
 export default function HomeCarouselRow({
   children,
   className = '',
@@ -16,36 +11,67 @@ export default function HomeCarouselRow({
   readonly className?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [checkScroll]);
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir === 'left' ? -el.clientWidth * 0.85 : el.clientWidth * 0.85, behavior: 'smooth' });
+    const amount = el.clientWidth * 0.75;
+    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    setTimeout(checkScroll, 350);
   };
 
   return (
     <div className="relative group/carousel">
       <div
         ref={scrollRef}
-        className={`flex overflow-x-auto hide-scrollbar gap-3 scroll-smooth snap-x snap-mandatory ${className}`}
+        onScroll={checkScroll}
+        className={`flex overflow-x-auto hide-scrollbar gap-3 scroll-smooth snap-x snap-mandatory py-1 ${className}`}
       >
         {children}
       </div>
+
       <button
         type="button"
         onClick={() => scroll('left')}
+        disabled={!canScrollLeft}
         aria-label="Scroll left"
-        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 items-center justify-center bg-surface border border-line hover:border-ink text-ink opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
+        className={`absolute -left-3 sm:-left-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-surface border border-line shadow-md text-ink transition-all z-20 ${
+          canScrollLeft
+            ? 'opacity-100 cursor-pointer hover:bg-canvas hover:border-ink active:scale-95'
+            : 'opacity-40 cursor-not-allowed pointer-events-none'
+        }`}
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft size={20} />
       </button>
+
       <button
         type="button"
         onClick={() => scroll('right')}
+        disabled={!canScrollRight}
         aria-label="Scroll right"
-        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 items-center justify-center bg-surface border border-line hover:border-ink text-ink opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
+        className={`absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-surface border border-line shadow-md text-ink transition-all z-20 ${
+          canScrollRight
+            ? 'opacity-100 cursor-pointer hover:bg-canvas hover:border-ink active:scale-95'
+            : 'opacity-40 cursor-not-allowed pointer-events-none'
+        }`}
       >
-        <ChevronRight size={18} />
+        <ChevronRight size={20} />
       </button>
     </div>
   );

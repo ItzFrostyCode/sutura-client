@@ -5,16 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
-import { requestCurrentLocation } from '@/lib/customerLocation';
-import { CatalogItem, CatalogItemImage, MapBranch } from '../types';
-
-export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+import { CatalogItem, CatalogItemImage } from '../types';
 
 export function useCatalogItemDetail(storeId: string, itemId: string) {
   const router = useRouter();
@@ -39,14 +30,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   const [headerOpacity, setHeaderOpacity] = useState(0);
   const [fromSameShop, setFromSameShop] = useState<CatalogItemResult[]>([]);
   const [moreLikeThis, setMoreLikeThis] = useState<CatalogItemResult[]>([]);
-  const [showFind, setShowFind] = useState(false);
-  const [findInteractive, setFindInteractive] = useState(false);
-  const [findSheetBranchId, setFindSheetBranchId] = useState<number | null>(null);
-  const [showBookConfirm, setShowBookConfirm] = useState(false);
-  const [showBranchPickModal, setShowBranchPickModal] = useState(false);
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState('');
   const pageRef = useRef<HTMLDivElement>(null);
 
   const { user, isAuthenticated } = useAuthStore();
@@ -201,37 +184,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     router.push(`/store/${storeId}/catalog/${itemId}/report`);
   };
 
-  // showFind is set from multiple call sites (including outside this hook,
-  // via the exposed setShowFind), so this can't be moved into an event
-  // handler the way the two setShowFind(false) calls above were — it's a
-  // genuine "respond to a state change with a timed side effect" case
-  // (keep it interactive immediately on open, but linger interactive for
-  // 320ms after close so an in-flight close animation isn't cut short).
-  useEffect(() => {
-    if (showFind) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFindInteractive(true);
-      return;
-    }
-    const t = setTimeout(() => setFindInteractive(false), 320);
-    return () => clearTimeout(t);
-  }, [showFind]);
-
-  const handleLocate = () => {
-    setLocating(true);
-    setLocateError('');
-    requestCurrentLocation(
-      (loc) => {
-        setUserPos({ lat: loc.lat, lng: loc.lng });
-        setLocating(false);
-      },
-      () => {
-        setLocateError('Unable to get your location. Check your location permission.');
-        setLocating(false);
-      }
-    );
-  };
-
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated || !user) {
@@ -265,35 +217,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   // actual choice to make.
   const allColorOptions = item ? getItemColorOptions(item) : [];
   const colorOptions = allColorOptions.length > 1 ? allColorOptions : [];
-
-  const branches = item?.store?.branches ?? [];
-  const findBranch = branches.find(b => b.latitude && b.longitude) ?? branches[0] ?? null;
-
-  const mapBranches: MapBranch[] = branches
-    .filter(b => b.latitude && b.longitude)
-    .map(b => ({ id: b.id, name: b.name, slug: b.slug, latitude: Number(b.latitude), longitude: Number(b.longitude), isMain: !!b.is_main }));
-  const selectedFindBranch = mapBranches.find(b => b.id === findSheetBranchId) ?? null;
-
-  // A shop with a single mapped branch: pick it as soon as Find a Branch
-  // opens, so Direction / Book a Fitting work straight away instead of
-  // sitting greyed out until the customer taps the only row in the list.
-  const onlyBranchId = mapBranches.length === 1 ? mapBranches[0].id : null;
-  useEffect(() => {
-    if (showFind && onlyBranchId !== null && findSheetBranchId === null) setFindSheetBranchId(onlyBranchId);
-  }, [showFind, onlyBranchId, findSheetBranchId]);
-
-  const selectedDistanceKm = userPos && selectedFindBranch
-    ? haversineKm(userPos.lat, userPos.lng, selectedFindBranch.latitude, selectedFindBranch.longitude)
-    : null;
-  const nearestBranch = userPos
-    ? mapBranches.reduce<{ branch: MapBranch; km: number } | null>((best, b) => {
-        const km = haversineKm(userPos.lat, userPos.lng, b.latitude, b.longitude);
-        return !best || km < best.km ? { branch: b, km } : best;
-      }, null)
-    : null;
-  const nearerBranchSuggestion = nearestBranch && selectedFindBranch && nearestBranch.branch.id !== selectedFindBranch.id
-    ? nearestBranch
-    : null;
 
   const isRealVariationLabel = Boolean(selectedVariation && selectedVariation !== 'Default' && selectedVariation.toLowerCase() !== 'front' && selectedVariation !== 'Fabric Swatch');
   const colorFromFilename = (url: string): string => {
@@ -359,30 +282,10 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     headerOpacity,
     fromSameShop,
     moreLikeThis,
-    showFind,
-    setShowFind,
-    findInteractive,
-    findSheetBranchId,
-    setFindSheetBranchId,
-    showBookConfirm,
-    setShowBookConfirm,
-    showBranchPickModal,
-    setShowBranchPickModal,
-    userPos,
-    locating,
-    locateError,
-    handleLocate,
     pageRef,
     gate,
     handleBackClick,
     handleReportClick,
-    branches,
-    findBranch,
-    mapBranches,
-    selectedFindBranch,
-    selectedDistanceKm,
-    nearestBranch,
-    nearerBranchSuggestion,
     buildBookHref,
     displayColor,
   };

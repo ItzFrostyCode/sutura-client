@@ -72,14 +72,47 @@ export function stripRedundantDavaoProvince(text: string): string {
 // clause and keep just the first-named street, which is enough to geocode
 // to the right area.
 export function stripCornerClause(text: string): string {
-  return text.replace(/\s+corner\s+[^,]+/gi, '').trim();
+  return text.replace(/\s+(?:corner|cor\.?)\s+[^,]+/gi, '').trim();
+}
+
+/**
+ * Philippine addresses frequently include landmark or relationship clauses:
+ * "Pichon St. infront of Almendras Gym", "Near SM City", "Beside City Hall", "Across San Pedro Hospital"
+ * Nominatim/OSM fails on these clauses, so we strip them when looking for the primary street/location.
+ */
+export function stripLandmarkClause(text: string): string {
+  return text.replace(/\s+(?:in\s*front\s*of|infront\s*of|near|beside|across(?:\s*from)?|opposite|behind|adjacent\s*to)\s+[^,]+/gi, '').trim();
+}
+
+/**
+ * Extracts distinct place segments from composite queries like "Pichon St. Infront Of Almendras Gym".
+ * Returns [original, "Pichon St", "Almendras Gym", "Pichon St Almendras Gym"].
+ */
+export function extractLocationSegments(input: string): string[] {
+  const raw = input.trim();
+  if (!raw) return [];
+  const connectorPattern = /\b(?:in\s*front\s*of|infront\s*of|near|beside|across(?:\s*from)?|opposite|corner|cor\.?|along|at|behind|adjacent\s*to)\b/gi;
+
+  const segments: string[] = [];
+  if (connectorPattern.test(raw)) {
+    const parts = raw.split(connectorPattern).map((s) => s.trim().replace(/^[,\s.-]+|[,\s.-]+$/g, '')).filter((s) => s.length >= 2);
+    segments.push(...parts);
+  }
+
+  const cleanWithoutConnectors = raw.replace(connectorPattern, ' ').replace(/\s+/g, ' ').trim();
+  if (cleanWithoutConnectors && cleanWithoutConnectors !== raw && !segments.includes(cleanWithoutConnectors)) {
+    segments.push(cleanWithoutConnectors);
+  }
+
+  return segments;
 }
 
 // Runs every pasted-text cleanup step before handing the result to
 // Nominatim — order matters (Plus Code first, since it can sit anywhere in
-// the string; the trailing province name and "Corner" clause come after).
+// the string; the trailing province name, Corner, and Landmark clauses come after).
 export function cleanLocationQuery(text: string): string {
   const withoutPlusCode = stripPlusCode(text) || text;
   const withoutProvince = stripRedundantDavaoProvince(withoutPlusCode) || withoutPlusCode;
-  return stripCornerClause(withoutProvince) || withoutProvince;
+  const withoutCorner = stripCornerClause(withoutProvince) || withoutProvince;
+  return stripLandmarkClause(withoutCorner) || withoutCorner;
 }

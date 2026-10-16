@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 import type { RelatedStore } from '../types';
@@ -71,6 +72,14 @@ export default function ShopDetail({
             <p className="mobile-caption line-clamp-1 text-ink-muted">{subtitle}</p>
           )}
         </div>
+
+        {/* Open full store page */}
+        <Link
+          href={`/store/${store.slug}`}
+          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink text-white text-xs font-semibold hover:bg-ink/80 transition-colors mr-1 cursor-pointer"
+        >
+          View Store
+        </Link>
 
         {/* RIGHT: Expand / Minimise */}
         {onToggleExpand && (

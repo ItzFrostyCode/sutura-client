@@ -463,10 +463,7 @@ export default function ServiceDetailPage({
           is exact full width with zero left/right margin. On tablet/desktop
           (600px+), container insets, border, and 2-column grid take over. */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10">
-        {/* Breadcrumb — tablet/desktop only, matches CatalogDetailBreadcrumb's placement */}
-        <div className="hidden min-[600px]:block">
-          <ServiceDetailBreadcrumb service={service} />
-        </div>
+
 
         <CatalogDetailGrid
           gallery={
@@ -558,7 +555,7 @@ export default function ServiceDetailPage({
         </div>
       </main>
 
-      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} storeHref={`/store/${storeId}`} showShop={!embedded} />
+      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} />
     </div>
   );
 }

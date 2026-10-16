@@ -25,9 +25,8 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
       })
     : null;
   const hasPrice = service.base_price !== null && service.base_price !== undefined && service.base_price !== '';
-  // Bulk orders (team jerseys, school uniforms) show how many pieces the shop takes at least.
-  const bulk = (service.capabilities ?? []).includes('bulk_orders') || (service.service_types ?? []).includes('bulk_sublimation');
-  const minOrder = bulk && service.min_order_qty && service.min_order_qty > 1 ? service.min_order_qty : null;
+  // Minimum order is displayed whenever the service has a configured minimum order quantity greater than 1 (e.g. bulk uniforms, jerseys). If none or 1, it is hidden.
+  const minOrder = service.min_order_qty && Number(service.min_order_qty) > 1 ? Number(service.min_order_qty) : null;
 
   return (
     <div className="space-y-0">

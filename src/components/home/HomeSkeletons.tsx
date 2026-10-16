@@ -9,26 +9,32 @@ export function FeaturedSkeleton() {
   return (
     <section aria-label="Loading featured shops" aria-busy="true">
       <HomeSectionHeader id="featured-title-loading" title="Featured" />
-      <div className="card-soft overflow-hidden">
-        <div className="flex flex-col lg:flex-row">
-          <div className={`h-[220px] w-full sm:h-[300px] lg:h-auto lg:min-h-[400px] lg:flex-1 ${block}`} />
-          <div className="flex w-full shrink-0 flex-col gap-5 p-5 sm:p-6 lg:w-[360px]">
-            <div className="space-y-2.5">
-              <div className={`h-6 w-3/4 rounded-md ${block}`} />
-              <div className={`h-4 w-1/2 rounded-md ${block}`} />
+      <div className="card-soft overflow-hidden lg:h-[350px]">
+        <div className="flex flex-col lg:h-full lg:flex-row">
+          <div className={`h-[180px] w-full sm:h-[220px] lg:h-full lg:flex-1 ${block}`} />
+          <div className="flex w-full shrink-0 flex-col justify-between p-3.5 sm:p-4 lg:w-[340px] lg:p-3.5">
+            <div className="space-y-1.5">
+              <div className={`h-5 w-3/4 rounded-md ${block}`} />
+              <div className={`h-3.5 w-1/2 rounded-md ${block}`} />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {[0, 1, 2].map((i) => <div key={i} className={`h-7 w-24 rounded-full ${block}`} />)}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className={`aspect-[16/10] rounded-xl ${block}`} />
-                  <div className={`h-3 w-4/5 rounded ${block}`} />
-                </div>
+            <div className="flex flex-wrap gap-1.5 my-1">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={`h-5 w-20 rounded-full ${block}`} />
               ))}
             </div>
-            <div className={`h-12 rounded-full ${block}`} />
+            <div>
+              <div className={`mb-1.5 h-3 w-24 rounded ${block}`} />
+              <div className="grid grid-cols-2 gap-2">
+                {[0, 1].map((i) => (
+                  <div key={i} className="space-y-1">
+                    <div className={`aspect-[16/10] rounded-lg ${block}`} />
+                    <div className={`h-2.5 w-4/5 rounded ${block}`} />
+                    <div className={`h-2.5 w-3/5 rounded ${block}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className={`h-9 w-full rounded-full ${block} mt-1`} />
           </div>
         </div>
       </div>

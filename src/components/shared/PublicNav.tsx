@@ -59,8 +59,6 @@ export default function PublicNav({
           />
         </div>
       </header>
-
-      <PublicBottomNav accountHref={accountHref} />
     </>
   );
 }

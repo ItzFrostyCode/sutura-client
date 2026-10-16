@@ -11,13 +11,13 @@ interface HomeFilterSheetProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly value: NearFilters & Partial<MoreFilters>;
-  /** Also show price, rating and district (the search screen). The landing page only needs Distance and the lights. */
+  /** Also show price, rating and district. Defaults to true for consistency between landing and search screens. */
   readonly showMore?: boolean;
   readonly onApply: (filters: AllFilters) => void;
 }
 
-/** The one filter pop-up: Distance, Open / Closed lights and, on the search screen, price, rating and district. */
-export default function HomeFilterSheet({ isOpen, onClose, value, showMore = false, onApply }: HomeFilterSheetProps) {
+/** The filter pop-up: Distance, Open / Closed lights, and price, rating, and district filters. */
+export default function HomeFilterSheet({ isOpen, onClose, value, showMore = true, onApply }: HomeFilterSheetProps) {
   const [draft, setDraft] = useState<AllFilters>({ ...DEFAULT_ALL_FILTERS, ...value });
   useEffect(() => { if (isOpen) setDraft({ ...DEFAULT_ALL_FILTERS, ...value }); }, [isOpen, value]);
 

@@ -67,6 +67,10 @@
   --font-serif: var(--font-playfair);
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

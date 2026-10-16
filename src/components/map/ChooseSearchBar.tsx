@@ -7,20 +7,24 @@ interface ChooseSearchBarProps {
   readonly onBack: () => void;
   readonly onSubmit: () => void;
   readonly onClear: () => void;
+  readonly onFocus?: () => void;
+  readonly inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 /** One soft pill floating over the map: Back, the search field, and search / clear. */
-export default function ChooseSearchBar({ query, setQuery, searching, onBack, onSubmit, onClear }: ChooseSearchBarProps) {
+export default function ChooseSearchBar({ query, setQuery, searching, onBack, onSubmit, onClear, onFocus, inputRef }: ChooseSearchBarProps) {
   return (
-    <div className="flex h-14 items-center gap-1 rounded-full border border-line/60 bg-surface pl-2 pr-2 shadow-[0_1px_2px_rgba(45,42,38,0.04),0_8px_24px_rgba(45,42,38,0.12)]">
+    <div className="flex h-14 items-center gap-1 rounded-full border border-line/60 bg-surface pl-2 pr-2 shadow-[0_1px_2px_rgba(45,42,38,0.04),0_8px_24px_rgba(45,42,38,0.12)] transition-colors focus-within:border-line-strong">
       <button type="button" onClick={onBack} aria-label="Back" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:bg-sunken active:bg-sunken">
         <ArrowLeft size={20} />
       </button>
       <MapPin size={20} className="shrink-0 text-taupe" />
       <input
+        ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onFocus={onFocus}
         onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
         placeholder="Search a place in Davao"
         aria-label="Search a place"

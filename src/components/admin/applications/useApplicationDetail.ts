@@ -12,12 +12,14 @@ export interface ApplicationDocument {
 export interface ApplicationDetail {
   id: number;
   name: string;
+  slug?: string | null;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   address: string;
   city: string;
   province: string;
   phone: string | null;
   email: string | null;
+
   latitude: string | null;
   longitude: string | null;
   specializations: string[] | null;
@@ -75,5 +77,12 @@ export function useApplicationDetail(id: string) {
     return res.data.message as string;
   };
 
-  return { store, documents, error, suggestedLogin, loginDomain, approve, reject };
+  const reissueCredentials = async () => {
+    const res = await adminApi.post(`/admin/store-applications/${id}/reissue-credentials`);
+    await load();
+    return { message: res.data.message as string, credentials: res.data.credentials as IssuedCredentials };
+  };
+
+  return { store, documents, error, suggestedLogin, loginDomain, approve, reject, reissueCredentials };
 }
+

@@ -6,7 +6,7 @@ import type { SavedLocation } from '@/lib/customerLocation';
 import HomeCarouselRow from './HomeCarouselRow';
 import HomeShopCard from './HomeShopCard';
 import type { StoreResult } from './homeTypes';
-import type { NearFilters } from './homeFilters';
+import type { MoreFilters, NearFilters } from './homeFilters';
 
 const CHOOSE_ON_MAP = '/map?select=1&returnTo=/&continueTo=/';
 
@@ -16,7 +16,7 @@ interface HomeNearShopsProps {
   readonly locating: boolean;
   readonly stores: StoreResult[];
   readonly loading: boolean;
-  readonly filters: NearFilters;
+  readonly filters: NearFilters & Partial<MoreFilters>;
   readonly onRequestLocation: () => void;
   readonly onResetDistance: () => void;
 }
@@ -25,7 +25,25 @@ const box = 'card-soft flex flex-col items-center gap-3 px-6 py-8 text-center';
 
 export default function HomeNearShops({ location, denied, locating, stores, loading, filters, onRequestLocation, onResetDistance }: HomeNearShopsProps) {
   let body: React.ReactNode;
-  if (!location) {
+  if (loading) {
+    body = (
+      <SkeletonRow>{(i) => <ShopCardSkeleton key={i} />}</SkeletonRow>
+    );
+  } else if (stores.length > 0) {
+    body = (
+      <div className="space-y-2">
+        {!location && (
+          <div className="flex items-center justify-between px-1 text-xs text-ink-muted">
+            <span>Tailoring shops in Davao City</span>
+            <Link href={CHOOSE_ON_MAP} className="font-medium text-taupe transition-colors hover:text-ink hover:underline">
+              Choose on map for distance &rarr;
+            </Link>
+          </div>
+        )}
+        <HomeCarouselRow>{stores.map((store) => <HomeShopCard key={store.id} store={store} />)}</HomeCarouselRow>
+      </div>
+    );
+  } else if (!location) {
     body = (
       <div className={box}>
         <MapPin size={24} className="text-taupe" />
@@ -43,11 +61,7 @@ export default function HomeNearShops({ location, denied, locating, stores, load
         </div>
       </div>
     );
-  } else if (loading) {
-    body = (
-      <SkeletonRow>{(i) => <ShopCardSkeleton key={i} />}</SkeletonRow>
-    );
-  } else if (stores.length === 0) {
+  } else {
     body = (
       <div className={box}>
         <p className="mobile-body-md text-ink-body">
@@ -58,13 +72,11 @@ export default function HomeNearShops({ location, denied, locating, stores, load
         )}
       </div>
     );
-  } else {
-    body = <HomeCarouselRow>{stores.map((store) => <HomeShopCard key={store.id} store={store} />)}</HomeCarouselRow>;
   }
 
   return (
     <section aria-labelledby="home-near-title">
-      <HomeSectionHeader id="home-near-title" title="Near Shops" href="/search?tab=store&sortBy=distance" />
+      <HomeSectionHeader id="home-near-title" title="Near Shops" href="/shops" linkLabel="See All Shops" />
       {body}
     </section>
   );

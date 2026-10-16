@@ -37,6 +37,7 @@ export function useBottomSheet(containerRef: RefObject<HTMLElement | null>, hasD
     height,
     total,
     settledHeight: height,
+    collapsedHeight,
     expanded,
     setExpanded,
     toggle,

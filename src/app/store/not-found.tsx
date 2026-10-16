@@ -15,7 +15,7 @@ export default function StoreIndexNotFound() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/stores');
+    router.replace('/shops');
   }, [router]);
 
   return (

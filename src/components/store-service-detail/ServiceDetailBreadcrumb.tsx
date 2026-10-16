@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
@@ -9,20 +11,36 @@ interface BreadcrumbItem {
   service_leaf_type?: string | null;
 }
 
+interface ServiceDetailBreadcrumbProps {
+  readonly service: BreadcrumbItem;
+  readonly store?: { slug?: string; name?: string } | null;
+}
+
 /**
- * Home > Search > {Service Category} > {Service Name} — the 4 approved service groups (2026-10-14).
+ * Clean store-scoped breadcrumb: Home > Shops > {Store Name} > {Service Category} > {Service Name}.
+ * Never loops to Map/Search.
  */
-export default function ServiceDetailBreadcrumb({ service }: Readonly<{ service: BreadcrumbItem }>) {
+export default function ServiceDetailBreadcrumb({ service, store }: ServiceDetailBreadcrumbProps) {
   const crumbs: { label: string; href: string }[] = [
     { label: 'Home', href: '/' },
-    { label: 'Search', href: '/search' },
-    { label: 'Services', href: '/search?tab=services' },
+    { label: 'Shops', href: '/shops' },
   ];
+
+  if (store?.name && store?.slug) {
+    crumbs.push({ label: store.name, href: `/store/${store.slug}` });
+  }
+
   const key = service.service_category;
   if (key && key in SERVICE_GROUPS) {
-    crumbs.push({ label: SERVICE_GROUPS[key as ServiceGroupKey].label, href: serviceHref(key as ServiceGroupKey) });
+    crumbs.push({
+      label: SERVICE_GROUPS[key as ServiceGroupKey].label,
+      href: store?.slug ? `/store/${store.slug}?tab=services&category=${key}` : serviceHref(key as ServiceGroupKey),
+    });
   } else if (key && SERVICE_CATEGORY_LABELS[key as ServiceCategory]) {
-    crumbs.push({ label: SERVICE_CATEGORY_LABELS[key as ServiceCategory], href: `/search?tab=services&service_category=${key}` });
+    crumbs.push({
+      label: SERVICE_CATEGORY_LABELS[key as ServiceCategory],
+      href: store?.slug ? `/store/${store.slug}?tab=services&category=${key}` : '/categories',
+    });
   }
 
   return (

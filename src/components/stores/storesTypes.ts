@@ -9,7 +9,7 @@ export interface StoreResult {
   banner_path: string | null;
   reviews_count: number;
   reviews_avg_rating: number | null;
-  branches: { city: string | null; name: string }[];
+  branches: { city: string | null; name: string; district?: string | null }[];
   operating_hours?: OperatingHours | string | null;
 }
 
