@@ -59,7 +59,7 @@ export default function CatalogSizeSelector({
 
       {/* Bespoke note */}
       <p className={`text-xs text-ink-muted ${hasSizes ? 'mt-2' : 'mt-3'}`}>
-        Custom tailored to your bespoke measurements during fitting.
+        Made to your own measurements during the fitting.
       </p>
 
       {orderSuccess && (

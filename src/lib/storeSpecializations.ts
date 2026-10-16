@@ -1,6 +1,6 @@
 // What a store can say it specializes in: the "services offered" a shop lists — modelled on Davao shops' own
 // signboards. Mirrors CanonicalTaxonomy::storeSpecializations() / STORE_SERVICE_TAGS on the backend. A store tag
-// only — separate from the Services that classify individual services and packages. Men / Women / Kids were
+// only — separate from the Services that classify individual services. Men / Women / Kids were
 // dropped on 2026-10-14 (who wears it is not a category); shops that saved them keep them, hidden.
 const STORE_SERVICE_TAGS: { value: string; label: string }[] = [
   { value: 'custom_tailoring', label: 'Custom Tailoring' },

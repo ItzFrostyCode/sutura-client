@@ -200,64 +200,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     router.push(`/store/${storeId}/catalog/${itemId}/report`);
   };
 
-  // Standard Bulk — reuses the existing customerBulkOrder() contract exactly
-  // (catalog_item_id, organization_name, store_branch_id, roster[]{name,size}).
-  // No additional fields invented. See docs/PAYMENT-WORKFLOW.md §4.4,
-  // docs/CUSTOMER-JOURNEY-TARGET.md §11 — Custom Bulk's extra requirements
-  // are explicitly not assumed here.
-  const [showBulkSheet, setShowBulkSheet] = useState(false);
-  const [bulkOrganizationName, setBulkOrganizationName] = useState('');
-  // [key: string] carries this service's extra roster_fields values (e.g.
-  // jersey_number) — always strings, one column per field, alongside the
-  // two fixed columns every roster row always has.
-  const [bulkRoster, setBulkRoster] = useState<{ name: string; size: string; [key: string]: string }[]>([]);
-  const [bulkBranchId, setBulkBranchId] = useState<number | null>(null);
-  const [bulkSubmitting, setBulkSubmitting] = useState(false);
-  const [bulkError, setBulkError] = useState('');
-
-  const isBulkItem = Boolean(item?.service?.service_types?.includes('bulk_sublimation'));
-  const bulkMinQty = item?.service?.min_order_qty ?? 1;
-  const bulkRosterFields = item?.service?.roster_fields ?? [];
-
-  const openBulkSheet = () => {
-    if (!isAuthenticated) {
-      router.push(`/login?redirect=${encodeURIComponent(currentItemPath)}`);
-      return;
-    }
-    setBulkError('');
-    setBulkOrganizationName('');
-    setBulkRoster([{ name: '', size: '', ...Object.fromEntries(bulkRosterFields.map((f) => [f.id, ''])) }]);
-    setBulkBranchId(null);
-    setShowBulkSheet(true);
-  };
-
-  const handleBulkOrder = async () => {
-    if (!item) return;
-    const validRoster = bulkRoster.filter((r) => r.size);
-    if (validRoster.length < bulkMinQty) {
-      setBulkError(`This service requires a minimum of ${bulkMinQty} pieces.`);
-      return;
-    }
-    setBulkSubmitting(true);
-    setBulkError('');
-    try {
-      const res = await api.post(`/stores/${storeId}/bulk-orders`, {
-        catalog_item_id: item.id,
-        organization_name: bulkOrganizationName || undefined,
-        store_branch_id: bulkBranchId || undefined,
-        roster: validRoster,
-      });
-      setOrderSuccess({ order_number: res.data.data.order_number, id: res.data.data.id });
-      setShowBulkSheet(false);
-      setShowFind(false);
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setBulkError(e.response?.data?.message || 'Something went wrong placing your bulk order. Please try again.');
-    } finally {
-      setBulkSubmitting(false);
-    }
-  };
-
   // showFind is set from multiple call sites (including outside this hook,
   // via the exposed setShowFind), so this can't be moved into an event
   // handler the way the two setShowFind(false) calls above were — it's a
@@ -411,21 +353,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     isSaved,
     togglingSave,
     handleToggleSave,
-    isBulkItem,
-    bulkMinQty,
-    bulkRosterFields,
-    showBulkSheet,
-    setShowBulkSheet,
-    openBulkSheet,
-    bulkOrganizationName,
-    setBulkOrganizationName,
-    bulkRoster,
-    setBulkRoster,
-    bulkBranchId,
-    setBulkBranchId,
-    bulkSubmitting,
-    bulkError,
-    handleBulkOrder,
     myRating,
     setMyRating,
     hoverRating,

@@ -79,7 +79,7 @@ export const BRANCH_LIMITS: Record<string, number | null> = {
 // SubscriptionSwitcher / StoreController (premium).
 export const COMPARE_ROWS = [
   { label: 'Catalog Designs & Gallery Photos', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
-  { label: 'Services & Combo Packages', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Services', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
   { label: 'Dashboard Analytics', basic: 'Included', pro: 'Included', premium: 'Included' },
   { label: 'Sales & Staff Reports', basic: '—', pro: 'Included', premium: 'Included' },
   { label: 'Branch Comparison Reports', basic: '—', pro: '—', premium: 'Included' },

@@ -37,6 +37,12 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
   const [mounted, setMounted] = useState(false);
   useScrollLock(isOpen);
 
+  // The latest onClose, without making the effect below depend on it. Callers pass a new arrow every render, and a
+  // parent that owns the form state re-renders on every keystroke: the effect would re-run each time, pull focus to the
+  // panel, and the person could type only one character before the field lost it.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -47,7 +53,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
     panelRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
       // Minimal focus trap: keep Tab cycling inside the panel.
       if (e.key === 'Tab' && panelRef.current) {
         const focusables = panelRef.current.querySelectorAll<HTMLElement>(
@@ -70,7 +76,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       document.removeEventListener('keydown', onKey);
       (triggerRef.current as HTMLElement | null)?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !mounted || typeof document === 'undefined') return null;
 

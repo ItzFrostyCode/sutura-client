@@ -7,7 +7,7 @@ import { getErrorMessage } from '@/lib/apiError';
 import { getMediaUrl } from '@/lib/media';
 import { useToast } from '@/context/ToastContext';
 
-// One photo: add, replace, remove. Used by services and combo packages.
+// One photo: add, replace, remove. Used by services.
 export default function ImageUploadField({ value, onChange, storeId, hint, alt }: Readonly<{ value: string; onChange: (url: string) => void; storeId: number; hint: string; alt: string }>) {
   const toast = useToast();
   const [uploading, setUploading] = React.useState(false);

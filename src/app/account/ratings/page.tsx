@@ -17,7 +17,7 @@ type RatedStore = StoreResult & { rating: number };
 // permanently-empty tab would be dead weight here. Recently Viewed's Services tab is real (backed by click-tracking).
 type Tab = 'showroom' | 'stores';
 const TABS: { key: Tab; label: string; shortLabel: string }[] = [
-  { key: 'showroom', label: 'Catalog Designs', shortLabel: 'Catalog' },
+  { key: 'showroom', label: 'Designs', shortLabel: 'Designs' },
   { key: 'stores', label: 'Stores', shortLabel: 'Stores' },
 ];
 

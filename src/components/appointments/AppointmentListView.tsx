@@ -1,3 +1,4 @@
+import AppointmentPager from './AppointmentPager';
 import React, { useState } from 'react';
 import AppointmentSubject from './AppointmentSubject';
 import {
@@ -6,7 +7,7 @@ import {
   Building2, UserCheck, Sparkles, MoreHorizontal, FileText, Ruler, LogIn
 } from 'lucide-react';
 import {
-  Appointment, formatScheduled, StatusBadge, TypeBadge, getCustomerInitials,
+  Appointment, formatScheduled, appointmentNo, fullDateTime, StatusBadge, TypeBadge, getCustomerInitials,
   ChannelBadge, RescheduledBadge, WalkInPriorityBadge, CheckInBadge
 } from './appointmentHelpers';
 
@@ -19,7 +20,6 @@ interface AppointmentListViewProps {
 
   // Actions
   readonly onReviewClick: (apt: Appointment) => void;
-  readonly onStartClick: (aptId: number) => void;
   readonly onCreateJobClick: (apt: Appointment) => void;
   readonly onCompleteClick: (apt: Appointment) => void;
   readonly onRescheduleClick: (apt: Appointment) => void;
@@ -31,12 +31,21 @@ interface AppointmentListViewProps {
   readonly onCheckInClick?: (aptId: number) => void;
 }
 
+const PAGE_SIZE = 10;
+
 export default function AppointmentListView({
-  filtered, loading, viewMode = 'table', actionLoadingId, isOwnerOrManager,
-  onReviewClick, onStartClick, onCreateJobClick, onCompleteClick,
+  filtered: all, loading, viewMode = 'table', actionLoadingId, isOwnerOrManager,
+  onReviewClick, onCreateJobClick, onCompleteClick,
   onRescheduleClick, onDetailsClick, onEditClick, onCancelClick,
   onNoShowClick, onNewAppointmentClick, onCheckInClick
 }: AppointmentListViewProps) {
+
+  // Ten at a time, so the list stays easy to read.
+  const [page, setPage] = useState(1);
+  const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pages);
+  const filtered = all.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pager = <AppointmentPager total={all.length} page={currentPage} pageSize={PAGE_SIZE} onPage={setPage} />;
 
   // Active dropdown row ID for table more-menu
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
@@ -66,29 +75,19 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onReviewClick(apt)}
-            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 h-9 cursor-pointer max-[599px]:h-11 max-[599px]:px-4 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
           >
             <Eye size={13} /> <span>Review</span>
           </button>
         )}
 
-        {isConfirmed && !apt.checked_in_at && onCheckInClick && (
+        {isConfirmed && onCheckInClick && (
           <button
             type="button"
             onClick={() => onCheckInClick(apt.id)}
-            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 h-9 cursor-pointer max-[599px]:h-11 max-[599px]:px-4 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
           >
-            <LogIn size={12} /> <span>Check In</span>
-          </button>
-        )}
-
-        {isConfirmed && (
-          <button
-            type="button"
-            onClick={() => onStartClick(apt.id)}
-            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-ink hover:bg-black text-white shadow-2xs transition-colors"
-          >
-            <Play size={12} fill="currentColor" /> <span>Start</span>
+            <LogIn size={12} /> <span>{apt.checked_in_at ? 'Start now' : 'Customer arrived'}</span>
           </button>
         )}
 
@@ -96,9 +95,9 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onCompleteClick(apt)}
-            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 h-9 cursor-pointer max-[599px]:h-11 max-[599px]:px-4 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
           >
-            <CheckSquare size={13} /> <span>Complete</span>
+            <CheckSquare size={13} /> <span>Done</span>
           </button>
         )}
 
@@ -107,16 +106,16 @@ export default function AppointmentListView({
           type="button"
           onClick={() => onDetailsClick(apt)}
           title="View details"
-          className="p-1.5 max-[599px]:p-3 text-ink-muted hover:text-ink hover:bg-canvas rounded-lg transition-colors"
+          className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-white px-3 text-xs font-semibold text-ink transition-colors hover:border-ink hover:bg-sunken max-[599px]:h-11"
         >
-          <Eye size={15} />
+          <Eye size={14} /> <span>Details</span>
         </button>
 
         {!isOwnerOrManager && isConfirmed && !apt.job_order_id && (
           <button
             type="button"
             onClick={() => onCreateJobClick(apt)}
-            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-surface border border-line hover:bg-canvas text-ink transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 h-9 cursor-pointer max-[599px]:h-11 max-[599px]:px-4 rounded-lg bg-surface border border-line hover:bg-canvas text-ink transition-colors"
           >
             <Scissors size={13} /> <span>Create Job</span>
           </button>
@@ -129,7 +128,8 @@ export default function AppointmentListView({
               type="button"
               onClick={() => setActiveMenuId(isMenuOpen ? null : apt.id)}
               title="More actions"
-              className="p-1.5 max-[599px]:p-3 text-ink-faint hover:text-ink hover:bg-canvas rounded-lg transition-colors"
+              aria-label="More actions"
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line-strong bg-white text-ink transition-colors hover:border-ink hover:bg-sunken max-[599px]:h-11 max-[599px]:w-11"
             >
               <MoreHorizontal size={16} />
             </button>
@@ -181,7 +181,7 @@ export default function AppointmentListView({
                           className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-medium"
                         >
                           <UserX size={14} className="text-rose-500" />
-                          <span>Mark as No-Show</span>
+                          <span>Didn't come</span>
                         </button>
                       )}
                     </div>
@@ -210,7 +210,7 @@ export default function AppointmentListView({
   const renderTypeAndService = (apt: Appointment) => (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 flex-wrap">
-        <TypeBadge type={apt.appointment_type} label={apt.purpose_label} />
+        <TypeBadge type={apt.appointment_type} label={apt.purpose_label} kind={apt.kind} />
         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
           apt.intake_channel === 'online'
             ? 'bg-sky-50/80 text-sky-900 border-sky-200'
@@ -240,6 +240,7 @@ export default function AppointmentListView({
         <>
           {Array.from({ length: 5 }).map((_, i) => (
             <tr key={`apt-skel-${i}`} className="animate-pulse border-b border-line">
+              <td className="px-5 py-3.5"><div className="h-4 bg-line rounded w-14"></div></td>
               <td className="px-5 py-3.5">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-sunken"></div>
@@ -273,7 +274,7 @@ export default function AppointmentListView({
     if (filtered.length === 0) {
       return (
         <tr>
-          <td colSpan={6} className="px-6 py-16 text-center">
+          <td colSpan={7} className="px-6 py-16 text-center">
             <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
               <div className="w-12 h-12 bg-canvas border border-line rounded-full flex items-center justify-center mb-3 text-taupe">
                 <CalendarIcon size={22} />
@@ -298,7 +299,8 @@ export default function AppointmentListView({
     }
 
     return filtered.map(apt => {
-      const { shortDate, time, relative, isToday } = formatScheduled(apt.scheduled_at);
+      const { relative, isToday } = formatScheduled(apt.scheduled_at);
+      const { date: fullDate, time } = fullDateTime(apt.scheduled_at);
       const isPending = apt.status === 'pending';
       const initials = getCustomerInitials(apt.customer?.name);
 
@@ -309,14 +311,20 @@ export default function AppointmentListView({
             isPending ? 'bg-amber-50/10' : ''
           }`}
         >
+          {/* Number */}
+          <td className="hidden lg:table-cell px-3 sm:px-4 xl:px-5 py-3.5 align-middle whitespace-nowrap font-mono text-xs font-semibold text-ink-body">{appointmentNo(apt.id)}</td>
+
           {/* Customer */}
-          <td className="px-5 py-3.5 align-middle">
-            <div className="flex items-center gap-3">
+          <td className="px-3 sm:px-4 xl:px-5 py-3.5 align-middle">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <div className="w-8 h-8 rounded-full bg-taupe/10 border border-taupe/20 text-taupe flex items-center justify-center text-xs font-bold shrink-0">
                 {initials}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <span className="font-mono text-[11px] font-semibold text-ink-faint lg:hidden">
+                    {appointmentNo(apt.id)}
+                  </span>
                   <p className="font-semibold text-sm text-ink truncate group-hover:text-taupe transition-colors">
                     {apt.customer?.name || 'Walk-in Client'}
                   </p>
@@ -330,21 +338,28 @@ export default function AppointmentListView({
                 <p className="text-[11px] text-ink-faint truncate mt-0.5">
                   {apt.customer?.email || apt.customer?.phone || 'No contact info'}
                 </p>
+                {/* On tablet (< lg) show assigned staff under customer so Assigned to column can be hidden */}
+                {apt.assigned_staff && (
+                  <p className="text-[11px] text-ink-muted lg:hidden flex items-center gap-1 mt-0.5 truncate">
+                    <UserCheck size={11} className="text-taupe shrink-0" />
+                    <span className="truncate">{apt.assigned_staff.name}</span>
+                  </p>
+                )}
               </div>
             </div>
           </td>
 
           {/* Type & Service */}
-          <td className="px-5 py-3.5 align-middle">
+          <td className="px-3 sm:px-4 xl:px-5 py-3.5 align-middle">
             {renderTypeAndService(apt)}
           </td>
 
           {/* Scheduled Date & Time (Clean single-line wrap guard) */}
-          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+          <td className="px-3 sm:px-4 xl:px-5 py-3.5 align-middle whitespace-nowrap">
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5 text-ink font-semibold text-xs">
                 <CalendarIcon size={12} className="text-taupe shrink-0" />
-                <span>{shortDate}</span>
+                <span>{fullDate}</span>
                 {relative && (
                   <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
                     isToday ? 'bg-taupe text-white' : 'bg-canvas border border-line text-taupe'
@@ -361,26 +376,20 @@ export default function AppointmentListView({
             </div>
           </td>
 
-          {/* Branch & Staff */}
-          <td className="px-5 py-3.5 align-middle">
-            <div className="space-y-0.5 text-xs">
-              <div className="flex items-center gap-1 text-ink font-medium truncate">
-                <Building2 size={12} className="text-ink-faint shrink-0" />
-                <span className="truncate">{apt.branch?.name || 'Main Branch'}</span>
+          {/* Assigned to (Visible on lg+) */}
+          <td className="hidden lg:table-cell px-3 sm:px-4 xl:px-5 py-3.5 align-middle">
+            {apt.assigned_staff ? (
+              <div className="flex items-center gap-1 text-xs text-ink-body truncate">
+                <UserCheck size={12} className="text-taupe shrink-0" />
+                <span className="truncate">{apt.assigned_staff.name}</span>
               </div>
-              {apt.assigned_staff ? (
-                <div className="flex items-center gap-1 text-ink-muted text-[11px] truncate">
-                  <UserCheck size={11} className="text-taupe shrink-0" />
-                  <span className="truncate">{apt.assigned_staff.name}</span>
-                </div>
-              ) : (
-                <span className="text-[10px] text-ink-faint italic">Unassigned</span>
-              )}
-            </div>
+            ) : (
+              <span className="text-xs text-ink-faint italic">Nobody yet</span>
+            )}
           </td>
 
           {/* Status */}
-          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+          <td className="px-3 sm:px-4 xl:px-5 py-3.5 align-middle whitespace-nowrap">
             <div className="flex items-center gap-1.5">
               <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
               <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
@@ -388,7 +397,7 @@ export default function AppointmentListView({
           </td>
 
           {/* Actions (Single neat row) */}
-          <td className="px-5 py-3.5 align-middle text-right">
+          <td className="px-3 sm:px-4 xl:px-5 py-3.5 align-middle text-right">
             {renderTableActions(apt)}
           </td>
         </tr>
@@ -502,10 +511,7 @@ export default function AppointmentListView({
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-ink-muted">
-                    <span className="flex items-center gap-1">
-                      <Building2 size={11} className="text-ink-faint" />
-                      {apt.branch?.name || 'Main Branch'}
-                    </span>
+                    <span className="font-mono font-semibold">{appointmentNo(apt.id)}</span>
                     {apt.assigned_staff && (
                       <span className="flex items-center gap-1">
                         <UserCheck size={11} className="text-taupe" />
@@ -533,22 +539,13 @@ export default function AppointmentListView({
                       Review
                     </button>
                   )}
-                  {isConfirmed && !apt.checked_in_at && onCheckInClick && (
+                  {isConfirmed && onCheckInClick && (
                     <button
                       type="button"
                       onClick={() => onCheckInClick(apt.id)}
                       className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe transition-colors"
                     >
-                      Check In
-                    </button>
-                  )}
-                  {isConfirmed && (
-                    <button
-                      type="button"
-                      onClick={() => onStartClick(apt.id)}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-ink hover:bg-black text-white transition-colors"
-                    >
-                      Start
+                      {apt.checked_in_at ? 'Start now' : 'Customer arrived'}
                     </button>
                   )}
                   {isInProgress && (
@@ -557,7 +554,7 @@ export default function AppointmentListView({
                       onClick={() => onCompleteClick(apt)}
                       className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white transition-colors"
                     >
-                      Complete
+                      Done
                     </button>
                   )}
                   {isConfirmed && !apt.job_order_id && (
@@ -599,27 +596,158 @@ export default function AppointmentListView({
     );
   };
 
+  // ── MOBILE COMPACT LIST VIEW (<640px) ─────────────────────────────────
+  const renderMobileList = () => {
+    if (loading) {
+      return (
+        <div className="divide-y divide-line p-3 space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={`skel-mob-${i}`} className="p-3.5 bg-surface rounded-xl border border-line animate-pulse space-y-2.5">
+              <div className="h-4 bg-line rounded w-1/2"></div>
+              <div className="h-3 bg-line rounded w-3/4"></div>
+              <div className="h-9 bg-line rounded-lg w-full mt-2"></div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (filtered.length === 0) {
+      return (
+        <div className="py-12 px-4 text-center">
+          <div className="w-12 h-12 bg-canvas border border-line rounded-full flex items-center justify-center mx-auto text-taupe mb-2">
+            <CalendarIcon size={20} />
+          </div>
+          <h3 className="text-sm font-bold text-ink">No appointments found</h3>
+          <p className="text-xs text-ink-muted mt-1">There are no appointments matching your current filters.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="divide-y divide-line">
+        {filtered.map((apt) => {
+          const { shortDate, time, relative, isToday } = formatScheduled(apt.scheduled_at);
+          const isPending = apt.status === 'pending';
+          const initials = getCustomerInitials(apt.customer?.name);
+
+          return (
+            <div
+              key={`mob-apt-${apt.id}`}
+              className={`p-3.5 space-y-2.5 transition-colors ${
+                isPending ? 'bg-amber-50/20' : 'bg-surface'
+              }`}
+            >
+              {/* Header: Customer avatar, name, badges, status */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-taupe/10 border border-taupe/20 text-taupe flex items-center justify-center text-xs font-bold shrink-0">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-[11px] font-semibold text-ink-faint">
+                        {appointmentNo(apt.id)}
+                      </span>
+                      <p className="font-semibold text-sm text-ink truncate">
+                        {apt.customer?.name || 'Walk-in Client'}
+                      </p>
+                      <ChannelBadge channel={apt.intake_channel} />
+                      {apt.notes?.includes('[Walk-in Priority]') ? (
+                        <WalkInPriorityBadge />
+                      ) : (apt.outcome === 'rescheduled' || apt.notes?.includes('[Rescheduled from')) ? (
+                        <RescheduledBadge />
+                      ) : null}
+                    </div>
+                    <p className="text-[11px] text-ink-faint truncate mt-0.5">
+                      {apt.customer?.phone || apt.customer?.email || 'No contact info'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
+                  <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
+                </div>
+              </div>
+
+              {/* Service & Schedule Box */}
+              <div className="flex items-center justify-between text-xs text-ink-body bg-canvas/40 border border-line/60 rounded-lg p-2.5 gap-2">
+                <div className="min-w-0 flex-1 truncate">
+                  {renderTypeAndService(apt)}
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="flex items-center gap-1 font-semibold text-ink">
+                    <CalendarIcon size={11} className="text-taupe" />
+                    <span>{shortDate}</span>
+                    {relative && (
+                      <span className={`text-[9px] font-bold px-1 rounded ${
+                        isToday ? 'bg-taupe text-white' : 'bg-canvas border border-line text-taupe'
+                      }`}>
+                        {relative}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-ink-muted justify-end">
+                    <Clock size={10} className="text-ink-faint" />
+                    <span>{time}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer: Staff & Actions */}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <div className="text-[11px] text-ink-muted truncate min-w-0">
+                  {apt.assigned_staff ? (
+                    <span className="flex items-center gap-1 truncate">
+                      <UserCheck size={11} className="text-taupe shrink-0" />
+                      <span className="truncate">{apt.assigned_staff.name}</span>
+                    </span>
+                  ) : (
+                    <span className="text-ink-faint italic">Nobody assigned</span>
+                  )}
+                </div>
+                <div className="shrink-0">
+                  {renderTableActions(apt)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (viewMode === 'cards') {
-    return renderCardGrid();
+    return <>{renderCardGrid()}{pager}</>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm text-ink-body">
-        <thead className="bg-canvas/50 text-[11px] font-bold uppercase tracking-wider text-ink-faint border-b border-line">
-          <tr>
-            <th className="px-5 py-3">Customer</th>
-            <th className="px-5 py-3">Type & Service</th>
-            <th className="px-5 py-3">Schedule</th>
-            <th className="px-5 py-3">Branch & Staff</th>
-            <th className="px-5 py-3">Status</th>
-            <th className="px-5 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
-          {renderTableBody()}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile List View (<640px) */}
+      <div className="block sm:hidden">
+        {renderMobileList()}
+      </div>
+
+      {/* Tablet & Desktop Table (>=640px) */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-left text-sm text-ink-body">
+          <thead className="bg-canvas/50 text-[11px] font-bold uppercase tracking-wider text-ink-faint border-b border-line">
+            <tr>
+              <th className="hidden lg:table-cell px-3 sm:px-4 xl:px-5 py-3">No.</th>
+              <th className="px-3 sm:px-4 xl:px-5 py-3">Customer</th>
+              <th className="px-3 sm:px-4 xl:px-5 py-3">Visit</th>
+              <th className="px-3 sm:px-4 xl:px-5 py-3 whitespace-nowrap">Date and time</th>
+              <th className="hidden lg:table-cell px-3 sm:px-4 xl:px-5 py-3">Assigned to</th>
+              <th className="px-3 sm:px-4 xl:px-5 py-3">Status</th>
+              <th className="px-3 sm:px-4 xl:px-5 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {renderTableBody()}
+          </tbody>
+        </table>
+      </div>
+      {pager}
+    </>
   );
 }

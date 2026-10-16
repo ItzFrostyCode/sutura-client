@@ -48,7 +48,8 @@ export function toDraft(service: Service): ServiceDraft {
     showcase_category: service.showcase_category ?? '',
     service_leaf_type: service.service_leaf_type ?? '',
     service_types: service.service_types ?? [],
-    garment_types: Array.from(new Set((service.garment_types ?? []).map((g) => canonicalGarment(g)).filter(Boolean) as string[])),
+    // A garment from the list under its current slug; a name the shop typed under "Other garments" stays as typed.
+    garment_types: Array.from(new Set((service.garment_types ?? []).map((g) => canonicalGarment(g) ?? g.trim()).filter(Boolean))),
     capabilities: service.capabilities ?? [],
     tiers: deriveTiersFromService(service),
     image_url: service.image_url ?? '',
@@ -62,6 +63,8 @@ export function toDraft(service: Service): ServiceDraft {
     requirements: requirementsToDraft(service),
   } satisfies ServiceDraft;
 }
+
+const ANY_GARMENT_GROUPS = ['alterations_repairs', 'garment_customization'];
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
@@ -83,11 +86,14 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
   if (section === 'type' || section === 'work') {
     if (!d.service_category) return 'Pick the kind of work this service is.';
   }
+  // Alterations and customization may take any garment; every other service must say which garments it works on.
+  if ((section === 'garments' || section === 'work') && d.service_category && !ANY_GARMENT_GROUPS.includes(d.service_category) && d.garment_types.length === 0) {
+    return 'Select at least one garment this service works on. Not in the list? Add it under “Other garments”.';
+  }
   if ((section === 'capabilities' || section === 'work') && d.capabilities.includes('bulk_orders')) {
     if (!d.min_order_qty || Number(d.min_order_qty) < 1) return 'Enter the minimum order for bulk orders.';
   }
   if (section === 'spec') {
-    if (!d.showcase_category) return 'Pick where it shows on your shop page.';
     if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one price or add-on.';
   }
   if (section === 'requirements') return validateRequirements(d.requirements);
@@ -143,7 +149,7 @@ const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   garments: ['garment_types'],
   capabilities: ['capabilities', 'min_order_qty'],
   work: ['service_category', 'garment_types', 'capabilities', 'min_order_qty'],
-  spec: ['showcase_category', 'tiers'],
+  spec: ['tiers'],
   chart: ['sizeChart'],
   description: ['description'],
   booking: ['custom_fields', 'roster_fields'],

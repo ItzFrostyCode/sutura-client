@@ -16,7 +16,7 @@ const FORMAT = new Intl.DateTimeFormat('en-US', {
 /** "SUN,OCT 11 1:20:26PM" in Philippine time, ticking every second. Empty until mounted so it never mismatches the server render. */
 function format(date: Date): string {
   const part = Object.fromEntries(FORMAT.formatToParts(date).map((p) => [p.type, p.value]));
-  return `${part.weekday.toUpperCase()},${part.month.toUpperCase()} ${part.day} ${part.hour}:${part.minute}:${part.second}${part.dayPeriod}`;
+  return `${part.weekday.toUpperCase()}, ${part.month.toUpperCase()} ${part.day} ${part.hour}:${part.minute}:${part.second} ${part.dayPeriod}`;
 }
 
 export default function LiveClock({ className = '' }: { readonly className?: string }) {

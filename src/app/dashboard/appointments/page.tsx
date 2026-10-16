@@ -1,23 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import {
   List, LayoutGrid, Calendar as CalendarIcon, AlertCircle,
-  Plus, Clock, CheckCircle2, Scissors, Building2, SlidersHorizontal,
+  Plus, Clock, CheckCircle2, Scissors,
   RotateCcw, CalendarPlus
 } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import PageHeader from '@/components/shared/PageHeader';
+import AppointmentToolbar from '@/components/appointments/AppointmentToolbar';
 import { useAppointments } from '@/components/appointments/useAppointments';
+import type { Appointment } from '@/components/appointments/appointmentHelpers';
 import AppointmentCreateModal from '@/components/appointments/AppointmentCreateModal';
 import AppointmentActionModals from '@/components/appointments/AppointmentActionModals';
 import AppointmentCalendarView from '@/components/appointments/AppointmentCalendarView';
 import AppointmentListView from '@/components/appointments/AppointmentListView';
+import WalkInClashDialog from '@/components/appointments/WalkInClashDialog';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
 import { APPOINTMENT_TYPES, TYPE_CONFIG, STATUS_CONFIG, AppointmentType } from '@/components/appointments/appointmentHelpers';
-import { useBranch } from '@/context/BranchContext';
 
 export default function AppointmentsPage() {
+  // useSearchParams (a customer's "Book appointment" link) needs a Suspense boundary.
+  return <Suspense fallback={null}><AppointmentsPageContent /></Suspense>;
+}
+
+function AppointmentsPageContent() {
   const {
     loading,
     viewMode,
@@ -27,6 +34,8 @@ export default function AppointmentsPage() {
     statusFilter,
     setStatusFilter,
     typeFilter,
+    whenFilter,
+    setWhenFilter,
     setTypeFilter,
     search,
     setSearch,
@@ -84,6 +93,10 @@ export default function AppointmentsPage() {
     setAssignedToMe,
     updateStatus,
     handleCheckIn,
+    handleDidntCome,
+    clash,
+    resolveClash,
+    services,
     handleAccommodateEarly,
     handleAskToWait,
     refreshAppointments,
@@ -96,19 +109,19 @@ export default function AppointmentsPage() {
     filtered,
     stats,
     pendingCount,
+    presetCustomerId,
+    setPresetCustomerId,
   } = useAppointments();
 
-  const { selectedBranchId, branches: branchList } = useBranch();
-  const currentBranch = branchList.find(b => b.id === selectedBranchId);
+  // The appointment a follow-up visit is being booked for. A follow-up always belongs to an existing record.
+  const [followUpFor, setFollowUpFor] = useState<Appointment | null>(null);
 
-  // Mobile / Collapsible Filter State
-  const [showFilters, setShowFilters] = useState(false);
-
-  const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (search ? 1 : 0);
+  const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (whenFilter !== 'any' ? 1 : 0) + (search ? 1 : 0);
 
   const clearAllFilters = () => {
     setStatusFilter('all');
     setTypeFilter('all');
+    setWhenFilter('any');
     setSearch('');
   };
 
@@ -162,7 +175,7 @@ export default function AppointmentsPage() {
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <PageHeader
         title="Schedule & Appointments"
-        description="Book and manage client fittings, measurement sessions, and bespoke consultations."
+        description="Book and manage fittings, measurements and consultations."
         actions={
           // flex-wrap — on the narrowest real phones (320px, e.g. iPhone SE)
           // "Schedule Follow-Up" + "New Appointment" together are wider than
@@ -171,22 +184,6 @@ export default function AppointmentsPage() {
           // so without its own wrap the second button would overflow off
           // the edge of the screen instead of dropping to its own line.
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Staff's narrow booking authority — a follow-up visit only,
-                not the full owner/manager form. See docs/STAFF-WORKFLOW.md §17. */}
-            <button
-              type="button"
-              onClick={() => {
-                setFollowUpError('');
-                setShowFollowUpModal(true);
-              }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px] ${
-                isOwnerOrManager
-                  ? 'bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe'
-                  : 'bg-taupe hover:bg-taupe-hover text-white'
-              }`}
-            >
-              <CalendarPlus size={16} /> Schedule Follow-Up
-            </button>
             {isOwnerOrManager && (
               <button
                 type="button"
@@ -205,7 +202,7 @@ export default function AppointmentsPage() {
       />
 
       {/* ── Operational KPI Cards (Clickable Quick Filters) ───────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Today's Schedule */}
         <button
           type="button"
@@ -213,7 +210,7 @@ export default function AppointmentsPage() {
           className="bg-surface border border-line rounded-xl p-4 flex flex-col justify-between min-h-[96px] shadow-2xs hover:border-taupe/60 transition-all text-left group"
         >
           <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Today&apos;s Schedule</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Today</span>
             <Clock size={15} className="text-taupe shrink-0" />
           </div>
           <p className="text-figure text-2xl font-bold text-ink mt-2 tabular-nums">{stats.todayCount}</p>
@@ -229,7 +226,7 @@ export default function AppointmentsPage() {
         >
           <div className="flex items-center justify-between gap-2 w-full">
             <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">
-              Pending Review
+              Waiting for approval
             </span>
             <AlertCircle size={15} className={stats.pendingCount > 0 ? 'text-amber-600' : 'text-ink-faint'} />
           </div>
@@ -247,7 +244,7 @@ export default function AppointmentsPage() {
           }`}
         >
           <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Active & Confirmed</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Approved & in progress</span>
             <Scissors size={15} className="text-taupe shrink-0" />
           </div>
           <p className="text-figure text-2xl font-bold text-ink mt-2 tabular-nums">{stats.activeCount}</p>
@@ -262,7 +259,7 @@ export default function AppointmentsPage() {
           }`}
         >
           <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Completed</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Done</span>
             <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
           </div>
           <p className="text-figure text-2xl font-bold text-ink mt-2 tabular-nums">{stats.completedCount}</p>
@@ -271,177 +268,21 @@ export default function AppointmentsPage() {
 
       {/* ── Main Container Card ──────────────────────────────────────────── */}
       <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
-        {/* Table & Cards Filter & View Switcher Bar (Always Single Full Row) */}
-        <div className="p-3.5 sm:p-4 border-b border-line bg-canvas/30">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left Controls: Search + Filter Button (or Type Select on huge screens) */}
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              {/* flex-1 min-w-0 instead of a fixed w-48 shrink-0 — at real
-                  narrow-phone widths (320-375px) the search box's old fixed
-                  192px plus the Filter button plus the view-switcher pill on
-                  the right added up to more than the available row width,
-                  and with nothing allowed to shrink the pill got clipped by
-                  this card's own overflow-hidden. Letting the search input
-                  compress (while Filter/pill stay fixed-size) is what
-                  actually keeps this a single row at every real width,
-                  instead of just asserting it in a comment. */}
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Search customer, service, notes..."
-                className="flex-1 min-w-0 sm:w-64 sm:flex-none"
-              />
-
-              {/* Filter Trigger Button — clean, never collides, opens drawer */}
-              <button
-                type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`h-[38px] flex items-center gap-1.5 px-3.5 rounded-lg border text-xs font-bold transition-all shrink-0 ${
-                  showFilters || activeFiltersCount > 0
-                    ? 'bg-taupe text-white border-taupe shadow-xs'
-                    : 'bg-canvas text-ink border-line hover:bg-sunken'
-                }`}
-              >
-                <SlidersHorizontal size={14} />
-                <span>Filters</span>
-                {activeFiltersCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-white text-taupe text-[10px] font-black flex items-center justify-center">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Active Filter Indicators on desktop */}
-              {statusFilter !== 'all' && (
-                <div className="hidden md:flex h-[38px] items-center gap-1.5 text-xs bg-taupe/10 border border-taupe/20 text-taupe px-3 rounded-lg font-semibold shrink-0">
-                  <span className="capitalize">{statusFilter.replace(/_/g, ' ')}</span>
-                  <button type="button" onClick={() => setStatusFilter('all')} className="hover:text-ink ml-1 font-bold">×</button>
-                </div>
-              )}
-
-              {typeFilter !== 'all' && (
-                <div className="hidden md:flex h-[38px] items-center gap-1.5 text-xs bg-taupe/10 border border-taupe/20 text-taupe px-3 rounded-lg font-semibold shrink-0">
-                  <span className="capitalize">{typeFilter}</span>
-                  <button type="button" onClick={() => setTypeFilter('all')} className="hover:text-ink ml-1 font-bold">×</button>
-                </div>
-              )}
-
-              {currentBranch && (
-                <div className="hidden xl:flex items-center gap-1.5 text-xs text-taupe bg-taupe/10 border border-taupe/20 px-2.5 py-1 rounded-lg font-semibold shrink-0">
-                  <Building2 size={12} />
-                  <span>{currentBranch.name}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Right: View Switcher Pill (ALWAYS on the Right Side!) */}
-            <div className="flex items-center gap-2 shrink-0">
-              <ViewSwitcherPill />
-            </div>
-          </div>
-
-          {/* Collapsible Filter Panel (Clean, spacious, responsive drawer) */}
-          {showFilters && (
-            <div className="mt-3.5 pt-3.5 border-t border-line/80 space-y-3.5 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-ink uppercase tracking-wider">Filter Bookings</span>
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="text-[11px] font-semibold text-taupe flex items-center gap-1 hover:underline"
-                  >
-                    <RotateCcw size={11} /> Reset All Filters
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6">
-                {/* Appointment Type Select (Adjustable compact combobox) */}
-                <div className="w-full lg:w-56 xl:w-64 shrink-0">
-                  <label className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
-                    Type of Session
-                  </label>
-                  <select
-                    value={typeFilter}
-                    onChange={e => setTypeFilter(e.target.value as AppointmentType | 'all')}
-                    className="w-full h-[38px] text-xs font-medium border border-line rounded-lg px-3 bg-surface text-ink focus:outline-none focus:border-taupe shadow-2xs"
-                  >
-                    <option value="all">All Appointment Types</option>
-                    {APPOINTMENT_TYPES.map(t => (
-                      <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Mine only — staff start here; owners/managers can narrow to a person's own work too */}
-                <div className="shrink-0">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Show</span>
-                  <button
-                    type="button"
-                    aria-pressed={assignedToMe ?? isPlainStaff}
-                    onClick={() => setAssignedToMe(!(assignedToMe ?? isPlainStaff))}
-                    className={`h-[44px] md:h-[38px] px-3 rounded-lg text-xs font-semibold border whitespace-nowrap cursor-pointer ${(assignedToMe ?? isPlainStaff) ? 'bg-taupe text-white border-taupe' : 'bg-surface text-ink-body border-line hover:border-taupe/50'}`}
-                  >
-                    Assigned to me
-                  </button>
-                </div>
-
-                {/* Status Selection Pills (Full horizontal row) */}
-                <div className="flex-1 min-w-0">
-                  <label className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
-                    Booking Status
-                  </label>
-                  <div className="flex items-center gap-1.5 flex-wrap xl:flex-nowrap">
-                    {(['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rejected', 'no_show'] as const).map(s => {
-                      let tabLabel = '';
-                      let count = 0;
-                      if (s === 'all') {
-                        tabLabel = 'All';
-                        count = stats.totalCount;
-                      } else if (s === 'in_progress') {
-                        tabLabel = 'In Progress';
-                        count = stats.inProgressCount;
-                      } else if (s === 'no_show') {
-                        tabLabel = 'No Show';
-                        count = stats.noShowCount;
-                      } else {
-                        tabLabel = STATUS_CONFIG[s]?.label || '';
-                        if (s === 'pending') count = stats.pendingCount;
-                        if (s === 'confirmed') count = stats.confirmedCount;
-                        if (s === 'completed') count = stats.completedCount;
-                        if (s === 'cancelled') count = stats.cancelledCount;
-                        if (s === 'rejected') count = stats.rejectedCount;
-                      }
-
-                      const isActive = statusFilter === s;
-
-                      return (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setStatusFilter(s)}
-                          className={`h-[38px] px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap shrink-0 ${
-                            isActive
-                              ? 'bg-taupe text-white border-taupe shadow-xs'
-                              : 'bg-surface text-ink-body border-line hover:border-taupe/50'
-                          }`}
-                        >
-                          <span>{tabLabel}</span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full tabular-nums ${
-                            isActive ? 'bg-white/20 text-white' : 'bg-sunken text-ink-faint'
-                          }`}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <AppointmentToolbar
+          search={search} onSearch={setSearch}
+          status={statusFilter} onStatus={setStatusFilter}
+          type={typeFilter} onType={setTypeFilter}
+          when={whenFilter} onWhen={setWhenFilter}
+          mine={assignedToMe ?? isPlainStaff} onMine={setAssignedToMe}
+          counts={{
+            all: stats.totalCount, pending: stats.pendingCount, confirmed: stats.confirmedCount,
+            in_progress: stats.inProgressCount, completed: stats.completedCount,
+            closed: stats.cancelledCount + stats.rejectedCount + stats.noShowCount,
+          }}
+          viewSwitcher={<ViewSwitcherPill />}
+          hasFilters={activeFiltersCount > 0}
+          onReset={clearAllFilters}
+        />
 
         {/* View Mode Content */}
         {viewMode === 'calendar' ? (
@@ -458,13 +299,12 @@ export default function AppointmentsPage() {
             actionLoadingId={actionLoadingId}
             isOwnerOrManager={isOwnerOrManager}
             onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
-            onStartClick={(id) => updateStatus(id, 'in_progress')}
             onCheckInClick={handleCheckIn}
             onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
             onCreateJobClick={handleCreateJob}
             onNoShowClick={(apt) => {
-              if (window.confirm(`Mark the appointment for ${apt.customer?.name || 'this client'} as No-Show?`)) {
-                updateStatus(apt.id, 'no_show');
+              if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+                handleDidntCome(apt.id);
               }
             }}
             onDetailsClick={(apt) => { setViewApt(apt); setShowViewModal(true); }}
@@ -482,7 +322,6 @@ export default function AppointmentsPage() {
             actionLoadingId={actionLoadingId}
             isOwnerOrManager={isOwnerOrManager}
             onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
-            onStartClick={(id) => updateStatus(id, 'in_progress')}
             onCheckInClick={handleCheckIn}
             onCreateJobClick={handleCreateJob}
             onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
@@ -491,8 +330,8 @@ export default function AppointmentsPage() {
             onEditClick={(apt) => { setEditingApt(apt); setShowCreateModal(true); }}
             onCancelClick={(apt) => { setCancelApt(apt); setShowCancelModal(true); }}
             onNoShowClick={(apt) => {
-              if (window.confirm(`Mark the appointment for ${apt.customer?.name || 'this client'} as No-Show?`)) {
-                updateStatus(apt.id, 'no_show');
+              if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+                handleDidntCome(apt.id);
               }
             }}
             onNewAppointmentClick={() => {
@@ -507,17 +346,21 @@ export default function AppointmentsPage() {
       {/* ── Action Modals ────────────────────────────────────────────────── */}
       <AppointmentCreateModal
         isOpen={showCreateModal}
-        onClose={() => { setShowCreateModal(false); setEditingApt(null); setError(''); }}
+        onClose={() => { setShowCreateModal(false); setEditingApt(null); setError(''); setPresetCustomerId(''); }}
         editingApt={editingApt}
+        presetCustomerId={presetCustomerId}
         customers={customers}
         onCreateCustomer={handleCreateCustomer}
         branches={branches}
         staff={staff}
+        services={services}
         appointments={appointments}
         onSubmit={handleCreateSubmit}
         isSubmitting={isSubmitting}
         error={error}
       />
+
+      <WalkInClashDialog clash={clash} isSubmitting={isSubmitting} onChoose={resolveClash} />
 
       <AppointmentActionModals
         showReviewModal={showReviewModal}
@@ -556,14 +399,17 @@ export default function AppointmentsPage() {
         onAccommodateEarly={handleAccommodateEarly}
         onAskToWait={handleAskToWait}
         onAppointmentUpdated={refreshAppointments}
+        onFollowUp={(apt) => { setFollowUpError(''); setFollowUpFor(apt); setShowFollowUpModal(true); }}
       />
 
       <FollowUpAppointmentModal
-        isOpen={showFollowUpModal}
-        onClose={() => { setShowFollowUpModal(false); setFollowUpError(''); }}
+        isOpen={showFollowUpModal && followUpFor !== null}
+        onClose={() => { setShowFollowUpModal(false); setFollowUpError(''); setFollowUpFor(null); }}
         customers={customers}
-        branches={branches}
-        todayStr={todayStr}
+        presetCustomerId={followUpFor?.customer?.id}
+        presetJobOrderId={followUpFor?.job_order?.id}
+        presetCustomerName={followUpFor?.customer?.name}
+                todayStr={todayStr}
         minTimeFor={minTimeFor}
         onSubmit={handleCreateFollowUp}
         isSubmitting={isSubmitting}

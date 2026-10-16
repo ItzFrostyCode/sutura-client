@@ -1,0 +1,1000 @@
+FINAL ANALYSIS BY GLM 5.2
+
+
+# 🧵 SUTURA — MULTI-PERSPECTIVE PROFESSIONAL ERP AUDIT
+
+## PANEL OF EXPERTS
+
+| Role | Focus |
+|---|---|
+| 🧵 Real Tailoring Shop Owner | Business reality, suki culture, shop floor operations |
+| 💼 ERP Consultant | System architecture, module coherence, scalability |
+| 🗄 Database Architect | Schema integrity, normalization, relationships, audit trails |
+| 💻 Full Stack System Analyst | API design, data flow, state management, security |
+| 🎨 Senior UI/UX Designer | Interface hierarchy, interaction patterns, cognitive load |
+| 📊 Business Process Analyst | Workflow completeness, edge cases, business logic gaps |
+| 🛡 Capstone Defense Panel | Thesis compliance, defensibility, academic rigor |
+
+**Goal:** Transform SUTURA from a student project into a defensible, professional ERP system.
+
+---
+
+## PHASE 1 — DATABASE AUDIT
+
+### 1.1 Missing Tables
+
+| # | Missing Table | Severity | Justification |
+|---|---|---|---|
+| 1 | `branch` | 🔴 Critical | Thesis explicitly includes branch management but no BRANCH table exists in the schema. SHOP table cannot represent multiple physical locations. |
+| 2 | `notification_log` | 🔴 Critical | Thesis promises "automated SMS or email notifications at each stage transition" but there is no table to log notification delivery, status, or content. |
+| 3 | `job_order_stage_log` | 🔴 Critical | Production stages (Cutting → Sewing → QC) are stored as a single ENUM field on JOB_ORDER. There is no history table tracking when each stage started, who updated it, and when it was completed. This makes the "real-time order progress monitoring" objective undefendable. |
+| 4 | `measurement_version` | 🔴 Critical | Thesis claims "version-controls anatomical dimensions" but MEASUREMENT table has only `updated_at`. There is no version number, no previous-value retention, and no link to which job order triggered each measurement update. |
+| 5 | `payment_timeline` (or split PAYMENT) | 🔴 Critical | PAYMENT table currently mixes subscription fees and customer order payments via nullable FKs on both `order_id` and `subscription_id`. Deposits (50% DP) and balances are not structurally separated. Real shops need "DP Collected" vs "Balance Due" as distinct financial events. |
+| 6 | `appointment_type` (lookup) | 🟠 High | Thesis mentions "purpose" as free-text VARCHAR on APPOINTMENT. Without an enum or lookup table for appointment types (consultation, measurement, first_fitting, final_fitting, pickup), the system cannot enforce business rules like "a fitting appointment requires a linked job order." |
+| 7 | `job_order_staff` (junction) | 🟠 High | JOB_ORDER has a single `staff_id` FK. In reality, multiple staff work on one order (cutter, sewer, embroiderer, QC). A many-to-many junction table with role and assignment date is needed. |
+| 8 | `customer_note` | 🟠 High | The "suki card" institutional memory ("Client always rushes," "Prefers slim fit") is the most-used CRM feature in real PH shops. CUSTOMER_PROFILE has no notes field. |
+| 9 | `catalog_item` | 🟠 High | The thesis mentions a "service catalog" but SERVICE table only stores service_name, base_price, garment_type. There is no table for portfolio/showcase items with images, descriptions, and categorization. |
+| 10 | `role_permission` / `permission` | 🟠 High | RBAC is mentioned but no permission table exists. The USER table has a `role` VARCHAR/ENUM but there is no granular permission mapping. |
+| 11 | `staff_specialization` (junction or lookup) | 🟡 Medium | TAILORING_STAFF_PROFILE has no specialization field. Real shops need to know which tailor handles barong vs uniforms vs gowns. |
+| 12 | `shop_review` (separate from FEEDBACK) | 🟡 Medium | FEEDBACK is linked to JOB_ORDER (order-level review). Public marketplace reviews should be shop-level, not just order-level. |
+| 13 | `audit_log` detail expansion | 🟡 Medium | AUDIT_LOG exists but lacks `entity_type`, `entity_id`, `old_value`, `new_value` columns. It only records action_type and description text. |
+| 14 | `system_setting` / `shop_setting` | 🟡 Medium | No table for storing shop-level configuration (operating hours, booking policies, custom questions, landmark field). |
+| 15 | `deposit` (liability ledger) | 🟠 High | Real shops track refundable deposits (rentals) separately from earned revenue. Mixing these in PAYMENT creates accounting confusion. |
+
+### 1.2 Duplicate / Redundant Tables
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 16 | `SERVICE` vs `CATALOG_ITEM` concept overlap | 🟠 High | SERVICE stores service_name, base_price, garment_type. If catalog items are added, they will overlap with services. Need clear separation: SERVICE = capability declaration, CATALOG_ITEM = portfolio showcase piece. |
+| 17 | `ORDER_MATERIAL` without `MATERIAL` reference | 🟡 Medium | ORDER_MATERIAL has `order_id` and `quantity_used` but no `material_id` FK. Since thesis excludes inventory, this table is orphaned — it tracks quantities of nothing. Either remove it or add a text field for material description. |
+| 18 | `FEEDBACK` vs shop-level reviews | 🟡 Medium | FEEDBACK is tied to order_id only. If a customer wants to review the shop generally (not a specific order), there is no mechanism. |
+
+### 1.3 Wrong Relationships
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 19 | `JOB_ORDER.staff_id` is single FK | 🔴 Critical | Only one staff member can be assigned. Real production involves cutter → sewer → embroiderer → QC inspector. Need junction table `job_order_staff` with `role` and `assigned_at`. |
+| 20 | `APPOINTMENT` has no `job_order_id` FK | 🔴 Critical | Fitting appointments are not linked to the job order they belong to. Staff cannot answer "which order is this fitting for?" without manual cross-referencing. |
+| 21 | `MEASUREMENT` has no `job_order_id` FK | 🟠 High | Measurements are linked to customer and shop but not to the specific job order that triggered them. Cannot trace "which order required this measurement update?" |
+| 22 | `PAYMENT` dual nullable FKs (`order_id` + `subscription_id`) | 🟠 High | A payment record can reference either an order or a subscription. This creates ambiguity in queries and reporting. Should be split into `order_payment` and `subscription_payment` tables, or use a polymorphic approach with a `payable_type` field. |
+| 23 | `JOB_ORDER.measurement_id` is NOT NULL | 🟡 Medium | Alterations and ready-to-wear orders do not require measurements. This NOT NULL constraint makes it impossible to create an alteration or RTW order without a measurement record. Should be NULLABLE. |
+| 24 | `FEEDBACK` has no `shop_id` FK | 🟡 Medium | To display reviews on the public shop profile, the system must join FEEDBACK → JOB_ORDER → SHOP. Adding `shop_id` directly to FEEDBACK would simplify this query. |
+
+### 1.4 Wrong Normalization
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 25 | `SHOP.coordinates` as VARCHAR/POINT | 🟡 Medium | Storing coordinates as a single VARCHAR field prevents spatial queries. Should use proper GIS POINT type or separate `latitude` and `longitude` DECIMAL columns. |
+| 26 | `MEASUREMENT.measurement_data` as JSON/TEXT | 🟡 Medium | While JSON is flexible, it prevents querying individual measurement fields (e.g., "find all customers with chest > 40"). For a capstone, this is acceptable, but a `measurement_detail` child table with `field_name` and `field_value` would be more normalized. |
+| 27 | `USER.role` as single ENUM | 🟠 High | A user can only have one role. In real shops, the shop owner is also the tailor and the cashier. Need a `user_role` junction table for multi-role assignment. |
+| 28 | `SUBSCRIPTION_PLAN` has no feature list | 🟡 Medium | Plan tiers (Basic, Pro, Premium) need to define what features each tier includes (max branches, max staff, etc.). This should be in a `plan_feature` child table. |
+
+### 1.5 Missing History / Audit / Logs
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 29 | No `deleted_at` soft-delete columns | 🟠 High | Hard deletes on CUSTOMER_PROFILE, JOB_ORDER, or PAYMENT would lose financial records. Every business-critical table needs `deleted_at TIMESTAMP NULL` for soft deletion. |
+| 30 | No `updated_at` on most tables | 🟠 High | Only MEASUREMENT has `updated_at`. SHOP, SERVICE, SUBSCRIPTION_PLAN, CUSTOMER_PROFILE, TAILORING_STAFF_PROFILE all lack `updated_at`. Cannot track when records were last modified. |
+| 31 | No `created_by` / `updated_by` columns | 🟡 Medium | Cannot determine which user created or modified a record. Important for accountability in multi-user systems. |
+| 32 | No stage transition history | 🔴 Critical | JOB_ORDER.status is a single field that gets overwritten. There is no record of when the status changed, who changed it, or what the previous status was. |
+| 33 | No payment status change history | 🟠 High | PAYMENT.status changes from Pending → Completed, but there is no log of when this happened or who verified it. |
+
+### 1.6 Missing Transactions / Business-Critical Fields
+
+| # | Missing Field | Table | Severity | Detail |
+|---|---|---|---|---|
+| 34 | `order_type` ENUM | JOB_ORDER | 🔴 Critical | No way to distinguish custom_tailoring, alteration, ready_to_wear. All orders are treated identically. |
+| 35 | `is_rush` BOOLEAN + `rush_fee` DECIMAL | JOB_ORDER | 🔴 Critical | Rush orders are a core real-world business pattern. Cannot identify or surcharge rush jobs. |
+| 36 | `deposit_amount`, `deposit_paid_at`, `balance_amount`, `balance_paid_at` | JOB_ORDER | 🔴 Critical | No structural separation of deposit vs balance. The "DP gate" business rule cannot be enforced. |
+| 37 | `layout_approval_required` BOOLEAN + `layout_approved_at` TIMESTAMP | JOB_ORDER | 🟠 High | No mockup/layout approval tracking. Real shops require explicit customer sign-off before cutting. |
+| 38 | `branch_id` FK | JOB_ORDER, APPOINTMENT, CUSTOMER_PROFILE, TAILORING_STAFF_PROFILE | 🔴 Critical | Branch management is in thesis scope but no table has a branch_id. Branch switcher cannot filter data. |
+| 39 | `appointment_type` ENUM | APPOINTMENT | 🔴 Critical | All appointments are treated identically. Cannot distinguish consultation from fitting from pickup. |
+| 40 | `job_order_id` FK (nullable) | APPOINTMENT | 🔴 Critical | Appointments cannot be linked to job orders. Fitting appointments float without context. |
+| 41 | `customer_type` ENUM | CUSTOMER_PROFILE | 🟠 High | Cannot distinguish walk-in, B2B corporate, B2B school, repeat suki. |
+| 42 | `notes` TEXT | CUSTOMER_PROFILE | 🟠 High | The "suki memory" field is missing. |
+| 43 | `specialization` VARCHAR/ENUM | TAILORING_STAFF_PROFILE | 🟡 Medium | Cannot identify which tailor specializes in barong, gowns, uniforms, etc. |
+| 44 | `payment_method` detail (reference_number, collected_by) | PAYMENT | 🟠 High | No GCash reference number field. No record of which staff collected the payment. |
+| 45 | `cancel_reason` / `cancellation_notes` | JOB_ORDER, APPOINTMENT | 🟡 Medium | No way to record why an order or appointment was cancelled. |
+| 46 | `fitting_outcome` ENUM | (new table or field) | 🟠 High | No way to record whether a fitting passed or needs alterations. The rework loop is missing. |
+| 47 | `estimated_pickup` DATE | JOB_ORDER | 🟡 Medium | Thesis mentions "Calculate Estimated Pick-Up Date" but JOB_ORDER only has `due_date`. These are different concepts (estimated vs committed). |
+| 48 | `shop_id` FK | FEEDBACK | 🟡 Medium | Reviews should be directly linkable to shops for public display. |
+| 49 | `landmark` VARCHAR | SHOP | 🟠 High | PH customers navigate by landmarks, not addresses. Every Facebook post in the research data includes landmarks. |
+| 50 | `operating_hours` JSON or child table | SHOP | 🟡 Medium | No field for shop operating hours. Needed for public profile and appointment availability checking. |
+
+---
+
+## PHASE 2 — BUSINESS LOGIC AUDIT
+
+### 2.1 Customer Journey Analysis
+
+**Documented Flow (from thesis BPMN):**
+```
+Customer Search → Select Shop → Book Appointment → Staff Creates Job Order →
+Measurement → Payment → Production → Fitting → Balance Payment → Pickup → Rate
+```
+
+**Issues Found:**
+
+| # | Gap / Shortcut / Impossible Workflow | Severity | Detail |
+|---|---|---|---|
+| 51 | **No DP Gate Enforcement** | 🔴 Critical | The thesis BPMN shows "Process Payment" before "Generate Job Order Profile," but the database schema allows JOB_ORDER.status to advance without any payment record. There is no system-enforced rule preventing production start before deposit is verified. |
+| 52 | **No Layout/Mockup Approval Gate** | 🔴 Critical | The BPMN jumps from "Approve Order" directly to "Allocate Materials and Labor." In reality, sublimation shops require explicit layout approval, and gown shops require sketch/peg approval. This step is entirely absent. |
+| 53 | **No Alteration/Rework Loop** | 🔴 Critical | The BPMN shows "Perform Garment Alterations" after fitting, but there is no mechanism to revert JOB_ORDER.status from "Ready for Fitting" back to "Sewing." Once an order reaches QC, it cannot re-enter production. |
+| 54 | **No Completion Gate (Balance Check)** | 🔴 Critical | The thesis states "No balance, no claim" is standard practice, but the schema allows JOB_ORDER.status to be set to "Completed" (or "Picked Up") without verifying that `balance_paid_at` is populated. |
+| 55 | **No Inquiry/Quotation State** | 🟠 High | The customer journey starts at "Search" and jumps to "Book Appointment." In reality, there is a Messenger inquiry phase where the customer asks "Is this available?" and receives a verbal quotation. This pre-appointment state is missing. |
+| 56 | **No Rush Order Workflow** | 🟠 High | Rush orders need priority queueing, premium fee calculation, and staff notification. None of this exists. |
+| 57 | **Appointment-to-Order Conversion is Manual** | 🟠 High | The thesis says "tailoring staff can create job orders directly from scheduled fittings" but the BPMN shows this as a manual step. There is no "Convert Appointment to Job Order" button or automated linkage. |
+| 58 | **No Customer Self-Service Tracking** | 🔴 Critical | Thesis explicitly states "customers monitor their ongoing garment fulfillment status in real time." But there is no customer portal. Customers receive SMS but cannot log in to see their order status. |
+| 59 | **No Fitting Outcome Recording** | 🟠 High | When a customer attends a fitting, the system has no way to record: "Fitting passed" vs "Needs alterations" vs "Customer no-show." The appointment just becomes "Completed." |
+| 60 | **No Pickup Verification** | 🟠 High | When a customer picks up an order, there is no system step to verify: (a) balance is paid, (b) customer identity, (c) physical handover confirmation. |
+| 61 | **No Re-scheduling Logic** | 🟡 Medium | The appointment BPMN mentions "Request Reschedule" but there is no logic to prevent double-booking or to auto-suggest alternative slots. |
+| 62 | **No Cancellation Logic** | 🟡 Medium | If a customer cancels after paying DP, what happens to the payment? The system has no refund workflow. |
+| 63 | **No Multi-Branch Order Routing** | 🟠 High | In the main-satellite model, an order taken at Branch B may need to be produced at Branch A (where the machinery is). The system has no concept of order routing between branches. |
+| 64 | **No Corporate/B2B Account Handling** | 🟡 Medium | Real shops service schools and corporations with PO-based billing (50% DP, 50% on delivery, 30-day terms). The system treats all customers as individuals. |
+| 65 | **No Appointment Availability Checking** | 🟡 Medium | The BPMN mentions "Check Availability" but the schema has no staff availability or shop capacity table. Cannot prevent overbooking. |
+
+### 2.2 Impossible Workflows Detected
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 66 | Creating an alteration order without measurements | 🔴 Critical | `JOB_ORDER.measurement_id` is NOT NULL. Alteration orders do not require new measurements. The schema makes this impossible. |
+| 67 | Assigning multiple staff to one order | 🔴 Critical | `JOB_ORDER.staff_id` is a single FK. Cannot assign a cutter, sewer, and QC inspector to the same order. |
+| 68 | Tracking which staff updated which production stage | 🔴 Critical | No `job_order_stage_log` table exists. Cannot answer "Who moved this order to Sewing and when?" |
+| 69 | Viewing a customer's measurement history across versions | 🟠 High | MEASUREMENT table overwrites `measurement_data` on update. Previous measurements are lost. |
+| 70 | Filtering appointments by type | 🟠 High | `APPOINTMENT.purpose` is free-text VARCHAR. Cannot filter "show me all first_fitting appointments this week." |
+| 71 | Branch manager seeing only their branch data | 🔴 Critical | No `branch_id` on any table. Branch switcher in the UI does not pass to API calls. A branch manager sees all branches' data. |
+| 72 | Customer rating a shop without a completed order | 🟡 Medium | FEEDBACK requires `order_id`. A customer cannot leave a general shop review. |
+
+---
+
+## PHASE 3 — UI AUDIT (Per Page)
+
+### 3.1 Customer Dashboard
+
+| # | Page / Component | Missing Element | Severity | Detail |
+|---|---|---|---|---|
+| 73 | Customer Orders page | Order Timeline | 🔴 Critical | Customer sees a status label ("Cutting") but no visual timeline showing all stages and progress. |
+| 74 | Customer Orders page | Payment Status Display | 🔴 Critical | No visible "DP Paid: ₱2,500 / Balance Due: ₱1,200" breakdown on the order card. |
+| 75 | Customer Orders page | Estimated Pickup Date | 🟠 High | No display of when the order is expected to be ready. |
+| 76 | Customer Orders page | Fitting Schedule Link | 🟠 High | Cannot see upcoming fitting appointments linked to the order. |
+| 77 | Customer Orders page | Order History (archived) | 🟡 Medium | No way to view past completed orders separately from active ones. |
+| 78 | Customer Measurements page | Version History | 🔴 Critical | Shows only current measurements. No way to see previous measurement sets or when they changed. |
+| 79 | Customer Measurements page | Measurement-to-Order Link | 🟠 High | Cannot see which order triggered each measurement update. |
+| 80 | Customer Appointments page | Appointment Type Indicator | 🟠 High | All appointments look the same. No visual distinction between consultation, measurement, fitting, and pickup. |
+| 81 | Customer Appointments page | Reschedule/Cancel Button | 🟡 Medium | No self-service reschedule or cancel option. |
+| 82 | Customer Dashboard Home | Quick Stats Summary | 🟡 Medium | No "You have X active orders, Y upcoming appointments" summary cards. |
+| 83 | Customer Profile page | Saved/Shops List | 🟡 Medium | Storyboard mentions "Saved Shops" but no UI for bookmarking favorite shops. |
+| 84 | Customer Shop Discovery | Distance/Proximity Display | 🟡 Medium | Map shows pins but no distance from customer's location. |
+| 85 | Customer Shop Discovery | Filter by Specialization | 🟠 High | Storyboard mentions filters but the filter UI for garment types (Barong, Filipiniana, Uniforms) needs to be prominent. |
+| 86 | Customer Shop Profile page | Service Catalog Display | 🟡 Medium | No clear display of services offered with starting prices. |
+| 87 | Customer Shop Profile page | Gallery/Portfolio Section | 🟡 Medium | No showcase of past work (critical for trust-building per research data). |
+| 88 | Customer Shop Profile page | Operating Hours Display | 🟠 High | No visible operating hours on the shop profile. |
+| 89 | Customer Shop Profile page | Landmark/Directions | 🟠 High | No landmark field. PH customers navigate by landmarks. |
+| 90 | Customer Review page | Order Context | 🟡 Medium | When rating, the customer should see what they ordered (garment type, date) for context. |
+
+### 3.2 Shop Owner Dashboard
+
+| # | Page / Component | Missing Element | Severity | Detail |
+|---|---|---|---|---|
+| 91 | Shop Owner Home (Today View) | Actionable "Needs Attention" Section | 🔴 Critical | Current dashboard is a metrics dump. No "3 deposits to verify," "2 overdue orders," "1 QC ready" alerts. |
+| 92 | Shop Owner Home | Today's Schedule | 🔴 Critical | No display of today's appointments on the home screen. |
+| 93 | Shop Owner Home | Quick Financial Summary | 🟠 High | No "DP Collected Today: ₱X," "Balance Due This Week: ₱Y" summary. |
+| 94 | Shop Owner Home | Overdue Order Alerts | 🔴 Critical | No flagging of orders past their due_date that are not yet completed. |
+| 95 | Orders List page | Order Type Filter (Custom/Alteration/RTW) | 🔴 Critical | All orders are in one flat list. No tabs or filters for order type. |
+| 96 | Orders List page | Rush Order Visual Indicator | 🟠 High | No ⚡ icon or visual flag for rush orders. |
+| 97 | Orders List page | Payment Status on Order Card | 🔴 Critical | Order cards do not show "DP Paid / Balance Due" without clicking in. |
+| 98 | Orders List page | Quick "Log Payment" Button | 🟠 High | Must navigate to a separate Payments page to log a deposit. Should be inline on the order card. |
+| 99 | Orders List page | Stage Update Inline Button | 🟠 High | Must open order detail to update production stage. Should be a quick-action button on the card. |
+| 100 | Order Detail page | Production Stage Timeline (visual) | 🔴 Critical | No visual stage tracker showing Pending → Cutting → Sewing → QC → Fitting → Pickup. |
+| 101 | Order Detail page | Payment Timeline | 🔴 Critical | No chronological view of payment events (DP logged, balance collected). |
+| 102 | Order Detail page | Linked Appointments Section | 🟠 High | No display of fitting appointments linked to this order. |
+| 103 | Order Detail page | Staff Assignment Section | 🟠 High | Shows only one assigned staff. No way to assign multiple staff with roles. |
+| 104 | Order Detail page | Measurement Reference Link | 🟠 High | No quick-link to the customer's measurement record used for this order. |
+| 105 | Order Detail page | Fitting Outcome Record | 🟠 High | No field to record "Fitting passed" or "Needs alterations." |
+| 106 | Order Detail page | Customer Notes Display | 🟠 High | No display of the "suki notes" from the customer profile. |
+| 107 | Order Detail page | Rework/Alteration Loop Button | 🔴 Critical | No way to revert an order from "Ready for Pickup" back to "Sewing" if fitting fails. |
+| 108 | Appointments page | Calendar View | 🟠 High | No calendar grid view. Only a list. |
+| 109 | Appointments page | Appointment Type Filter | 🟠 High | Cannot filter by consultation, measurement, fitting, pickup. |
+| 110 | Appointments page | "Convert to Job Order" Button | 🟠 High | No quick action to create a job order from a completed measurement appointment. |
+| 111 | Customer Profile page | Customer Notes Field | 🟠 High | No free-text notes field for institutional memory. |
+| 112 | Customer Profile page | Customer Type Tag | 🟡 Medium | No visual tag for walk-in, B2B, suki, etc. |
+| 113 | Customer Profile page | Order History (per customer) | 🟠 High | No list of all orders this customer has placed. |
+| 114 | Customer Profile page | Measurement History (per customer) | 🟠 High | No versioned measurement history. Only latest measurement. |
+| 115 | Customer Profile page | Balance History | 🟡 Medium | No view of outstanding balances across all orders for this customer. |
+| 116 | Customer Profile page | Appointment History | 🟡 Medium | No chronological list of all appointments this customer has had. |
+| 117 | Staff Management page | Staff Specialization Tags | 🟡 Medium | No tags showing what each tailor specializes in. |
+| 118 | Staff Management page | Staff Workload Indicator | 🟡 Medium | No display of how many orders are currently assigned to each staff member. |
+| 119 | Reports page | DP vs Balance Trend Chart | 🟠 High | No chart showing deposit collection vs balance collection over time. |
+| 120 | Reports page | Order Completion Rate | 🟡 Medium | No metric showing what percentage of orders are completed on time. |
+| 121 | Reports page | Staff Productivity Chart | 🟡 Medium | No per-staff order completion chart. |
+| 122 | Shop Settings page | Services & Pricing Tab | 🟠 High | Services are a separate module. Should be a tab in Settings. |
+| 123 | Shop Settings page | Specializations Tab | 🟠 High | Specializations are a separate page. Should be a tab in Settings. |
+| 124 | Shop Settings page | Landmark Field | 🟠 High | No "Nearest Landmark" input field. |
+| 125 | Shop Settings page | Operating Hours Configuration | 🟠 High | No UI for setting daily operating hours. |
+| 126 | Branch Management page | Branch-Specific Data View | 🔴 Critical | Branch switcher does not filter data. Selecting Branch B still shows Branch A's orders. |
+
+### 3.3 Staff Dashboard
+
+| # | Page / Component | Missing Element | Severity | Detail |
+|---|---|---|---|---|
+| 127 | Staff Home | My Assigned Jobs Queue | 🟠 High | No personalized queue of "jobs assigned to me." |
+| 128 | Staff Home | Quick Stage Update Buttons | 🟠 High | Must navigate into order detail to update stage. Should be one-click from the queue. |
+| 129 | Staff Measurement Entry | Measurement Form with Validation | 🟡 Medium | No described form validation for measurement values (e.g., chest cannot be 999cm). |
+| 130 | Staff Measurement Entry | Previous Measurement Reference | 🟠 High | When taking new measurements, staff cannot see the customer's previous measurements for comparison. |
+
+### 3.4 Admin Dashboard
+
+| # | Page / Component | Missing Element | Severity | Detail |
+|---|---|---|---|---|
+| 131 | Admin Dashboard | Shop Approval Queue (frontend) | 🔴 Critical | Thesis states admin "reviews and approves" shops, but the audit confirms "API only, no frontend portal exists." The admin has no UI to perform their core function. |
+| 132 | Admin Dashboard | Subscription Health Monitoring | 🟡 Medium | No view of expiring subscriptions or churn rate. |
+| 133 | Admin Dashboard | Platform Revenue Analytics | 🟡 Medium | No revenue trending from subscription fees. |
+
+---
+
+## PHASE 4 — UX AUDIT
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 134 | Too many sidebar items at same hierarchy level | 🔴 Critical | Shop owner sidebar has 12+ items at the same level. No visual grouping or hierarchy. Causes cognitive overload. |
+| 135 | No unified global search | 🟠 High | Cannot search "Juan dela Cruz" or "JOB-0047" from any page. Must navigate to the correct module first. |
+| 136 | No quick-action floating buttons | 🟠 High | Common actions (New Order, Log Payment, New Appointment) require navigation. Should be accessible from any screen. |
+| 137 | Settings fragmented across multiple pages | 🟠 High | Shop Settings, Account Settings, Specializations, Services, Branches are all separate nav items. Should be consolidated. |
+| 138 | No contextual breadcrumbs | 🟡 Medium | Cannot see "Dashboard > Orders > JO-0047" navigation path. |
+| 139 | No empty state designs | 🟡 Medium | When a list is empty (no orders, no appointments), the page shows a blank table. Should show helpful empty state with CTA. |
+| 140 | No loading skeletons | 🟡 Medium | No skeleton loaders during data fetching. Blank screens cause perceived slowness. |
+| 141 | No error state designs | 🟡 Medium | No described error handling UI for failed API calls, validation errors, or network issues. |
+| 142 | No success/error toast notifications | 🟠 High | No feedback when actions succeed or fail. User clicks "Save" and sees nothing. |
+| 143 | No bulk actions on list pages | 🟡 Medium | Cannot select multiple orders and perform batch actions (e.g., "Mark all as QC passed"). |
+| 144 | No keyboard shortcuts | 🟢 Nice to Have | No keyboard navigation for power users (e.g., "/" to focus search, "N" for new order). |
+| 145 | No drag-and-drop for production stages | 🟡 Medium | Production stage updates should support drag-and-drop on a Kanban board, not just dropdown selection. |
+| 146 | Mobile responsiveness unclear for owner dashboard | 🟠 High | Thesis says "mobile-responsive design for customers" but shop owner dashboard is desktop-only. Real owners check their phones constantly. |
+| 147 | No dark mode option | 🟢 Nice to Have | Long sessions in a workshop benefit from dark mode. |
+| 148 | No data export functionality | 🟡 Medium | Cannot export orders, customers, or payments to CSV/Excel for external accounting. |
+| 149 | No filter persistence | 🟡 Medium | When navigating away and back, filter selections are lost. |
+| 150 | No pagination strategy described | 🟡 Medium | For large order lists, no described pagination or infinite scroll strategy. |
+| 151 | Branch switcher is non-functional | 🔴 Critical | Selecting a branch in the switcher does not pass the selection to any API call. All data is shown regardless of selection. |
+| 152 | No "Today" contextual awareness | 🟠 High | Dashboard does not highlight what needs to happen today vs what can wait. |
+| 153 | No notification center | 🟠 High | No bell icon or dropdown showing recent system notifications (new bookings, payment confirmations, stage updates). |
+| 154 | No onboarding flow | 🟡 Medium | New shop owners have no guided setup. Must discover all settings manually. |
+| 155 | Form validation is undescribed | 🟠 High | No described validation rules for critical forms (measurement entry, payment logging, appointment booking). |
+
+---
+
+## PHASE 5 — MODAL AUDIT
+
+| # | Modal / Interaction | Missing Element | Severity | Detail |
+|---|---|---|---|---|
+| 156 | New Order modal | Order Type Selector | 🔴 Critical | No selector for custom_tailoring vs alteration vs ready_to_wear. |
+| 157 | New Order modal | Rush Order Checkbox + Fee Field | 🟠 High | No rush designation in the order creation flow. |
+| 158 | New Order modal | Deposit Amount + Payment Method | 🔴 Critical | No deposit collection at order creation. Order is created with zero payment context. |
+| 159 | New Order modal | Estimated Due Date Calculator | 🟡 Medium | No auto-calculation of due date based on order type and rush status. |
+| 160 | New Order modal | Layout Approval Checkbox | 🟠 High | No field to indicate whether layout/mockup approval is required. |
+| 161 | Payment Logging modal | Payment Type (Deposit vs Balance) | 🔴 Critical | No distinction between deposit payment and balance payment. |
+| 162 | Payment Logging modal | GCash Reference Number Field | 🟠 High | No field for payment reference number (critical for GCash verification). |
+| 163 | Payment Logging modal | Collected By (Staff Selector) | 🟠 High | No record of which staff member collected the payment. |
+| 164 | Payment Logging modal | Payment Confirmation/Receipt | 🟡 Medium | No generated receipt or confirmation number after logging payment. |
+| 165 | Appointment Booking modal | Appointment Type Selector | 🔴 Critical | No selector for consultation, measurement, fitting, pickup. |
+| 166 | Appointment Booking modal | Link to Existing Job Order | 🟠 High | No field to link the appointment to an existing job order (for fittings). |
+| 167 | Appointment Booking modal | Conflict Detection Warning | 🟠 High | No warning if the selected timeslot conflicts with another appointment. |
+| 168 | Stage Update modal | Previous Stage Display | 🟡 Medium | When updating stage, no display of current stage for context. |
+| 169 | Stage Update modal | Stage Notes/Comments | 🟠 High | No field for staff to add notes when updating a stage (e.g., "Fabric shortage, delayed 1 day"). |
+| 170 | Stage Update modal | Confirmation Dialog | 🟡 Medium | No "Are you sure you want to advance this order to Sewing?" confirmation. |
+| 171 | Customer Creation modal | Customer Type Selector | 🟡 Medium | No tag for walk-in, B2B, suki. |
+| 172 | Customer Creation modal | Notes Field | 🟠 High | No free-text notes field. |
+| 173 | Cancel Order modal | Cancellation Reason (required) | 🟠 High | No required reason field for order cancellation. |
+| 174 | Cancel Order modal | Refund Handling | 🟠 High | No workflow for handling the deposit refund on cancellation. |
+| 175 | Delete Confirmation modal | Soft Delete vs Hard Delete | 🟠 High | No distinction between archiving and permanent deletion. |
+| 176 | Staff Assignment modal | Multi-Staff Assignment | 🟠 High | Can only assign one staff. No UI for assigning multiple staff with different roles. |
+| 177 | Measurement Entry modal | Validation Against Previous Values | 🟡 Medium | No warning if new measurement differs significantly from previous (e.g., "Chest was 38 last time, now 45 — confirm?"). |
+| 178 | Measurement Entry modal | Garment-Specific Field Templates | 🟡 Medium | All measurements use the same JSON. Should have templates per garment type (barong needs different fields than gown). |
+| 179 | Shop Settings modal | Live Preview | 🟢 Nice to Have | No live preview of how the shop profile will look to customers. |
+| 180 | Branch Creation modal | Geolocation Auto-Fill | 🟡 Medium | No map integration for setting branch coordinates during creation. |
+
+---
+
+## PHASE 6 — ERP AUDIT
+
+### Compared to Real Tailoring/Fashion Business Systems
+
+| # | ERP Capability | SUTURA Status | Severity | Detail |
+|---|---|---|---|---|
+| 181 | Activity Logs (per-record change tracking) | ❌ Missing | 🔴 Critical | No record-level audit trail. Cannot see "who changed this order's status and when." |
+| 182 | Role-Based Permissions (granular) | ⚠️ Partial | 🟠 High | Only has USER.role ENUM. No permission table. Cannot control "staff can update stages but cannot see financials." |
+| 183 | Calendar View | ❌ Missing | 🟠 High | No calendar interface for appointments. Only list view. |
+| 184 | Production Queue (Kanban) | ❌ Missing | 🟠 High | No visual production pipeline. Orders are in a flat list. |
+| 185 | Cashflow Tracking | ❌ Missing | 🟠 High | No view of daily/weekly/monthly cash inflow (DP collected vs balance collected). |
+| 186 | Customer Timeline (360° view) | ❌ Missing | 🟠 High | No unified customer timeline showing all interactions (appointments, orders, payments, notes, measurements) chronologically. |
+| 187 | Notification Center | ⚠️ Partial | 🟠 High | SMS/email sending is described but no in-app notification center or notification log table. |
+| 188 | Digital Receipts | ❌ Missing | 🟡 Medium | No generated receipt after payment. |
+| 189 | Email/SMS Templates | ❌ Missing | 🟡 Medium | No configurable notification templates. Messages are hardcoded. |
+| 190 | Expense Tracking | ❌ Out of Scope | 🟢 Nice to Have | Thesis excludes overhead accounting. Acceptable to defer. |
+| 191 | Analytics Dashboard | ⚠️ Partial | 🟠 High | Dashboard exists but charts are "generic" and lack depth (no DP vs balance trend, no order velocity, no staff productivity per garment type). |
+| 192 | Forecasting | ❌ Out of Scope | 🟢 Nice to Have | Thesis excludes predictive analytics. Acceptable. |
+| 193 | Customer Loyalty / Retention | ❌ Missing | 🟡 Medium | No "suki" tracking (repeat customer identification, preferred tailor, family accounts). |
+| 194 | Return Management (alterations/rework) | ❌ Missing | 🔴 Critical | No workflow for post-pickup alterations ("Sir, maliit yung sukat"). Real shops allow 1-time free adjustment within 7 days. |
+| 195 | Multi-Branch Data Isolation | ❌ Broken | 🔴 Critical | Branch switcher does not filter data. Branch managers see all branches' data. |
+| 196 | Supplier Management | ❌ Out of Scope | 🟢 Nice to Have | Thesis explicitly excludes. Acceptable. |
+| 197 | Inventory Management | ❌ Out of Scope | 🟢 Nice to Have | Thesis explicitly excludes. Acceptable. |
+| 198 | Performance Dashboard (KPI) | ⚠️ Partial | 🟡 Medium | Has basic metrics (Total Earnings, Total Orders) but lacks KPIs like "orders completed on time," "average production time per garment type." |
+| 199 | Branch Support | ⚠️ Broken | 🔴 Critical | Branch management is in scope but non-functional (no branch_id on tables, switcher doesn't filter). |
+| 200 | Subscription Cloud Backup | ❌ Missing | 🟢 Nice to Have | No described backup strategy beyond "automated database backups every 24 hours." |
+| 201 | Job Costing | ❌ Missing | 🟡 Medium | No tracking of cost per order (fabric cost + labor cost + overhead = profit per order). |
+| 202 | Production Bottleneck Alerts | ❌ Missing | 🟡 Medium | No flagging of orders stuck at a particular stage for too long. |
+
+---
+
+## PHASE 7 — BUSINESS OWNER AUDIT
+
+### "Owner Opens System — Can They Immediately Know..."
+
+| # | Question | Answer | Severity | Detail |
+|---|---|---|---|---|
+| 203 | "What are today's sales?" | ❌ NO | 🔴 Critical | No daily sales summary on the dashboard. "Total Earnings" is cumulative, not daily. |
+| 204 | "Which fittings are pending?" | ⚠️ Partially | 🟡 Medium | Appointments are listed but not filtered to "today's fittings." |
+| 205 | "Which orders are late?" | ❌ NO | 🔴 Critical | No overdue order detection or alert. |
+| 206 | "Is any stock low?" | N/A | 🟢 N/A | Out of scope (no inventory). |
+| 207 | "What are my workers doing?" | ❌ NO | 🟠 High | No staff workload view. Cannot see "Tailor A has 5 orders, Tailor B has 2." |
+| 208 | "What is my profit?" | ❌ NO | 🟡 Medium | Revenue is tracked but not profit (no cost tracking per order). |
+| 209 | "What are my expenses?" | ❌ NO | 🟢 N/A | Out of scope. |
+| 210 | "What appointments are today?" | ❌ NO | 🔴 Critical | No "Today's Schedule" widget on the dashboard. |
+| 211 | "What's in production right now?" | ⚠️ Partially | 🟠 High | Orders list exists but no production pipeline view (how many at cutting, how many at sewing, etc.). |
+| 212 | "What's my cashflow?" | ❌ NO | 🟠 High | No cash inflow/outflow view. No "DP collected this week" vs "Balance outstanding" summary. |
+| 213 | "Which deposits need verification?" | ❌ NO | 🔴 Critical | No "Pending Deposit Verification" queue. |
+| 214 | "Which orders are ready for pickup?" | ⚠️ Partially | 🟡 Medium | Orders at "Ready for Pickup" status exist but no dedicated view or alert for unclaimed orders. |
+| 215 | "Which customers have outstanding balances?" | ❌ NO | 🟠 High | No "Outstanding Balances" report. |
+| 216 | "Which orders are rush?" | ❌ NO | 🔴 Critical | No rush flag exists. |
+| 217 | "How productive is each staff member?" | ⚠️ Partially | 🟡 Medium | Thesis mentions "individual staff productivity" in reports but no implementation detail. |
+
+---
+
+## PHASE 8 — DEFENSE AUDIT
+
+### Panel Questions and Defensibility Assessment
+
+| # | Anticipated Panel Question | Can Defend? | Severity | Action Needed |
+|---|---|---|---|---|
+| 218 | "The thesis says customers monitor real-time status. Where is the customer portal?" | ❌ NO | 🔴 Critical | Build a minimal `/my-orders` customer portal. |
+| 219 | "The thesis says the admin reviews and approves shops. Where is the admin frontend?" | ❌ NO | 🔴 Critical | Build a minimal `/admin` portal with shop approval queue. |
+| 220 | "How does the branch switcher work?" | ❌ NO | 🔴 Critical | Fix: add `branch_id` to all operational tables and pass `selectedBranch` to all API calls. |
+| 221 | "How is the 50% downpayment enforced before production starts?" | ❌ NO | 🔴 Critical | Add deposit gate logic: JOB_ORDER cannot advance past "Pending Deposit" until a deposit payment is logged. |
+| 222 | "What happens when a fitting fails and the garment needs alteration?" | ❌ NO | 🔴 Critical | Add rework loop: allow status to revert from "Ready for Fitting" back to "Sewing" with a reason. |
+| 223 | "How are measurements versioned? The thesis says version-controlled." | ❌ NO | 🔴 Critical | Add `measurement_version` table or versioning fields (`version_number`, `previous_data`, `is_current`). |
+| 224 | "Can a customer have measurements taken at different shops? How is data isolation maintained?" | ⚠️ Unclear | 🟠 High | MEASUREMENT has both `customer_id` and `shop_id`. Clarify: measurements are per-shop or portable? |
+| 225 | "Why is CatalogOrder a separate entity from JobOrder?" | ❌ NO | 🟠 High | Eliminate CatalogOrder. Fold into JobOrder with `order_type` field. |
+| 226 | "How does the system handle rush orders?" | ❌ NO | 🟠 High | Add `is_rush` and `rush_fee` to JOB_ORDER. |
+| 227 | "How does the system notify customers? Is there a notification log?" | ❌ NO | 🟠 High | Add `notification_log` table and in-app notification center. |
+| 228 | "What happens if a customer cancels after paying the deposit?" | ❌ NO | 🟠 High | Add cancellation workflow with reason tracking and deposit forfeiture logic. |
+| 229 | "Can multiple staff work on one order?" | ❌ NO | 🟠 High | Add `job_order_staff` junction table. |
+| 230 | "How are appointment types differentiated?" | ❌ NO | 🔴 Critical | Add `appointment_type` ENUM to APPOINTMENT. |
+| 231 | "Where does the shop owner see what needs to happen today?" | ❌ NO | 🔴 Critical | Redesign dashboard home as "Today View" with actionable items. |
+| 232 | "How is the audit trail maintained for order status changes?" | ❌ NO | 🔴 Critical | Add `job_order_stage_log` table. |
+| 233 | "Is the payment system integrated with a payment gateway?" | ✅ YES | 🟢 N/A | Thesis explicitly excludes gateway integration. Manual logging is defensible. |
+| 234 | "Does the system handle inventory?" | ✅ YES | 🟢 N/A | Thesis explicitly excludes inventory. Defensible. |
+| 235 | "How does the system handle corporate/B2B accounts with PO billing?" | ❌ NO | 🟡 Medium | Add `customer_type` and corporate billing fields. |
+| 236 | "Can the system generate financial reports for tax filing?" | ❌ NO | 🟢 N/A | Thesis explicitly excludes tax filing. Defensible. |
+
+---
+
+---
+
+# FINAL OUTPUTS
+
+## PHASE 1 — CRITICAL FIXES (Must Do Before Defense)
+
+### Database Fixes
+
+🔴 **1.** Add `branch` table with fields: `branch_id`, `shop_id`, `branch_name`, `address`, `latitude`, `longitude`, `landmark`, `contact_number`, `is_main_branch`, `created_at`, `updated_at`, `deleted_at`.
+
+🔴 **2.** Add `branch_id` FK (nullable) to: `JOB_ORDER`, `APPOINTMENT`, `CUSTOMER_PROFILE`, `TAILORING_STAFF_PROFILE`, `MEASUREMENT`, `SERVICE`.
+
+🔴 **3.** Add `order_type` ENUM('custom_tailoring', 'alteration', 'ready_to_wear') to `JOB_ORDER`.
+
+🔴 **4.** Add `is_rush` BOOLEAN DEFAULT FALSE and `rush_fee` DECIMAL(10,2) DEFAULT 0.00 to `JOB_ORDER`.
+
+🔴 **5.** Add `deposit_amount` DECIMAL, `deposit_paid_at` TIMESTAMP NULL, `balance_amount` DECIMAL, `balance_paid_at` TIMESTAMP NULL to `JOB_ORDER`.
+
+🔴 **6.** Make `JOB_ORDER.measurement_id` NULLABLE (alterations and RTW don't need measurements).
+
+🔴 **7.** Add `layout_approval_required` BOOLEAN DEFAULT FALSE and `layout_approved_at` TIMESTAMP NULL to `JOB_ORDER`.
+
+🔴 **8.** Replace `JOB_ORDER.staff_id` single FK with a new `job_order_staff` junction table: `id`, `job_order_id`, `staff_id`, `role` ENUM('cutter', 'sewer', 'embroiderer', 'qc_inspector', 'fitter'), `assigned_at`.
+
+🔴 **9.** Create `job_order_stage_log` table: `log_id`, `job_order_id`, `previous_stage`, `new_stage`, `changed_by` (FK to USER), `notes` TEXT NULL, `changed_at` TIMESTAMP.
+
+🔴 **10.** Add `appointment_type` ENUM('consultation', 'measurement', 'first_fitting', 'final_fitting', 'pickup') to `APPOINTMENT`.
+
+🔴 **11.** Add `job_order_id` FK (nullable) to `APPOINTMENT`.
+
+🔴 **12.** Add `version_number` INT DEFAULT 1, `is_current` BOOLEAN DEFAULT TRUE, `previous_measurement_id` FK (nullable, self-referencing) to `MEASUREMENT`. On update, create a new record with incremented version instead of overwriting.
+
+🔴 **13.** Add `job_order_id` FK (nullable) to `MEASUREMENT` to link measurements to the orders that triggered them.
+
+🔴 **14.** Split `PAYMENT` into `order_payment` and `subscription_payment` tables. Or add `payment_category` ENUM('deposit', 'balance', 'subscription_fee', 'rush_fee') and `reference_number` VARCHAR, `collected_by` FK to `order_payment`.
+
+🔴 **15.** Create `notification_log` table: `notification_id`, `recipient_user_id`, `channel` ENUM('sms', 'email', 'in_app'), `subject`, `body`, `related_entity_type`, `related_entity_id`, `status` ENUM('queued', 'sent', 'failed', 'delivered'), `sent_at`, `created_at`.
+
+🔴 **16.** Add `notes` TEXT to `CUSTOMER_PROFILE`.
+
+🔴 **17.** Add `customer_type` ENUM('walk_in', 'b2b_corporate', 'b2b_school', 'repeat_suki') to `CUSTOMER_PROFILE`.
+
+🔴 **18.** Add `specialization` VARCHAR or create `staff_specialization` junction table linking staff to garment types.
+
+🔴 **19.** Add `soft_delete` columns (`deleted_at` TIMESTAMP NULL) to: `CUSTOMER_PROFILE`, `JOB_ORDER`, `APPOINTMENT`, `MEASUREMENT`, `PAYMENT`, `SERVICE`, `TAILORING_STAFF_PROFILE`.
+
+🔴 **20.** Add `updated_at` TIMESTAMP to all tables that lack it.
+
+🔴 **21.** Add `created_by` and `updated_by` FK (to USER) to business-critical tables.
+
+🔴 **22.** Add `landmark` VARCHAR to `SHOP` (or `BRANCH`).
+
+🔴 **23.** Add `operating_hours` JSON (or create `shop_operating_hours` child table with day_of_week, open_time, close_time, is_closed) to `SHOP`.
+
+🔴 **24.** Add `cancel_reason` TEXT and `cancelled_at` TIMESTAMP to `JOB_ORDER` and `APPOINTMENT`.
+
+🔴 **25.** Add `fitting_outcome` ENUM('pending', 'approved', 'needs_alteration', 'no_show') and `fitting_notes` TEXT to `APPOINTMENT` (or create `fitting_record` table).
+
+### Business Logic Fixes
+
+🔴 **26.** Implement **DP Gate**: `JOB_ORDER.status` cannot advance from 'pending_deposit' to any production stage until `deposit_paid_at` is populated. Enforce at the API/service layer.
+
+🔴 **27.** Implement **Completion Gate**: `JOB_ORDER.status` cannot be set to 'completed' until `balance_paid_at` is populated.
+
+🔴 **28.** Implement **Rework Loop**: Allow status to revert from 'for_fitting' or 'for_pickup' back to 'in_sewing' with a mandatory reason and stage log entry.
+
+🔴 **29.** Implement **Branch Data Isolation**: All API endpoints for shop owner and staff must accept `branch_id` parameter and filter data accordingly. Branch managers are locked to their branch.
+
+🔴 **30.** Implement **Appointment-to-Order Linkage**: When creating a fitting appointment, require a `job_order_id` if appointment_type is 'first_fitting' or 'final_fitting'.
+
+### UI/UX Critical Fixes
+
+🔴 **31.** Build **Admin Frontend Portal** (`/admin`): Minimal 4-tab interface — (1) Shop Registration Queue with approve/reject buttons, (2) Subscription Plans CRUD, (3) Active Shops directory, (4) Platform Analytics overview.
+
+🔴 **32.** Build **Customer Portal** (`/my-orders`): (1) My Orders list with real-time status, (2) My Appointments, (3) My Measurements (versioned), (4) Rate & Review for completed orders.
+
+🔴 **33.** Redesign **Shop Owner Dashboard Home** as "Today View" with: (a) Needs Attention section (pending deposits, overdue orders, QC ready), (b) Today's Schedule, (c) Quick Financial Summary.
+
+🔴 **34.** Merge **Job Orders + Payments Queue + Ready-to-Wear** into a single **Orders** module with filter tabs.
+
+🔴 **35.** Add **Production Stage Timeline** visual component on the Order Detail page showing all stages with timestamps and staff who updated each.
+
+🔴 **36.** Add **Payment Timeline** on the Order Detail page showing all payment events chronologically.
+
+🔴 **37.** Fix **Branch Switcher** to pass `selectedBranch` to all API calls and filter all displayed data.
+
+---
+
+## PHASE 2 — PROFESSIONAL FEATURES (Strongly Recommended)
+
+### Business Logic Enhancements
+
+🟠 **38.** Implement **Appointment Type System**: Different appointment types trigger different UI flows. Measurement appointment → prompt to create job order. Fitting appointment → require linked job order. Pickup appointment → require order at 'for_pickup' status.
+
+🟠 **39.** Implement **Rush Order Workflow**: Rush orders get ⚡ visual indicator, sorted to top of lists, and trigger staff notifications. Rush fee auto-calculated (configurable percentage).
+
+🟠 **40.** Implement **Layout Approval Gate**: When `layout_approval_required` is true, order cannot advance to 'cutting' until `layout_approved_at` is populated. Staff can log approval with method (verbal, screenshot, signed form).
+
+🟠 **41.** Implement **Inquiry/Quotation State**: Before an appointment is booked, allow staff to log an inquiry with estimated quotation (garment type, estimated price range, estimated timeline). Convert inquiry to appointment to job order.
+
+🟠 **42.** Implement **Customer Notes System**: Free-text notes on customer profile with timestamp and author. Visible on order detail page.
+
+🟠 **43.** Implement **Multi-Staff Assignment**: When creating or editing an order, allow assigning multiple staff with roles (cutter, sewer, embroiderer, QC).
+
+🟠 **44.** Implement **Fitting Outcome Recording**: After a fitting appointment, staff records outcome (approved, needs alteration, no-show). If "needs alteration," order reverts to production with notes.
+
+🟠 **45.** Implement **Pickup Verification Flow**: Before marking an order as completed, verify (a) balance is paid, (b) customer identity confirmed, (c) staff confirms handover.
+
+🟠 **46.** Implement **Cancellation Workflow**: When cancelling an order, require a reason. If deposit was paid, log deposit forfeiture or refund decision.
+
+🟠 **47.** Implement **Stage Notes**: Each stage update can include notes ("Fabric shortage, delayed 1 day," "Customer requested design change").
+
+### UI/UX Enhancements
+
+🟠 **48.** Implement **Unified Global Search**: Search bar in the top bar that searches across customers, orders, and appointments simultaneously.
+
+🟠 **49.** Implement **Quick-Action Buttons** on order cards: "Log Payment" (when pending deposit), "Advance Stage" (when in production), "Schedule Fitting" (when at QC).
+
+🟠 **50.** Implement **Calendar View** for appointments with day/week/month views and color-coded appointment types.
+
+🟠 **51.** Implement **Kanban Production Board**: Drag-and-drop cards across columns (Pending → Cutting → Sewing → QC → Fitting → Pickup → Completed).
+
+🟠 **52.** Implement **Customer 360° Timeline**: On customer profile, show a unified chronological timeline of all events (appointments, orders, payments, measurements, notes).
+
+🟠 **53.** Implement **Notification Center**: Bell icon in top bar with dropdown showing recent notifications (new bookings, payment confirmations, stage updates, overdue alerts).
+
+🟠 **54.** Implement **Toast Notifications**: Success/error toasts for all user actions (save, update, delete, payment logged).
+
+🟠 **55.** Implement **Empty State Designs**: Helpful messages with CTAs when lists are empty (e.g., "No orders yet. Create your first order →").
+
+🟠 **56.** Implement **Loading Skeletons**: Show skeleton loaders during data fetching instead of blank screens.
+
+🟠 **57.** Implement **Mobile-Responsive Owner Dashboard**: At minimum, the Today View and Orders list should be usable on mobile.
+
+🟠 **58.** Consolidate **Sidebar Navigation**: Primary (Today, Orders, Schedule, Customers) — Secondary (Catalog & Services, Team, Reports) — Settings (Shop Settings, Branches, Billing, Help).
+
+🟠 **59.** Move **Specializations** into Shop Settings → Identity tab.
+
+🟠 **60.** Move **Services** into Shop Settings → Services & Pricing tab.
+
+🟠 **61.** Demote **Support Tickets** to a footer "Help" link.
+
+🟠 **62.** Demote **Reviews** to a tab on the public shop profile or inside Customer module.
+
+🟠 **63.** Implement **Order Card Redesign**: Each card shows — customer name, garment type, order type badge, rush ⚡ indicator, current stage, due date, payment status (DP/Balance), quick-action buttons.
+
+🟠 **64.** Implement **Data Export**: Allow exporting orders, customers, and payments to CSV.
+
+🟠 **65.** Implement **Payment Reference Number Field**: For GCash/bank transfer payments, require a reference number.
+
+🟠 **66.** Implement **Staff Workload Indicator**: On Staff Management page, show how many active orders are assigned to each staff member.
+
+🟠 **67.** Implement **Overdue Order Detection**: Orders past `due_date` with status not 'completed' are flagged with red indicator and surfaced on the Today View.
+
+### Reporting Enhancements
+
+🟠 **68.** Add **DP vs Balance Trend Chart**: Monthly view of deposits collected vs balances collected.
+
+🟠 **69.** Add **Outstanding Balances Report**: List of all customers with unpaid balances, grouped by age (0-30 days, 31-60 days, 60+ days).
+
+🟠 **70.** Add **Order Completion Rate Metric**: Percentage of orders completed on or before due_date.
+
+🟠 **71.** Add **Staff Productivity Report**: Orders completed per staff, average production time per staff, garments by type per staff.
+
+🟠 **72.** Add **Revenue by Garment Type**: Bar chart showing revenue broken down by garment type (Barong, Gown, Uniform, etc.).
+
+🟠 **73.** Add **Daily Sales Summary**: Today's DP collected, balance collected, total revenue, number of orders.
+
+### Security & Audit Enhancements
+
+🟠 **74.** Implement **Granular Role Permissions**: Create `permission` and `role_permission` tables. Define permissions like `order.view.all`, `order.view.assigned`, `payment.log`, `customer.view`, `reports.view.financial`, etc.
+
+🟠 **75.** Implement **Audit Trail Enhancement**: Expand AUDIT_LOG to include `entity_type`, `entity_id`, `old_values` JSON, `new_values` JSON.
+
+🟠 **76.** Implement **Session Management**: Track active sessions, allow forced logout, session timeout after inactivity.
+
+🟠 **77.** Implement **API Rate Limiting**: Protect endpoints from abuse.
+
+🟠 **78.** Implement **Input Validation on All Forms**: Server-side and client-side validation with clear error messages.
+
+🟠 **79.** Implement **GCash Screenshot Verification Workflow**: When staff logs a GCash payment, require the reference number and mark as "verified" or "pending verification."
+
+---
+
+## PHASE 3 — ADVANCED ERP FEATURES (Quality Improvement)
+
+### Analytics & Intelligence
+
+🟡 **80.** Add **Order Velocity Tracking**: Average days from order creation to completion, broken down by garment type.
+
+🟡 **81.** Add **Production Bottleneck Detection**: Flag orders that have been at a particular stage longer than the average for that stage.
+
+🟡 **82.** Add **Customer Retention Metrics**: New vs repeat customers per month, average orders per customer.
+
+🟡 **83.** Add **Seasonal Demand Chart**: Orders by month, color-coded by garment type to show seasonal patterns (graduation season, wedding season, etc.).
+
+🟡 **84.** Add **Revenue Forecasting (Basic)**: Linear projection based on historical monthly revenue data (not AI, just trend line).
+
+🟡 **85.** Add **Appointment No-Show Rate**: Track and display percentage of appointments where the customer did not appear.
+
+🟡 **86.** Add **Capacity Utilization Metric**: Percentage of available appointment slots that are booked.
+
+### Customer Experience
+
+🟡 **87.** Add **Customer Self-Service Reschedule**: Allow customers to request a reschedule from the portal (requires shop approval).
+
+🟡 **88.** Add **Appointment Reminders**: Automated SMS/email 24 hours before appointment.
+
+🟡 **89.** Add **Order Status Update Notifications**: Automated SMS/email when order advances to a new stage.
+
+🟡 **90.** Add **Pickup Ready Notification**: Automated SMS/email when order reaches 'for_pickup' status.
+
+🟡 **91.** Add **Balance Due Reminder**: Automated SMS/email 3 days before due_date if balance is unpaid.
+
+🟡 **92.** Add **Post-Pickup Satisfaction Check**: Automated follow-up SMS/email 2 days after pickup asking for a rating.
+
+🟡 **93.** Add **Customer Measurement Templates**: Different measurement forms for different garment types (barong needs chest, waist, sleeve length; gown needs bust, waist, hips, shoulder, etc.).
+
+🟡 **94.** Add **Measurement Change Alert**: When new measurements differ significantly from previous, prompt staff to confirm.
+
+🟡 **95.** Add **Saved Shops Feature**: Customers can bookmark favorite shops in their portal.
+
+🟡 **96.** Add **Shop Gallery/Portfolio**: Display past work photos on the public shop profile.
+
+🟡 **97.** Add **Shop Operating Hours Display**: On public profile, show weekly hours with "Open Now" / "Closed" indicator.
+
+🟡 **98.** Add **Distance Display**: On map view, show distance from customer's location to each shop.
+
+🟡 **99.** Add **Filter by Operating Hours**: "Open now" filter on shop discovery.
+
+🟡 **100.** Add **Customer Tags for Segmentation**: Tags like "VIP," "Corporate," "Frequent Rusher" for internal segmentation.
+
+### Production Management
+
+🟡 **101.** Add **Estimated vs Actual Production Time Tracking**: Compare estimated completion date with actual completion date.
+
+🟡 **102.** Add **Garment-Specific Production Stages**: Custom tailoring has full stages (Cut → Sew → Embroider → QC). Alteration has simplified stages (Alter → QC). RTW has minimal (Prepare → QC).
+
+🟡 **103.** Add **Production Capacity Calendar**: Show how many orders are due each day to prevent overbooking.
+
+🟡 **104.** Add **Staff Availability Calendar**: Track staff working days, off days, and leave.
+
+🟡 **105.** Add **Quality Check Checklist**: Structured QC checklist per garment type (e.g., "Buttons secured? Hem even? Measurements match?").
+
+🟡 **106.** Add **Post-Pickup Alteration Workflow**: Allow customers to request adjustments within 7 days of pickup. Creates a linked alteration job order.
+
+🟡 **107.** Add **Order Dependencies**: For event packages (wedding entourage), link multiple orders to a parent "event" and track overall completion.
+
+🟡 **108.** Add **Fabric/Material Description Field**: On job order, allow free-text description of fabric/material requirements (since inventory is out of scope).
+
+### Financial Management
+
+🟡 **109.** Add **Digital Receipt Generation**: Auto-generate a printable/emailable receipt after each payment.
+
+🟡 **110.** Add **Payment Method Analytics**: Breakdown of payments by method (Cash, GCash, Bank Transfer).
+
+🟡 **111.** Add **Daily Cash Reconciliation**: End-of-day summary of all payments collected, grouped by method.
+
+🟡 **112.** Add **Outstanding Balance Aging Report**: 0-30, 31-60, 60+ days overdue.
+
+🟡 **113.** Add **Refund Tracking**: Log all refunds with reason, amount, and approval.
+
+🟡 **114.** Add **Discount/Promo Code System**: Allow shops to create discount codes for promotions.
+
+🟡 **115.** Add **Tiered Pricing Display**: "Starting from ₱X" on public catalog, with note that final price depends on fabric/complexity.
+
+### Communication
+
+🟡 **116.** Add **Email Notification Templates**: Configurable templates for each notification type.
+
+🟡 **117.** Add **SMS Notification Templates**: Configurable SMS templates with character count display.
+
+🟡 **118.** Add **In-App Messaging**: Customer can send messages to shop staff from the portal.
+
+🟡 **119.** Add **Automated Appointment Confirmation**: Customer must confirm/cancel appointment via SMS reply or portal button within 24 hours.
+
+🟡 **120.** Add **Bulk SMS to Customers**: Shop owner can send bulk SMS to all customers with pending pickups or overdue balances.
+
+### System Features
+
+🟡 **121.** Add **Data Export to CSV/Excel**: For orders, customers, payments, appointments.
+
+🟡 **122.** Add **Filter Persistence**: Remember filter selections when navigating away and back.
+
+🟡 **123.** Add **Pagination on All List Views**: With configurable items-per-page.
+
+🟡 **124.** Add **Advanced Search Filters**: On orders (by date range, by status, by staff, by garment type, by payment status).
+
+🟡 **125.** Add **Dark Mode Toggle**: For long workshop sessions.
+
+🟡 **126.** Add **Accessibility Features**: ARIA labels, keyboard navigation, color contrast compliance.
+
+🟡 **127.** Add **Activity Feed**: Global feed showing recent system activity (new orders, stage updates, payments, appointments) visible to shop owner.
+
+🟡 **128.** Add **Dashboard Customization**: Allow shop owner to pin/unpin widgets on the dashboard.
+
+🟡 **129.** Add **Multi-Language Support (English/Filipino)**: Toggle between English and Filipino for staff who prefer local language.
+
+🟡 **130.** Add **Onboarding Wizard**: Guided setup for new shop owners (profile, services, specializations, staff, branch).
+
+🟡 **131.** Add **Help Tooltips**: Contextual help icons on complex fields and actions.
+
+🟡 **132.** Add **Confirmation Dialogs** on all destructive actions (delete, cancel, revert stage).
+
+🟡 **133.** Add **Undo for Soft Deletes**: "Undo" button appears briefly after archiving a record.
+
+🟡 **134.** Add **Bulk Actions**: Select multiple orders → batch update status, batch assign staff, batch export.
+
+🟡 **135.** Add **Version History for Critical Records**: Job orders and measurements show a version history with diff view.
+
+🟡 **136.** Add **Print-Friendly Views**: For order details, payment receipts, appointment schedules, measurement cards.
+
+🟡 **137.** Add **Shop Profile Completeness Indicator**: "Your profile is 80% complete. Add operating hours to reach 100%."
+
+🟡 **138.** Add **Subscription Tier Feature Gating**: Basic tier = 1 branch, 5 staff. Pro = 3 branches, 15 staff. Premium = unlimited.
+
+🟡 **139.** Add **Subscription Expiry Warning**: Notify shop owner 7 days before subscription expires.
+
+🟡 **140.** Add **Subscription Renewal Flow**: In-app renewal with manual payment logging.
+
+🟡 **141.** Add **Platform Health Dashboard (Admin)**: System uptime, active users, error rates, API response times.
+
+🟡 **142.** Add **Shop Verification Badge System**: Verified shops get a checkmark on public profile. Verification status tracked in SHOP table.
+
+🟡 **143.** Add **Reported Review System**: Customers can report inappropriate reviews. Admin can moderate.
+
+🟡 **144.** Add **Shop Comparison Tool**: Customers can compare 2-3 shops side by side (services, prices, ratings, distance).
+
+🟡 **145.** Add **Favorite/Bookmark from Search**: Customers can save shops from the search results page.
+
+---
+
+## PHASE 4 — POLISH (Future Enhancement)
+
+### Animations & Microinteractions
+
+🟢 **146.** Add **Page Transition Animations**: Smooth fade/slide transitions between pages.
+
+🟢 **147.** Add **Stage Update Animation**: When a stage is updated, the stage tracker animates to the new position.
+
+🟢 **148.** Add **Payment Success Animation**: celebratory micro-interaction when a payment is logged.
+
+🟢 **149.** Add **Button Hover/Press States**: Tactile feedback on all interactive elements.
+
+🟢 **150.** Add **Drag-and-Drop Visual Feedback**: Ghost preview and drop zone highlighting on Kanban board.
+
+🟢 **151.** Add **Notification Badge Animation**: Pulse animation on the bell icon when new notifications arrive.
+
+🟢 **152.** Add **Loading State Animations**: Branded spinner or progress bar during data fetching.
+
+🟢 **153.** Add **Success Checkmark Animation**: Animated checkmark on successful form submission.
+
+🟢 **154.** Add **Stagger Animation on List Items**: List items appear with a slight stagger for visual polish.
+
+### UX Polish
+
+🟢 **155.** Add **Keyboard Shortcuts**: "/" to focus search, "N" for new order, "Esc" to close modals, "Cmd+K" for command palette.
+
+🟢 **156.** Add **Command Palette**: Quick navigation and actions via keyboard (Cmd+K).
+
+🟢 **157.** Add **Recent Items Quick Access**: "Recently viewed orders/customers" section on the dashboard.
+
+🟢 **158.** Add **Breadcrumbs on All Nested Pages**: "Dashboard > Orders > JO-0047 > Edit".
+
+🟢 **159.** Add **Form Auto-Save**: Draft saving for long forms (new order, measurement entry).
+
+🟢 **160.** Add **Smart Defaults**: Pre-fill fields based on context (e.g., default appointment duration based on type).
+
+🟢 **161.** Add **Drag-to-Resize Columns** on list views.
+
+🟢 **162.** Add **Sticky Table Headers** on scroll.
+
+🟢 **163.** Add **Inline Editing** on detail pages (click a field to edit without opening a modal).
+
+🟢 **164.** Add **Bulk Select with Shift+Click** on list views.
+
+🟢 **165.** Add **Right-Click Context Menus** on order cards (quick actions without opening detail).
+
+🟢 **166.** Add **Tabbed Interface** on order detail page (Overview, Payments, Appointments, Measurements, Notes, History).
+
+🟢 **167.** Add **Collapsible Sections** on detail pages for cleaner overview.
+
+🟢 **168.** Add **Progressive Disclosure**: Show essential info first, with "Show more" for details.
+
+🟢 **169.** Add **Animated Number Counters** on dashboard KPI cards.
+
+🟢 **170.** Add **Skeleton Screen Matching**: Skeleton loaders that match the exact layout of the incoming content.
+
+### Design System
+
+🟢 **171.** Add **Comprehensive Design System**: Document all colors, typography, spacing, components.
+
+🟢 **172.** Add **Consistent Icon Set**: Use a single icon library (Lucide, Heroicons, or Phosphor) throughout.
+
+🟢 **173.** Add **Component Storybook**: Document all reusable components with examples.
+
+🟢 **174.** Add **Responsive Breakpoints**: Mobile (320-768px), Tablet (768-1024px), Desktop (1024px+).
+
+🟢 **175.** Add **Touch-Friendly UI Elements**: Minimum 44px tap targets for mobile.
+
+🟢 **176.** Add **Focus Visible States**: Clear focus rings for keyboard navigation.
+
+🟢 **177.** Add **Color-Blind Safe Palette**: Ensure status colors are distinguishable for color-blind users.
+
+🟢 **178.** Add **Print Stylesheet**: Clean print layout for receipts, reports, and measurement cards.
+
+🟢 **179.** Add **Favicon and PWA Manifest**: Installable as a web app on mobile devices.
+
+### Performance
+
+🟢 **180.** Add **Code Splitting**: Lazy-load route components to reduce initial bundle size.
+
+🟢 **181.** Add **Image Optimization**: Auto-resize and compress uploaded shop/gallery images.
+
+🟢 **182.** Add **Database Query Optimization**: Add indexes on frequently queried columns (customer_id, shop_id, status, due_date on JOB_ORDER).
+
+🟢 **183.** Add **API Response Caching**: Cache shop profiles and catalog data that change infrequently.
+
+🟢 **184.** Add **Debounced Search**: Delay search API calls until user stops typing (300ms).
+
+🟢 **185.** Add **Optimistic UI Updates**: Update UI immediately on action, revert if API fails.
+
+🟢 **186.** Add **WebSocket Real-Time Updates**: Live update of order status and notifications without page refresh.
+
+🟢 **187.** Add **Pagination Cursor**: Use cursor-based pagination for large datasets instead of offset.
+
+---
+
+## PHASE 5 — FUTURE VERSION (Post-Thesis)
+
+### AI & Automation
+
+🟢 **188.** Add **AI-Powered Measurement OCR**: Scan physical measurement cards and auto-extract values.
+
+🟢 **189.** Add **Barcode/QR Code Generation**: Print QR codes on physical job order tickets for workshop tracking.
+
+🟢 **190.** Add **Smart Scheduling AI**: Auto-suggest optimal appointment slots based on staff availability and historical no-show rates.
+
+🟢 **191.** Add **Demand Forecasting AI**: Predict peak seasons and suggest capacity planning.
+
+🟢 **192.** Add **Automated Quality Scoring**: AI-assisted QC using garment photos.
+
+### Customer Portal Expansion
+
+🟢 **193.** Add **Customer Self-Service Measurement Upload**: Customers can submit their own measurements with photo guides.
+
+🟢 **194.** Add **Virtual Fitting Consultation**: Video call integration for remote consultations.
+
+🟢 **195.** Add **Customer Design Upload**: Customers can upload reference photos for custom designs.
+
+🟢 **196.** Add **Order Modification Requests**: Customers can request changes before production starts.
+
+🟢 **197.** Add **Customer Communication History**: Full message history between customer and shop.
+
+🟢 **198.** Add **Family Account Linking**: Multiple family members under one account for shared measurements.
+
+### Mobile App
+
+🟢 **199.** Add **Native Mobile App (React Native)**: Full-featured mobile app for customers and staff.
+
+🟢 **200.** Add **Push Notifications**: Native push notifications for order updates.
+
+🟢 **201.** Add **Offline Mode**: Allow measurement entry and stage updates without internet (sync when online).
+
+🟢 **202.** Add **Camera Integration**: Take customer photos during fitting for records.
+
+🟢 **203.** Add **GPS Navigation**: Turn-by-turn directions to the shop.
+
+### Integrations
+
+🟢 **204.** Add **Facebook Messenger Integration**: Auto-capture inquiries from Messenger into the system.
+
+🟢 **205.** Add **GCash Payment Gateway Integration**: Direct payment processing (post-thesis, removes manual verification).
+
+🟢 **206.** Add **Accounting Software Integration**: Export data to QuickBooks or Xero.
+
+🟢 **207.** Add **Shopee/Lazada Order Sync**: Pull marketplace orders into the job order queue.
+
+🟢 **208.** Add **Google Calendar Sync**: Sync appointments to Google Calendar.
+
+🟢 **209.** Add **SMS Gateway Integration**: Direct SMS sending (Twilio, Semaphore, etc.).
+
+🟢 **210.** Add **Email Service Integration**: Transactional email (SendGrid, Mailgun).
+
+### Advanced ERP
+
+🟢 **211.** Add **Rental Lifecycle Management**: Full rental flow with deposit tracking, return inspection, damage charges.
+
+🟢 **212.** Add **Event Package Booking**: Bundle multiple garments (groom + entourage) under one event.
+
+🟢 **213.** Add **Bulk Team Order Matrix**: Excel-like grid for team uniform rosters (name, number, size per player).
+
+🟢 **214.** Add **Supplier Management**: Track fabric suppliers, purchase orders, and credit terms.
+
+🟢 **215.** Add **Material Consumption Tracking**: Bill of materials per job order (fabric yards, thread, buttons).
+
+🟢 **216.** Add **Piece-Rate (Pakiwari) Payroll Tracking**: Per-garment payout calculation for sewers.
+
+🟢 **217.** Add **Machine Maintenance Scheduling**: Track industrial equipment maintenance cycles.
+
+🟢 **218.** Add **Corporate B2B Portal**: Separate portal for corporate clients with PO submission and bulk order tracking.
+
+🟢 **219.** Add **Designer/Artist Portal**: Separate portal for layout artists with design queue and approval workflow.
+
+🟢 **220.** Add **Loyalty Program**: Points-based or tier-based loyalty system for repeat customers.
+
+🟢 **221.** Add **Gift Card/Voucher System**: Digital gift cards for holiday seasons.
+
+🟢 **222.** Add **Multi-Currency Support**: For international client transactions.
+
+🟢 **223.** Add **Multi-Region Expansion**: Expand beyond Davao City to other PH cities.
+
+🟢 **224.** Add **White-Label Option**: Allow enterprise clients to white-label the platform.
+
+🟢 **225.** Add **API for Third-Party Developers**: Public API for integrations.
+
+---
+
+---
+
+# MASTER ROADMAP SUMMARY
+
+## What to ADD (New Features/Tables/Fields)
+
+| Priority | Items |
+|---|---|
+| 🔴 Critical | `branch` table, `job_order_stage_log` table, `notification_log` table, `job_order_staff` junction table, measurement versioning, `order_type` field, `is_rush` field, deposit/balance fields, `appointment_type` enum, `job_order_id` on APPOINTMENT, customer `notes` field, `branch_id` on all tables, Admin frontend portal, Customer portal, Today View dashboard, Production Stage Timeline, Payment Timeline |
+| 🟠 High | `customer_type` enum, staff specialization, payment reference number, cancellation reason, fitting outcome, Global Search, Calendar View, Kanban Board, Notification Center, Toast notifications, Consolidated sidebar, Quick-action buttons, Overdue detection, GCash verification workflow, Granular permissions, Enhanced audit log, Operating hours, Landmark field |
+| 🟡 Medium | Customer 360° timeline, Digital receipts, Email/SMS templates, Data export, Filter persistence, Dark mode, Accessibility, Onboarding wizard, Quality check checklist, Post-pickup alteration workflow, Order dependencies, Capacity calendar, Staff availability calendar, Payment method analytics, Daily cash reconciliation, Discount/promo system, In-app messaging |
+| 🟢 Nice to Have | AI OCR, Barcode/QR, Native mobile app, Messenger integration, GCash gateway, Accounting integration, Rental lifecycle, Event packages, Bulk team matrix, Supplier management, Payroll tracking, Loyalty program, Gift cards, Multi-region, White-label, Public API |
+
+## What to MODIFY (Existing Features)
+
+| Priority | Items |
+|---|---|
+| 🔴 Critical | Merge CatalogOrder into JobOrder with type field, Fix branch switcher to filter API calls, Make `measurement_id` nullable on JOB_ORDER, Split PAYMENT into deposit vs balance tracking, Redesign dashboard home as Today View, Merge Payments Queue into Orders module |
+| 🟠 High | Merge Services into Shop Settings, Move Specializations to Shop Settings, Demote Support Tickets to footer, Demote Reviews to tab/sub-page, Remove Ready-to-Wear from sidebar (fold into Orders), Redesign order cards with payment status and quick actions, Expand audit log with entity/old/new values |
+| 🟡 Medium | Add `updated_at` to all tables, Add `deleted_at` soft delete to all tables, Add `created_by`/`updated_by` to all tables, Expand measurement to support garment-specific templates, Add form validation to all forms |
+| 🟢 Nice to Have | Add animations and microinteractions, Add keyboard shortcuts, Add command palette, Implement dark mode, Optimize database indexes, Implement code splitting |
+
+## What to REMOVE
+
+| Priority | Items |
+|---|---|
+| 🔴 Critical | Remove empty `/dashboard/inventory` folder (out of scope, confuses reviewers) |
+| 🟠 High | Remove `CatalogOrder` as a separate entity (fold into JobOrder), Remove `Ready-to-Wear` as separate sidebar item, Remove `Payments Queue` as separate sidebar item, Remove `Specializations` as separate page |
+| 🟡 Medium | Remove `ORDER_MATERIAL` table (has no material_id reference, serves no purpose without inventory) or add a `material_description` text field |
+| 🟢 Nice to Have | Remove any unused stub routes or dead code |
+
+## What to FIX (Bugs/Broken Features)
+
+| Priority | Items |
+|---|---|
+| 🔴 Critical | Fix branch switcher to pass `selectedBranch` to all API calls (currently does nothing), Fix DP gate enforcement (orders can advance without deposit), Fix completion gate (orders can be marked complete without balance payment), Fix rework loop (no way to revert stage), Fix measurement versioning (data is overwritten, not versioned), Fix admin portal (no frontend exists), Fix customer portal (no real-time tracking exists) |
+| 🟠 High | Fix appointment-to-order linkage (no FK), Fix multi-staff assignment (single FK only), Fix payment categorization (deposits and balances mixed), Fix GCash reference tracking (no field), Fix cancellation workflow (no reason tracking) |
+| 🟡 Medium | Fix `ORDER_MATERIAL` orphan table, Fix `FEEDBACK` shop-level queries (requires join through JOB_ORDER), Fix coordinate storage (VARCHAR instead of proper GIS type) |
+| 🟢 Nice to Have | Fix API response times with indexing and caching, Fix mobile responsiveness on owner dashboard |
+
+## What is MANDATORY (Non-Negotiable for Defense)
+
+1. 🔴 **Admin Frontend Portal** — Without this, the admin's core thesis function cannot be demonstrated.
+2. 🔴 **Customer Portal** — Thesis explicitly states customers monitor real-time status. No portal = undefendable.
+3. 🔴 **Branch Data Isolation** — Branch management is in scope. Non-functional switcher = broken feature.
+4. 🔴 **DP Gate Enforcement** — Core business logic. Without it, the system doesn't model real tailoring.
+5. 🔴 **Measurement Versioning** — Thesis claims "version-controls." Overwriting = false claim.
+6. 🔴 **Production Stage Log** — Thesis claims "real-time order progress monitoring." No log = no monitoring.
+7. 🔴 **Notification Log Table** — Thesis claims "automated notifications." No log = cannot prove delivery.
+8. 🔴 **Appointment Types** — Without types, appointments are meaningless in the business context.
+9. 🔴 **Rework Loop** — Without this, the fitting process is broken (garments that need alteration have no path back).
+10. 🔴 **Today View Dashboard** — Current dashboard is a metrics dump. An ERP surfaces what needs action.
+
+## What Can Wait Until Version 2
+
+- Rental lifecycle management
+- Event package bundling
+- Bulk team order matrix
+- Supplier management
+- Material consumption tracking
+- Payroll/piece-rate tracking
+- AI features (OCR, forecasting, smart scheduling)
+- Native mobile app
+- Payment gateway integration
+- Third-party marketplace sync
+- Loyalty program
+- Gift cards
+- Multi-region expansion
+
+## What Will Impress the Capstone Panel
+
+1. A working **Admin Portal** that demonstrates the full verification workflow.
+2. A **Customer Portal** where a customer can log in and see their order progress in real time.
+3. A **Today View** that shows the shop owner exactly what needs attention today.
+4. A **Kanban Production Board** where orders move visually through stages.
+5. A **Branch Switcher that actually filters data** — demonstrating real multi-branch capability.
+6. A **Measurement Version History** showing how measurements changed over time.
+7. A **Payment Timeline** on each order showing DP and balance events chronologically.
+8. A **Rush Order** flagged with ⚡ throughout the system, demonstrating attention to real business needs.
+9. A **Rework Loop** where an order can revert to production after a failed fitting.
+10. A **Customer 360° View** showing the complete timeline of a customer's relationship with the shop.
+
+## What Makes SUTURA Feel Like a Real-World ERP Instead of a Student Project
+
+> A student project has CRUD tables. An ERP has **enforced business gates**, **audit trails**, **operational dashboards**, and **role-scoped data isolation**.
+>
+> The single biggest transformation: **turning the dashboard from a reporting tool into a triage board.** When the shop owner logs in and the first thing they see is "3 deposits to verify, 2 orders overdue, 1 fitting at QC" — that's an ERP. When they see "Total Earnings: ₱45,000" — that's a student project.
+>
+> The second biggest transformation: **the order is the center of gravity.** Everything — payments, fittings, staff assignments, measurements, notifications — orbits the job order. When a shop owner opens an order and sees the full timeline (created → DP paid → cutting → sewing → QC → fitting → balance paid → picked up) with timestamps and staff names — that's an ERP. When they see a status dropdown — that's a student project.
+>
+> The third transformation: **the system enforces business rules.** No production without deposit. No completion without balance. No fitting appointment without a linked order. No branch manager seeing another branch's data. When the system says "no" — that's an ERP. When the system lets you do anything — that's a student project.
+
+---
+
+**Total Recommendations: 225**
+
+| Priority | Count |
+|---|---|
+| 🔴 Critical (must fix before defense) | 37 |
+| 🟠 High Priority (strongly recommended) | 42 |
+| 🟡 Medium Priority (quality improvement) | 66 |
+| 🟢 Nice to Have (future enhancement) | 80 |
+
+This roadmap gives you a clear, prioritized path from student project to professional ERP. Start with the 🔴 items — they are the difference between a passing grade and a failing one.

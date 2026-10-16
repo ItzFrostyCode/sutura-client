@@ -56,7 +56,7 @@ export default function TrackResultPage({ params }: Readonly<{ params: Promise<{
           </div>
         )}
 
-        {!loading && !notFound && order && <OrderTrackingView order={order} stepperLayout="vertical" />}
+        {!loading && !notFound && order && <OrderTrackingView order={order} />}
       </main>
     </div>
   );

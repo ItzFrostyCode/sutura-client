@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { LayoutGrid, Scissors, Store, CreditCard, ClipboardCheck } from 'lucide-react';
+import { LayoutGrid, CreditCard, ClipboardCheck } from 'lucide-react';
 
-export type JobDetailTabKey = 'readiness' | 'overview' | 'production' | 'fulfillment' | 'financials';
+export type JobDetailTabKey = 'steps' | 'details' | 'payments';
 
 interface JobDetailTabsNavProps {
   activeTab: JobDetailTabKey;
@@ -19,11 +19,9 @@ interface JobDetailTabsNavProps {
 }
 
 const TABS = [
-  { key: 'readiness', label: 'Order Steps', icon: ClipboardCheck },
-  { key: 'overview', label: 'Overview', icon: LayoutGrid },
-  { key: 'production', label: 'Production', icon: Scissors },
-  { key: 'fulfillment', label: 'Fulfillment', icon: Store },
-  { key: 'financials', label: 'Financials', icon: CreditCard },
+  { key: 'steps', label: 'Steps', icon: ClipboardCheck },
+  { key: 'details', label: 'Details', icon: LayoutGrid },
+  { key: 'payments', label: 'Payments', icon: CreditCard },
 ] as const;
 
 export default function JobDetailTabsNav({
@@ -35,7 +33,7 @@ export default function JobDetailTabsNav({
 }: JobDetailTabsNavProps) {
   return (
     <div className="flex items-center gap-1 border-b border-line overflow-x-auto hide-scrollbar">
-      {TABS.filter(tab => (tab.key !== 'financials' || showFinancials) && (tab.key !== 'readiness' || showReadiness)).map(tab => {
+      {TABS.filter(tab => tab.key !== 'payments' || showFinancials).map(tab => {
         const TabIcon = tab.icon;
         const active = activeTab === tab.key;
         const isTabDirty = Boolean(dirtyTabs[tab.key]);

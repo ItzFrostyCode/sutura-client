@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import api from '@/lib/axios';
-import type { SavedLocation } from '@/lib/customerLocation';
+import { getSavedLocation, type SavedLocation } from '@/lib/customerLocation';
 import { MAX_RADIUS_KM } from '../homeFilters';
 
 /** Past this, the visitor is not in or near Davao City (50 km from the centre covers the whole city). */
@@ -12,8 +12,19 @@ const ASK_TIMEOUT_MS = 8000;
 /** "Finding tailoring shops…" stays at least this long, so the screens follow one another instead of flashing. */
 const MIN_FINDING_MS = 1000;
 
-// Once cleared, going back to the landing page inside the app shows the page straight away; a reload asks again.
+// Once cleared, going back to the landing page inside the app shows the page straight away
 let clearedThisLoad = false;
+
+function isGateAlreadyCleared(): boolean {
+  if (clearedThisLoad) return true;
+  if (typeof window !== 'undefined') {
+    try {
+      if (sessionStorage.getItem('sutura_gate_cleared') === '1') return true;
+      if (getSavedLocation() !== null) return true;
+    } catch {}
+  }
+  return false;
+}
 
 export type GatePhase = 'pinpointing' | 'permission' | 'finding' | 'far' | 'done';
 
@@ -30,12 +41,30 @@ interface GatePlace {
  * nearest shop is too far (someone outside Davao), while still letting them in or onto the map.
  */
 export function useLocationGate(place: GatePlace) {
-  const [cleared, setCleared] = useState(clearedThisLoad);
+  // Start cleared=true so server render and initial client hydration match identically
+  const [cleared, setCleared] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
   const [farKm, setFarKm] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (clearedThisLoad) return;
+    try {
+      const alreadyCleared =
+        sessionStorage.getItem('sutura_gate_cleared') === '1' ||
+        getSavedLocation() !== null;
+      if (alreadyCleared) {
+        clearedThisLoad = true;
+      } else {
+        setCleared(false);
+      }
+    } catch {}
+  }, []);
+
   const enter = useCallback(() => {
     clearedThisLoad = true;
+    try {
+      sessionStorage.setItem('sutura_gate_cleared', '1');
+    } catch {}
     setCleared(true);
   }, []);
 

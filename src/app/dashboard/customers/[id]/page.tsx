@@ -8,9 +8,14 @@ import CustomerMeasurementsTab from '@/components/customers/CustomerMeasurements
 import CustomerJobsTab from '@/components/customers/CustomerJobsTab';
 import CustomerAppointmentsTab from '@/components/customers/CustomerAppointmentsTab';
 import CustomerHistoryTab from '@/components/customers/CustomerHistoryTab';
+import CustomerPaymentsTab from '@/components/customers/CustomerPaymentsTab';
+import CustomerTextsTab from '@/components/customers/CustomerTextsTab';
+import { useAuthStore } from '@/store/useAuthStore';
+import { moneySummary, peso } from '@/components/customers/customerMoney';
 import { useCustomerProfile } from '@/components/customers/hooks/useCustomerProfile';
 import CustomerProfileHeader from '@/components/customers/profile/CustomerProfileHeader';
 import CustomerProfileStats from '@/components/customers/profile/CustomerProfileStats';
+import CustomerDeleteModal from '@/components/customers/CustomerDeleteModal';
 import CustomerProfileEditModal from '@/components/customers/profile/CustomerProfileEditModal';
 import CustomerTabNav, { CustomerTabType } from '@/components/customers/profile/CustomerTabNav';
 
@@ -20,6 +25,9 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<CustomerTabType>('overview');
+  // Owner and branch manager collect money and send texts; staff see the customer and the balances.
+  const roles = useAuthStore((st) => st.user?.roles);
+  const canManageMoney = !!roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name));
 
   const {
     customer,
@@ -31,13 +39,13 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
     setIsEditingProfile,
     editName,
     setEditName,
-    editEmail,
-    setEditEmail,
     editPhone,
     setEditPhone,
-    editNotes,
-    setEditNotes,
     savingProfile,
+    isDeleteOpen,
+    setIsDeleteOpen,
+    deleting,
+    deleteCustomer,
     handleUpdateProfile,
     totalSpend,
     activeJobsCount,
@@ -63,7 +71,8 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         customer={customer}
         onBack={() => router.back()}
         onEditProfile={() => setIsEditingProfile(true)}
-        onViewMeasurements={() => setActiveTab('measurements')}
+        onDelete={() => setIsDeleteOpen(true)}
+        onText={canManageMoney ? () => setActiveTab('texts') : undefined}
       />
 
       {/* Stats Summary 5-Column Grid */}
@@ -81,18 +90,24 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         onClose={() => setIsEditingProfile(false)}
         editName={editName}
         setEditName={setEditName}
-        editEmail={editEmail}
-        setEditEmail={setEditEmail}
         editPhone={editPhone}
         setEditPhone={setEditPhone}
-        editNotes={editNotes}
-        setEditNotes={setEditNotes}
         savingProfile={savingProfile}
         onSubmit={handleUpdateProfile}
       />
 
+      <CustomerDeleteModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        isSubmitting={deleting}
+        onConfirm={async () => {
+          if (await deleteCustomer()) router.replace('/dashboard/customers');
+          else setIsDeleteOpen(false);
+        }}
+      />
+
       {/* Clean Tab Navigation */}
-      <CustomerTabNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      <CustomerTabNav activeTab={activeTab} setActiveTab={setActiveTab} showTexts={canManageMoney} balanceDue={moneySummary(jobs).balance > 0 ? peso(moneySummary(jobs).balance) : undefined} />
 
       {/* Active Tab Panel */}
       <div className="pt-2">
@@ -102,6 +117,8 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
             jobs={jobs}
             measurements={measurements}
             setActiveTab={setActiveTab}
+            canCollect={canManageMoney}
+            canText={canManageMoney}
           />
         )}
 
@@ -117,6 +134,12 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
 
         {activeTab === 'orders' && (
           <CustomerJobsTab jobs={jobs} />
+        )}
+
+        {activeTab === 'payments' && <CustomerPaymentsTab jobs={jobs} canCollect={canManageMoney} />}
+
+        {activeTab === 'texts' && canManageMoney && (
+          <CustomerTextsTab storeId={store?.id} customerId={customer?.id} customerName={customer?.name} />
         )}
 
         {activeTab === 'appointments' && (

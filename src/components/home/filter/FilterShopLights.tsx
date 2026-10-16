@@ -1,36 +1,34 @@
-import { Lightbulb, LightbulbOff } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import type { ShopStatusFilter } from '../homeFilters';
-import { chip } from './filterUi';
 
 interface FilterShopLightsProps {
   readonly value: ShopStatusFilter;
   readonly onChange: (value: ShopStatusFilter) => void;
 }
 
-const LIGHTS = [
-  { key: 'open', label: 'Open', Icon: Lightbulb },
-  { key: 'closed', label: 'Closed', Icon: LightbulbOff },
-] as const;
-
 /**
- * Two lights, not a switch: a lit bulb for shops that are open, an unlit one for shops that are closed.
- * Tap a light to turn it on, tap it again to turn it off. With both off, every shop is shown.
+ * Open toggle with label text.
+ * Active = open shops only. Tap again = show all shops.
  */
 export default function FilterShopLights({ value, onChange }: FilterShopLightsProps) {
+  const on = value === 'open';
   return (
-    <div>
-      <div className="flex gap-3">
-        {LIGHTS.map(({ key, label, Icon }) => {
-          const on = value === key;
-          return (
-            <button key={key} type="button" aria-pressed={on} onClick={() => onChange(on ? 'all' : key)} className={`${chip(on)} flex-1`}>
-              <Icon size={20} className={on && key === 'open' ? 'fill-current' : ''} />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-      <p className="mobile-caption mt-2 text-ink-muted">Both off shows every shop.</p>
+    <div className="flex items-center justify-between gap-3">
+      <span className="mobile-body-sm text-ink-muted">
+        {on ? 'Open shops only' : 'All shops'}
+      </span>
+      <button
+        type="button"
+        aria-pressed={on}
+        onClick={() => onChange(on ? 'all' : 'open')}
+        className={[
+          'flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors',
+          on ? 'bg-ink text-white' : 'bg-sunken text-ink hover:bg-sunken-hover',
+        ].join(' ')}
+      >
+        <Lightbulb size={15} className={on ? 'fill-current' : ''} />
+        Open
+      </button>
     </div>
   );
 }

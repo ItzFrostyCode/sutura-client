@@ -28,7 +28,7 @@ function LoginFormContent() {
   const initialPortal = searchParams.get('as') === 'store' ? 'store' : 'customer';
 
   // Tablet/desktop customers sent here to book get the Sign In modal over the page they came
-  // from (design / service / package / store) rather than an empty canvas.
+  // from (design / service / store) rather than an empty canvas.
   useEffect(() => {
     if (!redirectPath || initialPortal === 'store' || window.innerWidth < 768) return;
     const m = redirectPath.match(/^\/store\/([^/?]+)\/book(?:\?(.*))?$/);
@@ -36,7 +36,6 @@ function LoginFormContent() {
     const q = new URLSearchParams(m[2] ?? '');
     const context = q.get('ref_item_id') ? `/store/${m[1]}/catalog/${q.get('ref_item_id')}`
       : q.get('service_id') ? `/store/${m[1]}/service/${q.get('service_id')}`
-      : q.get('package_id') ? `/store/${m[1]}/package/${q.get('package_id')}`
       : `/store/${m[1]}`;
     router.replace(`${context}?signin=1&redirect=${encodeURIComponent(redirectPath)}`);
   }, [redirectPath, initialPortal, router]);

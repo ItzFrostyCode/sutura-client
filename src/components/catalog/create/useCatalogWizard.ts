@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { emptyRequirementsDraft, requirementsPayload, validateRequirements } from '@/components/requirements/requirementsDraft';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -29,6 +29,12 @@ export function useCatalogWizard() {
   const [saving, setSaving] = useState(false);
   const [requirements, setRequirements] = useState(emptyRequirementsDraft);
   const form = useCatalogForm({ onSubmit: async () => {}, submitting: saving });
+  // Arrived from a service ("Add a design"): file the design under it and go back there afterwards.
+  const fromService = useSearchParams().get('service_id');
+  const { setFormData } = form;
+  useEffect(() => {
+    if (fromService) setFormData((prev) => ({ ...prev, service_id: fromService }));
+  }, [fromService, setFormData]);
   const last = step === CATALOG_STEPS.length - 1;
 
   const next = async () => {
@@ -47,14 +53,14 @@ export function useCatalogWizard() {
       const res = await api.post(`/stores/${store.id}/catalog`, { ...payload, ...requirementsPayload(requirements) });
       toast.success('Design published.');
       const id = res.data?.data?.id;
-      router.push(id ? `/dashboard/catalog/${id}` : '/dashboard/catalog');
+      router.push(id ? `/dashboard/catalog/${id}` : fromService ? `/dashboard/services/${fromService}` : '/dashboard/services');
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not publish this design.'));
       setSaving(false);
     }
   };
 
-  const back = () => (step === 0 ? router.push('/dashboard/catalog') : setStep(step - 1));
+  const back = () => (step === 0 ? router.push(fromService ? `/dashboard/services/${fromService}` : '/dashboard/services') : setStep(step - 1));
 
   return { step, current: CATALOG_STEPS[step], last, form, requirements, setRequirements, saving, next, back, storeId: store?.id ?? 0 };
 }

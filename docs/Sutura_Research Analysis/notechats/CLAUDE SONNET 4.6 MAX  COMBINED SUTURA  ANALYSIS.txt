@@ -1,0 +1,739 @@
+CLAUDE SONNET 4.6 MAX ANALYSIS
+
+
+🧵 SUTURA — Final System Synthesis Analysis
+
+Senior Product Architecture Audit
+Generated: June 29, 2026 | Auditor: Antigravity + AI Senior Review
+
+
+
+How to read this document. This is a layered audit — each phase builds toward the final outputs at the end. Read the phases to understand why the finals look the way they do. Skip to Section 7 if you need decisions now. But understanding the reasoning in Phases 1–6 is what separates a defensible design from a guess.
+
+
+
+
+PHASE 1 — BUSINESS MODEL COLLISION ANALYSIS
+
+1.1 The Three Realities Compared
+
+DimensionTailoring Shop RealityFashion Shop RealitySUTURA Thesis ScopeCore RevenueMTO custom garments, bulk uniform production, alteration feesEvent-package rentals, MTO hero pieces, used-item liquidationOrder tracking + shop discovery (platform-level)Order StartFacebook Messenger inquiry → verbal quoteFacebook post → Messenger availability checkPublic booking form + appointment schedulerPayment Gate"No DP, No Layout, No Cut" — strictly 50% before production"First to pay basis" — deposit locks the itemDeposit tracking (no gateway integration)Measurement FlowUniforms: size chart only. Bespoke: in-person tape measureBespoke: in-person fitting. Rental: try-on in storeDigital measurement repository per customerFitting LogicUniforms: zero fittings. Bespoke gowns/barong: 1–2 fittingsRental: try-on as decision gate. Alterations: 1 fittingAppointment-based fitting sessionsCustomer Record"Suki card" — saved measurements, order history, notesRepeat client albums, measurement historyCustomer profile + measurement historyRelease Gate"No balance, no claim" — full payment before handoverDeposit returned after return inspectionPayment status before marking completePhysical anchorPhysical job ticket follows the garment through the workshopRental item tracked by condition statusJob order with stage trackingBranch modelMain bodega (heavy machinery) + satellite showroomsSingle-location or small-format satellite fitting roomsBranch management module
+
+
+1.2 Workflow Overlaps (SUTURA already covers these, validate they're correct)
+
+WorkflowTailoringFashionSUTURANotesAppointments✅ Measurements, fittings✅ Try-on sessions✅ Calendar + CRUDAppointment types are missing — all appointments look the same in SUTURAMeasurements✅ Core for bespoke✅ For alterations✅ Per-customer repositoryNeeds measurement-to-job-order linkage for traceabilityDeposit tracking✅ 50% DP gate✅ Rental deposit + reservation fee✅ Payment recordsDeposits and revenue are mixed in the same Payment table — wrongOrder release✅ "No balance, no claim"✅ Deposit return after inspection✅ Job status flowThe "release gate" (balance must be paid before marking Complete) is not enforced in current flowCustomer records✅ "Suki card" loyalty✅ Repeat client albums✅ CRM moduleTags (B2B, Walk-in, Corporate) missing; notes field missingStage tracking✅ Layout → Cut → Print/Sew → QC → Release✅ Availability → Reserved → Used → Returned✅ Job order statusProduction stages are correct but not specific enough for real workshop flow
+
+
+1.3 Business Reality Exists But Is WEAK in SUTURA
+
+These are not missing from the thesis — they're in the approved scope. But the current implementation handles them poorly or incompletely.
+
+A. The DP Gate Is Not Enforced
+In real shops, no fabric is cut, no layout is started, and no order is moved to "In Production" until the deposit is received and verified. In SUTURA, a job order can move through status without a DP event attached. This is the single most important missing business logic.
+
+B. Layout/Mockup Approval Workflow
+Both tailoring shops (sublimation layouts) and fashion shops (sketch/peg approval) require explicit customer sign-off before production begins. Currently, SUTURA has no approval gate between "order created" and "production started." The customer must explicitly say "Approved" before the shop proceeds.
+
+C. Appointment Types Are Collapsed
+SUTURA treats all appointments as the same. In real business, there are at least 5 functionally different appointment types with different expected outcomes:
+
+
+Initial Consultation (no order yet)
+Measurement Taking (linked to a new job order)
+First Fitting (linked to in-progress job order)
+Final Fitting / Quality Check (linked to near-complete job order)
+Pickup / Claiming (final handover event)
+
+
+D. Rush Order Flag Is Missing
+Real shops accept rush orders with a premium fee (30–50% markup). SUTURA has no rush designation. This forces shop owners to track rush jobs mentally or in a side notebook, defeating the system's purpose.
+
+E. The "Suki" Notes Field Is Missing
+The customer profile has standard fields but no free-text notes. In real business: "Client always rushes," "Prefers slim fit," "Corporate account — invoice required," "Family account — maintain measurements for 3 members." This is the most-used piece of institutional memory in a PH tailoring shop.
+
+F. Branch Switcher Does Not Filter Data
+The system audit explicitly flags this: "The selectedBranch state is not passed to any API calls in the layout. Pages don't currently filter by branch selection." A branch manager at Branch B should not see Branch A's job orders when they switch branches. This is a data isolation failure.
+
+G. Alteration Jobs Have No Home
+Short-cycle alteration orders (hemming, letting out seams, zipper replacement) are a high-volume, high-frequency service in real tailoring shops. They don't belong in the full Job Order flow (too heavyweight) but currently have nowhere to go in SUTURA.
+
+
+1.4 SUTURA Has Features That Feel UNNATURAL in Real Business
+
+A. CatalogOrder as a Separate Entity
+In real PH shops, a "ready-to-wear" transaction is not meaningfully different from a custom order — it's just a custom order with no measurement phase and a shorter production stage. Having a completely separate CatalogOrder entity with its own controller, frontend route, and database table creates a parallel system that confuses both staff and the database schema.
+
+Verdict: Eliminate CatalogOrder as a separate entity. Any "catalog item" becomes a job order with type: ready_to_wear and measurement_required: false. The catalog itself remains as a portfolio/showcase — not a shopping cart.
+
+B. ServicePricing as a Fixed-Price System
+In real PH tailoring shops, pricing is highly negotiable and context-dependent: "If the client buys 20 pieces instead of 5, the price per piece drops." "If they supply their own fabric, subtract ₱150." "If they want a rush delivery, add 30%." A fixed ServicePricing table is a fiction. No tailor quotes from a fixed menu.
+
+Verdict: ServicePricing should display "starting from" prices only. Remove as a CRUD-heavy management module. Fold into Shop Settings as a simple "Services & Starting Prices" text configuration.
+
+C. Support Ticket System as a Formal Module
+Real PH shop owners do not open formal support tickets. They message on Facebook. The Support Ticket module is too formalized for the MSME audience SUTURA targets. It exists for the SaaS platform admin to receive complaints, but it shouldn't be a prominent sidebar item eating navigation real estate.
+
+Verdict: Keep as a low-profile "Help" footer link. Not a Workroom module.
+
+D. Specializations as a Standalone Nav Item
+"Specializations" (barong, gown, suit, uniforms, etc.) is a tag set for the shop's identity — not something a shop owner manages on a daily or even weekly basis. It should be configured once inside Shop Settings and never touched again.
+
+Verdict: Move to Shop Settings → Identity tab. Remove from sidebar navigation entirely.
+
+E. Ready-to-Wear as a Separate Module
+The frontend for Ready-to-Wear is a "minimal stub" by the system audit's own admission. The real-world volume of pure RTW transactions in bespoke tailoring shops is low. RTW is either: (a) liquidation of old stock, which is more fashion-shop behavior, or (b) a pre-made design that the customer wants made to their size, which is just a job order with a catalog reference.
+
+Verdict: Eliminate Ready-to-Wear as a separate nav module. Fold into Job Orders with type: ready_to_wear.
+
+
+1.5 Core Unified Business Model for SUTURA
+
+SUTURA should model a service-based tailoring and alterations business with the following operational core:
+
+SHOP DISCOVERY (Customer finds shop via map + specialization search)
+    ↓
+APPOINTMENT BOOKING (Customer books: consultation / measurement / fitting)
+    ↓
+JOB ORDER CREATION (Staff creates order after initial consultation)
+    ↓
+DEPOSIT GATE (Order locked until deposit is confirmed)
+    ↓  [Optional: Layout/Mockup Approval]
+PRODUCTION TRACKING (Staff updates stages: Cut → Sew/Alter → QC)
+    ↓
+FITTING APPOINTMENTS (Linked to job order, if applicable)
+    ↓
+COMPLETION GATE (Balance must be cleared before status → Complete)
+    ↓
+PICKUP / DELIVERY (Customer claims order, rates the shop)
+    ↓
+CUSTOMER RECORD UPDATE (Measurements saved, order archived)
+
+This model covers: bespoke tailoring, alterations, RTW sales, and sublimation/custom uniforms — without requiring rental flow (which remains outside scope but can be added later as a service type).
+
+
+PHASE 2 — MODULE ARCHITECTURE AUDIT
+
+Module-by-Module Verdict
+
+ModuleRouteVerdictReasonAdmin Dashboard/adminKEEPPlatform governance is necessarySubscriptions (admin side)/admin/plansKEEPCore SaaS monetizationShop DiscoveryPublic /EXPANDCore customer value prop; needs richer filter UIBranches/dashboard/branchesKEEP + FIXFix branch switcher to actually filter API callsShop Dashboard / Home/dashboardEXPANDTransform from analytics dump to operational "Today View"Design Catalog/dashboard/catalogSIMPLIFYMake it portfolio-only; remove transactional CatalogOrder flowServices/dashboard/servicesMERGEFold into Shop Settings → Services & Pricing tabSpecializations(separate page)MOVEMove into Shop Settings → Identity tabAppointments/dashboard/appointmentsEXPANDAdd appointment types; link appointments to job ordersJob Orders/dashboard/jobsEXPANDAdd order subtypes, rush flag, deposit gate, layout approvalReady-to-Wear Orders/dashboard/ordersREMOVEEliminate as standalone module; fold into Job OrdersPayments Queue/dashboard/paymentsMERGEMerge into Job Orders; each order shows its payment stateCustomers (CRM)/dashboard/customersEXPANDAdd notes field, customer tags, order history per customerReviews/dashboard/reviewsSIMPLIFYKeep as simple read/respond; reduce to a tab, not a nav itemReports / Insights/dashboard/reportsKEEP + EXPANDComplete the chart depth; add DP vs Balance trendStaff/dashboard/staffKEEPAdd specialization tags per staff memberShop Settings/dashboard/settingsEXPANDAdd Specializations tab; add Services & Pricing tabAccount Settings/dashboard/account-settingsMERGEMerge Profile page into Account SettingsBilling & Plans/dashboard/billingKEEPMove to lower-priority settings area, not primary navSupport Tickets/dashboard/supportMOVEDemote to footer Help link, not a sidebar nav itemStaff Dashboard/staff-dashboardKEEPSimplify view is correct for staff roleInventory/dashboard/inventoryREMOVEEmpty directory; explicitly excluded by thesis limitations
+
+
+Module Deep Notes
+
+Job Orders (most critical module)
+Current state: Good bones. Gaps: no deposit gate, no rush flag, no layout approval step, no alteration subtype.
+
+Add:
+
+
+order_type field: custom_tailoring, alteration, ready_to_wear
+is_rush boolean + rush_fee decimal
+layout_approval_required boolean + layout_approved_at timestamp
+deposit_amount, deposit_paid_at, balance_amount, balance_paid_at
+production_stage field replacing vague status, with values: pending_deposit → layout_review → in_cutting → in_sewing → quality_check → for_fitting → for_pickup → completed
+
+
+Appointments (links to jobs)
+Add appointment_type enum: consultation, measurement, first_fitting, final_fitting, pickup
+Add linked_job_order_id nullable FK — so a fitting appointment is formally connected to its job order.
+
+Catalog (portfolio only)
+Remove all CatalogOrder endpoints. Catalog items become reference objects only.
+Add catalog_item_id as optional FK on JobOrder (for "based on this design from our catalog").
+Customer can browse catalog and trigger a "Request this design" → which opens a new appointment booking, not a checkout.
+
+Customers (CRM expansion)
+Add customer_type enum: walk_in, b2b_corporate, b2b_school, repeat_suki
+Add notes text field (free-form institutional memory)
+Add preferred_tailor_id FK to StaffProfile
+Measurement history should show which job order each measurement was taken for.
+
+Shop Dashboard Home ("Today View")
+Instead of generic analytics charts, the home page should surface:
+
+
+Today's appointments (with type and linked order)
+Job orders needing deposit confirmation
+Jobs at QC stage (ready to notify customer)
+Jobs marked "For Pickup" that haven't been claimed in 3+ days
+Overdue orders (past due_date with status not Complete)
+
+
+This transforms the dashboard from a reporting tool into an operational hub.
+
+
+PHASE 3 — ROLE SYSTEM AUDIT
+
+3.1 Current Role vs. Ideal Role Mapping
+
+RoleCurrent PortalsCurrent IssuesClean ProposaladminAPI only (no frontend portal)No frontend exists for admin — how does the admin approve shops?Build a minimal /admin portal: approve shops, manage plans, view platform analyticsshop_owner/dashboard (full access)Too many low-frequency modules in primary nav; no financial separation from branch data/dashboard — full access, all branches, billing, analyticsbranch_manager/staff-dashboard (same as staff)Branch managers can manage their branch but are stuck in the staff portal — wrong/dashboard scoped to their branch — sees all branch orders, customers, appointments, analytics for their branch onlystaff/staff-dashboardCorrect scope — simplify/staff-dashboard — assigned jobs only, customer lookup, measurementscustomerNone (public booking only)Critical gap. Customers have no authenticated portal to track their orders./my-orders — order status, appointments, notifications, rate completed orders
+
+3.2 Role Conflict Resolution
+
+Branch Manager vs. Staff Boundary:
+Branch Managers should access /dashboard with their branch pre-selected (not changeable), seeing:
+
+
+All job orders in their branch
+Their branch's customer list
+Their branch's appointments
+Branch-level analytics (not platform-wide)
+
+
+Staff access /staff-dashboard and see:
+
+
+Only job orders assigned to them
+The customers whose jobs they're working on
+Their appointments
+
+
+The Missing Customer Portal:
+The thesis explicitly states: "customers monitor their ongoing garment fulfillment status in real time and receive automated notifications." This implies an authenticated customer-facing portal, not just a booking form. Currently, the customer gets an SMS notification but has no place to log in and track their order. This is a gap in the thesis scope that can be addressed.
+
+Proposed Customer Portal (/my-orders):
+
+
+View all their job orders and current status
+See their upcoming appointments
+View their stored measurements
+Rate completed orders
+
+
+3.3 Clean RBAC Matrix
+
+FeatureAdminShop OwnerBranch ManagerStaffCustomerApprove/reject shops✅❌❌❌❌Manage subscription plans✅❌❌❌❌View all shops (platform)✅❌❌❌❌Shop Settings❌✅❌❌❌Billing & Plans❌✅❌❌❌Branch Management❌✅❌❌❌All Job Orders (shop-wide)❌✅❌❌❌All Job Orders (branch)❌✅✅❌❌Assigned Job Orders❌✅✅✅❌Their own orders❌❌❌❌✅Customer List (all)❌✅✅ (branch)❌❌Customer Measurements❌✅✅✅ (assigned)✅ (own)Staff Management❌✅❌❌❌Reports (platform)✅❌❌❌❌Reports (shop-wide)❌✅❌❌❌Reports (branch)❌✅✅❌❌Catalog (manage)❌✅❌❌❌Catalog (browse)❌✅✅✅✅Book Appointment❌✅✅❌✅Public Shop Discovery❌❌❌❌✅
+
+
+PHASE 4 — SHOP OWNER EXPERIENCE AUDIT
+
+4.1 The "Logout Feeling" Diagnosed
+
+The current sidebar has this problem: every module feels equally important. When everything is in the sidebar at the same level, the owner feels like they're managing a filing cabinet, not running a business.
+
+Compare to:
+
+
+Facebook Marketplace: You're always inside your listings. Actions surface to you.
+Shopee Seller Center: Today's orders, pending shipments, and buyer messages are front and center. Settings are buried.
+Instagram Business: Your content is always visible. Metrics are secondary.
+
+
+The difference is information hierarchy. SUTURA currently has no information hierarchy — it has equal-weight navigation items.
+
+4.2 Frequency Analysis of Current Sidebar Items
+
+ModuleReal Business FrequencyCurrent Nav PriorityJob OrdersDAILY (multiple times)Group 2 (Workroom) — okayAppointmentsDAILYGroup 1 (Command Center) — okayCustomersDAILY (lookup measurements)Group 2 (Workroom) — okayPayments QueueDAILY (verify GCash)Group 1 (Command Center) — but should be inside OrdersReportsWEEKLYGroup 4 (Team & Performance) — okayStaffWEEKLYGroup 4 — okayCatalogMONTHLY (rarely updated)Group 3 (Showroom) — overcrowdedServicesRARELY (set and forget)Group 3 — overcrowdedSpecializationsONCESeparate page — wrongShop SettingsRARELYGroup 5 (Config) — okayReady-to-WearSTUBGroup 2 (Workroom) — wasted spaceReviewsWEEKLYGroup 3 — overcrowdedSupport TicketsRARELYGroup 5 (Config) — overcrowdedBillingMONTHLYGroup 5 — okayBranchesRARELYGroup 5 — okay
+
+4.3 Redesigned Shop Owner Navigation
+
+SIDEBAR — PRIMARY (always visible, daily-use)
+──────────────────────────────────────────
+🏠  Today               ← renamed from "Home" — operational focus
+✂️  Orders              ← merged: Jobs + Payments + RTW
+📅  Schedule            ← renamed from "Appointments"
+👥  Customers           ← CRM (unchanged)
+
+SIDEBAR — SECONDARY (weekly-use, collapsible or smaller)
+──────────────────────────────────────────
+🛍️  Catalog & Services  ← merged: Catalog + Services + Specializations (config-time)
+🧑‍🔧  Team               ← Staff management
+📊  Reports             ← Analytics
+
+SIDEBAR — SETTINGS AREA (in profile dropdown or "…" overflow)
+──────────────────────────────────────────
+⚙️  Shop Settings       ← includes Specializations + Services as tabs
+🏗️  Branches            ← shop_owner only
+💳  Plan & Billing      ← subscription management
+🆘  Help & Support      ← demoted; footer-level
+
+Eliminated from primary nav:
+
+
+Ready-to-Wear (folded into Orders)
+Payments Queue (folded into Orders — each order card shows payment status)
+Specializations (moved into Shop Settings)
+Reviews (moved into Shop Settings or as a tab on the public-facing profile view)
+
+
+4.4 "Today View" Dashboard Design Concept
+
+SUTURA — TODAY (Monday, June 29, 2026)
+═══════════════════════════════════════════════════════
+
+⚡ NEEDS ATTENTION (4 items)
+  [!] 3 deposits awaiting verification      → [View Pending Deposits]
+  [!] 2 orders past due date                → [View Overdue Orders]
+  [!] 1 order at QC — notify customer       → [View QC Orders]
+  [!] Rush order submitted 2 hours ago      → [View Rush Orders]
+
+📅 TODAY'S SCHEDULE (3 appointments)
+  09:00  Measurement — Maria Santos (New Job: Filipiniana)
+  13:00  First Fitting — Juan dela Cruz (Job #JO-0041)
+  15:30  Pickup — Carmela Reyes (Job #JO-0039) — Balance: ₱850 pending
+
+📋 ORDERS OVERVIEW (this week)
+  In Production: 12 orders
+  For Fitting: 3 orders
+  For Pickup: 5 orders
+  Completed this month: 28 orders
+
+💰 QUICK FINANCIAL SUMMARY
+  DP Collected Today: ₱4,500
+  Balance Due This Week: ₱18,200
+  Outstanding Balances (all): ₱47,800
+
+This view gives the shop owner the answers to: "What do I need to do right now? What's happening today? How is my business doing?"
+
+4.5 Orders Module (Merged Job Flow)
+
+The unified Orders module should have filter tabs at the top:
+
+ORDERS
+[ All ] [ New/Pending ] [ In Production ] [ For Fitting ] [ For Pickup ] [ Completed ]
+[ + ] [🔍 Search] [Filter ▼] [Rush ⚡]
+────────────────────────────────────────────────
+JO-0047 | Maria Santos           | Custom Barong    | ⚡ RUSH
+         | In Production: Sewing  | Due: July 2      | ₱2,500 DP Paid | ₱1,200 Balance
+
+JO-0046 | Carmela Reyes          | Alteration       |
+         | QC Stage               | Due: June 30     | Fully Paid ✓
+
+Each order card shows: customer name, order type, current stage, due date, payment status — everything visible without clicking in.
+
+
+PHASE 5 — ORDER PIPELINE NORMALIZATION
+
+5.1 The Duplication Problem
+
+Currently SUTURA has three parallel order paths that share 80% of the same logic:
+
+
+JobOrder → JobOrderStaff → Payment
+CatalogOrder → Payment
+Appointment (sometimes triggers an order, sometimes doesn't)
+
+
+This creates: duplicate controllers, duplicate frontend routes, duplicate payment tracking, and conceptual confusion for users ("Is this a Job Order or a Catalog Order?").
+
+5.2 Unified Order Architecture
+
+One entity: JobOrder
+
+With a type field that controls which stages and sub-fields are relevant:
+
+Order TypeMeasurements RequiredFitting RequiredLayout ApprovalProduction Stagescustom_tailoring✅✅ (1-2 fittings)OptionalFull: Cut → Sew → QCalteration❌ (usually)✅ (1 fitting)❌Simplified: Alter → QCready_to_wear❌❌❌Minimal: Check Stock → QC
+
+Catalog items become reference objects: catalog_item_id (nullable FK on JobOrder). Customer browses catalog → "I want this" → triggers an appointment booking (not a checkout).
+
+Appointments remain as a separate entity but gain a job_order_id FK so fitting appointments are formally linked to the job they're for.
+
+5.3 Unified Production Stage Flow
+
+STAGE FLOW FOR CUSTOM TAILORING:
+───────────────────────────────────────────────────────
+[INQUIRY] 
+    ↓ (Admin creates job order)
+[PENDING DEPOSIT]        ← DP must be logged before moving forward
+    ↓ (DP confirmed)
+[LAYOUT/APPROVAL]        ← Optional: if design proof needed
+    ↓ (Customer approves OR skipped)
+[CUTTING]
+    ↓
+[SEWING / ASSEMBLY]
+    ↓
+[EMBROIDERY / DETAIL]    ← Optional stage (can be skipped)
+    ↓
+[QUALITY CHECK]          ← Trigger: auto-notify customer "For Fitting"
+    ↓
+[FITTING SESSION]        ← Linked appointment created
+    ↓ (Fitting complete, no major alterations)
+[FOR PICKUP]             ← Trigger: auto-notify customer "Ready for Pickup"
+    ↓ (Balance confirmed)
+[COMPLETED]              ← Trigger: customer can now rate
+
+STAGE FLOW FOR ALTERATION:
+───────────────────────────────────────────────────────
+[INQUIRY] → [PENDING DEPOSIT] → [ALTERATION IN PROGRESS] 
+    → [FITTING/CHECK] → [FOR PICKUP] → [COMPLETED]
+
+STAGE FLOW FOR READY-TO-WEAR:
+───────────────────────────────────────────────────────
+[ORDER PLACED] → [PENDING DEPOSIT] → [FOR PICKUP] → [COMPLETED]
+
+5.4 Payment Sub-Events (Within Job Order)
+
+Remove Payments Queue as a separate module. Instead, each job order has a Payment Timeline visible within its detail view:
+
+JO-0047 — PAYMENT HISTORY
+────────────────────────────────────
+June 25  DP Collected   ₱2,500   GCash   [Verified by: J. Arabejo]
+July 2   Balance Due    ₱1,200   —       [Pending]
+
+Staff can log: amount, method (Cash / GCash / Bank Transfer), reference_number (for GCash), and collected_by (staff ID). This replaces the separate Payments Queue page while providing the same function.
+
+The "Payments Queue" view in the current nav becomes a filtered view inside the Orders module — orders where payment is pending.
+
+5.5 Appointment Types (Linked to Job Orders)
+
+Appointment Types:
+──────────────────────────────────────────────────
+consultation    → No job order yet; customer is exploring
+measurement     → Job order exists; taking body measurements
+first_fitting   → Job order in progress; checking initial fit
+final_fitting   → Job order nearing completion; final drape check
+pickup          → Job order complete; customer claiming item
+
+When creating a measurement appointment: system prompts staff to link or create a job order.
+When creating a fitting appointment: job order is required.
+When creating a pickup appointment: job order must be at for_pickup status.
+
+
+PHASE 6 — THESIS COMPLIANCE CHECK
+
+6.1 Features Explicitly Inside Thesis Scope
+
+FeatureThesis ReferenceSUTURA StatusAdmin: approve/reject shop registrations"review and approve tailoring shop verification requests"✅ Exists (API only, no frontend)Admin: subscription monitoring"monitor tier-based subscription billing"✅ ExistsAdmin: platform analytics"generate real-time platform performance reports"✅ ExistsSubscription tiers (Basic/Pro/Premium)"select from Basic, Pro, and Premium subscription plans"✅ ExistsShop profile configuration"configure their digital profile"✅ Exists (4-tab Settings)Apparel specialization management"specialized apparel categorization module"✅ Exists (as separate page — MOVE to Settings)Map-based shop discovery"pinned geolocation coordinates within Davao City"✅ Exists (public shop + map)Garment-based + location-based filtering"search by specific garment type, filter by area or specialization"✅ Exists (public search)Appointment scheduling"appointment-based order intake"✅ ExistsJob order creation from appointments"tailoring staff can create job orders directly from scheduled fittings"✅ ExistsCustomer measurement repository"record and retrieve digital customer measurements"✅ ExistsProduction stage tracking"update garment production stages"✅ ExistsReal-time order status for customers"customers monitor their ongoing garment fulfillment status"⚠️ Partial (notifications exist; customer portal does not)Automated SMS/email notifications on stage change"automated SMS or email notifications at each stage transition"✅ Exists (wiring needs verification)Shop analytics for owners"monthly sales revenue, outstanding customer balances, individual staff productivity"✅ Partial (needs chart depth)Staff management"manage role-based staff access"✅ ExistsBranch management"manage multiple branches based on selected tier"✅ Exists (branch switcher needs fix)Support ticket system"support tickets"✅ Exists (demote from nav)Service catalog"manage service catalogs"✅ Exists (merge into Settings)Pricing configuration"set itemized pricing"✅ Exists (simplify to "starting from")Reviews"verified customer reviews"✅ ExistsPayment deposit tracking"deposit tracking"✅ Exists (needs DP gate enforcement)
+
+6.2 Features Explicitly OUTSIDE Thesis Scope
+
+FeatureThesis LimitationActionInventory management (fabric, materials, stock)"completely excluding inventory tracking, material stock monitoring"REMOVE empty /dashboard/inventory folder permanentlyCourier / delivery logistics"system completely excludes logistics, courier routing"Do NOT add delivery trackingPayroll / salary calculation"management of employee payroll is outside the functional scope"Do NOT add payroll to staff modulePayment gateway integration (direct fund transfer)"does not include native integration with third-party payment gateways for direct fund transfers"Keep as manual payment logging onlyPredictive analytics / AI forecasting"does not include predictive analytics, AI-driven forecasting"Basic charts onlyTax filing / business permit validation"does not include tax filing automation or business permit validation"Out of scopeHardware integration (body scanners, RFID)"does not support hardware integration"Out of scopeSupplier management"all supplier-related processes...fall entirely outside the system boundary"Do NOT add supplier module
+
+6.3 Improvements SAFE to Make Within Approved Scope
+
+These are not new scope — they're more faithful implementations of what the thesis already approved:
+
+ImprovementJustificationAdd order_type field (custom/alteration/RTW)"manage active customer inquiries" covers different order typesAdd is_rush flag to job ordersPart of "dynamic order tracking" and "monitoring order progress"Add layout_approved_at timestampPart of the production stage flow described in thesisAdd deposit gate (DP must be confirmed before production stage)Thesis explicitly mentions "deposit tracking" — enforcing it is an implementation detailAdd appointment_type enumPart of "appointment-based order intake" — types are impliedLink appointments to job orders via FKThe BPMN in the thesis shows this relationshipAdd customer_notes field to CustomerProfilePart of "digital customer measurement repository" and CRMAdd customer_type tagPart of CRM and "customer profiles" featureAdd rush flag to appointmentsService scheduling is in scopeFix branch switcher to filter API callsBranch management is explicitly in scope; filtering data by branch is a correct behaviorBuild minimal customer portal (/my-orders)Thesis explicitly says customers monitor real-time status — implies a login portalBuild admin frontend portalAdmin management is in scope; the frontend is just missingAdd payment method + reference logging"transaction details" is explicitly mentioned in thesis limitations as something the system tracks
+
+6.4 Features to Defer to Post-Thesis (Out of Scope But Valuable)
+
+FeatureWhy ValuableWhy DeferredRental lifecycle (deposit as liability, condition tracking, return)Real fashion shops need thisNot in thesis objectivesEvent bundling (wedding entourage as one booking)Reduces booking friction for fashion shopsArchitecture change; not in thesisLayout/mockup file upload and approval workflowCritical for sublimation shopsNot explicitly in thesis objectives (can be simple)Bulk team order roster (size matrix)Critical for uniform shopsOutside thesis scopeMessenger integration (inquiry capture)Core of how PH shops actually receive ordersComplex integration; outside scopeCorporate B2B accounts with PO handlingImportant for schools/government clientsOutside scopeDesign archive per customer (reprint from old layout)High-value retention featureOutside scope
+
+
+SECTION 7 — FINAL OUTPUTS
+
+
+7.1 Final Unified SUTURA Business Model
+
+SUTURA is a multi-tenant SaaS platform for tailoring and custom garment shops in Davao City that solves two problems simultaneously:
+
+For Customers:
+The map-based discovery portal lets them search for a tailoring shop by garment type and location, book an appointment directly, and then track their order from production through pickup — without a single phone call.
+
+For Shop Owners:
+A unified operations dashboard to manage job orders across their production pipeline, customer measurements, appointment schedules, staff assignments, and business analytics — replacing the notebook, the spreadsheet, and the Messenger chat window.
+
+The Business Flow:
+
+CUSTOMER discovers shop via map → Books appointment →
+STAFF takes measurements → Creates job order → Customer pays DP →
+Production proceeds through tracked stages →
+CUSTOMER notified at key milestones (via SMS/notification) →
+Fitting appointment scheduled if needed →
+CUSTOMER pays balance → Picks up → Rates shop →
+SHOP receives analytics: revenue, productivity, order velocity
+
+The Platform Layer (Admin):
+Shops must be verified before appearing on the marketplace. Subscription tiers control feature access and how many branches a shop can register. The admin monitors platform-wide activity and subscription health.
+
+
+7.2 Final Clean Module Structure
+
+ADMIN PORTAL (/admin)
+├── Shop Registration Queue    ← approve / reject applications
+├── Subscription Plans         ← manage plan tiers
+├── Active Shops               ← view all registered shops
+└── Platform Analytics         ← platform-wide metrics
+
+PUBLIC (no login)
+├── /                          ← Map + Shop Discovery + Search + Filter
+├── /shop/[shop_id]            ← Public shop profile (services, hours, reviews, booking)
+└── /book/[shop_id]            ← Public appointment booking form
+
+CUSTOMER PORTAL (/my-orders)
+├── My Orders                  ← job order list + real-time status
+├── My Appointments            ← upcoming and past appointments
+├── My Measurements            ← stored body measurements
+└── Rate & Review              ← for completed orders
+
+SHOP OWNER DASHBOARD (/dashboard)
+│
+├── TODAY (home)
+│   ├── Attention Items (pending deposits, overdue orders, QC ready)
+│   ├── Today's Schedule (appointments)
+│   └── Quick Stats (orders by status, weekly revenue)
+│
+├── ORDERS (/dashboard/orders)
+│   ├── All Orders (list with filters by type, status, date)
+│   ├── New Order (create: custom / alteration / RTW)
+│   ├── Order Detail (/dashboard/orders/[id])
+│   │   ├── Order Info (type, customer, garment, rush flag, due date)
+│   │   ├── Production Stages (interactive stage tracker)
+│   │   ├── Linked Appointments (fittings)
+│   │   ├── Payment Timeline (DP + balance log)
+│   │   └── Staff Assignment
+│   └── [Filter view] Pending Payments  ← replaces "Payments Queue"
+│
+├── SCHEDULE (/dashboard/schedule)
+│   ├── Calendar View
+│   ├── Appointment List
+│   └── New Appointment (with type + optional job order link)
+│
+├── CUSTOMERS (/dashboard/customers)
+│   ├── Customer List (search, filter by type)
+│   ├── Customer Detail (/dashboard/customers/[id])
+│   │   ├── Profile (name, contact, type, notes)
+│   │   ├── Measurement History (linked to job orders)
+│   │   └── Order History
+│   └── New Customer
+│
+├── CATALOG & SERVICES (/dashboard/catalog)
+│   ├── Portfolio / Catalog Items (showcase only)
+│   ├── New Catalog Item
+│   └── [Pricing managed in Shop Settings]
+│
+├── TEAM (/dashboard/staff)
+│   ├── Staff List
+│   ├── Staff Detail (specializations, availability, assigned orders)
+│   └── New Staff Account
+│
+├── REPORTS (/dashboard/reports)
+│   ├── Revenue (monthly DP collected vs balance received vs outstanding)
+│   ├── Orders (by type, by stage, completion rate)
+│   ├── Customers (new vs repeat, top customers)
+│   └── Staff Productivity (orders completed per staff)
+│
+└── [PROFILE DROPDOWN / SETTINGS AREA]
+    ├── My Account (/dashboard/account)
+    │   ├── Personal Info
+    │   └── Security / Password
+    ├── Shop Settings (/dashboard/settings)
+    │   ├── Identity (name, description, contact, specializations)
+    │   ├── Hours & Location (operating hours, map coordinates)
+    │   ├── Services & Pricing (service list + "starting from" prices)
+    │   ├── Policies (booking policy, custom questions)
+    │   └── Gallery & Social (shop images, social links)
+    ├── Branches (/dashboard/branches)  [shop_owner only]
+    ├── Plan & Billing (/dashboard/billing)
+    └── Help & Support (/dashboard/support)  ← demoted footer link
+
+STAFF DASHBOARD (/staff-dashboard)
+├── My Jobs (assigned job orders, with stage update controls)
+└── Customers (lookup: view measurements, read-only)
+
+
+7.3 Final Role Architecture
+
+SYSTEM ADMIN
+─────────────────────────────────────────────────────
+Portal: /admin
+Owns: Platform data, subscription plans, shop registry
+Sees: All shops (not their internal customer data), platform analytics
+Controls: Shop approval/rejection, plan management
+Does NOT see: Individual customer records, job order details
+
+SHOP OWNER
+─────────────────────────────────────────────────────
+Portal: /dashboard (full)
+Owns: Their shop(s) — all data across all branches
+Sees: All orders, all customers, all staff, all analytics for their shop
+Controls: All shop configuration, billing, branch management, staff accounts
+Branch switcher: Can view any branch or all branches combined
+
+BRANCH MANAGER
+─────────────────────────────────────────────────────
+Portal: /dashboard (scoped to their branch)
+Owns: Their branch's data
+Sees: All orders for their branch, all customers for their branch
+Controls: Order management, customer management, appointment management
+Does NOT see: Other branches' data, billing, branch creation, plan management
+Branch switcher: Fixed to their branch
+
+STAFF
+─────────────────────────────────────────────────────
+Portal: /staff-dashboard (simplified)
+Owns: Their assigned job orders
+Sees: Jobs assigned to them, customers they're serving, their appointments
+Controls: Update production stage on assigned jobs, record measurements
+Does NOT see: Financial reports, other staff's jobs (unless reassigned)
+
+CUSTOMER
+─────────────────────────────────────────────────────
+Portal: /my-orders (authenticated, lightweight)
+Owns: Their own profile, measurements, orders
+Sees: Their job orders (status only), their appointments, their measurements
+Controls: Book appointments (via public booking or portal), rate completed orders
+Does NOT see: Other customers' data, shop internal notes, staff assignments
+
+
+7.4 Final Order Flow Architecture
+
+Across All Business Types — From Inquiry to Pickup
+
+DISCOVERY (all types)
+────────────────────────────────────────────────────────
+Customer finds shop via map (specialization: barong / gown / uniforms / alterations)
+→ Views public profile (services, hours, gallery, reviews)
+→ Books appointment (type: consultation / measurement)
+
+— or —
+
+Customer walks in directly → Staff creates customer profile on the spot
+
+INTAKE (type-specific)
+────────────────────────────────────────────────────────
+CUSTOM TAILORING:
+  Appointment: Consultation / Measurement Taking
+  Staff creates JobOrder (type: custom_tailoring, linked to appointment)
+  Staff records body measurements → saved to CustomerProfile
+  Due date calculated, total cost quoted, payment terms set
+
+ALTERATION:
+  Walk-in or appointment (type: consultation)
+  Staff creates JobOrder (type: alteration)
+  Garment inspected; alteration scope defined
+  No measurements usually needed (alterations are on existing garment)
+
+READY-TO-WEAR:
+  Customer selects from catalog portfolio (in-store or via public profile)
+  Staff creates JobOrder (type: ready_to_wear, catalog_item_id: linked)
+  Size confirmed (no custom measurements needed)
+
+DEPOSIT GATE (all types)
+────────────────────────────────────────────────────────
+Job order status: PENDING DEPOSIT
+Staff logs deposit payment: amount / method (Cash / GCash / Bank) / reference number
+Status unlocks → advances to next stage
+[Order cannot move forward until deposit is confirmed]
+
+LAYOUT APPROVAL (optional — for design-heavy orders)
+────────────────────────────────────────────────────────
+If layout_approval_required: true
+  Staff sends digital proof to customer (via external channel: Messenger/WhatsApp)
+  Staff logs: layout_approved_at timestamp, approved_by: "Customer (verbal / screenshot)"
+  Status advances to production
+
+PRODUCTION (stage tracking)
+────────────────────────────────────────────────────────
+CUSTOM TAILORING stages:
+  → CUTTING
+  → SEWING / ASSEMBLY
+  → DETAIL / EMBROIDERY  (optional)
+  → QUALITY CHECK  [trigger: notify customer "For Fitting" if fitting required]
+
+ALTERATION stages:
+  → ALTERATION IN PROGRESS
+  → QUALITY CHECK  [trigger: notify customer "For Fitting" or "For Pickup"]
+
+READY-TO-WEAR stages:
+  → PREPARING
+  → QUALITY CHECK  [trigger: notify customer "For Pickup"]
+
+FITTING (if applicable)
+────────────────────────────────────────────────────────
+Appointment created (type: first_fitting, linked to job_order_id)
+Staff records outcome: Approved / Needs Alterations
+If Needs Alterations → return to production (brief loop)
+If Approved → status advances to FOR PICKUP
+
+COMPLETION GATE
+────────────────────────────────────────────────────────
+Job order status: FOR PICKUP
+[Customer receives automated notification: "Your order is ready for pickup."]
+Customer arrives → Staff verifies balance is paid (logs balance_paid_at)
+If balance unpaid → cannot mark as COMPLETED (gate enforced)
+Staff confirms handover → status: COMPLETED
+Customer rates the order (1–5 stars + review text)
+
+POST-ORDER
+────────────────────────────────────────────────────────
+Measurement record permanently linked to this job order
+Order archived in CustomerProfile history
+Revenue event logged to analytics
+
+
+7.5 Final Shop Owner UX Architecture
+
+Design Principles:
+
+
+Surface what needs action. The home screen is not a dashboard — it's a triage board.
+Operations over configuration. Settings are a one-time activity. Orders are a daily activity. Design reflects this frequency.
+One flow, not parallel flows. All order types live in one Orders module. No split brains.
+The order is the center of gravity. Everything — payments, fittings, staff assignments — orbits the job order.
+Don't make the owner navigate to find out what happened. Status changes, payment events, and stage updates send notifications AND surface on the Today view.
+Reduce confirmation friction. Common actions (log deposit, advance stage, create appointment from order) should be one-click from the order card — not a navigation journey.
+
+
+Interaction Patterns:
+
+
+Order cards show: customer name, garment type, current stage, due date, payment status. No need to click in for this info.
+Stage advancement: inline button on order detail. Not a separate edit flow.
+Quick deposit log: a "+ Log Payment" button directly on order card when status = PENDING DEPOSIT.
+Appointment creation from order: "Schedule Fitting" button visible when order status = QUALITY CHECK.
+Rush orders: visually tagged (⚡) throughout, sorted to top of lists by default.
+
+
+Navigation Anti-patterns to Avoid:
+
+
+Never require more than 3 clicks to update a stage on a job order.
+Never require more than 2 clicks to find a customer's measurements.
+Never require the owner to visit two separate modules to complete one workflow (e.g., visiting both "Jobs" and "Payments" to close out an order).
+
+
+
+7.6 Final Thesis-Safe Version of SUTURA
+
+The strongest capstone-aligned implementation:
+
+Admin Portal (Build This)
+A minimal /admin frontend currently missing from the system. Without it, the thesis objective "system administrator will review and approve tailoring shop verification requests" is unimplementable from a UI perspective. Build it as a simple 4-tab admin portal: Shops (pending queue + active list), Plans (CRUD), Analytics (platform metrics), Support.
+
+Customer Portal (Build This)
+The /my-orders lightweight customer portal — order status, upcoming appointments, stored measurements, rate-and-review. This is the most defensible thesis gap because the thesis explicitly states: "customers monitor their ongoing garment fulfillment status in real time." Real-time status requires a logged-in view, not just an SMS.
+
+Job Orders (Expand This)
+Add order_type, is_rush, deposit_gate, and production stages. This is the thesis core — make it bulletproof.
+
+Appointments (Expand This)
+Add appointment_type and linked_job_order_id. These two fields make the appointment module actually useful and tie it correctly to the order lifecycle.
+
+Shop Discovery (Expand This)
+The public map and search is the customer-facing showcase. Invest in the filter UX: by garment type, by location/distance, by operating hours, by specialization. This is what makes the demo impressive and the thesis defensible.
+
+Branch Switcher (Fix This)
+Pass selectedBranch to all API calls. This is a critical bug that breaks multi-branch use cases and undermines the entire branch management thesis objective.
+
+Simplify These:
+
+
+Merge Services into Shop Settings
+Move Specializations into Shop Settings
+Remove CatalogOrder entity; fold into JobOrder with type field
+Remove Ready-to-Wear nav item
+Remove Payments Queue nav item; payment events live inside orders
+Remove Inventory folder permanently (empty, out of scope)
+
+
+Defer These:
+
+
+Rental lifecycle (add post-thesis as a job order service type)
+Event bundling (post-thesis)
+Layout file upload and customer approval workflow (post-thesis — the approval gate as a manual timestamp is within scope now)
+Bulk team order matrix (post-thesis)
+
+
+
+APPENDIX — QUICK REFERENCE DECISION TABLE
+
+DecisionActionReasonShould CatalogOrder stay?❌ RemoveDuplicate of JobOrder; frontend is minimal stubShould Ready-to-Wear stay in nav?❌ Remove from navFold into Orders with type filterShould Payments Queue stay in nav?❌ Remove from navFold into Orders; payment events live in order detailShould Specializations stay as page?❌ Move to SettingsOne-time config; not daily useShould Services stay as module?❌ Merge into SettingsSet-and-forget; not an operational screenShould Support Tickets stay in nav?❌ Demote to footerLow frequency; not operationalShould Inventory be built?❌ Permanent removeExplicitly out of scope in thesisShould branch switcher filter data?✅ FIX THIS NOWCritical bug; breaks branch management featureShould admin portal be built?✅ Build minimal versionRequired for thesis objective to functionShould customer portal be built?✅ Build itThesis explicitly requires real-time tracking for customersShould appointment types be added?✅ Add enumRequired for the appointment-to-order linkage to workShould deposit gate be enforced?✅ Add business logicCore real-world behavior; no production without DPShould rush flag be added?✅ Add to JobOrderSimple field; high real-world valueShould order_type be added?✅ Add to JobOrderUnifies three separate order flows into oneShould customer notes field be added?✅ Add to CustomerProfileThe "suki memory" — most-used CRM featureShould catalog remain?✅ Keep as portfolio onlyShowcase drives bookings; remove transactional behavior
+
+
+End of SUTURA Final System Synthesis Analysis
+Document covers: Phase 1–6 analysis + 6 Final Output Sections
+Scope: Based on SUTURA Thesis Document (May 2026), System Audit (June 2026), Tailoring Shop Business Research, and Fashion Shop Business Research
+

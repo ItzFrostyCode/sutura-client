@@ -4,7 +4,6 @@ import {
   type MyOrder,
   type MyAppointment,
   type CalendarCell,
-  IN_PRODUCTION,
   dayKey,
 } from './accountTypes';
 
@@ -70,8 +69,8 @@ export function useAccountHub(isAuthenticated: boolean) {
     return cells;
   }, [countsByDay]);
 
-  const inProduction = useMemo(() => orders.filter((o) => IN_PRODUCTION.has(o.status)).length, [orders]);
-  const readyForPickup = useMemo(() => orders.filter((o) => o.status === 'ready_for_pickup').length, [orders]);
+  const inProduction = useMemo(() => orders.filter((o) => o.progress && !o.progress.closed && ['request', 'confirmed', 'making'].includes(o.progress.current ?? '')).length, [orders]);
+  const readyForPickup = useMemo(() => orders.filter((o) => o.progress?.current === 'ready').length, [orders]);
   const completed = useMemo(() => orders.filter((o) => o.status === 'completed').length, [orders]);
 
   return {

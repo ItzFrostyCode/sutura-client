@@ -10,6 +10,8 @@ export interface StaffPerson {
   /** The branch they work in; null for the owner. */
   branchId: number | null;
   branch: string | null;
+  /** What they are good at, as the owner wrote it on the Staff page. */
+  skills: string[];
 }
 
 /** The people an order can be planned for or a correction assigned to: active staff, plus the owner when the owner is the one asking. */
@@ -23,10 +25,11 @@ export function useStoreStaff(storeId: number): StaffPerson[] {
       const rows = Array.isArray(res.data?.data) ? res.data.data : [];
       const staff: StaffPerson[] = rows
         .filter((r: { is_active?: boolean }) => r.is_active !== false)
-        .map((r: { user: { id: number; name: string }; active_jobs?: number; store_branch_id?: number | null; branch?: { name: string } | null }) => ({
+        .map((r: { user: { id: number; name: string }; active_jobs?: number; store_branch_id?: number | null; branch?: { name: string } | null; specialization?: string | string[] | null }) => ({
           id: r.user.id, name: r.user.name, active: r.active_jobs ?? null, branchId: r.store_branch_id ?? null, branch: r.branch?.name ?? null,
+          skills: ([] as string[]).concat(r.specialization ?? []).map((x) => x.trim()).filter(Boolean),
         }));
-      setPeople(isOwner && me ? [{ id: me.id, name: `${me.name} (owner)`, active: null, branchId: null, branch: null }, ...staff.filter((p) => p.id !== me.id)] : staff);
+      setPeople(isOwner && me ? [{ id: me.id, name: `${me.name} (owner)`, active: null, branchId: null, branch: null, skills: [] }, ...staff.filter((p) => p.id !== me.id)] : staff);
     }).catch(() => setPeople([]));
   }, [storeId, isOwner, me]);
 

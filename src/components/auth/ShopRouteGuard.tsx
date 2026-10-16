@@ -5,9 +5,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useShopAccount } from '@/hooks/useShopAccount';
 
 // Own-storefront subpaths the dashboard relies on (profile preview, review
-// management, catalog/service/package previews, portfolio). Customer
+// management, catalog/service previews, portfolio). Customer
 // actions on it — booking, repair requests — stay blocked.
-const OWN_STORE_SUBPATHS = ['', '/catalog', '/service', '/package', '/portfolio'];
+const OWN_STORE_SUBPATHS = ['', '/catalog', '/service', '/portfolio'];
 
 function isAllowed(pathname: string, ownStoreKeys: string[]): boolean {
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/print') || pathname.startsWith('/admin')) return true;

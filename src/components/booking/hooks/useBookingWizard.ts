@@ -5,20 +5,20 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
-import { MessageSquare, Ruler, Shirt, Scissors, Package } from 'lucide-react';
+import { buildBookingTypes } from '../bookingTypes';
 import {
   StoreSettings,
-  PackageInfo,
   CalendarAppointment,
   BookingCustomer,
   Branch,
   Service,
   SpecialHour,
-  BookingTypeOption,
 } from '../types';
 
-const VALID_APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup', 'other'];
-const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
+// Fitting and pickup are made by the system for a production order; nobody books them.
+const VALID_APPOINTMENT_TYPES = ['consultation', 'measurement', 'alteration', 'other'];
+
+export type BookingKind = 'service' | 'shop';
 
 export function useBookingWizard(storeId: string) {
   const router = useRouter();
@@ -36,15 +36,13 @@ export function useBookingWizard(storeId: string) {
     if (!hydrated || user) return;
     const query = searchParams.toString();
     const redirectTarget = `${pathname}${query ? `?${query}` : ''}`;
-    // Tablet/desktop: send the guest back to the page they came from (design, service, package or
+    // Tablet/desktop: send the guest back to the page they came from (design, service or
     // the store) with the Sign In modal over it, instead of a blank /login page.
     if (typeof window !== 'undefined' && window.innerWidth >= 600) {
       const itemId = searchParams.get('ref_item_id');
       const svcId = searchParams.get('service_id');
-      const pkgId = searchParams.get('package_id');
       const context = itemId ? `/store/${storeId}/catalog/${itemId}`
         : svcId ? `/store/${storeId}/service/${svcId}`
-        : pkgId ? `/store/${storeId}/package/${pkgId}`
         : `/store/${storeId}`;
       router.replace(`${context}?signin=1&redirect=${encodeURIComponent(redirectTarget)}`);
       return;
@@ -62,13 +60,14 @@ export function useBookingWizard(storeId: string) {
   const branchSlugParam = searchParams.get('branch');
   const serviceIdParam = searchParams.get('service_id');
   const serviceNameParam = searchParams.get('service_name');
-  const packageIdParam = searchParams.get('package_id');
   const refTypeParam = searchParams.get('ref_type');
+  // Coming from a service or design already tells us this is a service visit.
+  const hasServiceContext = !!serviceIdParam || !!refItemId || !!refName;
 
+  const [kind, setKind] = useState<BookingKind>(hasServiceContext ? 'service' : 'shop');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
-  const [packageInfo, setPackageInfo] = useState<PackageInfo | null>(null);
   // The owner's Appointment Configuration for the design being booked from.
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -107,35 +106,14 @@ export function useBookingWizard(storeId: string) {
   const [remarks, setRemarks] = useState('');
   // What an "Other" appointment is for (shown to the shop as "Other — {label}").
   const [purposeLabel, setPurposeLabel] = useState('');
-  // Separate from remarks (general "Notes") — both fields now render on the
-  // same step (2), so they need their own state or typing in one would show
-  // up in the other. Only used when needsOrderReference is true (fitting/
-  // pickup with no design reference).
-  const [orderReference, setOrderReference] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
-
-  // A customer arriving via a fitting/pickup deep link (e.g. staff sent them
-  // a link, or an order-tracking page linked here) already carries that
-  // context; everyone else starts without it and can opt in via the "I
-  // already have an order" toggle so Fitting/Pickup aren't presented as
-  // universal first-visit options (they only make sense against an existing
-  // order/garment — see BookingTypeSelector).
-  const [hasExistingOrder, setHasExistingOrder] = useState(
-    refTypeParam === 'fitting' || refTypeParam === 'pickup'
-  );
 
   // Material/fabric responsibility — a structured choice, not a new backend
   // field: encoded into the existing free-text `notes` column at submit time
   // (handleSubmit), the same bracket-tag convention already used below for
-  // the design-reference/package-inquiry context.
+  // the design-reference context.
   const [materialSource, setMaterialSource] = useState<'own' | 'shop' | ''>('');
   const [materialDescription, setMaterialDescription] = useState('');
-
-  // Payment State
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [paymentReference, setPaymentReference] = useState('');
-  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState('');
-  const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   // Calendar Appointments
   const [calendarAppointments, setCalendarAppointments] = useState<CalendarAppointment[]>([]);
@@ -183,171 +161,10 @@ export function useBookingWizard(storeId: string) {
     return storeSettings.services.find((s) => s.id.toString() === selectedServiceId || s.id.toString() === serviceIdParam) || null;
   }, [storeSettings?.services, selectedServiceId, serviceIdParam]);
 
-  const availableBookingTypes = useMemo(() => {
-    const consultationBase: BookingTypeOption = {
-      value: 'consultation',
-      label: 'Consultation',
-      duration: 30,
-      icon: React.createElement(MessageSquare, { size: 18 }),
-      hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
-    };
-
-    const measurementBase: BookingTypeOption = {
-      value: 'measurement',
-      label: 'Measurement',
-      duration: 45,
-      icon: React.createElement(Ruler, { size: 18 }),
-      hint: 'Get measured in person for your garment.',
-    };
-
-    const alterationBase: BookingTypeOption = {
-      value: 'alteration',
-      label: 'Alteration / Repair',
-      duration: 30,
-      icon: React.createElement(Scissors, { size: 18 }),
-      hint: 'Bring an existing garment for adjustment or repair.',
-    };
-
-    const fittingBase: BookingTypeOption = {
-      value: 'fitting',
-      label: 'Fitting',
-      duration: 45,
-      icon: React.createElement(Shirt, { size: 18 }),
-      hint: 'Try on your garment in progress so the store can adjust the fit.',
-    };
-
-    const pickupBase: BookingTypeOption = {
-      value: 'pickup',
-      label: 'Pickup',
-      duration: 15,
-      icon: React.createElement(Package, { size: 18 }),
-      hint: 'Collect your finished garment or order at the store.',
-    };
-
-    const withExisting = (baseList: BookingTypeOption[]) => {
-      return hasExistingOrder ? [...baseList, fittingBase, pickupBase] : baseList;
-    };
-
-    // 1. SPECIFIC CATALOG DESIGN CONTEXT
-    // Discuss design/pricing or take in-person measurements.
-    if (refName) {
-      return withExisting([consultationBase, measurementBase]);
-    }
-
-    // 1b. COMBO PACKAGE CONTEXT — the package's category decides the purpose,
-    // the same way a single service's type does.
-    if (packageIdParam) {
-      if (packageInfo?.service_category === 'alterations_repairs') {
-        return withExisting([{ ...alterationBase, label: 'Alteration / Repair', hint: 'Bring your garments for adjustment or repair with the store.' }]);
-      }
-      return withExisting([consultationBase, measurementBase]);
-    }
-
-    // 2. SPECIFIC SERVICE CONTEXT
-    const sName = (selectedService?.name || serviceNameParam || '').toLowerCase();
-    const hasSpecificService = !!selectedService || !!serviceIdParam || !!serviceNameParam;
-
-    if (hasSpecificService && sName) {
-      // Real functional taxonomy wins when the service is actually tagged —
-      // only falls back to guessing from the name for an older/untyped
-      // service that has no service_types set at all. isPrinting has no
-      // dedicated backend type (it's a marketing category, not a functional
-      // one), so it always goes by name.
-      const types = selectedService?.service_types ?? [];
-      const hasTypes = types.length > 0;
-
-      const isAlteration = hasTypes
-        ? types.includes('alteration_repair')
-        : (
-          sName.includes('alter') ||
-          sName.includes('repair') ||
-          sName.includes('hem') ||
-          sName.includes('adjust') ||
-          sName.includes('taper') ||
-          sName.includes('patch') ||
-          sName.includes('fix') ||
-          sName.includes('resize') ||
-          sName.includes('shorten') ||
-          sName.includes('lengthen') ||
-          sName.includes('resew')
-        );
-
-      if (isAlteration) {
-        return withExisting([
-          {
-            ...alterationBase,
-            label: 'Alteration / Repair',
-            hint: 'Bring your garment for adjustment or repair with the store.',
-          },
-        ]);
-      }
-
-      const isPrinting =
-        sName.includes('print') ||
-        sName.includes('sublimat') ||
-        sName.includes('embroid') ||
-        sName.includes('silkscreen') ||
-        sName.includes('dtf') ||
-        sName.includes('heat press') ||
-        sName.includes('vinyl');
-
-      if (isPrinting) {
-        return withExisting([
-          {
-            ...consultationBase,
-            label: 'Consultation / Order Discussion',
-            hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the store.',
-          },
-        ]);
-      }
-
-      const isBulk = hasTypes
-        ? types.includes('bulk_sublimation')
-        : (
-          sName.includes('bulk') ||
-          sName.includes('uniform') ||
-          sName.includes('corporate') ||
-          sName.includes('organization') ||
-          sName.includes('course') ||
-          sName.includes('batch') ||
-          sName.includes('team') ||
-          sName.includes('intramural')
-        );
-
-      if (isBulk) {
-        return withExisting([
-          {
-            ...consultationBase,
-            label: 'Consultation / Order Discussion',
-            hint: 'Discuss bulk garment requirements, fabric, sizing strategy, and quotation with the store.',
-          },
-          {
-            ...measurementBase,
-            hint: 'Get measured in person for your group or individual uniform.',
-          },
-        ]);
-      }
-
-      // Other custom tailoring / bespoke / made-to-measure services
-      return withExisting([
-        consultationBase,
-        {
-          ...measurementBase,
-          hint: 'Get measured in person for your custom garment.',
-        },
-      ]);
-    }
-
-    // 3. GENERAL SHOP CONTEXT (no specific design or service chosen yet)
-    const otherBase: BookingTypeOption = {
-      value: 'other',
-      label: 'Other',
-      duration: 30,
-      icon: React.createElement(MessageSquare, { size: 18 }),
-      hint: 'Something else — fabric selection, a question, a concern. Tell the store what it is for.',
-    };
-    return withExisting([consultationBase, measurementBase, alterationBase, otherBase]);
-  }, [refName, selectedService, serviceIdParam, serviceNameParam, hasExistingOrder, packageIdParam, packageInfo]);
+  const availableBookingTypes = useMemo(
+    () => buildBookingTypes({ kind, refName, selectedService, serviceIdParam, serviceNameParam }),
+    [kind, refName, selectedService, serviceIdParam, serviceNameParam],
+  );
 
   // Synchronize appointmentType if current selection is invalid for this service
   useEffect(() => {
@@ -359,7 +176,8 @@ export function useBookingWizard(storeId: string) {
     }
   }, [availableBookingTypes, appointmentType]);
 
-  const durationMinutes = availableBookingTypes.find((t) => t.value === appointmentType)?.duration ?? 30;
+  // One duration table, kept on the server for online and walk-in; the form only shows the length.
+  const durationMinutes = storeSettings?.durations?.[appointmentType] ?? availableBookingTypes.find((t) => t.value === appointmentType)?.duration ?? 30;
 
   const branchAutoFilled = !!branchSlugParam && !!storeSettings?.branches?.some((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam);
   const autoFilledBranch = branchAutoFilled ? storeSettings?.branches?.find((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam) || null : null;
@@ -376,9 +194,7 @@ export function useBookingWizard(storeId: string) {
   // The picker only reappears when the entry point genuinely carried neither
   // (a plain "Book Appointment" from the store profile, not tied to any
   // design or service).
-  const hasServiceContext = !!serviceIdParam || !!refName || !!packageIdParam;
-  const needsServicePicker = !hasServiceContext && appointmentType !== 'pickup' && appointmentType !== 'other' && !!storeSettings?.services && storeSettings.services.length > 0;
-  const needsOrderReference = (appointmentType === 'fitting' || appointmentType === 'pickup') && !refName;
+  const needsServicePicker = kind === 'service' && !hasServiceContext && !!storeSettings?.services && storeSettings.services.length > 0;
 
   const totalSteps = 3;
   const displayStep = step;
@@ -467,7 +283,7 @@ export function useBookingWizard(storeId: string) {
     !time ||
     !!getSpecialHoursForDate(date)?.is_closed ||
     (!!storeSettings?.branches && storeSettings.branches.length > 0 && !selectedBranchId) ||
-    (TYPES_REQUIRING_SERVICE.includes(appointmentType) && needsServicePicker && !selectedServiceId) ||
+    (needsServicePicker && !selectedServiceId) ||
     // The service's own required questions (Services → Booking Form).
     (selectedService?.custom_fields ?? []).some((f) => f.required && f.type !== 'checkbox' && f.label?.trim() && !(answers[f.label] ?? '').trim());
 
@@ -498,45 +314,11 @@ export function useBookingWizard(storeId: string) {
         setLoading(false);
       });
 
-    if (packageIdParam) {
-      api
-        .get(`/public/stores/${storeId}/service-packages`)
-        .then((res) => {
-          const found = (res.data.data || []).find((p: PackageInfo) => p.id.toString() === packageIdParam);
-          if (found) setPackageInfo(found);
-        })
-        .catch((err) => console.error('Failed to fetch package details:', err));
-    }
-
     api
       .get(`/catalog/${storeId}/appointments`)
       .then((res) => setCalendarAppointments(res.data.data || []))
       .catch((err) => console.error('Failed to fetch appointments:', err));
-  }, [storeId, branchSlugParam, serviceIdParam, packageIdParam]);
-
-  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingReceipt(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await api.post(`/public/stores/${storeId}/upload-receipt`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      if (res.data.success) {
-        setPaymentReceiptUrl(res.data.data.url);
-      }
-    } catch (err) {
-      console.error('Failed to upload receipt:', err);
-      alert('Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).');
-      e.target.value = '';
-    } finally {
-      setUploadingReceipt(false);
-    }
-  };
+  }, [storeId, branchSlugParam, serviceIdParam]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -554,18 +336,12 @@ export function useBookingWizard(storeId: string) {
         refSize ? ` — Size ${refSize}` : ''
       }${refColor ? ` — ${refColor}` : ''}]\n`;
     }
-    if (packageInfo) {
-      notesPayload += `[Package Inquiry: ${packageInfo.name} — includes ${packageInfo.services.map((s) => s.name).join(', ')}]\n`;
-    }
     if (materialSource === 'own') {
       notesPayload += `[Material: Customer will bring own fabric/sample${
         materialDescription.trim() ? ` — ${materialDescription.trim()}` : ''
       }]\n`;
     } else if (materialSource === 'shop') {
       notesPayload += `[Material: Customer will use the shop's material]\n`;
-    }
-    if (orderReference.trim()) {
-      notesPayload += `[Existing Order: ${orderReference.trim()}]\n`;
     }
     if (quantity.trim()) {
       notesPayload += `[Quantity: ${quantity.trim()} people/items]\n`;
@@ -575,25 +351,21 @@ export function useBookingWizard(storeId: string) {
     }
 
     try {
+      // The account is the customer (sign-in is required), so no name or email is sent. No payment is taken.
+      const isService = kind === 'service';
       await api.post(`/catalog/${storeId}/book`, {
-        name: user ? user.name || customer.name : customer.name,
-        email: user ? user.email || customer.email : customer.email,
-        phone: customer.phone,
+        kind,
+        phone: !user?.phone && customer.phone ? customer.phone : undefined,
         appointment_type: appointmentType,
         purpose_label: appointmentType === 'other' ? purposeLabel.trim() : undefined,
         scheduled_at,
         notes: notesPayload.trim() || null,
         store_branch_id: selectedBranchId ? Number(selectedBranchId) : null,
-        service_id: selectedServiceId ? Number(selectedServiceId) : null,
-        catalog_item_id: refItemId ? Number(refItemId) : null,
-        service_package_id: packageIdParam ? Number(packageIdParam) : null,
-        selected_size: refItemId ? refSize : null,
-        selected_color: refItemId ? refColor : null,
+        service_id: isService && selectedServiceId ? Number(selectedServiceId) : null,
+        catalog_item_id: isService && refItemId ? Number(refItemId) : null,
+        selected_size: isService && refItemId ? refSize : null,
+        selected_color: isService && refItemId ? refColor : null,
         reference_images: refImage ? [refImage] : undefined,
-        duration_minutes: durationMinutes,
-        payment_method: paymentMethod,
-        payment_reference: paymentMethod !== 'cash' ? paymentReference : null,
-        payment_receipt_path: paymentMethod !== 'cash' ? paymentReceiptUrl : null,
         answers: Object.keys(answers).length > 0 ? answers : undefined,
       });
       setSuccess(true);
@@ -630,7 +402,6 @@ export function useBookingWizard(storeId: string) {
     success,
     submitting,
     storeSettings,
-    packageInfo,
 
     // Design / Service reference context
     refName,
@@ -646,17 +417,14 @@ export function useBookingWizard(storeId: string) {
     availableBookingTypes,
     appointmentType,
     setAppointmentType,
-    hasExistingOrder,
-    setHasExistingOrder,
+    kind,
+    setKind,
+    kindLocked: hasServiceContext,
     needsServicePicker,
-    typesRequiringService: TYPES_REQUIRING_SERVICE,
     selectedServiceId,
     setSelectedServiceId,
-    needsOrderReference,
     remarks,
     setRemarks,
-    orderReference,
-    setOrderReference,
     materialSource,
     setMaterialSource,
     materialDescription,
@@ -689,13 +457,6 @@ export function useBookingWizard(storeId: string) {
     setCustomer,
     answers,
     setAnswers,
-    paymentMethod,
-    setPaymentMethod,
-    paymentReference,
-    setPaymentReference,
-    paymentReceiptUrl,
-    uploadingReceipt,
-    handleReceiptUpload,
     handleSubmit,
   };
 }

@@ -20,6 +20,7 @@ import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGr
 import ServiceDesignsGrid from '@/components/store-service-detail/ServiceDesignsGrid';
 import { useEmbedded, embedSuffix } from '@/hooks/useEmbedded';
 import { canonicalGarment } from '@/lib/garmentTaxonomy';
+import ServiceRequestLink from '@/components/store-service-detail/ServiceRequestLink';
 import ServiceAccordionSections from '@/components/store-service-detail/ServiceAccordionSections';
 import ServiceStoreProfileCard from '@/components/store-service-detail/ServiceStoreProfileCard';
 import ServiceRecommendationsSection from '@/components/store-service-detail/ServiceRecommendationsSection';
@@ -179,7 +180,7 @@ export default function ServiceDetailPage({
     };
   }, []);
 
-  const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && user?.roles?.[0]?.name === 'store_owner';
+  const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && !!user?.roles?.some((r) => r.name === 'store_owner' || r.name === 'branch_manager');
 
   // Real history-back when there's actual history to go back to (matches
   // useCatalogItemDetail.ts's handleBackClick) — a plain unconditional
@@ -282,6 +283,8 @@ export default function ServiceDetailPage({
   const facebookUrl = getSocialUrl(store.social_links, 'facebook');
   const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`;
   const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
+  const isRepair = (service.service_types ?? []).includes('alteration_repair');
+  const canRequest = !(service.service_types ?? []).some((t) => t === 'alteration_repair' || t === 'bulk_sublimation');
 
   return (
     <div className="min-h-full flex flex-col bg-canvas">
@@ -514,6 +517,9 @@ export default function ServiceDetailPage({
             </div>
           }
         />
+
+        {canRequest && <ServiceRequestLink href={`/store/${storeId}/request?service_id=${service.id}`} />}
+        {isRepair && <ServiceRequestLink kind="repair" href={`/store/${storeId}/repair-request?service_id=${service.id}`} />}
 
         {/* Specification · Description — same numbered-card system as the
             Catalog Item Detail page's Size Guide/Specification/Description. */}

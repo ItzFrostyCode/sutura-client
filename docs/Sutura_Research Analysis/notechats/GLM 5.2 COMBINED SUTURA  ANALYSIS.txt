@@ -1,0 +1,193 @@
+GLM 5.2 COMBINED ANALYSIS
+
+Here is the ultimate system synthesis and deep architectural audit of SUTURA, strictly aligning the business realities of Philippine tailoring and fashion shops with the approved capstone scope.
+
+---
+
+# SUTURA FINAL SYSTEM SYNTHESIS
+
+## PHASE 1 — BUSINESS MODEL COLLISION ANALYSIS
+
+**A. Which business flows overlap?**
+Both tailoring (Doc A) and fashion shops (Doc B) share a critical operational core: **Appointments (for fitting/measurements), Customer Records (the "Suki" system), Deposits (50% DP or Refundable Security), and Status Tracking (Cutting, Sewing, Ready for Pickup).** 
+
+**B. Which flows exist in business reality but are weak in SUTURA?**
+- **Deposit & Liability Tracking:** Real shops survive on 50% DPs and refundable rental deposits. SUTURA currently treats payments as a single flat record rather than separating "Earned Revenue" from "Refundable Liability."
+- **Showcase & Proof Gallery:** Shops win clients by posting "Client Album" photos, not just catalog items. SUTURA lacks a portfolio-centric showcase.
+- **Physical Store Dependency (The "Vibe" & Fit Risk):** Real businesses force offline conversions for fittings. SUTURA’s current e-commerce-like flow assumes online order finalization, which is unnatural for formalwear.
+
+**C. Which flows exist in SUTURA but feel unnatural in real business?**
+- **Complex Ready-to-Wear (RTW) E-commerce:** Treating RTW like Shopee checkout ignores the local "fake screenshot" scam culture and the necessity of physical inspection.
+- **Inventory Expectations:** Real shops track "Dirty/Clean" or "Rack A" for rentals, not strict SKU bin locations. (Note: Thesis forbids inventory, so this must be abstracted).
+- **Strict Role Separation on the Floor:** In reality, the Shop Owner is often the Tailor and the Cashier. Forcing users to switch accounts to update a status and log a payment causes friction.
+
+**D. Which workflows are overcomplicated?**
+- **Branch Switching vs. Order Routing:** Managing multiple branches as completely isolated databases is overcomplicated. In reality, the Main branch handles production; satellites handle intake. 
+- **Settings Fragmentation:** Splitting "Shop Settings" and "Account Settings" into deeply separated tabs with branch management hidden inside account settings creates severe navigation fatigue.
+
+**E. Which workflows are missing?**
+- **Inquiry/Reservation State:** The gap between "Customer sends a message" and "Appointment is booked."
+- **Rental Return & Inspection Flow:** Tracking the physical return of an item, inspection for damage, and deposit release.
+- **Alteration/Rework Loop:** The ability to revert a "Ready for Pickup" status back to "Sewing/Adjustment" if the fitting fails.
+
+### OUTPUT: CORE UNIFIED BUSINESS MODEL FOR SUTURA
+SUTURA operates as a **Centralized Service Tracker & Discovery Platform**, not an e-commerce checkout. The unified model is:
+**Discovery → Inquiry (Messenger/In-app) → Appointment Booking + Deposit Payment → Physical Fitting/Measurement → Job Order Creation (or Rental Reservation) → Production Tracking → Final Fitting → Balance Payment → Pickup/Return.**
+
+---
+
+## PHASE 2 — MODULE ARCHITECTURE AUDIT
+
+| Module | Audit Finding | Action |
+| :--- | :--- | :--- |
+| **Admin Dashboard** | Fits scope perfectly. Platform governance is clean. | **KEEP** |
+| **Subscriptions** | Essential for SaaS tier gating. | **KEEP** |
+| **Shop Discovery** | Core thesis value. Map integration is vital. | **KEEP** |
+| **Branches** | Overcomplicated. Should act as location tags, not isolated silos. | **SIMPLIFY** |
+| **Shop Dashboard** | Too CRUD-heavy. Needs to be an operational command center. | **EXPAND** |
+| **Catalog** | Must support all 6 listing types (MTO, Rental, Used, Showcase, etc.). | **EXPAND** |
+| **Services** | Redundant if Catalog items have service types (e.g., "Custom Tailoring"). | **MERGE** into Catalog |
+| **Specializations** | Should be simple tags, not standalone management pages. | **SIMPLIFY** |
+| **Appointments** | Core driver. Must support physical fitting and consultation types. | **KEEP** |
+| **Job Orders** | The central hub. Must support Alteration/Rework loops. | **KEEP** |
+| **Payments** | Must split into "Deposit" (liability) and "Balance" (revenue) tracking. | **EXPAND** |
+| **Customers** | The "Suki" CRM. Needs saved measurements and transaction history. | **KEEP** |
+| **Reviews** | Standard marketplace feature. | **KEEP** |
+| **Reports** | Keep to sales, balances, and productivity. No inventory/accounting. | **SIMPLIFY** |
+| **Staff** | Needs simple role assignment (Cutter, Sewer, Front Desk). | **KEEP** |
+| **Shop Settings** | Consolidate hours, location, social links, and policies here. | **SIMPLIFY** |
+| **Profile** | Move personal info/password into a single Account dropdown. | **MOVE** |
+
+---
+
+## PHASE 3 — ROLE SYSTEM AUDIT (CLEAN RBAC ARCHITECTURE)
+
+**1. System Admin (Platform Governance)**
+- **Owns:** Subscription plans, Platform analytics, Verification status.
+- **Triggers:** Approves/Rejects Shop registrations. Manages global categories.
+- **Cannot Access:** Individual shop job orders, customer measurements, staff profiles.
+
+**2. Shop Owner (Business Operator)**
+- **Owns:** Shop profile, Branches, Catalog/Services, Staff accounts, Subscriptions.
+- **Triggers:** Assigns Job Orders to staff. Approves appointments. Verifies payments. 
+- **Cannot Access:** System-wide analytics, other shops' data.
+
+**3. Staff (Workshop/Floor Executor)**
+- **Owns:** Their assigned queue. 
+- **Sees:** Customer profiles & measurements *only for orders assigned to them*.
+- **Triggers:** Updates production status (Cutting → Sewing → Ready). Logs measurements. 
+- **Cannot Access:** Billing/Subscription settings, Shop financial reports, other staff's queues.
+
+**4. Customer (End-User)**
+- **Owns:** Their profile, saved measurements, appointment history, order tracking.
+- **Triggers:** Books appointments, sends inquiries, leaves reviews, uploads payment receipts.
+- **Cannot Access:** Shop dashboard, staff details, other customer profiles.
+
+---
+
+## PHASE 4 — SHOP OWNER EXPERIENCE AUDIT (UX ARCHITECTURE)
+
+**The Problem:** The current layout causes a "logout feeling"—jumping from a static CRUD Catalog page to a Calendar to a Payment queue feels like using three different disconnected software tools. 
+
+**The Solution:** Transform the dashboard from a "Database Manager" into an "Operational Workspace" (Shopee Seller Center / Meta Business Suite model).
+
+**Ideal Shop Owner Workspace Layout:**
+- **Top Bar:** Global Search (Find any customer/order instantly) + Branch Context Switcher + Notifications (New inquiries, late payments) + Quick Actions (New Order, Log Payment).
+- **Left Sidebar (Task-Oriented, not Object-Oriented):**
+  - 🏠 **Home:** Actionable metrics. "X orders need QC," "Y appointments today," "Z unpaid balances."
+  - 📅 **Schedule & Inbox:** Unified view of upcoming appointments and customer inquiries.
+  - ✂️ **Production Queue:** The core Job Order pipeline (Kanban board: Pending → Cutting → Sewing → Fitting → Ready).
+  - 💳 **Payments:** Simple ledger of "Deposits Collected" vs "Balances Due."
+  - 🛍️ **Storefront:** The Catalog & Services manager. Where portfolio photos and rental items are posted.
+  - 👥 **Suki CRM:** Customer database with measurement histories.
+  - ⚙️ **Settings:** Shop profile, staff, branches, subscription.
+
+*This eliminates the CRUD feeling. The owner logs in and immediately sees their "To-Do" list for the day, not a blank table of database rows.*
+
+---
+
+## PHASE 5 — ORDER PIPELINE NORMALIZATION
+
+To avoid duplicated logic, unify all business models into **Listing Types** within a single Catalog, which then route to the appropriate pipeline.
+
+**Unified Listing Types:**
+1. **Made-to-Order (MTO) / Custom Tailoring** (Gowns, Barongs, Uniforms)
+2. **Alteration / Repair** (Racing, adjusting)
+3. **Rental** (Per piece or Event Package)
+4. **Ready-Made / Used Item Sale** (Liquidation stock)
+5. **Showcase Only** (Portfolio photos, no direct transaction)
+
+**Pipeline Routing:**
+- **MTO & Alteration:** Creates an **Appointment** (for measurement) → Converts to a **Job Order** (with production tracking) → Triggers **Payment** (50% DP, 50% Balance).
+- **Rental:** Creates a **Catalog Order** → Triggers **Payment** (Rental Fee + Refundable Deposit) → Tracks Dates (Pickup Date → Return Date) → Does *not* enter production Job Order queue unless alteration is needed.
+- **Used/Ready-Made Sale:** Creates a **Catalog Order** → Triggers **Payment** (Full amount) → Status: "Ready for Pickup".
+- **Showcase Only:** Allows Customer to send an **Inquiry** (Appointment request) to replicate a design.
+
+*By normalizing this, a single "Orders" module can display all types using a "Type" filter, rather than having separate databases for Job Orders and Catalog Orders.*
+
+---
+
+## PHASE 6 — THESIS COMPLIANCE CHECK
+
+| Feature / Flow | Scope Status | Justification / Action |
+| :--- | :--- | :--- |
+| **Job Order Tracking (Cutting, Sewing, Fitting)** | ✅ Inside Scope | Core objective. Multi-stage garment tracking. |
+| **Map-Based Discovery** | ✅ Inside Scope | Explicitly stated in objectives. |
+| **Appointment & Measurement Logging** | ✅ Inside Scope | Central to the Order Tracking module. |
+| **Deposit & Balance Payment Tracking** | ✅ Inside Scope | "Tracks transaction details and deposits." |
+| **Rental Return Tracking (Dates & Condition)** | ✅ Inside Scope | Can be tracked via Job Order/Catalog Order status fields without violating rules. |
+| **Inventory Management (Fabric, Threads)** | ❌ Outside Scope | **MUST EXCLUDE.** Thesis explicitly excludes material stock monitoring. |
+| **Courier / Delivery API** | ❌ Outside Scope | **MUST EXCLUDE.** Logistics are handled externally. |
+| **Payment Gateway Integration (GCash API)** | ❌ Outside Scope | **MUST EXCLUDE.** Payments are logged manually via receipt upload. |
+| **Automated SMS/Email Notifications** | ⚠️ Limited Scope | Allowed, but dependent on third-party services. Keep to basic in-app notifications + email if possible. |
+| **Payroll / Piece-rate (Pakiwari) tracking** | ❌ Outside Scope | **MUST EXCLUDE.** Employee payroll is strictly excluded. |
+
+---
+
+## FINAL OUTPUT REQUIRED
+
+### 1. Final Unified SUTURA Business Model
+SUTURA is a **Web-Based Tailoring & Fashion Service Tracker**. It bridges the gap between Facebook-based inquiries and physical workshop execution. It does not sell products like an e-commerce store; it **books services, tracks custom production, and manages rental lifecycles**. Customers discover shops via map/garment filters, inquire, and book physical appointments. Shop owners log 50% downpayments, take digital measurements, and update production stages. The system ensures transparency from the first fitting to the final garment pickup.
+
+### 2. Final Clean Module Structure
+- **Admin Portal:** Shop Approvals, Subscription Plans, Platform Analytics.
+- **Shop Owner Dashboard:**
+  - *Command Center:* Home (To-dos), Schedule & Appointments, Payments Ledger.
+  - *Workroom:* Production Queue (Job Orders), Customer CRM (Sukis & Measurements).
+  - *Storefront:* Catalog (Listings: MTO, Rental, Showcase, Sale), Reviews.
+  - *Configuration:* Shop Profile & Branches, Staff Management, Subscription Billing.
+- **Staff Dashboard:** My Production Queue, My Appointments, Customer Measurements.
+- **Customer Portal:** Map Discovery, Shop Profiles, My Appointments, My Orders (Track Status), My Measurements.
+
+### 3. Final Role Architecture
+- **Admin:** Gatekeeper. Governs platform integrity and tenant subscriptions.
+- **Shop Owner:** Business Manager. Configures storefront, manages team, oversees all operational tracking and finances.
+- **Staff:** Executor. Interacts only with assigned daily tasks (measurements, status updates).
+- **Customer:** Consumer. Searches, books, tracks, and reviews.
+
+### 4. Final Order Flow Architecture
+1. **Inquiry:** Customer finds Shop via Map/Catalog → Sends Inquiry / Booking Request.
+2. **Intake:** Shop Owner approves Appointment → Customer pays Deposit (logged manually).
+3. **Execution (Custom/MTO):** Staff takes Measurements → Creates Job Order → Updates stages (Cutting → Sewing).
+4. **Execution (Rental):** Shop logs Catalog Order → Marks as "Reserved" → Awaits Pickup.
+5. **Fitting/QA:** Custom garments enter "Fitting" stage → Adjustments loop if needed.
+6. **Closure:** Customer pays Balance (logged) → Status: "Released/Picked Up". (If Rental: Status: "Returned" → Deposit refunded).
+
+### 5. Final Shop Owner UX Architecture
+**Fluid, Business-First, Action-Driven.**
+- **No more "CRUD tables."** The default view is an operational dashboard highlighting *today's* bottlenecks (e.g., "3 garments awaiting QC", "2 unpaid balances").
+- **Unified Search:** A single search bar to find "Juan dela Cruz" (Customer) or "JOB-1024" (Order) instantly.
+- **Kanban Production Board:** Job orders are drag-and-drop cards moving across columns (Pending → Cutting → Sewing → Ready). This mimics physical garment tags moving through a workshop.
+- **Quick-Action Floating Buttons:** "Log Payment," "New Appointment," "Upload Client Photo" accessible from any screen.
+- **Landmark Manager:** A dedicated field in Shop Settings for "Nearest Landmark" that auto-appends to public profiles and map pins, solving the #1 PH customer pain point.
+
+### 6. Final Thesis-Safe Version of SUTURA
+The strongest capstone-aligned version of SUTURA strictly adheres to the approved documentation:
+- It features a **Map-Based Discovery Module** utilizing Google Maps API for Davao City tailors.
+- It implements a **Subscription Tier System** (Basic, Pro, Premium) gated by the Admin.
+- It utilizes a **Tailoring Shop Dashboard** where owners manage staff, branches, and services.
+- The core engine is the **Order Tracking and Measurement Module**, where staff version-control JSON body dimensions and update sequential production milestones.
+- Payments are **tracked manually** (deposit/balance), respecting the exclusion of third-party gateways.
+- It entirely **excludes inventory, payroll, and courier APIs**, ensuring 100% compliance with the approved scope limitations. 
+
+This system is realistic, locally contextualized, and technologically bounded—making it the perfect IT capstone project.

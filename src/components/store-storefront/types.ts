@@ -22,7 +22,6 @@ export interface PublicService {
   category?: string;
   service_type?: string;
   service_category?: string | null;
-  /** Which "Service Categories" chip it sits under on this tab. */
   showcase_category?: string | null;
   service_leaf_type?: string | null;
   categories?: string[];
@@ -66,18 +65,6 @@ export interface PublicService {
     required?: boolean;
     options?: string[];
   }[];
-}
-
-export interface PublicServicePackage {
-  id: number;
-  name: string;
-  description: string | null;
-  bundle_price: string | null;
-  image_url?: string | null;
-  service_category?: string | null;
-  reviews_count?: number;
-  reviews_avg_rating?: number | null;
-  services: { id: number; name: string; base_price: string | null }[];
 }
 
 export interface CatalogItemImage {

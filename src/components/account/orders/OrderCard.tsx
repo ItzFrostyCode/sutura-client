@@ -6,9 +6,9 @@ import { type MyOrder, getPhaseMeta } from './ordersTypes';
 
 /** One job order as a soft card: shop, what it is and where it stands, due date, and what is still to pay. */
 export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
-  const meta = getPhaseMeta(order.status);
+  const meta = getPhaseMeta(order.status, order.progress);
   const StatusIcon = meta.Icon;
-  const itemName = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? order.garment_category ?? 'Garment';
+  const itemName = order.catalog_item_name ?? order.service_name ?? order.garment_category ?? 'Garment';
 
   return (
     <Link href={`/account/orders/${order.id}`} className="card-soft flex gap-3 p-4 transition-opacity active:opacity-80">
@@ -31,6 +31,9 @@ export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
             <StatusIcon size={12} /> {meta.label}
           </span>
         </div>
+
+        {order.progress && <p className="mobile-body-sm mt-1 truncate font-normal text-ink-body">{order.progress.headline}</p>}
+        {order.progress?.action && <p className="mobile-caption mt-1 font-semibold text-taupe">{order.progress.action.label}</p>}
 
         <div className="mobile-caption mt-1 flex items-center gap-3 text-ink-muted">
           <span className="truncate">{order.order_number}</span>

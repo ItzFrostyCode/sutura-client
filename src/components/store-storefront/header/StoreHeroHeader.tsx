@@ -1,5 +1,6 @@
 'use client';
 
+import { useCanGoBack } from '@/hooks/useCanGoBack';
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -94,6 +95,8 @@ export default function StoreHeroHeader({
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
   const router = useRouter();
+  // A tab opened from the dashboard's Eye icon (or a shared link) has nothing to go back to: no Back button there.
+  const canGoBack = useCanGoBack();
   const [editingImage, setEditingImage] = useState<'logo' | 'banner' | null>(null);
 
   return (
@@ -106,7 +109,7 @@ export default function StoreHeroHeader({
               state/query exactly since this is real browser-history back,
               not a hardcoded destination. Overlaid on the banner so it's
               reachable without scrolling on every breakpoint. */}
-          {!isShopViewingOwnStore && !embedded && (
+          {!isShopViewingOwnStore && !embedded && canGoBack && (
             <button
               type="button"
               onClick={() => router.back()}
@@ -214,7 +217,8 @@ export default function StoreHeroHeader({
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
             {activeBranch && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
-                <MapPin size={11} /> {activeBranch.name}
+                {/* The main branch is marked once, by " · Main HQ": a name that already says "(Main)" would show it twice. */}
+                <MapPin size={11} /> {Boolean(activeBranch.is_main) ? activeBranch.name.replace(/\s*\(main\)\s*$/i, '') : activeBranch.name}
                 {Boolean(activeBranch.is_main) ? ' · Main HQ' : ''}
               </span>
             )}
@@ -351,7 +355,15 @@ export default function StoreHeroHeader({
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (tab.id === 'services' && typeof window !== 'undefined') {
+                      const el = document.getElementById('service-group-title') || tabBarRef.current;
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }
+                  }}
                   className={`flex-1 sm:flex-none min-w-0 min-h-[46px] py-2.5 px-3 sm:px-5 flex items-center justify-center text-center text-sm sm:text-base whitespace-nowrap transition-all border-b-2 -mb-px cursor-pointer ${
                     isActive
                       ? 'border-ink text-ink font-semibold'

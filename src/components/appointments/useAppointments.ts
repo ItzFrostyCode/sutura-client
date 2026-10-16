@@ -1,17 +1,20 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
+import type { WalkInClash } from './WalkInClashDialog';
+import { newOrderHref } from '@/components/jobs/board/newOrderHref';
 import {
   Appointment, ServiceData, CustomerData, BranchData, StaffData,
-  AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString, minTimeForDate
+  AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString, minTimeForDate, appointmentNo,
 } from './appointmentHelpers';
 
 export function useAppointments() {
   const { store, user } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const { selectedBranchId } = useBranch();
 
@@ -19,8 +22,9 @@ export function useAppointments() {
   const [loading, setLoading]           = useState(true);
   const [viewMode, setViewMode]         = useState<'table' | 'cards' | 'calendar'>('table');
   const [calSubMode, setCalSubMode]     = useState<'month' | 'day'>('month');
-  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all' | 'closed'>('all');
   const [typeFilter, setTypeFilter]     = useState<AppointmentType | 'all'>('all');
+  const [whenFilter, setWhenFilter]     = useState<'any' | 'today' | 'upcoming' | 'past'>('any');
   const [search, setSearch]             = useState('');
   // Plain staff start on "assigned to me" — their own work first; anyone can flip it.
   const [assignedToMe, setAssignedToMe]  = useState<boolean | null>(null);
@@ -29,7 +33,9 @@ export function useAppointments() {
   const [hoveredAptId, setHoveredAptId] = useState<number | null>(null);
 
   // Modal visibility
-  const [showCreateModal,    setShowCreateModal]    = useState(false);
+  // Opened from a customer's profile (Book appointment): the new-appointment form is already open with that customer.
+  const [presetCustomerId, setPresetCustomerId] = useState(() => searchParams.get('customer_id') ?? '');
+  const [showCreateModal,    setShowCreateModal]    = useState(Boolean(searchParams.get('customer_id')));
   const [showReviewModal,    setShowReviewModal]    = useState(false);
   const [showRescheduleModal,setShowRescheduleModal]= useState(false);
   const [showCompleteModal,  setShowCompleteModal]  = useState(false);
@@ -50,6 +56,8 @@ export function useAppointments() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [error, setError]                     = useState('');
   const [followUpError, setFollowUpError]     = useState('');
+  // A walk-in against an online request that is still waiting: the owner chooses (see WalkInClashDialog).
+  const [clash, setClash] = useState<{ payload: Record<string, unknown>; conflicts: WalkInClash['conflicts'] } | null>(null);
 
   // Reference data
   const [services,  setServices]  = useState<ServiceData[]>([]);
@@ -168,17 +176,33 @@ export function useAppointments() {
     }
   };
 
-  // Staff Check-In — records arrival time only. Does not touch `status`;
-  // On Time/Late is derived on render from checked_in_at vs scheduled_at.
+  // "Customer arrived": one tap. The server records the arrival and starts the visit (an early customer waits
+  // if another visit is still using the branch; tap again once it is free).
   const handleCheckIn = async (id: number) => {
     if (!store) return;
     setActionLoadingId(id);
     try {
-      await api.put(`/stores/${store.id}/appointments/${id}`, { checked_in_at: new Date().toISOString() });
-      toast.success('Client checked in.');
+      const res = await api.post(`/stores/${store.id}/appointments/${id}/arrive`);
+      if (res.data?.started === false) toast.info(res.data?.message ?? 'Arrival recorded. The customer waits for their time.');
+      else toast.success('Visit started.');
       fetchAppointments();
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to check in client.'));
+      toast.error(getErrorMessage(err, 'Could not record the arrival.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // "Didn't come": the one way to record a no-show (same data as Done > Didn't come).
+  const handleDidntCome = async (id: number) => {
+    if (!store) return;
+    setActionLoadingId(id);
+    try {
+      await api.post(`/stores/${store.id}/appointments/${id}/complete`, { outcome: 'no_show' });
+      toast.success('Recorded: the customer didn\u2019t come.');
+      fetchAppointments();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not record this.'));
     } finally {
       setActionLoadingId(null);
     }
@@ -262,9 +286,23 @@ export function useAppointments() {
       setEditingApt(null);
       setError('');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to save appointment.'));
+      const data = (err as { response?: { data?: { code?: string; conflicts?: WalkInClash['conflicts'] } } })?.response?.data;
+      if (data?.code === 'pending_online_request') {
+        setClash({ payload, conflicts: data.conflicts ?? [] });
+      } else {
+        setError(getErrorMessage(err, 'Failed to save appointment.'));
+      }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // The owner's choice for a clash: serve the walk-in (the online customer is asked to move), or pick another time.
+  const resolveClash = async (choice: 'serve_walkin_reschedule_online' | 'other_time') => {
+    const pending = clash;
+    setClash(null);
+    if (choice === 'serve_walkin_reschedule_online' && pending) {
+      await handleCreateSubmit({ ...pending.payload, on_conflict: choice });
     }
   };
 
@@ -288,28 +326,23 @@ export function useAppointments() {
     }
   };
 
-  const handleCompleteSubmit = async (aptId: number, notes: string, jobOrderId: string, measurementAction: 'none' | 'record', outcome: string, fittingNotes?: string) => {
+  // "Done": Consultation only (completed) or Didn't come (no_show). Proceed to Production Order goes through
+  // handleCreateJob: creating the order closes the visit.
+  const handleCompleteSubmit = async (aptId: number, result: 'completed' | 'no_show', notes: string, fittingNotes?: string) => {
     if (!store) return;
     setIsSubmitting(true);
     try {
       await api.post(`/stores/${store.id}/appointments/${aptId}/complete`, {
-        notes:          notes || undefined,
-        job_order_id:   jobOrderId || undefined,
-        outcome:        outcome,
-        fitting_notes:  fittingNotes || undefined,
+        notes:         notes || undefined,
+        outcome:       result,
+        fitting_notes: fittingNotes || undefined,
       });
       setShowCompleteModal(false);
-
-      if (measurementAction === 'record') {
-        const targetApt = appointments.find(a => a.id === aptId);
-        const custId = targetApt?.customer?.id;
-        if (custId) router.push(`/dashboard/measurements?customer_id=${custId}`);
-      }
       setCompleteApt(null);
-      toast.success('Appointment marked as completed!');
+      toast.success(result === 'no_show' ? 'Recorded: the customer didn\u2019t come.' : 'Visit done.');
       fetchAppointments();
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to complete appointment.'));
+      toast.error(getErrorMessage(err, 'Could not close this visit.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -335,12 +368,8 @@ export function useAppointments() {
 
   const handleCreateJob = async (apt: Appointment) => {
     const custId = apt.customer?.id;
-    const servId = apt.service?.id;
     if (!custId) { toast.error('Customer not found.'); return; }
-    const serviceParam = servId ? `&service_id=${servId}` : '';
-    const notesParam = encodeURIComponent(`From appointment. Notes: ${apt.notes || ''}`);
-    const packageParam = apt.service_package?.id ? `&service_package_id=${apt.service_package.id}` : '';
-    router.push(`/dashboard/jobs/new?customer_id=${custId}${serviceParam}${packageParam}&notes=${notesParam}&appointment_id=${apt.id}`);
+    router.push(newOrderHref(apt));
   };
 
   // Multi-attribute searching and filtering
@@ -348,28 +377,32 @@ export function useAppointments() {
     const q = search.trim().toLowerCase();
     const needsNewTime = (x: Appointment) => x.status === 'pending' && x.outcome === 'rescheduled';
     return appointments.filter(a => {
-      const matchStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchStatus = statusFilter === 'all'
+        || (statusFilter === 'closed' ? ['cancelled', 'rejected', 'no_show'].includes(a.status) : a.status === statusFilter);
+      const today = getLocalDateString(new Date());
+      const day = a.scheduled_at ? a.scheduled_at.split('T')[0].split(' ')[0] : '';
+      const matchWhen = whenFilter === 'any' || (whenFilter === 'today' ? day === today : whenFilter === 'upcoming' ? day >= today : day < today);
       const matchType   = typeFilter   === 'all' || a.appointment_type === typeFilter;
       const mineOnly = assignedToMe ?? isPlainStaff;
       if (mineOnly && a.assigned_staff_id !== user?.id) return false;
-      if (!matchStatus || !matchType) return false;
+      if (!matchStatus || !matchType || !matchWhen) return false;
       if (!q) return true;
 
       return (
         a.customer?.name?.toLowerCase().includes(q) ||
         a.customer?.email?.toLowerCase().includes(q) ||
         a.customer?.phone?.toLowerCase().includes(q) ||
+        appointmentNo(a.id).toLowerCase().includes(q) ||
         a.service?.name?.toLowerCase().includes(q) ||
         a.appointment_type?.toLowerCase().includes(q) ||
         a.garment_category?.toLowerCase().includes(q) ||
         a.notes?.toLowerCase().includes(q) ||
-        a.branch?.name?.toLowerCase().includes(q) ||
         a.assigned_staff?.name?.toLowerCase().includes(q)
       );
     })
       // Requests whose slot a walk-in took go to the top so they are not missed (stable: the rest keep their order).
       .sort((x, y) => Number(needsNewTime(y)) - Number(needsNewTime(x)));
-  }, [appointments, statusFilter, typeFilter, search, assignedToMe, isPlainStaff, user?.id]);
+  }, [appointments, statusFilter, typeFilter, whenFilter, search, assignedToMe, isPlainStaff, user?.id]);
 
   // Operational metrics
   const stats = useMemo(() => {
@@ -422,6 +455,8 @@ export function useAppointments() {
     setStatusFilter,
     typeFilter,
     setTypeFilter,
+    whenFilter,
+    setWhenFilter,
     search,
     setSearch,
     currentDate,
@@ -431,6 +466,8 @@ export function useAppointments() {
     hoveredAptId,
     setHoveredAptId,
     showCreateModal,
+    presetCustomerId,
+    setPresetCustomerId,
     setShowCreateModal,
     showReviewModal,
     setShowReviewModal,
@@ -486,6 +523,9 @@ export function useAppointments() {
     handleCompleteSubmit,
     handleCancelConfirm,
     handleCreateJob,
+    handleDidntCome,
+    clash,
+    resolveClash,
     filtered,
     stats,
     pendingCount: stats.pendingCount,

@@ -84,7 +84,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
               refPrice={b.refPrice}
               refSize={b.refSize}
               refColor={b.refColor}
-              packageInfo={b.packageInfo}
               selectedService={b.selectedService}
               serviceName={b.serviceNameParam}
               quantity={b.quantity}
@@ -99,9 +98,9 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 availableBookingTypes={b.availableBookingTypes}
                 appointmentType={b.appointmentType}
                 setAppointmentType={b.setAppointmentType}
-                showExistingOrderToggle={!b.refName}
-                hasExistingOrder={b.hasExistingOrder}
-                setHasExistingOrder={b.setHasExistingOrder}
+                kind={b.kind}
+                setKind={b.setKind}
+                kindLocked={b.kindLocked}
                 purposeLabel={b.purposeLabel}
                 setPurposeLabel={b.setPurposeLabel}
               />
@@ -116,13 +115,9 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 materialDescription={b.materialDescription}
                 setMaterialDescription={b.setMaterialDescription}
                 needsServicePicker={b.needsServicePicker}
-                typesRequiringService={b.typesRequiringService}
                 selectedServiceId={b.selectedServiceId}
                 setSelectedServiceId={b.setSelectedServiceId}
                 storeSettings={b.storeSettings}
-                needsOrderReference={b.needsOrderReference}
-                orderReference={b.orderReference}
-                setOrderReference={b.setOrderReference}
                 remarks={b.remarks}
                 setRemarks={b.setRemarks}
                 branchesWithDistance={b.branchesWithDistance}
@@ -143,13 +138,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 answers={b.answers}
                 serviceFields={b.selectedService?.custom_fields}
                 setAnswers={b.setAnswers}
-                paymentMethod={b.paymentMethod}
-                setPaymentMethod={b.setPaymentMethod}
-                paymentReference={b.paymentReference}
-                setPaymentReference={b.setPaymentReference}
-                paymentReceiptUrl={b.paymentReceiptUrl}
-                uploadingReceipt={b.uploadingReceipt}
-                handleReceiptUpload={b.handleReceiptUpload}
               />
             )}
 
@@ -164,7 +152,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 refSize={b.refSize}
                 refColor={b.refColor}
                 selectedService={b.selectedService}
-                packageInfo={b.packageInfo}
                 appointmentType={b.appointmentType}
                 date={b.date}
                 time={b.time}
@@ -176,13 +163,10 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 user={b.user}
                 customer={b.customer}
                 remarks={b.remarks}
-                orderReference={b.orderReference}
                 answers={b.answers}
                 storeSettings={b.storeSettings}
                 materialSource={b.materialSource}
                 materialDescription={b.materialDescription}
-                paymentMethod={b.paymentMethod}
-                paymentReceiptUrl={b.paymentReceiptUrl}
                 quantity={b.quantity}
                 handleSubmit={b.handleSubmit}
               />
@@ -194,7 +178,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
           <BookingDesktopSummary
             refName={b.refName}
             refPrice={b.refPrice}
-            packageInfo={b.packageInfo}
             selectedService={b.selectedService}
             appointmentType={b.appointmentType}
             selectedBranch={b.selectedBranch}
@@ -223,7 +206,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
         step1NextDisabled={b.step1NextDisabled}
         step2NextDisabled={b.step2NextDisabled}
         submitting={b.submitting}
-        uploadingReceipt={b.uploadingReceipt}
         returnToReview={b.returnToReview}
       />
     </div>

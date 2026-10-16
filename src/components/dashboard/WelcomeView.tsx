@@ -34,14 +34,14 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     step: 'Step 3',
     title: 'List Your Services & Pricing',
-    desc: 'Declare what you offer — Barong, Gown, School Uniforms, Jerseys, Alterations, or custom services — with pricing tiers, estimated turnaround, and minimum order quantities for bulk work. You can bundle related services into Packages at a combo price too.',
+    desc: 'Declare what you offer — Barong, Gown, School Uniforms, Jerseys, Alterations, or custom services — with pricing tiers, estimated turnaround, and minimum order quantities for bulk work.',
     icon: Tag,
     href: '/dashboard/services',
   },
   {
     step: 'Step 4',
     title: 'Build Your Catalog',
-    desc: 'Add photos of past work and craftsmanship samples customers can browse and request fittings for — bespoke tailoring works, not off-the-shelf inventory. Each catalog item showcases your atelier craftsmanship.',
+    desc: 'Add photos of your past work that customers can browse and request fittings for — your own tailoring work. Each design shows what your shop can make.',
     icon: ShoppingBag,
     href: '/dashboard/catalog',
   },

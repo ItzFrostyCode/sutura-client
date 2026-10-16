@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/store/useAuthStore';
 
-// Services, packages and catalog designs are written only by the owner or a branch
+// Services and catalog designs are written only by the owner or a branch
 // manager (role:store_owner,branch_manager on the API). Plain staff can read them.
 export function useCanManageOfferings(): boolean {
   const { user } = useAuthStore();

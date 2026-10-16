@@ -40,7 +40,7 @@ function MyOrdersPageContent() {
 
   const activeMatch = TABS.find((t) => t.key === activeTab)?.match ?? TABS[0].match;
   const filteredOrders = useMemo(
-    () => orders.filter((o) => activeMatch(o.status)),
+    () => orders.filter((o) => activeMatch(o)),
     [orders, activeMatch],
   );
 
@@ -52,7 +52,7 @@ function MyOrdersPageContent() {
         label="Order status"
         active={activeTab}
         onChange={setActiveTab}
-        options={TABS.map((tab) => ({ key: tab.key, label: tab.label, count: loading ? undefined : orders.filter((o) => tab.match(o.status)).length }))}
+        options={TABS.map((tab) => ({ key: tab.key, label: tab.label, count: loading ? undefined : orders.filter((o) => tab.match(o)).length }))}
       />
 
       {loading && <div className="py-16 text-center mobile-body-sm text-ink-muted">Loading your orders…</div>}

@@ -1,12 +1,13 @@
-import PurposeLabelField from './PurposeLabelField';
+import WalkInKindFields from './WalkInKindFields';
+import CustomerPicker from './CustomerPicker';
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useBranch } from '@/context/BranchContext';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
-  Appointment, CustomerData, BranchData, StaffData, AppointmentType,
-  APPOINTMENT_TYPES, TYPE_CONFIG, TYPE_DEFAULT_DURATIONS, getLocalDateString
+  Appointment, CustomerData, BranchData, StaffData, ServiceData, AppointmentType,
+  TYPE_CONFIG, TYPE_DEFAULT_DURATIONS, getLocalDateString
 } from './appointmentHelpers';
 import { roleLabel } from '@/components/staff/staffHelpers';
 import CustomerFormModal from '@/components/customers/CustomerFormModal';
@@ -16,9 +17,12 @@ interface AppointmentCreateModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly editingApt?: Appointment | null;
+  /** A customer to start with (Book appointment from their profile). */
+  readonly presetCustomerId?: string;
   readonly customers?: CustomerData[];
   readonly branches?: BranchData[];
   readonly staff?: StaffData[];
+  readonly services?: ServiceData[];
   readonly appointments?: Appointment[];
   readonly onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   readonly onCreateCustomer: (payload: Record<string, string | null>) => Promise<CustomerData>;
@@ -31,13 +35,14 @@ interface AppointmentCreateModalProps {
 const OCCUPYING_STATUSES = new Set(['pending', 'confirmed', 'in_progress']);
 
 const defaultForm = {
+  kind: 'shop' as 'service' | 'shop', service_id: '', when: 'later' as 'now' | 'later',
   customer_id: '', appointment_type: 'consultation' as AppointmentType,
   store_branch_id: '', scheduled_date: '', scheduled_time: '',
   duration_minutes: String(TYPE_DEFAULT_DURATIONS.consultation), assigned_staff_id: '', notes: '', purpose_label: '',
 };
 
 export default function AppointmentCreateModal({
-  isOpen, onClose, editingApt, customers = [], branches = [], staff = [], appointments = [], onSubmit, onCreateCustomer, isSubmitting, error
+  isOpen, onClose, editingApt, presetCustomerId = '', customers = [], branches = [], staff = [], services = [], appointments = [], onSubmit, onCreateCustomer, isSubmitting, error
 }: AppointmentCreateModalProps) {
   const [formData, setFormData] = useState(defaultForm);
   const { selectedBranchId } = useBranch();
@@ -88,6 +93,9 @@ export default function AppointmentCreateModal({
       const localDate = getLocalDateString(d);
       const today = getLocalDateString(new Date());
       setFormData({
+        kind: editingApt.kind === 'service' ? 'service' : 'shop',
+        service_id: editingApt.service?.id?.toString() || '',
+        when: 'later',
         customer_id: custId,
         appointment_type: editingApt.appointment_type,
         store_branch_id: editingApt.store_branch_id?.toString() || '',
@@ -103,34 +111,41 @@ export default function AppointmentCreateModal({
       const today = getLocalDateString(new Date());
       setFormData({
         ...defaultForm,
+        customer_id: presetCustomerId,
         scheduled_date: today,
         store_branch_id: defaultBranchId || (branches.length === 1 ? branches[0].id.toString() : '')
       });
     }
-  }, [editingApt, isOpen, customers, branches, selectedBranchId]);
+  }, [editingApt, isOpen, customers, branches, selectedBranchId, presetCustomerId]);
 
   // Step 1 (Who & What) — just Customer + Type now; Service/Garment Category/
   // Job Order linking were removed (finalized later at Job Order creation, or
   // — for Fitting — auto-linked by the system when a job becomes Ready for
   // Fitting, see JobOrderController@update on the backend).
-  const step1Valid = !!formData.customer_id && !!formData.appointment_type && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '');
+  const step1Valid = !!formData.customer_id && !!formData.appointment_type
+    && (formData.kind !== 'service' || !!formData.service_id)
+    && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '');
 
-  const step2Valid = !!formData.scheduled_date && !!formData.scheduled_time
-    && (branches.length <= 1 || !!formData.store_branch_id);
+  const step2Valid = !!formData.scheduled_date && !!formData.scheduled_time;
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
-    const payload = {
+    const now = new Date();
+    const date = formData.when === 'now' ? getLocalDateString(now) : formData.scheduled_date;
+    const time = formData.when === 'now' ? now.toTimeString().substring(0, 5) : formData.scheduled_time;
+    const common = {
       customer_id: formData.customer_id,
       appointment_type: formData.appointment_type,
       purpose_label: formData.appointment_type === 'other' ? formData.purpose_label.trim() : null,
-      scheduled_at: `${formData.scheduled_date} ${formData.scheduled_time}:00`,
-      duration_minutes: Number.parseInt(formData.duration_minutes, 10) || TYPE_DEFAULT_DURATIONS[formData.appointment_type],
+      scheduled_at: `${date} ${time}:00`,
       notes: formData.notes || null,
       store_branch_id: formData.store_branch_id || null,
       assigned_staff_id: formData.assigned_staff_id || null,
     };
-    onSubmit(payload);
+    // A new visit: the server picks the length (one table for online and walk-in) and, for a service, the purpose.
+    onSubmit(editingApt
+      ? { ...common, duration_minutes: Number.parseInt(formData.duration_minutes, 10) || TYPE_DEFAULT_DURATIONS[formData.appointment_type] }
+      : { ...common, kind: formData.kind, service_id: formData.kind === 'service' ? formData.service_id : null });
   };
 
   return (
@@ -158,60 +173,18 @@ export default function AppointmentCreateModal({
         {/* STEP 1: Customer & Appointment Type */}
         {step === 1 && (
         <div className="space-y-4">
-        {/* Customer */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label htmlFor="customer_id" className="block text-sm font-medium text-ink-body">Customer <span className="text-rose-500">*</span></label>
-            <button
-              type="button"
-              onClick={() => setShowAddCustomer(true)}
-              className="flex items-center gap-1 text-xs font-semibold text-taupe hover:underline"
-            >
-              <UserPlus size={12} /> Add New Customer
-            </button>
-          </div>
-          <select id="customer_id" required value={formData.customer_id} onChange={e => setFormData({ ...formData, customer_id: e.target.value })}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
-            <option value="" disabled>Select a customer</option>
-            {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ''}</option>)}
-          </select>
-        </div>
+        <CustomerPicker customers={customers} value={formData.customer_id} onChange={(id) => setFormData(prev => ({ ...prev, customer_id: id }))} onAdd={() => setShowAddCustomer(true)} />
 
-        {/* Appointment Type — reserves time for a consultation/measurement/
-            fitting/alteration/pickup only. Service, Garment Category, and
-            Job Order linking are finalized later during Job Order creation
-            (or, for Fitting, auto-linked by the system) — not captured here. */}
-        <div>
-          <span className="block text-sm font-medium text-ink-body mb-1">Appointment Type <span className="text-rose-500">*</span></span>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {APPOINTMENT_TYPES.map(t => {
-              const tc = TYPE_CONFIG[t];
-              return (
-                <button
-                  type="button" key={t}
-                  onClick={() => setFormData({
-                    ...formData,
-                    appointment_type: t,
-                    // Duration auto-calculates from the appointment type —
-                    // there's no manual Duration selector anymore.
-                    duration_minutes: String(TYPE_DEFAULT_DURATIONS[t]),
-                  })}
-                  className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border text-[10px] font-semibold transition-all ${
-                    formData.appointment_type === t
-                      ? `${tc.bg} ${tc.border} ${tc.text} ring-2 ring-offset-1 ${tc.border.replace('border-', 'ring-')}`
-                      : 'bg-white border-line text-ink-muted hover:border-taupe/40'
-                  }`}
-                >
-                  {tc.icon}
-                  {tc.label}
-                </button>
-              );
-            })}
-          </div>
-          {formData.appointment_type === 'other' && (
-            <PurposeLabelField value={formData.purpose_label} onChange={(v) => setFormData({ ...formData, purpose_label: v })} />
-          )}
-        </div>
+        {/* Service or Shop, then the purpose. Fitting and pickup are made by the Production Order, never typed in. */}
+        <WalkInKindFields
+          form={formData}
+          services={services}
+          onChange={(patch) => setFormData(prev => {
+            const next = { ...prev, ...patch };
+            next.duration_minutes = String(TYPE_DEFAULT_DURATIONS[next.appointment_type]);
+            return next;
+          })}
+        />
         </div>
         )}
 
@@ -220,26 +193,34 @@ export default function AppointmentCreateModal({
         <div className="space-y-4">
         {/* Duration is auto-calculated from the Appointment Type chosen in
             Step 1 (see TYPE_DEFAULT_DURATIONS) — no manual selector. */}
+        {!editingApt && (
+          <div className="grid grid-cols-2 gap-2">
+            {([['now', 'Customer is here now'], ['later', 'Book a time']] as const).map(([v, text]) => (
+              <button type="button" key={v}
+                onClick={() => setFormData(prev => v === 'now'
+                  ? { ...prev, when: 'now', scheduled_date: getLocalDateString(new Date()), scheduled_time: new Date().toTimeString().substring(0, 5) }
+                  : { ...prev, when: 'later' })}
+                className={`min-h-12 border text-sm font-semibold transition-colors ${formData.when === v ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink-muted hover:border-ink/40'}`}>
+                {text}
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-ink-muted">
+          {formData.when === 'now'
+            ? 'For a customer standing at the shop right now. The visit starts at this minute, no date or time to pick.'
+            : 'Pick a day and a free time. Use this when the customer will come later.'}
+        </p>
         <p className="text-xs text-ink-muted -mt-1">
           Duration: <span className="font-semibold text-ink-body">{formData.duration_minutes} minutes</span> (auto-set for {TYPE_CONFIG[formData.appointment_type].label})
         </p>
 
-        {/* Branch (multi-branch only) — set before the calendar so slots are
-            already filtered to this branch's own existing bookings. */}
-        {branches.length > 1 && (
-          <div>
-            <label htmlFor="store_branch_id" className="block text-sm font-medium text-ink-body mb-1">Branch <span className="text-rose-500">*</span></label>
-            <select id="store_branch_id" required value={formData.store_branch_id} onChange={e => setFormData({ ...formData, store_branch_id: e.target.value })}
-              className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
-              <option value="" disabled>Select branch...</option>
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-        )}
+        {/* No branch question: the visit is at the branch you are working in. */}
 
         {/* Date & Time — same interactive calendar the customer-facing
             booking page uses, so the owner sees the store's own existing
             appointments/operating hours instead of guessing at a blank date/time input. */}
+        {formData.when === 'later' && (
         <div>
           <InteractiveCalendar
             selectedBranchId={formData.store_branch_id || null}
@@ -255,6 +236,7 @@ export default function AppointmentCreateModal({
             onTimeChange={time => setFormData(prev => ({ ...prev, scheduled_time: time }))}
           />
         </div>
+        )}
         </div>
         )}
 
@@ -278,10 +260,9 @@ export default function AppointmentCreateModal({
                 // pinned to a branch can only be assigned to that branch's
                 // appointments, so surface it here instead of a rejection
                 // after the fact.
-                const branchLabel = s.branch ? ` (${s.branch.name})` : '';
                 return (
                   <option key={s.user_id} value={s.user_id}>
-                    {roles ? `[${roles}] ${name}` : name}{branchLabel}
+                    {roles ? `[${roles}] ${name}` : name}
                   </option>
                 );
               })}

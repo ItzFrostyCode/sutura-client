@@ -188,6 +188,7 @@ export function getItemDistanceInfo(
       branches?: {
         name: string;
         district?: string | null;
+        city?: string | null;
         latitude?: number | string | null;
         longitude?: number | string | null;
       }[];
@@ -197,7 +198,7 @@ export function getItemDistanceInfo(
 ): { distanceKm: number; label: string } | null {
   if (item.distance_km != null) {
     const firstBranch = item.store?.branches?.[0];
-    const locName = firstBranch?.district || firstBranch?.name || '';
+    const locName = firstBranch?.name || firstBranch?.city || '';
     return {
       distanceKm: item.distance_km,
       label: locName ? `${item.distance_km.toFixed(1)} km · ${locName}` : `${item.distance_km.toFixed(1)} km`,
@@ -218,7 +219,7 @@ export function getItemDistanceInfo(
     const d = haversineKm(userCoords.lat, userCoords.lng, bLat, bLng);
     if (minKm === null || d < minKm) {
       minKm = d;
-      nearestBranchName = b.district || b.name || '';
+      nearestBranchName = b.name || b.city || '';
     }
   }
 

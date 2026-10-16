@@ -1,17 +1,16 @@
-import {
-  Clock, Palette, Ruler, Scissors, Shirt, Wrench, Sparkles, Package, Flag, AlertCircle, Ban, PauseCircle,
-} from 'lucide-react';
-import { CUSTOMER_PHASE_STATUS_MAP, TERMINAL_STATUSES } from '@/components/shared/OrderTrackingView';
+import { Clock, BadgeCheck, Shirt, Package, Flag, Ban, PauseCircle, type LucideIcon } from 'lucide-react';
+import { type OrderProgress, progressLabel } from '@/components/shared/orderTracking/orderProgress';
 
 export interface MyOrder {
   id: number;
   order_number: string;
   tracking_code: string;
   status: string;
+  /** Five plain stages and one sentence, built by the server. */
+  progress?: OrderProgress;
   garment_category: string | null;
   catalog_item_name: string | null;
   service_name: string | null;
-  service_package?: { id: number; name: string; services?: string[] } | null;
   quantity?: number;
   is_rush: boolean;
   due_date: string | null;
@@ -25,69 +24,52 @@ export interface MyOrder {
   store: { name: string; slug: string; logo_path: string | null } | null;
 }
 
-export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; tone: string }> = {
-  pending: { label: 'Pending', Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
-  confirmed: { label: 'Confirmed', Icon: Flag, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  awaiting_materials: { label: 'Waiting for materials', Icon: Clock, tone: 'text-amber-700 bg-amber-50 border-amber-200' },
-  design: { label: 'Design', Icon: Palette, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  pattern_making: { label: 'Pattern Making', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  mass_cutting_printing: { label: 'Mass Cutting', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  cutting: { label: 'Cutting', Icon: Scissors, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  sewing: { label: 'Sewing', Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  ready_for_fitting: { label: 'Fitting / Inspection', Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  final_adjustments: { label: 'Adjustment / Correction', Icon: Wrench, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  qc_ironing: { label: 'Quality Check', Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  ready_for_pickup: { label: 'Ready for Fitting / Collection', Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
-  balance_handover: { label: 'Payment & Handover', Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
-  completed: { label: 'Completed', Icon: Flag, tone: 'text-sage bg-sage/10 border-sage/20' },
-  cancelled: { label: 'Cancelled', Icon: Ban, tone: 'text-danger bg-danger/10 border-danger/20' },
-  rejected: { label: 'Rejected', Icon: AlertCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
-  on_hold: { label: 'On Hold', Icon: PauseCircle, tone: 'text-ink-muted bg-sunken border-line' },
-};
-
-export const IN_PRODUCTION = new Set([
-  'pending', 'confirmed', 'awaiting_materials', 'design', 'pattern_making', 'mass_cutting_printing', 'cutting',
-  'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'balance_handover', 'on_hold',
-]);
-
-/**
- * List-card badge: the collapsed 6-phase view (CUSTOMER-WORKFLOW.md §12),
- * not the full internal pipeline STATUS_META above still renders on the
- * order detail page's stepper. Terminal exceptions (cancelled/rejected/
- * on_hold) keep their own distinct styling instead of being folded into a
- * phase, same rule OrderTrackingView.tsx applies.
- */
-const PHASE_TONE: Record<string, { Icon: typeof Clock; tone: string }> = {
-  'Order Received': { Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
-  'Order Confirmed': { Icon: Flag, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  'Quality Check': { Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  'Ready for Fitting / Collection': { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
-  'Fitting / Inspection': { Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  'Adjustment / Correction': { Icon: Wrench, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  'Payment & Handover': { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
-  'In Production': { Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  'Fitting / Adjustment': { Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  Finalizing: { Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  'Ready for Pickup': { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
-  Completed: { Icon: Flag, tone: 'text-sage bg-sage/10 border-sage/20' },
-};
-
-export function getPhaseMeta(status: string): { label: string; Icon: typeof Clock; tone: string } {
-  if (status in TERMINAL_STATUSES) {
-    const t = TERMINAL_STATUSES[status];
-    return { label: t.label, Icon: t.Icon, tone: t.tone };
-  }
-  const phase = CUSTOMER_PHASE_STATUS_MAP[status];
-  if (phase && PHASE_TONE[phase]) {
-    return { label: phase, ...PHASE_TONE[phase] };
-  }
-  return STATUS_META[status] ?? STATUS_META.pending;
+interface PhaseMeta {
+  label: string;
+  Icon: LucideIcon;
+  tone: string;
 }
 
-export const TABS: { key: string; label: string; match: (status: string) => boolean }[] = [
+const STAGE_META: Record<string, { Icon: LucideIcon; tone: string }> = {
+  request: { Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
+  confirmed: { Icon: BadgeCheck, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  making: { Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  ready: { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },
+  done: { Icon: Flag, tone: 'text-sage bg-sage/10 border-sage/20' },
+};
+
+const CLOSED_TONE = 'text-danger bg-danger/10 border-danger/20';
+
+/** Used only where a page has just the status (no progress from the server): the same five stages, coarsely. */
+const STAGE_OF_STATUS: Record<string, string> = {
+  pending: 'request', confirmed: 'confirmed', awaiting_materials: 'confirmed', queued: 'confirmed',
+  ready_for_pickup: 'ready', balance_handover: 'ready', completed: 'done',
+};
+const STAGE_LABEL: Record<string, string> = { request: 'Request', confirmed: 'Confirmed', making: 'Being made', ready: 'Ready', done: 'Done' };
+
+/** Label, icon and colour for the small badge on an order. Pass `progress` whenever the page has it. */
+export function getPhaseMeta(status: string, progress?: OrderProgress | null): PhaseMeta {
+  if (progress) {
+    if (progress.closed) return { label: progressLabel(progress) ?? 'Closed', Icon: Ban, tone: CLOSED_TONE };
+    if (progress.on_hold) return { label: 'On hold', Icon: PauseCircle, tone: 'text-ink-muted bg-sunken border-line' };
+    const key = progress.current ?? 'request';
+    return { label: progressLabel(progress) ?? STAGE_LABEL[key], ...STAGE_META[key] };
+  }
+  if (status === 'cancelled' || status === 'rejected') return { label: status === 'cancelled' ? 'Cancelled' : 'Not accepted', Icon: Ban, tone: CLOSED_TONE };
+  if (status === 'on_hold') return { label: 'On hold', Icon: PauseCircle, tone: 'text-ink-muted bg-sunken border-line' };
+  const key = STAGE_OF_STATUS[status] ?? 'making';
+  return { label: STAGE_LABEL[key], ...STAGE_META[key] };
+}
+
+/** True while an order is still open: not finished and not closed. */
+export function isActiveOrder(order: Pick<MyOrder, 'status' | 'progress'>): boolean {
+  if (order.progress) return !order.progress.closed && order.progress.current !== 'done';
+  return !['completed', 'cancelled', 'rejected'].includes(order.status);
+}
+
+export const TABS: { key: string; label: string; match: (order: MyOrder) => boolean }[] = [
   { key: 'all', label: 'All', match: () => true },
-  { key: 'production', label: 'In Production', match: (s) => IN_PRODUCTION.has(s) },
-  { key: 'pickup', label: 'Ready for Pickup', match: (s) => s === 'ready_for_pickup' },
-  { key: 'completed', label: 'Completed', match: (s) => s === 'completed' },
-  { key: 'cancelled', label: 'Cancelled', match: (s) => s === 'cancelled' || s === 'rejected' },
+  { key: 'active', label: 'In progress', match: (o) => isActiveOrder(o) },
+  { key: 'completed', label: 'Done', match: (o) => o.status === 'completed' },
+  { key: 'cancelled', label: 'Closed', match: (o) => o.status === 'cancelled' || o.status === 'rejected' },
 ];

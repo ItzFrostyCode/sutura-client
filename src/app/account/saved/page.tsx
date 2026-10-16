@@ -27,7 +27,7 @@ interface SavedService {
 // lands here.
 type Tab = 'catalog' | 'services';
 const TABS: { key: Tab; label: string; shortLabel: string }[] = [
-  { key: 'catalog', label: 'Catalog Designs', shortLabel: 'Catalog' },
+  { key: 'catalog', label: 'Designs', shortLabel: 'Designs' },
   { key: 'services', label: 'Services', shortLabel: 'Services' },
 ];
 

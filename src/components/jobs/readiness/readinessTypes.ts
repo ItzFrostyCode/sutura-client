@@ -61,9 +61,15 @@ export interface ReadinessData {
     can_confirm: boolean;
     can_approve_change: boolean;
     can_manage_refund: boolean;
+    can_accept_request?: boolean;
   };
   order?: { id: number; order_number: string; due_date: string | null; measurement_requirement: string; fitting_requirement: string | null; material_source: string | null; is_rush: boolean; rush_fee: number; quantity: number };
   checklist?: ChecklistItem[];
+  pre_production?: PreProduction;
+  queue?: { received_at: string | null; accepted_at: string | null; authorized_at: string | null };
+  terms?: { policy: string | null; percent: number | null; text: string; locked: boolean };
+  decision?: { value: 'accepted' | 'changes_requested' | 'declined' | null; note: string | null; at: string | null; valid_until: string | null };
+  assignee_history?: AssigneeEvent[];
   blockers?: { confirm: Blocker[]; start: Blocker[] };
   quotation?: {
     status: 'estimate' | 'final' | null;
@@ -76,6 +82,7 @@ export interface ReadinessData {
     production_started_at: string | null;
     data?: QuotationData | null;
     total?: number;
+    versions?: QuotationVersion[];
   };
   deposit?: { met: boolean; policy: string | null; policy_percent: number | null; required?: number; paid?: number; pending_verification?: number };
   materials?: {
@@ -140,4 +147,37 @@ export interface Delivery {
   };
   balance_clear: boolean;
   balance: number | null;
+}
+
+export interface PreProductionStep {
+  key: 'request' | 'details' | 'quotation' | 'decision' | 'payment' | 'staff' | 'start';
+  label: string;
+  done: boolean;
+  note: string | null;
+}
+
+export interface PreProduction {
+  steps: PreProductionStep[];
+  current: PreProductionStep['key'] | null;
+}
+
+export interface QuotationVersion {
+  version: number;
+  status: 'estimate' | 'final';
+  total: number;
+  due_date: string | null;
+  payment_policy: string | null;
+  payment_policy_percent: number | null;
+  reason: string | null;
+  by: string | null;
+  at: string;
+}
+
+export interface AssigneeEvent {
+  action: 'added' | 'removed' | 'replaced';
+  from: string | null;
+  to: string | null;
+  by: string | null;
+  reason: string | null;
+  at: string;
 }

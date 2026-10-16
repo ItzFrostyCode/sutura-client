@@ -3,7 +3,6 @@
 import { use, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import ServiceDetailModal from '@/components/profile/ServiceDetailModal';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
 import EditOperatingHoursModal from '@/components/profile/EditOperatingHoursModal';
@@ -89,7 +88,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         {s.activeTab === 'services' && (
           <StoreServicesTab
             services={s.services}
-            packages={s.packages}
             catalogItems={s.catalogItems}
             catalogLoading={s.catalogLoading}
             storeId={storeId}
@@ -228,15 +226,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
           onSubmit={s.submitServiceRating}
         />
       )}
-
-      {/* Service Detail & Package Modals */}
-      <ServiceDetailModal
-        service={s.selectedService}
-        isOpen={s.selectedService !== null}
-        onClose={() => s.setSelectedService(null)}
-        facebookUrl={getSocialUrl(s.store.social_links, 'facebook')}
-        storeId={storeId}
-      />
 
       {/* Post Image Lightbox */}
       <PostImageLightbox

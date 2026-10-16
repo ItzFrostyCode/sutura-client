@@ -54,7 +54,7 @@ export default function AccountSettingsMenuPage() {
             href={locationHref}
             Icon={MapPin}
             title="My Location"
-            subtitle={location ? [location.address, location.district && location.district !== 'Davao City' ? `${location.district} District` : ''].filter(Boolean).join(' · ') : 'Set your location'}
+            subtitle={location ? (location.address || 'Davao City') : 'Set your location'}
           />
         </HubGroup>
 

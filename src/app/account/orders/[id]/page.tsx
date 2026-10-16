@@ -47,7 +47,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
           {order.quotation_flow && (
             <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
           )}
-          <OrderTrackingView order={order} stepperLayout="vertical" />
+          <OrderTrackingView order={order} />
           <PayForOrder
             orderId={Number(id)}
             storeSlug={order.store?.slug}

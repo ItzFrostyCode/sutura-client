@@ -93,7 +93,7 @@ export const STAFF_STAGE_LABELS: Record<StaffStage, string> = {
 // Mirrors JobOrder::isBulkOrder() on the backend exactly: a Team Roster /
 // Size Sheet was submitted, OR the linked service is itself typed as bulk
 // sublimation (a job can be bulk by service type alone, with no roster yet).
-function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
+export function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
   const data = job.custom_order_data as { team_roster?: unknown[]; size_breakdown?: Record<string, number> } | null | undefined;
   const roster = data?.team_roster;
   if (Array.isArray(roster) && roster.length > 0) return true;
@@ -181,7 +181,6 @@ export interface Job {
   payment_policy_percent?: number | null;
   customer?: { name: string; suki_tag?: string | null } | null;
   service?: { name: string; service_type?: string | null; service_types?: string[] | null; department?: string | null } | null;
-  service_package?: { id: number; name: string } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;
@@ -193,6 +192,10 @@ export interface Job {
   is_rush?: boolean;
   // Ordering flow (server-derived). Orders created before the flow have uses_confirmation_flow = false.
   uses_confirmation_flow?: boolean;
+  shop_accepted_at?: string | null;
+  fitting_requirement?: 'none' | 'optional' | 'required' | null;
+  customer_decision?: 'accepted' | 'changes_requested' | 'declined' | null;
+  created_at?: string;
   quotation_status?: 'estimate' | 'final' | null;
   specs_approved_at?: string | null;
   customer_approved_at?: string | null;

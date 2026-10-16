@@ -82,3 +82,5 @@ export function districtOfBarangay(name: string | null | undefined): DavaoDistri
   }
   return null;
 }
+
+export const ALL_DAVAO_BARANGAYS: readonly string[] = Object.values(DAVAO_BARANGAYS).flat().sort((a, b) => a.localeCompare(b));

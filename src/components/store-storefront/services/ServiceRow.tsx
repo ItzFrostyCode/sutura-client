@@ -22,10 +22,9 @@ interface ServiceRowProps {
   readonly onDeleteDesign?: (id: number) => void;
   /** Inside the map panel: links keep ?embed=1. */
   readonly embedded?: boolean;
+  readonly isHighlighted?: boolean;
 }
 
-/** How many designs the strip shows before "See all" takes over (the full set is on the service page). */
-const STRIP = 8;
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 
 /**
@@ -33,16 +32,20 @@ const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDig
  * price and how long it takes (tapping it opens the service page), and under it a strip of the designs made under this service — tap a design for its page, or "See all" for the service
  * page with every design in two columns.
  */
-export default function ServiceRow({ service, storeId, designs, designsLoading, onOpen, canManage, onEdit, onDelete, onDeleteDesign, embedded = false }: ServiceRowProps) {
+export default function ServiceRow({ service, storeId, designs, designsLoading, onOpen, canManage, onEdit, onDelete, onDeleteDesign, embedded = false, isHighlighted = false }: ServiceRowProps) {
   const href = `/store/${storeId}/service/${service.id}${embedSuffix(embedded)}`;
   const base = Number(service.base_price);
   const sale = service.base_price
     ? getActiveSale({ price: service.base_price, sale_price: service.sale_price, sale_starts_at: service.sale_starts_at, sale_ends_at: service.sale_ends_at })
     : null;
-  const shown = designs.slice(0, STRIP);
 
   return (
-    <article className="min-w-0">
+    <article
+      id={`service-item-${service.id}`}
+      className={`min-w-0 scroll-mt-28 rounded-2xl transition-all duration-500 ${
+        isHighlighted ? 'bg-taupe/10 ring-2 ring-taupe p-3 -m-3' : ''
+      }`}
+    >
       <div className="flex items-start gap-3">
         <Link href={href} onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 transition-opacity active:opacity-80">
           <span className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sunken text-ink-faint">
@@ -88,14 +91,9 @@ export default function ServiceRow({ service, storeId, designs, designsLoading, 
           <p className="mobile-caption text-ink-muted">No designs yet — book it and the shop will design it with you.</p>
         ) : (
           <div className="hide-scrollbar flex snap-x gap-3 overflow-x-auto pb-1">
-            {shown.map((d) => (
+            {designs.map((d) => (
               <DesignTile key={d.id} item={d} href={`/store/${storeId}/catalog/${d.id}${embedSuffix(embedded)}`} className="w-[118px] shrink-0 snap-start" onDelete={canManage ? onDeleteDesign : undefined} />
             ))}
-            {designs.length > STRIP && (
-              <Link href={href} onClick={onOpen} className="flex aspect-[3/4] w-[118px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-2xl bg-sunken text-sm font-semibold text-ink">
-                See all <span className="mobile-caption font-normal text-ink-muted">{designs.length} designs</span>
-              </Link>
-            )}
           </div>
         )}
       </div>

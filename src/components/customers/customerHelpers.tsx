@@ -31,3 +31,14 @@ export const SUKI_TAG_CONFIG: Record<string, { label: string; cls: string; badge
     Icon: User
   },
 };
+
+/** A Philippine mobile number as people write it: 0917 123 4567, 917-123-4567, +63 917 123 4567. */
+export const isMobileNumber = (value: string) => /^(09\d{9}|9\d{9}|639\d{9})$/.test(value.replace(/\D+/g, ''));
+
+/** What is missing before a customer can be saved, in words for the form; null when it is complete. */
+export function customerFormProblem(f: { name: string; phone: string; gender: string }): string | null {
+  if (!f.name.trim()) return 'Enter the customer’s full name.';
+  if (!isMobileNumber(f.phone)) return 'Enter a valid mobile number, e.g. 0917 123 4567.';
+  if (!f.gender) return 'Choose the customer’s gender.';
+  return null;
+}

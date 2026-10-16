@@ -3,15 +3,16 @@ import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, CalendarPlus } from 'lucide-react';
 import {
-  CustomerData, BranchData, AppointmentType,
-  APPOINTMENT_TYPES, TYPE_CONFIG, TYPE_DEFAULT_DURATIONS
+  CustomerData, AppointmentType, TYPE_CONFIG
 } from './appointmentHelpers';
+
+// A follow-up is a shop visit. Fitting and pickup are made by the Production Order, never typed in.
+const FOLLOW_UP_TYPES = ['consultation', 'measurement', 'other'] as const;
 
 interface FollowUpAppointmentModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly customers?: CustomerData[];
-  readonly branches?: BranchData[];
   readonly todayStr: string;
   readonly minTimeFor: (dateStr: string) => string | undefined;
   // Pre-fills and locks the customer when opened from a Job Order's own
@@ -25,8 +26,8 @@ interface FollowUpAppointmentModalProps {
 }
 
 const defaultForm = {
-  purpose_label: '', customer_id: '', appointment_type: 'fitting' as AppointmentType,
-  store_branch_id: '', scheduled_date: '', scheduled_time: '', notes: '',
+  purpose_label: '', customer_id: '', appointment_type: 'consultation' as AppointmentType,
+  scheduled_date: '', scheduled_time: '', notes: '',
 };
 
 /**
@@ -38,7 +39,7 @@ const defaultForm = {
  * StoreFollowUpAppointmentRequest/AppointmentController::createFollowUp.
  */
 export default function FollowUpAppointmentModal({
-  isOpen, onClose, customers = [], branches = [], todayStr, minTimeFor,
+  isOpen, onClose, customers = [], todayStr, minTimeFor,
   presetCustomerId, presetJobOrderId, presetCustomerName,
   onSubmit, isSubmitting, error,
 }: FollowUpAppointmentModalProps) {
@@ -51,13 +52,11 @@ export default function FollowUpAppointmentModal({
       ...defaultForm,
       customer_id: presetCustomerId?.toString() || '',
       scheduled_date: todayStr,
-      store_branch_id: branches.length === 1 ? branches[0].id.toString() : '',
     });
-  }, [isOpen, presetCustomerId, todayStr, branches]);
+  }, [isOpen, presetCustomerId, todayStr]);
 
   const isValid = (presetJobOrderId || !!formData.customer_id)
-    && !!formData.appointment_type && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '') && !!formData.scheduled_date && !!formData.scheduled_time
-    && (branches.length <= 1 || !!formData.store_branch_id);
+    && !!formData.appointment_type && (formData.appointment_type !== 'other' || formData.purpose_label.trim() !== '') && !!formData.scheduled_date && !!formData.scheduled_time;
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -67,8 +66,6 @@ export default function FollowUpAppointmentModal({
       appointment_type: formData.appointment_type,
       purpose_label: formData.appointment_type === 'other' ? formData.purpose_label.trim() : undefined,
       scheduled_at: `${formData.scheduled_date} ${formData.scheduled_time}:00`,
-      duration_minutes: TYPE_DEFAULT_DURATIONS[formData.appointment_type],
-      store_branch_id: formData.store_branch_id || undefined,
       notes: formData.notes || undefined,
     });
   };
@@ -81,7 +78,7 @@ export default function FollowUpAppointmentModal({
         <p className="text-sm text-ink-muted">
           {presetCustomerName
             ? <>Book a return visit for <span className="font-semibold text-ink">{presetCustomerName}</span>. They&apos;ll be notified automatically.</>
-            : 'Book a return visit — fitting, adjustment, consultation, or pickup coordination. The customer will be notified automatically.'}
+            : 'Book a return visit. The customer will be notified automatically.'}
         </p>
 
         {!presetJobOrderId && (
@@ -97,8 +94,8 @@ export default function FollowUpAppointmentModal({
 
         <div>
           <span className="block text-sm font-medium text-ink-body mb-1">What&apos;s this visit for? <span className="text-rose-500">*</span></span>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {APPOINTMENT_TYPES.map(t => {
+          <div className="grid grid-cols-3 gap-2">
+            {FOLLOW_UP_TYPES.map(t => {
               const tc = TYPE_CONFIG[t];
               return (
                 <button
@@ -121,16 +118,7 @@ export default function FollowUpAppointmentModal({
           )}
         </div>
 
-        {branches.length > 1 && (
-          <div>
-            <label htmlFor="fu_branch" className="block text-sm font-medium text-ink-body mb-1">Branch <span className="text-rose-500">*</span></label>
-            <select id="fu_branch" required value={formData.store_branch_id} onChange={e => setFormData({ ...formData, store_branch_id: e.target.value })}
-              className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
-              <option value="" disabled>Select branch...</option>
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-        )}
+        <p className="text-xs text-ink-muted">The visit is booked at the branch that has this customer's order, so they do not travel to a different one.</p>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -151,7 +139,7 @@ export default function FollowUpAppointmentModal({
           <label htmlFor="fu_notes" className="block text-sm font-medium text-ink-body mb-1">Notes (Optional)</label>
           <textarea id="fu_notes" rows={2} value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
             className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
-            placeholder="e.g. Balik po kayo para sa fitting..." />
+            placeholder="e.g. Balik po kayo para sa measurement..." />
         </div>
 
         <div className="pt-2 flex justify-end gap-3">

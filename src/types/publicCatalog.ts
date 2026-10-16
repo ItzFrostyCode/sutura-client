@@ -37,7 +37,9 @@ export interface CatalogItemResult {
       name: string;
       is_main?: boolean;
       district?: string | null;
+      barangay?: string | null;
       city?: string | null;
+      address?: string | null;
       latitude?: number | string | null;
       longitude?: number | string | null;
     }[];

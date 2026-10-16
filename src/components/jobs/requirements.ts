@@ -1,6 +1,6 @@
 // Measurement / final-fitting / payment requirements. Mirrors
 // App\Support\OrderRequirements on the server. Precedence on the server:
-// design -> its linked service -> store default (a combo: own, else store).
+// design -> its linked service -> store default.
 
 export type MeasurementRequirement = 'none' | 'existing' | 'shop';
 export type FittingRequirement = 'none' | 'optional' | 'required';

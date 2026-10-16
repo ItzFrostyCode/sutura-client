@@ -6,7 +6,7 @@ export interface NearFilters {
   status: ShopStatusFilter;
 }
 
-export const DEFAULT_NEAR_FILTERS: NearFilters = { radiusKm: null, status: 'all' };
+export const DEFAULT_NEAR_FILTERS: NearFilters = { radiusKm: null, status: 'open' };
 
 /** 50 km from the city centre covers the whole of Davao City, so the slider stops there. */
 export const MIN_RADIUS_KM = 5;
@@ -43,7 +43,7 @@ export interface MoreFilters {
   sortBy: string;
 }
 
-export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: '' };
+export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: 'price_asc' };
 
 export type AllFilters = NearFilters & MoreFilters;
 
@@ -51,5 +51,5 @@ export const DEFAULT_ALL_FILTERS: AllFilters = { ...DEFAULT_NEAR_FILTERS, ...DEF
 
 /** How many filters are on, for the dot on the filter icon. */
 export function countAllFilters(f: NearFilters & Partial<MoreFilters>): number {
-  return activeFilterCount(f) + (f.minPrice || f.maxPrice || f.sortBy ? 1 : 0) + (f.minRating ? 1 : 0) + (f.district || f.barangay || f.area ? 1 : 0);
+  return activeFilterCount(f) + (f.minPrice || f.maxPrice || f.sortBy ? 1 : 0) + (f.minRating ? 1 : 0);
 }

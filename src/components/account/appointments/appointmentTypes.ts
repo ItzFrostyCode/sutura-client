@@ -3,6 +3,8 @@ import { Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
 export interface MyAppointment {
   id: number;
   appointment_type: string;
+  // Service, Shop, or Production (made by the shop's production order). Older rows may not have it.
+  kind?: 'service' | 'shop' | 'production';
   intake_channel: string | null;
   status: string;
   scheduled_at: string;
@@ -21,7 +23,6 @@ export interface MyAppointment {
     garment_structure?: string | null;
     garment_type?: string | null;
   } | null;
-  service_package?: { id: number; name: string; service_category?: string | null } | null;
   selected_size?: string | null;
   selected_color?: string | null;
   // A walk-in took this request's slot; the customer must pick another time.
@@ -57,6 +58,8 @@ export const STATUS_FILTERS: { key: string; label: string }[] = [
   { key: 'rejected', label: 'Rejected' },
   { key: 'no_show', label: 'No Show' },
 ];
+
+export const KIND_LABELS: Record<string, string> = { service: 'Service', shop: 'Shop', production: 'Production' };
 
 export const TYPE_LABELS: Record<string, string> = {
   consultation: 'Consultation',

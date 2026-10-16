@@ -11,7 +11,7 @@ export const WIZARD_STEPS: { key: ServiceSection; title: string; hint: string; o
   { key: 'info', title: 'Basics', hint: 'Name, starting price and how long it takes.' },
   { key: 'type', title: 'Kind of work', hint: 'Make, uniforms & jerseys, alter & repair, or embroider.' },
   { key: 'garments', title: 'Garments', hint: 'The clothing you work on, by category.' },
-  { key: 'capabilities', title: 'What you do', hint: 'Tick only the tasks you offer. Customers are matched to these.' },
+  { key: 'capabilities', title: 'What you do', hint: 'Select only the tasks you offer. Customers are matched to these.' },
   { key: 'spec', title: 'Prices & add-ons', hint: 'What you charge, add-ons, and where it shows on your shop page.' },
   { key: 'chart', title: 'Reference chart', hint: 'A size or measurement chart customers can check.', optional: true },
   { key: 'description', title: 'Description', hint: 'What it covers and what to bring.', optional: true },

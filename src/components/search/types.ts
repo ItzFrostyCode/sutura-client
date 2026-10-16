@@ -1,5 +1,4 @@
 import type { OperatingHours } from '@/lib/storeStatus';
-import { DAVAO_DISTRICTS } from '@/lib/davaoLocations';
 import type { DesignPricing } from '@/lib/designPricing';
 
 export interface RelatedStore {
@@ -102,30 +101,12 @@ export interface SearchServiceResult {
   } | null;
 }
 
-// All 11 Davao City districts — one list for the whole app (src/lib/davaoLocations.ts).
-export const DISTRICTS: string[] = [...DAVAO_DISTRICTS];
-
 export const FILTER_TABS = [
   { key: 'specialization', label: 'Specialty' },
   { key: 'price', label: 'Price' },
   { key: 'rating', label: 'Rating' },
-  { key: 'district', label: 'Location' },
 ] as const;
 
 export type FilterTabKey = typeof FILTER_TABS[number]['key'];
 
 export type SearchActiveTab = 'all' | 'store' | 'services' | 'showroom';
-
-/** A combo package in search results (GET /public/service-packages). */
-export interface SearchPackageResult {
-  id: number;
-  name: string;
-  description: string | null;
-  service_category: string | null;
-  image_url: string | null;
-  bundle_price: string | null;
-  reviews_count?: number;
-  reviews_avg_rating?: number | null;
-  services: { id: number; name: string; base_price: string | null }[];
-  store: { id: number; name: string; slug: string; branches?: { district?: string | null; city?: string | null }[] } | null;
-}

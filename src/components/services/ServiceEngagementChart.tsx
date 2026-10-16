@@ -1,14 +1,14 @@
 import React from 'react';
 import { Activity, Heart, ShoppingBag, Star } from 'lucide-react';
-import type { Service, ServicePackage } from './serviceHelpers';
+import type { Service } from './serviceHelpers';
 
 // Saves, orders and reviews side by side, each bar scaled against the biggest of the three.
 // (Services have no page-view count, so this is not a funnel like the catalog's.)
-export default function ServiceEngagementChart({ services, packages = [] }: Readonly<{ services: Service[]; packages?: ServicePackage[] }>) {
+export default function ServiceEngagementChart({ services }: Readonly<{ services: Service[] }>) {
   const sum = (pick: (s: Service) => number | undefined) => services.reduce((t, s) => t + (pick(s) || 0), 0);
   const stages = [
     { label: 'Saves', value: sum((s) => s.saves_count), icon: Heart, color: '#86b6ef' },
-    { label: 'Orders', value: sum((s) => s.job_orders_count) + packages.reduce((t, p) => t + (p.job_orders_count || 0), 0), icon: ShoppingBag, color: '#3987e5' },
+    { label: 'Orders', value: sum((s) => s.job_orders_count), icon: ShoppingBag, color: '#3987e5' },
     { label: 'Reviews', value: sum((s) => s.reviews_count), icon: Star, color: '#1c5cab' },
   ];
   const max = Math.max(...stages.map((s) => s.value), 1);

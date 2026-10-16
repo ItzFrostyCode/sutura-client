@@ -33,14 +33,18 @@ export default function HomeFilterSheet({ isOpen, onClose, value, showMore = fal
         </div>
       )}
     >
+      {/* Distance */}
       <section>
         <h3 className="mobile-h4 mb-3 text-ink">Distance</h3>
         <FilterDistance radiusKm={draft.radiusKm} onChange={(radiusKm) => setDraft({ ...draft, radiusKm })} />
       </section>
+
+      {/* Shop */}
       <section className="mt-6">
         <h3 className="mobile-h4 mb-3 text-ink">Shop</h3>
         <FilterShopLights value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
       </section>
+
       {showMore && <FilterMore value={draft} onChange={(more) => setDraft({ ...draft, ...more })} />}
     </HomeSheet>
   );

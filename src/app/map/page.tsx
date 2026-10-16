@@ -22,9 +22,7 @@ function MapPageContent() {
     if (isSelectMode) return;
     const params = new URLSearchParams();
     const text = searchParams.get('q');
-    const district = searchParams.get('district');
     if (text) params.set('q', text);
-    if (district) params.set('district', district);
     router.replace(params.toString() ? `/search?${params.toString()}` : '/search');
   }, [isSelectMode, router, searchParams]);
 

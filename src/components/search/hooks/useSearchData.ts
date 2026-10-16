@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { applyCategoryFilter } from '@/lib/garmentCategories';
+import { GARMENTS, GARMENT_CATEGORIES, type GarmentCategory } from '@/lib/garmentTaxonomy';
 import {
   getSavedLocation,
   saveLocation,
@@ -20,13 +21,24 @@ import type { CatalogItemResult } from '@/types/publicCatalog';
 import {
   RelatedStore,
   SearchServiceResult,
-  SearchPackageResult,
   FilterTabKey,
   SearchActiveTab,
 } from '../types';
 import { useToast } from '@/context/ToastContext';
 import { isStoreOpen } from '@/lib/storeStatus';
 import { parseRadiusKm, parseStatusFilter, type AllFilters } from '@/components/home/homeFilters';
+
+/** What to show in the search box when a link carried a category instead of typed text (e.g. "Barong"). */
+function categoryText(params: URLSearchParams): string {
+  const label = params.get('qlabel');
+  if (label) return label;
+  const slug = params.get('category') ?? params.get('specialization') ?? params.get('garment_type') ?? '';
+  if (!slug) return '';
+  const key = slug.toLowerCase();
+  const garment = GARMENTS[key]?.label.split(' / ')[0];
+  const category = GARMENT_CATEGORIES[key as GarmentCategory]?.label;
+  return garment ?? category ?? slug.replace(/[-_]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+}
 
 export function useSearchData() {
   const router = useRouter();
@@ -42,7 +54,7 @@ export function useSearchData() {
   // can't accidentally AND-narrow results away from a category match; the
   // search input just falls back to showing it when `q` itself is empty
   // (see search/page.tsx), and typing anything replaces it immediately.
-  const [categoryLabel, setCategoryLabel] = useState(searchParams.get('qlabel') ?? '');
+  const [categoryLabel, setCategoryLabel] = useState(categoryText(searchParams));
 
   const [specialization, setSpecialization] = useState(
     searchParams.get('specialization') ?? searchParams.get('category') ?? ''
@@ -89,7 +101,7 @@ export function useSearchData() {
     if (nextQ !== null && nextQ !== undefined) {
       setQ(nextQ);
     }
-    setCategoryLabel(searchParams.get('qlabel') ?? '');
+    setCategoryLabel(categoryText(searchParams));
 
     setSpecialization(nextCat);
 
@@ -195,7 +207,6 @@ export function useSearchData() {
   const [services, setServices] = useState<SearchServiceResult[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesTotal, setServicesTotal] = useState(0);
-  const [packages, setPackages] = useState<SearchPackageResult[]>([]);
 
   const [items, setItems] = useState<CatalogItemResult[]>([]);
   const [total, setTotal] = useState(0);
@@ -305,7 +316,7 @@ export function useSearchData() {
         setUserCoords({ lat: loc.lat, lng: loc.lng });
         setSortBy('distance');
         setLocating(false);
-        toast.success(`Showing stores nearest to ${loc.district || 'you'}.`);
+        toast.success(`Showing stores nearest to ${loc.address || 'you'}.`);
       },
       () => {
         setLocating(false);
@@ -528,12 +539,6 @@ export function useSearchData() {
       }
       if (sortBy) params.sort_by = sortBy;
 
-      // Combo packages ride along with services: same text, category and district filters.
-      api
-        .get('/public/service-packages', { params: { q: params.q, service_category: params.service_category, district: params.district, barangay: params.barangay, area: params.area } })
-        .then((res) => setPackages(res.data.data ?? []))
-        .catch(() => setPackages([]));
-
       api
         .get('/public/services', { params })
         .then((res) => {
@@ -652,7 +657,6 @@ export function useSearchData() {
     services,
     servicesLoading,
     servicesTotal,
-    packages,
     items,
     total,
     lastPage,

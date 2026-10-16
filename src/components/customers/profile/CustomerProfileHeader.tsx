@@ -1,21 +1,26 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors } from 'lucide-react';
+import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors, Trash2, CalendarPlus, MessageSquare, Printer } from 'lucide-react';
 import { CustomerData } from '../customerTypes';
-import { isWalkInEmail } from '../customerHelpers';
+import { isWalkInCustomer, isWalkInEmail } from '../customerHelpers';
 
 interface CustomerProfileHeaderProps {
   readonly customer: CustomerData | null;
   readonly onBack: () => void;
   readonly onEditProfile: () => void;
-  readonly onViewMeasurements: () => void;
+  readonly onDelete: () => void;
+  /** Opens the Texts tab; only given to people who may text customers. */
+  readonly onText?: () => void;
 }
+
+const ACTION = 'h-9 px-3.5 rounded-xl bg-surface hover:bg-canvas border border-line text-ink font-semibold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer';
 
 export default function CustomerProfileHeader({
   customer,
   onBack,
   onEditProfile,
-  onViewMeasurements,
+  onDelete,
+  onText,
 }: CustomerProfileHeaderProps) {
   const sukiTagMap: Record<string, { label: string; badgeCls: string }> = {
     b2b_suki: { label: 'B2B Suki ⭐', badgeCls: 'bg-amber-50 text-amber-800 border-amber-200' },
@@ -56,14 +61,14 @@ export default function CustomerProfileHeader({
             </div>
 
             <div className="flex items-center gap-3 text-xs text-ink-muted flex-wrap">
-              {customer?.email && !isWalkInEmail(customer.email) ? (
+              {/* Online = came from an online appointment or order; everyone else is a walk-in, with or without an email. */}
+              <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${isWalkInCustomer(customer) ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                {isWalkInCustomer(customer) ? 'Walk-in Client' : 'Online Client'}
+              </span>
+              {customer?.email && !isWalkInEmail(customer.email) && (
                 <a href={`mailto:${customer.email}`} className="flex items-center gap-1 hover:text-taupe transition-colors">
                   <Mail size={12} className="text-ink-faint shrink-0" /> {customer.email}
                 </a>
-              ) : (
-                <span className="inline-flex items-center text-[9px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200 uppercase tracking-wider">
-                  Walk-in Client
-                </span>
               )}
               {customer?.phone && (
                 <a href={`tel:${customer.phone}`} className="flex items-center gap-1 hover:text-taupe transition-colors font-mono">
@@ -71,16 +76,16 @@ export default function CustomerProfileHeader({
                 </a>
               )}
               <span className="flex items-center gap-1 text-ink-faint">
-                <Clock size={12} className="shrink-0" /> Client since{' '}
-                {new Date(customer?.created_at || '').toLocaleDateString('en-PH', { year: 'numeric', month: 'short' })}
+                <Clock size={12} className="shrink-0" /> Customer since{' '}
+                {customer?.created_at ? new Date(customer.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
               </span>
-              <span className="text-ink-faint font-mono text-[11px]">ID #{customer?.id}</span>
+              <span className="text-ink-faint font-mono text-[11px]">Customer No. #{customer?.shop_number ?? customer?.id}</span>
             </div>
           </div>
         </div>
 
         {/* Quick Header Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/dashboard/jobs/new?customer_id=${customer?.id}`}
             className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
@@ -88,12 +93,25 @@ export default function CustomerProfileHeader({
             <Scissors size={13} />
             <span>New Order</span>
           </Link>
+          <Link href={`/dashboard/appointments?customer_id=${customer?.id}`} className={ACTION}>
+            <CalendarPlus size={13} /> <span>Book</span>
+          </Link>
+          {onText && (
+            <button type="button" onClick={onText} className={ACTION}>
+              <MessageSquare size={13} /> <span>Text</span>
+            </button>
+          )}
+          <Link href={`/print/customers/${customer?.id}/statement`} target="_blank" className={ACTION}>
+            <Printer size={13} /> <span>Statement</span>
+          </Link>
           <button
             type="button"
-            onClick={onViewMeasurements}
-            className="h-9 px-3.5 rounded-xl bg-surface hover:bg-canvas border border-line text-ink font-semibold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+            onClick={onDelete}
+            aria-label="Remove customer"
+            title="Remove customer"
+            className="h-9 w-9 rounded-xl bg-surface hover:bg-danger/10 border border-line text-ink-muted hover:text-danger flex items-center justify-center transition-all shadow-2xs cursor-pointer"
           >
-            <span>Measurements</span>
+            <Trash2 size={15} />
           </button>
         </div>
       </div>

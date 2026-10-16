@@ -14,7 +14,6 @@ import {
   StoreProfile,
   StoreBranch,
   PublicService,
-  PublicServicePackage,
   CatalogListItem,
   PublicStorePost,
   StorefrontReview,
@@ -32,11 +31,10 @@ export function useStoreStorefront(storeId: string) {
 
   const [store, setStore] = useState<StoreProfile | null>(null);
   const [services, setServices] = useState<PublicService[]>([]);
-  const [packages, setPackages] = useState<PublicServicePackage[]>([]);
   const [posts, setPosts] = useState<PublicStorePost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && user?.roles?.[0]?.name === 'store_owner';
+  const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && !!user?.roles?.some((r) => r.name === 'store_owner' || r.name === 'branch_manager');
 
   // Owner services
   const [ownerServices, setOwnerServices] = useState<Service[]>([]);
@@ -97,7 +95,6 @@ export function useStoreStorefront(storeId: string) {
   const [isSubmittingServiceRating, setIsSubmittingServiceRating] = useState(false);
 
   // Service detail modal
-  const [selectedService, setSelectedService] = useState<PublicService | null>(null);
   const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null);
   const [highlightedServiceId, setHighlightedServiceId] = useState<number | null>(null);
   const hasScrolledToService = useRef(false);
@@ -473,12 +470,17 @@ export function useStoreStorefront(storeId: string) {
     const svcId = Number(targetServiceId);
     if (Number.isNaN(svcId)) return;
 
+    // Immediately highlight to ensure StoreServicesTab switches to this service's category group
+    const targetService = services.find((s) => s.id === svcId);
+    if (targetService) {
+      setHighlightedServiceId(svcId);
+    }
+
     const tryScroll = (attempts = 0) => {
       const targetElement = document.getElementById(`service-item-${svcId}`);
       if (targetElement) {
         hasScrolledToService.current = true;
         setHighlightedServiceId(svcId);
-        setExpandedServiceId(svcId);
         isAutoScrollingService.current = true;
 
         const container = targetElement.closest('.overflow-y-auto') as HTMLElement | null;
@@ -504,13 +506,13 @@ export function useStoreStorefront(storeId: string) {
 
         const fadeTimer = setTimeout(() => {
           setHighlightedServiceId(null);
-        }, 2500);
+        }, 3000);
 
         return () => {
           clearTimeout(scrollLockTimer);
           clearTimeout(fadeTimer);
         };
-      } else if (attempts < 6) {
+      } else if (attempts < 8) {
         setTimeout(() => tryScroll(attempts + 1), 150);
       }
     };
@@ -518,12 +520,6 @@ export function useStoreStorefront(storeId: string) {
     const timer = setTimeout(() => tryScroll(0), 100);
     return () => clearTimeout(timer);
   }, [searchParams, services, activeTab]);
-
-  useEffect(() => {
-    api.get(`/public/stores/${storeId}/service-packages`)
-      .then(res => setPackages(res.data.data || []))
-      .catch(() => {});
-  }, [storeId]);
 
   useEffect(() => {
     api.get(`/public/stores/${storeId}/posts`)
@@ -939,14 +935,11 @@ export function useStoreStorefront(storeId: string) {
 
     // Services
     services,
-    packages,
     serviceSearch,
     setServiceSearch,
     expandedServiceId,
     setExpandedServiceId,
     highlightedServiceId,
-    selectedService,
-    setSelectedService,
 
     // Owner service modals
     ownerServices,

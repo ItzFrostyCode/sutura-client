@@ -1,24 +1,18 @@
 'use client';
 
-import React, { Suspense, useState, useMemo } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { AlertCircle, X } from 'lucide-react';
 import JobRejectModal from '@/components/jobs/JobRejectModal';
-import JobKanbanBoard from '@/components/jobs/JobKanbanBoard';
 import JobTrashModal from '@/components/jobs/JobTrashModal';
-import { useJobs } from '@/components/jobs/useJobs';
-import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
+import JobsPageHeader from '@/components/jobs/JobsPageHeader';
+import SimpleBoard from '@/components/jobs/board/SimpleBoard';
+import BoardToolbar from '@/components/jobs/board/BoardToolbar';
+import BoardSummary from '@/components/jobs/board/BoardSummary';
+import { useJobsBoard } from '@/components/jobs/board/useJobsBoard';
+import { useWaitingAppointments } from '@/components/jobs/board/useWaitingAppointments';
 import { useAuthStore } from '@/store/useAuthStore';
 import { KanbanSkeleton } from '@/components/ui/Skeleton';
-import {
-  DEFAULT_NOTIF_PREFS,
-  buildStageIconFilters,
-} from '@/components/jobs/stageIconFilters';
-import StageNotifSettingsModal from '@/components/jobs/StageNotifSettingsModal';
-import JobsPageHeader from '@/components/jobs/JobsPageHeader';
-import JobsPageToolbar from '@/components/jobs/JobsPageToolbar';
-import { useKanbanPrefs } from '@/components/jobs/kanban/useKanbanPrefs';
 
 export default function JobOrdersPage() {
   return (
@@ -29,196 +23,49 @@ export default function JobOrdersPage() {
 }
 
 function JobOrdersPageContent() {
-  const { store, user } = useAuthStore();
+  const { user } = useAuthStore();
   const isStaff = user?.roles?.[0]?.name === 'staff';
-  const isOwnerOrManager = Boolean(
-    user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
-  );
-  const {
-    jobs,
-    loading,
-    search,
-    setSearch,
-    tab,
-    setTab,
-    myJobsOnly,
-    setMyJobsOnly,
-    rejectModalOpen,
-    setRejectModalOpen,
-    actionLoadingId,
-    updateJobStatus,
-    handleApproveJob,
-    openRejectModal,
-    handleConfirmReject,
-    activeColumns,
-    groupedJobs,
-    onHoldJobs,
-    walkInCount,
-    onlineCount,
-    pendingReviewCount,
-    fetchJobs,
-    overdueOnly,
-    garmentCategoryFilter,
-    designOriginFilter,
-    setDesignOriginFilter,
-    deptFilter,
-    setDeptFilter,
-    deptCounts,
-    statusCounts,
-    catalogJobsCount,
-    customBespokeCount,
-    alterationJobsCount,
-  } = useJobs();
-  // View mode and collapsed columns/lanes, remembered per browser.
-  const prefs = useKanbanPrefs();
-
-  const [trashModalOpen, setTrashModalOpen] = useState(false);
-  // Home's "Quality checks needed" card deep-links here with ?stage=qc_ironing.
-  const [stageFilter, setStageFilter] = useState<string>(useSearchParams().get('stage') || 'all');
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-
-  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('sutura_job_stage_notif_prefs');
-        if (saved) return { ...DEFAULT_NOTIF_PREFS, ...JSON.parse(saved) };
-      } catch {
-        // ignore
-      }
-    }
-    return DEFAULT_NOTIF_PREFS;
-  });
-
-  const toggleNotifPref = (stageKey: string) => {
-    setNotifPrefs((prev) => {
-      const next = { ...prev, [stageKey]: !prev[stageKey] };
-      try {
-        localStorage.setItem('sutura_job_stage_notif_prefs', JSON.stringify(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  };
-
-  const stageIconFilters = useMemo(
-    () =>
-      buildStageIconFilters(
-        notifPrefs,
-        pendingReviewCount,
-        groupedJobs,
-        onHoldJobs.length
-      ),
-    [notifPrefs, pendingReviewCount, groupedJobs, onHoldJobs.length]
-  );
+  const isOwnerOrManager = Boolean(user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)));
+  const board = useJobsBoard();
+  const waiting = useWaitingAppointments();
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [declining, setDeclining] = useState<number | null>(null);
+  const filtered = board.statusFilter || board.overdueOnly || board.garment;
 
   return (
-    <div className="space-y-5 h-full flex flex-col">
-      <JobsPageHeader
-        jobsCount={jobs.length}
-        onOpenTrash={() => setTrashModalOpen(true)}
-        isOwnerOrManager={isOwnerOrManager}
+    <div className="space-y-4">
+      <JobsPageHeader jobsCount={board.jobs.length} onOpenTrash={() => setTrashOpen(true)} isOwnerOrManager={isOwnerOrManager} />
+
+      {filtered && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-taupe/20 bg-taupe/10 px-4 py-2.5 text-sm font-medium text-taupe">
+          <span className="flex items-center gap-2"><AlertCircle size={16} /> Showing only part of your orders</span>
+          <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline"><X size={13} /> Show all</Link>
+        </div>
+      )}
+
+      {!board.loading && <BoardSummary jobs={board.jobs} canSeeMoney={isOwnerOrManager} />}
+
+      <BoardToolbar
+        search={board.search} onSearch={board.setSearch} showMine={isStaff} mine={board.mine} onMine={board.setMine}
+        closedCount={board.closed.length} showClosed={board.showClosed} onShowClosed={board.setShowClosed}
       />
 
-      {overdueOnly && (
-        <div className="flex items-center justify-between gap-3 bg-danger/10 border border-danger/20 text-danger text-sm font-medium rounded-lg px-4 py-2.5">
-          <span className="flex items-center gap-2"><AlertCircle size={16} /> Showing overdue jobs only</span>
-          <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline">
-            <X size={13} /> Clear filter
-          </Link>
-        </div>
-      )}
-
-      {garmentCategoryFilter && (
-        <div className="flex items-center justify-between gap-3 bg-taupe/10 border border-taupe/20 text-taupe text-sm font-medium rounded-lg px-4 py-2.5">
-          <span className="flex items-center gap-2">
-            <AlertCircle size={16} /> Showing {GARMENT_CATEGORY_LABELS[garmentCategoryFilter] ?? garmentCategoryFilter} jobs only
-          </span>
-          <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline">
-            <X size={13} /> Clear filter
-          </Link>
-        </div>
-      )}
-
-      {/* Main White Surface Card Panel (Enclosing Toolbar + Kanban Board) */}
-      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs flex flex-col flex-1">
-        <JobsPageToolbar
-          tab={tab}
-          setTab={setTab}
-          totalJobsCount={jobs.length}
-          walkInCount={walkInCount}
-          onlineCount={onlineCount}
-          onOpenSettings={() => setSettingsModalOpen(true)}
-          showMyJobsToggle={isStaff}
-          myJobsOnly={myJobsOnly}
-          setMyJobsOnly={setMyJobsOnly}
-          designOriginFilter={designOriginFilter}
-          setDesignOriginFilter={setDesignOriginFilter}
-          catalogJobsCount={catalogJobsCount}
-          customBespokeCount={customBespokeCount}
-          alterationJobsCount={alterationJobsCount}
-          stageFilter={stageFilter}
-          setStageFilter={setStageFilter}
-          stageIconFilters={stageIconFilters}
-          search={search}
-          setSearch={setSearch}
-          activeColumns={activeColumns}
-          deptFilter={deptFilter}
-          setDeptFilter={setDeptFilter}
-          deptCounts={deptCounts}
-          statusCounts={statusCounts}
-          prefs={prefs}
+      {board.loading ? <KanbanSkeleton columns={4} /> : (
+        <SimpleBoard
+          byStage={board.byStage} closed={board.closed} showClosed={board.showClosed}
+          canSeeMoney={isOwnerOrManager} canDecline={isOwnerOrManager} busyId={board.busyId} waiting={waiting}
+          onAdvance={board.advance} onDecline={setDeclining}
         />
-
-        <div className="p-3 sm:p-4 flex-1 overflow-hidden">
-          {loading ? (
-            <KanbanSkeleton columns={4} />
-          ) : (
-            <JobKanbanBoard
-              groupedJobs={groupedJobs}
-              activeColumns={activeColumns}
-              onHoldJobs={onHoldJobs}
-              actionLoadingId={actionLoadingId}
-              onUpdateStatus={updateJobStatus}
-              onApprove={handleApproveJob}
-              onReject={openRejectModal}
-              highlightedJobId={null}
-              stageFilter={stageFilter}
-              prefs={prefs}
-              statusCounts={statusCounts}
-            />
-          )}
-        </div>
-      </div>
-
-      <StageNotifSettingsModal
-        isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        notifPrefs={notifPrefs}
-        onToggleNotifPref={toggleNotifPref}
-        onResetAll={() => {
-          setNotifPrefs(DEFAULT_NOTIF_PREFS);
-          try {
-            localStorage.setItem('sutura_job_stage_notif_prefs', JSON.stringify(DEFAULT_NOTIF_PREFS));
-          } catch {}
-        }}
-      />
+      )}
 
       <JobRejectModal
-        isOpen={rejectModalOpen}
-        onClose={() => setRejectModalOpen(false)}
-        onConfirm={handleConfirmReject}
-        actionLoading={actionLoadingId !== null}
+        isOpen={declining !== null}
+        onClose={() => setDeclining(null)}
+        onConfirm={async (reason) => { if (declining !== null) await board.decline(declining, reason); setDeclining(null); }}
+        actionLoading={board.busyId !== null}
       />
 
-      {store && (
-        <JobTrashModal
-          isOpen={trashModalOpen}
-          onClose={() => setTrashModalOpen(false)}
-          storeId={store.id}
-          onRestored={() => { if (fetchJobs) fetchJobs(); }}
-        />
-      )}
+      {board.store && <JobTrashModal isOpen={trashOpen} onClose={() => setTrashOpen(false)} storeId={board.store.id} onRestored={board.refetch} />}
     </div>
   );
 }

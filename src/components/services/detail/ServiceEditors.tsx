@@ -6,7 +6,6 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { getMediaUrl } from '@/lib/media';
 import { useToast } from '@/context/ToastContext';
-import { SHOWCASE_CATEGORIES } from '@/lib/serviceShowcase';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
 import ImageUploadField from './ImageUploadField';
 import type { ServiceSectionEdit } from './useServiceSectionEdit';
@@ -118,15 +117,6 @@ export function ServiceSpecEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
         <button type="button" onClick={() => patch({ tiers: [...d.tiers, { label: '', amount: '' }] })} className="mt-2 h-11 px-3 text-taupe text-xs font-semibold flex items-center gap-1 cursor-pointer">
           <Plus size={14} /> Add a price or add-on
         </button>
-      </div>
-
-      <div>
-        <label htmlFor="svc-showcase" className={LABEL}>Shown under on your shop page <span className="text-red-600">*</span></label>
-        <select id="svc-showcase" value={d.showcase_category} onChange={e => patch({ showcase_category: e.target.value })} className={FIELD}>
-          <option value="">Select a group…</option>
-          {SHOWCASE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
-        <p className="mt-1 text-xs text-ink-muted">Customers browse your services by these groups, then open a service to see its designs.</p>
       </div>
     </div>
   );

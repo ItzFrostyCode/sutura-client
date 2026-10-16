@@ -1,13 +1,15 @@
 import React from 'react';
 import Modal from '@/components/Modal';
 import { Loader2 } from 'lucide-react';
+import { type Gender } from '@/components/shared/GenderPicker';
+import CustomerFields from './CustomerFields';
 
 interface CustomerAddEditModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly editingId: number | null;
-  readonly formData: { name: string; email: string; phone: string };
-  readonly setFormData: React.Dispatch<React.SetStateAction<{ name: string; email: string; phone: string }>>;
+  readonly formData: { name: string; email: string; phone: string; gender: Gender | '' };
+  readonly setFormData: React.Dispatch<React.SetStateAction<{ name: string; email: string; phone: string; gender: Gender | '' }>>;
   readonly onSubmit: (e: React.SyntheticEvent) => Promise<void>;
   readonly isSubmitting: boolean;
   readonly error: string;
@@ -36,49 +38,7 @@ export default function CustomerAddEditModal({
           </div>
         )}
 
-        <div>
-          <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-            Full Name <span className="text-danger">*</span>
-          </label>
-          <input
-            id="name"
-            type="text"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink font-semibold focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-            placeholder="e.g. Maria Clara"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-            Email Address <span className="text-[10px] text-ink-faint font-normal lowercase">(optional for walk-ins)</span>
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-            placeholder="e.g. maria.clara@gmail.com"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="phone" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-            Phone Number <span className="text-danger">*</span>
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            required
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-            placeholder="e.g. +63 917 123 4567"
-          />
-        </div>
+        <CustomerFields value={formData} onChange={setFormData} showEmail={editingId !== null} />
 
         <div className="pt-3 flex justify-end gap-2 border-t border-line">
           <button

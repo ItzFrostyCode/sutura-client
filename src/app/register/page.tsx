@@ -1,5 +1,6 @@
 'use client';
 
+import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -35,6 +36,7 @@ function RegisterPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [gender, setGender] = useState<Gender | ''>('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,7 +61,7 @@ function RegisterPageContent() {
     try {
       const name = `${firstName.trim()} ${lastName.trim()}`.trim();
       const response = await api.post('/auth/register', {
-        name, email, password, password_confirmation: passwordConfirmation, role
+        name, email, password, password_confirmation: passwordConfirmation, role, gender: gender || null
       });
       if (response.data.success) {
         if (response.data.data?.token && response.data.data?.user) {
@@ -152,6 +154,8 @@ function RegisterPageContent() {
               required
             />
           </div>
+
+          <GenderPicker value={gender} onChange={setGender} />
 
           <div>
             <label htmlFor="register-email" className="block text-sm text-ink mb-2">

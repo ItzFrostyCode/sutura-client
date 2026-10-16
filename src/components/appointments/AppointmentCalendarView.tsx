@@ -25,7 +25,6 @@ interface AppointmentCalendarViewProps {
 
   // Actions
   readonly onReviewClick: (apt: Appointment) => void;
-  readonly onStartClick: (aptId: number) => void;
   readonly onCompleteClick: (apt: Appointment) => void;
   readonly onCreateJobClick: (apt: Appointment) => void;
   readonly onDetailsClick: (apt: Appointment) => void;
@@ -38,7 +37,7 @@ export default function AppointmentCalendarView({
   appointments, currentDate, setCurrentDate, selectedDay, setSelectedDay,
   calSubMode, setCalSubMode, hoveredAptId, setHoveredAptId, actionLoadingId,
   isOwnerOrManager,
-  onReviewClick, onStartClick, onCompleteClick, onCreateJobClick, onDetailsClick, onNoShowClick, onAddClick, onCheckInClick
+  onReviewClick, onCompleteClick, onCreateJobClick, onDetailsClick, onNoShowClick, onAddClick, onCheckInClick
 }: AppointmentCalendarViewProps) {
 
   const year = currentDate.getFullYear();
@@ -366,7 +365,7 @@ export default function AppointmentCalendarView({
           <p className="text-xs text-ink-muted">
             {isDayPast
               ? 'Past dates cannot be selected for new bookings.'
-              : 'The atelier schedule is open for new fittings or consultations.'}
+              : 'This day is open for new fittings or consultations.'}
           </p>
           {isOwnerOrManager && !isDayPast && (
             <button
@@ -409,7 +408,7 @@ export default function AppointmentCalendarView({
                       {(apt.outcome === 'rescheduled' || apt.notes?.includes('[Rescheduled from')) && (
                         <RescheduledBadge />
                       )}
-                      <TypeBadge type={apt.appointment_type} label={apt.purpose_label} />
+                      <TypeBadge type={apt.appointment_type} label={apt.purpose_label} kind={apt.kind} />
                       <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
                       <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
                     </div>
@@ -458,22 +457,13 @@ export default function AppointmentCalendarView({
                       <Eye size={13} /> <span>Review & Approve</span>
                     </button>
                   )}
-                  {isConfirmed && !apt.checked_in_at && onCheckInClick && (
+                  {isConfirmed && onCheckInClick && (
                     <button
                       type="button"
                       onClick={() => onCheckInClick(apt.id)}
                       className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
                     >
-                      Check In
-                    </button>
-                  )}
-                  {isConfirmed && (
-                    <button
-                      type="button"
-                      onClick={() => onStartClick(apt.id)}
-                      className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-ink hover:bg-black text-white shadow-2xs transition-colors"
-                    >
-                      Start
+                      {apt.checked_in_at ? 'Start now' : 'Customer arrived'}
                     </button>
                   )}
                   {isInProgress && (
@@ -482,7 +472,7 @@ export default function AppointmentCalendarView({
                       onClick={() => onCompleteClick(apt)}
                       className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors"
                     >
-                      Complete
+                      Done
                     </button>
                   )}
                   {isConfirmed && !apt.job_order_id && (

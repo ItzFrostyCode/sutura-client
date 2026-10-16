@@ -60,6 +60,12 @@ No tables were added: the lists live in code, the client copy (`src/lib/garmentT
 - **Shop cards and the shop page** say "Alters & repairs" when the shop has that service.
 - **All Categories / header menu:** Garments (10 → 54), Services (4 → tasks), Discover. No Men / Women / Kids.
 
+## 5b. The shop side uses the same lists (2026-10-16)
+
+- **Services dashboard filters** (`components/services/useServiceFilters.ts`, `serviceTaxonomyFilters.ts`): Kind of work (the 4 services), Garment (garment category, an "any garment" service counts in each) and Task (capability), same names and order as the landing page and `/search`. Search matches the words customers use (garment names and aliases, tasks, kind of work).
+- **Storefront Services tab chips** (`lib/storefrontGroups.ts`) follow from what the owner ticked: a service sits under each garment category of its garments; one with no garments sits under its kind of work. The separate "Shown under on your shop page" field (and its Uniform / Casual / Office… list) is gone from the service form; the `showcase_category` column stays but nothing reads it.
+- **Create Job Order** offers the same garments and only the services that work on them (`ORDER-FLOW.md`).
+
 ## 6. Still open
 
 1. `/dashboard/services/[id]` was not page-checked: the running dev server lost its Node version (restart `npm run dev`).

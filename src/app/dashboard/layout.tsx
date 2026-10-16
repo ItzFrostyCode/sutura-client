@@ -128,41 +128,36 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     return <StoreApplicationGate store={store} onLogout={() => { logout(); router.push('/login?as=store'); }} />;
   }
 
+  // Grouped by how the shop is used: the day's work, then the shop's setup, then the reports.
   const NAV_GROUPS = [
     {
-      title: 'Main Operations',
+      title: 'Daily Work',
       items: [
         { name: 'Home', path: '/dashboard', icon: Home },
         { name: 'Appointments', path: '/dashboard/appointments', icon: Calendar },
+        { name: 'Orders', path: '/dashboard/jobs', icon: Scissors },
+        { name: 'Customers', path: '/dashboard/customers', icon: Users },
         // Payment capture/verification is Owner/Branch-Manager-exclusive
         // under the finalized target (PAYMENT-WORKFLOW.md Part B) — Staff's
         // role narrows to reading payment_status/balance elsewhere (job
         // detail, appointment detail), never acting on it here.
         ...((isStoreOwner || isBranchManager) ? [{ name: 'Collect Payments', path: '/dashboard/payments', icon: CreditCard }] : []),
-      ],
-    },
-    {
-      title: 'Workroom',
-      items: [
-        { name: 'Orders', path: '/dashboard/jobs', icon: Scissors },
-        { name: 'Customers', path: '/dashboard/customers', icon: Users },
         // Texts wait for the shop to check the number and wording before they are sent.
         ...((isStoreOwner || isBranchManager) ? [{ name: 'Text Messages', path: '/dashboard/sms', icon: MessageSquare }] : []),
       ],
     },
     {
-      title: 'Showroom',
+      title: 'My Shop',
       items: [
-        ...((isStoreOwner || isBranchManager) ? [{ name: 'Catalog Designs', path: '/dashboard/catalog', icon: Sparkles }] : []),
         ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
+        ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
       ],
     },
     {
-      title: 'Staff & Performance',
+      title: 'Reports',
       items: [
-        ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Staff', path: '/dashboard/staff', icon: UserCog }] : []),
         ...(canViewAnalytics ? [{ name: 'Reports & Insights', path: '/dashboard/reports', icon: LayoutDashboard }] : []),
-        ...((isStoreOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
         ...(isStoreOwner ? [{ name: 'Audit Log', path: '/dashboard/audit-log', icon: ScrollText }] : []),
       ],
     },
@@ -171,6 +166,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   const isActivePath = (path: string) =>
     pathname === path ||
     (path !== '/dashboard' && pathname.startsWith(path)) ||
+    // Designs live inside Services now: their pages keep Services lit in the menu.
+    (path === '/dashboard/services' && pathname.startsWith('/dashboard/catalog')) ||
     (path === '/dashboard/customers' && pathname.startsWith('/dashboard/measurements'));
 
   /** One nav item, used by both the desktop rail and the mobile drawer.

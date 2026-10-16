@@ -1,10 +1,9 @@
 'use client';
 
 import { depositFraction } from '@/components/jobs/requirements';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
-import JobFulfillmentCard from '@/components/jobs/JobFulfillmentCard';
 import JobFinancialsCard from '@/components/jobs/JobFinancialsCard';
 import SendCustomerMessageModal from '@/components/jobs/SendCustomerMessageModal';
 import { useJobDetail } from '@/components/jobs/useJobDetail';
@@ -15,8 +14,9 @@ import JobProductionTab from '@/components/jobs/detail/JobProductionTab';
 import JobPrintWorkTicket from '@/components/jobs/detail/JobPrintWorkTicket';
 import JobDeleteModal from '@/components/jobs/detail/JobDeleteModal';
 import OrderReadinessTab from '@/components/jobs/readiness/OrderReadinessTab';
+import type { Job as StageJob } from '@/components/jobs/jobHelpers';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
-import { BranchData, getLocalDateString, minTimeForDate, getErrorMessage } from '@/components/appointments/appointmentHelpers';
+import { getLocalDateString, minTimeForDate, getErrorMessage } from '@/components/appointments/appointmentHelpers';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -25,7 +25,6 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   const id = unwrappedParams.id;
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
-  const [followUpBranches, setFollowUpBranches] = useState<BranchData[]>([]);
   const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
   const toast = useToast();
@@ -36,15 +35,13 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   const userRoleNames = user?.roles?.map(r => r.name) ?? [];
   const isOwnerOrManager = userRoleNames.some(r => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
 
-  // In-page tabs — lazy initialized from URL hash (e.g. #financials from dashboard quick actions)
+  // In-page tabs — lazy initialized from the URL hash. Old names (#financials, #overview...) still work.
   const [activeTab, setActiveTab] = useState<JobDetailTabKey>(() => {
-    if (typeof window === 'undefined') return 'overview';
-    const validTabs = ['readiness', 'overview', 'production', 'fulfillment', 'financials'] as const;
+    if (typeof window === 'undefined') return 'steps';
     const hash = window.location.hash.replace('#', '');
-    if ((validTabs as readonly string[]).includes(hash)) {
-      return hash as JobDetailTabKey;
-    }
-    return 'overview';
+    if (hash === 'financials' || hash === 'payments') return 'payments';
+    if (hash === 'overview' || hash === 'details') return 'details';
+    return 'steps';
   });
 
   const {
@@ -83,31 +80,12 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     handleResetChanges,
   } = useJobDetail(id);
 
-  // Orders that use the ordering flow open on their steps (set-up, then delivery) until they are closed
-  // (unless the link names a tab, e.g. #financials from a dashboard shortcut).
-  const openedOnce = useRef(false);
   useEffect(() => {
-    if (!job || openedOnce.current) return;
-    openedOnce.current = true;
-    if (!window.location.hash && job.uses_confirmation_flow && !['completed', 'cancelled', 'rejected'].includes(job.status)) {
+    if (activeTab === 'payments' && user && !isOwnerOrManager) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab('readiness');
-    }
-  }, [job]);
-
-  useEffect(() => {
-    if (activeTab === 'financials' && user && !isOwnerOrManager) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab('overview');
+      setActiveTab('details');
     }
   }, [activeTab, user, isOwnerOrManager]);
-
-  useEffect(() => {
-    if (!store?.id) return;
-    api.get(`/stores/${store.id}/branches`)
-      .then(r => setFollowUpBranches(Array.isArray(r.data?.data) ? r.data.data : []))
-      .catch(() => {});
-  }, [store?.id]);
 
   const handleCreateFollowUp = async (payload: Record<string, unknown>) => {
     if (!store) return;
@@ -163,65 +141,52 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
         <JobDetailTabsNav
           activeTab={activeTab}
           onSelectTab={setActiveTab}
-          dirtyTabs={dirtyTabs}
+          dirtyTabs={{ steps: dirtyTabs.production, details: dirtyTabs.overview }}
           showFinancials={isOwnerOrManager}
-          showReadiness={Boolean(job.uses_confirmation_flow)}
         />
 
-        {activeTab === 'readiness' && store && (
+        {activeTab === 'steps' && store && (
           <OrderReadinessTab
             storeId={store.id}
             jobId={job.id}
+            job={job as unknown as StageJob}
             currentTotal={jobTotalAmount}
             onChanged={refreshJob}
-            onStarted={() => setActiveTab('production')}
-            onGoToFinancials={isOwnerOrManager ? () => setActiveTab('financials') : undefined}
+            onStarted={() => {}}
+            onGoToFinancials={isOwnerOrManager ? () => setActiveTab('payments') : undefined}
+            work={(
+              <JobProductionTab
+                job={job}
+                status={status}
+                setStatus={setStatus}
+                notes={notes}
+                setNotes={setNotes}
+                completionPhotoUrl={completionPhotoUrl}
+                setCompletionPhotoUrl={setCompletionPhotoUrl}
+                estimatedReadyAt={estimatedReadyAt}
+                setEstimatedReadyAt={setEstimatedReadyAt}
+                customerMaterialStatus={customerMaterialStatus}
+                setCustomerMaterialStatus={setCustomerMaterialStatus}
+                setCancellationReason={setCancellationReason}
+                setHoldReason={setHoldReason}
+                refreshJob={refreshJob}
+              />
+            )}
           />
         )}
 
-        {activeTab === 'overview' && (
+        {activeTab === 'details' && (
           <JobOverviewTab
             job={job}
             notes={notes}
             setNotes={setNotes}
-            jobPaidSoFar={jobPaidSoFar}
-            requiredDownpayment={requiredDownpayment}
             downpaymentShortfall={downpaymentShortfall}
-            showDownpaymentGate={showDownpaymentGate}
             onUseCurrentMeasurement={handleUseCurrentMeasurement}
             onToggleRosterItem={handleToggleRosterItem}
-            onGoToFinancials={() => setActiveTab('financials')}
-            onGoToProduction={() => setActiveTab('production')}
-            isOwnerOrManager={isOwnerOrManager}
           />
         )}
 
-        {activeTab === 'production' && (
-          <JobProductionTab
-            job={job}
-            status={status}
-            setStatus={setStatus}
-            notes={notes}
-            setNotes={setNotes}
-            completionPhotoUrl={completionPhotoUrl}
-            setCompletionPhotoUrl={setCompletionPhotoUrl}
-            estimatedReadyAt={estimatedReadyAt}
-            setEstimatedReadyAt={setEstimatedReadyAt}
-            customerMaterialStatus={customerMaterialStatus}
-            setCustomerMaterialStatus={setCustomerMaterialStatus}
-            setCancellationReason={setCancellationReason}
-            setHoldReason={setHoldReason}
-            refreshJob={refreshJob}
-          />
-        )}
-
-        {activeTab === 'fulfillment' && (
-          <div className="space-y-6">
-            <JobFulfillmentCard />
-          </div>
-        )}
-
-        {activeTab === 'financials' && isOwnerOrManager && (
+        {activeTab === 'payments' && isOwnerOrManager && (
           <div className="space-y-6" id="financials">
             <JobFinancialsCard
               job={job}
@@ -260,7 +225,6 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
         <FollowUpAppointmentModal
           isOpen={showFollowUpModal}
           onClose={() => { setShowFollowUpModal(false); setFollowUpError(''); }}
-          branches={followUpBranches}
           todayStr={getLocalDateString(new Date())}
           minTimeFor={(dateStr) => minTimeForDate(dateStr, getLocalDateString(new Date()))}
           presetJobOrderId={job.id}

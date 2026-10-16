@@ -12,6 +12,7 @@ import type { Service } from '@/components/services/serviceHelpers';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import ServiceDetailHeader from '@/components/services/detail/ServiceDetailHeader';
 import ServiceEditableOverview from '@/components/services/detail/ServiceEditableOverview';
+import ServiceDesignsSection from '@/components/services/detail/ServiceDesignsSection';
 import { useServiceSectionEdit } from '@/components/services/detail/useServiceSectionEdit';
 import { buildServicePayload, toDraft, toPublicService } from '@/components/services/detail/serviceEditing';
 import CatalogDetailTabsNav, { type CatalogDetailTab } from '@/components/catalog/detail/CatalogDetailTabsNav';
@@ -75,18 +76,12 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     return { ...toPublicService(service), reviews: publicView?.reviews ?? [], reviews_count: publicView?.reviews_count ?? service.reviews_count ?? 0, reviews_avg_rating: publicView?.reviews_avg_rating ?? service.reviews_avg_rating ?? null };
   }, [service, publicView]);
 
-  // A combo needs 2+ orderable services; the server pauses any that fall short and says which.
-  const notePausedPackages = (names?: string[]) => {
-    if (names?.length) toast.info(`Paused ${names.length === 1 ? 'the combo' : 'these combos'} because fewer than 2 services are left: ${names.join(', ')}.`);
-  };
-
   const saveWithActive = async (isActive: boolean) => {
     if (!store?.id || !service) return;
     setToggling(true);
     try {
-      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
+      await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
       toast.success(isActive ? 'Service is live again.' : 'Service paused.');
-      notePausedPackages(res.data?.paused_packages);
       await reload();
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not change the service status.'));
@@ -99,9 +94,8 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     if (!store?.id || !service) return;
     setModalBusy(true);
     try {
-      const res = await api.delete(`/stores/${store.id}/services/${service.id}`);
+      await api.delete(`/stores/${store.id}/services/${service.id}`);
       toast.success('Service deleted.');
-      notePausedPackages(res.data?.paused_packages);
       router.push('/dashboard/services');
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to delete service.'));
@@ -159,7 +153,10 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         </div>
 
         {activeTab === 'overview' && (
-          <ServiceEditableOverview service={service} edit={edit} />
+          <>
+            <ServiceEditableOverview service={service} edit={edit} />
+            {store?.id && <ServiceDesignsSection storeId={store.id} serviceId={service.id} canManage={canManage} />}
+          </>
         )}
 
         {activeTab === 'reviews' && ratingsView && (

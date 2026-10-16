@@ -38,7 +38,7 @@ export interface StoreSettingsData {
   repair_requires_downpayment: boolean;
   // Shown to the customer before they approve a quotation; empty = the built-in default text.
   cancellation_policy: string;
-  // Shop-wide defaults for new orders; designs, services and combos can override them.
+  // Shop-wide defaults for new orders; designs and services can override them.
   default_measurement_requirement: 'none' | 'existing' | 'shop';
   default_fitting_requirement: 'none' | 'optional' | 'required';
   default_payment_policy: 'none' | 'full' | 'deposit' | 'custom';

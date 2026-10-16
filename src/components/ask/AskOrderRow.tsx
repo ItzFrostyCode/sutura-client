@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { STATUS_META, type MyOrder } from '@/components/account/orders/ordersTypes';
+import { getPhaseMeta, type MyOrder } from '@/components/account/orders/ordersTypes';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`;
 
 /** One order in "Where is my order?": what is being made, at which shop, what stage it is in, and what is left to pay. */
 export default function AskOrderRow({ order }: { readonly order: MyOrder }) {
-  const what = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? 'Your order';
-  const stage = STATUS_META[order.status]?.label ?? order.status;
+  const what = order.catalog_item_name ?? order.service_name ?? 'Your order';
+  const stage = getPhaseMeta(order.status, order.progress).label;
   const pending = order.pending_payment_amount ?? 0;
   return (
     <li>
