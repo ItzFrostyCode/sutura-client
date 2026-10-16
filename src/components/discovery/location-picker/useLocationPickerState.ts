@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
-import type { SavedLocation, RecentLocation } from '@/lib/customerLocation';
-import { DEFAULT_DAVAO_LOCATION, getRecentLocations, addRecentLocation, requestCurrentLocation } from '@/lib/customerLocation';
+import { getRecentLocations, addRecentLocation, requestCurrentLocation, type SavedLocation, type RecentLocation } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
 import { DAVAO_CENTER } from './locationPickerTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
@@ -113,12 +112,7 @@ export function useLocationPickerState(
         setLocating(false);
       },
       () => {
-        // Fallback for desktop PC without GPS hardware
-        const def = DEFAULT_DAVAO_LOCATION;
-        jumpTo(def.lat, def.lng);
-        setAddress(def.address);
-        setDistrict(def.district);
-        setError('GPS hardware unavailable on this device. Centered on Davao City — drag map to your place.');
+        setError('Could not get your location. Check your browser’s location permission and try again.');
         setLocating(false);
       }
     );
