@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Map as MapIcon, Scissors } from 'lucide-react';
+import { Compass, MapPin, Map as MapIcon, Scissors } from 'lucide-react';
 import SpinningPin from './SpinningPin';
 import { NEARBY_KM, type GatePhase } from './useLocationGate';
 
@@ -10,13 +10,15 @@ const secondary = 'flex h-[52px] w-full items-center justify-center gap-2 rounde
 interface LocationGateProps {
   readonly phase: Exclude<GatePhase, 'done'>;
   readonly denied: boolean;
+  readonly unavailable?: boolean;
   readonly farKm: number | null;
   readonly onRetry: () => void;
   readonly onEnter: () => void;
+  readonly onUseDefault?: () => void;
 }
 
 /** The landing page's main panel while it finds the visitor: the spinning pin, a permission ask, or "too far". */
-export default function LocationGate({ phase, denied, farKm, onRetry, onEnter }: LocationGateProps) {
+export default function LocationGate({ phase, denied, unavailable, farKm, onRetry, onEnter, onUseDefault }: LocationGateProps) {
   return (
     <main className="mobile-screen-margins flex flex-1 flex-col items-center justify-center py-12 text-center">
       {phase === 'pinpointing' || phase === 'finding' ? (
@@ -30,22 +32,56 @@ export default function LocationGate({ phase, denied, farKm, onRetry, onEnter }:
       ) : phase === 'permission' ? (
         <>
           <MapPin size={64} strokeWidth={1.75} className="text-taupe-dark" aria-hidden />
-          <h1 className="mobile-h1 mt-6 text-ink">{denied ? 'Location Is Blocked' : 'Location Permission Required'}</h1>
+          <h1 className="mobile-h1 mt-6 text-ink">
+            {denied
+              ? 'Location Is Blocked'
+              : unavailable
+                ? 'GPS Signal Unavailable'
+                : 'Location Permission'}
+          </h1>
           <p className="mobile-body-md mt-3 max-w-md text-ink-muted">
             {denied
-              ? 'Location is turned off for SUTURA in your browser settings. Turn it on there, or choose your area on the map to see tailoring shops near you.'
-              : 'SUTURA needs your location to show tailoring shops near you and how far each one is.'}
+              ? 'Location is turned off for SUTURA in your browser settings. Choose your area on the map or use Davao City center to see tailoring shops near you.'
+              : unavailable
+                ? 'Your browser has permission, but your device could not detect an exact GPS or network position fix. You can continue with Davao City center, choose on the map, or retry.'
+                : 'SUTURA needs your location to show tailoring shops near you and how far each one is.'}
           </p>
           <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
             {denied ? (
               <>
                 <Link href={CHOOSE_ON_MAP} className={primary}><MapIcon size={18} aria-hidden />Choose on map</Link>
-                <button type="button" onClick={onRetry} className={secondary}>Try again</button>
+                {onUseDefault && (
+                  <button type="button" onClick={onUseDefault} className={secondary}>
+                    <Compass size={18} aria-hidden />Use Davao City Center
+                  </button>
+                )}
+                <button type="button" onClick={onRetry} className="h-11 text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline">
+                  Try again
+                </button>
+              </>
+            ) : unavailable ? (
+              <>
+                {onUseDefault && (
+                  <button type="button" onClick={onUseDefault} className={primary}>
+                    <Compass size={18} aria-hidden />Use Davao City Center
+                  </button>
+                )}
+                <Link href={CHOOSE_ON_MAP} className={secondary}><MapIcon size={18} aria-hidden />Choose on map</Link>
+                <button type="button" onClick={onRetry} className="h-11 text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline">
+                  Retry GPS
+                </button>
               </>
             ) : (
               <>
                 <button type="button" onClick={onRetry} className={primary}>Allow Location / Retry</button>
-                <Link href={CHOOSE_ON_MAP} className={secondary}><MapIcon size={18} aria-hidden />Choose on map</Link>
+                {onUseDefault && (
+                  <button type="button" onClick={onUseDefault} className={secondary}>
+                    <Compass size={18} aria-hidden />Use Davao City Center
+                  </button>
+                )}
+                <Link href={CHOOSE_ON_MAP} className="h-11 text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline">
+                  <MapIcon size={16} className="mr-1 inline" aria-hidden />Choose on map
+                </Link>
               </>
             )}
             <button type="button" onClick={onEnter} className="h-11 text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline">

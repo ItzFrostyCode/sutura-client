@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { SavedLocation, RecentLocation, HomeLocation } from '@/lib/customerLocation';
 import {
+  DEFAULT_DAVAO_LOCATION,
+  requestCurrentLocation,
   getSavedLocation,
   saveLocationWithHistory,
   getRecentLocations,
@@ -69,39 +71,18 @@ export function useLocationPageState() {
   }
 
   function handleUseCurrentGps() {
-    if (!navigator.geolocation) {
-      setSearchError('Geolocation not supported.');
-      return;
-    }
     setLocatingCurrent(true);
     setSearchError('');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await reverseGeocodeCoords(latitude, longitude);
-          handleSelectLocation({
-            lat: latitude,
-            lng: longitude,
-            address: res.address,
-            district: res.district,
-          });
-        } catch {
-          handleSelectLocation({
-            lat: latitude,
-            lng: longitude,
-            address: `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-            district: 'Davao City',
-          });
-        } finally {
-          setLocatingCurrent(false);
-        }
-      },
-      () => {
-        setSearchError('Unable to get location. Check browser permissions.');
+    requestCurrentLocation(
+      (loc) => {
+        handleSelectLocation(loc);
         setLocatingCurrent(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => {
+        // Fallback for desktop PC without GPS hardware
+        handleSelectLocation(DEFAULT_DAVAO_LOCATION);
+        setLocatingCurrent(false);
+      }
     );
   }
 

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
+import { DEFAULT_DAVAO_LOCATION, requestCurrentLocation } from '@/lib/customerLocation';
 import { CatalogItem, CatalogItemImage, MapBranch } from '../types';
 
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -217,22 +218,19 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   }, [showFind]);
 
   const handleLocate = () => {
-    if (!navigator.geolocation) {
-      setLocateError('Geolocation is not supported on this device.');
-      return;
-    }
     setLocating(true);
     setLocateError('');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    requestCurrentLocation(
+      (loc) => {
+        setUserPos({ lat: loc.lat, lng: loc.lng });
         setLocating(false);
       },
       () => {
-        setLocateError('Unable to get your location. Check your location permission.');
+        // Fallback for desktop PC without GPS hardware
+        const def = DEFAULT_DAVAO_LOCATION;
+        setUserPos({ lat: def.lat, lng: def.lng });
         setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      }
     );
   };
 

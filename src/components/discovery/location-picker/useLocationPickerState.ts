@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { SavedLocation, RecentLocation } from '@/lib/customerLocation';
-import { getRecentLocations, addRecentLocation } from '@/lib/customerLocation';
+import { DEFAULT_DAVAO_LOCATION, getRecentLocations, addRecentLocation, requestCurrentLocation } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
 import { DAVAO_CENTER } from './locationPickerTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
@@ -102,25 +102,25 @@ export function useLocationPickerState(
   }
 
   function handleUseCurrentLocation() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setError('Your browser does not support location access.');
-      return;
-    }
     setLocating(true);
     setError('');
     setShowSuggestions(false);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        jumpTo(latitude, longitude);
-        reverseGeocode(latitude, longitude);
+    requestCurrentLocation(
+      (loc) => {
+        jumpTo(loc.lat, loc.lng);
+        setAddress(loc.address);
+        setDistrict(loc.district);
         setLocating(false);
       },
       () => {
-        setError('Could not get your location. Check your browser’s location permission and try again.');
+        // Fallback for desktop PC without GPS hardware
+        const def = DEFAULT_DAVAO_LOCATION;
+        jumpTo(def.lat, def.lng);
+        setAddress(def.address);
+        setDistrict(def.district);
+        setError('GPS hardware unavailable on this device. Centered on Davao City — drag map to your place.');
         setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      }
     );
   }
 

@@ -231,6 +231,13 @@ export function getItemDistanceInfo(
   };
 }
 
+export const DEFAULT_DAVAO_LOCATION: SavedLocation = {
+  lat: 7.0731,
+  lng: 125.6128,
+  address: 'San Pedro St, Poblacion District, Davao City',
+  district: 'Poblacion',
+};
+
 export async function checkLocationPermission(): Promise<PermissionState | 'unsupported'> {
   if (typeof navigator === 'undefined' || !navigator.permissions || !navigator.permissions.query) {
     return 'unsupported';
@@ -243,42 +250,77 @@ export async function checkLocationPermission(): Promise<PermissionState | 'unsu
   }
 }
 
+export interface RequestLocationOptions {
+  enableHighAccuracy?: boolean;
+  timeout?: number;
+  maximumAge?: number;
+  fallbackToDefault?: boolean;
+}
+
 export function requestCurrentLocation(
   onSuccess?: (loc: SavedLocation) => void,
-  onError?: (err: GeolocationPositionError | Error) => void
+  onError?: (err: GeolocationPositionError | Error) => void,
+  options?: RequestLocationOptions
 ): void {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
-    onError?.(new Error('Geolocation not supported'));
+    if (options?.fallbackToDefault) {
+      saveLocationWithHistory(DEFAULT_DAVAO_LOCATION);
+      onSuccess?.(DEFAULT_DAVAO_LOCATION);
+    } else {
+      onError?.(new Error('Geolocation not supported'));
+    }
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-      let district = 'Davao City';
+  const handlePositionSuccess = async (pos: GeolocationPosition) => {
+    const { latitude, longitude } = pos.coords;
+    let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    let district = 'Davao City';
 
-      try {
-        const geo = await reverseGeocodeCoords(latitude, longitude);
-        address = geo.address;
-        district = geo.district;
-      } catch {
-        // Fallback
+    try {
+      const geo = await reverseGeocodeCoords(latitude, longitude);
+      address = geo.address;
+      district = geo.district;
+    } catch {
+      // Fallback
+    }
+
+    const loc: SavedLocation = {
+      lat: latitude,
+      lng: longitude,
+      address,
+      district,
+    };
+
+    saveLocationWithHistory(loc);
+    onSuccess?.(loc);
+  };
+
+  // Step 1: Try high accuracy GPS (5s timeout, 2min maximumAge)
+  navigator.geolocation.getCurrentPosition(
+    handlePositionSuccess,
+    (err) => {
+      // User explicitly clicked "Block" (PERMISSION_DENIED = 1) -> respect it immediately
+      if (err.code === 1) {
+        onError?.(err);
+        return;
       }
 
-      const loc: SavedLocation = {
-        lat: latitude,
-        lng: longitude,
-        address,
-        district,
-      };
-
-      saveLocationWithHistory(loc);
-      onSuccess?.(loc);
+      // Step 2: High accuracy failed or timed out (code 2 = POSITION_UNAVAILABLE, code 3 = TIMEOUT, common on Windows/PCs).
+      // Retry with low accuracy (network/Wi-Fi/cell/ISP coordinates) and 5min cached position!
+      navigator.geolocation.getCurrentPosition(
+        handlePositionSuccess,
+        (secondErr) => {
+          if (options?.fallbackToDefault) {
+            saveLocationWithHistory(DEFAULT_DAVAO_LOCATION);
+            onSuccess?.(DEFAULT_DAVAO_LOCATION);
+          } else {
+            onError?.(secondErr);
+          }
+        },
+        { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
+      );
     },
-    (err) => {
-      onError?.(err);
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
+    { enableHighAccuracy: true, timeout: 5000, maximumAge: 120000 }
   );
 }
