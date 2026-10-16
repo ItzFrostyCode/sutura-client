@@ -1,17 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserCircle, Eye, Pencil, Trash2, X, Scissors, UserCheck, Sparkles, Building2 } from 'lucide-react';
+import { UserCircle, Eye, Pencil, Trash2, X, Scissors, UserCheck, Sparkles } from 'lucide-react';
 import { Staff, roleLabel, formatLastSeen } from './staffHelpers';
-import { useBranch } from '@/context/BranchContext';
 import SearchInput from '@/components/shared/SearchInput';
-
-type WorkloadFilter = 'all' | 'light' | 'moderate' | 'heavy';
-
-function workloadBucket(jobs: number): Exclude<WorkloadFilter, 'all'> {
-  if (jobs >= 5) return 'heavy';
-  if (jobs >= 3) return 'moderate';
-  return 'light';
-}
 
 interface StaffListViewProps {
   readonly staff: Staff[];
@@ -33,31 +24,6 @@ interface StaffMemberRowProps {
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
   readonly onView: (id: number) => void;
-}
-
-const WORKLOAD_STYLE: Record<Exclude<WorkloadFilter, 'all'>, { bar: string; text: string; bg: string; label: string }> = {
-  light:    { bar: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', label: 'Light' },
-  moderate: { bar: 'bg-amber-500',   text: 'text-amber-700',   bg: 'bg-amber-50',   label: 'Moderate' },
-  heavy:    { bar: 'bg-rose-500',    text: 'text-rose-700',    bg: 'bg-rose-50',    label: 'High Load' },
-};
-
-function WorkloadBar({ jobs }: { readonly jobs: number }) {
-  const { bar: barColor, text: textColor, bg: bgColor, label } = WORKLOAD_STYLE[workloadBucket(jobs)];
-  const pct = Math.min((jobs / 10) * 100, 100);
-
-  return (
-    <div className="w-full sm:w-36 space-y-1.5">
-      <div className="flex justify-between items-center text-xs">
-        <span className="font-bold text-ink font-mono">{jobs} active {jobs === 1 ? 'job' : 'jobs'}</span>
-        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded border border-current/20 ${textColor} ${bgColor}`}>
-          {label}
-        </span>
-      </div>
-      <div className="w-full bg-line/60 rounded-full h-1.5 overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.max(pct, 6)}%` }} />
-      </div>
-    </div>
-  );
 }
 
 function StatusBadges({ member }: { readonly member: Staff }) {
@@ -139,16 +105,10 @@ function StaffMemberRow({ member, canManage = true, onEdit, onDelete, onView }: 
             </div>
             <div className="flex items-center gap-1.5 text-xs text-ink-muted mt-0.5 flex-wrap">
               <span className="font-semibold text-ink-body">{roleLabel(member.role)}</span>
-              <span className="text-ink-faint">•</span>
-              <span className="text-ink-faint flex items-center gap-1 truncate">
-                <Building2 size={11} className="text-taupe shrink-0" />
-                {member.branch?.name || 'All Branches'}
-              </span>
             </div>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4"><WorkloadBar jobs={member.active_jobs || 0} /></td>
       <td className="px-6 py-4"><StatusBadges member={member} /></td>
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-1.5">
@@ -195,7 +155,7 @@ function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }:
           <div className="min-w-0">
             <div className="font-bold text-ink truncate text-sm">{member.user?.name}</div>
             <div className="text-xs text-ink-muted truncate">
-              {roleLabel(member.role)} · {member.branch?.name || 'All branches'}
+              {roleLabel(member.role)}
             </div>
           </div>
         </div>
@@ -229,18 +189,8 @@ function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }:
         </div>
       </div>
 
-      {/* flex-col sm:flex-row: WorkloadBar's own class is `w-full sm:w-36`
-          — it assumes it owns its row alone (true in the desktop table,
-          where it sits in its own <td>). Here it shared a single
-          non-wrapping row with StatusBadges, which can render up to 4
-          badges (Active/Busy/Branch Manager/+N roles) comfortably wider
-          than a real phone on its own, forcing the two to fight over
-          width instead of WorkloadBar ever getting its intended
-          full-width bar. Stacking below sm: gives both the room the
-          desktop table already gives them. */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-line/60">
         <StatusBadges member={member} />
-        <WorkloadBar jobs={member.active_jobs || 0} />
       </div>
     </div>
   );
@@ -255,13 +205,9 @@ export default function StaffListView({
   onDelete,
 }: StaffListViewProps) {
   const router = useRouter();
-  const { branches } = useBranch();
-  const safeBranches = Array.isArray(branches) ? branches : [];
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [workloadFilter, setWorkloadFilter] = useState<WorkloadFilter>('all');
-  const [branchFilter, setBranchFilter] = useState('all');
 
   const safeStaff = Array.isArray(staff) ? staff : [];
 
@@ -289,20 +235,14 @@ export default function StaffListView({
     const matchesStatus =
       statusFilter === 'all' ||
       (statusFilter === 'active' ? member.is_active : !member.is_active);
-    const matchesWorkload = workloadFilter === 'all' || workloadBucket(member.active_jobs || 0) === workloadFilter;
-    const matchesBranch =
-      branchFilter === 'all' ||
-      (branchFilter === 'unassigned' ? !member.store_branch_id : member.store_branch_id === Number(branchFilter));
-    return matchesSearch && matchesRole && matchesStatus && matchesWorkload && matchesBranch;
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const hasActiveFilters = roleFilter !== 'all' || statusFilter !== 'all' || workloadFilter !== 'all' || branchFilter !== 'all' || searchQuery !== '';
+  const hasActiveFilters = roleFilter !== 'all' || statusFilter !== 'all' || searchQuery !== '';
   const clearFilters = () => {
     setSearchQuery('');
     setRoleFilter('all');
     setStatusFilter('all');
-    setWorkloadFilter('all');
-    setBranchFilter('all');
   };
 
   const selectClass = 'px-3 py-2 bg-surface border border-line rounded-xl text-xs font-semibold text-ink-body focus:outline-none focus:border-taupe shadow-2xs cursor-pointer';
@@ -344,33 +284,6 @@ export default function StaffListView({
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
-
-          <select
-            value={workloadFilter}
-            onChange={e => setWorkloadFilter(e.target.value as WorkloadFilter)}
-            className={selectClass}
-            aria-label="Filter by workload"
-          >
-            <option value="all">All Workloads</option>
-            <option value="light">Light Load</option>
-            <option value="moderate">Moderate</option>
-            <option value="heavy">High Load</option>
-          </select>
-
-          {safeBranches.length > 1 && (
-            <select
-              value={branchFilter}
-              onChange={e => setBranchFilter(e.target.value)}
-              className={selectClass}
-              aria-label="Filter by branch"
-            >
-              <option value="all">All Branches</option>
-              {safeBranches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}{b.is_main ? ' (Main)' : ''}</option>
-              ))}
-              <option value="unassigned">Unassigned</option>
-            </select>
-          )}
 
           {hasActiveFilters && (
             <button
@@ -424,7 +337,6 @@ export default function StaffListView({
           <thead className="bg-canvas/50 text-[11px] font-bold uppercase tracking-wider text-ink-muted border-b border-line">
             <tr>
               <th className="px-6 py-3.5">Staff Member</th>
-              <th className="px-6 py-3.5">Workroom Load</th>
               <th className="px-6 py-3.5">Availability</th>
               <th className="px-6 py-3.5 text-right">Actions</th>
             </tr>
@@ -444,12 +356,6 @@ export default function StaffListView({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="w-36 space-y-2">
-                        <div className="h-3 bg-line rounded w-full"></div>
-                        <div className="h-1.5 bg-line rounded-full w-full"></div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
                       <div className="h-5 bg-line rounded-full w-20"></div>
                     </td>
                     <td className="px-6 py-4">
@@ -461,7 +367,7 @@ export default function StaffListView({
             )}
             {!loading && filteredStaff.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-ink-muted text-sm">
+                <td colSpan={3} className="px-6 py-12 text-center text-ink-muted text-sm">
                   No staff members found.
                 </td>
               </tr>

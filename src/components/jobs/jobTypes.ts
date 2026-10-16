@@ -1,3 +1,5 @@
+export const CUSTOM_SIZE = 'Custom Fit';
+
 export interface RosterItem {
   name: string;
   print_name?: string;
@@ -45,7 +47,6 @@ export interface Job {
   deadline?: string;
   due_date?: string;
   customer?: { name: string; id: number; email?: string | null; suki_tag?: string | null };
-  service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
   service?: {
     name: string;
     id: number;
@@ -88,6 +89,9 @@ export interface Job {
   customer_job_count?: number;
   // Ordering flow (server-derived).
   uses_confirmation_flow?: boolean;
+  shop_accepted_at?: string | null;
+  customer_decision?: 'accepted' | 'changes_requested' | 'declined' | null;
+  created_at?: string;
   quotation_status?: 'estimate' | 'final' | null;
   confirmed_at?: string | null;
   production_started_at?: string | null;

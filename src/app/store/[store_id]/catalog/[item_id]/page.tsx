@@ -21,7 +21,6 @@ import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogFindInStoreSheet from '@/components/store-catalog-detail/CatalogFindInStoreSheet';
 import { isStoreOpen } from '@/lib/storeStatus';
-import BulkOrderSheet from '@/components/store-catalog-detail/BulkOrderSheet';
 import CatalogDetailBreadcrumb from '@/components/store-catalog-detail/CatalogDetailBreadcrumb';
 
 export default function PublicProductDetailPage({
@@ -48,21 +47,6 @@ export default function PublicProductDetailPage({
     isSaved,
     togglingSave,
     handleToggleSave,
-    isBulkItem,
-    bulkMinQty,
-    bulkRosterFields,
-    showBulkSheet,
-    setShowBulkSheet,
-    openBulkSheet,
-    bulkOrganizationName,
-    setBulkOrganizationName,
-    bulkRoster,
-    setBulkRoster,
-    bulkBranchId,
-    setBulkBranchId,
-    bulkSubmitting,
-    bulkError,
-    handleBulkOrder,
     myRating,
     setMyRating,
     hoverRating,
@@ -204,8 +188,6 @@ export default function PublicProductDetailPage({
             <CatalogDesktopActionButtons
               onOpenFind={() => setShowFind(true)}
               bookHref={bookHref}
-              orderAction={isBulkItem ? 'bulk' : null}
-              onOrder={isBulkItem ? openBulkSheet : undefined}
             />
           </div>
           }
@@ -263,28 +245,9 @@ export default function PublicProductDetailPage({
         bookHref={bookHref}
         storeSlug={item.store?.slug}
         showShop={!embedded}
-        orderAction={isBulkItem ? 'bulk' : null}
-        onOrder={isBulkItem ? openBulkSheet : undefined}
       />
 
-      <BulkOrderSheet
-        show={showBulkSheet}
-        onClose={() => setShowBulkSheet(false)}
-        itemName={item.name}
-        sizes={item.sizes}
-        minQty={bulkMinQty}
-        rosterFields={bulkRosterFields}
-        branches={branches}
-        branchId={bulkBranchId}
-        setBranchId={setBulkBranchId}
-        organizationName={bulkOrganizationName}
-        setOrganizationName={setBulkOrganizationName}
-        roster={bulkRoster}
-        setRoster={setBulkRoster}
-        submitting={bulkSubmitting}
-        error={bulkError}
-        onSubmit={handleBulkOrder}
-      />
+
 
       <CatalogFindInStoreSheet
         showFind={showFind}

@@ -33,7 +33,7 @@ type RecentRow = RecentCatalogItem | RecentService | RecentStore;
 
 type Tab = 'showroom' | 'services' | 'stores';
 const TABS: { key: Tab; label: string; shortLabel: string; type: RecentRow['type'] }[] = [
-  { key: 'showroom', label: 'Catalog Designs', shortLabel: 'Catalog', type: 'catalog_item' },
+  { key: 'showroom', label: 'Designs', shortLabel: 'Designs', type: 'catalog_item' },
   { key: 'services', label: 'Services', shortLabel: 'Services', type: 'service' },
   { key: 'stores', label: 'Stores', shortLabel: 'Stores', type: 'store' },
 ];

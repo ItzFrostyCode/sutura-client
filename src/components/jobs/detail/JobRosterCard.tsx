@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { Shirt, CheckCircle2, Circle, Ruler } from 'lucide-react';
-import { Job, RosterItem } from '../jobTypes';
-import { CUSTOM_SIZE } from '@/components/store-catalog-detail/BulkOrderSheet';
+import { Job, RosterItem, CUSTOM_SIZE } from '../jobTypes';
 
 interface JobRosterCardProps {
   job: Job;

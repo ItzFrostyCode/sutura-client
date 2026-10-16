@@ -144,7 +144,7 @@ export default function SearchStoresTab({
           {(activeTab === 'all' ? stores.slice(0, 4) : stores).map((store, index) => {
             const distKm = store.distance_km != null ? store.distance_km : null;
             const branch = store.branches?.[0];
-            const districtText = branch?.district || branch?.city || 'Davao City';
+            const addressText = branch?.address || branch?.city || 'Davao City';
             const imageSrc = store.logo_path || store.banner_path;
 
             const itemsMatchingStore = items.filter(
@@ -202,9 +202,7 @@ export default function SearchStoresTab({
             const dropped = !inPanel || openIds.includes(store.id);
 
             const storeHref = gate(
-              showServicesCarousel && storeServices.length > 0
-                ? `/store/${store.slug}?tab=services${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
-                : `/store/${store.slug}?tab=catalog${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
+              `/store/${store.slug}?tab=services${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`
             );
 
             return (
@@ -212,7 +210,14 @@ export default function SearchStoresTab({
                 {/* Store Header Row */}
                 <div className="flex items-center gap-2">
                   {onShowOnMap && hasPin ? (
-                    <button type="button" onClick={() => onShowOnMap(store.slug)} className="group min-w-0 flex-1 text-left active:opacity-80">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const qParam = effectiveQ.trim() ? `?tab=services&q=${encodeURIComponent(effectiveQ.trim())}` : '';
+                        onShowOnMap(store.slug, qParam);
+                      }}
+                      className="group min-w-0 flex-1 text-left active:opacity-80"
+                    >
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     <StoreLogoAvatar
                       src={imageSrc}
@@ -255,7 +260,7 @@ export default function SearchStoresTab({
                         {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
                       </p>
                       <p className="text-[11px] text-ink-faint truncate">
-                        {districtText} · Davao City
+                        {addressText}
                       </p>
                     </div>
                   </div>
@@ -304,7 +309,7 @@ export default function SearchStoresTab({
                         {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
                       </p>
                       <p className="text-[11px] text-ink-faint truncate">
-                        {districtText} · Davao City
+                        {addressText}
                       </p>
                     </div>
                   </div>
@@ -392,6 +397,7 @@ export default function SearchStoresTab({
                       <div
                         key={item.id}
                         className="snap-start w-[160px] shrink-0"
+                        onClickCapture={inPanel && onShowOnMap && hasPin ? (e) => { if (onShowOnMap(store.slug, `/catalog/${item.id}`)) e.preventDefault(); } : undefined}
                       >
                         <CatalogItemCard item={toCatalogItemResult(item, store)} />
                       </div>

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
+import Link from 'next/link';
 import PageHeader from '@/components/shared/PageHeader';
 import { Plus } from 'lucide-react';
 import SubscriptionGate from '@/components/SubscriptionGate';
@@ -86,8 +88,6 @@ export default function StaffPage() {
         password?: string;
         is_active?: boolean;
         is_available?: boolean;
-        store_branch_id: number | null;
-        is_branch_manager: boolean;
         bio: string;
       } = {
         name: formData.name,
@@ -102,8 +102,6 @@ export default function StaffPage() {
           ? formData.specialization.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         hired_at: formData.hired_at,
-        store_branch_id: formData.store_branch_id ? Number.parseInt(formData.store_branch_id, 10) : null,
-        is_branch_manager: formData.is_branch_manager,
         bio: formData.bio,
       };
 
@@ -196,6 +194,12 @@ export default function StaffPage() {
   const isStoreOwner = roleNames.includes('store_owner');
   const isBranchManager = roleNames.includes('branch_manager') || (user as { staff_profile?: { is_branch_manager?: boolean } })?.staff_profile?.is_branch_manager;
   const canManageStaff = isStoreOwner || isBranchManager;
+  // A branch manager adds staff to their own branch; the owner adds staff only to the branch they run themselves
+  // (the main branch, while it has no manager of its own). Branch managers are made from Store Branches.
+  const { branches } = useBranch();
+  const mainBranch = branches?.find(b => b.is_main) ?? branches?.[0];
+  const ownerAddsStaff = isStoreOwner && !!mainBranch && !mainBranch.manager;
+  const canAddStaff = isBranchManager || ownerAddsStaff;
 
   const visibleStaff = Array.isArray(staff) ? staff : [];
 
@@ -210,7 +214,7 @@ export default function StaffPage() {
         title="Staff Management"
         description="Manage your tailors, cutters, seamstresses, and branch managers."
         actions={
-          canManageStaff ? (
+          canAddStaff ? (
             <button
               type="button"
               onClick={() => {
@@ -237,6 +241,10 @@ export default function StaffPage() {
               <Plus size={16} />
               <span>Add Staff Member</span>
             </button>
+          ) : isStoreOwner ? (
+            <Link href="/dashboard/branches" className="text-sm font-semibold text-taupe underline underline-offset-4">
+              Staff are added by each branch manager. Manage branches
+            </Link>
           ) : null
         }
       />
@@ -277,7 +285,7 @@ export default function StaffPage() {
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Total Active Jobs Assigned</span>
                 <div className="text-2xl font-black font-mono text-ink">{totalActiveJobs}</div>
-                <div className="text-xs text-ink-muted">Live stages currently in workroom</div>
+                <div className="text-xs text-ink-muted">Jobs being worked on now</div>
               </div>
               <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs">
                 <span className="font-bold text-sm font-mono">{totalActiveJobs}</span>
@@ -295,7 +303,7 @@ export default function StaffPage() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-ink-muted">Balanced workroom capacity</div>
+                <div className="text-xs text-ink-muted">How evenly the work is shared</div>
               </div>
               <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
                 <span className="font-bold text-xs font-mono">{avgJobs}</span>

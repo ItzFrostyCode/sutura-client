@@ -15,7 +15,6 @@ import BookingServiceQuestions from './BookingServiceQuestions';
 import BookingServicePicker from './schedule/BookingServicePicker';
 import BookingBranchSelector from './schedule/BookingBranchSelector';
 import BookingMaterialSelector from './schedule/BookingMaterialSelector';
-import BookingPaymentSection from './review/BookingPaymentSection';
 
 interface UserInfo {
   name?: string | null;
@@ -31,13 +30,9 @@ interface BookingStep2ScheduleProps {
   readonly materialDescription: string;
   readonly setMaterialDescription: (val: string) => void;
   readonly needsServicePicker: boolean;
-  readonly typesRequiringService: string[];
   readonly selectedServiceId: string;
   readonly setSelectedServiceId: (val: string) => void;
   readonly storeSettings: StoreSettings | null;
-  readonly needsOrderReference: boolean;
-  readonly orderReference: string;
-  readonly setOrderReference: (val: string) => void;
   readonly remarks: string;
   readonly setRemarks: (val: string) => void;
   readonly branchesWithDistance: Branch[];
@@ -59,13 +54,6 @@ interface BookingStep2ScheduleProps {
   /** The chosen service's own questions, if the shop set any. */
   readonly serviceFields?: Service['custom_fields'];
   readonly setAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  readonly paymentMethod: string;
-  readonly setPaymentMethod: (val: string) => void;
-  readonly paymentReference: string;
-  readonly setPaymentReference: (val: string) => void;
-  readonly paymentReceiptUrl: string;
-  readonly uploadingReceipt: boolean;
-  readonly handleReceiptUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function BookingStep2Schedule({
@@ -76,13 +64,9 @@ export default function BookingStep2Schedule({
   materialDescription,
   setMaterialDescription,
   needsServicePicker,
-  typesRequiringService,
   selectedServiceId,
   setSelectedServiceId,
   storeSettings,
-  needsOrderReference,
-  orderReference,
-  setOrderReference,
   remarks,
   setRemarks,
   branchesWithDistance,
@@ -103,13 +87,6 @@ export default function BookingStep2Schedule({
   answers,
   setAnswers,
   serviceFields,
-  paymentMethod,
-  setPaymentMethod,
-  paymentReference,
-  setPaymentReference,
-  paymentReceiptUrl,
-  uploadingReceipt,
-  handleReceiptUpload,
 }: BookingStep2ScheduleProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
@@ -117,21 +94,16 @@ export default function BookingStep2Schedule({
 
       <BookingServicePicker
         needsServicePicker={needsServicePicker}
-        typesRequiringService={typesRequiringService}
-        appointmentType={appointmentType}
         selectedServiceId={selectedServiceId}
         setSelectedServiceId={setSelectedServiceId}
         storeSettings={storeSettings}
-        needsOrderReference={needsOrderReference}
-        orderReference={orderReference}
-        setOrderReference={setOrderReference}
       />
 
       {/* A catalog design being custom-made always needs this answered
           (regardless of appointmentType — catalog bookings default to
           ref_type=fitting, which this condition used to miss entirely),
           same as the general consultation/measurement flows. */}
-      {(appointmentType === 'consultation' || appointmentType === 'measurement' || !!refName) && (
+      {(appointmentType === 'consultation' || appointmentType === 'measurement' || appointmentType === 'alteration' || !!refName) && (
         <BookingMaterialSelector
           materialSource={materialSource}
           setMaterialSource={setMaterialSource}
@@ -190,8 +162,7 @@ export default function BookingStep2Schedule({
         )
       )}
 
-      {/* Relevant Details — contact confirmation, notes, owner questions,
-          payment. Already-authenticated (name/email come from the account),
+      {/* Relevant Details — contact confirmation, notes, owner questions. Already-authenticated (name/email come from the account),
           so only what the account doesn't already know gets asked here. */}
       <div className="pt-4 border-t border-line space-y-4">
         <h3 className="mobile-h3 font-semibold text-ink">Relevant Details</h3>
@@ -263,17 +234,6 @@ export default function BookingStep2Schedule({
         {serviceFields && serviceFields.length > 0 && (
           <BookingServiceQuestions fields={serviceFields} answers={answers} setAnswers={setAnswers} />
         )}
-
-        <BookingPaymentSection
-          storeSettings={storeSettings}
-          paymentMethod={paymentMethod}
-          setPaymentMethod={setPaymentMethod}
-          paymentReference={paymentReference}
-          setPaymentReference={setPaymentReference}
-          paymentReceiptUrl={paymentReceiptUrl}
-          uploadingReceipt={uploadingReceipt}
-          handleReceiptUpload={handleReceiptUpload}
-        />
       </div>
     </div>
   );

@@ -6,12 +6,8 @@ interface CustomerProfileEditModalProps {
   readonly onClose: () => void;
   readonly editName: string;
   readonly setEditName: (v: string) => void;
-  readonly editEmail: string;
-  readonly setEditEmail: (v: string) => void;
   readonly editPhone: string;
   readonly setEditPhone: (v: string) => void;
-  readonly editNotes: string;
-  readonly setEditNotes: (v: string) => void;
   readonly savingProfile: boolean;
   readonly onSubmit: (e: React.SyntheticEvent) => Promise<void>;
 }
@@ -21,12 +17,8 @@ export default function CustomerProfileEditModal({
   onClose,
   editName,
   setEditName,
-  editEmail,
-  setEditEmail,
   editPhone,
   setEditPhone,
-  editNotes,
-  setEditNotes,
   savingProfile,
   onSubmit,
 }: CustomerProfileEditModalProps) {
@@ -60,43 +52,18 @@ export default function CustomerProfileEditModal({
             />
           </div>
           <div>
-            <label htmlFor="customer-edit-email" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-              Email Address <span className="text-[10px] text-ink-faint font-normal lowercase">(Optional for walk-ins)</span>
-            </label>
-            <input
-              id="customer-edit-email"
-              type="email"
-              value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-            />
-          </div>
-          <div>
             <label htmlFor="customer-edit-phone" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
               Phone Number <span className="text-rose-500">*</span>
             </label>
             <input
               id="customer-edit-phone"
-              type="text"
+              type="tel"
+              inputMode="tel"
               required
               value={editPhone}
               onChange={(e) => setEditPhone(e.target.value)}
-              placeholder="e.g. +63 917 123 4567"
+              placeholder="0917 123 4567"
               className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-            />
-          </div>
-          <div>
-            <label htmlFor="customer-edit-notes" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-              Private Store Notes <span className="text-[10px] text-ink-faint font-normal lowercase">(Internal atelier reference)</span>
-            </label>
-            <textarea
-              id="customer-edit-notes"
-              rows={3}
-              value={editNotes}
-              onChange={(e) => setEditNotes(e.target.value)}
-              maxLength={2000}
-              placeholder="e.g. Prefers snug waist fit, allergic to synthetic wool, uses cocoon silk for barongs..."
-              className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe resize-none shadow-2xs"
             />
           </div>
           <div className="flex justify-end gap-2 pt-3 border-t border-line">

@@ -11,7 +11,9 @@ interface TailorsModalProps {
   readonly current: Assignee[];
   readonly capacity?: Capacity;
   readonly busy: boolean;
-  readonly onSave: (assignees: { user_id: number; role: string }[]) => Promise<boolean>;
+  readonly onSave: (assignees: { user_id: number; role: string }[], reason?: string) => Promise<boolean>;
+  /** True once work has started: taking someone off then needs a reason. */
+  readonly started?: boolean;
 }
 
 interface Person { id: number; name: string; active: number | null }
@@ -19,10 +21,11 @@ interface Person { id: number; name: string; active: number | null }
 const ROLES = [{ v: 'lead', t: 'Lead' }, { v: 'tailor', t: 'Tailor' }, { v: 'assistant', t: 'Assistant' }];
 
 /** Pick who is planned for this order and in what role. The owner can plan themselves ("owner only" shops). */
-export default function TailorsModal({ isOpen, onClose, storeId, current, capacity, busy, onSave }: TailorsModalProps) {
+export default function TailorsModal({ isOpen, onClose, storeId, current, capacity, busy, onSave, started = false }: TailorsModalProps) {
   const me = useAuthStore((s) => s.user);
   const isOwner = Boolean(me?.roles?.some((r) => r.name === 'store_owner'));
   const [people, setPeople] = useState<Person[]>([]);
+  const [reason, setReason] = useState('');
   const [picked, setPicked] = useState<Record<number, string>>(() => Object.fromEntries(current.map((a) => [a.user_id, a.role])));
 
   useEffect(() => {
@@ -36,6 +39,8 @@ export default function TailorsModal({ isOpen, onClose, storeId, current, capaci
   }, [storeId, isOwner, me]);
 
   const toggle = (id: number) => setPicked((p) => { const n = { ...p }; if (id in n) delete n[id]; else n[id] = 'tailor'; return n; });
+  const removing = current.some((a) => !(a.user_id in picked));
+  const needsReason = started && removing;
   const open = (id: number) => capacity?.tailors.find((t) => t.user_id === id)?.open_orders;
 
   return (
@@ -47,11 +52,11 @@ export default function TailorsModal({ isOpen, onClose, storeId, current, capaci
       footer={(
         <div className="flex w-full justify-end gap-2">
           <button type="button" onClick={onClose} className="h-11 rounded-lg px-4 text-sm font-medium text-ink-body hover:text-ink">Cancel</button>
-          <button type="button" disabled={busy} onClick={async () => { if (await onSave(Object.entries(picked).map(([id, role]) => ({ user_id: Number(id), role })))) onClose(); }} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">Save</button>
+          <button type="button" disabled={busy || (needsReason && !reason.trim())} onClick={async () => { if (await onSave(Object.entries(picked).map(([id, role]) => ({ user_id: Number(id), role })), reason.trim() || undefined)) onClose(); }} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">Save</button>
         </div>
       )}
     >
-      <p className="mb-3 text-xs text-ink-muted">Planning does not replace the automatic record of who actually worked each stage — that still follows whoever moves the order.</p>
+      <p className="mb-3 text-xs text-ink-muted">Changes are kept in the order's history. The record of who actually worked each stage still follows whoever moves the order.</p>
       <ul className="space-y-1.5">
         {people.map((p) => (
           <li key={p.id} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2">
@@ -69,6 +74,12 @@ export default function TailorsModal({ isOpen, onClose, storeId, current, capaci
         ))}
         {people.length === 0 && <li className="py-4 text-center text-xs text-ink-muted">No staff found for this shop.</li>}
       </ul>
+      {removing && (
+        <label className="mt-3 block text-xs font-semibold text-ink">
+          Why is the tailor being changed?{needsReason ? '' : ' (optional)'}
+          <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={255} placeholder="Example: sick leave" className="mt-1 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-base font-normal text-ink focus:border-taupe focus:outline-none sm:text-sm" />
+        </label>
+      )}
     </Modal>
   );
 }

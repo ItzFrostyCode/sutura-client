@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Package as PackageIcon } from 'lucide-react';
 import CatalogGridToolbar from '@/components/catalog/CatalogGridToolbar';
 import CatalogFilterSidebar from '@/components/catalog/CatalogFilterSidebar';
@@ -9,8 +9,9 @@ import SearchServiceCard from '@/components/search/SearchServiceCard';
 import type { SearchServiceResult } from '@/components/search/types';
 import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import type { Service } from './serviceHelpers';
-import ServiceFilterBody, { type ServiceStatusFilter } from './ServiceFilterBody';
-import { DEFAULT_SERVICE_SORT, SERVICE_RANK_CHIPS, isServicePriceSort, type ServiceSortOption } from './serviceSort';
+import ServiceFilterBody from './ServiceFilterBody';
+import { useServiceFilters } from './useServiceFilters';
+import { SERVICE_RANK_CHIPS } from './serviceSort';
 
 // The owner's own list, shown with the very same card customers see in
 // search, so the shop sees its services exactly as customers do. One tap on a
@@ -33,8 +34,6 @@ function toCardResult(service: Service): SearchServiceResult {
   };
 }
 
-const effectivePrice = (s: Service) => Number(s.sale_price ?? s.base_price ?? 0);
-
 interface ServiceGridViewProps {
   readonly services: Service[];
   readonly loading: boolean;
@@ -43,44 +42,9 @@ interface ServiceGridViewProps {
 }
 
 export default function ServiceGridView({ services, loading, canManage }: Readonly<ServiceGridViewProps>) {
-  const [search, setSearch] = useState('');
-  const [sortOrder, setSortOrder] = useState<ServiceSortOption>(DEFAULT_SERVICE_SORT);
-  const [statusFilter, setStatusFilter] = useState<ServiceStatusFilter>('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const f = useServiceFilters(services);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  const categoryOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    services.forEach((s) => s.service_category && counts.set(s.service_category, (counts.get(s.service_category) ?? 0) + 1));
-    return Array.from(counts, ([value, count]) => ({ value, count }));
-  }, [services]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return services
-      .filter((s) => {
-        if (statusFilter === 'active' && !s.is_active) return false;
-        if (statusFilter === 'paused' && s.is_active) return false;
-        if (categoryFilter && s.service_category !== categoryFilter) return false;
-        return !q || s.name.toLowerCase().includes(q) || (s.categories ?? []).some((c) => c.toLowerCase().includes(q));
-      })
-      .sort((a, b) => {
-        switch (sortOrder) {
-          case 'price_asc': return effectivePrice(a) - effectivePrice(b);
-          case 'price_desc': return effectivePrice(b) - effectivePrice(a);
-          case 'top_rated': return Number(b.reviews_avg_rating ?? 0) - Number(a.reviews_avg_rating ?? 0);
-          case 'most_saved': return (b.saves_count ?? 0) - (a.saves_count ?? 0);
-          default: return (b.job_orders_count ?? 0) - (a.job_orders_count ?? 0);
-        }
-      });
-  }, [services, search, sortOrder, statusFilter, categoryFilter]);
-
-  const activeFiltersCount = (isServicePriceSort(sortOrder) ? 1 : 0) + (statusFilter ? 1 : 0) + (categoryFilter ? 1 : 0);
-  const resetAll = () => {
-    setSortOrder(DEFAULT_SERVICE_SORT);
-    setStatusFilter('');
-    setCategoryFilter('');
-  };
+  const { filtered, activeFiltersCount, resetAll, search, setSearch } = f;
 
   if (loading) return <CardGridSkeleton count={8} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" />;
 
@@ -94,17 +58,7 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
     );
   }
 
-  const body = (
-    <ServiceFilterBody
-      sortOrder={sortOrder}
-      setSortOrder={setSortOrder}
-      statusFilter={statusFilter}
-      setStatusFilter={setStatusFilter}
-      categoryFilter={categoryFilter}
-      setCategoryFilter={setCategoryFilter}
-      categoryOptions={categoryOptions}
-    />
-  );
+  const body = <ServiceFilterBody f={f} />;
 
   return (
     <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-5">
@@ -114,10 +68,10 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
         <CatalogGridToolbar
           searchQuery={search}
           setSearchQuery={setSearch}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
+          sortOrder={f.sortOrder}
+          setSortOrder={f.setSortOrder}
           chips={SERVICE_RANK_CHIPS}
-          searchPlaceholder="Search by service name..."
+          searchPlaceholder="Search a service, garment or task…"
           activeFiltersCount={activeFiltersCount}
           onOpenFilters={() => setSheetOpen(true)}
         />

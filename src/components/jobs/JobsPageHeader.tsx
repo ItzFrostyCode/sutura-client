@@ -20,9 +20,9 @@ export default function JobsPageHeader({
 }: JobsPageHeaderProps) {
   return (
     <PageHeader
-      eyebrow={`${jobsCount} Tailored Job Orders`}
-      title="Production Orders"
-      description="Unified artisan pipeline tracking all bespoke, lookbook-inspired, and alteration jobs."
+      eyebrow={`${jobsCount} orders`}
+      title="Orders"
+      description="Every order from request to pick-up. The one who came first is on top."
       actions={
         isOwnerOrManager ? (
           <>
@@ -40,7 +40,7 @@ export default function JobsPageHeader({
               className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white px-4 py-2 rounded-lg font-bold text-xs transition-colors h-10 shadow-2xs cursor-pointer"
             >
               <Plus size={15} />
-              <span>Create Job Order</span>
+              <span>New order</span>
             </Link>
           </>
         ) : undefined

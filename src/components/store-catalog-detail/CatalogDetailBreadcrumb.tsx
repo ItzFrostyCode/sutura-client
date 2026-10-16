@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { GARMENT_CATEGORIES, GARMENTS, canonicalGarment } from '@/lib/garmentTaxonomy';
-import { categoryHref, garmentHref } from '@/components/categories/categoriesDirectoryData';
+import { SERVICE_GROUPS, type ServiceGroupKey, canonicalGarment, GARMENTS } from '@/lib/garmentTaxonomy';
+import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 
 interface BreadcrumbItem {
   name: string;
@@ -8,32 +8,63 @@ interface BreadcrumbItem {
   department?: string | null;
   subcategory?: string | null;
   garment_structure?: string | null;
+  store?: { slug?: string; name?: string } | null;
+  service?: {
+    id?: number;
+    name?: string;
+    service_category?: string | null;
+    showcase_category?: string | null;
+  } | null;
 }
 
 /**
- * Home > Search > {Garment Category} > {Garment} > {Design} — the 2-level taxonomy (2026-10-14). An old 4-level slug
- * resolves to the garment it was merged into; a typed-in name shows under "Other Garments". Takes a minimal
- * structural shape since this page's own `CatalogItem` and the shared `CatalogItemResult` are different types for
- * the same API resource.
+ * Home > Search > Services > {Service Category} > {Service Name} > {Design Name}
+ * Follows the approved Services taxonomy (2026-10-14), matching ServiceDetailBreadcrumb.
  */
 export default function CatalogDetailBreadcrumb({ item }: Readonly<{ item: BreadcrumbItem }>) {
   const crumbs: { label: string; href: string }[] = [
     { label: 'Home', href: '/' },
-    { label: 'Search', href: '/search?tab=catalog' },
+    { label: 'Search', href: '/search' },
+    { label: 'Services', href: '/search?tab=services' },
   ];
-  const slug = canonicalGarment(item.garment_type);
-  if (slug) {
-    const cat = GARMENTS[slug].category;
-    crumbs.push({ label: GARMENT_CATEGORIES[cat].label, href: categoryHref(cat) });
-    crumbs.push({ label: GARMENTS[slug].label, href: garmentHref(slug) });
-  } else if (item.garment_type) {
-    crumbs.push({ label: item.garment_type, href: `/search?q=${encodeURIComponent(item.garment_type)}` });
+
+  // Resolve service category: from item.service or infer from canonical garment
+  let categoryKey = item.service?.service_category;
+  if (!categoryKey && item.garment_type) {
+    const slug = canonicalGarment(item.garment_type);
+    if (slug) {
+      const cat = GARMENTS[slug]?.category;
+      if (cat === 'jerseys_sportswear' || cat === 'uniforms') {
+        categoryKey = 'uniform_production';
+      } else {
+        categoryKey = 'custom_tailoring';
+      }
+    }
+  }
+
+  if (categoryKey && categoryKey in SERVICE_GROUPS) {
+    crumbs.push({
+      label: SERVICE_GROUPS[categoryKey as ServiceGroupKey].label,
+      href: `/search?tab=services&service_category=${categoryKey}`,
+    });
+  } else if (categoryKey && SERVICE_CATEGORY_LABELS[categoryKey as ServiceCategory]) {
+    crumbs.push({
+      label: SERVICE_CATEGORY_LABELS[categoryKey as ServiceCategory],
+      href: `/search?tab=services&service_category=${categoryKey}`,
+    });
+  }
+
+  if (item.service?.name) {
+    const serviceHref = item.store?.slug && item.service.id
+      ? `/store/${item.store.slug}/service/${item.service.id}`
+      : `/search?tab=services${categoryKey ? `&service_category=${categoryKey}` : ''}`;
+    crumbs.push({ label: item.service.name, href: serviceHref });
   }
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 mb-3 overflow-x-auto hide-scrollbar whitespace-nowrap">
       {crumbs.map((crumb) => (
-        <span key={crumb.href} className="flex items-center gap-1.5 shrink-0">
+        <span key={`${crumb.label}-${crumb.href}`} className="flex items-center gap-1.5 shrink-0">
           <Link href={crumb.href} className="mobile-caption text-ink-muted hover:text-ink">
             {crumb.label}
           </Link>
@@ -44,3 +75,4 @@ export default function CatalogDetailBreadcrumb({ item }: Readonly<{ item: Bread
     </nav>
   );
 }
+

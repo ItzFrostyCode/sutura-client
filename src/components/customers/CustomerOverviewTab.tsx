@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { CustomerData, JobOrder, MeasurementProfile } from './customerTypes';
+import type { CustomerTabType } from './profile/CustomerTabNav';
+import { moneySummary } from './customerMoney';
 import CustomerProfileCard from './overview/CustomerProfileCard';
 import CustomerActiveJobsCard from './overview/CustomerActiveJobsCard';
 import CustomerMeasurementsCard from './overview/CustomerMeasurementsCard';
@@ -11,7 +13,9 @@ interface CustomerOverviewTabProps {
   readonly customer: CustomerData | null;
   readonly jobs: JobOrder[];
   readonly measurements: MeasurementProfile[];
-  readonly setActiveTab: (tab: 'overview' | 'measurements' | 'orders' | 'appointments' | 'history') => void;
+  readonly setActiveTab: (tab: CustomerTabType) => void;
+  readonly canCollect?: boolean;
+  readonly canText?: boolean;
 }
 
 export default function CustomerOverviewTab({
@@ -19,6 +23,8 @@ export default function CustomerOverviewTab({
   jobs,
   measurements,
   setActiveTab,
+  canCollect = false,
+  canText = false,
 }: CustomerOverviewTabProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in">
@@ -38,7 +44,7 @@ export default function CustomerOverviewTab({
           measurements={measurements}
           onManage={() => setActiveTab('measurements')}
         />
-        <CustomerQuickActionsCard customerId={customer?.id} />
+        <CustomerQuickActionsCard customerId={customer?.id} balance={moneySummary(jobs).balance} canCollect={canCollect} canText={canText} onOpenTab={setActiveTab} />
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { X, Loader2, ChevronDown, ChevronRight, Lock } from 'lucide-react';
-import { useBranch } from '@/context/BranchContext';
 
 interface StaffFormModalProps {
   readonly isOpen: boolean;
@@ -71,7 +70,6 @@ export default function StaffFormModal({
   setFormData,
   isStoreOwner = false,
 }: StaffFormModalProps) {
-  const { branches } = useBranch();
   const [showPortalSection, setShowPortalSection] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   if (!isOpen) return null;
@@ -175,7 +173,7 @@ export default function StaffFormModal({
             {showPortalSection && (
               <div className="p-4 space-y-3.5 border-t border-line bg-surface animate-fade-in">
                 <p className="text-xs text-ink-muted leading-relaxed">
-                  These credentials allow this staff member to log into the SUTURA Staff Portal to view their assigned jobs and workroom schedule.
+                  These credentials allow this staff member to log into the SUTURA Staff Portal to view their assigned jobs and schedule.
                 </p>
                 <div>
                   <label htmlFor="staff_email" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
@@ -264,7 +262,7 @@ export default function StaffFormModal({
               )}
             </div>
             <p className="text-[11px] text-ink-muted leading-relaxed">
-              For staff who cover multiple workroom stages (e.g. Head Tailor who also handles Sublimation & Finishing).
+              For staff who cover several work stages (e.g. Head Tailor who also handles Sublimation & Finishing).
             </p>
             {formData.additional_roles.length === 0 ? (
               <p className="text-xs text-ink-faint italic bg-canvas/30 px-3 py-2 rounded-xl border border-line">No additional cross-trained roles.</p>
@@ -310,7 +308,7 @@ export default function StaffFormModal({
               name="specialization"
               value={formData.specialization}
               onChange={handleInputChange}
-              placeholder="e.g. Bespoke Barong, Bridal Gowns, Pattern Drafting (comma-separated)"
+              placeholder="e.g. Barong, Bridal Gowns, Pattern Drafting (comma-separated)"
               className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs"
             />
           </div>
@@ -332,54 +330,8 @@ export default function StaffFormModal({
             <p className="text-[11px] text-ink-muted mt-1">Visible only to store owner and management.</p>
           </div>
 
-          {branches.length > 0 && (
-            <div>
-              <label htmlFor="staff_branch" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
-                Assigned Atelier Branch {formData.is_branch_manager && <span className="text-rose-600">*</span>}
-              </label>
-              <select
-                id="staff_branch"
-                name="store_branch_id"
-                required={formData.is_branch_manager}
-                value={formData.store_branch_id}
-                onChange={handleInputChange}
-                className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs cursor-pointer"
-              >
-                <option value="" disabled={formData.is_branch_manager}>
-                  {formData.is_branch_manager ? 'Select a branch…' : 'Unassigned (Works across all branches)'}
-                </option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}{b.is_main ? ' (Main Branch)' : ''}</option>
-                ))}
-              </select>
-              {formData.is_branch_manager && !formData.store_branch_id && (
-                <p className="text-[11px] text-rose-600 mt-1">
-                  A Branch Manager must be assigned to one branch — &quot;Unassigned&quot; would give them access across the whole store.
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Manager & Status Checkboxes */}
           <div className="space-y-3 pt-2 border-t border-line/70">
-            {isStoreOwner && (
-              <label className="flex items-start gap-3 cursor-pointer select-none">
-                <input
-                  id="staff_is_branch_manager"
-                  type="checkbox"
-                  checked={formData.is_branch_manager}
-                  onChange={e => setFormData(prev => ({ ...prev, is_branch_manager: e.target.checked }))}
-                  className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-[#8A7063] cursor-pointer"
-                />
-                <span className="text-xs font-semibold text-ink leading-snug">
-                  <span>Grant Branch Manager Authority</span>
-                  <span className="block text-[11px] font-normal text-ink-muted mt-0.5">
-                    Allows collecting customer payments, assigning workroom staff, and updating jobs for their branch.
-                  </span>
-                </span>
-              </label>
-            )}
-
             {editingId && (
               <label className="flex items-start gap-3 cursor-pointer select-none">
                 <input

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Scissors } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { getServicePriceLabel } from '@/lib/servicePricing';
-import { PackageInfo, Service } from './types';
+import { Service } from './types';
 
 interface BookingReferenceCardProps {
   readonly refName: string | null;
@@ -13,7 +13,6 @@ interface BookingReferenceCardProps {
   readonly refPrice: string | null;
   readonly refSize: string | null;
   readonly refColor: string | null;
-  readonly packageInfo: PackageInfo | null;
   readonly selectedService?: Service | null;
   readonly serviceName?: string | null;
   readonly quantity?: string | null;
@@ -25,7 +24,6 @@ export default function BookingReferenceCard({
   refPrice,
   refSize,
   refColor,
-  packageInfo,
   selectedService,
   serviceName,
   quantity,
@@ -53,22 +51,6 @@ export default function BookingReferenceCard({
               {refSize && refColor && <span>•</span>}
               {refColor && <span>{refColor}</span>}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Compact Package Summary Preview */}
-      {packageInfo && (
-        <div className="mb-5 bg-surface border border-taupe/30 rounded-none p-3 shadow-xs">
-          <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">Package Inquiry</span>
-          <div className="flex items-center justify-between mt-0.5">
-            <h3 className="font-semibold text-xs text-ink">{packageInfo.name}</h3>
-            <span className="text-xs font-bold text-taupe">
-              ₱{(packageInfo.bundle_price
-                ? Number(packageInfo.bundle_price)
-                : packageInfo.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0)
-              ).toLocaleString()}
-            </span>
           </div>
         </div>
       )}

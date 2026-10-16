@@ -145,7 +145,7 @@ export default function StoreSwitcher() {
               <div className="mt-1 pt-1 border-t border-line/60">
                 <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
                   <Star size={10} className="fill-amber-500 text-amber-500" />
-                  <span>Headquarters</span>
+                  <span>Main Branch</span>
                 </div>
                 <button
                   type="button"

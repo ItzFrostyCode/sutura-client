@@ -1,256 +1,100 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useJobCreateForm } from './form/useJobCreateForm';
-import GarmentDesignSection from './form/GarmentDesignSection';
-import CustomerServiceSection from './form/CustomerServiceSection';
-import CustomSpecsSection from './form/CustomSpecsSection';
-import ProductionFulfillmentSection from './form/ProductionFulfillmentSection';
-import AssignStaffSection from './form/AssignStaffSection';
 import { useBranch } from '@/context/BranchContext';
-import PricingScheduleSection from './form/PricingScheduleSection';
+import { garmentLabel, categoryOfGarment, GARMENT_CATEGORIES } from '@/lib/garmentTaxonomy';
+import { useJobCreateForm } from './form/useJobCreateForm';
+import FormStep from './form/FormStep';
+import CustomerStep from './form/CustomerStep';
+import WhatStep from './form/WhatStep';
+import DetailsStep from './form/DetailsStep';
+import AssignStaffSection from './form/AssignStaffSection';
+import PriceStep from './form/PriceStep';
 
 export default function JobCreateForm() {
-  // Arrived from a specific page (e.g. a design's "Tailor this Design")? Back and
-  // Cancel return there instead of the jobs list. Dashboard paths only.
   const searchParams = useSearchParams();
+  // Arrived from a specific page (e.g. a design's "Tailor this Design")? Back and Cancel return there. Dashboard paths only.
   const returnParam = searchParams.get('return');
-  const roleNames = useAuthStore((s) => s.user?.roles?.map((r) => r.name) ?? []);
-  const canCollectMoney = roleNames.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
-  // Staff open a job from an approved appointment, never from scratch.
-  const { selectedBranchId } = useBranch();
-  const staffWithoutAppointment = !canCollectMoney && !searchParams.get('appointment_id');
   const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//') ? returnParam : '/dashboard/jobs';
+  // Select the stored roles array itself: a selector that builds a new array each call loops forever.
+  const roles = useAuthStore((s) => s.user?.roles);
+  const canCollectMoney = !!roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name));
+  const { selectedBranchId } = useBranch();
+  const form = useJobCreateForm();
+  const { store, formData, set } = form;
 
-  const {
-    store,
-    loading,
-    submitting,
-    error,
-    handleSubmit,
-    customers,
-    services,
-    catalogItems,
-    customerMeasurements,
-    catalogItemId,
-    setCatalogItemId,
-    handleSelectCatalogItem,
-    standardSize,
-    setStandardSize,
-    appointmentId,
-    setAppointmentId,
-    assignees,
-    setAssignees,
-    servicePackage,
-    effectiveIntakeChannel,
-    referenceImages,
-    setReferenceImages,
-    referenceLink,
-    setReferenceLink,
-    uploadingReference,
-    setUploadingReference,
-    customerLocked,
-    setCustomerLocked,
-    isTotalAmountCustom,
-    setIsTotalAmountCustom,
-    isDueDateCustom,
-    setIsDueDateCustom,
-    isBulkOrder,
-    setIsBulkOrder,
-    teamName,
-    setTeamName,
-    roster,
-    setRoster,
-    preExistingDamageNotes,
-    setPreExistingDamageNotes,
-    formData,
-    setFormData,
-    customFieldValues,
-    setCustomFieldValues,
-    handleCheckboxChange,
-    selectedService,
-    selectedCatalogItem,
-    isSelectedAlterationRepair,
-    isCustomTailoring,
-    sectionTwoMeta,
-  } = useJobCreateForm();
-
-  if (loading) {
+  if (form.loading) {
     return (
-      <div className="py-12 text-center text-ink-faint animate-pulse flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-6 h-6 animate-spin text-taupe" />
+      <div className="flex flex-col items-center justify-center gap-3 py-12 text-ink-faint">
+        <Loader2 className="h-6 w-6 animate-spin text-taupe" />
         <span>Loading form data...</span>
       </div>
     );
   }
 
-  if (staffWithoutAppointment) {
+  // Staff open a job from an approved appointment, never from scratch.
+  if (!canCollectMoney && !form.appointmentId) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-4">
+      <div className="mx-auto max-w-xl space-y-4 px-4 py-12 text-center">
         <h1 className="mobile-h2 font-semibold text-ink">Start from an appointment</h1>
         <p className="mobile-body-md text-ink-muted">Staff open a job order from an approved appointment. Pick the appointment and tap Create Job Order.</p>
-        <Link href="/dashboard/appointments" className="inline-flex items-center justify-center h-[52px] px-6 bg-taupe hover:bg-taupe-hover text-white font-semibold">Go to Appointments</Link>
+        <Link href="/dashboard/appointments" className="inline-flex h-[52px] items-center justify-center bg-taupe px-6 font-semibold text-white hover:bg-taupe-hover">Go to Appointments</Link>
       </div>
     );
   }
 
+  const garmentCategoryLabel = categoryOfGarment(formData.garment_type) ? GARMENT_CATEGORIES[categoryOfGarment(formData.garment_type)!].label : '';
+  const jobTerms = [garmentLabel(formData.garment_type) ?? formData.garment_type, garmentCategoryLabel, form.service?.name ?? ''].filter(Boolean);
+  const staffStep = canCollectMoney && store;
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <Link
-          href={backHref}
-          className="p-2 bg-surface border border-line rounded-lg hover:bg-sunken text-ink-muted hover:text-ink transition-colors cursor-pointer"
-        >
+        <Link href={backHref} aria-label="Back" className="flex h-11 w-11 shrink-0 items-center justify-center border border-line bg-surface text-ink-muted hover:bg-sunken hover:text-ink">
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Create Job Order</h1>
-          <p className="text-ink-muted text-sm mt-1">
-            Start a new garment production workflow.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-ink">Create Job Order</h1>
+          <p className="mt-1 text-sm text-ink-muted">Who it is for, what is being made, and the price. The tailors’ steps come next.</p>
         </div>
       </div>
 
-      <div className="bg-surface border border-line rounded-2xl p-6">
-        {error && (
-          <div className="mb-6 bg-danger/10 border border-danger/50 text-danger px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
+      <form onSubmit={form.handleSubmit} className="space-y-6 border border-line bg-surface p-5 sm:p-6">
+        {(form.error || form.formError) && <div role="alert" className="border border-danger/50 bg-danger/10 px-4 py-3 text-sm text-danger">{form.error || form.formError}</div>}
+
+        <FormStep n={1} title="Customer">
+          <CustomerStep
+            customers={form.customers} customerId={formData.customer_id} onChange={(id) => set({ customer_id: id })} onAdd={form.addCustomer}
+            locked={form.customerLocked} onUnlock={() => form.setCustomerLocked(false)} channel={form.intakeChannel}
+            appointmentId={form.appointmentId} onClearAppointment={canCollectMoney ? () => form.setAppointmentId(null) : undefined}
+          />
+        </FormStep>
+        <FormStep n={2} title="What is being made" hint="Same garments and services your customers search by.">
+          <WhatStep form={form} />
+        </FormStep>
+        <FormStep n={3} title="Details" hint="Shaped by the service you picked.">
+          <DetailsStep form={form} />
+        </FormStep>
+        {staffStep && (
+          <FormStep n={4} title="Who works on it" hint="They are told right away. Staff with a matching skill are listed first.">
+            <AssignStaffSection storeId={store.id} branchId={selectedBranchId ?? null} assignees={form.assignees} setAssignees={form.setAssignees} jobTerms={jobTerms} />
+          </FormStep>
         )}
+        <FormStep n={staffStep ? 5 : 4} title="Price and date">
+          <PriceStep form={form} canCollectMoney={canCollectMoney} />
+        </FormStep>
 
-        {appointmentId && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
-            <div>
-              <span className="font-semibold">Linked Booking:</span> This Job Order will automatically link to and update Appointment{' '}
-              <span className="font-mono bg-blue-100 px-1.5 py-0.5 rounded text-xs font-bold">
-                #{appointmentId}
-              </span>.
-            </div>
-            <button
-              type="button"
-              onClick={() => setAppointmentId(null)}
-              className="text-blue-500 hover:text-blue-700 text-xs font-semibold cursor-pointer"
-            >
-              Clear Link
-            </button>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {servicePackage && (
-            <div className="border border-taupe/40 bg-taupe/5 p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-taupe">Combo package · one order for the whole set</p>
-              <p className="text-base font-semibold text-ink mt-1">{servicePackage.name}</p>
-              {(servicePackage.services?.length ?? 0) > 0 && (
-                <p className="text-sm text-ink-body mt-1">Includes: {servicePackage.services!.map(s => s.name).join(', ')}</p>
-              )}
-              <p className="text-xs text-ink-muted mt-1">The total is set to the bundle price; you can still adjust it below.</p>
-            </div>
-          )}
-          {/* Section 1: Garment Type & Design */}
-          <GarmentDesignSection
-            formData={formData}
-            setFormData={setFormData}
-            catalogItems={catalogItems}
-            catalogItemId={catalogItemId}
-            setCatalogItemId={setCatalogItemId}
-            onSelectCatalogItem={handleSelectCatalogItem}
-            standardSize={standardSize}
-            setStandardSize={setStandardSize}
-            isSelectedAlterationRepair={isSelectedAlterationRepair}
-            appointmentId={appointmentId}
-            referenceImages={referenceImages}
-            setReferenceImages={setReferenceImages}
-            referenceLink={referenceLink}
-            setReferenceLink={setReferenceLink}
-            uploadingReference={uploadingReference}
-            setUploadingReference={setUploadingReference}
-            storeId={store?.id}
-          />
-
-          {/* Section 2: Customer & Service Details */}
-          <CustomerServiceSection
-            formData={formData}
-            setFormData={setFormData}
-            effectiveIntakeChannel={effectiveIntakeChannel}
-            appointmentId={appointmentId}
-            customerLocked={customerLocked}
-            setCustomerLocked={setCustomerLocked}
-            customers={customers}
-            services={services}
-            customerMeasurements={customerMeasurements}
-            isBulkOrder={isBulkOrder}
-            setIsBulkOrder={setIsBulkOrder}
-            setIsTotalAmountCustom={setIsTotalAmountCustom}
-            setIsDueDateCustom={setIsDueDateCustom}
-            setCustomFieldValues={setCustomFieldValues}
-            selectedCatalogItem={selectedCatalogItem}
-          />
-
-          {/* Section 3: Custom Specifications & Notes */}
-          <CustomSpecsSection
-            formData={formData}
-            setFormData={setFormData}
-            selectedService={selectedService}
-            isSelectedAlterationRepair={isSelectedAlterationRepair}
-            preExistingDamageNotes={preExistingDamageNotes}
-            setPreExistingDamageNotes={setPreExistingDamageNotes}
-            customFieldValues={customFieldValues}
-            setCustomFieldValues={setCustomFieldValues}
-            handleCheckboxChange={handleCheckboxChange}
-            isBulkOrder={isBulkOrder}
-            setIsBulkOrder={setIsBulkOrder}
-            teamName={teamName}
-            setTeamName={setTeamName}
-            roster={roster}
-            setRoster={setRoster}
-            sectionTwoMeta={sectionTwoMeta}
-          />
-
-          {/* Section 4: who works on it (shop / branch decide; staff just move it along) */}
-          {canCollectMoney && store && (
-            <AssignStaffSection storeId={store.id} branchId={selectedBranchId ?? null} assignees={assignees} setAssignees={setAssignees} />
-          )}
-
-          {/* Section 5: Production & Fulfillment */}
-          <ProductionFulfillmentSection />
-
-          {/* Section 6: Pricing & Schedule */}
-          <PricingScheduleSection
-            formData={formData}
-            setFormData={setFormData}
-            selectedService={selectedService}
-            isCustomTailoring={isCustomTailoring}
-            isTotalAmountCustom={isTotalAmountCustom}
-            setIsTotalAmountCustom={setIsTotalAmountCustom}
-            setIsDueDateCustom={setIsDueDateCustom}
-            isBulkOrder={isBulkOrder}
-            canCollectMoney={canCollectMoney}
-          />
-
-          {/* Action Buttons */}
-          <div className="pt-6 border-t border-line flex justify-end gap-4">
-            <Link
-              href={backHref}
-              className="px-6 py-2.5 rounded-lg font-medium text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="bg-taupe hover:bg-taupe-hover text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-2xs"
-            >
-              {submitting && <Loader2 size={18} className="animate-spin" />}
-              Create Job Order
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className="flex justify-end gap-3 border-t border-line pt-6">
+          <Link href={backHref} className="inline-flex h-12 items-center px-6 font-medium text-ink-muted hover:bg-sunken hover:text-ink">Cancel</Link>
+          <button type="submit" disabled={form.submitting} className="inline-flex h-12 cursor-pointer items-center gap-2 bg-taupe px-6 font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">
+            {form.submitting && <Loader2 size={18} className="animate-spin" />}
+            Create Job Order
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

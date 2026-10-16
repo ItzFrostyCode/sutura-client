@@ -44,17 +44,6 @@ export interface StoreSettings {
   description?: string | null;
   business_type?: string | null;
   specializations?: string[] | null;
-  gcash_number?: string | null;
-  gcash_account_name?: string | null;
-  gcash_qr_path?: string | null;
-  paymaya_number?: string | null;
-  paymaya_account_name?: string | null;
-  paymaya_qr_path?: string | null;
-  bank_name?: string | null;
-  bank_account_number?: string | null;
-  bank_account_name?: string | null;
-  bank_qr_path?: string | null;
-  fitting_fee?: number | string | null;
   booking_policy?: string | null;
   booking_questions?: string[] | null;
   max_appointments_per_day?: number | null;
@@ -62,14 +51,8 @@ export interface StoreSettings {
   branches?: Branch[];
   services?: Service[];
   special_hours?: SpecialHour[];
-}
-
-export interface PackageInfo {
-  id: number;
-  name: string;
-  bundle_price: string | null;
-  service_category?: string | null;
-  services: { id: number; name: string; base_price: string | null }[];
+  /** Minutes per purpose: one table on the server for online and walk-in. */
+  durations?: Record<string, number>;
 }
 
 export interface CalendarAppointment {

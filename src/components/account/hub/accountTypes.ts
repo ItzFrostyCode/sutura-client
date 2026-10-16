@@ -8,6 +8,7 @@ import {
 export interface MyOrder {
   id: number;
   status: string;
+  progress?: import('@/components/shared/orderTracking/orderProgress').OrderProgress;
 }
 
 export interface MyAppointment {
@@ -48,11 +49,6 @@ export const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-
-export const IN_PRODUCTION = new Set([
-  'pending', 'design', 'pattern_making', 'mass_cutting_printing', 'cutting',
-  'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'balance_handover', 'on_hold',
-]);
 
 export const GUEST_MENU_ITEMS = [
   { label: 'Job Orders', Icon: ClipboardList },

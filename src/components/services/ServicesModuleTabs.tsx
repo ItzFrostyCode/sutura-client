@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Scissors, Layers, BarChart3 } from 'lucide-react';
+import { Scissors, BarChart3 } from 'lucide-react';
 
-export type ServiceTabId = 'services' | 'packages' | 'analytics';
+export type ServiceTabId = 'services' | 'analytics';
 
 export interface ServiceTabItem {
   id: ServiceTabId;
@@ -12,8 +12,7 @@ export interface ServiceTabItem {
 }
 
 export const SERVICE_TABS: readonly ServiceTabItem[] = [
-  { id: 'services', label: 'Individual Services', icon: Scissors },
-  { id: 'packages', label: 'Combo Packages', icon: Layers },
+  { id: 'services', label: 'Services', icon: Scissors },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ] as const;
 
@@ -21,7 +20,6 @@ interface ServicesModuleTabsProps {
   readonly activeTab: ServiceTabId;
   readonly onTabChange: (tabId: ServiceTabId) => void;
   readonly serviceCount?: number;
-  readonly packageCount?: number;
   readonly className?: string;
   // Analytics shows revenue-ranked figures (total_revenue is embedded in
   // every service returned by the staff-accessible GET /services) — the role
@@ -35,7 +33,6 @@ export default function ServicesModuleTabs({
   activeTab,
   onTabChange,
   serviceCount,
-  packageCount,
   className = '',
   isOwnerOrManager = false,
 }: ServicesModuleTabsProps) {
@@ -48,7 +45,7 @@ export default function ServicesModuleTabs({
       {visibleTabs.map(tab => {
         const active = tab.id === activeTab;
         const Icon = tab.icon;
-        const count = tab.id === 'services' ? serviceCount : packageCount;
+        const count = tab.id === 'services' ? serviceCount : undefined;
 
         return (
           <button

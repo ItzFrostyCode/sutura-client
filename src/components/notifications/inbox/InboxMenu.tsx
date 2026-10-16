@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Check, Monitor, MoreHorizontal, Settings, Trash2 } from 'lucide-react';
+import { Check, Monitor, MoreHorizontal, Settings } from 'lucide-react';
 
 interface InboxMenuProps {
   readonly canMarkAll: boolean;
-  readonly canClear: boolean;
+  readonly canClear?: boolean;
   readonly onMarkAll: () => void;
-  readonly onClear: () => void;
+  readonly onClear?: () => void;
   /** In the bell's drop-down: also offer the full Notifications page. */
   readonly showOpenAll?: boolean;
   readonly onLeave?: () => void;
@@ -16,8 +16,8 @@ interface InboxMenuProps {
 
 const item = 'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-ink transition-colors hover:bg-sunken active:bg-sunken';
 
-/** The ⋯ button beside the title, as on Facebook: mark all as read, notification settings, open notifications (in the drop-down), clear read (which asks first). */
-export default function InboxMenu({ canMarkAll, canClear, onMarkAll, onClear, showOpenAll = false, onLeave }: InboxMenuProps) {
+/** The ⋯ button beside the title, as on Facebook: mark all as read, notification settings, open notifications (in the drop-down). */
+export default function InboxMenu({ canMarkAll, onMarkAll, showOpenAll = false, onLeave }: InboxMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -38,7 +38,6 @@ export default function InboxMenu({ canMarkAll, canClear, onMarkAll, onClear, sh
           {canMarkAll && <button type="button" className={item} onClick={() => { onMarkAll(); setOpen(false); }}><Check size={18} /> Mark all as read</button>}
           <Link href="/account/settings/notifications" className={item} onClick={() => { setOpen(false); onLeave?.(); }}><Settings size={18} /> Notification settings</Link>
           {showOpenAll && <Link href="/notifications" className={item} onClick={() => { setOpen(false); onLeave?.(); }}><Monitor size={18} /> Open Notifications</Link>}
-          {canClear && <button type="button" className={`${item} text-danger`} onClick={() => { onClear(); setOpen(false); }}><Trash2 size={18} /> Clear read notifications</button>}
         </div>
       )}
     </div>

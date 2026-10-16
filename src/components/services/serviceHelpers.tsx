@@ -23,7 +23,7 @@ export interface ServiceField {
 export type ServiceType = 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bridal' | 'alteration_repair';
 
 export const SERVICE_TYPES: { value: ServiceType; label: string; hint: string }[] = [
-  { value: 'custom_tailoring', label: 'Custom Tailoring & Bespoke', hint: 'Measurement-driven made-to-order garments' },
+  { value: 'custom_tailoring', label: 'Custom Tailoring', hint: 'Measurement-driven made-to-order garments' },
   { value: 'bulk_sublimation', label: 'Bulk / Team Orders', hint: 'Team jerseys, corporate & school uniforms — enables team roster ordering' },
   { value: 'fashion_bridal', label: 'Fashion & Bridal', hint: 'Gowns, barong, Filipiniana — supports two-fitting scheduling' },
   { value: 'alteration_repair', label: 'Alterations & Repairs', hint: 'Resizing, repairs, hemming — requires pre-existing damage notes' },
@@ -112,19 +112,6 @@ export function deriveTiersFromService(service: Service): PricingTierInput[] {
     return service.pricing.map(p => ({ label: p.label, amount: p.amount ? String(Number(p.amount)) : '' }));
   }
   return (service.tags || []).map(tag => ({ label: tag, amount: '' }));
-}
-
-export interface ServicePackage extends RequirementFields {
-  id: number;
-  name: string;
-  description: string | null;
-  image_url?: string | null;
-  service_category?: string | null;
-  job_orders_count?: number;
-  total_revenue?: number;
-  bundle_price: string | null;
-  is_active: boolean;
-  services: Service[];
 }
 
 export const SERVICE_CATEGORIES = [

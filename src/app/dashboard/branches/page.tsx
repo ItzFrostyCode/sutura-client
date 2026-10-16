@@ -104,7 +104,11 @@ export default function BranchesPage() {
       operating_hours: branch.operating_hours || '',
       status: branch.status || 'active',
       guide_image_url: branch.guide_image_url || '',
-      manager_id: branch.manager?.id || '',
+      manager_current: branch.manager?.user?.name ? `${branch.manager.user.name} (${branch.manager.user.email})` : '',
+      manager_name: '',
+      manager_email: '',
+      manager_phone: '',
+      manager_password: '',
     });
     setErrorMsg('');
     setIsModalOpen(true);
@@ -123,16 +127,22 @@ export default function BranchesPage() {
     setIsSubmitting(true);
     setErrorMsg('');
 
+    // The manager's login is sent only when the owner filled it in.
+    const { manager_current: _current, manager_name, manager_email, manager_phone, manager_password, ...branchFields } = formData;
+    const payload = manager_name && manager_email && manager_password
+      ? { ...branchFields, manager: { name: manager_name, email: manager_email, phone: manager_phone || undefined, password: manager_password } }
+      : branchFields;
+
     try {
       if (editingId) {
-        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, formData);
+        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, payload);
         const updated = res.data?.data;
         if (updated) {
           setBranches(prev => prev.map(b => (b.id === editingId ? { ...b, ...updated } : b)));
         }
         toast.success('Branch details updated successfully.');
       } else {
-        const res = await api.post(`/stores/${store.id}/branches`, formData);
+        const res = await api.post(`/stores/${store.id}/branches`, payload);
         const created = res.data?.data;
         if (created) {
           setBranches(prev => [...prev, created]);
@@ -158,7 +168,7 @@ export default function BranchesPage() {
     try {
       const res = await api.put(`/stores/${store.id}/branches/${branch.id}/set-main`);
       if (res.data?.success) {
-        toast.success(`${branch.name} is now designated as the Primary Headquarters.`);
+        toast.success(`${branch.name} is now the main branch.`);
         fetchBranches();
         refreshBranches();
       }
@@ -197,42 +207,32 @@ export default function BranchesPage() {
         {/* Header Skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="h-8 bg-line rounded w-48 mb-2"></div>
-            <div className="h-4 bg-line rounded w-96 max-w-full"></div>
+            <div className="h-7 bg-line rounded-lg w-36 mb-2"></div>
+            <div className="h-4 bg-line rounded w-72 max-w-full"></div>
           </div>
           <div className="flex gap-2">
-            <div className="h-9 bg-line rounded w-32"></div>
-            <div className="h-9 bg-line rounded w-32"></div>
+            <div className="h-9 bg-line rounded-xl w-28"></div>
+            <div className="h-9 bg-line rounded-xl w-28"></div>
           </div>
-        </div>
-        
-        {/* Summary Bar Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={`summary-skel-${i}`} className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
-              <div className="w-9 h-9 bg-sunken rounded-lg"></div>
-              <div className="space-y-1">
-                <div className="h-5 bg-line rounded w-8"></div>
-                <div className="h-3 bg-line rounded w-20"></div>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {[1, 2, 3].map(i => (
-            <div key={`card-skel-${i}`} className="h-48 bg-surface border border-line rounded-2xl p-5">
-              <div className="flex justify-between items-start mb-4">
-                <div className="space-y-2">
-                  <div className="h-5 bg-line rounded w-32"></div>
-                  <div className="h-4 bg-line rounded w-48"></div>
+            <div key={`card-skel-${i}`} className="h-56 bg-surface border border-line rounded-2xl p-5 space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-sunken rounded-xl"></div>
+                  <div className="space-y-1.5">
+                    <div className="h-4 bg-line rounded w-32"></div>
+                    <div className="h-3 bg-line rounded w-20"></div>
+                  </div>
                 </div>
-                <div className="w-8 h-8 bg-sunken rounded-full"></div>
+                <div className="w-14 h-5 bg-sunken rounded-full"></div>
               </div>
-              <div className="space-y-3">
-                <div className="h-4 bg-line rounded w-full"></div>
-                <div className="h-4 bg-line rounded w-2/3"></div>
+              <div className="space-y-2 pt-2">
+                <div className="h-3.5 bg-line rounded w-full"></div>
+                <div className="h-3.5 bg-line rounded w-2/3"></div>
               </div>
             </div>
           ))}
@@ -244,43 +244,51 @@ export default function BranchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Store Branches"
-        description="Manage every physical location of your store. Each branch appears on the customer discovery map."
+        title="Branches"
+        description="Manage your shop locations and customer visit spots."
         actions={
           <>
-            <div className="flex items-center bg-sunken rounded-lg p-1">
+            <div className="flex items-center bg-sunken rounded-xl p-1 border border-line/60">
               <button
                 type="button"
                 onClick={() => setViewMode('cards')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[38px] ${viewMode === 'cards' ? 'bg-surface text-ink' : 'text-ink-muted hover:text-ink'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'cards'
+                    ? 'bg-surface text-ink shadow-2xs'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
               >
-                <LayoutGrid size={15} /> Cards
+                <LayoutGrid size={14} /> Cards
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('map')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[38px] ${viewMode === 'map' ? 'bg-surface text-ink' : 'text-ink-muted hover:text-ink'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'map'
+                    ? 'bg-surface text-ink shadow-2xs'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
               >
-                <MapIcon size={15} /> Map
+                <MapIcon size={14} /> Map
               </button>
             </div>
             {isStoreOwner && (addLocked ? (
               <Link
                 href="/dashboard/billing"
                 title={`${limitText}. Upgrade to add more.`}
-                className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+                className="flex items-center gap-1.5 border border-line bg-surface hover:bg-sunken text-ink px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm transition-colors min-h-[38px]"
               >
-                <Lock size={16} />
-                Branch limit reached · Upgrade
+                <Lock size={15} />
+                Upgrade plan for more branches
               </Link>
             ) : (
               <button
                 type="button"
                 onClick={openAddModal}
-                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+                className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm shadow-2xs transition-colors min-h-[38px]"
               >
-                <Plus size={17} />
-                Add Branch
+                <Plus size={16} />
+                Add Location
               </button>
             ))}
           </>

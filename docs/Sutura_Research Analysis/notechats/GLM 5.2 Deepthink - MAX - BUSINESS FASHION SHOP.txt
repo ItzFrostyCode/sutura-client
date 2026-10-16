@@ -1,0 +1,100 @@
+Based on the provided document—specifically filtering out the generic US-centric e-commerce articles and focusing exclusively on the localized Philippine shop data (Fashion Shop, Barong Heneral, Gardini, J&G's, KM Couture, LilBoss)—here is the extracted Business Intelligence.
+
+### 1. Actual Fashion Shop Business Model
+
+Philippine formalwear shops do not operate on single-item sales; they operate on **Event-Based Block Booking** and **Hybrid Liquidation**.
+
+*   **The Dominant Model: Hybrid Rental + MTO (Made-to-Order).** Shops like Gardini and KM Couture make their core revenue by locking down the "Groom" via Made-to-Order (high margin) and then renting out the "Entourage" (high volume/turnover).
+*   **The Package Model:** The unnamed "Fashion Shop" demonstrates that revenue is often generated in lump sums (₱10k–₱35k) covering the Bride, Groom, 3-5 sets of Entourage, and Parents. This shifts the business from "renting a dress" to "producing a wedding aesthetic."
+*   **The Liquidation Model (LilBoss):** A distinct secondary revenue stream exists in selling off used rental stock (Barongs/Filipiniana) at lower price points to capture the market that cannot afford rentals or prefers ownership of older styles.
+*   **Cash Flow Mechanism:** The "Refundable Deposit" (500-1k per item at LilBoss) acts as a micro-financing tool and security enforcement mechanism, distinct from the actual rental fee.
+
+### 2. Unified Listing Types
+
+Based on actual post behavior, a system must support these distinct types:
+
+1.  **Showcase/Portfolio Only:** Items not for immediate transaction but used to prove skill (KM Couture client photos).
+2.  **For Rent (Per Piece):** Standard rental with daily rates (LilBoss Career Costumes).
+3.  **For Rent (Event Package):** Bundled rental for weddings (Gardini Entourage Package).
+4.  **For Sale (Brand New MTO):** Custom manufacturing (Barong Heneral, Gardini Groom Suits).
+5.  **For Sale (Used/Pre-loved Liquidation):** Ex-rental stock sold as-is (LilBoss Used Barongs).
+6.  **The "Set" Listing:** A parent listing (e.g., "Filipiniana Set") that allows mix-and-match of tops and skirts (LilBoss).
+
+### 3. Unified Product Categories
+
+The ecosystem is divided into **Hero Products** (high ticket) and **Fillers** (marginal utility).
+
+*   **Hero Garments:**
+    *   Bridal Gowns (Floor length to Long Tail to Luxury)
+    *   Groom Wear (Tuxedo Set, Barong Tagalog, Coat Barong)
+    *   Entourage Wear (Long Gowns, Cocktail Dresses, Ball Gowns)
+*   **Support Garments:**
+    *   Kids/Secondary Entourage (Flowergirls, Boy Bearers)
+    *   Parents' Sets
+    *   Specialty (Pre-nup gowns, Robes, Career Costumes)
+*   **Accessories/Upsells:**
+    *   Traditional (Veil, Cord, Headdress, Alampay, Bolero)
+    *   Modern (Underskirts, Inner Dresses)
+
+### 4. Rental Lifecycle Model
+
+Extracted heavily from LilBoss and Gardini operational rules:
+
+1.  **Discovery:** Facebook post (Price/Size often in caption).
+2.  **Inquiry:** Messenger (Availability check).
+3.  **Reservation:** **"First to pay basis"** (This is the critical gate. Availability is not held by "intent," only by payment).
+4.  **Compliance:** Customer must present **1 Valid ID** (Security measure against theft).
+5.  **Payment:** Rental Fee + Refundable Deposit paid upfront.
+6.  **Preparation:** Shop washes, steams, and disinfects (Hygiene standard post-COVID).
+7.  **Pickup:** Physical handover.
+8.  **Usage:** Strict duration (3 days at LilBoss, 4-5 days at Gardini).
+9.  **Return:** Physical return to store.
+10. **Inspection:** Check for damage.
+11. **Closure:** Deposit returned (or deducted if damaged/late).
+
+### 5. Sales Lifecycle Model
+
+*   **Used Sales:** Facebook Post (Warning: "Photos taken during brand new condition") -> Customer visits shop to inspect actual wear/tear -> Cash Purchase.
+*   **MTO Sales:** Facebook Post (Style showcase) -> Inquiry -> Store Visit for Measurement/Fabric selection -> 50% Downpayment (implied standard) -> Production -> Fitting -> Final Payment -> Release.
+
+### 6. Customer Conversion Model
+
+The funnel is strictly **Online-to-Offline**. It never closes online.
+
+*   **Stage 1 (Trust):** Facebook Feed (Seeing "Congratulations" posts or real client photos like KM Couture).
+*   **Stage 2 (Intent):** Messenger Inquiry ("Is this available?").
+*   **Stage 3 (Commitment):** The store forces physical presence. *Keywords: "Visit our shop for fitting," "Check items first in the shop."*
+*   **Stage 4 (Conversion):** Physical Fitting is where the sale actually happens. This is where upselling (e.g., adding a bolero or upgrading fabric) occurs.
+*   **Stage 5 (Logistics):** Payment and Pickup happen in-store.
+
+### 7. Physical Store Dependency Model
+
+These businesses cannot be Shopee because:
+
+*   **The Fit Risk:** Formalwear (Barongs, Gowns) has zero tolerance for sizing errors. "Tailored for you" (Barong Heneral) requires physical measurement.
+*   **The Condition Reality:** For used items, photos lie ("Photos were taken during brand new condition"). Customers *must* touch the fabric to accept the depreciation.
+*   **The ID Check:** The rental security model (LilBoss) requires checking a physical ID, which cannot be done safely/legally via a simple online checkout.
+*   **The "Vibe" Consultation:** Gardini mentions "Choose the look that fits your vibe." This is a stylist consultation, not a catalog selection.
+
+### 8. Customer Buying Behavior Model
+
+*   **Scarcity Driven:** "First to pay basis" indicates customers are trained to pay immediately to lock items, suggesting high competition for popular sizes/styles.
+*   **Proof-Reliant:** Customers respond to social proof. KM Couture's strategy of posting a client photo with "Thank you for trusting us" is the primary conversion trigger.
+*   **Bundle Seekers:** Customers look for "Packages" to reduce decision fatigue (Silver/Gold/Platinum model).
+*   **Location-Anxious:** Every post contains hyper-specific landmarks ("Infront of Motohub," "Behind Flying V," "Beside Mjuan Lechon"). This suggests customers are highly concerned with finding the shop easily in congested PH streets.
+
+### 9. System Recommendations
+
+*   **MISSING MODULE: "Event Blocker".** The system needs to treat a Wedding as a single entity that blocks out multiple inventories (Groom + 5 Groomsmen + Parents) simultaneously, rather than treating them as 8 separate rentals.
+*   **BLOATED MODULE: Complex Inventory Tracking.** These shops do not need bin locations or SKU barcodes. They need "Rack/Shelf" visibility and "Clean/Dirty" status (Washed/Steamed).
+*   **SPLIT MODULE: The Deposit.** Deposits must be tracked as a "Liability" in a separate ledger, not mixed with Sales Revenue.
+*   **STAY MANUAL: Style Consultation.** Do not try to digitize the "vibe" selection. Let the staff handle this in-store.
+*   **SEMI-DIGITAL: The Booking.** Use Messenger integration to answer "Is this available?" but require a "Deposit Upload" (GCash screenshot) to change status from "Available" to "Reserved."
+
+### 10. UX Recommendations
+
+*   **The "Quick Rent" Flow:** For shops like LilBoss, create a 1-click rental post template: [Photo] + [Size] + [Price] + [Deposit] + [Days Allowed]. Stop forcing owners to write this out.
+*   **The "Client Album" Dashboard:** Instead of a product catalog, KM Couture needs a "Client Gallery" where they can instantly upload a photo from a client's event and tag it "Wedding - Gown" to automatically post to Facebook with the "Thank you" template.
+*   **The "Used Item" Flag:** Create a specific visual border/watermark for "Used/For Sale" items to manage customer expectations, preventing the "it looked better online" return arguments.
+*   **Landmark Manager:** A text field for "Nearest Landmark" that auto-appends to every Facebook post or GMaps link, as this is the #1 customer question in the data.
+*   **Hygiene Status Toggle:** A simple button for staff to mark an item "Dirty/Returned" vs "Steamed/Ready." This prevents accidentally renting a gown that just came back from a wedding.

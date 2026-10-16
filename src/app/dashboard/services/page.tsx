@@ -7,10 +7,9 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
-import { Service, ServicePackage, deriveTiersFromService } from '@/components/services/serviceHelpers';
+import { Service, deriveTiersFromService } from '@/components/services/serviceHelpers';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import ServiceGridView from '@/components/services/ServiceGridView';
-import PackageGridView from '@/components/services/packages/PackageGridView';
 import PageHeader from '@/components/shared/PageHeader';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
@@ -19,10 +18,8 @@ export default function ServicesPage() {
   const { store, user } = useAuthStore();
   const toast = useToast();
   const router = useRouter();
-  // POST/PUT/DELETE on services, service-packages, and restore are all
-  // role:store_owner,branch_manager-only in routes/api.php, but the Services
-  // nav (with the Packages tab) is shown to plain staff too since they need
-  // read access to pick a service on a job/appointment.
+  // POST/PUT/DELETE on services are role:store_owner,branch_manager-only in routes/api.php, but the
+  // Services nav is shown to plain staff too since they need read access to pick a service on a job/appointment.
   const isOwnerOrManager = Boolean(
     user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
   );
@@ -41,10 +38,9 @@ export default function ServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
 
-  // Packages tab
-  type Tab = 'services' | 'packages' | 'analytics';
+  type Tab = 'services' | 'analytics';
   const [activeTab, setActiveTabState] = useState<Tab>('services');
-  // The tab lives in the URL (?tab=packages) so coming back from a package page lands on the same tab.
+  // The tab lives in the URL (?tab=analytics) so coming back lands on the same tab.
   const setActiveTab = (tab: Tab) => {
     setActiveTabState(tab);
     window.history.replaceState(null, '', tab === 'services' ? window.location.pathname : `?tab=${tab}`);
@@ -52,10 +48,8 @@ export default function ServicesPage() {
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (t === 'packages' || t === 'analytics') setActiveTabState(t);
+    if (t === 'analytics') setActiveTabState(t);
   }, []);
-  const [packages, setPackages] = useState<ServicePackage[]>([]);
-  const [packagesLoading, setPackagesLoading] = useState(true);
 
   const fetchServices = useCallback(() => {
     if (!store?.id) {
@@ -76,26 +70,6 @@ export default function ServicesPage() {
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
-
-  const fetchPackages = useCallback(() => {
-    if (!store?.id) {
-      if (user?.id) setTimeout(() => setPackagesLoading(false), 0);
-      return;
-    }
-    api.get(`/stores/${store.id}/service-packages`)
-      .then(res => {
-        setPackages(res.data.data);
-        setPackagesLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setPackagesLoading(false);
-      });
-  }, [store, user]);
-
-  useEffect(() => {
-    fetchPackages();
-  }, [fetchPackages]);
 
   useEffect(() => {
     if (!isOwnerOrManager) return;
@@ -149,7 +123,7 @@ export default function ServicesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Services"
-        description="Your tailoring services, turnaround times, and combo packages."
+        description="Your tailoring services and how long they take."
         inlineActions
         actions={
           !isOwnerOrManager ? null : activeTab === 'services' ? (
@@ -162,16 +136,6 @@ export default function ServicesPage() {
                 Create New
               </button>
             </>
-          ) : activeTab === 'packages' ? (
-            <button
-              onClick={() => router.push('/dashboard/services/packages/new')}
-              disabled={services.length < 2}
-              title={services.length < 2 ? 'Add at least 2 services first' : undefined}
-              className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <Plus size={17} />
-              Create New
-            </button>
           ) : null
         }
       >
@@ -179,15 +143,12 @@ export default function ServicesPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           serviceCount={services.length}
-          packageCount={packages.length}
           isOwnerOrManager={isOwnerOrManager}
         />
       </PageHeader>
 
       {activeTab === 'services' ? (
         <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} />
-      ) : activeTab === 'packages' ? (
-        <PackageGridView packages={packages} loading={packagesLoading} />
       ) : isOwnerOrManager ? (
         <ServiceAnalyticsView />
       ) : null}

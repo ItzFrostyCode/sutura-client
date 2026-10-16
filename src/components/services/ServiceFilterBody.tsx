@@ -2,41 +2,34 @@
 
 import React from 'react';
 import { FilterOption, FilterSection } from '@/components/catalog/CatalogFilterBody';
-import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
-import { DEFAULT_SERVICE_SORT, SERVICE_PRICE_SORTS, isServicePriceSort, type ServiceSortOption } from './serviceSort';
+import { DEFAULT_SERVICE_SORT, SERVICE_PRICE_SORTS, isServicePriceSort } from './serviceSort';
+import type { CountedOption } from './serviceTaxonomyFilters';
+import type { ServiceFilters } from './useServiceFilters';
 
 export type ServiceStatusFilter = '' | 'active' | 'paused';
 
-export interface ServiceFilterState {
-  readonly sortOrder: ServiceSortOption;
-  readonly setSortOrder: (v: ServiceSortOption) => void;
-  readonly statusFilter: ServiceStatusFilter;
-  readonly setStatusFilter: (v: ServiceStatusFilter) => void;
-  readonly categoryFilter: string;
-  readonly setCategoryFilter: (v: string) => void;
-  /** Service categories this store actually has, with how many services in each. */
-  readonly categoryOptions: { value: string; count: number }[];
+function Choice({ title, options, value, onChange, all }: Readonly<{ title: string; options: CountedOption[]; value: string; onChange: (v: string) => void; all: string }>) {
+  if (options.length === 0) return null;
+  return (
+    <FilterSection title={title}>
+      <div className="divide-y divide-line/60">
+        <FilterOption selected={!value} onClick={() => onChange('')}>{all}</FilterOption>
+        {options.map((o) => (
+          <FilterOption key={o.value} selected={value === o.value} onClick={() => onChange(o.value)}>{o.label} ({o.count})</FilterOption>
+        ))}
+      </div>
+    </FilterSection>
+  );
 }
 
-// The service page's filter sections — same shell and rows as the catalog's.
-export default function ServiceFilterBody({
-  sortOrder,
-  setSortOrder,
-  statusFilter,
-  setStatusFilter,
-  categoryFilter,
-  setCategoryFilter,
-  categoryOptions,
-}: Readonly<ServiceFilterState>) {
+// The services page's filter sections — same shell and rows as the catalog's, and the same three levels the customer
+// side searches by: kind of work, garment category, task.
+export default function ServiceFilterBody({ f }: Readonly<{ f: ServiceFilters }>) {
   return (
     <div>
       <FilterSection title="Sort by price">
         {SERVICE_PRICE_SORTS.map((opt) => (
-          <FilterOption
-            key={opt.value}
-            selected={sortOrder === opt.value}
-            onClick={() => setSortOrder(isServicePriceSort(sortOrder) && sortOrder === opt.value ? DEFAULT_SERVICE_SORT : opt.value)}
-          >
+          <FilterOption key={opt.value} selected={f.sortOrder === opt.value} onClick={() => f.setSortOrder(isServicePriceSort(f.sortOrder) && f.sortOrder === opt.value ? DEFAULT_SERVICE_SORT : opt.value)}>
             {opt.label}
           </FilterOption>
         ))}
@@ -44,24 +37,13 @@ export default function ServiceFilterBody({
 
       <FilterSection title="Status">
         {([['', 'All services'], ['active', 'Active'], ['paused', 'Paused']] as const).map(([value, label]) => (
-          <FilterOption key={value || 'all'} selected={statusFilter === value} onClick={() => setStatusFilter(value)}>
-            {label}
-          </FilterOption>
+          <FilterOption key={value || 'all'} selected={f.statusFilter === value} onClick={() => f.setStatusFilter(value)}>{label}</FilterOption>
         ))}
       </FilterSection>
 
-      {categoryOptions.length > 0 && (
-        <FilterSection title="Narrow by Category">
-          <div className="divide-y divide-line/60">
-            <FilterOption selected={!categoryFilter} onClick={() => setCategoryFilter('')}>All Categories</FilterOption>
-            {categoryOptions.map((c) => (
-              <FilterOption key={c.value} selected={categoryFilter === c.value} onClick={() => setCategoryFilter(c.value)}>
-                {SERVICE_CATEGORY_LABELS[c.value as ServiceCategory] ?? c.value} ({c.count})
-              </FilterOption>
-            ))}
-          </div>
-        </FilterSection>
-      )}
+      <Choice title="Kind of work" options={f.options.kinds} value={f.kindFilter} onChange={f.chooseKind} all="All kinds of work" />
+      <Choice title="Garment" options={f.options.garments} value={f.garmentFilter} onChange={f.setGarmentFilter} all="All garments" />
+      <Choice title="Task" options={f.options.tasks} value={f.taskFilter} onChange={f.setTaskFilter} all="All tasks" />
     </div>
   );
 }

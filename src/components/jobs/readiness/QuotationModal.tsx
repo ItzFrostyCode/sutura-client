@@ -26,6 +26,13 @@ export default function QuotationModal({ isOpen, onClose, data, currentTotal, bu
   const [deductions, setDeductions] = useState<ChargeRow[]>(q?.customer_provided_deduction ?? []);
   const [dueDate, setDueDate] = useState(data.order?.due_date ?? '');
   const [notes, setNotes] = useState(q?.notes ?? '');
+  const [policy, setPolicy] = useState(data.terms?.policy ?? 'deposit');
+  const [percent, setPercent] = useState(data.terms?.percent ?? 50);
+  const [validUntil, setValidUntil] = useState(data.decision?.valid_until ?? '');
+  const [reason, setReason] = useState('');
+  // Once a price was sent, a change needs a reason; choosing "pay when picking up" always does.
+  const sent = (data.quotation?.versions?.length ?? 0) > 0 && (data.quotation?.status === 'final' || Boolean(data.quotation?.approved_at));
+  const needsReason = sent || (policy === 'none' && data.terms?.policy !== 'none');
 
   const total = Math.max(0, Number(base) + Number(qtyAdj) + sum(extras) - sum(deductions));
   const cap = data.capacity;
@@ -35,6 +42,8 @@ export default function QuotationModal({ isOpen, onClose, data, currentTotal, bu
       base_price: Number(base) || 0, quantity_adjustment: Number(qtyAdj) || 0,
       additional_charges: extras, customer_provided_deduction: deductions,
       due_date: dueDate || null, notes: notes.trim() || null, status,
+      payment_policy: policy, payment_policy_percent: policy === 'deposit' || policy === 'custom' ? percent : undefined,
+      valid_until: validUntil || undefined, reason: reason.trim() || undefined,
     });
     if (ok) onClose();
   };
@@ -50,13 +59,13 @@ export default function QuotationModal({ isOpen, onClose, data, currentTotal, bu
           <p className="text-sm text-ink-muted">Total <strong className="text-lg text-ink">{peso(total)}</strong></p>
           <div className="flex gap-2">
             <button type="button" disabled={busy} onClick={() => submit('estimate')} className="h-11 rounded-lg border border-line px-4 text-sm font-semibold text-ink-body hover:bg-sunken disabled:opacity-50">Save as estimate</button>
-            <button type="button" disabled={busy} onClick={() => submit('final')} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">Finalize quotation</button>
+            <button type="button" disabled={busy || (needsReason && !reason.trim())} onClick={() => submit('final')} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">Finalize quotation</button>
           </div>
         </div>
       )}
     >
       <div className="space-y-4">
-        <p className="text-xs text-ink-muted">An <strong>estimate</strong> can still change. A <strong>final</strong> quotation needs the specs approved, measurements verified, supplier costs filled in and a completion date — then the customer can approve it.</p>
+        <p className="text-xs text-ink-muted">An <strong>estimate</strong> can still change. A <strong>final</strong> quotation needs the specs approved, the measurements verified and a completion date. It is sent to the customer, who can approve it, ask for changes, or decline.</p>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="space-y-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Service price
@@ -80,9 +89,35 @@ export default function QuotationModal({ isOpen, onClose, data, currentTotal, bu
             {cap.tailors.filter((t) => t.conflicts.length > 0).map((t) => ` ${t.name} also has ${t.conflicts.map((c) => c.order_number).join(', ')} due around then.`)}
           </p>
         )}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="space-y-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Payment terms
+            <select value={policy} onChange={(e) => setPolicy(e.target.value)} className={`${field} normal-case tracking-normal font-normal`}>
+              <option value="deposit">Deposit before we start</option>
+              <option value="full">Full payment before we start</option>
+              <option value="none">Pay when picking up</option>
+            </select>
+          </label>
+          {policy === 'deposit' ? (
+            <label className="space-y-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Deposit (%)
+              <input type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(Math.min(100, Math.max(1, Number(e.target.value) || 1)))} className={`${field} normal-case tracking-normal font-normal`} />
+            </label>
+          ) : <span />}
+        </div>
+        <p className="-mt-2 text-[11px] text-ink-muted">The customer sees these terms with the price, before they answer. After they agree, the terms are locked.</p>
+
+        <label className="block space-y-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Price valid until (optional)
+          <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className={`${field} normal-case tracking-normal font-normal`} />
+        </label>
+
         <label className="block space-y-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Note for the customer (optional)
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={500} className={`${field} resize-none normal-case tracking-normal font-normal`} />
         </label>
+
+        {needsReason && (
+          <label className="block space-y-1 text-xs font-bold uppercase tracking-wide text-ink-muted">{sent ? 'Why did the price, date or terms change?' : 'Why can this customer pay when picking up?'}
+            <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={255} className={`${field} normal-case tracking-normal font-normal`} />
+          </label>
+        )}
 
         {blockers.length > 0 && (
           <ul role="alert" className="list-disc space-y-0.5 rounded-lg border border-amber-300 bg-amber-50 py-2 pl-7 pr-3 text-xs text-amber-900">

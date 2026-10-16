@@ -20,7 +20,6 @@ export interface AppointmentDetailData {
     garment_structure?: string | null;
     garment_type?: string | null;
   } | null;
-  service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
   selected_size?: string | null;
   selected_color?: string | null;
   purpose_label?: string | null;
@@ -31,6 +30,9 @@ export interface AppointmentDetailData {
   shared_images?: string[];
   needs_new_time?: boolean;
   store_branch_id?: number | null;
+  kind?: 'service' | 'shop' | 'production';
+  // New bookings take no payment; only an older booking that did has this.
+  has_payment?: boolean;
   payment_status: string;
   payment_method: string | null;
   notes: string | null;

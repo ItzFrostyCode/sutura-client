@@ -90,7 +90,7 @@ export default function BookingFlowEditForm({ formData, onChange, setFormData }:
 
       <div className="space-y-3 pt-2 border-t border-line/60">
         <h4 className="text-xs font-semibold text-ink">Default order requirements</h4>
-        <p className="text-xs text-ink-muted">Used when a design, service or combo does not set its own. Each order keeps a copy of what applied when it was created.</p>
+        <p className="text-xs text-ink-muted">Used when a design or service does not set its own. Each order keeps a copy of what applied when it was created.</p>
         <RequirementsEditor
           value={{
             measurement_requirement: formData.default_measurement_requirement,

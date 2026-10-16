@@ -9,7 +9,6 @@ interface BookingActionBarProps {
   readonly step1NextDisabled?: boolean;
   readonly step2NextDisabled: boolean;
   readonly submitting: boolean;
-  readonly uploadingReceipt: boolean;
   readonly returnToReview?: boolean;
 }
 
@@ -19,7 +18,6 @@ export default function BookingActionBar({
   step1NextDisabled = false,
   step2NextDisabled,
   submitting,
-  uploadingReceipt,
   returnToReview,
 }: BookingActionBarProps) {
   return (
@@ -60,16 +58,12 @@ export default function BookingActionBar({
           <button
             type="submit"
             form="booking-form"
-            disabled={submitting || uploadingReceipt}
+            disabled={submitting}
             className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.99]"
           >
-            {(submitting || uploadingReceipt) && <Loader2 size={18} className="animate-spin" />}
+            {submitting && <Loader2 size={18} className="animate-spin" />}
             <span>
-              {submitting
-                ? 'Processing...'
-                : uploadingReceipt
-                ? 'Uploading receipt...'
-                : 'Book Appointment'}
+              {submitting ? 'Sending...' : 'Send request'}
             </span>
           </button>
         )}

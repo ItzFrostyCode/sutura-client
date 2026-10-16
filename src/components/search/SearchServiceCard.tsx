@@ -45,9 +45,7 @@ export default function SearchServiceCard({
 }: SearchServiceCardProps) {
   const turnaroundText = (service.estimated_days ? 'Est. ' : '') + formatServiceTurnaround(service.estimated_days, service.estimated_days_max);
   const branch = service.store?.branches?.[0];
-  const locationText = branch?.district
-    ? `${branch.district}, Davao City`
-    : (branch?.city || service.store?.name || 'Davao City');
+  const locationText = branch?.city || service.store?.name || 'Davao City';
 
   // Prefer the canonical Services taxonomy label over the legacy free-text
   // service_type/category fields — matches ServiceCardItem.tsx/

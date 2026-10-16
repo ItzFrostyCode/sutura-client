@@ -53,7 +53,13 @@ export interface BranchFormData {
   operating_hours: string;
   status: string;
   guide_image_url: string;
-  manager_id: string | number;
+  /** Shown only while editing: who manages the branch now. */
+  manager_current: string;
+  /** A new branch manager's login, made right here by the owner. */
+  manager_name: string;
+  manager_email: string;
+  manager_phone: string;
+  manager_password: string;
 }
 
 export const EMPTY_FORM: BranchFormData = {
@@ -69,7 +75,11 @@ export const EMPTY_FORM: BranchFormData = {
   operating_hours: '',
   status: 'active',
   guide_image_url: '',
-  manager_id: '',
+  manager_current: '',
+  manager_name: '',
+  manager_email: '',
+  manager_phone: '',
+  manager_password: '',
 };
 
 export function StatusBadge({ status }: Readonly<{ status?: string }>) {

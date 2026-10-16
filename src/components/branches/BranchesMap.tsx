@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapPin, Star, Phone, Clock, User, ExternalLink, Map as MapIcon, List, Navigation } from 'lucide-react';
 import { StoreBranch, getMapUrl } from './branchHelpers';
 
-// 🌟 Special Gold Star Pin for Primary Headquarters (Main Branch)
+// 🌟 Special Gold Star Pin for Main Branch (Main Branch)
 const mainPinIcon = L.divIcon({
   className: '',
   html: '<div style="filter: drop-shadow(0 3px 6px rgba(180,83,9,0.45)); transform: scale(1.15);"><svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="#D97706" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><polygon points="12 6 13.5 8.8 16.5 9.2 14.2 11.4 14.8 14.5 12 13 9.2 14.5 9.8 11.4 7.5 9.2 10.5 8.8 12 6" fill="#FEF3C7" stroke="#92400E" stroke-width="0.8"/></svg></div>',
@@ -352,7 +352,7 @@ export default function BranchesMap({
                     <div className="flex items-center gap-1.5 mb-1">
                       {Boolean(branch.is_main) ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-none">
-                          <Star size={10} className="fill-amber-500" /> Primary Headquarters
+                          <Star size={10} className="fill-amber-500" /> Main Branch
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">

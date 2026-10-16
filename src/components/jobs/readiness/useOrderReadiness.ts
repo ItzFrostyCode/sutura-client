@@ -63,6 +63,7 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
 
   const actions = {
     // Flow 2 -- set-up
+    acceptRequest: () => post('accept', 'accept-request'),
     approveSpecs: () => post('specs', 'specs/approve'),
     verifyMeasurements: () => post('measurements', 'measurements/verify'),
     assessCustomerItems: (assessment: 'suitable' | 'not_suitable') => post('customer_items', 'customer-items', { assessment }),
@@ -70,7 +71,7 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
     approveInPerson: () => post('approval', 'quotation/approve', { accepted_terms: true }),
     confirm: () => post('confirmed', 'confirm'),
     saveQuotation: (body: Record<string, unknown>) => run('quotation', () => api.put(`${base}/quotation`, body)),
-    saveAssignees: (assignees: { user_id: number; role: string }[]) => run('tailor', () => api.put(`${base}/assignees`, { assignees })),
+    saveAssignees: (assignees: { user_id: number; role: string }[], reason?: string) => run('tailor', () => api.put(`${base}/assignees`, { assignees, reason: reason || undefined })),
     startProduction: async () => {
       const ok = await moveTo('design', 'Production started.');
       if (ok) onStarted?.();

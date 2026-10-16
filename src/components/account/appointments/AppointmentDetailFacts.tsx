@@ -28,7 +28,7 @@ export default function AppointmentDetailFacts({ appt, scheduled }: { readonly a
           <span>{appt.branch.name}{appt.branch.address ? `, ${appt.branch.address}` : ''}{appt.branch.city ? `, ${appt.branch.city}` : ''}</span>
         </div>
       )}
-      {appt.payment_method && (
+      {appt.has_payment && appt.payment_method && (
         <div className={row}>
           <Wallet size={16} className={icon} />
           <span>Payment: {appt.payment_status} · {appt.payment_method}</span>

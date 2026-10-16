@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
-import { Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Plus, X } from 'lucide-react';
 import {
   GARMENT_CATEGORIES,
   GARMENT_CATEGORY_KEYS,
   GARMENTS,
   SERVICE_GROUPS,
   SERVICE_GROUP_KEYS,
+  canonicalGarment,
   garmentsInCategory,
   type ServiceGroup,
   type ServiceGroupKey,
@@ -75,8 +76,8 @@ export function ServiceGarmentsEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
     <div className="space-y-4">
       <p className="text-sm text-ink-muted">
         {anyAllowed
-          ? 'Tick the garments you work on — or leave everything unticked if you take any garment.'
-          : 'Tick the garments this service makes. Customers searching for them will find it.'}
+          ? 'Select the garments you work on. Select none if you take any kind of garment.'
+          : 'Select every garment this service makes. Customers who search for them will find this service.'}
       </p>
       {GARMENT_CATEGORY_KEYS.filter(c => c !== 'other').map(cat => {
         const slugs = garmentsInCategory(cat);
@@ -103,7 +104,49 @@ export function ServiceGarmentsEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
           </fieldset>
         );
       })}
+      <OtherGarments value={d.garment_types} onChange={(garment_types) => patch({ garment_types })} />
     </div>
+  );
+}
+
+/** Garments that are not on the list: the shop types the name. They are kept as typed and SUTURA checks new names. */
+function OtherGarments({ value, onChange }: Readonly<{ value: string[]; onChange: (next: string[]) => void }>) {
+  const [name, setName] = useState('');
+  const typed = value.filter(g => !canonicalGarment(g));
+  const clean = name.trim();
+  const exists = typed.some(g => g.toLowerCase() === clean.toLowerCase());
+  const add = () => {
+    if (clean.length < 2 || exists) return;
+    onChange([...value, clean]);
+    setName('');
+  };
+  return (
+    <fieldset className="border-t border-line pt-3">
+      <legend className="sr-only">Other garments</legend>
+      <p className="text-sm font-semibold text-ink" aria-hidden>Other garments</p>
+      <p className="text-xs text-ink-muted mt-0.5">Not in the list above? Type the garment and add it. Your service uses it right away; SUTURA checks new names.</p>
+      {typed.length > 0 && (
+        <ul className="flex flex-wrap gap-2 mt-3">
+          {typed.map(g => (
+            <li key={g} className="flex items-center gap-1 border border-line bg-canvas pl-3 text-sm text-ink">
+              {g}
+              <button type="button" aria-label={`Remove ${g}`} onClick={() => onChange(value.filter(x => x !== g))} className="w-9 h-9 flex items-center justify-center text-ink-faint hover:text-danger cursor-pointer"><X size={14} /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2 mt-3">
+        <input
+          type="text" maxLength={100} value={name} onChange={e => setName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          aria-label="Other garment name" placeholder="e.g. Kimono, Malong" className={FIELD}
+        />
+        <button type="button" onClick={add} disabled={clean.length < 2 || exists} className="h-12 shrink-0 px-4 border border-line text-sm font-semibold text-taupe hover:bg-sunken disabled:opacity-40 flex items-center gap-1.5 cursor-pointer">
+          <Plus size={14} /> Add
+        </button>
+      </div>
+      {exists && <p className="text-xs text-danger mt-1.5">You already added “{clean}”.</p>}
+    </fieldset>
   );
 }
 
@@ -119,7 +162,7 @@ export function ServiceCapabilitiesEditor({ edit }: Readonly<{ edit: DraftEdit }
   return (
     <div className="space-y-4">
       <fieldset>
-        <legend className={LABEL}>What you do — tick only what you offer</legend>
+        <legend className={LABEL}>What you do — select only what you offer</legend>
         <div className="grid grid-cols-1 gap-1">
           {Object.entries(group.capabilities).map(([slug, cap]) => (
             <label key={slug} className="flex items-center gap-3 min-h-11 cursor-pointer">

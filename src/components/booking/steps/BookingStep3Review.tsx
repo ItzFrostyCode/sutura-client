@@ -8,10 +8,8 @@ import {
   Phone,
   Shirt,
   StickyNote,
-  Wallet,
   Sparkles,
   Scissors,
-  Package,
   MapPin,
   Calendar,
   Clock,
@@ -26,7 +24,6 @@ import {
   StoreSettings,
   Branch,
   Service,
-  PackageInfo,
   BookingCustomer,
 } from '../types';
 
@@ -45,7 +42,6 @@ interface BookingStep3ReviewProps {
   readonly refSize: string | null;
   readonly refColor: string | null;
   readonly selectedService: Service | null;
-  readonly packageInfo: PackageInfo | null;
   readonly appointmentType: string;
   readonly purposeLabel?: string;
   readonly date: string;
@@ -58,13 +54,10 @@ interface BookingStep3ReviewProps {
   readonly user: UserInfo | null;
   readonly customer: BookingCustomer;
   readonly remarks: string;
-  readonly orderReference: string;
   readonly answers: Record<string, string>;
   readonly storeSettings: StoreSettings | null;
   readonly materialSource: 'own' | 'shop' | '';
   readonly materialDescription: string;
-  readonly paymentMethod: string;
-  readonly paymentReceiptUrl: string;
   readonly quantity?: string | null;
   readonly handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }
@@ -82,14 +75,6 @@ const PURPOSE_MAP: Record<string, { label: string; hint: string }> = {
     label: 'Alteration / Repair',
     hint: 'Bring an existing garment for adjustment or repair.',
   },
-  fitting: {
-    label: 'Fitting',
-    hint: 'Try on your garment in progress so the store can adjust the fit.',
-  },
-  pickup: {
-    label: 'Pickup',
-    hint: 'Collect your finished garment or order at the store.',
-  },
 };
 
 export default function BookingStep3Review({
@@ -101,7 +86,6 @@ export default function BookingStep3Review({
   refSize,
   refColor,
   selectedService,
-  packageInfo,
   appointmentType,
   purposeLabel,
   date,
@@ -114,18 +98,14 @@ export default function BookingStep3Review({
   user,
   customer,
   remarks,
-  orderReference,
   answers,
   storeSettings,
   materialSource,
   materialDescription,
-  paymentMethod,
-  paymentReceiptUrl,
   quantity,
   handleSubmit,
 }: BookingStep3ReviewProps) {
   const answerEntries = Object.entries(answers).filter(([, v]) => v);
-  const hasFittingFee = Number(storeSettings?.fitting_fee) > 0;
   const isDiscussion = appointmentType === 'consultation' && selectedService && (
     selectedService.name.toLowerCase().includes('print') ||
     selectedService.name.toLowerCase().includes('sublimat') ||
@@ -255,27 +235,6 @@ export default function BookingStep3Review({
         </div>
       )}
 
-      {/* 4. Package Inquiry */}
-      {!refName && packageInfo && (
-        <div className="p-4 bg-surface border border-taupe/30 rounded-none space-y-2">
-          <span className="mobile-overline text-taupe flex items-center gap-1.5">
-            <Package size={14} className="text-taupe" /> Package Inquiry
-          </span>
-          <div className="flex items-center justify-between">
-            <h3 className="mobile-h4 font-medium text-ink">{packageInfo.name}</h3>
-            <span className="mobile-body-sm font-semibold text-taupe">
-              ₱{(packageInfo.bundle_price
-                ? Number(packageInfo.bundle_price)
-                : packageInfo.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0)
-              ).toLocaleString()}
-            </span>
-          </div>
-          <p className="mobile-body-sm text-ink-muted font-normal">
-            Includes: {packageInfo.services.map((s) => s.name).join(', ')}
-          </p>
-        </div>
-      )}
-
       {/* 5. Branch */}
       {selectedBranch && (
         <div className="p-4 bg-surface border border-line rounded-none space-y-2">
@@ -401,18 +360,10 @@ export default function BookingStep3Review({
         </div>
       </div>
 
-      {/* 11. Relevant Details (notes, order reference, owner questions) */}
-      {(orderReference.trim() || remarks.trim() || answerEntries.length > 0) && (
+      {/* 11. Relevant Details (notes, owner questions) */}
+      {(remarks.trim() || answerEntries.length > 0) && (
         <div className="p-4 bg-surface border border-line rounded-none space-y-3">
           <span className="mobile-overline text-taupe">Relevant Details</span>
-          {orderReference.trim() && (
-            <div className="flex items-start gap-2.5">
-              <StickyNote size={15} className="text-taupe shrink-0 mt-0.5" />
-              <p className="mobile-body-sm text-ink-body font-normal">
-                Existing order: {orderReference.trim()}
-              </p>
-            </div>
-          )}
           {remarks.trim() && (
             <div className="flex items-start gap-2.5">
               <StickyNote size={15} className="text-taupe shrink-0 mt-0.5" />
@@ -428,16 +379,9 @@ export default function BookingStep3Review({
         </div>
       )}
 
-      {/* 12. Payment (read-only) */}
-      {hasFittingFee && (
-        <div className="p-4 bg-surface border border-line rounded-none flex items-center gap-2.5">
-          <Wallet size={16} className="text-taupe shrink-0" />
-          <p className="mobile-body-sm text-ink-body font-normal">
-            Reservation fee via <span className="font-semibold text-ink capitalize">{paymentMethod}</span>
-            {paymentMethod !== 'cash' && (paymentReceiptUrl ? ' — receipt attached' : ' — no receipt attached yet')}
-          </p>
-        </div>
-      )}
+      <p className="mobile-caption text-ink-faint font-normal">
+        Nothing is paid now. If the shop makes an order for you, the first payment comes after you accept the price.
+      </p>
     </form>
   );
 }

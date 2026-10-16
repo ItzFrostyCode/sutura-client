@@ -1,12 +1,21 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useWizardGate } from '@/app/dashboard/services/new/useWizardGate';
 import { useCatalogWizard, CATALOG_STEPS } from '@/components/catalog/create/useCatalogWizard';
 import CatalogWizardStep from '@/components/catalog/create/CatalogWizardStep';
 import ServiceWizardBar from '@/components/services/create/ServiceWizardBar';
 
 export default function NewCatalogItemPage() {
-  const allowed = useWizardGate('/dashboard/catalog');
+  return (
+    <Suspense fallback={<div className="min-h-[50vh]" />}>
+      <NewCatalogItemContent />
+    </Suspense>
+  );
+}
+
+function NewCatalogItemContent() {
+  const allowed = useWizardGate('/dashboard/services');
   const w = useCatalogWizard();
   if (!allowed) return null;
   return (

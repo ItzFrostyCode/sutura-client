@@ -61,7 +61,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     } else if (pathname.match(/\/dashboard\/jobs\/\d+/)) {
       segments.push({ label: 'Job Details' });
     } else if (pathname.startsWith('/dashboard/orders') || (typeof window !== 'undefined' && window.location.search.includes('tab=showroom_sales'))) {
-      segments.push({ label: 'Showroom Orders' });
+      segments.push({ label: 'Design Orders' });
     } else {
       segments.push({ label: 'Custom Jobs' });
     }
@@ -71,7 +71,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
       segments.push({ label: 'Customer Profile' });
     }
   } else if (pathname.startsWith('/dashboard/catalog')) {
-    segments.push({ label: 'Catalog Designs', href: '/dashboard/catalog', icon: Sparkles });
+    segments.push({ label: 'Services', href: '/dashboard/services', icon: Package });
     if (pathname === '/dashboard/catalog') {
       segments.push({ label: 'Designs' });
     } else if (pathname === '/dashboard/catalog/new') {
@@ -85,11 +85,8 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     } else if (pathname.match(/\/dashboard\/catalog\/\d+/)) {
       segments.push({ label: 'Item Details' });
     }
-  } else if (pathname.startsWith('/dashboard/services') || pathname.startsWith('/dashboard/service-packages')) {
+  } else if (pathname.startsWith('/dashboard/services')) {
     segments.push({ label: 'Services', href: '/dashboard/services', icon: Package });
-    if (pathname.startsWith('/dashboard/service-packages')) {
-      segments.push({ label: 'Packages' });
-    }
   } else if (pathname.startsWith('/dashboard/staff')) {
     segments.push({ label: 'Staff', href: '/dashboard/staff', icon: UserCog });
     if (pathname.match(/\/dashboard\/staff\/\d+/)) {

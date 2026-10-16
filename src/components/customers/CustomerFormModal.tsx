@@ -1,7 +1,9 @@
+import { type Gender } from '@/components/shared/GenderPicker';
+import CustomerFields from './CustomerFields';
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2 } from 'lucide-react';
-import { isWalkInEmail } from './customerHelpers';
+import { customerFormProblem, isWalkInEmail } from './customerHelpers';
 import { CustomerData } from './customerTypes';
 
 interface CustomerFormModalProps {
@@ -21,7 +23,7 @@ export default function CustomerFormModal({
   isSubmitting,
   error,
 }: CustomerFormModalProps) {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', suki_tag: '' });
+  const [formData, setFormData] = useState<{ name: string; email: string; phone: string; suki_tag: string; gender: Gender | '' }>({ name: '', email: '', phone: '', suki_tag: '', gender: '' });
 
   useEffect(() => {
     if (editingCustomer && isOpen) {
@@ -31,19 +33,25 @@ export default function CustomerFormModal({
         email: isWalkInEmail(editingCustomer.email) ? '' : editingCustomer.email,
         phone: editingCustomer.phone || '',
         suki_tag: editingCustomer.suki_tag || '',
+        gender: editingCustomer.gender ?? '',
       });
     } else {
-      setFormData({ name: '', email: '', phone: '', suki_tag: '' });
+      setFormData({ name: '', email: '', phone: '', suki_tag: '', gender: '' });
     }
   }, [editingCustomer, isOpen]);
 
+  const [problem, setProblem] = useState('');
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
+    const missing = customerFormProblem(formData);
+    setProblem(missing ?? '');
+    if (missing) return;
     const payload = {
       name: formData.name,
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
       suki_tag: formData.suki_tag || null,
+      gender: formData.gender || null,
     };
     onSubmit(payload);
   };
@@ -51,58 +59,16 @@ export default function CustomerFormModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingCustomer ? "Edit Customer" : "Add New Customer"}>
       <form onSubmit={handleSubmit} className="space-y-4 text-ink">
-        {error && (
-          <div className="bg-danger/10 border border-danger/50 text-danger px-4 py-3 rounded-lg text-sm">
-            {error}
+        {(problem || error) && (
+          <div role="alert" className="bg-danger/10 border border-danger/50 text-danger px-4 py-3 rounded-lg text-sm">
+            {problem || error}
           </div>
         )}
         
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-ink-body mb-1">
-            Full Name <span className="text-rose-500">*</span>
-          </label>
-          <input 
-            id="name"
-            type="text" 
-            required
-            value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
-            placeholder="Juan Dela Cruz"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-ink-body mb-1">
-            Email Address <span className="text-xs text-ink-muted font-normal">(Optional)</span>
-          </label>
-          <input 
-            id="email"
-            type="email" 
-            value={formData.email}
-            onChange={e => setFormData({...formData, email: e.target.value})}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
-            placeholder="juan@example.com"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-ink-body mb-1">
-            Phone Number <span className="text-rose-500">*</span>
-          </label>
-          <input 
-            id="phone"
-            type="tel" 
-            required
-            value={formData.phone}
-            onChange={e => setFormData({...formData, phone: e.target.value})}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
-            placeholder="+63 900 000 0000"
-          />
-        </div>
+        <CustomerFields value={formData} onChange={(next) => setFormData({ ...formData, ...next })} showEmail={Boolean(editingCustomer)} />
 
-        {/* Suki Tag */}
-        <div>
+        {/* Client type: kept for existing customers; a new one is registered with just name, number and gender. */}
+        {editingCustomer && <div>
           <label htmlFor="suki_tag" className="block text-sm font-medium text-ink-body mb-1">
             Client Type <span className="text-xs text-ink-muted font-normal">(Suki Classification)</span>
           </label>
@@ -117,7 +83,7 @@ export default function CustomerFormModal({
             <option value="b2b_suki">B2B Suki (Bulk / Corporate)</option>
             <option value="reseller">Reseller (Palengke / Wholesale)</option>
           </select>
-        </div>
+        </div>}
 
         <div className="pt-4 flex justify-end gap-3">
           <button 

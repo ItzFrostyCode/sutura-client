@@ -101,7 +101,7 @@ The following matrix documents the exact technical state of the SUTURA codebase:
 | :--- | :--- | :---: | :--- |
 | **Owner Catalog Form** | `src/components/catalog/form/BasicInfoSection.tsx` | **Active / Verified** | Form input allowing Store Owner to select parent `service_id` for catalog garments. |
 | **Staff Job Creation** | `src/components/jobs/form/useJobCreateForm.ts` | **Active / Verified** | Auto-resolves `service_id` from selected `catalog_item_id`. |
-| **Customer Service Form** | `src/components/jobs/form/CustomerServiceSection.tsx` | **Active / Verified** | Links job orders to catalog items and services with auto-filled defaults. |
+| **Create Job Order form** | `src/components/jobs/form/WhatStep.tsx` | **Active / Verified** | Garment category → garment → the shop's services that do it → optional design; a design fills in its service, price, days and photo. |
 
 ---
 

@@ -21,7 +21,7 @@ interface SearchInputProps {
  * use — matches StaffListView's search bar exactly (confirmed by the user
  * as the reference to match everywhere: light background fill + border,
  * sitting inside the outer toolbar card). Previously each page
- * (Appointments, Payments, Jobs, Customers, Catalog, Packages, Staff,
+ * (Appointments, Payments, Jobs, Customers, Catalog, Staff,
  * Services) hand-rolled a slightly different version of this same input.
  */
 export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '', id, disabled, onFocus, onBlur, onCanvasBackground = false }: SearchInputProps) {

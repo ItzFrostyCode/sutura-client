@@ -1,10 +1,9 @@
-import { CatalogItem } from '@/components/catalog/catalogHelpers';
-
 export interface CustomerData {
   id: number;
   name: string;
   email?: string;
   phone?: string;
+  profile_picture?: string | null;
 }
 
 export interface ServiceField {
@@ -26,11 +25,19 @@ export interface ServiceData {
   // never-since-edited row. See jobHelpers.tsx's serviceHasType().
   service_type?: 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bridal' | 'alteration_repair' | null;
   service_types?: string[] | null;
+  /** One of the 4 approved service groups (lib/garmentTaxonomy SERVICE_GROUPS). */
+  service_category?: string | null;
+  /** Garments it works on; empty = any garment. */
+  garment_types?: string[] | null;
+  /** Tasks it offers (capability slugs of its group). */
+  capabilities?: string[] | null;
   base_price?: string | number;
   min_order_qty?: number;
+  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   custom_fields?: ServiceField[] | null;
   tags?: string[];
   estimated_days?: number | null;
+  estimated_days_max?: number | null;
 }
 
 export interface StaffData {
@@ -69,15 +76,18 @@ export interface JobCreateFormData {
   // profile — distinct from a bulk order's roster (different people,
   // different sizes). Meaningless for a bulk order; hidden there.
   quantity: string;
-  total_amount: string;
+  /** Price before rush fee and discount. null until the owner types one; then the suggestion from the service / design is used. */
+  price: string | null;
   downpayment: string;
-  due_date: string;
+  /** null until the owner picks one; then the service's turnaround is used. */
+  due_date: string | null;
   notes: string;
-  po_number: string;
   is_rush: boolean;
   rush_fee: string;
   material_source: 'store_supplied' | 'customer_supplied';
-  garment_category: '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair';
-  discount_amount?: string;
-  discount_reason?: string;
+  /** Garment slug (lib/garmentTaxonomy) or a typed-in name for "Other garment". */
+  garment_type: string;
+  discount_mode: 'fixed' | 'percent';
+  discount_value: string;
+  discount_reason: string;
 }

@@ -19,6 +19,8 @@ export interface CatalogItem {
   sizes?: string[] | null;
   description?: string;
   garment_type?: string;
+  /** The service this design is a style of. */
+  service_id?: number | string | null;
   department?: string;
   category?: string;
   images: { id: number; image_url: string; is_primary: boolean }[];

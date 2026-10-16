@@ -231,7 +231,7 @@ export default function CatalogFindInStoreSheet({
             }}
             className="flex-[1.3] bg-ink hover:bg-taupe text-white font-medium py-2.5 px-2 transition-colors flex items-center justify-center rounded-none text-xs whitespace-nowrap"
           >
-            Book a Fitting
+            Book a visit
           </button>
         </div>
         {locateError && <p className="text-xs text-danger mt-2">{locateError}</p>}

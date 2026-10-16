@@ -1,10 +1,11 @@
+import type { Gender } from '@/components/shared/GenderPicker';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { CustomerData } from './customerTypes';
-import { isWalkInCustomer, isWalkInEmail } from './customerHelpers';
+import { customerFormProblem, isWalkInCustomer, isWalkInEmail } from './customerHelpers';
 
 export { type CustomerData };
 
@@ -22,7 +23,7 @@ export function useCustomers() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [formData, setFormData] = useState<{ name: string; email: string; phone: string; gender: Gender | '' }>({ name: '', email: '', phone: '', gender: '' });
   const [error, setError] = useState('');
   // "My customers": only those with an appointment assigned to me or a job I'm on (staff).
   const [mineOnly, setMineOnly] = useState(false);
@@ -59,14 +60,18 @@ export function useCustomers() {
   const handleAddCustomer = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!store) return;
-    
+
+    const missing = customerFormProblem(formData);
+    if (missing) { setError(missing); return; }
+
     setIsSubmitting(true);
     setError('');
-    
+
     const payload = {
-      name: formData.name,
+      name: formData.name.trim(),
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
+      gender: formData.gender || null,
     };
     
     try {
@@ -88,7 +93,7 @@ export function useCustomers() {
       }
       setIsModalOpen(false);
       setEditingId(null);
-      setFormData({ name: '', email: '', phone: '' });
+      setFormData({ name: '', email: '', phone: '', gender: '' });
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } } };
       setError(errorResponse.response?.data?.message || 'Failed to save customer');
@@ -103,7 +108,8 @@ export function useCustomers() {
     setFormData({
       name: customer.name,
       email: isWalkInEmail(customer.email) ? '' : customer.email,
-      phone: customer.phone || ''
+      phone: customer.phone || '',
+      gender: customer.gender ?? '',
     });
     setIsModalOpen(true);
   };
@@ -134,7 +140,7 @@ export function useCustomers() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData({ name: '', email: '', phone: '' });
+    setFormData({ name: '', email: '', phone: '', gender: '' });
     setError('');
   };
 

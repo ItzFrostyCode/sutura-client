@@ -4,6 +4,12 @@ import { MessageSquare, Ruler, ShirtIcon, Scissors, Package, Globe, Store, Refre
 export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup', 'other'] as const;
 export type AppointmentType = typeof APPOINTMENT_TYPES[number];
 
+/** What a person can book or type in. Fitting and pickup only exist as system-made `production` visits. */
+export const BOOKABLE_TYPES = ['consultation', 'measurement', 'alteration', 'other'] as const;
+/** Service (for a service or design), Shop (a general visit), Production (made by a production order). */
+export type AppointmentKind = 'service' | 'shop' | 'production';
+export const KIND_LABELS: Record<AppointmentKind, string> = { service: 'Service', shop: 'Shop', production: 'Production' };
+
 /**
  * Default duration (minutes) per appointment type — the Schedule Appointment
  * form auto-calculates duration from this instead of a manual selector.
@@ -35,6 +41,7 @@ export const TYPES_REQUIRING_SERVICE = new Set<AppointmentType>(['measurement', 
 export interface Appointment {
   id: number;
   appointment_type: AppointmentType;
+  kind?: AppointmentKind;
   intake_channel?: 'walk_in' | 'online';
   customer: { id: number; name: string; email?: string; phone?: string | null };
   service: {
@@ -52,14 +59,6 @@ export interface Appointment {
     subcategory?: string | null;
     garment_structure?: string | null;
     garment_type?: string | null;
-  } | null;
-  // The combo package this booking came from, with what it includes.
-  service_package?: {
-    id: number;
-    name: string;
-    bundle_price?: string | null;
-    service_category?: string | null;
-    services?: { id: number; name: string; base_price?: string | null }[];
   } | null;
   selected_size?: string | null;
   selected_color?: string | null;
@@ -97,8 +96,8 @@ export interface Appointment {
   garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
 }
 
-export interface ServiceData  { id: number; name: string }
-export interface CustomerData { id: number; name: string; phone?: string | null; email?: string }
+export interface ServiceData  { id: number; name: string; service_category?: string | null; image_url?: string | null; base_price?: string | number | null; reviews_avg_rating?: number | null; reviews_count?: number | null }
+export interface CustomerData { id: number; name: string; phone?: string | null; email?: string; profile_picture?: string | null }
 export interface BranchData   { id: number; name: string }
 export interface StaffData    { id: number; user_id: number; role?: string; additional_roles?: string[] | null; branch?: { id: number; name: string } | null; user?: { id: number; name: string } }
 export interface JobOrderData { id: number; customer_id?: number; title?: string; order_number?: string; status?: string; customer?: { name: string } }
@@ -142,20 +141,20 @@ export const TYPE_CONFIG: Record<AppointmentType, {
 export const STATUS_CONFIG: Record<AppointmentStatus, {
   label: string; dot: string; badge: string; opacity: string; borderStyle: string;
 }> = {
-  pending:     { label: 'Pending Review', dot: 'bg-amber-500', badge: 'bg-amber-50/70 text-amber-900 border-amber-200', opacity: 'opacity-90', borderStyle: 'border-dashed' },
-  confirmed:   { label: 'Confirmed',      dot: 'bg-blue-600', badge: 'bg-blue-50/80 text-blue-900 border-blue-200', opacity: 'opacity-100', borderStyle: 'border-solid' },
-  in_progress: { label: 'In Progress',    dot: 'bg-taupe', badge: 'bg-taupe/10 text-taupe border-taupe/30', opacity: 'opacity-100', borderStyle: 'border-solid' },
-  completed:   { label: 'Completed',      dot: 'bg-emerald-600', badge: 'bg-emerald-50/80 text-emerald-900 border-emerald-200', opacity: 'opacity-70', borderStyle: 'border-solid' },
+  pending:     { label: 'Waiting for approval', dot: 'bg-amber-500', badge: 'bg-amber-50/70 text-amber-900 border-amber-200', opacity: 'opacity-90', borderStyle: 'border-dashed' },
+  confirmed:   { label: 'Approved',       dot: 'bg-blue-600', badge: 'bg-blue-50/80 text-blue-900 border-blue-200', opacity: 'opacity-100', borderStyle: 'border-solid' },
+  in_progress: { label: 'In progress',    dot: 'bg-taupe', badge: 'bg-taupe/10 text-taupe border-taupe/30', opacity: 'opacity-100', borderStyle: 'border-solid' },
+  completed:   { label: 'Done',           dot: 'bg-emerald-600', badge: 'bg-emerald-50/80 text-emerald-900 border-emerald-200', opacity: 'opacity-70', borderStyle: 'border-solid' },
   cancelled:   { label: 'Cancelled',      dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
-  rejected:    { label: 'Rejected',       dot: 'bg-rose-700', badge: 'bg-rose-50 text-rose-800 border-rose-300', opacity: 'opacity-60', borderStyle: 'border-solid' },
-  no_show:     { label: 'No Show',        dot: 'bg-stone-400', badge: 'bg-stone-100 text-stone-600 border-stone-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
+  rejected:    { label: 'Declined',       dot: 'bg-rose-700', badge: 'bg-rose-50 text-rose-800 border-rose-300', opacity: 'opacity-60', borderStyle: 'border-solid' },
+  no_show:     { label: 'No-show',        dot: 'bg-stone-400', badge: 'bg-stone-100 text-stone-600 border-stone-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
 };
 
-export function TypeBadge({ type, label }: { readonly type: AppointmentType; readonly label?: string | null }) {
+export function TypeBadge({ type, label, kind }: { readonly type: AppointmentType; readonly label?: string | null; readonly kind?: AppointmentKind }) {
   const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.consultation;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border tracking-tight ${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText}`}>
-      {cfg.icon} <span>{type === 'other' && label ? `Other — ${label}` : cfg.label}</span>
+      {cfg.icon} <span>{kind ? `${KIND_LABELS[kind]} · ` : ''}{type === 'other' && label ? `Other — ${label}` : cfg.label}</span>
     </span>
   );
 }
@@ -231,7 +230,7 @@ export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'onli
           ? 'bg-sky-50 text-sky-700 border-sky-200'
           : 'bg-stone-50 text-stone-600 border-stone-200'
       }`}
-      title={isOnline ? 'Booked online by customer via store profile' : 'Walk-in booking entered in atelier'}
+      title={isOnline ? 'Booked online by customer via store profile' : 'Walk-in booking entered by the shop'}
     >
       {isOnline ? <Globe size={11} className="text-sky-600 shrink-0" /> : <Store size={11} className="text-stone-500 shrink-0" />}
       <span>{isOnline ? 'Online Booking' : 'Walk-in'}</span>
@@ -340,4 +339,18 @@ export function getCustomerInitials(name?: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + (parts.at(-1)?.[0] ?? '')).toUpperCase();
+}
+
+/** The number staff and customers can quote: A-0042. */
+export function appointmentNo(id: number): string {
+  return `A-${String(id).padStart(4, '0')}`;
+}
+
+/** A complete date for a list: "Thu, Oct 16, 2026 · 2:30 PM". */
+export function fullDateTime(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  return {
+    date: d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+    time: d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }),
+  };
 }

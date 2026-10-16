@@ -1,11 +1,10 @@
 import { Scissors, Sparkles, MapPin, Calendar, Clock, Shirt, CheckCircle2 } from 'lucide-react';
 import { getServicePriceLabel } from '@/lib/servicePricing';
-import { Branch, Service, PackageInfo } from './types';
+import { Branch, Service } from './types';
 
 interface BookingDesktopSummaryProps {
   readonly refName: string | null;
   readonly refPrice: string | null;
-  readonly packageInfo: PackageInfo | null;
   readonly selectedService: Service | null;
   readonly appointmentType: string;
   readonly selectedBranch: Branch | null;
@@ -24,7 +23,6 @@ interface BookingDesktopSummaryProps {
 export default function BookingDesktopSummary({
   refName,
   refPrice,
-  packageInfo,
   selectedService,
   appointmentType,
   selectedBranch,
@@ -68,14 +66,7 @@ export default function BookingDesktopSummary({
           </div>
         )}
 
-        {!refName && packageInfo && (
-          <div className="space-y-1 pt-3 border-t border-line">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Package</span>
-            <p className="text-sm font-medium text-ink">{packageInfo.name}</p>
-          </div>
-        )}
-
-        {!refName && !packageInfo && selectedService && (
+        {!refName && selectedService && (
           <div className="space-y-1 pt-3 border-t border-line">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint flex items-center gap-1.5">
               <Scissors size={13} className="text-taupe" /> Service

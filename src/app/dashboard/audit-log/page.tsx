@@ -80,7 +80,7 @@ const formatPayload = (action: string, rawPayload: Record<string, unknown> | str
     case 'catalog_item_deleted':
       return `${payload.name ?? '—'}`;
     case 'branch_set_main':
-      return `Designated "${payload.name ?? payload.branch_name ?? 'Branch'}" as Primary Headquarters`;
+      return `Made "${payload.name ?? payload.branch_name ?? 'Branch'}" the main branch`;
     default: {
       if (typeof payload === 'object' && payload !== null) {
         if ('name' in payload && Object.keys(payload).length === 1) {
@@ -123,7 +123,7 @@ export default function AuditLogPage() {
     <div className="space-y-5">
       <PageHeader
         title="Audit Log"
-        description="A record of accountability-sensitive actions — discounts, payment rejections, and reschedules — with who did it, when, and why."
+        description="A record of important actions, like discounts, rejected payments and reschedules: who did it, when, and why."
       />
 
       <div className="bg-surface border border-line rounded-xl overflow-hidden">

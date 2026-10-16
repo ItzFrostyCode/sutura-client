@@ -1,0 +1,480 @@
+PHASE 1 — RAW DATA EXTRACTION (NO CONCLUSION)
+A. ALL SERVICES OFFERED (Raw Findings)
+Tailoring / Sewing
+
+Pattern making
+Cut and sew services
+Bulk sewing (3000 pcs weekly capacity)
+Embroidery (Polo, Bomber, Corporate Jackets)
+Uniform manufacturing (PE, School, Company, Government)
+Tailoring adjustments/fitting (implied by "perfect fit" and size charts)
+Sublimation
+
+Full Sublimation Printing (Sportswear, Jerseys, Jackets, T-shirts, Polo)
+Print and Press Sublimation (for clients who supply their own garments)
+3D Sublimation Vacuum Heat Press (for mugs, plates, rock photos)
+Sublimation for non-apparel (Mugs, Tumblers, Keychains, Plates, Coasters)
+Printing (Non-Sublimation)
+
+DTF (Direct-to-Film) Printing
+Silk Screen / K-Screen Printing
+Offset Printing (BIR Official Receipts, Invoices, Forms, Letterheads)
+Digital / Document Printing
+Large Format / Tarpaulin / Plastic Banner Printing
+Photo Printing / Enlargement (A4 to A0)
+Vinyl Sticker / Label Printing (Waterproof, Oil-proof)
+Accessories & Packaging
+
+Custom Packaging Boxes (Soap, Serum, Cake, T-shirt, Perfume, etc.)
+Custom Paper Placemats
+Custom Keycard Sleeves
+Lanyard Printing
+Design Templates & Digital Products
+
+Custom Logo Design (Vape, Motovlog, Small Business)
+T-shirt Layout Design (PSD, PNG, JPEG)
+Mockup Bundle Sales (Photoshop/Canva editable, lifetime access via Google Drive)
+30,000+ Ready-to-print design bundles (Anime, NBA, Marvel, Fraternities, etc.)
+Rentals
+
+None explicitly found in the dataset.
+Bulk Orders
+
+10,000 pcs Flaglets
+3000 pcs weekly production capacity
+Bulk order discounts
+Promotional Offers
+
+Free Layout Design (for minimum orders, usually 10-20pcs)
+Free Banner (for qualified bulk orders)
+Free Coach/Muse Shirt (for qualified bulk orders)
+Free Ball (Molten/Mikasa) for team orders
+Plus 1 Free Jersey
+Buy 1 Polo, Get 1 Lanyard at 50% OFF
+Opening Promo (₱350 Custom Shirt / ₱650 Jersey Set)
+Holy Week Sale / Seasonal Sales (₱399 for 15,000+ design bundle)
+B. ALL PRODUCTS SOLD (Raw Findings)
+Customizable Apparel
+
+Basketball Jersey (Set, NBA Cut, Reversible)
+Volleyball Jersey
+Cycling Jersey (Short/Long Sleeve)
+Football/Soccer Jersey
+Baseball Uniform
+E-sports Jersey
+Polo Shirt (Chinese Collar, Zipper, Buttoned, Embroidered)
+T-shirt (Round Neck, V-Neck, Oversized, V-neck)
+Long Sleeves (Aircool, Reflectorized, Rider's)
+Hoodies / Rider's Hoodies
+Jackets (Bomber, Varsity, Windbreaker, Warmer)
+Jogging / Track Pants
+Shorts (Mesh, Compression, Grappling, Muay Thai)
+Singlet / Sando / Tank Top
+Rash Guard (Kids & Adult)
+Graduation Sash
+Leotards / Wrestling Singlet
+Premade / Digital Products
+
+30,000+ Design Templates (PNG, PSD, AI)
+Canva Drag & Drop Mockups (600+ templates)
+Tote Bag Designs
+Mug Design Bundles
+Non-Apparel Physical Products
+
+Sublimation Mugs (Magic, Sparkling, Inner-color, 3D Mold, Shot Glass)
+Tumblers / Stainless Travel Mugs / Sports Jug
+Ceramic Plates / Coasters
+Sublimated Keychains
+Ref Magnets / Wristbands
+Caps (Mesh, Embroidered)
+Tote Bags / Drawstring Bags / Shoebags / Pickleball bags / 3-in-1 School bags
+Plush Toys / Mini Me Pillows / Hoodie Blankets
+Lanyards / Ballpens / Powerbanks / USBs / Planners
+Fabrics / Materials Sold
+
+Pineapple Mesh, C-Stripes, Square Net, Polydex, Square Knitted, Square Mesh
+Sports Max (170 GSM), Sports Active (150 GSM), Sports Lite (100 GSM)
+Honeycomb / Cotton / Spandex / Microcool / Aircool / Dri-fit
+C. ALL CUSTOMER REQUEST TYPES
+
+Rush order requests (1-day, 3-day lead time)
+Custom name and number printing
+Team logo placement and mockup requests
+Size adjustments and size chart inquiries (e.g., "HM for Lacoste fabric texture")
+Bulk order quotations
+Specific fabric requests (breathable, UV protection, moisture-wicking)
+Revisions on pre-made layouts
+Delivery / Shipping tracking (J&T, LBC, Bus Cargo)
+Minimum order quantity (MOQ) inquiries
+BIR-compliant receipt printing requests
+D. ALL SALES BEHAVIOR
+
+Pre-order System: Advanced booking for Monday slots; Pre-ordering for School Year 2026 uniforms.
+Downpayment System: 50% Down Payment Required before production (explicitly stated by Castaneda Printing).
+Full Payment: Required upfront for digital assets (Google Drive access).
+Minimum Bulk Quantity: No MOQ (FabriCo), 5pcs (RMJE custom), 10pcs (AMPE, Castaneda, Maxwolf), 20pcs (E-Coretech for free layout), 30pcs (Fabrica MNL, T-Shirt Printing Davao).
+Installment: None mentioned.
+Rush Fees: "Accept rush orders" mentioned, but specific fee structures not detailed.
+Promo Bundles: Package deals for apparel + freebies; Digital asset lifetime access bundles.
+Payment Channels: GCash, PayMaya, PayPal, Bank to Bank, Shopee Checkout.
+E. ALL POST TYPES (Categorized & Estimated Frequency)
+
+Product Showcase (Very High): Displaying jerseys, polos, mugs, templates, fabrics.
+Customer Feedback / Testimonial (High): "Thank you for trusting [Brand]" posts with team photos.
+Promo Announcement (Medium): Opening promos, seasonal sales, bundle deals.
+Design Template Sale (Medium): Dump Drive PH selling 15k/30k design bundles.
+Order Completion / Released Today (Medium): Showcasing packed items or batch releases for the week.
+Educational / Behind the Scenes (Low): Step-by-step uniform creation (Design -> Print -> Cut -> Sew -> QC); Articles on sublimation business viability.
+Preorder Campaign (Low): School year 2026 advanced bookings.
+PHASE 2 — DUPLICATE MERGING
+Clean Master List of Offerings
+
+Custom Sports Jersey Production (Full Sublimation) - Merges Basketball, Volleyball, Cycling, Football, E-sports, Baseball, Reversible, NBA cut.
+Custom Corporate & School Uniforms - Merges PE uniforms, Company shirts, Government shirts, Faculty uniforms.
+Custom Polo Shirts - Merges Chinese collar, Zipper, Buttoned, Honeycomb, Polydex, Embroidered polos.
+Custom Outerwear & Bottoms - Merges Hoodies, Bomber, Varsity, Windbreaker, Warmers, Jogging pants, Shorts.
+DTF & Silk Screen T-Shirt Printing - Merges standard DTF prints, cotton shirts, oversized shirts, silk screen runs.
+Non-Apparel Sublimation (Drinkware & Souvenirs) - Merges Mugs, Tumblers, Plates, Keychains, Coasters, Ref Magnets.
+Commercial Offset & Digital Printing - Merges BIR Receipts, Invoices, Forms, Letterheads, Document printing.
+Large Format & Signage - Merges Tarpaulins, Plastic Banners, Sintra Boards, Indoor/Outdoor Signage.
+Packaging & Label Solutions - Merges Custom Boxes (Soap, Cake, Perfume), Vinyl Labels, Stickers, Keycard Sleeves, Placemats.
+Digital Assets & Graphic Design Services - Merges 30k+ template bundles, Canva mockups, Custom logo design, T-shirt layouts.
+Custom Bags & Accessories - Merges Tote bags, Drawstring bags, Shoebags, Pickleball bags, Lanyards, Caps.
+PHASE 3 — BUSINESS MODEL IDENTIFICATION
+Revenue Streams
+
+B2B Bulk Apparel Manufacturing: Core revenue driver. High-volume production of team uniforms, corporate wear, and government shirts.
+B2C Custom Retail: Single to medium-volume orders for family reunions, birthdays, personalized gifts (mugs, keychains).
+Commercial Print Contracts: BIR-compliant receipts, bulk flyers, packaging labels for local businesses (Restaurants, Water Refilling stations, Cosmetics).
+Digital Product Sales: One-time payment for lifetime access to massive Google Drive folders of ready-to-print sublimation templates and mockups.
+Graphic Design Services: Custom logo creation and layout services for clients without ready artwork.
+Upsells
+
+Premium Fabric Upgrades: Upgrading from standard mesh to Polydex, Honeycomb, or 170GSM Sports Max.
+Embroidery Add-ons: Adding embroidered logos to sublimated bomber jackets or polos.
+Reflectorized Gear: Upselling reflectorized prints for rider long-sleeves.
+Rush Production Fees: Charging premium for 1-3 day turnarounds.
+Accessory Bundling: Selling lanyards, shoebags, and banners alongside uniform orders.
+Repeatable Offers
+
+Sports League Packages: "Free layout + Free Banner + Free Coach/Muse shirt + Free Ball" for bulk team orders.
+Event/Reunion Merch: Barkada shirts, family reunion shirts, graduation sashes.
+Back-to-School Contracts: Annual PE uniforms, club shirts, and faculty polos.
+Election / Campaign Season: Bulk government/campaign shirts.
+Holiday / Corporate Giveaways: Christmas party shirts, customized mugs/tumblers, packaged gift sets.
+PHASE 4 — SYSTEM MAPPING (VERY IMPORTANT)
+A management system for these businesses must support complex custom fields, hybrid production flows, and tiered pricing.
+
+1. Customer Flow Module
+
+Inquiry: Capture via FB PM, Walk-in, or Website. Must support image upload (reference photos).
+Quotation: Auto-calculates based on quantity tiers, fabric type, and rush status.
+Layout & Mockup: Design approval routing (customer reviews digital proof).
+Payment: 50% DP logging, balance tracking.
+Production: Status tracking (Queued -> Printing -> Sewing -> QC).
+Delivery: Integration with J&T, LBC, Bus Cargo; Walk-in pickup.
+2. Service Flow Module (Custom Fields Required)
+
+Jersey Order: Team Name, Player Name, Player Number, Size Matrix (S-5XL), Fabric Type, Cut Style (NBA, Reversible).
+Tailoring/Uniform Order: Measurements (Chest, Waist, Length), Fabric Color, Collar Type, Embroidery details, Logo placement.
+Mug/Drinkware Order: Mug Type (Magic, Sparkling, 3D), Print Image (Front/Back), Text to include.
+Bulk Print Order: Item Type, Quantity, Paper Size, Finish (Matte/Glossy), Perforation/Numbering requirements.
+3. Catalog Flow Module
+
+Showcase Only: Past client photos, high-end mockups (no direct price).
+Made to Order: Sublimation apparel, custom jerseys, tailored polos.
+Ready Stock / Ready to Print: Digital templates (30k bundle), blank mugs, standard plain shirts.
+Bulk Only: BIR receipts, flaglets, packaging boxes (requires MOQ).
+4. Order Flow Module (Multi-Department Routing)
+
+Sublimation Production: Digital Print -> Heat Press -> Cut -> Sew -> QC.
+Tailoring Job Order: Measure -> Pattern -> Cut -> Sew -> Embroidery -> QC.
+DTF / Silk Screen Order: Print Film -> Press -> QC -> Pack.
+Digital Asset Fulfillment: Payment verified -> Send Google Drive Link -> Mark Complete.
+5. Payment Flow Module
+
+Deposit Logic: Mandatory 50% DP for cut-and-sew/bulk orders. 100% upfront for digital assets.
+Balance Collection: Triggered when order reaches QC stage (must be paid before shipping/delivery).
+Bulk Payment Terms: Net terms for government/corporate clients (PhilGEPS registered).
+Discount Engine: Auto-applies freebies (e.g., Free Banner at 15pcs, Free Coach shirt at 20pcs).
+PHASE 5 — OPERATIONAL INTELLIGENCE
+Most Common Services: Full sublimation jerseys and DTF t-shirt printing. Every major company in the dataset heavily promotes these.
+Most Profitable-Looking Services:
+Digital Asset Bundles: Selling 15,000-30,000 designs for ₱399 via Google Drive. Zero marginal cost after initial creation = 100% profit.
+Commercial Offset Printing (BIR Receipts/Forms): High-volume, repeatable corporate contracts.
+Bulk Sublimation Uniforms: 3000 pcs/week capacity indicates massive margin scaling once fabric is sourced cheaply.
+Most Repeated Customer Pain Points:
+Previous suppliers delivering incomplete/uncomfortable uniforms ("Kulang-kulang, Hindi komfortable").
+Fading and cracking prints (addressed by emphasizing "no fade, no crack" sublimation).
+Sizing issues ("Siguraduhing tama ang sukat!").
+Most Common Promo Strategies: Value-add bundles rather than direct price drops. Giving away free layouts, banners, and coach shirts to secure 15-20 piece bulk orders.
+Most Common Seasonal Offers:
+Summer/Intramurals: UV protection long sleeves, breathable jerseys.
+Rainy Season: Warmers and jackets.
+Back-to-School: PE uniforms, faculty polos.
+Holidays: Custom packaging, gift sets, customized mugs/tumblers.
+Most Scalable Services: Digital template sales (Dump Drive PH model) and DTF printing (can be outsourced or automated easily compared to cut-and-sew).
+Highest Labor-Intensive Services: Cut-and-Sew sublimated apparel and tailoring. Requires pattern makers, digital printers, heat press operators, cutters, sewers, and QC (explicitly mapped by FabriCo's 6-step process).
+PHASE 6 — BUSINESS STRUCTURE RECOMMENDATION
+Based on the data, here is the optimal, cleanest organizational structure for a hybrid Tailoring + Sublimation + Printing Shop:
+
+1. Services Module (Categorized by Production Method)
+
+Sublimation Department: Full Sublimation Apparel, Sublimation Drinkware/Souvenirs, Print & Press (Client-supplied garments).
+Tailoring & Sewing Department: Cut & Sew Uniforms, Embroidery, Pattern Making, Alterations.
+DTF & Silk Screen Department: Direct-to-Film Prints, Bulk Silk Screen.
+Commercial Print Department: Offset (Receipts/Forms), Large Format (Tarpaulins/Sintra), Digital Doc Printing.
+2. Catalog Module (Storefront Presentation)
+
+Sports & Athletics: Jerseys, Shorts, Warmers, Rash Guards, Singlets.
+Corporate & Uniforms: Polo Shirts, Long Sleeves, Company Shirts, Bomber/Varsity Jackets.
+Casual & Streetwear: Oversized Shirts, Hoodies, Windbreakers.
+Non-Apparel Customization: Mugs, Tumblers, Keychains, Plates.
+Packaging & Labels: Custom Boxes, Vinyl Stickers, Placemats.
+Digital Assets: Template Bundles, Mockup Packs, Canva Templates.
+3. Orders Module (Workflow Management)
+
+Team/Bulk Order Matrix: Master roster input (Name, Number, Size per player).
+Standard Custom Order: Single item, single design.
+Rush Order Queue: Flagged with priority status and rush fee applied.
+Digital Fulfillment Queue: Automated link delivery upon payment.
+4. Customers Module (CRM)
+
+B2B Accounts: Corporate profiles with Tax details, bulk pricing tiers, and dedicated account managers.
+B2C Retail: Individual profiles with standard pricing and loyalty perks.
+Reseller Accounts: Print shops buying blank garments or digital templates at wholesale rates.
+5. Templates & Design Module
+
+Free Layout Library: Pre-made designs that auto-apply when MOQ (10-20pcs) is met.
+Premium Digital Library: Paid access to 30k+ files (Google Drive integration).
+Custom Design Brief: Intake form for custom logos (Vape, Motovlog, Business) with 1-day turnaround SLA.
+6. Accessories & Upsells Module
+
+Attachable items at checkout: Lanyards, Caps, Shoebags, Ref Magnets, Ballpens.
+7. Promotions & Bulk Module
+
+Threshold Freebies Engine: (e.g., Buy 10pcs = Free Layout; Buy 15pcs = Free Banner; Buy 20pcs = Free Coach Shirt).
+Seasonal Campaigns: Summer UV Gear, Rainy Season Warmers, Back-to-School PE Uniforms.
+Tiered Pricing: Auto-adjusts unit price based on volume (10-49pcs, 50-99pcs, 100+pcs).
+
+
+
+
+PHASE 1 — PHILIPPINE REAL-WORLD MARKET RESEARCH
+A. Common Business Models in the Philippines (Actual Behavior)
+
+Order Acceptance: Facebook Messenger is the default CRM. Walk-ins are entertained but often take a backseat to bulk FB inquiries. Successful shops use a "Call-to-Action" comment system (e.g., "Comment CUSTOM to get a quote") to bypass Messenger's message request limit.
+Bulk Clients: Suki culture is king. Bulk clients (companies, schools, fraternities) are given priority lanes. They usually transact via Viber or WhatsApp groups with the owner directly.
+Rush Orders: "Rush" in the Philippines usually means "I need it tomorrow." Real shops charge 30-50% more, OR they push the client to a more expensive DTF/Heat Press method instead of cut-and-sew sublimation to save time. If a client is a suki, the rush fee is often waived but the order is squeezed into overtime.
+Downpayments: Strictly 50% DP for custom work to cover fabric and ink. However, for government/corporate accounts, they accept Purchase Orders (PO) and allow 50% DP upon delivery, with 50% balance on terms (15-30 days).
+Repeat Customers: They don't use points systems. They use "Free Layout" or "Free 1pc upgrade" for repeat clients. The owner personally chats them when new fabric arrives.
+B. Multi-Branch Operational Patterns
+
+The "Bodega" and Satellite Model: The main branch (usually in an industrial/commercial zone like Marikina, Davao, or Cebu) houses the heavy machinery (industrial sublimation printers, 15-needle embroidery, large cutting tables). Satellite branches in malls or busy intersections (e.g., Kalosph's multiple branches) are purely for showroom, measuring, fitting, and pickup.
+Logistics: Fabric and printed panels are cut at the main branch, bundled, and sent via Lalamove/Grab Pabili to satellite branches where local mananahi (sewers) assemble them.
+Branch Performance: Tracked by total DP collected vs. finished items released. Walk-in retail sales are considered "bonus" revenue; the lifeblood is bulk orders.
+C. Philippine Payment Behaviors
+
+Methods: GCash dominates retail/custom. BPI/BDO bank transfers dominate bulk corporate. Maya is secondary. Cash-on-Delivery (COD) is accepted only for trusted sukis or small wholesale RTW.
+Practical Flow:
+Quotation sent via FB.
+Client sends GCash screenshot of 50% DP.
+Admin verifies, then triggers layout/mockup creation.
+Balance is collected via GCash before shipping, or Cash-on-Pickup at the branch.
+D. Seasonal Sales Behavior (Product Spike Mapping)
+
+Jan-Mar (Graduation & Intrams): Graduation sashes, toga rentals/repairs, PE uniforms, intramural jerseys. High rush volume.
+Apr-May (Summer & Elections): Campaign shirts, barangay uniforms, rash guards, basketball leagues. Sublimation ink and fabric fly off the shelves.
+Jun-Aug (Back-to-School & Company Anniversaries): School uniforms, faculty polos, company team-building shirts.
+Sep-Oct (Ber Months & Halloween): Company Christmas party shirts, hoodies, windbreakers, Halloween/Cosplay costumes.
+Nov-Dec (Weddings/Debuts/Corporate): Barong, gowns, bomber jackets, employee gift packages (mugs, tumblers).
+PHASE 2 — GAP ANALYSIS AGAINST CURRENT BUSINESS STRUCTURE
+Comparing your previous structure to real-world PH shops, here is what is missing:
+
+Services Missing:
+Alterations & Repairs (Resing, Ajuste): Roadside tailors survive on this. It drives foot traffic that converts into custom uniform orders.
+Rush DTF / Vinyl Express: Sublimation takes days. Real shops offer "1-hour DTF print" for urgent single pieces.
+Barong Tagalog & Gown Construction: Essential for local ateliers targeting the wedding/debut market.
+Catalog Missing:
+Fabric Swatch Catalog: Clients need to feel the fabric. Shops miss a catalog of "Honeycomb, Polydex, Microcool, Aircool" with actual GSM and texture notes.
+Bulk Order Handling Missing:
+Master Size Matrix: Excel-like grid where the client inputs Player Name | Number | Size | Pants size. Without this, data entry errors are massive.
+Order Tracking Missing:
+Production Bottleneck Flags: Knowing if the order is stuck at "Waiting for Fabric" vs "Waiting for Sewing."
+Inventory of Consumables Missing:
+Real shops run out of Magenta ink or Black thread on a Friday night. Tracking consumables per job is critical.
+Accessories Upsell Missing:
+Lining, Zippers, Buttons, Patches: When making pants or jackets, the lining and zipper cost is often miscalculated. Woven patches (instead of embroidery) are a common upsell.
+PHASE 3 — ADVANCED BUSINESS ADDITIONS (Realistic Modules)
+Here are the modules that a real Davao or Manila shop owner desperately needs:
+
+Order Reservation Queue (Calendar Blocking)
+Why: During peak season (Intrams/Ber months), production reaches capacity. Shops need a "Cutoff" date tracker. If 500 jerseys are booked for October, the system stops accepting October deliveries and auto-quotes November.
+Bulk Team Builder Matrix
+Why: Eliminates the chaotic FB DM list of names. Client uploads a CSV/Google Sheet. System allocates sizes and auto-calculates fabric yardage needed.
+Supplier Tracker & "Suki" Credit Ledger
+Why: Tailoring shops buy fabric on credit (hulugan) from suppliers in Bambang or Divisoria. The system must track supplier tabs: "Owe Textile World ₱15,000 due in 30 days."
+Material Consumption Tracker (Bill of Materials)
+Why: A basketball jersey doesn't just cost "1 yard mesh." It costs 1 yard mesh + 0.5m sublimation paper + 15ml ink + 1.5m thread + 1pc tag. The system must deduct these from inventory per job order.
+Repair / Warranty Return Flow (Adjustment Orders)
+Why: "Sir, maliit yung sukat ng sobrang malaki yung T-shirt." Real shops allow 1-time free adjustment (letting out seams) within 7 days.
+Rental Damage Tracking (For Gown/Barong Shops)
+Why: Tracks stains, torn lace, or missing buttons. Automatically deducts from the cash bond/refundable deposit.
+PHASE 4 — SYSTEM ARCHITECTURE IMPROVEMENT
+Rebuilding the structure to be practical for an MSME owner:
+
+1. Shop Owner Dashboard (The "Tindera" View)
+
+Today's Target: ₱X collected DP.
+Critical Alerts: "Out of Black Thread," "3 Orders for QC," "GCash Payments to Verify."
+Capacity Meter: "85% booked this week. Stop accepting rush."
+2. Job Order Structure (The Digital "Job Ticket")
+
+Must support a QR code or Barcode printed on a physical tag attached to the fabric bundle.
+Status Flow: Layout Approved → DP Paid → Fabric Cut → Sublimation Print → Sewing → Embroidery → QC → Balance Paid → Out for Delivery.
+3. Catalog Structure
+
+Divided into:
+Made-to-Order (Subli & Tailoring)
+Ready-to-Wear (RTW Blanks & Overruns)
+Digital Assets (Templates)
+Add-ons (Lanyards, Caps, Mugs)
+4. Branch Management
+
+Main Branch View: Sees all orders. Heavy machinery routing.
+Satellite Branch View: Sees only their branch's walk-ins and pickups. Can request fabric/materials from Main.
+5. Customer Profiles
+
+Tags: B2B Suki, Walk-in Retail, Reseller (Palengke).
+Notes section for sastre details: "Client prefers tight fit," "Always rushes."
+6. Reports
+
+Profitability per Fabric: Which fabric yields the highest margin? (e.g., Sports Lite has 70% margin, Honeycomb has 50% due to sewing complexity).
+PHASE 5 — EXPANSION LOGIC (1 → 3 → 5 Branches)
+How the business breaks and what becomes mandatory as it scales:
+
+Scaling from 1 to 3 Branches:
+
+The Breakpoint: The owner can no longer be the layout artist, the cutter, and the cashier. Quality control drops.
+Mandatory Modules: Centralized Inventory (so Branch B doesn't steal Branch A's fabric), and the Team Builder Matrix (to standardize order intake).
+Workflow Fix: Branches must stop doing their own layouts. All layouts centralized at Main. Satellites just take measurements and collect DP.
+Bottleneck: Logistics. Moving cut fabric between branches via Grab/Lalamove gets expensive.
+Scaling from 3 to 5 Branches (Full Operation):
+
+The Breakpoint: Supplier credit limits and production floor space. 5 branches generating orders will choke a single sublimation printer.
+Mandatory Modules:
+Automated Procurement: System auto-alerts supplier when sublimation paper drops below 50 rolls.
+Employee Shift & Payroll Tracking: Piece-rate (pakiwari) sewers need per-garment payout tracking.
+Centralized vs. Local:
+Centralized: Sublimation Printing, Embroidery, Pattern Making, Bulk Fabric Storage.
+Branch-Local: Sewing (assembly), Heat Press (for small DTF/mugs), Walk-in Fitting, Customer Pickup.
+The Ultimate Bottleneck: Machine Downtime. If the 64" industrial sublimation printer breaks down, 5 branches stop earning. The system must track machine maintenance schedules and have a backup outsourced print partner on standby.
+Philippine-Specific Practical Recommendations:
+Accept "Palengke" Resellers: Create a wholesale tier for market vendors who buy plain sublimated shirts from you to silk-screen themselves. This moves bulk inventory fast.
+Integrate Lazada/Shopee/TikTok API: Many PH sublimation shops fulfill orders through marketplace checkouts. The system must pull Shopee orders into the main Job Order queue to avoid double-encoding.
+"Pakiwari" (Piece-rate) Payroll Module: Sewers in the PH are usually paid per piece (e.g., ₱50 per jersey sewn). The system must generate a daily/weekly payroll report based on the "Sewing Complete" status updates per sewer.
+
+
+Here is the raw, operational business intelligence of how real Philippine tailoring, sublimation, and fashion businesses actually run on the ground. This is stripped of all software theory and focused purely on human behavior, physical workflows, and local market realities.
+
+---
+
+### **A. Production Workflow Intelligence**
+
+**1. Inquiry & Quotation Phase**
+*   **The Facebook Messenger Reality:** The business does not start in a shop; it starts in Messenger. Customers send screenshots from Pinterest, TikTok, or other pages. The owner manually quotes based on a mental price matrix (fabric type + complexity + quantity).
+*   **Walk-in Flow:** Walk-ins are entertained but often put on hold if bulk online orders are pending. The owner or clerk entertains walk-ins, pulls out fabric swatches (or takes them to the "tela" racks), and writes down details in a ledger.
+*   **Quotation Behavior:** Quotation is highly fluid. If the client hesitates, the owner offers a downgrade in fabric (e.g., from Microcool to Honeycomb) to lower the price. 
+
+**2. Booking & Measurement Phase**
+*   **The "No DP, No Layout" Rule:** Shops do not start layouts or cut fabric without a downpayment. 
+*   **Measurements:** 
+    *   *Uniforms/Sublimation:* Customers provide a size chart (S-5XL) or send a "sando that fits perfectly" as a reference.
+    *   *Tailoring/Gowns/Barong:* Clients must come in person. The *mananahi* (seamstress) takes measurements using a tape measure. Measurements are written on a job order card that physically follows the fabric.
+*   **Design Approval:** For sublimation, a layout artist sends a digital mockup via Messenger. The client must explicitly say "Approved" or send a screenshot. For gowns, sketches or peg photos are confirmed before cutting.
+
+**3. Production & Deadline Management**
+*   **Batching:** Bulk orders (e.g., 50 basketball jerseys) are never done one by one. Fabric is rolled, cut in stacks using a pattern, then sent to the printer/heat press, then to a row of sewers. 
+*   **Deadline Estimation:** Usually quoted as "7-14 working days." Working days are strictly counted *after* DP and layout approval, not from the date of inquiry.
+*   **Rush Orders:** If a client demands a 3-day turnaround, the shop charges a 30-50% rush fee. This fee is often used to pay sewers overtime (pakiwari) or to pull the job to the front of the queue, inevitably delaying other clients.
+
+**4. Fittings, Revisions & Release**
+*   **Fittings (Gowns/Barong/Suits):** Usually two fittings. First fitting checks the base fit. Second fitting checks the final drape. Revisions are done on the spot (pinning).
+*   **Uniforms:** No fittings. Strictly based on the agreed size chart. 
+*   **Revisions/Complaints:** If a uniform doesn't fit and it's the shop's fault (wrong cut), they adjust it for free. If the client gave the wrong size, the shop usually charges a fee for re-cutting or offers a discount on a remake.
+*   **Release:** "Claiming" is the final step. The shop checks the physical job order ticket, ensures the balance is paid, packs the item, and hands it over. 
+
+**5. Rental Garments vs. Custom Orders**
+*   **Rentals (Gowns/Barong/Filipiniana):** The client pays a rental fee (usually 30-50% of the item's retail value) plus a refundable security deposit. The garment is lent out for 2-3 days. The deposit is held to cover damages, stains, or late returns.
+
+---
+
+### **B. Payment Behavior Intelligence**
+
+*   **Standard Downpayment (DP):** 50% is the industry standard. For tailors, this covers fabric and initial labor. For sublimation, it covers ink, transfer paper, and blank garments.
+*   **Reservation Fees:** For highly customized gowns or peak-season blocking, a non-refundable ₱1,000 - ₱3,000 reservation fee is collected to "block the slot."
+*   **Corporate & Government Billing:** For DTI/BIR registered shops handling schools, LGUs, or corporations, they accept Purchase Orders (PO). Payment terms are usually 50% DP upon signing of PO, and 50% balance upon delivery. Large corporations often ask for 30-day check releases, which forces the tailor to have strong cash flow.
+*   **Payment Methods:** GCash dominates retail. Maya is secondary. Bank transfers (BDO/BPI) are used for corporate. Walk-ins still heavily use cash.
+*   **Verification Process:** Admins manually check GCash screenshots. Fake screenshots are a common scam. Many require the client to send the GCash reference number first before packing.
+*   **Full Payment Before Release:** Strictly enforced. "No balance, no claim." Even if the client is a *suki*, the item stays in the shop until the final peso is paid, especially before holidays or weekends.
+*   **Refunds & Cancellations:** If the client cancels after DP is paid, the DP is forfeited to cover the cost of fabric already cut and ink already printed. Refunds are rarely given for custom items; only for gross shop negligence.
+
+---
+
+### **C. Customer Retention Intelligence**
+
+*   **The "Suki" System:** Loyalty is not tracked by points; it’s tracked by memory and relationship. A *suki* gets priority slots, waived rush fees, or free upgrades (e.g., using a better zipper for free).
+*   **Saved Measurements:** Local tailors keep a physical "Suki Card" or an Excel sheet of repeat clients' measurements. When a client messages, "Pwede ba akong palitan ng polo same size as last year?", the tailor just pulls the old record. No need to retake measurements.
+*   **Family-Based Clients:** A shop that makes a wedding gown often ends up making the debut gown for the daughter 18 years later, and the barongs for the sons. Keeping family records is crucial.
+*   **Corporate Uniform Retention:** B2B clients are retained through consistency. If a company orders 200 polos this year, the tailor keeps the pattern and logo files so that next year, when new hires come in, they can just say "Add 10 pcs to the ABC Corp order."
+*   **Design History:** Keeping the client’s approved layout files in the archive. If they want to reprint the exact same jersey next season, the shop doesn't charge a layout fee anymore.
+
+---
+
+### **D. Seasonal Demand Intelligence**
+
+*   **March - April (Graduation & Summer):** Massive spike in graduation sashes, toga alterations, PE uniforms, and summer league basketball jerseys (barangay intrams). This is a "no sleep" season.
+*   **May (Elections & Fiestas):** Every 3 years, election season is a goldmine. Campaign shirts (DTF or Silk Screen) are ordered by the thousands. Fiesta seasons also demand uniformed organizations (Knights of Columbus, Coca-Cola bearers).
+*   **June - July (Back to School):** School uniforms, patches, and ID lanyards.
+*   **August - October (Company Teambuildings & Sports Fest):** Corporate jerseys, barkada shirts, and company hoodies. 
+*   **November - December (Ber Months/Weddings/Debuts):** Corporate Christmas party shirts, customized mugs/tumblers for giveaways, and the peak season for bridal gowns, Barongs, and Filipiniana for December weddings.
+*   **Dead Months:** January to mid-February. Shops survive this by offering RTW (Ready-to-Wear) customization, accepting repair jobs (rasing/adjusting old pants), or pushing Valentine's couple shirts.
+
+---
+
+### **E. Scaling & Multi-Branch Intelligence**
+
+*   **The Main-Satellite Model:** Successful shops (e.g., in Davao or Manila) do not put heavy machinery in malls or expensive retail spaces. The Main Branch (the *bodega*) is in a cheaper industrial area. It houses the industrial sublimation printers, 15-needle embroidery machines, and cutting tables. Satellite branches in malls or busy intersections are purely for taking measurements, accepting walk-ins, and pickups.
+*   **Production Routing:** Cut fabric from the Main branch is sent via local courier (Lalamove/Grab) to home-based *mananahis* (sewers) or to satellite branches for assembly. 
+*   **Branch Specialization:** Some branches become known for specific things. Branch A handles all sublimation. Branch B handles all corporate tailoring. This prevents machine bottlenecks.
+*   **Oversight:** The owner usually stays at the Main branch to oversee production quality. Satellite branches are run by trusted "encoders" or head seamstresses who report daily sales via Viber.
+*   **Expansion Triggers:** Shops open a new branch when the main shop's capacity is maxed out, and clients from a specific city (e.g., clients from Taytay traveling to Puerto Princesa) complain about the distance. 
+
+---
+
+### **FINAL OUTPUT: BUSINESS LOGIC PATTERNS & PAIN POINTS**
+
+**Most Common Operational Workflows:**
+1.  **The Messenger Bounce:** Inquiry -> Verbal Quote -> 50% DP sent via GCash -> Mockup approved -> Fabric cut -> Print/Sew -> Photo sent to client -> Balance sent -> Pickup.
+2.  **The Corporate PO Flow:** RFQ (Request for Quotation) -> Send Proposal -> Sign Contract/PO -> 50% DP -> Bulk Production -> Delivery -> 30-day wait for remaining 50% balance.
+
+**Weak Points & Bottlenecks:**
+*   **The Layout Bottleneck:** Layout artists take too long, delaying printing. 
+*   **Fabric Shortages:** Running out of a specific color mid-bulk-order because the supplier in Divisoria/Bambang ran out.
+*   **Sewing Bottlenecks:** Sublimation printing is fast; sewing is slow. A shop can print 100 jerseys in a day but only sew 30. 
+
+**What Causes Delays & Customer Complaints:**
+*   **Delays:** Late layout approvals, late DP payments, machine breakdowns (heat press element burning out), and sewer absence (mananahi not showing up).
+*   **Complaints:** Shrinking after washing (using wrong fabric/print temp), wrong sizing (client gave wrong measurements), color fading (using DTF on dark shirts improperly), and missing deadlines for events (e.g., jersey wasn't ready for the championship game).
+
+**What Makes Customers Return:**
+*   Trust. The fabric didn't peel. The print didn't fade. The uniform fit perfectly. The owner was easy to talk to and allowed a minor revision without throwing a fit. 
+
+**What Makes Businesses Scale vs. Fail:**
+*   **Scale:** Delegation. The owner stops doing layouts and cutting fabric. They hire a dedicated graphic artist, a master cutter, and encoders. They centralize procurement to get bulk fabric discounts.
+*   **Fail:** Accepting too many rush orders during peak season, leading to a catastrophic drop in quality. Ruining a 100-piece corporate order means losing a B2B client forever. Another major cause of failure is poor cash flow management—spending the 50% DP of a future order to pay off past expenses, leaving no money to buy fabric for the current order.
+
+**Modern Social Selling Patterns:**
+*   "Comment a keyword to claim a slot" to bypass Messenger limits.
+*   Posting "Order Released Today" photos on Facebook as a public trust-building mechanism (showing the shop actually delivers).
+*   Selling lifetime-access Google Drive folders of 30,000+ designs for ₱399—a passive income stream that requires zero physical labor.

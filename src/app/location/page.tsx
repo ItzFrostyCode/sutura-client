@@ -39,7 +39,7 @@ function LocationPageContent() {
                 icon={<MapPin size={22} />}
                 title={res.display_name.split(',')[0]}
                 subtitle={res.display_name}
-                onClick={() => l.handleSelectLocation({ lat: res.lat, lng: res.lng, address: res.display_name, district: res.display_name.split(',')[1]?.trim() || 'Davao City' })}
+                onClick={() => l.handleSelectLocation({ lat: res.lat, lng: res.lng, address: res.display_name, district: 'Davao City' })}
               />
             ))}
           </section>

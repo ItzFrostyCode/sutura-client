@@ -18,7 +18,7 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
             <User size={15} />
           </div>
           <div>
-            <h2 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wider">Client Atelier Profile</h2>
+            <h2 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wider">Customer Profile</h2>
             <p className="text-[11px] text-ink-muted">Contact details and loyalty tier</p>
           </div>
         </div>
@@ -49,8 +49,8 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
         </div>
 
         <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-1 shadow-2xs">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">CRM Reference</span>
-          <span className="text-ink font-semibold block">Customer ID #{customer?.id}</span>
+          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Customer No.</span>
+          <span className="text-ink font-semibold block">#{customer?.shop_number ?? customer?.id}</span>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
       <div className="space-y-2 pt-1">
         <div className="flex items-center gap-2 text-xs font-bold text-ink-muted uppercase tracking-wider">
           <FileText size={13} className="text-taupe" />
-          <span>Private Atelier Notes</span>
+          <span>Private Notes</span>
         </div>
         {customer?.store_notes ? (
           <div className="p-4 bg-canvas border border-line rounded-xl text-xs text-ink-body whitespace-pre-wrap leading-relaxed shadow-2xs">
@@ -66,7 +66,7 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
           </div>
         ) : (
           <div className="p-4 bg-canvas/40 border border-dashed border-line rounded-xl text-xs text-ink-faint italic">
-            No special atelier instructions or fit preferences recorded yet.
+            No notes or fit preferences recorded yet.
           </div>
         )}
       </div>

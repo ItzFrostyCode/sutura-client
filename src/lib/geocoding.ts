@@ -34,13 +34,16 @@ export async function reverseGeocodeCoords(lat: number, lng: number): Promise<Ge
         // Locality / Barangay / Suburb
         if (feature.locality && !parts.includes(feature.locality)) parts.push(feature.locality);
 
-        // District (e.g. Poblacion, Buhangin, Talomo)
-        if (feature.district && !parts.includes(feature.district)) parts.push(feature.district);
+        // Sub-area (clean without 'District' suffix)
+        if (feature.district) {
+          const clean = feature.district.replace(/\s+district$/i, '').trim();
+          if (clean && !parts.includes(clean)) parts.push(clean);
+        }
 
         // City
         if (feature.city && !parts.includes(feature.city)) parts.push(feature.city);
 
-        const district = feature.district || feature.locality || feature.city || 'Davao City';
+        const district = (feature.district ? feature.district.replace(/\s+district$/i, '').trim() : '') || feature.locality || feature.city || 'Davao City';
         const address = parts.length > 0 ? parts.join(', ') : '';
 
         if (address) {
@@ -114,7 +117,10 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
             const primary = p.name || p.street;
             if (primary) parts.push(primary);
             if (p.locality && !parts.includes(p.locality)) parts.push(p.locality);
-            if (p.district && !parts.includes(p.district)) parts.push(p.district);
+            if (p.district) {
+              const clean = p.district.replace(/\s+district$/i, '').trim();
+              if (clean && !parts.includes(clean)) parts.push(clean);
+            }
             if (p.city && !parts.includes(p.city)) parts.push(p.city);
 
             const display_name = parts.join(', ');

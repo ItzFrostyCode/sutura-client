@@ -6,6 +6,7 @@ import Modal from '@/components/Modal';
 import api from '@/lib/axios';
 import { BranchFormData } from '@/components/branches/branchHelpers';
 import BranchPlaceFields from '@/components/branches/BranchPlaceFields';
+import BranchManagerFields from '@/components/branches/BranchManagerFields';
 import PinPaste from '@/components/shared/PinPaste';
 import type { SavedLocation } from '@/lib/customerLocation';
 import { getErrorMessage } from '@/lib/apiError';
@@ -37,7 +38,6 @@ export default function BranchFormModal({
 }: BranchFormModalProps) {
   const [uploading, setUploading] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [staffList, setStaffList] = useState<Array<{ id: number; role: string; user?: { name: string; email: string } }>>([]);
   // Reads a Google Maps share link into a pin (server side: it follows the short link).
   const resolveMapsLink = async (url: string) => {
     const res = await api.post(`/stores/${storeId}/branches/resolve-maps-link`, { url });
@@ -50,15 +50,6 @@ export default function BranchFormModal({
     ? { lat: parsedLat, lng: parsedLng, address: formData.address, district: formData.district ?? '' }
     : null;
 
-  React.useEffect(() => {
-    if (isOpen && storeId) {
-      api.get(`/stores/${storeId}/staff`)
-        .then(res => {
-          setStaffList(Array.isArray(res.data?.data) ? res.data.data : []);
-        })
-        .catch(err => console.error('Failed to load staff for manager selection:', err));
-    }
-  }, [isOpen, storeId]);
   return (
     <>
     <Modal isOpen={isOpen} onClose={onClose} title={editingId ? 'Edit Branch' : 'Add New Branch'}>
@@ -113,7 +104,7 @@ export default function BranchFormModal({
           />
         </div>
 
-        {/* District & Barangay (Davao City's official list) */}
+        {/* Barangay (Davao City's official list) */}
         <BranchPlaceFields formData={formData} setFormData={setFormData} />
 
         {/* Landmark */}
@@ -191,28 +182,7 @@ export default function BranchFormModal({
           </p>
         </div>
 
-        {/* Designated Branch Manager */}
-        <div>
-          <label htmlFor="branch-manager" className="block text-sm font-medium text-ink-body mb-1">
-            Designated Branch Manager
-          </label>
-          <select
-            id="branch-manager"
-            value={formData.manager_id ?? ''}
-            onChange={e => setFormData(prev => ({ ...prev, manager_id: e.target.value ? Number(e.target.value) : '' }))}
-            className="w-full px-4 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-taupe text-sm"
-          >
-            <option value="">-- No Branch Manager Assigned --</option>
-            {staffList.map(member => (
-              <option key={member.id} value={member.id}>
-                {member.user?.name || `Staff #${member.id}`} ({member.role?.replace(/_/g, ' ')})
-              </option>
-            ))}
-          </select>
-          <p className="text-[11px] text-ink-muted mt-1">
-            Assigning a manager establishes supervisory accountability and links staff to this branch.
-          </p>
-        </div>
+        <BranchManagerFields formData={formData} setFormData={setFormData} />
 
         {/* Status (only for edit) */}
         {editingId && (

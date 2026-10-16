@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { ChevronDown, MapPin } from 'lucide-react';
 import { StoreSettings, BookingTypeOption } from '../types';
 import BookingTypeSelector from './schedule/BookingTypeSelector';
+import BookingKindSelector from './schedule/BookingKindSelector';
+import type { BookingKind } from '../hooks/useBookingWizard';
 import PurposeLabelField from '@/components/appointments/PurposeLabelField';
 
 interface BookingStep1PolicyProps {
@@ -11,9 +13,9 @@ interface BookingStep1PolicyProps {
   readonly availableBookingTypes: BookingTypeOption[];
   readonly appointmentType: string;
   readonly setAppointmentType: (val: string) => void;
-  readonly showExistingOrderToggle: boolean;
-  readonly hasExistingOrder: boolean;
-  readonly setHasExistingOrder: (val: boolean) => void;
+  readonly kind: BookingKind;
+  readonly setKind: (val: BookingKind) => void;
+  readonly kindLocked: boolean;
   readonly purposeLabel: string;
   readonly setPurposeLabel: (val: string) => void;
 }
@@ -27,9 +29,9 @@ export default function BookingStep1Policy({
   availableBookingTypes,
   appointmentType,
   setAppointmentType,
-  showExistingOrderToggle,
-  hasExistingOrder,
-  setHasExistingOrder,
+  kind,
+  setKind,
+  kindLocked,
   purposeLabel,
   setPurposeLabel,
 }: BookingStep1PolicyProps) {
@@ -37,27 +39,22 @@ export default function BookingStep1Policy({
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
-      <h2 className="mobile-h2 text-ink">What are you coming in for?</h2>
+      <h2 className="mobile-h2 text-ink">Book a visit</h2>
 
-      {/* Sets expectations up front, before the customer picks a purpose —
-          a customer coming from a catalog item ("Book a Fitting") can easily
-          read this as an online-checkout flow otherwise, then be surprised
-          later that there's no delivery and they have to show up themselves. */}
       <div className="flex items-start gap-2.5 p-3 bg-sunken border border-line text-xs text-ink-body">
         <MapPin size={15} className="text-taupe shrink-0 mt-0.5" />
         <p>
-          This books an in-person visit, not a delivery — once the store accepts your request,
-          you&apos;ll need to go to the shop yourself on the scheduled date to be measured or fitted.
+          This is a visit to the shop, not a delivery. Once the shop accepts your request, go to the shop on the day.
+          Nothing is paid now.
         </p>
       </div>
+
+      <BookingKindSelector kind={kind} onChange={setKind} locked={kindLocked} />
 
       <BookingTypeSelector
         availableBookingTypes={availableBookingTypes}
         appointmentType={appointmentType}
         onSelectType={setAppointmentType}
-        showExistingOrderToggle={showExistingOrderToggle}
-        hasExistingOrder={hasExistingOrder}
-        onToggleExistingOrder={() => setHasExistingOrder(true)}
       />
 
       {appointmentType === 'other' && <PurposeLabelField value={purposeLabel} onChange={setPurposeLabel} />}

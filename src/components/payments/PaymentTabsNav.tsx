@@ -8,6 +8,8 @@ interface PaymentTabsNavProps {
   activeTab: Tab;
   onSelectTab: (tab: Tab) => void;
   pendingCount: number;
+  /** Walk-in catalog orders can no longer be created, so the tab only shows for shops that still have old ones. */
+  showCatalogOrders?: boolean;
 }
 
 const TAB_DEFS: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -22,6 +24,7 @@ export default function PaymentTabsNav({
   activeTab,
   onSelectTab,
   pendingCount,
+  showCatalogOrders = false,
 }: PaymentTabsNavProps) {
   return (
     // overflow-x-auto + shrink-0/whitespace-nowrap on each tab — same fix
@@ -31,7 +34,7 @@ export default function PaymentTabsNav({
     // a phone screen, and this bar had no wrap or scroll fallback at all,
     // so the third tab was pushed off-screen with no way to reach it.
     <div className="flex items-center gap-2 border-b border-line px-1 overflow-x-auto hide-scrollbar">
-      {TAB_DEFS.map(t => {
+      {TAB_DEFS.filter(t => t.id !== 'catalog_orders' || showCatalogOrders || activeTab === 'catalog_orders').map(t => {
         const Icon = t.icon;
         const active = activeTab === t.id;
         return (

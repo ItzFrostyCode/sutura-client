@@ -56,8 +56,8 @@ export default function CatalogItemCard({
 
   const turnaroundText = formatEstimatedTurnaround(item.estimated_days);
   const branch = item.store?.branches?.[0];
-  const locationText = branch?.district
-    ? `${branch.district}, Davao City`
+  const locationText = branch?.barangay
+    ? `${branch.barangay}, Davao City`
     : (branch?.city || item.store?.name || 'Davao City');
 
   return (

@@ -4,8 +4,8 @@ import ActiveNavigationCard from './ActiveNavigationCard';
 import ShopDirectionsCard from './ShopDirectionsCard';
 import type { useNavigation } from './useNavigation';
 
-// One spot for both cards, so one takes the place of the other: top right on desktop, across the top on tablet and phone.
-const SLOT = 'max-lg:inset-x-4 max-lg:top-3 max-lg:mx-auto max-lg:max-w-[var(--col-w)] lg:right-4 lg:top-4 lg:w-[440px]';
+// One spot for both cards: top right on desktop, top left/center leaving 72px for the 3 map buttons on tablet/phone.
+const SLOT = 'max-lg:left-4 max-lg:right-[72px] max-lg:top-3 lg:right-4 lg:top-4 lg:w-[440px]';
 
 interface MapTopCardProps {
   readonly nav: ReturnType<typeof useNavigation>;

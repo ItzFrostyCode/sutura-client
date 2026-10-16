@@ -9,6 +9,33 @@ Source: the "Final Workflow Specification" (3 flows), 2026-10-10. Scope rules: [
 | 3. Production → QC → fitting → handover → completed | **Built** (sequence, corrections, partial handover, completion rules). |
 | Scenarios B (change request) and D (follow-up order), due-date log, workload view | B and the due-date log are built; **D (linked follow-up order) and a full workload view are not.** |
 
+## Update 2026-10-16 — simple sequence (pre-production steps, five plain stages)
+
+Spec: `SUTURA/chatgpt Reply to  your executive summary.md`. Code beats this note.
+
+- **Before work starts: seven saved steps** (`App\Support\OrderPreProduction`, shown on the order's Steps tab): request accepted · details (specs, measurements) · price sent · customer answer · payment terms and deposit · tailor assigned · production authorized. Nothing extra is stored; coming back lands on the first unfinished step.
+- **Online request without an appointment:** `POST /stores/{slug}/order-requests` (client `/store/{slug}/request`). It waits as `pending` until the owner/manager accepts it (`POST …/jobs/{job}/accept-request`); nothing is paid or started.
+- **Quotation versions:** every save of the quotation adds a row in `order_quotation_versions` (who, why, total, terms). A change after the price was sent needs a reason. The proposed **payment terms** (deposit %, full, or pay on pick-up) and a **valid-until** date travel with the price; the customer sees them before answering and they lock when the customer agrees. Changing price, date or terms after that voids the answer.
+- **Customer decision:** `POST /my-orders/{id}/decision` with `accept | changes | decline`. Decline closes the order as `cancelled` with reason `quotation_declined` (only if nothing was paid). The customer cannot send payment proof before accepting.
+- **Authorization:** confirming records `production_authorized_at/by`; production cannot start without it. Only the owner or a branch manager can confirm or cancel an order on the flow, and a completed / cancelled / rejected flow order can no longer change status.
+- **Tailor changes** are kept in `job_order_assignee_events` (from, to, reason, by); a reason is required once work has started.
+- **Customer view:** one server-built `progress` (`App\Support\OrderProgress`): Request · Confirmed · Being made · Ready · Done, plus one plain sentence and the next action. Same for signed-in customers and guests (`/track/{code}`, no action shown). Fitting, adjustments and the internal tasks are notes inside a stage, never extra stages; the bar never moves backwards.
+- **Shop view:** Orders page = the same five stages, oldest order on top with its place in line and received date; a one-tap "Next" for the cutting/sewing tasks. Order page = three tabs: Steps, Details, Payments.
+- **Texts and notices:** new in-app/email notices for request accepted, price ready, price changed (`OrderUpdateNotification`); the optional text "price is ready" is off by default; the "ready" text now says what to bring (balance, full payment, or nothing). Texts still go through the shop's outbox, so the shop reviews and sends.
+- **Not done / open:** see section 7 of the spec (who accepts online requests beyond owner/manager, quote expiry reminders, legacy order mapping, receipt numbers). Internal statuses were not changed.
+
+## Update 2026-10-16 — Create Job Order form simplified
+
+`/dashboard/jobs/new` (`components/jobs/JobCreateForm.tsx` + `form/*`) is five plain steps: **Customer → What is being made → Details → Who works on it → Price and date.** Code beats this note.
+
+- **Same lists the customer searches by:** one garment search box (`form/GarmentStep.tsx`) built from `lib/garmentTaxonomy` plus any name typed on a shop's designs, the shop's own garments first; then only the services that work on it (`garment_types`; empty = any garment only for Alterations / Customization). A design (optional) fills in its service, price, days and photo and is filtered by the same garment.
+- **Derived, not asked:** repair flow (condition notes) from an alteration service, team list from a bulk service, measurements hidden when the service says none are needed. The old three-way "From a Design / Made to Order / Alteration" switch is gone.
+- **Staff step** (owner / branch manager): staff whose Skills (Staff page) mention the garment, its category or the service are listed first as "Skilled in …".
+- **Price and date are suggestions** (service or design price × quantity, service turnaround) until typed over; total = price + rush fee − discount. An empty price saves a zero-total order to be quoted in Order Steps (it now starts `unpaid`, not `paid`).
+- **Saved on the order:** `custom_order_data.garment_type` (readable name), `.garment` (slug), `.garment_group`; the old `garment_category` is still filled where a match exists (barong, gown, suit, filipiniana, uniform, alteration_repair) so the work ticket and reports keep working.
+
+**Orders board (2026-10-16):** the five stages are tinted full-height lanes with a count pill; a summary strip (active, waiting on you, due in 2 days, overdue, balance to collect — owner/manager only) is worked out from the loaded orders and hidden when there are none; the Request lane lists real appointments that took place but have no order yet ("Ready to write up"), each opening Create Job Order pre-filled (`board/WaitingAppointments.tsx`).
+
 ## Decisions (2026-10-10)
 
 - **Scope audit:** per-order materials (supplier, cost, "to buy", supplier recovery) were built first, then **removed** — they break the thesis Limitations (no inventory, material stock, purchase orders or supplier/procurement processes). Materials are now a **ready / waiting** yes/no with a note, plus an assessment of the customer's own fabric. See `PRD.md` difference 5.

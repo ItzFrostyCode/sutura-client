@@ -81,7 +81,7 @@ export default function CatalogFindSidebar({ branches, selectedId, onSelect, sel
           ) : (
             <button type="button" disabled title="Choose a branch first" className="flex-1 h-12 bg-sunken text-ink-faint text-sm font-medium cursor-not-allowed">Direction</button>
           )}
-          <button type="button" onClick={onBook} className="flex-[1.3] h-12 bg-ink hover:bg-taupe text-white text-sm font-semibold flex items-center justify-center whitespace-nowrap transition-colors cursor-pointer">Book a Fitting</button>
+          <button type="button" onClick={onBook} className="flex-[1.3] h-12 bg-ink hover:bg-taupe text-white text-sm font-semibold flex items-center justify-center whitespace-nowrap transition-colors cursor-pointer">Book a visit</button>
         </div>
       </div>
     </aside>

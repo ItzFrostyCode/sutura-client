@@ -10,13 +10,12 @@ interface BreadcrumbItem {
 }
 
 /**
- * Home > Search > Services > {Service} > {Service name} — the 4 approved services (2026-10-14). A service with no
- * approved group shows its old category name if it has one, else just Home > Search > Services.
+ * Home > Search > {Service Category} > {Service Name} — the 4 approved service groups (2026-10-14).
  */
 export default function ServiceDetailBreadcrumb({ service }: Readonly<{ service: BreadcrumbItem }>) {
   const crumbs: { label: string; href: string }[] = [
     { label: 'Home', href: '/' },
-    { label: 'Search', href: '/search?tab=services' },
+    { label: 'Search', href: '/search' },
     { label: 'Services', href: '/search?tab=services' },
   ];
   const key = service.service_category;

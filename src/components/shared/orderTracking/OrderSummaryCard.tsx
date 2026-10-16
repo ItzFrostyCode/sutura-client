@@ -14,7 +14,7 @@ const row = 'mobile-body-sm flex items-center gap-2 text-ink-muted';
 
 /** The top card of an order: the shop, the order number and phase, what it is, when it is due, and what is still to pay. */
 export default function OrderSummaryCard({ order, phase }: OrderSummaryCardProps) {
-  const itemName = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? order.garment_category ?? 'Garment';
+  const itemName = order.catalog_item_name ?? order.service_name ?? order.garment_category ?? 'Garment';
   const hasMaterialNote = order.customer_material_status && order.customer_material_status !== 'safe';
 
   return (
@@ -44,9 +44,6 @@ export default function OrderSummaryCard({ order, phase }: OrderSummaryCardProps
           <span>{itemName}</span>
           {(order.quantity ?? 1) > 1 && <span className="text-ink-muted">× {order.quantity}</span>}
         </div>
-        {order.service_package && (order.service_package.services?.length ?? 0) > 0 && (
-          <p className="mobile-caption pl-6 text-ink-muted">Package · includes {order.service_package.services!.join(', ')}</p>
-        )}
         {order.due_date && (
           <div className={row}>
             <CalendarDays size={16} className="shrink-0 text-ink-faint" />

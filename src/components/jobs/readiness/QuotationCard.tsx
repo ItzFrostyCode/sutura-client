@@ -32,6 +32,10 @@ export default function QuotationCard({ data }: { readonly data: ReadinessData }
           <p className="text-xs text-ink-muted">Prices are handled by the owner or branch manager.</p>
         )}
 
+        {money && data.terms && <p className="border-t border-line pt-3 text-xs text-ink-body">Terms: {data.terms.text}{data.terms.locked ? ' (agreed, locked)' : ''}</p>}
+        {data.decision?.value === 'changes_requested' && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">The customer asked for changes: {data.decision.note || '—'}</p>}
+        {data.decision?.valid_until && <p className="text-xs text-ink-muted">Price valid until {new Date(data.decision.valid_until).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}.</p>}
+
         <dl className="space-y-1 border-t border-line pt-3 text-xs">
           <div className="flex justify-between"><dt className="text-ink-muted">Customer approval</dt><dd className={q?.approved_at ? 'font-semibold text-emerald-700' : 'text-ink-muted'}>{q?.approved_at ? (q.approval_channel === 'online' ? 'Approved online' : 'Approved in person') : 'Waiting'}</dd></div>
           <div className="flex justify-between"><dt className="text-ink-muted">Deposit</dt><dd className={dep?.met ? 'font-semibold text-emerald-700' : 'text-rose-700'}>{dep?.met ? 'Verified' : 'Not verified yet'}</dd></div>
@@ -42,6 +46,18 @@ export default function QuotationCard({ data }: { readonly data: ReadinessData }
             </>
           )}
         </dl>
+        {money && (q?.versions?.length ?? 0) > 1 && (
+          <details className="border-t border-line pt-2 text-xs">
+            <summary className="cursor-pointer font-semibold text-ink-body">Earlier prices ({(q?.versions?.length ?? 1) - 1})</summary>
+            <ul className="mt-2 space-y-1.5">
+              {[...(q?.versions ?? [])].reverse().map((v) => (
+                <li key={v.version} className="text-ink-muted">
+                  <span className="font-semibold text-ink">v{v.version} · {peso(v.total)}</span>{v.status === 'estimate' ? ' (estimate)' : ''} — {new Date(v.at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}{v.by ? `, ${v.by}` : ''}{v.reason ? `. ${v.reason}` : ''}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </div>
     </section>
   );

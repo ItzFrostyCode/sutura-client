@@ -380,7 +380,7 @@ export default function InteractiveCalendar({
         {hasAnyOpen && mode === 'public' && selectedDate === todayStr && (
           <p className="text-xs text-ink-muted">Same-day appointments need at least 2 hours’ notice.</p>
         )}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2">
           {availableSlots.map(({ time: slot, isBooked: booked, hasPendingOnly, blocked }) => {
             // A passed / too-soon time is greyed out exactly like a booked one.
             const isBooked = booked || blocked !== null;
@@ -413,9 +413,9 @@ export default function InteractiveCalendar({
                     : undefined
                 }
                 aria-label={blocked && !booked ? `${formatSlotLabel(slot)} — unavailable` : undefined}
-                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-between gap-1.5 ${slotClass}`}
+                className={`min-h-11 min-w-0 rounded-lg border px-2 py-1.5 text-sm font-medium transition-all flex flex-col items-center justify-center gap-0.5 ${slotClass}`}
               >
-                <span className={booked ? 'line-through' : ''}>{formatSlotLabel(slot)}</span>
+                <span className={`whitespace-nowrap ${booked ? 'line-through' : ''}`}>{formatSlotLabel(slot)}</span>
                 {booked && (
                   <span className="text-[9px] font-bold uppercase no-underline tracking-wider bg-canvas border border-line px-1 rounded text-ink-faint">
                     Booked
@@ -445,7 +445,7 @@ export default function InteractiveCalendar({
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 [&>*]:min-w-0">
       {/* Date Picker Side */}
       <div className="space-y-4">
         <label className="text-sm font-medium text-ink-body flex items-center gap-2">
@@ -497,7 +497,7 @@ export default function InteractiveCalendar({
           <Clock size={16} /> Select Time <span className="text-danger">*</span>
         </label>
 
-        <div className="bg-surface border border-line rounded-xl p-4 h-80 overflow-y-auto">
+        <div className="bg-surface border border-line rounded-xl p-3 max-h-80 overflow-y-auto overflow-x-hidden">
           {renderTimePickerContent()}
         </div>
       </div>

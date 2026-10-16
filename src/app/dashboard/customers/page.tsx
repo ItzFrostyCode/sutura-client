@@ -66,7 +66,7 @@ export default function CustomersPage() {
             <button
               onClick={() => {
                 setEditingId(null);
-                setFormData({ name: '', email: '', phone: '' });
+                setFormData({ name: '', email: '', phone: '', gender: '' });
                 setError('');
                 setIsModalOpen(true);
               }}

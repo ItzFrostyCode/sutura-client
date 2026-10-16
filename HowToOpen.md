@@ -1,5 +1,3 @@
-	
-
 # How to Open SUTURA
 
 Run these steps after the one-time setup is complete. Keep both terminals open.
@@ -15,12 +13,14 @@ Open XAMPP Control Panel so its PHP is available. Do not start MySQL for this se
 Open a terminal at the `SUTURA THESIS` folder, then run:
 
 **Windows PowerShell**
+
 ```powershell
 cd sutura-server
 & "C:\xampp\php\php.exe" artisan serve --host=127.0.0.1 --port=8001
 ```
 
 **macOS**
+
 ```bash
 cd sutura-server
 php artisan serve --host=127.0.0.1 --port=8000
@@ -35,6 +35,7 @@ Leave this terminal running.
 Open a second terminal at the `SUTURA THESIS` folder, then run:
 
 **Windows PowerShell**
+
 ```powershell
 cd sutura-client
 $env:NEXT_PUBLIC_API_URL = "http://127.0.0.1:8001/api/v1"
@@ -42,6 +43,7 @@ npm run dev
 ```
 
 **macOS**
+
 ```bash
 cd sutura-client
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1 npm run dev
@@ -55,9 +57,6 @@ If this is a fresh clone, complete the one-time setup in the `sutura-server` and
 ## Demo Accounts
 
 - Shop Owner: `maria.cruz@gmail.com` / `password`
-- Staff: `juan.delacruz@sutura.com` / `password`
-- Branch Manager: `miguel.manager@sutura.com` / `password`
-- Admin: `admin@sutura.com` / `password`
+- i cant log`admin@sutura.com` / `password`
 - Customer: `jose.rizal@gmail.com` / `password` (or `juan.delacruz@gmail.com` / `password`)
 - Customer with no bookings yet (use this to test booking): `tess.tester@gmail.com` / `password`
-

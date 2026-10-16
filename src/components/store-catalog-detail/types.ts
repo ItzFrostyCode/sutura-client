@@ -88,6 +88,8 @@ export interface CatalogItem {
   service?: {
     id: number;
     name: string;
+    service_category?: string | null;
+    showcase_category?: string | null;
     service_types?: string[];
     min_order_qty?: number;
     /** The service's own price — a design is priced by its service. */

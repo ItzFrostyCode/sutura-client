@@ -139,6 +139,7 @@ export default function PaymentQueuePage() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         pendingCount={pendingCount}
+        showCatalogOrders={catalogOrders.length > 0}
       />
 
       <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">

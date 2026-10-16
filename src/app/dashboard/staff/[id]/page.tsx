@@ -379,7 +379,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
               <h3 className="font-bold text-ink text-xs uppercase tracking-wider">
                 Currently Assigned ({currentAssignments.length})
               </h3>
-              <span className="text-xs text-ink-muted">Active workroom queue</span>
+              <span className="text-xs text-ink-muted">Jobs being worked on</span>
             </div>
 
             {currentAssignments.length === 0 ? (
