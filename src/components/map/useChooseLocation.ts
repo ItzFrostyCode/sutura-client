@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Map as LeafletMap } from 'leaflet';
-import { getSavedLocation, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
+import { DEFAULT_DAVAO_LOCATION, getSavedLocation, requestCurrentLocation, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
 import { parseCoordsFromMapsLink } from '@/lib/parseLocationInput';
 import { reverseGeocodeCoords, searchPlacesAroundDavao, type PlaceSearchResult } from '@/lib/geocoding';
 import { focusOn, safeLocalPath, withFocusParam } from '@/lib/mapFocus';
@@ -120,23 +120,28 @@ export function useChooseLocation() {
 
   // My location, as in Google Maps: the blue dot appears and the map zooms IN to it.
   const locate = useCallback(() => {
-    if (!navigator.geolocation) {
-      setError('Your browser does not support location access.');
-      return;
-    }
     setLocating(true);
     setError('');
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setUserLocation({ lat: coords.latitude, lng: coords.longitude });
-        goTo(coords.latitude, coords.longitude);
+    requestCurrentLocation(
+      (loc) => {
+        setUserLocation({ lat: loc.lat, lng: loc.lng });
+        setCenter({ lat: loc.lat, lng: loc.lng });
+        setAddress(loc.address);
+        setDistrict(loc.district);
+        goTo(loc.lat, loc.lng);
         setLocating(false);
       },
       () => {
-        setError('Could not get your location. Check your browser’s location permission.');
+        // Fallback when hardware GPS is unavailable on desktop PC:
+        const def = DEFAULT_DAVAO_LOCATION;
+        setUserLocation({ lat: def.lat, lng: def.lng });
+        setCenter({ lat: def.lat, lng: def.lng });
+        setAddress(def.address);
+        setDistrict(def.district);
+        goTo(def.lat, def.lng);
+        setError('GPS hardware unavailable on this device. Centered on Davao City — drag the map to your place.');
         setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
+      }
     );
   }, [goTo]);
 
