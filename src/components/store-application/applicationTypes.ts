@@ -24,6 +24,7 @@ export interface PublicPlan {
 }
 
 export interface OwnerFields {
+  full_name: string;
   first_name: string;
   middle_name: string;
   last_name: string;
@@ -64,7 +65,7 @@ export const GOVERNMENT_ID_TYPES = [
 ];
 
 export const EMPTY_OWNER: OwnerFields = {
-  first_name: '', middle_name: '', last_name: '', suffix: '', birthday: '',
+  full_name: '', first_name: '', middle_name: '', last_name: '', suffix: '', birthday: '',
   email: '', contact_number: '',
 };
 

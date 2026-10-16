@@ -44,57 +44,59 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
   const branch = store.branches?.[0];
   const work = workOf(store);
   const garments = garmentCategoriesOf(store);
-  const shownGarments = garments.slice(0, 4);
+  const shownGarments = garments.slice(0, 3);
+  const shownThumbs = thumbnails.slice(0, 2);
 
   return (
-    <div className="flex w-full shrink-0 flex-col justify-between p-5 sm:p-6 lg:w-[360px]">
+    <div className="flex w-full shrink-0 flex-col justify-between p-3.5 sm:p-4 lg:w-[340px] lg:p-3.5">
       <div>
-        <Link href={gate(`/store/${store.slug}`)} className="group block">
-          <h3 className="truncate text-xl font-semibold tracking-tight text-ink transition-colors group-hover:text-taupe">{store.name}</h3>
+        <Link href={gate(`/search?store=${store.slug}`)} className="group block">
+          <h3 className="truncate text-base font-semibold tracking-tight text-ink transition-colors group-hover:text-taupe sm:text-lg">
+            {store.name}
+          </h3>
         </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
-          <span className="flex items-center gap-1 text-ink">
-            <Star size={14} className="fill-taupe text-taupe" />
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-ink-muted">
+          <span className="flex items-center gap-1 font-medium text-ink">
+            <Star size={13} className="fill-taupe text-taupe" />
             {store.reviews_avg_rating ? Number(store.reviews_avg_rating).toFixed(1) : 'New'}
           </span>
           <span>{store.reviews_count ? `${store.reviews_count} reviews` : 'Verified tailor'}</span>
           {branch && (
             <span className="flex items-center gap-1">
-              <MapPin size={13} className="shrink-0 text-taupe" />
-              {branch.district ?? branch.city ?? branch.name}
+              <MapPin size={12} className="shrink-0 text-taupe" />
+              <span className="truncate max-w-[130px]">{branch.district ?? branch.city ?? branch.name}</span>
             </span>
           )}
         </div>
       </div>
 
       {(work.length > 0 || garments.length > 0) && (
-        <div className="mt-4 space-y-3">
+        <div className="mt-2 space-y-1">
           {work.length > 0 && (
-            <div>
-              <p className="mobile-overline mb-1.5 text-ink-faint">What they do</p>
-              <ul className="flex flex-wrap gap-1.5">
-                {work.map((w) => (
-                  <li key={w} className="rounded-full border border-line px-3 py-1 text-xs text-ink-body">{w}</li>
-                ))}
-              </ul>
-            </div>
+            <ul className="flex flex-wrap gap-1">
+              {work.slice(0, 3).map((w) => (
+                <li key={w} className="rounded-full border border-line bg-sunken/30 px-2 py-0.5 text-[11px] text-ink-body">
+                  {w}
+                </li>
+              ))}
+            </ul>
           )}
           {garments.length > 0 && (
-            <div>
-              <p className="mobile-overline mb-1 text-ink-faint">Works on</p>
-              <p className="mobile-body-sm text-ink-body">
-                {shownGarments.join(' · ')}{garments.length > shownGarments.length ? ` +${garments.length - shownGarments.length} more` : ''}
-              </p>
-            </div>
+            <p className="truncate text-[11px] text-ink-muted">
+              <span className="text-ink-faint">Works on:</span> {shownGarments.join(' · ')}
+              {garments.length > shownGarments.length ? ` +${garments.length - shownGarments.length}` : ''}
+            </p>
           )}
         </div>
       )}
 
-      {thumbnails.length > 0 && (
-        <div className="my-5">
-          <p className="mobile-overline mb-2.5 text-ink-faint">Signature works</p>
-          <div className="grid grid-cols-2 gap-3">
-            {thumbnails.map((thumb) => (
+      {shownThumbs.length > 0 && (
+        <div className="my-2">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+            Signature works
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {shownThumbs.map((thumb) => (
               <Link
                 key={thumb.id}
                 href={gate(`/store/${store.slug}/catalog/${thumb.id}`)}
@@ -102,17 +104,26 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
                 onMouseLeave={() => onHover(null)}
                 className="group/thumb block"
               >
-                <div className={`relative aspect-[16/10] overflow-hidden rounded-xl bg-sunken ring-2 transition-shadow ${hoveredId === thumb.id ? 'ring-taupe/50' : 'ring-transparent'}`}>
+                <div
+                  className={`relative aspect-[16/10] overflow-hidden rounded-lg bg-sunken ring-2 transition-shadow ${
+                    hoveredId === thumb.id ? 'ring-taupe/50' : 'ring-transparent'
+                  }`}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={getMediaUrl(thumb.imageUrl)}
                     alt={thumb.name}
                     className="h-full w-full object-cover"
-                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/shop_storefront.jpg'; }}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/images/shop_storefront.jpg';
+                    }}
                   />
                 </div>
-                <p className="mt-1.5 truncate text-xs text-ink-body">{thumb.name}</p>
-                <p className="truncate text-xs font-semibold text-ink">{designPriceLabel(thumb.pricing, thumb.price)}</p>
+                <p className="mt-1 truncate text-[11px] text-ink-body leading-tight">{thumb.name}</p>
+                <p className="truncate text-[11px] font-semibold text-ink">
+                  {designPriceLabel(thumb.pricing, thumb.price)}
+                </p>
               </Link>
             ))}
           </div>
@@ -120,8 +131,8 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
       )}
 
       <Link
-        href={gate(`/store/${store.slug}`)}
-        className="flex h-12 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white transition-colors hover:bg-taupe active:opacity-80"
+        href={gate(`/search?store=${store.slug}`)}
+        className="flex h-9 w-full items-center justify-center rounded-full bg-ink text-xs font-semibold text-white transition-colors hover:bg-taupe active:opacity-80 mt-1"
       >
         Visit store
       </Link>

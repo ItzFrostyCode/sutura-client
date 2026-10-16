@@ -29,14 +29,25 @@ export default function DesignTile({ item, href, className = '', onDelete }: Des
   return (
     <div className={`relative ${className}`}>
       <Link href={href} className="group block transition-opacity active:opacity-80">
-        <span className="relative block aspect-[3/4] overflow-hidden rounded-2xl bg-sunken">
+        <span className="relative block aspect-3/4 overflow-hidden rounded-2xl bg-sunken">
           {image ? (
             <Image src={getMediaUrl(image.image_url)} alt="" fill sizes="(min-width: 1024px) 20vw, (min-width: 600px) 30vw, 45vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-ink-faint"><Shirt size={24} /></span>
           )}
         </span>
-        <span className="mobile-body-sm mt-2 line-clamp-2 block font-medium text-ink">{item.name}</span>
+        <span
+          title={item.name}
+          className="mobile-body-sm mt-2 font-medium text-ink leading-snug line-clamp-2 wrap-break-word h-[2.8em]"
+          style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {item.name}
+        </span>
         {item.garment_type && <span className="mobile-caption block truncate capitalize text-ink-muted">{item.garment_type.replace(/_/g, ' ')}</span>}
       </Link>
       {onDelete && (

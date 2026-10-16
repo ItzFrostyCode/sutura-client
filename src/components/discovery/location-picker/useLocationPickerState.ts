@@ -118,11 +118,51 @@ export function useLocationPickerState(
     );
   }
 
+  // Live autocomplete suggestions while typing (debounced 250ms)
+  useEffect(() => {
+    const text = query.trim();
+    if (!text) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    if (parseCoordsFromMapsLink(text)) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    if (text.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    setShowSuggestions(true);
+    const timer = setTimeout(async () => {
+      try {
+        const cleaned = cleanLocationQuery(text);
+        let places = await searchPlacesAroundDavao(cleaned);
+        if (places.length === 0 && cleaned !== text) {
+          places = await searchPlacesAroundDavao(text);
+        }
+        setSearchResults(places.slice(0, 8));
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
   async function handleSearchSubmit() {
     const text = query.trim();
     if (!text) return;
     setError('');
-    setSearchResults([]);
 
     const parsed = parseCoordsFromMapsLink(text);
     if (parsed) {
@@ -132,37 +172,29 @@ export function useLocationPickerState(
       return;
     }
 
+    if (searchResults.length > 0) {
+      handlePickSearchResult(searchResults[0]);
+      return;
+    }
+
     const cleaned = cleanLocationQuery(text);
 
     setSearching(true);
     try {
-      // Search the street / place part first. With the whole address
-      // ("A. Pichon St, Poblacion District, Davao City, Davao del Sur") the
-      // geocoder latches onto "Davao City" and returns City Hall offices
-      // instead of the street; the barangay/city parts add nothing anyway,
-      // since every search is already biased to Davao City.
-      const firstSegment = cleaned.split(',')[0].trim();
-      let data = firstSegment && firstSegment !== cleaned ? await searchPlacesAroundDavao(firstSegment) : [];
-      if (data.length === 0) {
-        data = await searchPlacesAroundDavao(cleaned);
+      let data = await searchPlacesAroundDavao(cleaned);
+      if (data.length === 0 && cleaned !== text) {
+        data = await searchPlacesAroundDavao(text);
       }
 
-      // Exactly what was typed is the top hit → go straight there instead of
-      // making the user pick it from a list.
-      const best = data[0];
-      const exact = best && firstSegment && samePlaceName(best.display_name.split(',')[0], firstSegment);
-
       if (data.length === 0) {
-        setError("Couldn't find that place. Try pasting the full Google Maps link, or a more specific address.");
+        setError("Couldn't find that place. Try typing a street name or landmark (e.g. Pichon St, Almendras Gym).");
         setShowSuggestions(false);
-      } else if (data.length === 1 || exact) {
+      } else {
         const { lat, lng, display_name } = data[0];
         jumpTo(lat, lng, true);
         setAddress(display_name ?? cleaned);
-        setShowSuggestions(false);
-      } else {
         setSearchResults(data);
-        setShowSuggestions(true);
+        setShowSuggestions(false);
       }
     } catch {
       setError('Something went wrong searching that. Please try again.');
@@ -193,7 +225,7 @@ export function useLocationPickerState(
   }
 
   function handleInputBlur() {
-    blurTimeout.current = setTimeout(() => setShowSuggestions(false), 150);
+    blurTimeout.current = setTimeout(() => setShowSuggestions(false), 200);
   }
 
   function handleInputFocus() {
@@ -201,7 +233,9 @@ export function useLocationPickerState(
     setShowSuggestions(true);
   }
 
-  const suggestionsVisible = showSuggestions && (searchResults.length > 0 || (!query.trim() && recents.length > 0));
+  const suggestionsVisible =
+    showSuggestions &&
+    (searching || searchResults.length > 0 || (query.trim().length >= 2) || (!query.trim() && recents.length > 0));
 
   return {
     query,

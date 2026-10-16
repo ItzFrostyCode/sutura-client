@@ -44,7 +44,7 @@ export default function LocationGate({ phase, denied, farKm, onRetry, onEnter }:
               </>
             ) : (
               <>
-                <button type="button" onClick={onRetry} className={primary}>Allow Location / Retry</button>
+                <button type="button" onClick={onRetry} className={primary}>Retry</button>
                 <Link href={CHOOSE_ON_MAP} className={secondary}><MapIcon size={18} aria-hidden />Choose on map</Link>
               </>
             )}

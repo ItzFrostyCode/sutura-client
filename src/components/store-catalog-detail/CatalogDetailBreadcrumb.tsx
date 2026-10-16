@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { SERVICE_GROUPS, type ServiceGroupKey, canonicalGarment, GARMENTS } from '@/lib/garmentTaxonomy';
 import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
@@ -18,15 +20,18 @@ interface BreadcrumbItem {
 }
 
 /**
- * Home > Search > Services > {Service Category} > {Service Name} > {Design Name}
- * Follows the approved Services taxonomy (2026-10-14), matching ServiceDetailBreadcrumb.
+ * Clean store-scoped breadcrumb: Home > Shops > {Store Name} > {Service Name} > {Design Name}
+ * Never loops to Map/Search.
  */
 export default function CatalogDetailBreadcrumb({ item }: Readonly<{ item: BreadcrumbItem }>) {
   const crumbs: { label: string; href: string }[] = [
     { label: 'Home', href: '/' },
-    { label: 'Search', href: '/search' },
-    { label: 'Services', href: '/search?tab=services' },
+    { label: 'Shops', href: '/shops' },
   ];
+
+  if (item.store?.name && item.store?.slug) {
+    crumbs.push({ label: item.store.name, href: `/store/${item.store.slug}` });
+  }
 
   // Resolve service category: from item.service or infer from canonical garment
   let categoryKey = item.service?.service_category;
@@ -42,23 +47,23 @@ export default function CatalogDetailBreadcrumb({ item }: Readonly<{ item: Bread
     }
   }
 
-  if (categoryKey && categoryKey in SERVICE_GROUPS) {
+  if (item.service?.name) {
+    const serviceHref = item.store?.slug && item.service.id
+      ? `/store/${item.store.slug}/service/${item.service.id}`
+      : item.store?.slug
+        ? `/store/${item.store.slug}?tab=services`
+        : '/shops';
+    crumbs.push({ label: item.service.name, href: serviceHref });
+  } else if (categoryKey && categoryKey in SERVICE_GROUPS) {
     crumbs.push({
       label: SERVICE_GROUPS[categoryKey as ServiceGroupKey].label,
-      href: `/search?tab=services&service_category=${categoryKey}`,
+      href: item.store?.slug ? `/store/${item.store.slug}?tab=services&category=${categoryKey}` : '/categories',
     });
   } else if (categoryKey && SERVICE_CATEGORY_LABELS[categoryKey as ServiceCategory]) {
     crumbs.push({
       label: SERVICE_CATEGORY_LABELS[categoryKey as ServiceCategory],
-      href: `/search?tab=services&service_category=${categoryKey}`,
+      href: item.store?.slug ? `/store/${item.store.slug}?tab=services&category=${categoryKey}` : '/categories',
     });
-  }
-
-  if (item.service?.name) {
-    const serviceHref = item.store?.slug && item.service.id
-      ? `/store/${item.store.slug}/service/${item.service.id}`
-      : `/search?tab=services${categoryKey ? `&service_category=${categoryKey}` : ''}`;
-    crumbs.push({ label: item.service.name, href: serviceHref });
   }
 
   return (
@@ -75,4 +80,3 @@ export default function CatalogDetailBreadcrumb({ item }: Readonly<{ item: Bread
     </nav>
   );
 }
-

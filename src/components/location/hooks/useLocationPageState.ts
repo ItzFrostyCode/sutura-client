@@ -63,6 +63,34 @@ export function useLocationPageState() {
     refreshData();
   }, [refreshData]);
 
+  // Live debounced suggestions as the visitor types
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setSearching(false);
+      setSearchError('');
+      return;
+    }
+
+    setSearching(true);
+    setSearchError('');
+    const timer = setTimeout(async () => {
+      try {
+        const places = await searchPlacesAroundDavao(trimmed);
+        if (Array.isArray(places)) {
+          setSearchResults(places);
+        }
+      } catch {
+        // Fallback silently during live debounced search
+      } finally {
+        setSearching(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   function handleSelectLocation(loc: SavedLocation) {
     saveLocationWithHistory(loc);
     const target = returnTo || (outgoingQ ? `/search?q=${encodeURIComponent(outgoingQ)}` : '/search');

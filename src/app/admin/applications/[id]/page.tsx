@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, X } from 'lucide-react';
+import { ArrowLeft, Check, KeyRound, X } from 'lucide-react';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/lib/apiError';
@@ -19,11 +19,12 @@ const STATUS_BADGE: Record<string, BadgeVariant> = { pending: 'warning', approve
 
 export default function ApplicationDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { store, documents, error, suggestedLogin, loginDomain, approve, reject } = useApplicationDetail(id);
+  const { store, documents, error, suggestedLogin, loginDomain, approve, reject, reissueCredentials } = useApplicationDetail(id);
   const toast = useToast();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [approveOpen, setApproveOpen] = useState(false);
   const [credentials, setCredentials] = useState<IssuedCredentials | null>(null);
+  const [reissuing, setReissuing] = useState(false);
 
   if (!store) return <ListState loading={!error} error={error} empty={false} emptyText="" />;
 
@@ -49,6 +50,19 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
     }
   };
 
+  const handleReissue = async () => {
+    setReissuing(true);
+    try {
+      const result = await reissueCredentials();
+      toast.success(result.message);
+      setCredentials(result.credentials);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not reissue credentials.'));
+    } finally {
+      setReissuing(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-24">
       <Link href="/admin/applications" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
@@ -60,7 +74,20 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
           <p className="text-eyebrow-accent">Shop application</p>
           <h1 className="text-display mt-2 text-3xl font-semibold text-ink">{store.name}</h1>
         </div>
-        <Badge variant={STATUS_BADGE[store.status] ?? 'neutral'} className="capitalize">{store.status}</Badge>
+        <div className="flex items-center gap-3">
+          {store.status === 'approved' && (
+            <button
+              type="button"
+              onClick={handleReissue}
+              disabled={reissuing}
+              className="inline-flex min-h-10 items-center gap-1.5 border border-line bg-surface px-3.5 text-xs font-semibold text-ink hover:bg-canvas disabled:opacity-50"
+              title="Generate a new temporary password and show it on screen"
+            >
+              <KeyRound size={14} /> {reissuing ? 'Generating...' : 'Re-issue Temporary Credentials'}
+            </button>
+          )}
+          <Badge variant={STATUS_BADGE[store.status] ?? 'neutral'} className="capitalize">{store.status}</Badge>
+        </div>
       </header>
 
       {store.status === 'rejected' && store.rejection_reason && (
@@ -74,7 +101,8 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
         </p>
       )}
 
-      <ApplicationSummary store={store} />
+      <ApplicationSummary store={store} onReissueCredentials={handleReissue} reissuing={reissuing} />
+
 
       <section>
         <h2 className="tablet-h3 text-ink mb-3">Documents</h2>

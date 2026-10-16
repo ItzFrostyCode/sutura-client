@@ -216,103 +216,93 @@ export default function SearchStoresTab({
                         const qParam = effectiveQ.trim() ? `?tab=services&q=${encodeURIComponent(effectiveQ.trim())}` : '';
                         onShowOnMap(store.slug, qParam);
                       }}
-                      className="group min-w-0 flex-1 text-left active:opacity-80"
+                      className="group min-w-0 flex-1 text-left active:opacity-80 cursor-pointer"
                     >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    <StoreLogoAvatar
-                      src={imageSrc}
-                      name={store.name}
-                      isOpen={isStoreOpen(store.operating_hours)}
-                      className="w-14 h-14 rounded-full border border-line bg-sunken"
-                      textClassName="text-base font-bold text-taupe"
-                    />
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {distKm != null ? (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                            {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
-                          </span>
-                        ) : store.subscription_plan === 'premium' || store.is_featured ? (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                            ★ FEATURED STORE
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                            DAVAO CITY
-                          </span>
-                        )}
-                        {store.reviews_avg_rating ? (
-                          <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
-                            <Star size={10} className="fill-current text-taupe" />
-                            {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
-                          </span>
-                        ) : null}
-                        {altersRepairs && (
-                          <span className="text-[10px] font-bold text-ink-muted inline-flex items-center gap-0.5">
-                            <Wrench size={10} className="text-taupe" /> Alters &amp; repairs
-                          </span>
-                        )}
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <StoreLogoAvatar
+                          src={imageSrc}
+                          name={store.name}
+                          isOpen={isStoreOpen(store.operating_hours)}
+                          className="w-14 h-14 rounded-full border border-line bg-sunken"
+                          textClassName="text-base font-bold text-taupe"
+                        />
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {distKm != null ? (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
+                              </span>
+                            ) : store.subscription_plan === 'premium' || store.is_featured ? (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                ★ FEATURED STORE
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                DAVAO CITY
+                              </span>
+                            )}
+                            {store.reviews_avg_rating ? (
+                              <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
+                                <Star size={10} className="fill-current text-taupe" />
+                                {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
+                              </span>
+                            ) : null}
+                          </div>
+                          <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
+                            {store.name}
+                          </h3>
+                          <p className="text-[11px] text-ink-muted truncate">
+                            {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
+                          </p>
+                          <p className="text-[11px] text-ink-faint truncate">
+                            {addressText}
+                          </p>
+                        </div>
                       </div>
-                      <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
-                        {store.name}
-                      </h3>
-                      <p className="text-[11px] text-ink-muted truncate">
-                        {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
-                      </p>
-                      <p className="text-[11px] text-ink-faint truncate">
-                        {addressText}
-                      </p>
-                    </div>
-                  </div>
                     </button>
                   ) : (
                     <Link href={storeHref} className="group min-w-0 flex-1 active:opacity-80">
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    <StoreLogoAvatar
-                      src={imageSrc}
-                      name={store.name}
-                      isOpen={isStoreOpen(store.operating_hours)}
-                      className="w-14 h-14 rounded-full border border-line bg-sunken"
-                      textClassName="text-base font-bold text-taupe"
-                    />
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {distKm != null ? (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                            {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
-                          </span>
-                        ) : store.subscription_plan === 'premium' || store.is_featured ? (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                            ★ FEATURED STORE
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                            DAVAO CITY
-                          </span>
-                        )}
-                        {store.reviews_avg_rating ? (
-                          <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
-                            <Star size={10} className="fill-current text-taupe" />
-                            {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
-                          </span>
-                        ) : null}
-                        {altersRepairs && (
-                          <span className="text-[10px] font-bold text-ink-muted inline-flex items-center gap-0.5">
-                            <Wrench size={10} className="text-taupe" /> Alters &amp; repairs
-                          </span>
-                        )}
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <StoreLogoAvatar
+                          src={imageSrc}
+                          name={store.name}
+                          isOpen={isStoreOpen(store.operating_hours)}
+                          className="w-14 h-14 rounded-full border border-line bg-sunken"
+                          textClassName="text-base font-bold text-taupe"
+                        />
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {distKm != null ? (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
+                              </span>
+                            ) : store.subscription_plan === 'premium' || store.is_featured ? (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                ★ FEATURED STORE
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                                DAVAO CITY
+                              </span>
+                            )}
+                            {store.reviews_avg_rating ? (
+                              <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
+                                <Star size={10} className="fill-current text-taupe" />
+                                {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
+                              </span>
+                            ) : null}
+                          </div>
+                          <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
+                            {store.name}
+                          </h3>
+                          <p className="text-[11px] text-ink-muted truncate">
+                            {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
+                          </p>
+                          <p className="text-[11px] text-ink-faint truncate">
+                            {addressText}
+                          </p>
+                        </div>
                       </div>
-                      <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
-                        {store.name}
-                      </h3>
-                      <p className="text-[11px] text-ink-muted truncate">
-                        {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
-                      </p>
-                      <p className="text-[11px] text-ink-faint truncate">
-                        {addressText}
-                      </p>
-                    </div>
-                  </div>
                     </Link>
                   )}
                   {inPanel ? (

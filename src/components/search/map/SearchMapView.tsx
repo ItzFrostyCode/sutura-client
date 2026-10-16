@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import HomeFilterSheet from '@/components/home/HomeFilterSheet';
 import { useHomeLocation } from '@/components/home/useHomeLocation';
@@ -67,6 +67,17 @@ export default function SearchMapView() {
     if (found) grow();
     return found;
   };
+
+  // Deep link from Home page or URL: auto-open store if ?store= or ?shop= is specified
+  const handledStoreParamRef = useRef<string | null>(null);
+  useEffect(() => {
+    const targetStore = s.searchParams.get('store') || s.searchParams.get('shop');
+    if (targetStore && s.stores.length > 0 && handledStoreParamRef.current !== targetStore) {
+      handledStoreParamRef.current = targetStore;
+      showOnMap(targetStore);
+    }
+  }, [s.searchParams, s.stores]);
+
   const getDirections = (branch: { latitude: number; longitude: number; storeSlug: string }, name: string) => {
     void nav.start({ lat: branch.latitude, lng: branch.longitude }, branch.storeSlug, name);
     sheet.setExpanded(false);
@@ -85,13 +96,28 @@ export default function SearchMapView() {
   };
 
   const fitPadding = desktop
-    ? { left: sheet.expanded ? 16 : DESKTOP_PANEL_PX, bottom: NAV_PX }
-    : { top: 16, bottom: (panelOpen ? sheet.settledHeight : 0) + NAV_PX };
+    ? { left: DESKTOP_PANEL_PX, bottom: NAV_PX }
+    : { top: 16, bottom: (panelOpen ? sheet.collapsedHeight : 0) + NAV_PX };
 
   return (
     <div ref={areaRef} className="relative min-h-0 flex-1 overflow-hidden" style={{ '--sheet-h': `${sheetPx}px` } as CSSProperties}>
-      <div className="absolute inset-0 z-0">
-        <DiscoveryMap fullScreen branches={map.pins} userLocation={nav.position ?? s.userCoords} userCourse={nav.course} onSelectBranch={choose} mapRef={map.mapRef} fitPadding={fitPadding} route={nav.route?.line ?? null} routeFit={nav.fitLine} followPosition={nav.following ? nav.position : null} focusUser={focusMe} onUserPan={() => { nav.stopFollowing(); setFocusMe(false); }} disableFitBounds={focusMe || (nav.following && nav.position !== null)} />
+      <div className={`absolute inset-0 z-0 ${sheet.expanded ? 'pointer-events-none select-none' : ''}`}>
+        <DiscoveryMap
+          fullScreen
+          branches={map.pins}
+          userLocation={nav.position ?? s.userCoords}
+          userCourse={nav.course}
+          onSelectBranch={choose}
+          mapRef={map.mapRef}
+          fitPadding={fitPadding}
+          route={nav.route?.line ?? null}
+          routeFit={nav.fitLine}
+          followPosition={sheet.expanded ? null : (nav.following ? nav.position : null)}
+          focusUser={focusMe && !sheet.expanded}
+          onUserPan={() => { nav.stopFollowing(); setFocusMe(false); }}
+          disableFitBounds={focusMe || (nav.following && nav.position !== null) || sheet.expanded}
+          interactive={!sheet.expanded}
+        />
       </div>
 
       {/* Desktop: floating card on the left with symmetrical 16px margins when expanded */}

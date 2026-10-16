@@ -17,9 +17,9 @@ interface ChangePasswordGateProps {
 // every store-scoped call (403 password_change_required) until this is done,
 // so the dashboard isn't shown behind it.
 export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: ChangePasswordGateProps) {
-  const [current, setCurrent] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +29,7 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
     setSaving(true);
     setError('');
     try {
-      await api.put('/profile/password', { current_password: current, password, password_confirmation: confirm });
+      await api.put('/profile/password', { password, password_confirmation: confirm });
       onChanged();
     } catch (err) {
       setError(getErrorMessage(err, 'Could not change your password. Please try again.'));
@@ -45,19 +45,32 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
         <div>
           <h1 className="mobile-h1 text-ink">Choose your password</h1>
           <p className="mobile-body-md text-ink-body mt-2">
-            You signed in with a temporary password. Pick your own to finish setting up <span className="break-all font-semibold">{loginEmail}</span>.
+            You signed in with a temporary password. Pick your permanent password to finish setting up <span className="break-all font-semibold">{loginEmail}</span>.
           </p>
         </div>
 
         {error && <div role="alert" className="border border-danger/30 bg-danger/5 p-3.5 text-sm text-danger">{error}</div>}
 
         <div>
-          <label htmlFor="cp-current" className="block text-sm text-ink mb-2">Temporary password</label>
-          <input id="cp-current" type="password" required autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} className={INPUT_CLASS} />
-        </div>
-        <div>
           <label htmlFor="cp-new" className="block text-sm text-ink mb-2">New password</label>
-          <input id="cp-new" type="password" required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT_CLASS} />
+          <div className="relative">
+            <input
+              id="cp-new"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${INPUT_CLASS} pr-16`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-ink underline underline-offset-2 hover:text-espresso"
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           <ul className="mt-3 space-y-1.5">
             {PASSWORD_RULES.map((rule) => {
               const met = rule.test(password);
@@ -72,10 +85,20 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
             })}
           </ul>
         </div>
+
         <div>
           <label htmlFor="cp-confirm" className="block text-sm text-ink mb-2">Confirm new password</label>
-          <input id="cp-confirm" type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT_CLASS} />
+          <input
+            id="cp-confirm"
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className={INPUT_CLASS}
+          />
         </div>
+
 
         <button type="submit" disabled={saving || !meetsPasswordRules(password)} className="btn-primary-mobile rounded-none! w-full bg-ink text-white uppercase tracking-widest text-sm disabled:opacity-40">
           {saving ? 'Saving…' : 'Save Password'}
@@ -87,3 +110,4 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
     </div>
   );
 }
+

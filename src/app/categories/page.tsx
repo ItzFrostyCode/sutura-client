@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
+import DirectorySearchBar from '@/components/shared/DirectorySearchBar';
 import HomeFooter from '@/components/home/HomeFooter';
-import CategoriesShowcaseGrid from '@/components/categories/CategoriesShowcaseGrid';
-import CategoriesServicesSection from '@/components/categories/CategoriesServicesSection';
+import CategoriesVisualGrid from '@/components/categories/CategoriesVisualGrid';
 import CategoriesAlphabetDirectory from '@/components/categories/CategoriesAlphabetDirectory';
 
 export default function CategoriesPage() {
@@ -28,35 +27,43 @@ export default function CategoriesPage() {
 
       <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-6 sm:py-8">
         <PageBrandRow className="mb-2" />
+        
+        {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mobile-caption text-ink-muted flex items-center gap-1.5 mb-4">
-          <Link href="/" className="hover:text-ink">SUTURA</Link>
+          <Link href="/" className="hover:text-ink">Home</Link>
           <span>&gt;</span>
           <span className="text-ink font-semibold">All Categories</span>
         </nav>
 
-        <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">All Categories</h1>
-        <p className="mobile-body-md text-ink-muted max-w-2xl mb-6">
-          Browse every garment SUTURA tailors work on, by category — then the work they do: made-to-measure,
-          uniforms and jerseys, alterations and repairs, and embroidery.
-        </p>
-
-        <form onSubmit={handleSearchSubmit} className="relative mb-8">
-          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search a garment or service, e.g. Barong Tagalog, Alterations..."
-            className="w-full h-12 sm:h-14 pl-11 pr-4 bg-surface border border-line focus:border-taupe focus:outline-none text-base text-ink placeholder:text-ink-faint"
-          />
-        </form>
-
-        <div className="mb-10">
-          <CategoriesShowcaseGrid />
+        {/* Page Title & Subtitle */}
+        <div className="mb-6">
+          <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">All Categories</h1>
+          <p className="mobile-body-md text-ink-muted max-w-2xl">
+            Explore every custom garment category, tailoring service, and alteration option available across SUTURA shops in Davao City.
+          </p>
         </div>
 
-        <CategoriesServicesSection />
+        {/* Top Visual Bar: Shopee-Style 2-Row Grid Carousel */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-ink-muted">
+              Main Categories
+            </h2>
+          </div>
+          <CategoriesVisualGrid />
+        </div>
 
+        {/* Search Bar - Landing page rounded style with generous height, no filter */}
+        <DirectorySearchBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={handleSearchSubmit}
+          placeholder="Search categories or sub-categories, e.g. Barong, Wedding Gown, Uniforms, Alterations..."
+          ariaLabel="Search categories or sub-categories"
+          className="mb-6"
+        />
+
+        {/* A–Z Alphabet Index Bar & 4-Column Directory */}
         <CategoriesAlphabetDirectory query={query} />
       </main>
 

@@ -92,18 +92,14 @@ export async function reverseGeocodeCoords(lat: number, lng: number): Promise<Ge
   };
 }
 
-/**
- * Searches places around Davao City.
- * Biased towards Davao City coordinates to return relevant streets and landmarks.
- */
-export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearchResult[]> {
+async function singleQueryPlaces(query: string): Promise<PlaceSearchResult[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
   // Strategy 1: Photon search biased to Davao City (7.0707, 125.6083)
   try {
     const res = await fetch(
-      `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&lat=7.0707&lon=125.6083&limit=8`,
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&lat=7.0707&lon=125.6083&limit=6`,
       { headers: { Accept: 'application/json' } }
     );
     if (res.ok) {
@@ -147,7 +143,7 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
         queryText
-      )}&viewbox=125.30,7.40,125.80,6.85&bounded=1&limit=8&countrycodes=ph`
+      )}&viewbox=125.30,7.40,125.80,6.85&bounded=1&limit=6&countrycodes=ph`
     );
     if (res.ok) {
       const data = await res.json();
@@ -161,6 +157,90 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
     }
   } catch {
     // Fallback
+  }
+
+  return [];
+}
+
+function normalizeStreetAbbrev(text: string): string {
+  return text
+    .replace(/\bste\.?\b/gi, 'Street')
+    .replace(/\bst\.?\b/gi, 'Street')
+    .replace(/\bave\.?\b/gi, 'Avenue')
+    .replace(/\bblvd\.?\b/gi, 'Boulevard')
+    .replace(/\brd\.?\b/gi, 'Road')
+    .replace(/\bext\.?\b/gi, 'Extension')
+    .replace(/\bbrgy\.?\b/gi, 'Barangay')
+    .replace(/\bbgy\.?\b/gi, 'Barangay')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Searches places around Davao City.
+ * Biased towards Davao City coordinates to return relevant streets and landmarks.
+ * Automatically handles multi-segment queries like "Washington ste. Front of almendras gym, Davao City".
+ */
+export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  // First try direct search
+  const directResults = await singleQueryPlaces(trimmed);
+  if (directResults.length > 0) {
+    return directResults;
+  }
+
+  // Also try normalized street abbreviations directly
+  const normalizedDirect = normalizeStreetAbbrev(trimmed);
+  if (normalizedDirect !== trimmed) {
+    const hits = await singleQueryPlaces(normalizedDirect);
+    if (hits.length > 0) return hits;
+  }
+
+  // Check if query contains connective segments (e.g. "Front of", "near", "beside", "corner")
+  const connectorPattern =
+    /\b(?:in\s*front\s*of|infront\s*of|front\s*of|fronting|ahead\s*of|near(?:\s*by|\s*to)?|beside|next\s*to|across(?:\s*from)?|opposite(?:\s*to)?|opp\.?|corner|cor\.?|along|at\s*the\s*back\s*of|back\s*of|behind|adjacent\s*to|around|outside|inside|close\s*to|between)\b/gi;
+
+  let rawSegments: string[] = [];
+  if (connectorPattern.test(trimmed)) {
+    rawSegments = trimmed.split(connectorPattern);
+  } else if (/[,;]+/.test(trimmed)) {
+    rawSegments = trimmed.split(/[,;]+/);
+  }
+
+  if (rawSegments.length > 0) {
+    const cleanSegments = rawSegments
+      .map((s) =>
+        s
+          .trim()
+          .replace(/^[,\s.-]+|[,\s.-]+$/g, '')
+          .replace(/,\s*davao(?:\s*(?:city|del\s*sur))?.*$/i, '')
+          .trim()
+      )
+      .filter((s) => s.length >= 2 && !/^(?:davao|davao city|philippines)$/i.test(s));
+
+    const combined: PlaceSearchResult[] = [];
+    const seen = new Set<string>();
+
+    for (const rawSeg of cleanSegments) {
+      const candidates = [rawSeg, normalizeStreetAbbrev(rawSeg)];
+      for (const cand of candidates) {
+        const hits = await singleQueryPlaces(cand);
+        for (const hit of hits) {
+          const key = `${hit.lat.toFixed(4)},${hit.lng.toFixed(4)}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            combined.push(hit);
+          }
+        }
+        if (combined.length >= 8) break;
+      }
+    }
+
+    if (combined.length > 0) {
+      return combined.slice(0, 8);
+    }
   }
 
   return [];

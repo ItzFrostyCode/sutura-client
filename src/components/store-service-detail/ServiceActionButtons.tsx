@@ -5,14 +5,14 @@ import { MessageCircle, CalendarDays } from 'lucide-react';
 interface ServiceActionButtonsProps {
   bookHref: string;
   messageHref?: string | null;
-  storeHref: string;
-  /** False inside the map panel (the shop is already open). */
+  storeHref?: string;
+  /** @deprecated Shop button removed from mobile bars */
   showShop?: boolean;
 }
 
 // 600px+: the inline pair in the info column (outline "Message" + filled
 // "Book an Appointment"), same sizes as the Catalog Design's buttons.
-export function ServiceInlineActions({ bookHref, messageHref }: Omit<ServiceActionButtonsProps, 'storeHref'>) {
+export function ServiceInlineActions({ bookHref, messageHref }: Omit<ServiceActionButtonsProps, 'storeHref' | 'showShop'>) {
   return (
     <div className="hidden min-[600px]:flex items-center gap-2 pt-4">
       {messageHref && (
@@ -35,34 +35,27 @@ export function ServiceInlineActions({ bookHref, messageHref }: Omit<ServiceActi
   );
 }
 
-// Below 600px: the sticky bottom bar (Shop · Message | Book an Appointment).
-export function ServiceBottomBar({ bookHref, messageHref, storeHref, showShop = true }: ServiceActionButtonsProps) {
+// Below 600px: the sticky bottom bar (Message | Book an Appointment).
+export function ServiceBottomBar({ bookHref, messageHref }: ServiceActionButtonsProps) {
   return (
     <div
       className="min-[600px]:hidden sticky bottom-0 left-0 right-0 z-40 bg-white border-t border-line shrink-0"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch h-14">
-        <div className={`flex items-stretch ${showShop || messageHref ? 'border-r border-line' : ''}`}>
-          {showShop && <Link href={storeHref} className="flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            <span className="text-[10px] font-semibold">Shop</span>
-          </Link>}
-          {messageHref && (
+        {messageHref && (
+          <div className="flex items-stretch border-r border-line">
             <a
               href={messageHref}
               target="_blank"
               rel="noopener noreferrer"
-              className={`flex flex-col items-center justify-center gap-0.5 px-3.5 text-ink-muted hover:text-taupe transition-colors ${showShop ? 'border-l border-line' : ''}`}
+              className="flex flex-col items-center justify-center gap-0.5 px-4 text-ink-muted hover:text-taupe transition-colors"
             >
               <MessageCircle size={20} />
               <span className="text-[10px] font-semibold">Message</span>
             </a>
-          )}
-        </div>
+          </div>
+        )}
         <Link href={bookHref} className="flex-1 flex items-center justify-center text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors text-center">
           Book an Appointment
         </Link>

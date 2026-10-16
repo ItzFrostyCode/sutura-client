@@ -52,7 +52,7 @@ export function useStoreDirectory() {
   useEffect(() => {
     const handle = setTimeout(() => {
       setLoading(true);
-      const params: Record<string, string | number> = { per_page: 24, page, sort_by: sortBy };
+      const params: Record<string, string | number> = { per_page: 50, page, sort_by: sortBy };
       if (q.trim()) params.q = q.trim();
       if (district) params.district = district;
       if (specialization) params.specialization = specialization;

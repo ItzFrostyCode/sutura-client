@@ -24,10 +24,19 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
   return (
     <form onSubmit={(e) => { e.preventDefault(); goTo(2); }} className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <TextField id="app-first" label="First Name" required autoComplete="given-name" {...bind('first_name')} />
-        <TextField id="app-middle" label="Middle Name" autoComplete="additional-name" {...bind('middle_name')} />
-        <TextField id="app-last" label="Last Name" required autoComplete="family-name" {...bind('last_name')} />
-        <TextField id="app-suffix" label="Suffix (Jr., Sr.)" {...bind('suffix')} />
+        <div className="sm:col-span-2">
+          <TextField
+            id="app-full-name"
+            label="Full Name"
+            required
+            autoComplete="name"
+            placeholder="Juan V. Dela Cruz II"
+            {...bind('full_name')}
+          />
+          <p className="mt-1.5 text-xs text-ink-muted">
+            Example: Juan V. Dela Cruz II
+          </p>
+        </div>
         <TextField id="app-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} />
         <TextField id="app-phone" label="Contact Number" type="tel" required placeholder="09XX XXX XXXX" autoComplete="tel" {...bind('contact_number')} />
       </div>

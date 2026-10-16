@@ -17,7 +17,7 @@ export default function HomeServices({ services, loading }: HomeServicesProps) {
 
   return (
     <section aria-labelledby="home-services-title">
-      <HomeSectionHeader id="home-services-title" title="Services" href="/search?tab=services" />
+      <HomeSectionHeader id="home-services-title" title="Services" href="/search?tab=services" linkLabel="See All Services" />
       {loading ? (
         <SkeletonRow>{(i) => <ServiceCardSkeleton key={i} />}</SkeletonRow>
       ) : offered.length === 0 ? (

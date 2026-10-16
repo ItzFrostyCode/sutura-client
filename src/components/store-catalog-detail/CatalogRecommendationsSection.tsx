@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import type { CatalogItemResult } from '@/types/publicCatalog';
+import { useEmbedded, embedSuffix } from '@/hooks/useEmbedded';
 
 interface CatalogRecommendationsSectionProps {
   fromSameShop: CatalogItemResult[];
@@ -16,6 +17,8 @@ export default function CatalogRecommendationsSection({
   moreLikeThis,
   storeId,
 }: CatalogRecommendationsSectionProps) {
+  const embedded = useEmbedded();
+
   return (
     <>
       {/* FROM THE SAME SHOP — mocked layout: bold uppercase header + "See All >" link, 4-col grid */}
@@ -24,7 +27,7 @@ export default function CatalogRecommendationsSection({
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <span className="text-xs font-bold uppercase tracking-wider text-ink">From the Same Shop</span>
             <Link
-              href={`/store/${fromSameShop[0]?.store?.slug ?? storeId}`}
+              href={`/store/${fromSameShop[0]?.store?.slug ?? storeId}${embedSuffix(embedded)}`}
               className="text-xs font-semibold text-taupe hover:underline"
             >
               See All &gt;
@@ -32,7 +35,11 @@ export default function CatalogRecommendationsSection({
           </div>
           <div className="p-3 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {fromSameShop.slice(0, 5).map((rec) => (
-              <CatalogItemCard key={rec.id} item={rec} />
+              <CatalogItemCard
+                key={rec.id}
+                item={rec}
+                hrefOverride={rec.store ? `/store/${rec.store.slug}/catalog/${rec.id}${embedSuffix(embedded)}` : undefined}
+              />
             ))}
           </div>
         </div>

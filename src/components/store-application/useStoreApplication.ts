@@ -30,6 +30,8 @@ export function useStoreApplication() {
   // Set once submitted — the owner can't sign in until a System Admin
   // approves and emails their shop login here.
   const [submittedTo, setSubmittedTo] = useState<string | null>(null);
+  const [submittedStoreId, setSubmittedStoreId] = useState<number | null>(null);
+  const [submittedStoreName, setSubmittedStoreName] = useState<string>('');
 
   useEffect(() => {
     api.get('/public/subscription-plans')
@@ -61,7 +63,28 @@ export function useStoreApplication() {
     setError('');
 
     const form = new FormData();
-    Object.entries(owner).forEach(([key, value]) => { if (value) form.append(key, value); });
+    const nameParts = owner.full_name.trim().split(/\s+/);
+    const suffixes = ['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v'];
+    let suffix = '';
+    if (nameParts.length > 1 && suffixes.includes(nameParts[nameParts.length - 1].toLowerCase())) {
+      suffix = nameParts.pop() ?? '';
+    }
+    const lastName = nameParts.length > 1 ? (nameParts.pop() ?? '') : (nameParts[0] ?? '');
+    let middleName = '';
+    if (nameParts.length > 1 && nameParts[nameParts.length - 1].replace(/\.$/, '').length === 1) {
+      middleName = nameParts.pop() ?? '';
+    }
+    const firstName = nameParts.join(' ') || lastName;
+
+    const resolvedOwner = {
+      ...owner,
+      first_name: owner.first_name || firstName,
+      middle_name: owner.middle_name || middleName,
+      last_name: owner.last_name || lastName,
+      suffix: owner.suffix || suffix,
+    };
+
+    Object.entries(resolvedOwner).forEach(([key, value]) => { if (value) form.append(key, value); });
     form.append('store_name', shop.store_name);
     form.append('address', shop.address);
     if (shop.barangay.trim()) form.append('barangay', shop.barangay.trim());
@@ -83,6 +106,8 @@ export function useStoreApplication() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setSubmittedTo(res.data.data.contact_email);
+      if (res.data.data.store_id) setSubmittedStoreId(res.data.data.store_id);
+      if (res.data.data.store_name) setSubmittedStoreName(res.data.data.store_name);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(getErrorMessage(err, 'Could not submit your application. Please try again.'));
@@ -95,6 +120,7 @@ export function useStoreApplication() {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
     paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
+    submittedStoreId, submittedStoreName,
   };
 }
 

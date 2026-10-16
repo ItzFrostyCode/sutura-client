@@ -19,8 +19,6 @@ import CatalogBottomActionBar from '@/components/store-catalog-detail/CatalogBot
 import { useEmbedded } from '@/hooks/useEmbedded';
 import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
-import CatalogFindInStoreSheet from '@/components/store-catalog-detail/CatalogFindInStoreSheet';
-import { isStoreOpen } from '@/lib/storeStatus';
 import CatalogDetailBreadcrumb from '@/components/store-catalog-detail/CatalogDetailBreadcrumb';
 
 export default function PublicProductDetailPage({
@@ -57,29 +55,10 @@ export default function PublicProductDetailPage({
     headerOpacity,
     fromSameShop,
     moreLikeThis,
-    showFind,
-    setShowFind,
-    findInteractive,
-    findSheetBranchId,
-    setFindSheetBranchId,
-    showBookConfirm,
-    setShowBookConfirm,
-    showBranchPickModal,
-    setShowBranchPickModal,
-    userPos,
-    locating,
-    locateError,
-    handleLocate,
     pageRef,
     gate,
     handleBackClick,
     handleReportClick,
-    branches,
-    findBranch,
-    mapBranches,
-    selectedFindBranch,
-    selectedDistanceKm,
-    nearerBranchSuggestion,
     buildBookHref,
   } = useCatalogItemDetail(storeId, itemId);
 
@@ -99,8 +78,7 @@ export default function PublicProductDetailPage({
     );
   }
 
-  const bookHref = gate(buildBookHref(selectedFindBranch?.slug ?? findBranch?.slug ?? null));
-  const bookConfirmHref = buildBookHref(branches.find(b => b.id === selectedFindBranch?.id)?.slug);
+  const bookHref = gate(buildBookHref());
 
   return (
     <div ref={pageRef} className="min-h-full flex flex-col bg-canvas">
@@ -119,10 +97,7 @@ export default function PublicProductDetailPage({
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10">
-        {/* Breadcrumb — tablet/desktop only */}
-        <div className="hidden min-[600px]:block">
-          <CatalogDetailBreadcrumb item={item} />
-        </div>
+
 
         {/* ──────────────────────────────────────────────────────
             SECTION 1: Hero Gallery (left) + Buy Zone (right)
@@ -184,9 +159,8 @@ export default function PublicProductDetailPage({
               onViewOrder={id => router.push(`/account/orders/${id}`)}
             />
 
-            {/* Find a Branch | Book an Appointment (desktop/tablet inline buttons) */}
+            {/* Book an Appointment (desktop/tablet inline button) */}
             <CatalogDesktopActionButtons
-              onOpenFind={() => setShowFind(true)}
               bookHref={bookHref}
             />
           </div>
@@ -241,39 +215,7 @@ export default function PublicProductDetailPage({
 
       {/* Mobile sticky bottom action bar */}
       <CatalogBottomActionBar
-        onOpenFind={() => setShowFind(true)}
         bookHref={bookHref}
-        storeSlug={item.store?.slug}
-        showShop={!embedded}
-      />
-
-
-
-      <CatalogFindInStoreSheet
-        showFind={showFind}
-        onClose={() => setShowFind(false)}
-        findInteractive={findInteractive}
-        mapBranches={mapBranches}
-        findSheetBranchId={findSheetBranchId}
-        setFindSheetBranchId={setFindSheetBranchId}
-        selectedFindBranch={selectedFindBranch}
-        userPos={userPos}
-        onLocate={handleLocate}
-        locating={locating}
-        locateError={locateError}
-        selectedImage={selectedImage}
-        itemName={item.name}
-        itemPrice={designPriceLabel(item.pricing, item.price)}
-        storeName={item.store?.name ?? ''}
-        storeLogoPath={item.store?.logo_path ?? null}
-        storeIsOpen={isStoreOpen(item.store?.operating_hours)}
-        showBookConfirm={showBookConfirm}
-        setShowBookConfirm={setShowBookConfirm}
-        selectedDistanceKm={selectedDistanceKm}
-        nearerBranchSuggestion={nearerBranchSuggestion}
-        showBranchPickModal={showBranchPickModal}
-        setShowBranchPickModal={setShowBranchPickModal}
-        bookConfirmHref={bookConfirmHref}
       />
     </div>
   );

@@ -7,7 +7,7 @@ const startsWithAny = (path: string, prefixes: string[]) => prefixes.some((p) =>
 
 // Map is the combined search + map screen; Discover covers the browsing pages that hang off the landing page.
 const LINKS = [
-  { label: 'Discover', href: '/', isActive: (p: string) => p === '/' || startsWithAny(p, ['/categories', '/stores']) },
+  { label: 'Discover', href: '/', isActive: (p: string) => p === '/' || startsWithAny(p, ['/categories', '/shops', '/stores']) },
   { label: 'Map', href: '/search', isActive: (p: string) => startsWithAny(p, ['/search', '/map', '/location']) },
   { label: 'About', href: '/about', isActive: (p: string) => p === '/about' },
 ];

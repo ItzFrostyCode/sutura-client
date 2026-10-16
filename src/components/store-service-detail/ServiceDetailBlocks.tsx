@@ -57,7 +57,8 @@ export function ServiceWorkBlock({ service }: Readonly<{ service: PublicService 
   if (garments) rows.push(['Works on', garments]);
   else if (ANY_GARMENT_GROUPS.includes(service.service_category ?? '')) rows.push(['Works on', 'Any garment — bring it in or ask for a quotation']);
   if (caps.length > 0) rows.push(['What they do', caps.join(' · ')]);
-  if (bulk && service.min_order_qty) rows.push(['Minimum order', `${service.min_order_qty} piece${service.min_order_qty === 1 ? '' : 's'}`]);
+  const hasMinOrder = Boolean(service.min_order_qty && Number(service.min_order_qty) > 1);
+  if (hasMinOrder) rows.push(['Minimum order', `${service.min_order_qty} pieces`]);
   rows.push(['Estimated Completion', formatServiceTurnaround(service.estimated_days, service.estimated_days_max)]);
 
   return (
