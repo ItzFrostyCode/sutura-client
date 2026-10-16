@@ -620,11 +620,11 @@ textarea:-webkit-autofill:focus {
    Smooth 360-degree rotation, floating levitation, dynamic ground shadow,
    and concentric ground radar waves that expand to indicate active scanning. */
 .sutura-pin-stage { position: relative; width: 120px; height: 140px; display: flex; align-items: center; justify-content: center; perspective: 600px; }
-.sutura-pin-bob { position: absolute; inset: 0 0 20px; display: flex; align-items: center; justify-content: center; animation: sutura-pin-bob 2.2s ease-in-out infinite; }
+.sutura-pin-bob { position: absolute; inset: 0 0 20px; display: flex; align-items: center; justify-content: center; animation: sutura-pin-bob 2.8s ease-in-out infinite; }
 .sutura-pin-spin {
   position: relative; width: 72px; height: 90px;
   transform-style: preserve-3d;
-  animation: sutura-pin-spin 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  animation: sutura-pin-spin 4.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 .sutura-pin-face-wrap {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -636,15 +636,15 @@ textarea:-webkit-autofill:focus {
 .sutura-radar-wave {
   position: absolute; left: 50%; top: 50%; width: 44px; height: 16px; margin-left: -22px; margin-top: -8px;
   border-radius: 50%; border: 1.5px solid rgba(154, 128, 115, 0.45);
-  animation: sutura-radar-wave 2.2s ease-out infinite;
+  animation: sutura-radar-wave 2.8s ease-out infinite;
 }
-.sutura-radar-wave-2 { animation-delay: 0.7s; }
-.sutura-radar-wave-3 { animation-delay: 1.4s; }
+.sutura-radar-wave-2 { animation-delay: 0.9s; }
+.sutura-radar-wave-3 { animation-delay: 1.8s; }
 
 .sutura-pin-shadow {
   position: absolute; left: 50%; top: 50%; width: 40px; height: 10px; margin-left: -20px; margin-top: -5px;
   border-radius: 50%; background: radial-gradient(ellipse at center, rgba(45, 42, 38, 0.38) 0%, rgba(45, 42, 38, 0) 75%);
-  animation: sutura-pin-shadow 2.2s ease-in-out infinite;
+  animation: sutura-pin-shadow 2.8s ease-in-out infinite;
 }
 
 @keyframes sutura-pin-spin {
@@ -653,20 +653,20 @@ textarea:-webkit-autofill:focus {
 }
 @keyframes sutura-pin-bob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
+  50% { transform: translateY(-12px); }
 }
 @keyframes sutura-pin-shadow {
   0%, 100% { transform: scale(1); opacity: 0.38; }
-  50% { transform: scale(0.65); opacity: 0.18; }
+  50% { transform: scale(0.7); opacity: 0.2; }
 }
 @keyframes sutura-radar-wave {
   0% { transform: scale(0.3); opacity: 0.8; }
   100% { transform: scale(2.8); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sutura-pin-spin { animation: sutura-pin-spin 6s linear infinite; }
+  .sutura-pin-spin { animation: sutura-pin-spin 8s linear infinite; }
   .sutura-pin-bob { animation: none; }
-  .sutura-radar-wave { animation: sutura-radar-wave 4s ease-out infinite; }
+  .sutura-radar-wave { animation: sutura-radar-wave 5s ease-out infinite; }
 }
 
 /* PublicBottomNav is fixed to the bottom edge; this keeps the end of the page reachable. */

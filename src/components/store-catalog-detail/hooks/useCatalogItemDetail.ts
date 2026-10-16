@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
 import type { CatalogItemResult } from '@/types/publicCatalog';
-import { DEFAULT_DAVAO_LOCATION, requestCurrentLocation } from '@/lib/customerLocation';
+import { requestCurrentLocation } from '@/lib/customerLocation';
 import { CatalogItem, CatalogItemImage, MapBranch } from '../types';
 
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -226,9 +226,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
         setLocating(false);
       },
       () => {
-        // Fallback for desktop PC without GPS hardware
-        const def = DEFAULT_DAVAO_LOCATION;
-        setUserPos({ lat: def.lat, lng: def.lng });
+        setLocateError('Unable to get your location. Check your location permission.');
         setLocating(false);
       }
     );

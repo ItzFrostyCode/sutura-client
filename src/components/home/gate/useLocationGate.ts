@@ -31,10 +31,8 @@ export type GatePhase = 'pinpointing' | 'permission' | 'finding' | 'far' | 'done
 interface GatePlace {
   readonly location: SavedLocation | null;
   readonly denied: boolean;
-  readonly unavailable?: boolean;
   readonly failed: boolean;
   readonly request: () => void;
-  readonly useDefault?: () => void;
 }
 
 /**
@@ -107,10 +105,6 @@ export function useLocationGate(place: GatePlace) {
     return () => { cancelled = true; };
   }, [cleared, lat, lng, enter]);
 
-  const useDefault = useCallback(() => {
-    place.useDefault?.();
-  }, [place]);
-
   let phase: GatePhase;
   if (cleared) phase = 'done';
   else if (farKm !== null) phase = 'far';
@@ -118,5 +112,5 @@ export function useLocationGate(place: GatePlace) {
   else if (place.denied || place.failed || timedOut) phase = 'permission';
   else phase = 'pinpointing';
 
-  return { phase, farKm, denied: place.denied, unavailable: Boolean(place.unavailable), enter, retry, useDefault };
+  return { phase, farKm, denied: place.denied, enter, retry };
 }

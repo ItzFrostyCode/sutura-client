@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { SavedLocation, RecentLocation, HomeLocation } from '@/lib/customerLocation';
 import {
-  DEFAULT_DAVAO_LOCATION,
   requestCurrentLocation,
   getSavedLocation,
   saveLocationWithHistory,
@@ -79,8 +78,7 @@ export function useLocationPageState() {
         setLocatingCurrent(false);
       },
       () => {
-        // Fallback for desktop PC without GPS hardware
-        handleSelectLocation(DEFAULT_DAVAO_LOCATION);
+        setSearchError('Unable to get location. Check browser permissions.');
         setLocatingCurrent(false);
       }
     );

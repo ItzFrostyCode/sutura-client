@@ -231,13 +231,6 @@ export function getItemDistanceInfo(
   };
 }
 
-export const DEFAULT_DAVAO_LOCATION: SavedLocation = {
-  lat: 7.0731,
-  lng: 125.6128,
-  address: 'San Pedro St, Poblacion District, Davao City',
-  district: 'Poblacion',
-};
-
 export async function checkLocationPermission(): Promise<PermissionState | 'unsupported'> {
   if (typeof navigator === 'undefined' || !navigator.permissions || !navigator.permissions.query) {
     return 'unsupported';
@@ -250,25 +243,12 @@ export async function checkLocationPermission(): Promise<PermissionState | 'unsu
   }
 }
 
-export interface RequestLocationOptions {
-  enableHighAccuracy?: boolean;
-  timeout?: number;
-  maximumAge?: number;
-  fallbackToDefault?: boolean;
-}
-
 export function requestCurrentLocation(
   onSuccess?: (loc: SavedLocation) => void,
-  onError?: (err: GeolocationPositionError | Error) => void,
-  options?: RequestLocationOptions
+  onError?: (err: GeolocationPositionError | Error) => void
 ): void {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
-    if (options?.fallbackToDefault) {
-      saveLocationWithHistory(DEFAULT_DAVAO_LOCATION);
-      onSuccess?.(DEFAULT_DAVAO_LOCATION);
-    } else {
-      onError?.(new Error('Geolocation not supported'));
-    }
+    onError?.(new Error('Geolocation not supported'));
     return;
   }
 
@@ -311,14 +291,9 @@ export function requestCurrentLocation(
       navigator.geolocation.getCurrentPosition(
         handlePositionSuccess,
         (secondErr) => {
-          if (options?.fallbackToDefault) {
-            saveLocationWithHistory(DEFAULT_DAVAO_LOCATION);
-            onSuccess?.(DEFAULT_DAVAO_LOCATION);
-          } else {
-            onError?.(secondErr);
-          }
+          onError?.(secondErr);
         },
-        { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
       );
     },
     { enableHighAccuracy: true, timeout: 5000, maximumAge: 120000 }

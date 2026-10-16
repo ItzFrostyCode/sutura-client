@@ -49,15 +49,7 @@ export default function HomePage() {
       </div>
 
       {gate.phase !== 'done' ? (
-        <LocationGate
-          phase={gate.phase}
-          denied={gate.denied}
-          unavailable={gate.unavailable}
-          farKm={gate.farKm}
-          onRetry={gate.retry}
-          onEnter={gate.enter}
-          onUseDefault={gate.useDefault}
-        />
+        <LocationGate phase={gate.phase} denied={gate.denied} farKm={gate.farKm} onRetry={gate.retry} onEnter={gate.enter} />
       ) : (
         <>
           <main className="mx-auto w-full max-w-[960px] flex-1 space-y-12 px-6 pb-6 pt-1 sm:space-y-16 sm:px-12 sm:pb-10 sm:pt-3 lg:px-0">
