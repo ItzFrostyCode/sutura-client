@@ -19,8 +19,6 @@ export interface ServiceDraft {
   min_order_qty: string;
   service_category: string;
   /** The storefront "Service Categories" chip it sits under (lib/serviceShowcase). */
-  showcase_category: string;
-  service_leaf_type: string;
   /** Worked out from the service type, capabilities and garments (deriveOrderTypes) — never ticked. */
   service_types: ServiceType[];
   /** Garments it works on (current slugs). */
@@ -45,8 +43,6 @@ export function toDraft(service: Service): ServiceDraft {
     turnaround_depends: service.estimated_days == null,
     min_order_qty: service.min_order_qty != null ? String(service.min_order_qty) : '1',
     service_category: service.service_category ?? '',
-    showcase_category: service.showcase_category ?? '',
-    service_leaf_type: service.service_leaf_type ?? '',
     service_types: service.service_types ?? [],
     // A garment from the list under its current slug; a name the shop typed under "Other garments" stays as typed.
     garment_types: Array.from(new Set((service.garment_types ?? []).map((g) => canonicalGarment(g) ?? g.trim()).filter(Boolean))),
@@ -68,7 +64,7 @@ const ANY_GARMENT_GROUPS = ['alterations_repairs', 'garment_customization'];
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
-  service_category: '', showcase_category: '', service_leaf_type: '', service_types: [], garment_types: [], capabilities: [],
+  service_category: '', service_types: [], garment_types: [], capabilities: [],
   tiers: [{ label: '', amount: '' }],
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
@@ -124,8 +120,6 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     service_category: draft.service_category || null,
     garment_types: draft.garment_types,
     capabilities: draft.capabilities,
-    showcase_category: draft.showcase_category || null,
-    service_leaf_type: draft.service_leaf_type || null,
     base_price: draft.base_price.trim() === '' ? null : Number.parseFloat(draft.base_price),
     estimated_days: draft.turnaround_depends || draft.estimated_days.trim() === '' ? null : Number.parseInt(draft.estimated_days, 10),
     estimated_days_max: draft.turnaround_depends || draft.estimated_days_max.trim() === '' ? null : Number.parseInt(draft.estimated_days_max, 10),

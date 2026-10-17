@@ -79,6 +79,27 @@ export function capabilityLabel(group: string | null | undefined, capability: st
   const g = group && group in SERVICE_GROUPS ? (SERVICE_GROUPS[group as ServiceGroupKey] as ServiceGroup) : null;
   return g?.capabilities[capability]?.label ?? capability;
 }
+
+/** The service group a (possibly old) service category means today: "Alterations & Repairs"; null for none. */
+export function serviceGroupLabel(category: string | null | undefined): string | null {
+  if (!category) return null;
+  const key = category in SERVICE_GROUPS ? (category as ServiceGroupKey) : LEGACY_SERVICE_CATEGORIES[category];
+  return key ? SERVICE_GROUPS[key].label : null;
+}
+
+/** Garment Category → Garment for a design, e.g. ["Barong", "Barong Tagalog"]; a typed-in name shows under "Other Garments". */
+export function catalogCategoryPath(item: { garment_type?: string | null }): string[] {
+  if (!item.garment_type) return [];
+  const slug = canonicalGarment(item.garment_type);
+  if (!slug) return [GARMENT_CATEGORIES.other.label, item.garment_type];
+  return [GARMENT_CATEGORIES[GARMENTS[slug].category].label, GARMENTS[slug].label];
+}
+
+/** "Services" → the service, e.g. ["Services", "Alterations & Repairs"]. */
+export function serviceCategoryPath(service: { service_category?: string | null }): string[] {
+  const label = serviceGroupLabel(service.service_category);
+  return label ? ['Services', label] : [];
+}
 `;
 
 writeFileSync(outPath, out);

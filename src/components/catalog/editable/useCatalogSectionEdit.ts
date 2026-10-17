@@ -31,7 +31,7 @@ const SECTION_KEYS: Record<CatalogSection, string[]> = {
   sizes: ['sizes'],
   sizeChart: ['size_chart_image_url', 'size_chart_columns', 'size_chart_rows'],
   measurement: ['measurement_guide'],
-  spec: ['department', 'subcategory', 'garment_structure', 'garment_type', 'service_id', 'material', 'fabric_image_url', 'features'],
+  spec: ['garment_type', 'service_id', 'material', 'fabric_image_url', 'features'],
   description: ['description', 'care_instructions'],
   requirements: [],
 };

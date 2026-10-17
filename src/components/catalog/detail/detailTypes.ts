@@ -54,9 +54,6 @@ export interface DetailedCatalogItem extends RequirementFields {
   sizes?: string[] | null;
   description?: string | null;
   garment_type?: string | null;
-  department?: string | null;
-  subcategory?: string | null;
-  garment_structure?: string | null;
   measurement_guide?: string | null;
   /** Owner's Appointment Configuration for this design (null = store defaults). */
   /** How the design is priced against its service (lib/designPricing); null = same as the service. */

@@ -68,7 +68,6 @@ export interface SearchServiceResult {
   category?: string | null;
   service_type?: string | null;
   service_category?: string | null;
-  service_leaf_type?: string | null;
   description?: string | null;
   base_price: number | null;
   sale_price?: number | null;

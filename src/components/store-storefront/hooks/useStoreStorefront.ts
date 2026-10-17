@@ -9,7 +9,6 @@ import { useToast } from '@/context/ToastContext';
 import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
 import { Service } from '@/components/services/serviceHelpers';
 import { isStoreOpen } from '@/lib/storeStatus';
-import type { DeptKey } from '../catalog/StoreCatalogFilterSidebar';
 import {
   StoreProfile,
   StoreBranch,
@@ -187,15 +186,10 @@ export function useStoreStorefront(storeId: string) {
   const [maxPrice, setMaxPrice] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
   const [catalogGarmentTypeFilters, setCatalogGarmentTypeFilters] = useState<Set<string>>(new Set());
-  // Department (Men/Women/Kids) — a separate filter dimension from the
-  // specific garment_type checkboxes above, not a shortcut that pre-checks
-  // all of them. Desktop-only (StoreCatalogFilterSidebar); mobile's
-  // PortfolioFilterSheet has no Department section, so no draft counterpart.
-  const [catalogDepartmentFilter, setCatalogDepartmentFilter] = useState<DeptKey>('all');
 
   // Draft filters for modal
   const [isPortfolioFilterOpen, setIsPortfolioFilterOpen] = useState(false);
-  // The sheet's own trigger is mobile-only (StoreCatalogFilterSidebar takes
+  // The sheet's own trigger is mobile-only (a sidebar used to take
   // over at sm+) — without this, resizing past 640px while it's open left
   // it stuck open on top of the now-visible sidebar.
   useCloseOnDesktop(() => setIsPortfolioFilterOpen(false), 640);
@@ -366,16 +360,14 @@ export function useStoreStorefront(storeId: string) {
     setMaxPrice('');
     setRatingFilter('');
     setCatalogGarmentTypeFilters(new Set());
-    setCatalogDepartmentFilter('all');
   }, []);
 
   const activeFilterCount = useMemo(() => {
     return (priceSort ? 1 : 0) +
       (minPrice || maxPrice ? 1 : 0) +
       (ratingFilter ? 1 : 0) +
-      (catalogDepartmentFilter !== 'all' ? 1 : 0) +
       catalogGarmentTypeFilters.size;
-  }, [priceSort, minPrice, maxPrice, ratingFilter, catalogDepartmentFilter, catalogGarmentTypeFilters]);
+  }, [priceSort, minPrice, maxPrice, ratingFilter, catalogGarmentTypeFilters]);
 
   const toggleGarmentType = useCallback((v: string) => {
     setCatalogGarmentTypeFilters((prev) => {
@@ -910,8 +902,6 @@ export function useStoreStorefront(storeId: string) {
     catalogGarmentTypeFilters,
     toggleGarmentType,
     setCatalogGarmentTypeFilters,
-    catalogDepartmentFilter,
-    setCatalogDepartmentFilter,
 
     // Portfolio filter modal
     isPortfolioFilterOpen,

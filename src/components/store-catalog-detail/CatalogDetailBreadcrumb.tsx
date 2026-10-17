@@ -2,20 +2,15 @@
 
 import Link from 'next/link';
 import { SERVICE_GROUPS, type ServiceGroupKey, canonicalGarment, GARMENTS } from '@/lib/garmentTaxonomy';
-import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 
 interface BreadcrumbItem {
   name: string;
   garment_type?: string;
-  department?: string | null;
-  subcategory?: string | null;
-  garment_structure?: string | null;
   store?: { slug?: string; name?: string } | null;
   service?: {
     id?: number;
     name?: string;
     service_category?: string | null;
-    showcase_category?: string | null;
   } | null;
 }
 
@@ -57,11 +52,6 @@ export default function CatalogDetailBreadcrumb({ item }: Readonly<{ item: Bread
   } else if (categoryKey && categoryKey in SERVICE_GROUPS) {
     crumbs.push({
       label: SERVICE_GROUPS[categoryKey as ServiceGroupKey].label,
-      href: item.store?.slug ? `/store/${item.store.slug}?tab=services&category=${categoryKey}` : '/categories',
-    });
-  } else if (categoryKey && SERVICE_CATEGORY_LABELS[categoryKey as ServiceCategory]) {
-    crumbs.push({
-      label: SERVICE_CATEGORY_LABELS[categoryKey as ServiceCategory],
       href: item.store?.slug ? `/store/${item.store.slug}?tab=services&category=${categoryKey}` : '/categories',
     });
   }

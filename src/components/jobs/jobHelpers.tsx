@@ -180,7 +180,7 @@ export interface Job {
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
   customer?: { name: string; suki_tag?: string | null } | null;
-  service?: { name: string; service_type?: string | null; service_types?: string[] | null; department?: string | null } | null;
+  service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;
@@ -206,7 +206,6 @@ export interface Job {
     name: string;
     category?: string | null;
     garment_type?: string | null;
-    department?: string | null;
     price?: number | string | null;
     fabric_image_url?: string | null;
     images?: Array<{ id?: number; image_url: string; is_primary?: boolean | number }>;

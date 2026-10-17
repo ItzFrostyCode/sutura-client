@@ -1,13 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import {
   GARMENT_CATEGORIES,
   GARMENTS,
   SERVICE_GROUPS,
   canonicalGarment,
   capabilityLabel,
+  serviceGroupLabel,
   type ServiceGroup,
   type ServiceGroupKey,
 } from '@/lib/garmentTaxonomy';
@@ -52,7 +52,7 @@ export function ServiceWorkBlock({ service }: Readonly<{ service: PublicService 
   const caps = (service.capabilities ?? []).map((c) => capabilityLabel(service.service_category, c));
   const bulk = (service.capabilities ?? []).includes('bulk_orders') || (service.service_types ?? []).includes('bulk_sublimation');
   const rows: [string, string][] = [];
-  const kind = group?.label ?? (service.service_category ? SERVICE_CATEGORY_LABELS[service.service_category as ServiceCategory] : null);
+  const kind = group?.label ?? serviceGroupLabel(service.service_category);
   if (kind) rows.push(['Service', kind]);
   if (garments) rows.push(['Works on', garments]);
   else if (ANY_GARMENT_GROUPS.includes(service.service_category ?? '')) rows.push(['Works on', 'Any garment — bring it in or ask for a quotation']);

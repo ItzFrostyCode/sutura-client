@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
-import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
+import { serviceGroupLabel } from '@/lib/garmentTaxonomy';
 import type { Service } from './serviceHelpers';
 
 // Fixed order, same palette as the catalog's Revenue by Category so the two tabs read alike.
@@ -23,7 +23,7 @@ export default function ServiceRevenueByCategoryChart({ services }: Readonly<{ s
     services.forEach((s) => by.set(s.service_category || 'other', (by.get(s.service_category || 'other') ?? 0) + Number(s.total_revenue || 0)));
     return Array.from(by.entries())
       .filter(([, v]) => v > 0)
-      .map(([k, value], i) => ({ name: SERVICE_CATEGORY_LABELS[k as ServiceCategory] ?? 'Other', value, color: COLORS[i % COLORS.length] }));
+      .map(([k, value], i) => ({ name: serviceGroupLabel(k) ?? 'Other', value, color: COLORS[i % COLORS.length] }));
   }, [services]);
   const total = data.reduce((sum, d) => sum + d.value, 0);
 

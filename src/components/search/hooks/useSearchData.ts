@@ -2,164 +2,94 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import api from '@/lib/axios';
-import { applyCategoryFilter } from '@/lib/garmentCategories';
-import { GARMENTS, GARMENT_CATEGORIES, type GarmentCategory } from '@/lib/garmentTaxonomy';
 import {
   getSavedLocation,
   saveLocation,
   getOldLocation,
   swapLocations,
-  haversineKm,
   requestCurrentLocation,
   LOCATION_CHANGED_EVENT,
   type SavedLocation,
 } from '@/lib/customerLocation';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
-import type { CatalogItemResult } from '@/types/publicCatalog';
-import {
-  RelatedStore,
-  SearchServiceResult,
-  FilterTabKey,
-  SearchActiveTab,
-} from '../types';
 import { useToast } from '@/context/ToastContext';
-import { isStoreOpen } from '@/lib/storeStatus';
 import { parseRadiusKm, parseStatusFilter, type AllFilters } from '@/components/home/homeFilters';
-
-/** What to show in the search box when a link carried a category instead of typed text (e.g. "Barong"). */
-function categoryText(params: URLSearchParams): string {
-  const label = params.get('qlabel');
-  if (label) return label;
-  const slug = params.get('category') ?? params.get('specialization') ?? params.get('garment_type') ?? '';
-  if (!slug) return '';
-  const key = slug.toLowerCase();
-  const garment = GARMENTS[key]?.label.split(' / ')[0];
-  const category = GARMENT_CATEGORIES[key as GarmentCategory]?.label;
-  return garment ?? category ?? slug.replace(/[-_]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
-}
+import type { FilterTabKey, SearchActiveTab } from '../types';
+import { categoryText, garmentParam, resolveTab, CONTEXT_PARAMS } from './searchUrl';
+import { useSearchResults } from './useSearchResults';
 
 export function useSearchData() {
   const router = useRouter();
   const gate = useGuestGatedHref();
   const searchParams = useSearchParams();
+  const toast = useToast();
 
   const [q, setQ] = useState(searchParams.get('q') ?? searchParams.get('search') ?? '');
   const effectiveQ = q.trim();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Display-only echo of a clicked nav category (e.g. "All Suits") — NOT a
-  // real filter value. Never merged into `effectiveQ`/API params, so it
-  // can't accidentally AND-narrow results away from a category match; the
-  // search input just falls back to showing it when `q` itself is empty
-  // (see search/page.tsx), and typing anything replaces it immediately.
-  const [categoryLabel, setCategoryLabel] = useState(categoryText(searchParams));
+  const [categoryLabel, setCategoryLabel] = useState(() => categoryText(searchParams));
 
   const [specialization, setSpecialization] = useState(
-    searchParams.get('specialization') ?? searchParams.get('category') ?? ''
+    () => searchParams.get('specialization') ?? searchParams.get('category') ?? ''
   );
-  const initialTabVal = searchParams.get('tab');
-  const initialDeptVal = searchParams.get('department') ?? '';
-  const isInitialStoreTab =
-    initialTabVal === 'store' ||
-    initialTabVal === 'stores' ||
-    (!initialTabVal && !searchParams.get('category') && !searchParams.get('specialization'));
-
-  const [department, setDepartment] = useState(
-    !isInitialStoreTab && (initialDeptVal.toLowerCase() === 'services' || initialDeptVal.toLowerCase() === 'service')
-      ? ''
-      : initialDeptVal
-  );
-  // Canonical Categories.md taxonomy — Subcategory/Structure/Garment Type,
-  // the levels between Department and the leaf item. Additive to (not a
-  // replacement for) `specialization` above, which stays as a legacy alias
-  // for old bookmarked/shared links (see the URL-sync effect below).
-  const [subcategory, setSubcategory] = useState(searchParams.get('subcategory') ?? '');
-  const [structure, setStructure] = useState(searchParams.get('structure') ?? '');
-  const [garmentType, setGarmentType] = useState(searchParams.get('garment_type') ?? '');
-  // Canonical Services.md taxonomy — Service Category/Service Type.
-  const [serviceCategory, setServiceCategory] = useState(searchParams.get('service_category') ?? '');
-  const [serviceType, setServiceType] = useState(searchParams.get('service_type') ?? '');
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') ?? '');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') ?? '');
-  const [minRating, setMinRating] = useState(searchParams.get('minRating') ?? '');
-  const [district, setDistrict] = useState(searchParams.get('district') ?? '');
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? '');
+  const [department, setDepartment] = useState(() => searchParams.get('department') ?? '');
+  const [subcategory, setSubcategory] = useState(() => searchParams.get('subcategory') ?? '');
+  const [structure, setStructure] = useState(() => searchParams.get('structure') ?? '');
+  const [garmentType, setGarmentType] = useState(() => garmentParam(searchParams));
+  const [serviceCategory, setServiceCategory] = useState(() => searchParams.get('service_category') ?? '');
+  const [serviceType, setServiceType] = useState(() => searchParams.get('service_type') ?? '');
+  const [minPrice, setMinPrice] = useState(() => searchParams.get('minPrice') ?? '');
+  const [maxPrice, setMaxPrice] = useState(() => searchParams.get('maxPrice') ?? '');
+  const [minRating, setMinRating] = useState(() => searchParams.get('minRating') ?? '');
+  const [district, setDistrict] = useState(() => searchParams.get('district') ?? '');
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sortBy') ?? '');
   const [page, setPage] = useState(1);
-  // Distance (null = Auto) and Open / Closed live in the URL so tab changes and shared links keep them.
+
   const radiusKm = parseRadiusKm(searchParams.get('radius_km'));
-  // Barangay and street / landmark (filter pop-up, FilterPlace) are read straight from the URL, like the distance.
   const barangay = searchParams.get('barangay') ?? '';
   const area = searchParams.get('area') ?? '';
   const openStatus = parseStatusFilter(searchParams.get('open'));
 
+  const [activeTab, setActiveTab] = useState<SearchActiveTab>(() => resolveTab(searchParams));
+
+  // Sync state when URL search params change
   useEffect(() => {
     const nextQ = searchParams.get('q') ?? searchParams.get('search') ?? '';
-    const nextCat = searchParams.get('specialization') ?? searchParams.get('category') ?? '';
-
-    if (nextQ !== null && nextQ !== undefined) {
-      setQ(nextQ);
-    }
+    setQ(nextQ);
     setCategoryLabel(categoryText(searchParams));
-
-    setSpecialization(nextCat);
-
-    const nextTab = searchParams.get('tab');
-    let resolvedTab: SearchActiveTab = 'store';
-    if (nextTab === 'services' || nextTab === 'service') {
-      setActiveTab('services');
-      setFilterPanelOpen(false);
-      resolvedTab = 'services';
-    } else if (nextTab === 'showroom' || nextTab === 'catalog') {
-      setActiveTab('showroom');
-      resolvedTab = 'showroom';
-    } else if (nextTab === 'store' || nextTab === 'stores') {
-      setActiveTab('store');
-      resolvedTab = 'store';
-    } else if (nextCat) {
-      setActiveTab('showroom');
-      resolvedTab = 'showroom';
-    } else {
-      setActiveTab('store');
-      resolvedTab = 'store';
-    }
-
-    // Header links (Men/Women/Kids) carry a "department" param alongside
-    // "category" — sync it so the sidebar's Department selector reflects
-    // what was actually clicked instead of always falling back to "All".
-    const nextDept = searchParams.get('department') ?? '';
-    if (nextDept.toLowerCase() === 'services' || nextDept.toLowerCase() === 'service' || resolvedTab === 'services') {
-      setDepartment('');
-    } else {
-      setDepartment(nextDept);
-    }
-
+    setSpecialization(searchParams.get('specialization') ?? searchParams.get('category') ?? '');
+    setDepartment(searchParams.get('department') ?? '');
     setSubcategory(searchParams.get('subcategory') ?? '');
     setStructure(searchParams.get('structure') ?? '');
-    setGarmentType(searchParams.get('garment_type') ?? '');
+    setGarmentType(garmentParam(searchParams));
     setServiceCategory(searchParams.get('service_category') ?? '');
     setServiceType(searchParams.get('service_type') ?? '');
-
-    const nextDistrict = searchParams.get('district') ?? '';
-    setDistrict(nextDistrict);
+    setDistrict(searchParams.get('district') ?? '');
+    setActiveTab(resolveTab(searchParams));
   }, [searchParams]);
 
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
 
+  // Location state
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [savedLocation, setSavedLocation] = useState<SavedLocation | null>(null);
   const [oldLocation, setOldLocation] = useState<SavedLocation | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
-  const [locationPromptDismissed, setLocationPromptDismissed] = useState(false);
-  const toast = useToast();
 
-  // Sync with global location change events across components.
-  // Note: user coordinates are used solely for distance display and proximity sorting,
-  // never to restrict search results to a single district.
+  useEffect(() => {
+    const loc = getSavedLocation();
+    setSavedLocation(loc);
+    setOldLocation(getOldLocation());
+    if (loc?.lat && loc?.lng) {
+      setUserCoords({ lat: loc.lat, lng: loc.lng });
+    }
+  }, []);
+
   useEffect(() => {
     const handleLocationChange = (e: Event) => {
       const customEvent = e as CustomEvent<SavedLocation>;
@@ -175,57 +105,6 @@ export function useSearchData() {
     };
   }, []);
 
-  const handleRequestLocation = () => {
-    setLocating(true);
-    requestCurrentLocation(
-      (loc) => {
-        setSavedLocation(loc);
-        setUserCoords({ lat: loc.lat, lng: loc.lng });
-        setLocating(false);
-      },
-      () => {
-        setLocating(false);
-      }
-    );
-  };
-
-  const initialTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<SearchActiveTab>(
-    initialTab === 'services' || initialTab === 'service'
-      ? 'services'
-      : initialTab === 'showroom' || initialTab === 'catalog'
-        ? 'showroom'
-        : initialTab === 'store' || initialTab === 'stores'
-          ? 'store'
-          : searchParams.get('category') || searchParams.get('specialization')
-            ? 'showroom'
-            : 'store'
-  );
-
-  const [stores, setStores] = useState<RelatedStore[]>([]);
-  const [storesLoading, setStoresLoading] = useState(true);
-  const [services, setServices] = useState<SearchServiceResult[]>([]);
-  const [servicesLoading, setServicesLoading] = useState(false);
-  const [servicesTotal, setServicesTotal] = useState(0);
-
-  const [items, setItems] = useState<CatalogItemResult[]>([]);
-  const [total, setTotal] = useState(0);
-  const [lastPage, setLastPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loc = getSavedLocation();
-    setSavedLocation(loc);
-    setOldLocation(getOldLocation());
-    if (loc?.lat && loc?.lng) {
-      setUserCoords({ lat: loc.lat, lng: loc.lng });
-    }
-    const urlDistrict = searchParams.get('district');
-    if (urlDistrict) {
-      setDistrict(urlDistrict);
-    }
-  }, [searchParams]);
-
   function handleToggleOldLocation() {
     const result = swapLocations();
     if (result?.current) {
@@ -233,67 +112,6 @@ export function useSearchData() {
       setUserCoords({ lat: result.current.lat, lng: result.current.lng });
       setOldLocation(result.old);
     }
-  }
-
-  function handleTabChange(nextTab: SearchActiveTab) {
-    setActiveTab(nextTab);
-    if (nextTab === 'services') {
-      setFilterPanelOpen(false);
-    }
-    const params = new URLSearchParams(searchParams.toString());
-    // Canonicalize outgoing URL: internal 'showroom' → public-facing 'catalog'
-    // so the address bar always shows ?tab=catalog (matching the tab label).
-    // Both values are accepted on read (see initialTab resolution above).
-    params.set('tab', nextTab === 'showroom' ? 'catalog' : nextTab);
-    const trimmed = q.trim();
-    if (trimmed) {
-      params.set('q', trimmed);
-    } else {
-      params.delete('q');
-    }
-
-    const currentDept = (params.get('department') || department).toLowerCase();
-    // 1. Department 'services' only belongs to the Stores tab.
-    // When switching to Catalog or Services, immediately remove it so results aren't blocked.
-    if (currentDept === 'services' || currentDept === 'service') {
-      if (nextTab === 'showroom' || nextTab === 'services') {
-        params.delete('department');
-        setDepartment('');
-        setDraftDepartment('');
-      }
-    }
-
-    // 2. Services tab doesn't use Department (services use Service Category/Type).
-    // Ensure department doesn't pollute the Services tab.
-    if (nextTab === 'services') {
-      params.delete('department');
-      setDepartment('');
-      setDraftDepartment('');
-    }
-
-    // 3. Catalog-only filters shouldn't pollute Services or Stores
-    if (nextTab === 'services' || nextTab === 'store') {
-      params.delete('subcategory');
-      params.delete('structure');
-      params.delete('garment_type');
-      setSubcategory('');
-      setDraftSubcategory('');
-      setStructure('');
-      setDraftStructure('');
-      setGarmentType('');
-      setDraftGarmentType('');
-    }
-
-    // 4. Service-only filters shouldn't pollute Stores or Catalog
-    if (nextTab === 'store' || nextTab === 'showroom') {
-      params.delete('service_category');
-      params.delete('service_type');
-      setServiceCategory('');
-      setServiceType('');
-    }
-
-    setPage(1);
-    router.replace(`/search?${params.toString()}`, { scroll: false });
   }
 
   function handleSortNearest() {
@@ -325,11 +143,22 @@ export function useSearchData() {
     );
   }
 
+  function handleTabChange(nextTab: SearchActiveTab) {
+    setActiveTab(nextTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', nextTab === 'showroom' ? 'catalog' : nextTab);
+    const trimmed = q.trim();
+    if (trimmed) {
+      params.set('q', trimmed);
+    } else {
+      params.delete('q');
+    }
+    setPage(1);
+    router.replace(`/search?${params.toString()}`, { scroll: false });
+  }
+
   // Filter Drawer draft states
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  // The drawer's own trigger button is sm:hidden (SearchWebFilterSidebar
-  // takes over at sm+) — without this, resizing past 640px while the
-  // drawer is open left it stuck open on top of the now-visible sidebar.
   useCloseOnDesktop(() => setFilterPanelOpen(false), 640);
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTabKey>('specialization');
   const [draftSpecialization, setDraftSpecialization] = useState('');
@@ -403,159 +232,27 @@ export function useSearchData() {
   // Reset to page 1 on filter changes
   useEffect(() => {
     setPage(1);
-  }, [effectiveQ, specialization, minPrice, maxPrice, minRating, district, barangay, area, sortBy, radiusKm, openStatus]);
+  }, [effectiveQ, specialization, garmentType, minPrice, maxPrice, minRating, district, barangay, area, sortBy, radiusKm, openStatus]);
 
-  // Catalog items fetch
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setLoading(true);
-      const params: Record<string, string | number> = { per_page: 30, page };
-      if (effectiveQ.trim()) params.q = effectiveQ.trim();
-      // Canonical garment_type (from the new cascading filter) wins over
-      // the legacy specialization->garment_type/q mapping when both are
-      // somehow present — specialization stays purely for old links.
-      if (garmentType) {
-        params.garment_type = garmentType;
-      } else if (specialization) {
-        applyCategoryFilter(params, specialization);
-      }
-      // Men / Women / Kids and top/bottom are no longer filters (2-level taxonomy, 2026-10-14): an old link
-      // that still carries them is ignored rather than silently narrowing the results.
-      if (minPrice) params.min_price = minPrice;
-      if (maxPrice) params.max_price = maxPrice;
-      if (minRating) params.min_rating = minRating;
-      if (district) params.district = district;
-      if (barangay) params.barangay = barangay;
-      if (area) params.area = area;
-      if (userCoords) {
-        params.lat = userCoords.lat;
-        params.lng = userCoords.lng;
-        if (radiusKm) params.radius_km = radiusKm;
-      }
-      if (sortBy) params.sort_by = sortBy;
+  // Use the extracted results hook
+  const { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading } = useSearchResults({
+    q: effectiveQ,
+    garmentType: garmentType || specialization,
+    serviceCategory,
+    serviceType,
+    minPrice,
+    maxPrice,
+    minRating,
+    district,
+    barangay,
+    area,
+    sortBy,
+    radiusKm,
+    openStatus,
+    userCoords,
+    page,
+  });
 
-      api
-        .get('/public/catalog-items', { params })
-        .then((res) => {
-          setItems(res.data.data ?? []);
-          setTotal(res.data.meta?.total ?? 0);
-          setLastPage(res.data.meta?.last_page ?? 1);
-        })
-        .catch(() => {
-          setItems([]);
-          setTotal(0);
-          setLastPage(1);
-        })
-        .finally(() => setLoading(false));
-    }, 300);
-
-    return () => clearTimeout(handle);
-  }, [effectiveQ, specialization, garmentType, subcategory, structure, department, minPrice, maxPrice, minRating, district, barangay, area, sortBy, page, userCoords, radiusKm]);
-
-  // Nearby stores fetch (aligned with /stores filter logic)
-  useEffect(() => {
-    setStoresLoading(true);
-    const handle = setTimeout(() => {
-      // Closed shops cannot be asked of the server, so that view takes a longer nearest-first list and picks them out.
-      const params: Record<string, string | number> = { per_page: openStatus === 'closed' ? 60 : 30 };
-      if (effectiveQ.trim()) params.q = effectiveQ.trim();
-      if (district) params.district = district;
-      if (barangay) params.barangay = barangay;
-      if (area) params.area = area;
-      // A garment type or service category from a link narrows the shops to those that carry it.
-      const carries = specialization || garmentType || serviceCategory;
-      if (carries) params.specialization = carries;
-      if (openStatus === 'open') params.open_now = 1;
-      // Header nav's MEN/WOMEN/KIDS/SERVICES axis — 'services' is a real,
-      // valid value here (unlike the catalog fetch's `department`, Store
-      // has no department column of its own; the backend interprets
-      // 'services' as "has any active service" instead of a garment tag).
-      if (department && ['services', 'service'].includes(department.toLowerCase())) params.department = department;
-      if (minPrice) params.min_price = minPrice;
-      if (maxPrice) params.max_price = maxPrice;
-      if (userCoords) {
-        params.lat = userCoords.lat;
-        params.lng = userCoords.lng;
-        params.sort_by = 'distance';
-        if (radiusKm) params.radius_km = radiusKm;
-      }
-
-      api
-        .get('/public/stores', { params })
-        .then((res) => {
-          let list: RelatedStore[] = res.data.data ?? [];
-          if (openStatus === 'closed') list = list.filter((s) => !isStoreOpen(s.operating_hours));
-          if (userCoords) {
-            list = list.map((store) => {
-              if (store.distance_km != null) return store;
-              let minKm: number | null = null;
-              if (store.branches) {
-                for (const b of store.branches) {
-                  if (b.latitude && b.longitude) {
-                    const d = haversineKm(userCoords.lat, userCoords.lng, Number(b.latitude), Number(b.longitude));
-                    if (minKm === null || d < minKm) minKm = d;
-                  }
-                }
-              }
-              return { ...store, distance_km: minKm };
-            });
-            list.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
-          }
-          setStores(list);
-        })
-        .catch(() => {
-          setStores([]);
-        })
-        .finally(() => setStoresLoading(false));
-    }, 300);
-
-    return () => clearTimeout(handle);
-  }, [effectiveQ, district, barangay, area, specialization, garmentType, serviceCategory, department, userCoords, minPrice, maxPrice, radiusKm, openStatus]);
-
-  // Services fetch
-  useEffect(() => {
-    setServicesLoading(true);
-    const handle = setTimeout(() => {
-      const params: Record<string, string | number> = { per_page: 30 };
-      // Canonical service_category/service_type filter directly — only
-      // fall back to folding `specialization` into free text (legacy
-      // behavior) when the new structured filters aren't set.
-      const qSearch = [
-        effectiveQ.trim(),
-        !serviceCategory && activeTab !== 'services' && specialization ? specialization.replace(/_/g, ' ') : '',
-      ].filter(Boolean).join(' ');
-      if (qSearch) params.q = qSearch;
-      if (serviceCategory) params.service_category = serviceCategory;
-      // service_type in the URL is now a capability (a task the service ticked, e.g. zipper_replacement).
-      if (serviceType) params.capability = serviceType;
-      if (district) params.district = district;
-      if (barangay) params.barangay = barangay;
-      if (area) params.area = area;
-      if (minPrice) params.min_price = minPrice;
-      if (maxPrice) params.max_price = maxPrice;
-      if (userCoords) {
-        params.lat = userCoords.lat;
-        params.lng = userCoords.lng;
-      }
-      if (sortBy) params.sort_by = sortBy;
-
-      api
-        .get('/public/services', { params })
-        .then((res) => {
-          setServices(res.data.data ?? []);
-          setServicesTotal(res.data.meta?.total ?? res.data.data?.length ?? 0);
-        })
-        .catch(() => {
-          setServices([]);
-          setServicesTotal(0);
-        })
-        .finally(() => setServicesLoading(false));
-    }, 300);
-
-    return () => clearTimeout(handle);
-  }, [effectiveQ, district, barangay, area, specialization, serviceCategory, serviceType, department, userCoords, sortBy, activeTab, minPrice, maxPrice]);
-
-  // Applying the filter pop-up sets every filter and rewrites the URL, keeping the typed text and the current tab.
   function applyAllFilters(next: AllFilters) {
     setMinPrice(next.minPrice);
     setMaxPrice(next.maxPrice);
@@ -584,10 +281,9 @@ export function useSearchData() {
     router.replace(`/search?${params.toString()}`, { scroll: false });
   }
 
-  // Drops the Men / Women / Suits-style context that arrived through the link, keeping text and filters.
   function clearContext() {
     const params = new URLSearchParams(searchParams.toString());
-    ['department', 'subcategory', 'structure', 'garment_type', 'service_category', 'service_type', 'specialization', 'category', 'qlabel'].forEach((k) => params.delete(k));
+    CONTEXT_PARAMS.forEach((k) => params.delete(k));
     const trimmed = q.trim();
     if (trimmed) params.set('q', trimmed);
     else params.delete('q');
@@ -656,7 +352,7 @@ export function useSearchData() {
     storesLoading,
     services,
     servicesLoading,
-    servicesTotal,
+    servicesTotal: services.length,
     items,
     total,
     lastPage,

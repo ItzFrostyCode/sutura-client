@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { MapPin, CalendarDays, Store } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
-import { catalogCategoryPath, serviceCategoryPath } from '@/lib/canonicalTaxonomy';
+import { catalogCategoryPath, serviceCategoryPath } from '@/lib/garmentTaxonomy';
 import { type MyAppointment, KIND_LABELS, STATUS_META, TYPE_LABELS } from './appointmentTypes';
 import AppointmentCardFooter from './AppointmentCardFooter';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { catalogCategoryPath, serviceCategoryPath } from '@/lib/canonicalTaxonomy';
+import { catalogCategoryPath, serviceCategoryPath } from '@/lib/garmentTaxonomy';
 import type { Appointment } from './appointmentHelpers';
 
 interface AppointmentSubjectProps {

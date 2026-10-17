@@ -1,6 +1,6 @@
 import React from 'react';
 import { getFabricLabel } from '@/lib/fabricHelper';
-import { catalogCategoryPath } from '@/lib/canonicalTaxonomy';
+import { catalogCategoryPath } from '@/lib/garmentTaxonomy';
 import { CatalogItem } from './types';
 import GuideImage from '@/components/shared/GuideImage';
 import { parseTextAndImage } from './CatalogGuideBlocks';

@@ -11,13 +11,10 @@ export interface AppointmentDetailData {
   scheduled_at: string;
   duration_minutes: number | null;
   service_name: string | null;
-  service?: { id: number; name: string; service_category?: string | null; service_leaf_type?: string | null } | null;
+  service?: { id: number; name: string; service_category?: string | null } | null;
   catalog_item?: {
     id: number;
     name: string;
-    department?: string | null;
-    subcategory?: string | null;
-    garment_structure?: string | null;
     garment_type?: string | null;
   } | null;
   selected_size?: string | null;

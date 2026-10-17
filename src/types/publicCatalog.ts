@@ -11,8 +11,6 @@ export interface CatalogItemResult {
   id: number;
   name: string;
   garment_type: string;
-  department?: string | null;
-  subcategory?: string | null;
   price: number | null;
   /** Server-worked price (lib/designPricing): the service's price, plus any extra charge, or a quotation. */
   pricing?: DesignPricing | null;

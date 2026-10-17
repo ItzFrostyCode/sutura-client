@@ -4,6 +4,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
+import { categoryOfGarment } from '@/lib/garmentTaxonomy';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { CatalogItem, CatalogItemImage } from '../types';
 
@@ -129,12 +130,11 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     };
   }, []);
 
-  // Related designs follow the category trail (Women's Apparel → Dresses &
-  // Gowns → …): everything in the same department + subcategory counts, with
-  // the exact same garment type listed first. Designs with no taxonomy fall
-  // back to garment type alone.
-  const relatedParams = item?.department && item?.subcategory
-    ? { department: item.department, subcategory: item.subcategory }
+  // Related designs follow the garment category (Barong, Dresses & Gowns, …): everything in the same category
+  // counts, with the exact same garment listed first. A typed-in garment name (no category) matches by itself.
+  const category = categoryOfGarment(item?.garment_type);
+  const relatedParams = category && category !== 'other'
+    ? { garment_category: category }
     : item?.garment_type ? { garment_type: item.garment_type } : null;
   const relatedKey = JSON.stringify(relatedParams);
   const sameTypeFirst = (list: CatalogItemResult[]) =>

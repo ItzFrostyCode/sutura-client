@@ -1,14 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
 import { serviceHref } from '@/components/categories/categoriesDirectoryData';
 
 interface BreadcrumbItem {
   name: string;
   service_category?: string | null;
-  service_leaf_type?: string | null;
 }
 
 interface ServiceDetailBreadcrumbProps {
@@ -35,11 +33,6 @@ export default function ServiceDetailBreadcrumb({ service, store }: ServiceDetai
     crumbs.push({
       label: SERVICE_GROUPS[key as ServiceGroupKey].label,
       href: store?.slug ? `/store/${store.slug}?tab=services&category=${key}` : serviceHref(key as ServiceGroupKey),
-    });
-  } else if (key && SERVICE_CATEGORY_LABELS[key as ServiceCategory]) {
-    crumbs.push({
-      label: SERVICE_CATEGORY_LABELS[key as ServiceCategory],
-      href: store?.slug ? `/store/${store.slug}?tab=services&category=${key}` : '/categories',
     });
   }
 
