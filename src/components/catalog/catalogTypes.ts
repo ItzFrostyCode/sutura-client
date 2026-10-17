@@ -30,9 +30,6 @@ export interface CatalogItemResponse {
   measurement_guide?: string;
   care_instructions?: string;
   garment_type?: string;
-  department?: string | null;
-  subcategory?: string | null;
-  garment_structure?: string | null;
   images: { id: number; image_url: string; view_angle?: string; is_primary: number }[];
   external_gallery_url?: string;
   is_active?: boolean;
@@ -82,9 +79,6 @@ export interface CatalogFormData {
   care_instructions: string;
   measurement_guide: string;
   garment_type: string;
-  department: string;
-  subcategory: string;
-  garment_structure: string;
   sizes: string[];
   external_gallery_url: string;
   is_active: boolean;

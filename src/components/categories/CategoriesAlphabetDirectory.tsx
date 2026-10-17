@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { ALPHABET, SHOPEE_ALPHABET_DIRECTORY } from './categoriesDirectoryData';
+import { ALPHABET, ALPHABET_DIRECTORY } from './categoriesDirectoryData';
 
 interface CategoriesAlphabetDirectoryProps {
   readonly query: string;
@@ -12,9 +12,9 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
   // Filter the directory by query if provided
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return SHOPEE_ALPHABET_DIRECTORY;
+    if (!q) return ALPHABET_DIRECTORY;
 
-    return SHOPEE_ALPHABET_DIRECTORY.map((group) => {
+    return ALPHABET_DIRECTORY.map((group) => {
       const filteredCategories = group.categories
         .map((cat) => {
           const categoryMatches = cat.title.toLowerCase().includes(q);
@@ -61,7 +61,7 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
 
   return (
     <div className="mt-8">
-      {/* A–Z Index Bar (Shopee Style) */}
+      {/* A–Z index bar */}
       <nav
         aria-label="A to Z Alphabet Index Bar"
         className="sticky top-[56px] sm:top-[68px] z-30 bg-surface/95 backdrop-blur-md py-3.5 px-4 border border-line shadow-2xs mb-8"

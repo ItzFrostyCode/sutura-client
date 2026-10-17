@@ -21,7 +21,6 @@ export interface CatalogItem {
   garment_type?: string;
   /** The service this design is a style of. */
   service_id?: number | string | null;
-  department?: string;
   category?: string;
   images: { id: number; image_url: string; is_primary: boolean }[];
   views_count: number;
@@ -156,9 +155,6 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
     care_instructions: careText,
     measurement_guide: measurementGuideText,
     garment_type: item.garment_type ?? '',
-    department: item.department ?? '',
-    subcategory: item.subcategory ?? '',
-    garment_structure: item.garment_structure ?? '',
     sizes: Array.isArray(item.sizes) ? item.sizes : [],
     external_gallery_url: item.external_gallery_url ?? '',
     is_active: item.is_active ?? true,

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Store } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
-import { catalogCategoryPath, serviceCategoryPath } from '@/lib/canonicalTaxonomy';
+import { catalogCategoryPath, serviceCategoryPath } from '@/lib/garmentTaxonomy';
 import { KIND_LABELS, STATUS_META, TYPE_LABELS } from './appointmentTypes';
 import type { AppointmentDetailData } from './AppointmentDetailContent';
 

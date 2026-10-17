@@ -1,4 +1,4 @@
-import { Loader2, Navigation } from 'lucide-react';
+import { Bike, Car, Footprints, Loader2, Navigation } from 'lucide-react';
 import { ESTIMATE_KMH, formatTravel } from './travelTime';
 
 interface ShopDirectionsCardProps {
@@ -32,10 +32,17 @@ export default function ShopDirectionsCard({ name, km, loading, onGetDirections,
       </div>
       {times && (
         <div className="mt-2.5 grid grid-cols-3 text-center border-t border-line-subtle pt-2">
-          {([['Walk', times.foot], ['Bike', times.bike], ['Drive', times.car]] as const).map(([label, minutes]) => (
-            <div key={label}>
+          {([
+            { label: 'Walk', minutes: times.foot, Icon: Footprints },
+            { label: 'Bike', minutes: times.bike, Icon: Bike },
+            { label: 'Drive', minutes: times.car, Icon: Car },
+          ] as const).map(({ label, minutes, Icon }) => (
+            <div key={label} className="flex flex-col items-center">
               <p className="mobile-body-sm font-semibold text-ink">{formatTravel(minutes)}</p>
-              <p className="mobile-caption text-ink-muted">{label} · est.</p>
+              <p className="mobile-caption flex items-center justify-center gap-1 text-ink-muted">
+                <Icon size={13} className="shrink-0 text-ink-muted" aria-hidden />
+                <span>{label} · est.</span>
+              </p>
             </div>
           ))}
         </div>

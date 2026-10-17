@@ -62,8 +62,6 @@ export interface Service extends RequirementFields {
   // do not replace the free-text `categories` or the operational `service_types` above.
   service_category?: string | null;
   /** Storefront "Service Categories" chip (lib/serviceShowcase). */
-  showcase_category?: string | null;
-  service_leaf_type?: string | null;
   /** Garments it works on (src/lib/garmentTaxonomy.ts); empty on an alteration / customization service = any garment. */
   garment_types?: string[] | null;
   /** Tasks it offers — capability slugs of its service group. */

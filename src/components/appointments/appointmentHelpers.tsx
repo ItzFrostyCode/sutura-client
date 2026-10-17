@@ -48,16 +48,12 @@ export interface Appointment {
     id: number;
     name: string;
     service_category?: string | null;
-    service_leaf_type?: string | null;
   } | null;
   // The catalog design this booking was made from (its page's "Book an
   // Appointment" button), with the size/color picked there.
   catalog_item?: {
     id: number;
     name: string;
-    department?: string | null;
-    subcategory?: string | null;
-    garment_structure?: string | null;
     garment_type?: string | null;
   } | null;
   selected_size?: string | null;

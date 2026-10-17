@@ -8,7 +8,7 @@ import {
 } from './appointmentHelpers';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { serviceCategoryPath } from '@/lib/canonicalTaxonomy';
+import { serviceCategoryPath } from '@/lib/garmentTaxonomy';
 import AppointmentSubject from './AppointmentSubject';
 import AppointmentCustomerToolkit from './AppointmentCustomerToolkit';
 import RejectAppointmentDialog from './RejectAppointmentDialog';

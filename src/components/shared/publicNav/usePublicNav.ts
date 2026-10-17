@@ -3,16 +3,11 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useCloseOnDesktop } from '@/hooks/useCloseOnDesktop';
-import type { CategoryLeaf, MenuScreen, TopGroup } from './navTypes';
 import { useTrackOrderLink } from './useTrackOrderLink';
 
 const NON_CUSTOMER_ROLES = new Set(['store_owner', 'staff', 'branch_manager', 'admin']);
 
 export function usePublicNav() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [screen, setScreen] = useState<MenuScreen>({ level: 0 });
-  const [openSection, setOpenSection] = useState('explore');
   const [unreadCount, setUnreadCount] = useState(0);
   const { isAuthenticated, user, hydrated } = useAuthStore();
 
@@ -21,7 +16,7 @@ export function usePublicNav() {
   const isCustomer = isAuth && !isNonCustomer;
 
   // Track Order: the code page for guests, My Orders for customers, the jobs list for shop roles.
-  const { href: trackOrderHref, title: trackOrderTitle, label: trackOrderLabel } = useTrackOrderLink();
+  const { href: trackOrderHref, title: trackOrderTitle } = useTrackOrderLink();
 
   // Notifications:
   // - Customer Profile: routes to /notifications (fetches customer notifications)
@@ -42,10 +37,6 @@ export function usePublicNav() {
   const userTitle = isAuth
     ? (user?.name ? `${user.name} (${isCustomer ? 'Customer Profile' : 'Dashboard'})` : 'My Account')
     : 'Account / Sign In';
-
-  const userDrawerLabel = isAuth
-    ? (isCustomer ? 'My Account' : 'Dashboard')
-    : 'Sign In / Register';
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -83,86 +74,15 @@ export function usePublicNav() {
     ? `${effectiveUnreadCount} unread notification${effectiveUnreadCount > 1 ? 's' : ''}`
     : 'Notifications';
 
-  // Resizing past md (768px) while the mobile drawer is open — e.g.
-  // rotating a tablet, or dragging a browser window wider — left it open
-  // with no way to close it. Force-close it the moment the viewport crosses
-  // into desktop nav territory.
-  useCloseOnDesktop(() => {
-    setMenuOpen(false);
-    setScreen({ level: 0 });
-  }, 768);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const prevBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const scrollContainers = Array.from(
-      document.querySelectorAll<HTMLElement>('.overflow-y-auto, .overflow-x-hidden')
-    );
-    const prevStyles = new Map<HTMLElement, string>();
-    scrollContainers.forEach((el) => {
-      if (!el.closest('[data-public-nav-menu]')) {
-        prevStyles.set(el, el.style.overflowY);
-        el.style.overflowY = 'hidden';
-      }
-    });
-
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      prevStyles.forEach((val, el) => {
-        el.style.overflowY = val;
-      });
-    };
-  }, [menuOpen]);
-
-  function toggleMenu() {
-    setMenuOpen((open) => !open);
-    setScreen({ level: 0 });
-  }
-
-  function closeMenu() {
-    setMenuOpen(false);
-    setScreen({ level: 0 });
-  }
-
-  function goBack() {
-    if (screen.level === 2) setScreen({ level: 1, group: screen.group });
-    else if (screen.level === 1) setScreen({ level: 0 });
-  }
-
-  function openCategory(group: TopGroup, category: CategoryLeaf) {
-    setOpenSection('explore');
-    setScreen({ level: 2, group, category });
-  }
-
-  function toggleSection(key: string) {
-    setOpenSection((cur) => (cur === key ? '' : key));
-  }
-
   return {
-    menuOpen,
-    screen,
-    setScreen,
-    openSection,
     unreadCount: effectiveUnreadCount,
     accountHref,
     userTitle,
-    userDrawerLabel,
     trackOrderHref,
     trackOrderTitle,
-    trackOrderLabel,
     notificationsHref,
     notificationsTitle,
     user: isAuth ? user : null,
     isAuthenticated: isAuth,
-    isCustomer,
-    isNonCustomer,
-    hydrated,
-    toggleMenu,
-    closeMenu,
-    goBack,
-    openCategory,
-    toggleSection,
   };
 }
