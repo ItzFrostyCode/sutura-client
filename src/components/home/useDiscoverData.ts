@@ -6,6 +6,7 @@ import { isStoreOpen } from '@/lib/storeStatus';
 import type { SearchServiceResult } from '@/components/search/types';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import type { StoreResult } from './homeTypes';
+import { DEFAULT_MORE_FILTERS } from './homeFilters';
 import type { AllFilters, MoreFilters, NearFilters } from './homeFilters';
 
 const NEAR_LIMIT = 6;
@@ -60,7 +61,8 @@ export function useDiscoverData(coords: { lat: number; lng: number } | null, fil
     if (filters.minRating) params.min_rating = filters.minRating;
     if (filters.minPrice) params.min_price = filters.minPrice;
     if (filters.maxPrice) params.max_price = filters.maxPrice;
-    if (filters.sortBy) params.sort_by = filters.sortBy;
+    // Near Shops are nearest first; only a sort the person picked (not the default) replaces that.
+    if (filters.sortBy && (filters.sortBy !== DEFAULT_MORE_FILTERS.sortBy || params.sort_by === undefined)) params.sort_by = filters.sortBy;
 
     api.get('/public/stores', { params })
       .then((res) => {
