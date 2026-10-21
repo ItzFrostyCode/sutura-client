@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit3, Check, Trash2 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SM, PLAIN_FIELD } from '@/components/shared/plainForm';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 interface AreaGridProps {
   readonly title: string;
@@ -62,12 +63,10 @@ export default function AreaGrid({
     setEditingColName(null);
   };
 
-  const handleConfirmRemove = (col: string) => {
+  const handleConfirmRemove = async (col: string) => {
     if (metrics[col] && metrics[col].trim() !== '') {
-      const confirm = window.confirm(
-        `"${col}" currently has a saved measurement of "${metrics[col]}". Are you sure you want to remove this field?`
-      );
-      if (!confirm) return;
+      const ok = await confirmDialog({ title: `Remove "${col}"?`, message: `It has a measurement of "${metrics[col]}", which is removed too.`, confirmLabel: 'Remove', danger: true });
+      if (!ok) return;
     }
     onRemoveColumn(col);
   };

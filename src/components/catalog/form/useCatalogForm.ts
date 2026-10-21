@@ -6,6 +6,7 @@ import { BulletItem, ImageItem, ColorItem, CatalogFormData } from '../catalogTyp
 import { uploadSectionImage, buildSavePayload } from '../catalogHelpers';
 import { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
 import { CatalogFormProps, StoreServiceOption } from './formTypes';
+import { noticeDialog } from '@/store/useConfirmStore';
 
 export function useCatalogForm({
   initialData,
@@ -129,7 +130,7 @@ export function useCatalogForm({
       const url = res.data?.data?.url || res.data?.url || '';
       setFormData(prev => ({ ...prev, fabric_image_url: url }));
     } catch (err) {
-      alert(getErrorMessage(err, 'Failed to upload fabric image.'));
+      void noticeDialog(getErrorMessage(err, 'Failed to upload fabric image.'));
     } finally {
       setFabricImageUploading(false);
     }

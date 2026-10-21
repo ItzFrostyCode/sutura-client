@@ -5,6 +5,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Loader2, Star, Trash2 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 interface CatalogItemReview {
   id: number;
@@ -63,7 +64,7 @@ export default function CatalogReviewsView() {
 
   const handleDelete = async (reviewId: number) => {
     if (!storeId) return;
-    if (!confirm('Delete this review? This cannot be undone.')) return;
+    if (!(await confirmDialog({ title: 'Delete this review?', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
     try {
       await api.delete(`/stores/${storeId}/catalog-item-reviews/${reviewId}`);
       setReviews(prev => prev.filter(r => r.id !== reviewId));

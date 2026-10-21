@@ -6,6 +6,7 @@ import {
   type DayCell,
   dayKey,
 } from './appointmentTypes';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 export function useAppointmentsList() {
   const toast = useToast();
@@ -56,7 +57,7 @@ export function useAppointmentsList() {
   }, [appointments]);
 
   const handleSelfCancel = async (id: number) => {
-    if (!window.confirm('Cancel this appointment? This can’t be undone.')) return;
+    if (!(await confirmDialog({ title: 'Cancel this appointment?', message: 'This can’t be undone.', confirmLabel: 'Cancel appointment', cancelLabel: 'Keep it', danger: true }))) return;
     setCancellingId(id);
     try {
       await api.delete(`/my-appointments/${id}`);

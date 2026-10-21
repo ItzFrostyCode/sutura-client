@@ -21,6 +21,7 @@ import WalkInClashDialog from '@/components/appointments/WalkInClashDialog';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
 import { useAuthStore } from '@/store/useAuthStore';
 import { APPOINTMENT_TYPES, TYPE_CONFIG, STATUS_CONFIG, AppointmentType } from '@/components/appointments/appointmentHelpers';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 /** The column every part of this page sits in (shared with the detail, so their edges line up). */
 const COL = APPOINTMENTS_COLUMN;
@@ -277,8 +278,8 @@ function AppointmentsPageContent() {
           }}
           onCheckInClick={handleCheckIn}
           onCreateJob={handleCreateJob}
-          onDidntComeClick={(apt) => {
-            if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+          onDidntComeClick={async (apt) => {
+            if (await confirmDialog({ title: `${apt.customer?.name || 'The customer'} didn't come?`, message: 'The appointment is marked as missed. This cannot be undone.', confirmLabel: "Didn't come", danger: true })) {
               handleDidntCome(apt.id);
             }
           }}
@@ -288,7 +289,7 @@ function AppointmentsPageContent() {
           }}
           onFinish={(apt, result, notes) => handleCompleteSubmit(apt.id, result, notes)}
           onDiscard={async (apt) => {
-            if (!window.confirm(`Remove this visit with ${apt.customer?.name || 'this customer'}? It disappears from the list completely.`)) return;
+            if (!(await confirmDialog({ title: 'Remove this visit?', message: `The visit with ${apt.customer?.name || 'this customer'} disappears from the list completely.`, confirmLabel: 'Remove', danger: true }))) return;
             if (await handleDiscard(apt.id)) setViewApt(null);
           }}
           onAppointmentUpdated={refreshAppointments}
@@ -340,8 +341,8 @@ function AppointmentsPageContent() {
               onCheckInClick={handleCheckIn}
               onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
               onCreateJobClick={handleCreateJob}
-              onNoShowClick={(apt) => {
-                if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+              onNoShowClick={async (apt) => {
+                if (await confirmDialog({ title: `${apt.customer?.name || 'The customer'} didn't come?`, message: 'The appointment is marked as missed. This cannot be undone.', confirmLabel: "Didn't come", danger: true })) {
                   handleDidntCome(apt.id);
                 }
               }}
@@ -368,8 +369,8 @@ function AppointmentsPageContent() {
               onDetailsClick={(apt) => { setViewApt(apt); }}
               onEditClick={(apt) => { setEditingApt(apt); setShowCreateModal(true); }}
               onCancelClick={(apt) => { setCancelApt(apt); setShowCancelModal(true); }}
-              onNoShowClick={(apt) => {
-                if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+              onNoShowClick={async (apt) => {
+                if (await confirmDialog({ title: `${apt.customer?.name || 'The customer'} didn't come?`, message: 'The appointment is marked as missed. This cannot be undone.', confirmLabel: "Didn't come", danger: true })) {
                   handleDidntCome(apt.id);
                 }
               }}
@@ -451,8 +452,8 @@ function AppointmentsPageContent() {
         onFollowUp={(apt) => { setFollowUpError(''); setFollowUpFor(apt); setShowFollowUpModal(true); }}
         onEditClick={(apt) => { setEditingApt(apt); setShowCreateModal(true); }}
         onCheckInClick={handleCheckIn}
-        onDidntComeClick={(apt) => {
-          if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+        onDidntComeClick={async (apt) => {
+          if (await confirmDialog({ title: `${apt.customer?.name || 'The customer'} didn't come?`, message: 'The appointment is marked as missed. This cannot be undone.', confirmLabel: "Didn't come", danger: true })) {
             handleDidntCome(apt.id);
           }
         }}

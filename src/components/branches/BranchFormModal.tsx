@@ -10,6 +10,7 @@ import BranchManagerFields from '@/components/branches/BranchManagerFields';
 import PinPaste from '@/components/shared/PinPaste';
 import type { SavedLocation } from '@/lib/customerLocation';
 import { getErrorMessage } from '@/lib/apiError';
+import { noticeDialog } from '@/store/useConfirmStore';
 
 const LocationPicker = dynamic(() => import('@/components/discovery/LocationPicker'), { ssr: false });
 
@@ -243,7 +244,7 @@ export default function BranchFormModal({
                         setFormData(prev => ({ ...prev, guide_image_url: res.data.data.url }));
                       } catch (err) {
                         console.error('Guide image upload failed', err);
-                        alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
+                        void noticeDialog(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
                       } finally {
                         setUploading(false);
                       }

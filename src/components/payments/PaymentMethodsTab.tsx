@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import PaymentMethodForm from './PaymentMethodForm';
 import { KIND_LABELS, emptyMethodForm, usePaymentMethods, type MethodForm } from './usePaymentMethods';
 import type { PaymentAccount } from './usePayments';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 // Where customers can pay this shop. They pay outside SUTURA (GCash, Maya, bank…), upload proof, and the shop verifies it.
 export default function PaymentMethodsTab() {
@@ -64,7 +65,7 @@ export default function PaymentMethodsTab() {
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button type="button" onClick={() => open(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink flex items-center gap-1.5 cursor-pointer hover:bg-sunken"><Pencil size={13} /> Edit</button>
                   <button type="button" onClick={() => toggle(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink cursor-pointer hover:bg-sunken">{m.is_active ? 'Pause' : 'Activate'}</button>
-                  <button type="button" onClick={() => { if (window.confirm(`Remove ${m.name}? Past payments keep their record.`)) remove(m.id); }} aria-label={`Remove ${m.name}`} className="h-11 w-11 border border-line-strong text-danger flex items-center justify-center cursor-pointer hover:bg-danger/5"><Trash2 size={15} /></button>
+                  <button type="button" onClick={async () => { if (await confirmDialog({ title: `Remove ${m.name}?`, message: 'Past payments keep their record.', confirmLabel: 'Remove', danger: true })) remove(m.id); }} aria-label={`Remove ${m.name}`} className="h-11 w-11 border border-line-strong text-danger flex items-center justify-center cursor-pointer hover:bg-danger/5"><Trash2 size={15} /></button>
                 </div>
               </div>
             </li>

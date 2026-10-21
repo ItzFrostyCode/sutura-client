@@ -10,6 +10,7 @@ import {
   Appointment, ServiceData, CustomerData, BranchData, StaffData,
   AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString, minTimeForDate, appointmentNo,
 } from './appointmentHelpers';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 // The last list per shop and branch, kept for this tab: the page shows it at once and refreshes quietly behind it, so
 // coming back to Appointments (or reloading) never waits on a skeleton. The lookups (services, customers, branches,
@@ -246,7 +247,7 @@ export function useAppointments() {
     if (!store) return;
     // "Customer arrived" starts the visit, and a first-time user taps buttons to see what they do: ask first.
     const who = appointments.find((a) => a.id === id)?.customer?.name;
-    if (!window.confirm(`Has ${who && who !== 'Walk-in customer' ? who : 'the customer'} arrived? This starts the visit.`)) return;
+    if (!(await confirmDialog({ title: `Has ${who && who !== 'Walk-in customer' ? who : 'the customer'} arrived?`, message: 'This starts the visit.', confirmLabel: 'Yes, start the visit' }))) return;
     setActionLoadingId(id);
     try {
       const res = await api.post(`/stores/${store.id}/appointments/${id}/arrive`);

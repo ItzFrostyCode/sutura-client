@@ -13,6 +13,7 @@ import ServiceGridView from '@/components/services/ServiceGridView';
 import PageHeader from '@/components/shared/PageHeader';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 export default function ServicesPage() {
   const { store, user } = useAuthStore();
@@ -46,7 +47,7 @@ export default function ServicesPage() {
 
   const handleDeleteDesign = async (designId: number) => {
     if (!store?.id) return;
-    if (!confirm('Are you sure you want to delete this service design?')) return;
+    if (!(await confirmDialog({ title: 'Delete this service design?', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
     try {
       await api.delete(`/stores/${store.id}/catalog/${designId}`);
       toast.success('Service design deleted.');

@@ -9,6 +9,7 @@ import RescheduleAppointmentModal from '@/components/account/appointments/Resche
 import AccountHeader from '@/components/account/AccountHeader';
 import EmptyState from '@/components/account/EmptyState';
 import AppointmentDetailContent, { type AppointmentDetailData } from '@/components/account/appointments/AppointmentDetailContent';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 export default function AppointmentDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -36,7 +37,7 @@ export default function AppointmentDetailPage({ params }: Readonly<{ params: Pro
   }, [id]);
 
   const handleSelfCancel = async () => {
-    if (!appt || !window.confirm('Cancel this appointment? This can’t be undone.')) return;
+    if (!appt || !(await confirmDialog({ title: 'Cancel this appointment?', message: 'This can’t be undone.', confirmLabel: 'Cancel appointment', cancelLabel: 'Keep it', danger: true }))) return;
     setCancelling(true);
     try {
       await api.delete(`/my-appointments/${appt.id}`);
