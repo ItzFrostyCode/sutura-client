@@ -32,6 +32,7 @@ export interface OwnerFields {
   birthday: string;
   email: string;
   contact_number: string;
+  gender: 'male' | 'female' | '';
 }
 
 export interface ShopFields {
@@ -66,7 +67,7 @@ export const GOVERNMENT_ID_TYPES = [
 
 export const EMPTY_OWNER: OwnerFields = {
   full_name: '', first_name: '', middle_name: '', last_name: '', suffix: '', birthday: '',
-  email: '', contact_number: '',
+  email: '', contact_number: '', gender: '',
 };
 
 export const EMPTY_SHOP: ShopFields = {

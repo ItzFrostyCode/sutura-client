@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 
-export type EditableField = 'name' | 'phone' | 'password';
+export type EditableField = 'name' | 'phone' | 'gender' | 'password';
 
 export function useAccountDetail() {
   const { user, token, setAuth } = useAuthStore();
@@ -12,6 +12,7 @@ export function useAccountDetail() {
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -27,6 +28,7 @@ export function useAccountDetail() {
     if (user) {
       setName(user.name || '');
       setPhone(user.phone || '');
+      setGender((user.gender as 'male' | 'female') || '');
     }
   }, [user]);
 
@@ -71,7 +73,11 @@ export function useAccountDetail() {
     setSavingProfile(true);
     setProfileMessage(null);
     try {
-      const res = await api.put('/profile/personal', { name, phone });
+      const res = await api.put('/profile/personal', {
+        name,
+        phone: phone || null,
+        gender: gender || null,
+      });
       setAuth(res.data.data, token);
       setOpenField(null);
     } catch {
@@ -114,6 +120,8 @@ export function useAccountDetail() {
     setName,
     phone,
     setPhone,
+    gender,
+    setGender,
     savingProfile,
     profileMessage,
     currentPassword,

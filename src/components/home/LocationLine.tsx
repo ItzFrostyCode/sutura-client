@@ -19,14 +19,14 @@ export default function LocationLine({ location, changeHref, compact = false, sm
   const oneRow = compact || small;
 
   return (
-    <div className={`flex flex-col gap-[3px] ${small ? '' : 'pt-1.5'}`}>
+    <div className={`flex min-w-0 flex-1 flex-col gap-[3px] ${small ? '' : 'pt-1.5'}`}>
       {/* The extra tap area is drawn outside the text so it adds no spacing. */}
-      <Link href={changeHref} title="Change location" className="group relative block before:absolute before:inset-x-0 before:-inset-y-2">
-        <span className={`flex gap-2 ${oneRow ? 'items-center' : 'items-start'}`}>
+      <Link href={changeHref} title="Change location" className="group relative block min-w-0 before:absolute before:inset-x-0 before:-inset-y-2">
+        <span className={`flex min-w-0 gap-2 ${oneRow ? 'items-center' : 'items-start'}`}>
           <MapPin size={small ? 14 : 18} className={`shrink-0 text-taupe ${oneRow ? '' : 'mt-[3px]'}`} />
           <span
             suppressHydrationWarning
-            className={`${small ? 'mobile-body-sm font-semibold' : 'mobile-body-md font-medium'} min-w-0 text-ink transition-colors group-hover:text-taupe ${oneRow ? 'truncate' : 'line-clamp-2 flex-1'}`}
+            className={`${small ? 'mobile-body-sm font-semibold' : 'mobile-body-md font-medium'} min-w-0 flex-1 text-ink transition-colors group-hover:text-taupe ${oneRow ? 'truncate' : 'line-clamp-2'}`}
           >
             {location?.address || 'Set your location'}
             {/* Right after the text, to show the address can be tapped to change the place. */}

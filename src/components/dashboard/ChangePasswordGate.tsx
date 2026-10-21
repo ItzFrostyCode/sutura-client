@@ -76,7 +76,7 @@ export default function ChangePasswordGate({ loginEmail, onChanged, onLogout }: 
               const met = rule.test(password);
               return (
                 <li key={rule.key} className="flex items-center gap-2 text-xs">
-                  <span className={`shrink-0 w-4 h-4 rounded-full border flex items-center justify-center ${met ? 'bg-taupe border-taupe text-white' : 'border-line-strong text-transparent'}`}>
+                  <span className={`shrink-0 w-4 h-4 rounded-full border flex items-center justify-center ${met ? 'bg-espresso border-taupe text-white' : 'border-line-strong text-transparent'}`}>
                     <Check size={10} strokeWidth={3} />
                   </span>
                   <span className={met ? 'text-ink' : 'text-ink-faint'}>{rule.label}</span>

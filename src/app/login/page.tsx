@@ -1,11 +1,14 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 import LoginForm from '@/components/auth/LoginForm';
 import AuthBrand from '@/components/auth/AuthBrand';
+import { useAuthStore } from '@/store/useAuthStore';
+import { destinationFor, withRedirect } from '@/lib/authRedirect';
 
 export default function LoginPage() {
   return (
@@ -26,6 +29,13 @@ function LoginFormContent() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
   const initialPortal = searchParams.get('as') === 'store' ? 'store' : 'customer';
+  const { user, staffProfile, hydrated } = useAuthStore();
+
+  // Already signed in (Back from the page they were sent to, or an old link): go on to where they belong, and take
+  // this page out of the history so Back does not return to it.
+  useEffect(() => {
+    if (hydrated && user) router.replace(destinationFor(user, !!staffProfile, redirectPath));
+  }, [hydrated, user, staffProfile, redirectPath, router]);
 
   // Tablet/desktop customers sent here to book get the Sign In modal over the page they came
   // from (design / service / store) rather than an empty canvas.
@@ -42,20 +52,25 @@ function LoginFormContent() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      {/* No header bar here at any size (bottomNavPaths' AUTH_PATHS) — PublicNav only brings the bottom
-          navigation, so Log In keeps the same layout as the Profile tab it was opened from. */}
       <PublicNav />
 
-      {/* Mobile (below md): full page, edge-to-edge. Tablet/desktop normally
-          get LoginModal over the current page instead; this card layout only
-          shows when someone lands on /login directly (e.g. a ?redirect link). */}
-      <div className="flex-1 px-[10px] py-6 md:flex md:items-start md:justify-center md:px-4 md:py-16">
-        <div className="md:w-full md:max-w-md md:bg-surface md:border md:border-line md:shadow-sm md:p-8">
+      {/* Mobile: full edge-to-edge without margins. Tablet/desktop: centered card on canvas. */}
+      <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
+        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:border sm:border-line sm:shadow-sm">
+          <Link
+            href="/"
+            aria-label="Back to home"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink-muted transition-colors py-1.5 -ml-1 mb-4"
+          >
+            <ArrowLeft size={18} />
+            <span>Back</span>
+          </Link>
+
           <AuthBrand className="mb-8" />
           <LoginForm
             customerRedirect={redirectPath || '/'}
             staffRedirect={redirectPath || '/dashboard'}
-            registerHref={redirectPath ? `/register?redirect=${encodeURIComponent(redirectPath)}` : '/register'}
+            registerHref={withRedirect('/register', redirectPath)}
             onClose={() => router.push('/')}
             initialPortal={initialPortal}
           />

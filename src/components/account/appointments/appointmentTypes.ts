@@ -1,9 +1,11 @@
 import { Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
 
+export interface MyJobOrder { id: number; order_number: string; status: string; tracking_code: string | null }
+
 export interface MyAppointment {
   id: number;
   appointment_type: string;
-  // Service, Shop, or Production (made by the shop's production order). Older rows may not have it.
+  // Service, Shop, or Production (made by the shop's job order). Older rows may not have it.
   kind?: 'service' | 'shop' | 'production';
   intake_channel: string | null;
   status: string;
@@ -24,6 +26,11 @@ export interface MyAppointment {
   selected_color?: string | null;
   // A walk-in took this request's slot; the customer must pick another time.
   needs_new_time?: boolean;
+  /** The order made from this visit, or the order a fitting belongs to. */
+  job_order?: MyJobOrder | null;
+  /** Where it was before it was moved. */
+  previous_scheduled_at?: string | null;
+  material_source?: 'shop' | 'own' | null;
   payment_status: string;
   cancellation_reason: string | null;
   purpose_label?: string | null;
@@ -36,27 +43,44 @@ export interface MyAppointment {
 }
 
 export const STATUS_META: Record<string, { label: string; Icon: typeof Clock; tone: string }> = {
-  pending: { label: 'Pending Confirmation', Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
-  confirmed: { label: 'Confirmed', Icon: CheckCircle2, tone: 'text-sage bg-sage/10 border-sage/20' },
-  in_progress: { label: 'In Progress', Icon: Clock, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
-  completed: { label: 'Completed', Icon: CheckCircle2, tone: 'text-sage bg-sage/10 border-sage/20' },
+  pending: { label: 'Waiting for the shop', Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
+  confirmed: { label: 'Approved', Icon: CheckCircle2, tone: 'text-sage bg-sage/10 border-sage/20' },
+  in_progress: { label: 'In progress', Icon: Clock, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  completed: { label: 'Done', Icon: CheckCircle2, tone: 'text-sage bg-sage/10 border-sage/20' },
   cancelled: { label: 'Cancelled', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
-  rejected: { label: 'Rejected', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
-  no_show: { label: 'No Show', Icon: Ban, tone: 'text-danger bg-danger/10 border-danger/20' },
+  rejected: { label: 'Declined', Icon: XCircle, tone: 'text-danger bg-danger/10 border-danger/20' },
+  no_show: { label: 'Missed', Icon: Ban, tone: 'text-danger bg-danger/10 border-danger/20' },
 };
+
+/**
+ * What a status means to the customer. A fitting the shop's order made was never requested: it is not "pending confirmation",
+ * the shop is fixing its time. A finished visit says how it ended: with an order, or as a consultation only.
+ */
+export function statusMetaFor(appt: Pick<MyAppointment, 'status' | 'kind' | 'job_order'> & { appointment_type?: string }): { label: string; Icon: typeof Clock; tone: string } {
+  const base = STATUS_META[appt.status] ?? STATUS_META.pending;
+  if (appt.kind === 'production') {
+    if (appt.status === 'pending') return { ...base, label: 'Shop is setting the time' };
+    if (appt.status === 'confirmed') return { ...base, label: 'Time confirmed' };
+  }
+  if (appt.status === 'completed' && appt.kind !== 'production') {
+    return { ...base, label: appt.job_order ? 'Order made' : appt.appointment_type === 'consultation' ? 'Consultation done' : 'Done' };
+  }
+  return base;
+}
 
 export const STATUS_FILTERS: { key: string; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'confirmed', label: 'Confirmed' },
-  { key: 'in_progress', label: 'In Progress' },
-  { key: 'completed', label: 'Completed' },
+  { key: 'pending', label: 'Waiting' },
+  { key: 'confirmed', label: 'Approved' },
+  { key: 'in_progress', label: 'In progress' },
+  { key: 'completed', label: 'Done' },
   { key: 'cancelled', label: 'Cancelled' },
-  { key: 'rejected', label: 'Rejected' },
-  { key: 'no_show', label: 'No Show' },
+  { key: 'rejected', label: 'Declined' },
+  { key: 'no_show', label: 'Missed' },
 ];
 
-export const KIND_LABELS: Record<string, string> = { service: 'Service', shop: 'Shop', production: 'Production' };
+// A fitting or pick-up belongs to the customer's order; the other two are what they asked for.
+export const KIND_LABELS: Record<string, string> = { service: 'Service', shop: 'General visit', production: 'For your order' };
 
 export const TYPE_LABELS: Record<string, string> = {
   consultation: 'Consultation',

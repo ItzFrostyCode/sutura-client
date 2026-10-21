@@ -52,12 +52,13 @@ export interface DetailedCatalogItem extends RequirementFields {
   color?: string;
   fabric_image_url?: string | null;
   sizes?: string[] | null;
+  add_ons?: { id?: string; name: string; price: number }[] | null;
   description?: string | null;
   garment_type?: string | null;
   measurement_guide?: string | null;
   /** Owner's Appointment Configuration for this design (null = store defaults). */
   /** How the design is priced against its service (lib/designPricing); null = same as the service. */
-  pricing_mode?: 'same' | 'extra' | 'quote' | null;
+  pricing_mode?: 'same' | 'set' | 'extra' | 'quote' | null;
   extra_charge?: string | number | null;
   /** Server-worked price (lib/designPricing). */
   pricing?: DesignPricing;

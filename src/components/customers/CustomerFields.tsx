@@ -25,10 +25,29 @@ export default function CustomerFields({ value, onChange, showEmail = false, chi
       <div>
         <label htmlFor="phone" className={LABEL}>Mobile number <span className="text-danger">*</span></label>
         <input
-          id="phone" type="tel" inputMode="tel" required autoComplete="off" maxLength={20}
+          id="phone" type="tel" inputMode="tel" required autoComplete="off" maxLength={16}
           value={value.phone} onChange={(e) => onChange({ ...value, phone: e.target.value.replace(/[^\d+\s-]/g, '') })}
           className={INPUT} placeholder="0917 123 4567"
         />
+        {(() => {
+          const digits = value.phone.replace(/\D+/g, '');
+          if (!digits) {
+            return <p className="mt-1 text-xs text-ink-muted">Enter an 11-digit number starting with 09 (e.g. 0977 704 4683)</p>;
+          }
+          if (digits.startsWith('09')) {
+            if (digits.length === 11) {
+              return <p className="mt-1 text-xs text-emerald-600 font-medium">✓ 11-digit Philippine mobile number</p>;
+            }
+            if (digits.length > 11) {
+              return <p className="mt-1 text-xs text-rose-600 font-medium">⚠️ {digits.length} digits entered — Philippine numbers must be exactly 11 digits</p>;
+            }
+            return <p className="mt-1 text-xs text-ink-muted">{digits.length}/11 digits (Philippine numbers have 11 digits)</p>;
+          }
+          if (digits.startsWith('63') && digits.length === 12) {
+            return <p className="mt-1 text-xs text-emerald-600 font-medium">✓ Valid Philippine mobile number (+63)</p>;
+          }
+          return <p className="mt-1 text-xs text-amber-600">Philippine mobile numbers start with 09 (e.g. 0977 704 4683)</p>;
+        })()}
       </div>
       <GenderPicker value={value.gender} onChange={(gender) => onChange({ ...value, gender })} optional={false} />
       {showEmail && (

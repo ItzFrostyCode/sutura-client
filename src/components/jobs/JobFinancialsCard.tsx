@@ -8,7 +8,7 @@ import { FinancialStatementSummary } from './financials/FinancialStatementSummar
 import { FinancialDiscountForm } from './financials/FinancialDiscountForm';
 import { PaymentAuditLedger } from './financials/PaymentAuditLedger';
 import { JobCashierDesk } from './financials/JobCashierDesk';
-import { DepositWaiverControl } from './financials/DepositWaiverControl';
+import OrderRulesButton from './detail/OrderRulesButton';
 
 export default function JobFinancialsCard({
   job,
@@ -104,7 +104,7 @@ export default function JobFinancialsCard({
               applyingDiscount={applyingDiscount}
               onApplyDiscountSubmit={handleApplyDiscountSubmit}
             />
-            {onRefresh && <DepositWaiverControl job={job} onChanged={onRefresh} />}
+            {onRefresh && <OrderRulesButton job={job} onChanged={onRefresh} label="Change the payment rule for this order" />}
           </div>
 
           <PaymentAuditLedger

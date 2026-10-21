@@ -108,7 +108,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
       </div>
 
       {/* Mobile cards — no sideways scroll needed */}
-      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-sunken border-t border-line">
         {safeData.map(row => (
           <div key={row.staff_id} className="px-6 py-3.5">
             <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ export default function StaffProductivityTable({ data, loading }: StaffProductiv
               <th className="px-6 py-3 font-medium">Avg. Adjustments</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F0EAE3]">
+          <tbody className="divide-y divide-sunken">
             {safeData.map(row => (
               <tr key={row.staff_id} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3 font-medium text-ink">{row.name || 'Unnamed Staff'}</td>

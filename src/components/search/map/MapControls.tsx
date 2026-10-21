@@ -28,15 +28,14 @@ export default function MapControls({ onLocate, onZoomIn, onZoomOut, locating, o
       <button type="button" onClick={onZoomOut} aria-label="Zoom out" className={button}>
         <Minus size={22} />
       </button>
-      {onTogglePanel && (
+      {onTogglePanel && !panelOpen && (
         <button
           type="button"
           onClick={onTogglePanel}
-          aria-label={panelOpen ? 'Hide search and results' : 'Show search and results'}
-          aria-expanded={panelOpen}
+          aria-label="Show search and results"
           className="flex h-12 w-12 items-center justify-center rounded-full bg-taupe-dark text-white shadow-[0_2px_12px_rgba(45,42,38,0.28)] transition-opacity hover:opacity-90 active:opacity-70 lg:hidden"
         >
-          {panelOpen ? <X size={22} /> : <Menu size={22} />}
+          <Menu size={22} />
         </button>
       )}
     </div>

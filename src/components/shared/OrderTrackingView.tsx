@@ -2,6 +2,8 @@ import OrderSummaryCard from '@/components/shared/orderTracking/OrderSummaryCard
 import OrderAppointmentsCard from '@/components/shared/orderTracking/OrderAppointmentsCard';
 import OrderProgressView from '@/components/shared/orderTracking/OrderProgressView';
 import { type OrderProgress, progressLabel } from '@/components/shared/orderTracking/orderProgress';
+import OrderBatchesCard from '@/components/shared/orderTracking/OrderBatchesCard';
+import type { BatchSummary } from '@/components/jobs/batches/batchTypes';
 
 export interface TrackedAppointment {
   id: number;
@@ -44,6 +46,10 @@ export interface TrackedOrder {
   status: string;
   /** Five plain stages and one sentence, built by the server. */
   progress?: OrderProgress;
+  /** Set when the order was split into batches (people paying at different times). A guest sees only this batch. */
+  batch?: BatchSummary | null;
+  /** Number of people, for a group order. */
+  people_count?: number | null;
   garment_category: string | null;
   quantity?: number;
   catalog_item_name?: string | null;
@@ -105,6 +111,7 @@ export default function OrderTrackingView({ order }: OrderTrackingViewProps) {
             <OrderProgressView progress={order.progress} />
           </div>
         )}
+        {order.batch && <OrderBatchesCard batch={order.batch} signedIn={!!order.id} />}
       </div>
 
       {order.appointments && order.appointments.length > 0 && <OrderAppointmentsCard appointments={order.appointments} />}

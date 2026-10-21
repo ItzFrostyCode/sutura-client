@@ -34,9 +34,8 @@ export default function CatalogEditableOverview({ item, edit }: Readonly<Catalog
   // before a save falls back to the default instead of pointing at a photo
   // that no longer exists.
   const defaultImage = useMemo(() => {
-    const angles = colorOptions.length > 0 ? sf.images.filter(i => isAngleLabel(i.view_angle)) : sf.images;
-    return (angles.find(i => i.is_primary) ?? angles[0] ?? sf.images[0])?.image_url ?? '';
-  }, [sf.images, colorOptions.length]);
+    return (sf.images.find(i => i.is_primary) ?? sf.images[0])?.image_url ?? '';
+  }, [sf.images]);
   const [pickedImage, setPickedImage] = useState('');
   const [pickedColor, setPickedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
@@ -44,9 +43,19 @@ export default function CatalogEditableOverview({ item, edit }: Readonly<Catalog
   const selectedImage = sf.images.some(i => i.image_url === pickedImage) ? pickedImage : defaultImage;
   const selectedColor = colorOptions.some(c => c.name === pickedColor) ? pickedColor : (colorOptions[0]?.name ?? '');
 
+  const handleSelectImage = (url: string) => {
+    setPickedImage(url);
+    const matched = colorOptions.find(c => c.modelImage === url);
+    if (matched) {
+      setPickedColor(matched.name);
+    }
+  };
+
   const pickColor = (opt: CatalogColorOption) => {
     setPickedColor(opt.name);
-    setPickedImage(opt.modelImage);
+    if (opt.modelImage) {
+      setPickedImage(opt.modelImage);
+    }
   };
 
   return (
@@ -63,7 +72,7 @@ export default function CatalogEditableOverview({ item, edit }: Readonly<Catalog
                 <CatalogHeroGallery
                   item={sf}
                   selectedImage={selectedImage}
-                  setSelectedImage={setPickedImage}
+                  setSelectedImage={handleSelectImage}
                   selectedVariation={selectedColor}
                   setSelectedVariation={() => {}}
                   storeId=""

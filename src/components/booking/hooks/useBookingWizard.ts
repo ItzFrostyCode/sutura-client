@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, FormEvent } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, FormEvent } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
 import { buildBookingTypes } from '../bookingTypes';
+import type { DesignSource } from '@/lib/designSource';
 import {
   StoreSettings,
   CalendarAppointment,
@@ -14,8 +15,9 @@ import {
   Service,
   SpecialHour,
 } from '../types';
+import { useRequestedItemsStore, RequestedServiceItem } from '@/store/useRequestedItemsStore';
 
-// Fitting and pickup are made by the system for a production order; nobody books them.
+// Fitting and pickup are made by the system for a job order; nobody books them.
 const VALID_APPOINTMENT_TYPES = ['consultation', 'measurement', 'alteration', 'other'];
 
 export type BookingKind = 'service' | 'shop';
@@ -57,20 +59,196 @@ export function useBookingWizard(storeId: string) {
   const refImage = searchParams.get('ref_image');
   const refPrice = searchParams.get('ref_price');
   const refColor = searchParams.get('ref_color');
+  const refAddOns = searchParams.get('ref_addons');
   const branchSlugParam = searchParams.get('branch');
   const serviceIdParam = searchParams.get('service_id');
   const serviceNameParam = searchParams.get('service_name');
   const refTypeParam = searchParams.get('ref_type');
+  const refQtyParam = searchParams.get('ref_qty');
+  const refMinQtyParam = searchParams.get('ref_min_qty');
+  const qtyParam = searchParams.get('qty') || searchParams.get('quantity');
   // Coming from a service or design already tells us this is a service visit.
   const hasServiceContext = !!serviceIdParam || !!refItemId || !!refName;
 
-  const [kind, setKind] = useState<BookingKind>(hasServiceContext ? 'service' : 'shop');
+  // Appointment Request Items
+  const allRequestedItems = useRequestedItemsStore((s) => s.items);
+  const requestedItems = useMemo(
+    () => allRequestedItems.filter((it) => String(it.storeId) === String(storeId)),
+    [allRequestedItems, storeId]
+  );
+  const {
+    addItem,
+    updateQuantity,
+    updateNotes,
+    updateCustomDetails,
+    removeCatalogDesign,
+    attachCatalogDesign,
+    removeItem,
+    clearStoreItems,
+    getStoreItems,
+  } = useRequestedItemsStore();
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addModalPrefilterServiceId, setAddModalPrefilterServiceId] = useState<number | null>(null);
+  const [attachDesignTargetItemId, setAttachDesignTargetItemId] = useState<string | null>(null);
+
+  // Initial seeding for 3 entry points
+  const seededRef = React.useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    seededRef.current = true;
+
+    if (hasServiceContext) {
+      // Clear any prior draft items so we do not produce duplicate service requests
+      clearStoreItems(storeId);
+      const minQ = Math.max(1, parseInt(refMinQtyParam || '1', 10) || 1);
+      const parsedQty = parseInt(refQtyParam || qtyParam || '1', 10) || minQ;
+      const initialQty = Math.max(minQ, parsedQty);
+
+      let parsedAddOns: string[] = [];
+      if (refAddOns) {
+        try {
+          const parsed = JSON.parse(refAddOns);
+          if (Array.isArray(parsed)) {
+            parsedAddOns = parsed.map((x) => String(x));
+          } else if (typeof parsed === 'string') {
+            parsedAddOns = [parsed];
+          }
+        } catch {
+          parsedAddOns = refAddOns.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
+
+      addItem({
+        storeId,
+        serviceId: serviceIdParam ? Number(serviceIdParam) : null,
+        serviceName: serviceNameParam || (!refItemId ? refName : null),
+        catalogItemId: refItemId ? Number(refItemId) : null,
+        catalogItemName: refItemId ? refName : null,
+        name: refName || serviceNameParam || 'Custom Item',
+        image: refImage || null,
+        basePrice: refPrice ? Number(refPrice) : null,
+        quantity: initialQty,
+        minQuantity: minQ,
+        selectedColor: refColor || null,
+        selectedSize: refSize || null,
+        addOns: parsedAddOns,
+        notes: null,
+        customDetails: null,
+      });
+    } else {
+      // Entry point 3: Normal Store Profile booking -> start with clean slate for general consultation
+      clearStoreItems(storeId);
+    }
+  }, [storeId, hasServiceContext, refItemId, serviceIdParam, refName, refImage, refPrice, refColor, refSize, refAddOns, refQtyParam, refMinQtyParam, qtyParam, addItem, getStoreItems, clearStoreItems, serviceNameParam]);
+
+  // Derive internal booking kind from actual requested items and entry point context:
+  // - Store Profile with no requested items: general 'shop' visit
+  // - Service or Catalog Design request: 'service'
+  const kind: BookingKind = useMemo(() => {
+    if (requestedItems.length > 0) return 'service';
+    if (hasServiceContext) return 'service';
+    return 'shop';
+  }, [requestedItems.length, hasServiceContext]);
+
+  const handleSetKind = useCallback((newKind: BookingKind) => {
+    if (newKind === 'shop') {
+      setMaterialSource('');
+      setMaterialDescription('');
+    }
+  }, []);
+
+  const handleAddService = (service: Service, qty?: number, customDetails?: string) => {
+    const minQ = Math.max(1, Number(service.min_order_qty) || 1);
+    const quantity = qty ? Math.max(minQ, qty) : minQ;
+    addItem({
+      storeId,
+      serviceId: service.id,
+      serviceName: service.name,
+      catalogItemId: null,
+      name: service.name,
+      basePrice: service.base_price != null ? Number(service.base_price) : null,
+      quantity,
+      minQuantity: minQ,
+      addOns: [],
+      notes: customDetails || null,
+      customDetails: customDetails || null,
+    });
+    setSelectedServiceId(String(service.id));
+  };
+
+  const handleAddCatalogDesign = (
+    item: {
+      id: number;
+      name: string;
+      price: number | string | null;
+      service_id?: number | null;
+      service?: { id: number; name: string; min_order_qty?: number } | null;
+      images?: Array<{ id: number; image_url: string }>;
+    },
+    options: { quantity: number; size?: string; color?: string; customDetails?: string }
+  ) => {
+    // If we were attaching a design to an existing item
+    if (attachDesignTargetItemId) {
+      attachCatalogDesign(attachDesignTargetItemId, {
+        id: item.id,
+        name: item.name,
+        image_url: item.images?.[0]?.image_url ?? null,
+        sizes: options.size ? [options.size] : null,
+        color: options.color || null,
+        price: item.price,
+      });
+      if (options.customDetails) {
+        updateNotes(attachDesignTargetItemId, options.customDetails);
+      }
+      setAttachDesignTargetItemId(null);
+      setAddModalPrefilterServiceId(null);
+      return;
+    }
+
+    const parentServiceId = item.service_id ?? item.service?.id ?? null;
+    const parentServiceName = item.service?.name ?? null;
+    const minQ = Math.max(1, Number(item.service?.min_order_qty) || 1);
+    const quantity = Math.max(minQ, options.quantity || minQ);
+    addItem({
+      storeId,
+      serviceId: parentServiceId,
+      serviceName: parentServiceName,
+      catalogItemId: item.id,
+      catalogItemName: item.name,
+      name: item.name,
+      image: item.images?.[0]?.image_url ?? null,
+      basePrice: item.price != null ? Number(item.price) : null,
+      quantity,
+      minQuantity: minQ,
+      selectedSize: options.size || null,
+      selectedColor: options.color || null,
+      addOns: [],
+      notes: options.customDetails || null,
+      customDetails: options.customDetails || null,
+    });
+    if (parentServiceId) {
+      setSelectedServiceId(String(parentServiceId));
+    }
+  };
+
+  const handleOpenAddModal = (prefilterServiceId?: number | null, targetItemId?: string | null) => {
+    setAddModalPrefilterServiceId(prefilterServiceId ?? null);
+    setAttachDesignTargetItemId(targetItemId ?? null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    removeItem(itemId);
+  };
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   // The owner's Appointment Configuration for the design being booked from.
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [bookingError, setBookingError] = useState<{ message: string; isConflict?: boolean } | null>(null);
 
   // Form Data
   const [appointmentType, setAppointmentType] = useState<string>(() => {
@@ -114,6 +292,11 @@ export function useBookingWizard(storeId: string) {
   // the design-reference context.
   const [materialSource, setMaterialSource] = useState<'own' | 'shop' | ''>('');
   const [materialDescription, setMaterialDescription] = useState('');
+  // Where the design comes from (the shop's, or the customer's own) and a link to the customer's file.
+  const [peopleCount, setPeopleCount] = useState('');
+  /** The customer's own pictures (uploaded), sent with the booking beside the design's picture. */
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [design, setDesign] = useState<{ design_source: DesignSource | null; design_link: string | null }>({ design_source: null, design_link: null });
 
   // Calendar Appointments
   const [calendarAppointments, setCalendarAppointments] = useState<CalendarAppointment[]>([]);
@@ -143,23 +326,25 @@ export function useBookingWizard(storeId: string) {
   }, []);
 
   const [returnToReview, setReturnToReview] = useState(false);
-  const qtyParam = searchParams.get('qty') || searchParams.get('quantity');
   const [quantity, setQuantity] = useState(qtyParam || '');
 
   const onEditPurpose = () => {
+    setBookingError(null);
     setStep(1);
     setReturnToReview(true);
   };
 
   const onEditSchedule = () => {
+    setBookingError(null);
     setStep(2);
     setReturnToReview(true);
   };
 
   const selectedService = useMemo(() => {
     if (!storeSettings?.services) return null;
-    return storeSettings.services.find((s) => s.id.toString() === selectedServiceId || s.id.toString() === serviceIdParam) || null;
-  }, [storeSettings?.services, selectedServiceId, serviceIdParam]);
+    const targetServiceId = selectedServiceId || serviceIdParam || (requestedItems[0]?.serviceId ? String(requestedItems[0].serviceId) : '');
+    return storeSettings.services.find((s) => s.id.toString() === targetServiceId) || null;
+  }, [storeSettings?.services, selectedServiceId, serviceIdParam, requestedItems]);
 
   const availableBookingTypes = useMemo(
     () => buildBookingTypes({ kind, refName, selectedService, serviceIdParam, serviceNameParam }),
@@ -182,19 +367,8 @@ export function useBookingWizard(storeId: string) {
   const branchAutoFilled = !!branchSlugParam && !!storeSettings?.branches?.some((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam);
   const autoFilledBranch = branchAutoFilled ? storeSettings?.branches?.find((b) => b.slug === branchSlugParam || String(b.id) === branchSlugParam) || null : null;
 
-  // A Catalog Item's own service_id (attached to the URL by the catalog item
-  // detail page whenever item.service exists) already answers "what
-  // service is this" — trust that context and never re-ask, even if this
-  // particular service happens to be filtered out of the general public
-  // services list (e.g. deactivated after the catalog page loaded). A design
-  // reference (refName, set for every catalog-item booking regardless of
-  // whether that item has a linked service_id) counts the same way — the
-  // catalog design itself already fully specifies what's being made, so a
-  // "Service (Optional)" dropdown underneath it is redundant, not optional.
-  // The picker only reappears when the entry point genuinely carried neither
-  // (a plain "Book Appointment" from the store profile, not tied to any
-  // design or service).
-  const needsServicePicker = kind === 'service' && !hasServiceContext && !!storeSettings?.services && storeSettings.services.length > 0;
+  // The service picker only appears if the visit is kind=service but no specific service or item was preselected or added yet.
+  const needsServicePicker = kind === 'service' && !hasServiceContext && requestedItems.length === 0 && !!storeSettings?.services && storeSettings.services.length > 0;
 
   const totalSteps = 3;
   const displayStep = step;
@@ -276,11 +450,16 @@ export function useBookingWizard(storeId: string) {
     return storeSettings.special_hours.find((s) => dateStr >= s.start_date && dateStr <= s.end_date) || null;
   };
 
-  const step1NextDisabled = appointmentType === 'other' && purposeLabel.trim() === '';
+  const step1NextDisabled = (appointmentType === 'other' || appointmentType === 'alteration') && purposeLabel.trim() === '';
+
+  const hasValidPhone = Boolean(
+    customer.phone && customer.phone.trim().replace(/\D/g, '').length >= 7
+  );
 
   const step2NextDisabled =
     !date ||
     !time ||
+    !hasValidPhone ||
     !!getSpecialHoursForDate(date)?.is_closed ||
     (!!storeSettings?.branches && storeSettings.branches.length > 0 && !selectedBranchId) ||
     (needsServicePicker && !selectedServiceId) ||
@@ -323,59 +502,74 @@ export function useBookingWizard(storeId: string) {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
+    setBookingError(null);
 
     const scheduled_at = `${date}T${time || '12:00'}:00`;
+    const currentStoreItems = getStoreItems(storeId);
 
-    // The design itself (title, category, size, color) is sent as structured
-    // fields below — catalog_item_id/selected_size/selected_color — instead
-    // of a "[Design Reference: …]" line in notes, so the owner, branch, and
-    // staff views can show its real title and category.
-    let notesPayload = '';
-    if (refName && !refItemId) {
-      notesPayload += `[Design Reference: ${refName}${refPrice ? ` (from ₱${Number(refPrice).toLocaleString()})` : ''}${
-        refSize ? ` — Size ${refSize}` : ''
-      }${refColor ? ` — ${refColor}` : ''}]\n`;
-    }
-    if (materialSource === 'own') {
-      notesPayload += `[Material: Customer will bring own fabric/sample${
-        materialDescription.trim() ? ` — ${materialDescription.trim()}` : ''
-      }]\n`;
-    } else if (materialSource === 'shop') {
-      notesPayload += `[Material: Customer will use the shop's material]\n`;
-    }
-    if (quantity.trim()) {
-      notesPayload += `[Quantity: ${quantity.trim()} people/items]\n`;
-    }
-    if (remarks.trim()) {
-      notesPayload += `Notes: ${remarks.trim()}`;
-    }
+    const itemsPayload = currentStoreItems.length > 0
+      ? currentStoreItems.map((item) => ({
+          service_id: item.serviceId ?? null,
+          catalog_item_id: item.catalogItemId ?? null,
+          item_name: item.name,
+          quantity: item.quantity,
+          selected_size: item.selectedSize ?? null,
+          selected_color: item.selectedColor ?? null,
+          add_ons: item.addOns && item.addOns.length > 0 ? item.addOns : null,
+          notes: item.notes ?? null,
+        }))
+      : undefined;
+
+    // Only what the customer wrote goes in the notes; the fabric choice has its own fields.
+    const notesPayload = remarks.trim();
 
     try {
       // The account is the customer (sign-in is required), so no name or email is sent. No payment is taken.
-      const isService = kind === 'service';
+      const hasItems = currentStoreItems.length > 0;
+      const isService = hasItems || kind === 'service';
+      const effectiveKind = hasItems ? 'service' : kind;
+      const firstItem = currentStoreItems[0];
+
       await api.post(`/catalog/${storeId}/book`, {
-        kind,
-        phone: !user?.phone && customer.phone ? customer.phone : undefined,
+        kind: effectiveKind,
+        phone: customer.phone?.trim() || undefined,
         appointment_type: appointmentType,
-        purpose_label: appointmentType === 'other' ? purposeLabel.trim() : undefined,
+        purpose_label: ['other', 'alteration'].includes(appointmentType) ? purposeLabel.trim() : undefined,
         scheduled_at,
         notes: notesPayload.trim() || null,
         store_branch_id: selectedBranchId ? Number(selectedBranchId) : null,
-        service_id: isService && selectedServiceId ? Number(selectedServiceId) : null,
-        catalog_item_id: isService && refItemId ? Number(refItemId) : null,
-        selected_size: isService && refItemId ? refSize : null,
-        selected_color: isService && refItemId ? refColor : null,
-        reference_images: refImage ? [refImage] : undefined,
-        answers: Object.keys(answers).length > 0 ? answers : undefined,
+        service_id: isService && (firstItem?.serviceId ?? selectedServiceId) ? Number(firstItem?.serviceId ?? selectedServiceId) : null,
+        catalog_item_id: isService && (firstItem?.catalogItemId ?? refItemId) ? Number(firstItem?.catalogItemId ?? refItemId) : null,
+        selected_size: isService ? (firstItem?.selectedSize ?? refSize ?? null) : null,
+        selected_color: isService ? (firstItem?.selectedColor ?? refColor ?? null) : null,
+        reference_images: isService ? (Array.from(new Set([firstItem?.image ?? refImage, ...photos].filter(Boolean) as string[])).slice(0, 10) || undefined) : undefined,
+        answers: isService && Object.keys(answers).length > 0 ? answers : undefined,
+        design_source: isService && design.design_source ? design.design_source : undefined,
+        design_link: isService && design.design_link ? design.design_link : undefined,
+        people_count: isService && Number(peopleCount) >= 2 ? Number(peopleCount) : undefined,
+        material_source: isService && materialSource ? materialSource : undefined,
+        material_note: isService && materialSource === 'own' && materialDescription.trim() ? materialDescription.trim() : undefined,
+        items: isService && itemsPayload && itemsPayload.length > 0 ? itemsPayload : undefined,
       });
+      clearStoreItems(storeId);
       setSuccess(true);
-    } catch (err) {
-      console.error('Failed to book appointment:', err);
-      // Say what the server actually objected to (an existing active booking, a taken slot,
-      // a missing answer…) instead of a generic message.
-      const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data;
-      const detail = res?.message ?? Object.values(res?.errors ?? {})[0]?.[0];
-      alert(detail ? `Could not book: ${detail}` : 'Failed to book appointment. Please check all fields.');
+    } catch (err: unknown) {
+      console.warn('Failed to book appointment:', err);
+      const axiosErr = err as {
+        response?: {
+          status?: number;
+          data?: { message?: string; errors?: Record<string, string[]> };
+        };
+      };
+      const status = axiosErr?.response?.status;
+      const res = axiosErr?.response?.data;
+      const firstFieldError = res?.errors ? Object.values(res.errors)[0]?.[0] : undefined;
+      const detail = firstFieldError || (res?.message && res.message !== 'The given data was invalid.' ? res.message : undefined);
+      const message = detail || 'Failed to book appointment. Please check all fields and try again.';
+      setBookingError({
+        message,
+        isConflict: status === 409,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -395,12 +589,11 @@ export function useBookingWizard(storeId: string) {
     onEditSchedule,
     quantity,
     setQuantity,
-    // Also true before hydrate() resolves and while a not-logged-in
-    // customer is mid-redirect to /login — keeps the wizard's own content
-    // from flashing in behind the redirect.
     loading: loading || !hydrated || !user,
     success,
     submitting,
+    bookingError,
+    clearBookingError: () => setBookingError(null),
     storeSettings,
 
     // Design / Service reference context
@@ -410,6 +603,7 @@ export function useBookingWizard(storeId: string) {
     refImage,
     refPrice,
     refColor,
+    refAddOns,
     serviceIdParam,
     serviceNameParam,
 
@@ -418,7 +612,7 @@ export function useBookingWizard(storeId: string) {
     appointmentType,
     setAppointmentType,
     kind,
-    setKind,
+    setKind: handleSetKind,
     kindLocked: hasServiceContext,
     needsServicePicker,
     selectedServiceId,
@@ -429,6 +623,12 @@ export function useBookingWizard(storeId: string) {
     setMaterialSource,
     materialDescription,
     setMaterialDescription,
+    design,
+    setDesign,
+    peopleCount,
+    setPeopleCount,
+    photos,
+    setPhotos,
     branchAutoFilled,
     autoFilledBranch,
     branchesWithDistance,
@@ -458,5 +658,23 @@ export function useBookingWizard(storeId: string) {
     answers,
     setAnswers,
     handleSubmit,
+
+    // Requested Items and modal state
+    requestedItems,
+    isAddModalOpen,
+    setIsAddModalOpen,
+    addModalPrefilterServiceId,
+    setAddModalPrefilterServiceId,
+    handleOpenAddModal,
+    handleAddService,
+    handleAddCatalogDesign,
+    handleRemoveItem,
+    handleUpdateQuantity: updateQuantity,
+    handleUpdateNotes: updateNotes,
+    handleRemoveCatalogDesign: removeCatalogDesign,
+    handleAttachCatalogDesign: attachCatalogDesign,
+    updateQuantity,
+    removeItem,
+    clearStoreItems,
   };
 }

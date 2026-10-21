@@ -192,9 +192,8 @@ Supersedes the older Services notes above (which name files and actions that no 
 
 **Customer-facing "My Orders" tracker (`/account/orders`, `/account/orders/[id]`) and cross-shop discovery search (`/search`) are both built** — verified directly against the code on 2026-09-19, after this doc and `GroupTasks.md` were found to still describe them as missing well after they'd shipped. Don't trust either doc's "genuinely missing" framing without checking the real routes first — that's exactly the mistake that happened here.
 
-Two remaining open tasks (not re-verified as of 2026-09-19 — check the code before trusting these too):
-1. **Masudog** — a "My Assigned Jobs" filter tab for staff (backend already supports `?assigned_staff_id=X` on the jobs endpoint).
-2. **Bongo** — System Admin dashboard has zero frontend pages, though the backend API is already fully built (`/admin/shops`, `/admin/subscription-plans`, `/admin/tickets`).
+- **System Admin dashboard (`/admin/*`) is built** (accounts, activity, applications, branches, login, plans, stores, tickets, upgrades, and system-health).
+- **Staff assigned jobs filter** is supported via `?mine=1` and `?assigned_staff_id=X`.
 
 ## UX principles — what "right" looks like here
 
@@ -279,7 +278,7 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 ## Staff module — thesis alignment (2026-10-01)
 
 - **Staff Home** (`components/dashboard/staff/*`) replaces the old quick-links card; its cards deep-link to `/dashboard/jobs?stage=qc_ironing` and `?mine=1`.
-- **Staff create jobs from an approved appointment** (Appointments → Create Job). `JobCreateForm` hides discount/downpayment for non-owner/manager (the server ignores them) and, without an `appointment_id`, tells staff to start from an appointment. The `/catalog` fetch there is tolerant because designs are owner/manager-only to read.
+- **Staff create jobs for a walk-in or from an appointment** (Jobs → New Job Order, or Appointments → Create Job Order; since 2026-10-20 an appointment is no longer required for a walk-in). `JobCreateForm` hides discount/downpayment for non-owner/manager (the server ignores them). The `/catalog` fetch there is tolerant because designs are owner/manager-only to read.
 - **Support tickets for all shop roles** (Help panel → Support tickets); only the Audit log link stays owner-only. The admin portal shows who filed a ticket (Owner / Branch manager / Staff).
 - **Measurement status** (Finalized / Pending fitting): picker in the measurement form, badge on shop and customer views.
 - **My Jobs** toggle on Orders now uses `?mine=1` (jobs I hold or moved through a stage); **My customers** toggle on Customers for staff.

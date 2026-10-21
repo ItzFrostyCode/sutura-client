@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
+import { withRedirect } from '@/lib/authRedirect';
 
 /**
  * Print pages live outside the dashboard route tree (so they render with a
@@ -18,7 +19,7 @@ export function usePrintAuthGuard() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.replace(withRedirect('/login', typeof window !== 'undefined' ? window.location.pathname : null, 'as=store'));
     } else if (!store && token) {
       api.get('/auth/me')
         .then(res => {
@@ -33,7 +34,7 @@ export function usePrintAuthGuard() {
         })
         .catch(() => {
           logout();
-          router.push('/login');
+          router.replace(withRedirect('/login', typeof window !== 'undefined' ? window.location.pathname : null, 'as=store'));
         });
     }
   }, [isAuthenticated, user, store, token, router, setAuth, logout]);

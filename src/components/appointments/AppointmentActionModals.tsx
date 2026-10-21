@@ -1,19 +1,21 @@
 import { safeHref } from '@/lib/safeHref';
+import { getMediaUrl } from '@/lib/media';
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
-import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler } from 'lucide-react';
+import { Loader2, RefreshCw, CheckSquare, X, Check, Scissors, Ruler, Eye, Pencil } from 'lucide-react';
 import {
   Appointment, JobOrderData, StaffData,
-  TypeBadge, StatusBadge, CheckInBadge, getLocalDateString
+  TypeBadge, StatusBadge, CheckInBadge, getLocalDateString, cleanCustomerNotes, contactLine
 } from './appointmentHelpers';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { serviceCategoryPath } from '@/lib/garmentTaxonomy';
 import AppointmentSubject from './AppointmentSubject';
-import AppointmentCustomerToolkit from './AppointmentCustomerToolkit';
 import RejectAppointmentDialog from './RejectAppointmentDialog';
 import AssignStaffControl from './AssignStaffControl';
 import VisitDoneModal, { type VisitResult } from './VisitDoneModal';
+import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
+import AppointmentItemsBreakdown from './AppointmentItemsBreakdown';
 
 interface AppointmentActionModalsProps {
   // Modal visibility & active records
@@ -37,16 +39,22 @@ interface AppointmentActionModalsProps {
   readonly cancelApt: Appointment | null;
   readonly setCancelApt: (a: Appointment | null) => void;
 
-  readonly showViewModal: boolean;
-  readonly setShowViewModal: (v: boolean) => void;
-  readonly viewApt: Appointment | null;
-  readonly setViewApt: (a: Appointment | null) => void;
+  readonly showRejectModal?: boolean;
+  readonly setShowRejectModal?: (v: boolean) => void;
+  readonly rejectApt?: Appointment | null;
+  readonly setRejectApt?: (a: Appointment | null) => void;
+
+  readonly showViewModal?: boolean;
+  readonly setShowViewModal?: (v: boolean) => void;
+  readonly viewApt?: Appointment | null;
+  readonly setViewApt?: (a: Appointment | null) => void;
 
   // Reference Data & Statuses
   readonly todayStr: string;
   readonly minTimeFor: (dateStr: string) => string | undefined;
   readonly isSubmitting: boolean;
   readonly actionLoadingId: number | null;
+  readonly appointments?: Appointment[];
 
   // Handlers
   readonly onConfirmReview: (aptId: number) => Promise<boolean>;
@@ -57,13 +65,13 @@ interface AppointmentActionModalsProps {
   readonly onCreateJob: (apt: Appointment) => void;
   /** Book a follow-up visit for this customer (and order). Only offered on an appointment that is approved or done. */
   readonly onFollowUp?: (apt: Appointment) => void;
-  readonly onAccommodateEarly?: (aptId: number) => Promise<void>;
-  readonly onAskToWait?: (aptId: number) => Promise<void>;
   /** Called after the shop shares something with the customer, so the list refreshes. */
-  readonly onAppointmentUpdated?: () => void;
   readonly staff: StaffData[];
   readonly canAssign: boolean;
   readonly onAssign: (aptId: number, staffId: number | null) => Promise<boolean>;
+  readonly onEditClick?: (apt: Appointment) => void;
+  readonly onCheckInClick?: (aptId: number) => void;
+  readonly onDidntComeClick?: (apt: Appointment) => void;
 }
 
 export default function AppointmentActionModals({
@@ -71,15 +79,28 @@ export default function AppointmentActionModals({
   showRescheduleModal, setShowRescheduleModal, rescheduleApt, setRescheduleApt,
   showCompleteModal, setShowCompleteModal, completeApt, setCompleteApt,
   showCancelModal, setShowCancelModal, cancelApt, setCancelApt,
+  showRejectModal, setShowRejectModal, rejectApt, setRejectApt,
   showViewModal, setShowViewModal, viewApt, setViewApt,
   todayStr, minTimeFor,
-  isSubmitting, actionLoadingId,
+  isSubmitting, actionLoadingId, appointments = [],
   onConfirmReview, onRejectReview, onRescheduleSubmit, onCompleteSubmit, onCancelConfirm, onCreateJob, onFollowUp,
-  onAccommodateEarly, onAskToWait, onAppointmentUpdated, staff, canAssign, onAssign
+  staff, canAssign, onAssign,
+  onEditClick, onCheckInClick, onDidntComeClick
 }: AppointmentActionModalsProps) {
 
-  const { store } = useAuthStore();
+  const { store, user } = useAuthStore();
+  const storeOwner = store?.owner ?? (user?.roles?.some(r => r.name === 'store_owner') ? { id: user.id, name: user.name } : null);
   const [rejectOpen, setRejectOpen] = useState(false);
+
+  // Exclude current reschedule appointment from conflicts
+  const calendarAppointments = appointments
+    .filter(a => ['pending', 'confirmed', 'in_progress'].includes(a.status) && a.id !== rescheduleApt?.id)
+    .map(a => ({
+      scheduled_at: a.scheduled_at,
+      duration_minutes: a.duration_minutes,
+      store_branch_id: a.store_branch_id ?? null,
+      status: a.status,
+    }));
 
   // Local Form States
   const [rescheduleForm, setRescheduleForm] = useState({ scheduled_date: '', scheduled_time: '', notes: '' });
@@ -128,9 +149,9 @@ export default function AppointmentActionModals({
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-base font-bold text-ink">{reviewApt.customer?.name}</h3>
-                <p className="text-xs text-ink-faint">{reviewApt.customer?.email}</p>
+                <p className="text-xs text-ink-faint">{contactLine(reviewApt.customer)}</p>
               </div>
-              <StatusBadge status={reviewApt.status} scheduledAt={reviewApt.scheduled_at} />
+              <StatusBadge status={reviewApt.status} scheduledAt={reviewApt.scheduled_at} jobOrderId={reviewApt.job_order_id} jobStatus={reviewApt.job_order?.status} kind={reviewApt.kind} type={reviewApt.appointment_type} />
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -159,14 +180,22 @@ export default function AppointmentActionModals({
                 <p className="text-ink font-medium mt-1">{reviewApt.branch?.name || 'Main Branch'}</p>
               </div>
               <div className="col-span-2">
-                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
-                <AssignStaffControl assignedStaffId={reviewApt.assigned_staff_id} assignedName={reviewApt.assigned_staff?.name} branchId={reviewApt.store_branch_id} staff={staff} canAssign={canAssign} onAssign={(id) => onAssign(reviewApt.id, id)} />
+                <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Assigned To</p>
+                <AssignStaffControl
+                  assignedStaffId={reviewApt.assigned_staff_id}
+                  assignedName={reviewApt.assigned_staff?.name}
+                  branchId={reviewApt.store_branch_id ?? reviewApt.branch?.id}
+                  staff={staff}
+                  storeOwner={storeOwner}
+                  canAssign={canAssign}
+                  onAssign={(id) => onAssign(reviewApt.id, id)}
+                />
               </div>
               {reviewApt.job_order && (
                 <div>
                   <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Linked Job Order</p>
                   <p className="text-ink font-medium mt-1">
-                    <a href={`/dashboard/jobs/${reviewApt.job_order.id}`} className="text-[#6B7FA8] hover:underline" target="_blank" rel="noopener noreferrer">
+                    <a href={`/dashboard/jobs/${reviewApt.job_order.id}`} className="text-taupe hover:underline" target="_blank" rel="noopener noreferrer">
                       #{reviewApt.job_order.order_number || reviewApt.job_order.id}
                     </a>
                   </p>
@@ -174,10 +203,14 @@ export default function AppointmentActionModals({
               )}
             </div>
 
-            {reviewApt.notes && (
+            {reviewApt.items && reviewApt.items.length > 0 && (
+              <AppointmentItemsBreakdown items={reviewApt.items} storeSlug={store?.slug} />
+            )}
+
+            {cleanCustomerNotes(reviewApt.notes) && (
               <div>
                 <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider mb-1">Notes from Customer</p>
-                <div className="bg-canvas border border-line rounded-lg p-3 text-sm text-ink whitespace-pre-wrap">{reviewApt.notes}</div>
+                <div className="bg-canvas border border-line rounded-lg p-3 text-sm text-ink whitespace-pre-wrap">{cleanCustomerNotes(reviewApt.notes)}</div>
               </div>
             )}
 
@@ -200,7 +233,7 @@ export default function AppointmentActionModals({
                 <button
                   type="button"
                   onClick={() => { setShowRescheduleModal(true); setRescheduleApt(reviewApt); setShowReviewModal(false); }}
-                  className="flex items-center gap-1.5 px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-[#6B7FA8] hover:bg-[#6B7FA8]/10 border border-[#6B7FA8]/20 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-taupe hover:bg-taupe/10 border border-taupe/20 transition-colors"
                 >
                   <RefreshCw size={14} /> Propose New Time
                 </button>
@@ -234,44 +267,84 @@ export default function AppointmentActionModals({
       </Modal>
 
       <RejectAppointmentDialog
-        isOpen={rejectOpen && !!reviewApt}
-        busy={!!reviewApt && actionLoadingId === reviewApt.id}
-        onClose={() => setRejectOpen(false)}
+        isOpen={Boolean(rejectOpen || (showRejectModal && (rejectApt || reviewApt || viewApt)))}
+        busy={Boolean((rejectApt || reviewApt || viewApt) && actionLoadingId === (rejectApt || reviewApt || viewApt)!.id)}
+        onClose={() => {
+          setRejectOpen(false);
+          setShowRejectModal?.(false);
+          setRejectApt?.(null);
+        }}
+        hasService={Boolean((rejectApt || reviewApt || viewApt)?.service || (rejectApt || reviewApt || viewApt)?.appointment_type === 'alteration' || (rejectApt || reviewApt || viewApt)?.appointment_type === 'fitting')}
         onConfirm={async (code, note) => {
-          if (!reviewApt) return false;
-          const ok = await onRejectReview(reviewApt.id, code, note);
-          if (ok) { setShowReviewModal(false); setReviewApt(null); }
+          const target = rejectApt || reviewApt || viewApt;
+          if (!target) return false;
+          const ok = await onRejectReview(target.id, code, note);
+          if (ok) {
+            setShowReviewModal(false);
+            setReviewApt(null);
+            setShowViewModal?.(false);
+            setViewApt?.(null);
+            setRejectOpen(false);
+            setShowRejectModal?.(false);
+            setRejectApt?.(null);
+          }
           return ok;
         }}
       />
 
       {/* ── 2. Reschedule Modal ─────────────────────────────────────────────── */}
-      <Modal isOpen={showRescheduleModal} onClose={() => { setShowRescheduleModal(false); setRescheduleApt(null); }} title="Propose New Schedule">
+      <Modal
+        isOpen={showRescheduleModal}
+        onClose={() => { setShowRescheduleModal(false); setRescheduleApt(null); }}
+        title="Propose New Schedule"
+        maxWidth="max-w-2xl"
+      >
         <form onSubmit={handleReschedule} className="space-y-4">
-          <p className="text-sm text-ink-muted">Propose a new date and time. The customer will be notified of the change.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="reschedule_date" className="block text-sm font-medium text-ink-body mb-1">New Date</label>
-              <input id="reschedule_date" type="date" required min={todayStr} value={rescheduleForm.scheduled_date}
-                onChange={e => setRescheduleForm(f => ({ ...f, scheduled_date: e.target.value }))}
-                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe" />
-            </div>
-            <div>
-              <label htmlFor="reschedule_time" className="block text-sm font-medium text-ink-body mb-1">New Time</label>
-              <input id="reschedule_time" type="time" required min={minTimeFor(rescheduleForm.scheduled_date)} value={rescheduleForm.scheduled_time}
-                onChange={e => setRescheduleForm(f => ({ ...f, scheduled_time: e.target.value }))}
-                className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe" />
-            </div>
-          </div>
+          <p className="text-sm text-ink-muted">
+            Propose a new date and time for <strong>{rescheduleApt?.customer?.name}</strong>. The customer will be notified of the proposed schedule.
+          </p>
+
+          <InteractiveCalendar
+            selectedBranchId={rescheduleApt?.store_branch_id ? String(rescheduleApt.store_branch_id) : null}
+            durationMinutes={rescheduleApt?.duration_minutes || 30}
+            operatingHours={store?.operating_hours ?? null}
+            specialHours={store?.special_hours ?? null}
+            appointments={calendarAppointments}
+            loadingAppts={false}
+            selectedDate={rescheduleForm.scheduled_date}
+            selectedTime={rescheduleForm.scheduled_time}
+            mode="walk_in"
+            onDateChange={(date) => setRescheduleForm(f => ({ ...f, scheduled_date: date }))}
+            onTimeChange={(time) => setRescheduleForm(f => ({ ...f, scheduled_time: time }))}
+          />
+
           <div>
-            <label htmlFor="reschedule_notes" className="block text-sm font-medium text-ink-body mb-1">Note to Customer (Optional)</label>
-            <textarea id="reschedule_notes" rows={2} value={rescheduleForm.notes} onChange={e => setRescheduleForm(f => ({ ...f, notes: e.target.value }))}
+            <label htmlFor="reschedule_notes" className="block text-sm font-medium text-ink-body mb-1">
+              Note to Customer (Optional)
+            </label>
+            <textarea
+              id="reschedule_notes"
+              rows={2}
+              value={rescheduleForm.notes}
+              onChange={e => setRescheduleForm(f => ({ ...f, notes: e.target.value }))}
               className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe resize-none"
-              placeholder="e.g. Unavailable on original date, please come on the new date..." />
+              placeholder="e.g. Schedule unavailable on original date — please come on this proposed time..."
+            />
           </div>
-          <div className="pt-2 flex flex-wrap justify-end gap-3">
-            <button type="button" onClick={() => setShowRescheduleModal(false)} className="px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="bg-[#6B7FA8] hover:bg-[#6B7FA8]/90 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50">
+
+          <div className="pt-2 flex flex-wrap justify-end gap-3 border-t border-line">
+            <button
+              type="button"
+              onClick={() => { setShowRescheduleModal(false); setRescheduleApt(null); }}
+              className="px-4 py-2 min-h-11 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || !rescheduleForm.scheduled_date || !rescheduleForm.scheduled_time}
+              className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 min-h-11 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
               {isSubmitting && <Loader2 size={15} className="animate-spin" />}
               <RefreshCw size={14} /> Confirm Reschedule
             </button>
@@ -333,211 +406,6 @@ export default function AppointmentActionModals({
         </div>
       </Modal>
 
-      {/* ── 5. View Details Modal ────────────────────────────────────────────── */}
-      <Modal isOpen={showViewModal} onClose={() => { setShowViewModal(false); setViewApt(null); }} title="Appointment Details">
-        {viewApt && (
-          <div className="space-y-4 text-sm text-ink-body">
-            <div className="flex items-start justify-between border-b border-line pb-3">
-              <div>
-                <h4 className="font-bold text-ink text-base">{viewApt.customer?.name}</h4>
-                <p className="text-xs text-ink-faint">{viewApt.customer?.email}</p>
-              </div>
-              <div className="flex flex-col gap-1 items-end">
-                <TypeBadge type={viewApt.appointment_type} label={viewApt.purpose_label} kind={viewApt.kind} />
-                <div className="flex items-center gap-1.5">
-                  <StatusBadge status={viewApt.status} scheduledAt={viewApt.scheduled_at} />
-                  <CheckInBadge checkedInAt={viewApt.checked_in_at} scheduledAt={viewApt.scheduled_at} />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Scheduled At</p>
-                <p className="text-ink font-medium mt-0.5">
-                  {new Date(viewApt.scheduled_at).toLocaleDateString('en-PH', { dateStyle: 'medium' })}
-                  {' at '}
-                  {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Duration</p>
-                <p className="text-ink font-medium mt-0.5">{viewApt.duration_minutes ?? 60} minutes</p>
-              </div>
-              {viewApt.checked_in_at && (
-                <div>
-                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Checked In</p>
-                  <p className="text-ink font-medium mt-0.5">
-                    {new Date(viewApt.checked_in_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              )}
-              {viewApt.arrival_status === 'early' && (
-                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
-                  <p className="text-[11px] text-amber-800 font-bold uppercase tracking-wider">
-                    Arrived Early{viewApt.early_arrival_decision ? ` — ${viewApt.early_arrival_decision.replace('_', ' ')}` : ''}
-                  </p>
-                  <p className="text-xs text-amber-700">
-                    Scheduled for {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}.
-                    {' '}The customer&apos;s original appointment time is unchanged unless accommodated below.
-                  </p>
-                  {viewApt.early_arrival_decision !== 'accommodated' && (onAccommodateEarly || onAskToWait) && (
-                    <div className="flex gap-2">
-                      {onAccommodateEarly && (
-                        <button
-                          type="button"
-                          onClick={() => onAccommodateEarly(viewApt.id)}
-                          disabled={actionLoadingId === viewApt.id}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          Accommodate Now
-                        </button>
-                      )}
-                      {onAskToWait && (
-                        <button
-                          type="button"
-                          onClick={() => onAskToWait(viewApt.id)}
-                          disabled={actionLoadingId === viewApt.id}
-                          className="flex-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          Ask Customer to Wait
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {viewApt.early_arrival_decision === 'accommodated' && viewApt.actual_service_start_at && (
-                    <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                      <Check size={12} /> Service started at{' '}
-                      {new Date(viewApt.actual_service_start_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  )}
-                </div>
-              )}
-              {viewApt.catalog_item && (
-                // Design only here — the Service block right below keeps its own link.
-                <AppointmentSubject apt={{ ...viewApt, service: null }} storeSlug={store?.slug} variant="full" />
-              )}
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Service</p>
-                {viewApt.service && store?.slug ? (
-                  <a
-                    href={`/store/${store.slug}/service/${viewApt.service.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#6B7FA8] hover:underline font-medium mt-0.5 inline-block"
-                  >
-                    {viewApt.service.name}
-                  </a>
-                ) : (
-                  <p className="text-ink font-medium mt-0.5">{viewApt.service?.name || <span className="italic text-ink-faint">Consultation</span>}</p>
-                )}
-                {viewApt.service && serviceCategoryPath(viewApt.service).length > 0 && (
-                  <p className="text-xs text-ink-muted mt-0.5">{serviceCategoryPath(viewApt.service).join(' → ')}</p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Branch</p>
-                <p className="text-ink font-medium mt-0.5">{viewApt.branch?.name || 'Main Branch'}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Assigned Staff</p>
-                <AssignStaffControl assignedStaffId={viewApt.assigned_staff_id} assignedName={viewApt.assigned_staff?.name} branchId={viewApt.store_branch_id} staff={staff} canAssign={canAssign && !['completed', 'cancelled', 'no_show', 'rejected'].includes(viewApt.status)} onAssign={(id) => onAssign(viewApt.id, id)} />
-              </div>
-              {viewApt.job_order && (
-                <div>
-                  <p className="text-[11px] text-ink-faint font-semibold uppercase tracking-wider">Linked Job Order</p>
-                  <p className="text-ink font-medium mt-1">
-                    <a href={`/dashboard/jobs/${viewApt.job_order.id}`} className="text-[#6B7FA8] hover:underline" target="_blank" rel="noopener noreferrer">
-                      #{viewApt.job_order.order_number || viewApt.job_order.id}
-                    </a>
-                  </p>
-                </div>
-              )}
-              {viewApt.priority && (
-                <div>
-                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Priority</p>
-                  <p className={`font-bold mt-0.5 capitalize text-xs ${
-                    viewApt.priority === 'rush' ? 'text-rose-600' : viewApt.priority === 'urgent' ? 'text-amber-600' : 'text-zinc-600'
-                  }`}>
-                    {viewApt.priority}
-                  </p>
-                </div>
-              )}
-              {viewApt.garment_category && (
-                <div>
-                  <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Garment Category</p>
-                  <p className="text-ink font-semibold mt-0.5 capitalize">{viewApt.garment_category}</p>
-                </div>
-              )}
-              {viewApt.outcome && (
-                <div className="col-span-2 bg-canvas border border-line rounded-xl p-3">
-                  <p className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Appointment Outcome</p>
-                  <p className="text-emerald-700 font-bold mt-0.5 text-xs capitalize flex items-center gap-1">
-                    <Check size={12} /> {viewApt.outcome.replace(/_/g, ' ')}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {viewApt.notes && (
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Notes</p>
-                <div className="bg-canvas border border-line rounded-lg p-3 text-xs mt-1 whitespace-pre-wrap text-ink">{viewApt.notes}</div>
-              </div>
-            )}
-
-            {viewApt.reference_images && viewApt.reference_images.length > 0 && (
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider mb-2">Design Reference Images</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {viewApt.reference_images.map((url) => (
-                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden border border-line bg-zinc-100 hover:opacity-80 transition-opacity">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="Reference" className="w-full h-full object-cover" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {viewApt.reference_link && (
-              <div>
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider">Reference Link</p>
-                <a href={safeHref(viewApt.reference_link)} target="_blank" rel="noopener noreferrer" className="text-[#6B7FA8] hover:underline text-xs break-all">
-                  {viewApt.reference_link}
-                </a>
-              </div>
-            )}
-
-            {viewApt.answers && Object.keys(viewApt.answers).length > 0 && (
-              <div className="border-t border-line pt-3">
-                <p className="text-xs text-ink-faint font-semibold uppercase tracking-wider mb-2">Booking Answers</p>
-                <div className="space-y-2">
-                  {Object.entries(viewApt.answers).map(([q, a]) => (
-                    <div key={q} className="bg-canvas border border-line rounded-lg p-2.5">
-                      <p className="text-xs font-semibold text-ink-muted">{q}</p>
-                      <p className="text-xs text-ink mt-0.5">{String(a)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {['pending', 'confirmed', 'in_progress'].includes(viewApt.status) && (
-              <AppointmentCustomerToolkit key={viewApt.id} apt={viewApt} onChanged={() => onAppointmentUpdated?.()} />
-            )}
-
-            <div className="pt-3 border-t border-line flex flex-wrap items-center justify-end gap-2">
-              {onFollowUp && ['confirmed', 'in_progress', 'completed'].includes(viewApt.status) && (
-                <button type="button" onClick={() => { setShowViewModal(false); onFollowUp(viewApt); }} className="border border-taupe/40 text-taupe hover:bg-taupe/10 px-5 py-2 rounded-lg text-xs font-medium transition-colors">
-                  Schedule a follow-up
-                </button>
-              )}
-              <button type="button" onClick={() => setShowViewModal(false)} className="bg-taupe hover:bg-taupe/90 text-white px-5 py-2 rounded-lg text-xs font-medium transition-colors">Close</button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </>
   );
 }

@@ -378,7 +378,9 @@ export function useStoreStorefront(storeId: string) {
     });
   }, []);
 
-  const activeBranch = store?.branches?.find(b => b.slug === selectedBranchSlug);
+  const activeBranch = store?.branches?.find(
+    (b) => b.slug === selectedBranchSlug || String(b.id) === selectedBranchSlug,
+  );
 
   const fetchStore = useCallback(() => {
     api.get(`/public/stores/${storeId}`)

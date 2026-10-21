@@ -55,7 +55,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
   const [showEditModal, setShowEditModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', phone: '', role: 'tailor',
+    name: '', email: '', password: '', phone: '', gender: '', role: 'tailor',
     additional_roles: [] as string[], specialization: '',
     hired_at: new Date().toISOString().split('T')[0],
     is_active: true, store_branch_id: '', is_branch_manager: false,
@@ -95,6 +95,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
       email: member.user?.email || '',
       password: '',
       phone: member.user?.phone || '',
+      gender: member.user?.gender || '',
       role: member.role || 'tailor',
       additional_roles: member.additional_roles || [],
       specialization: Array.isArray(member.specialization)
@@ -119,6 +120,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
+        gender: formData.gender || null,
         role: formData.role,
         additional_roles: formData.additional_roles.filter(r => r && r !== formData.role),
         specialization: formData.specialization
@@ -239,6 +241,11 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
                 <span className="flex items-center gap-1 text-ink-faint">
                   <Calendar size={12} className="shrink-0" /> Hired {member.hired_at ? new Date(member.hired_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                 </span>
+                {member.user?.gender && (
+                  <span className="flex items-center gap-1 text-ink-faint">
+                    <UserCircle size={12} className="shrink-0" /> {member.user.gender.charAt(0).toUpperCase() + member.user.gender.slice(1)}
+                  </span>
+                )}
                 <span className="flex items-center gap-1 text-ink-faint">
                   <Building2 size={12} className="shrink-0" /> {member.branch?.name || 'All Branches'}
                 </span>
@@ -260,7 +267,7 @@ export default function StaffProfilePage({ params }: Readonly<{ params: Promise<
               <button
                 type="button"
                 onClick={openEdit}
-                className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                className="h-9 px-3.5 rounded-xl bg-espresso hover:bg-espresso/90 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
               >
                 <Pencil size={13} />
                 <span>Edit</span>

@@ -23,7 +23,7 @@ export default function ServiceWizardBar({ step, total, last, saving, optional, 
         <button type="button" onClick={onBack} disabled={saving} className="h-[52px] px-5 border border-line-strong bg-white text-ink font-medium text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-sunken disabled:opacity-50">
           <ArrowLeft size={18} /> <span className="max-[374px]:hidden">{step === 0 ? 'Cancel' : 'Back'}</span>
         </button>
-        <button type="button" onClick={onNext} disabled={saving} className="flex-1 h-[52px] bg-taupe hover:bg-taupe-hover text-white font-semibold text-base flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60">
+        <button type="button" onClick={onNext} disabled={saving} className="flex-1 h-[52px] bg-espresso hover:bg-espresso/90 text-white font-semibold text-base flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60">
           {saving ? <Loader2 size={18} className="animate-spin" /> : last ? <Check size={18} /> : null}
           {last ? finishLabel : optional ? 'Next (optional)' : 'Next'}
           {!last && !saving && <ArrowRight size={18} />}

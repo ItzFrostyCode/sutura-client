@@ -94,7 +94,7 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
       // Everything handed over and nothing left to correct: the order is complete.
       const res = await api.get(`${base}/readiness`).catch(() => null);
       const d = res?.data?.data as ReadinessData | undefined;
-      if (d?.delivery && d.delivery.handover.remaining === 0 && d.delivery.open_corrections === 0) {
+      if (d?.delivery && d.delivery.handover.remaining === 0 && d.delivery.open_corrections === 0 && d.delivery.balance_clear) {
         return moveTo('completed', 'Order completed.');
       }
       return true;

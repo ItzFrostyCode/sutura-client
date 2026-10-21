@@ -19,7 +19,7 @@ export default function UnclaimedPickupsList({ rows }: UnclaimedPickupsListProps
       <p className="text-sm text-ink-faint mb-4">Ready for pickup 14+ days — follow up before it turns into a forfeited deposit.</p>
 
       {/* Mobile cards — no sideways scroll needed */}
-      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-sunken border-t border-line">
         {rows.map(row => (
           <div key={row.id} className="px-6 py-3.5">
             <div className="flex items-start justify-between gap-2">
@@ -54,7 +54,7 @@ export default function UnclaimedPickupsList({ rows }: UnclaimedPickupsListProps
               <th className="px-6 py-3 font-medium">Days Waiting</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F0EAE3]">
+          <tbody className="divide-y divide-sunken">
             {rows.map(row => (
               <tr key={row.id} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3">
@@ -71,7 +71,7 @@ export default function UnclaimedPickupsList({ rows }: UnclaimedPickupsListProps
                   {row.balance > 0 ? (
                     <span className="font-semibold text-amber-700">₱{row.balance.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                   ) : (
-                    <span className="text-[#4A7C59]">Fully paid</span>
+                    <span className="text-sage">Fully paid</span>
                   )}
                 </td>
                 <td className="px-6 py-3 font-semibold text-danger">{row.days_waiting} days</td>

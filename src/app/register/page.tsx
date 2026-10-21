@@ -5,11 +5,12 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
-import { Check, MailCheck, X } from 'lucide-react';
+import { ArrowLeft, Check, MailCheck, X } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
 import AuthBrand from '@/components/auth/AuthBrand';
 import { PASSWORD_RULES } from '@/lib/passwordRules';
+import { destinationFor, safeRedirect, withRedirect } from '@/lib/authRedirect';
 
 export default function RegisterPage() {
   return (
@@ -26,6 +27,7 @@ function RegisterPageContent() {
   // here, so old ?as=store_owner links are forwarded there instead.
   const role = 'customer';
   const wantsStore = searchParams.get('as') === 'store_owner';
+  const redirect = safeRedirect(searchParams.get('redirect'));
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,6 +44,12 @@ function RegisterPageContent() {
   useEffect(() => {
     if (wantsStore) router.replace('/register/store');
   }, [wantsStore, router]);
+
+  // Already signed in (Back, or an old link): go on, and take this page out of the history.
+  const { user: signedIn, staffProfile, hydrated } = useAuthStore();
+  useEffect(() => {
+    if (hydrated && signedIn && !registeredEmail) router.replace(destinationFor(signedIn, !!staffProfile, redirect));
+  }, [hydrated, signedIn, staffProfile, redirect, registeredEmail, router]);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -60,8 +68,14 @@ function RegisterPageContent() {
         name, email, password, password_confirmation: passwordConfirmation, role, gender: gender || null
       });
       if (response.data.success) {
-        if (response.data.data?.token && response.data.data?.user) {
+        const signedUp = !!(response.data.data?.token && response.data.data?.user);
+        if (signedUp) {
           useAuthStore.getState().setAuth(response.data.data.user, response.data.data.token);
+        }
+        // They were on their way somewhere (booking, a design): the new account is signed in, so carry on there.
+        if (signedUp && redirect) {
+          router.replace(redirect);
+          return;
         }
         setRegisteredEmail(email);
       }
@@ -78,40 +92,44 @@ function RegisterPageContent() {
       {/* The site's own nav */}
       <PublicNav />
 
-      {/* Main Container */}
-      <div className="flex-1 px-[10px] py-8 md:flex md:items-start md:justify-center md:px-4 md:py-16">
-        <div className="md:w-full md:max-w-md md:bg-surface md:border md:border-line md:shadow-sm md:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <AuthBrand />
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              aria-label="Close"
-              className="text-ink-muted hover:text-ink transition-colors p-1"
-            >
-              <X size={20} />
-            </button>
-          </div>
+      {/* Main Container: mobile full edge-to-edge, tablet/desktop centered card */}
+      <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
+        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:border sm:border-line sm:shadow-sm">
+          <Link
+            href={withRedirect('/login', redirect)}
+            aria-label="Back to sign in"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink-muted transition-colors py-1.5 -ml-1 mb-4"
+          >
+            <ArrowLeft size={18} />
+            <span>Back</span>
+          </Link>
+
+          <AuthBrand className="mb-8" />
 
           {registeredEmail ? (
             <div className="text-center py-4">
               <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200">
                 <MailCheck size={32} />
               </div>
-              <h1 className="text-display text-2xl text-ink mb-2">Check your email</h1>
-              <p className="text-sm text-ink-muted mb-4">
-                We sent a confirmation email to <strong className="font-semibold text-ink break-all">{registeredEmail}</strong>.
+              <h1 className="text-display text-2xl text-ink mb-2">Account Created</h1>
+              <p className="text-sm text-ink-muted mb-4 leading-relaxed">
+                Welcome to SUTURA! Your customer account for
+                <span className="block text-[15px] font-semibold text-ink break-words my-1.5">
+                  {registeredEmail}
+                </span>
+                is ready.
               </p>
               <div className="text-xs text-ink-body mb-6 bg-sunken p-4 border border-line text-left space-y-2">
-                <p>1. Open your Gmail or email inbox and look for the confirmation message from <strong>SUTURA</strong>.</p>
-                <p>2. Tap the confirmation link in the email, or click the button below to sign in to your new customer account.</p>
+                <p>A welcome confirmation email has been dispatched to your inbox for your records.</p>
+                <p>You are signed in. Start discovering shops, booking appointments, and tracking garments.</p>
               </div>
-              <Link
-                href="/login?as=customer"
+              <button
+                type="button"
+                onClick={() => router.replace(useAuthStore.getState().user ? '/' : withRedirect('/login', redirect, 'as=customer'))}
                 className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors flex items-center justify-center"
               >
-                Proceed to Customer Sign In
-              </Link>
+                {useAuthStore.getState().user ? 'Start exploring' : 'Proceed to Customer Sign In'}
+              </button>
             </div>
           ) : (
             <>
@@ -220,7 +238,7 @@ function RegisterPageContent() {
 
               <p className="mt-6 text-center text-sm text-ink">
                 Already have an account?{' '}
-                <a href="/login" className="font-bold underline underline-offset-2">
+                <a href={withRedirect('/login', redirect)} className="font-bold underline underline-offset-2">
                   Sign in
                 </a>
               </p>

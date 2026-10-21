@@ -15,6 +15,10 @@ import JobPrintWorkTicket from '@/components/jobs/detail/JobPrintWorkTicket';
 import JobDeleteModal from '@/components/jobs/detail/JobDeleteModal';
 import OrderReadinessTab from '@/components/jobs/readiness/OrderReadinessTab';
 import type { Job as StageJob } from '@/components/jobs/jobHelpers';
+import MobileActionBar from '@/components/jobs/detail/MobileActionBar';
+import BatchSummaryCard from '@/components/jobs/batches/BatchSummaryCard';
+import SplitOrderModal from '@/components/jobs/batches/SplitOrderModal';
+import { Split } from 'lucide-react';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
 import { getLocalDateString, minTimeForDate, getErrorMessage } from '@/components/appointments/appointmentHelpers';
 import { useToast } from '@/context/ToastContext';
@@ -27,6 +31,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
+  const [showSplit, setShowSplit] = useState(false);
   const toast = useToast();
   const { user } = useAuthStore();
   // Financials is Owner/Branch-Manager-exclusive under the finalized target
@@ -74,6 +79,8 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
     handleRejectPayment,
     handleUseCurrentMeasurement,
     handleToggleRosterItem,
+    handleSaveSpecTable,
+    handleSaveCustomizationInstructions,
     handleDelete,
     hasUnsavedChanges,
     dirtyTabs,
@@ -123,7 +130,7 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
 
   return (
     <>
-      <div className="print:hidden space-y-4">
+      <div className="print:hidden space-y-4 pb-24 sm:pb-0">
         <JobDetailHeader
           job={job}
           hasUnsavedChanges={hasUnsavedChanges}
@@ -136,7 +143,11 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
           onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
           onUpdate={handleUpdate}
           canDelete={isOwnerOrManager}
+          canCreateFollowUpOrder={isOwnerOrManager}
+          moreActions={job.can_split ? [{ label: 'Split into batches', icon: <Split size={17} />, onClick: () => setShowSplit(true) }] : undefined}
         />
+
+        {job.batch && <BatchSummaryCard batch={job.batch} currentId={job.id} />}
 
         <JobDetailTabsNav
           activeTab={activeTab}
@@ -183,6 +194,10 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             downpaymentShortfall={downpaymentShortfall}
             onUseCurrentMeasurement={handleUseCurrentMeasurement}
             onToggleRosterItem={handleToggleRosterItem}
+            onSaveSpecTable={handleSaveSpecTable}
+            onSaveInstructions={handleSaveCustomizationInstructions}
+            storeId={store?.id}
+            onRefreshJob={refreshJob}
           />
         )}
 
@@ -221,6 +236,10 @@ export default function JobDetailPage({ params }: Readonly<{ params: Promise<{ i
             customerEmail={job.customer?.email}
           />
         )}
+
+        {store && <MobileActionBar storeId={store.id} job={job as unknown as StageJob} dirty={hasUnsavedChanges} saving={saving} onSave={handleUpdate} onMoved={refreshJob} />}
+
+        {showSplit && <SplitOrderModal job={job} isOpen onClose={() => setShowSplit(false)} onDone={refreshJob} />}
 
         <FollowUpAppointmentModal
           isOpen={showFollowUpModal}

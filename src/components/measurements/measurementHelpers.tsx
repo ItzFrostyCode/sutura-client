@@ -1,3 +1,4 @@
+import { convertValue, withUnit, type MeasureUnit } from '@/lib/measurementUnit';
 import React from 'react';
 import { Metrics } from './measurementTypes';
 
@@ -14,22 +15,6 @@ export const METRIC_FIELDS: { key: string; label: string; group: string }[] = [
   { key: 'thigh',         label: 'Thigh',           group: 'Lower Body' },
 ];
 
-export const UPPER = METRIC_FIELDS.filter(f => f.group === 'Upper Body');
-export const LOWER = METRIC_FIELDS.filter(f => f.group === 'Lower Body');
-
-export const emptyMetrics = (): Metrics =>
-  Object.fromEntries(METRIC_FIELDS.map(f => [f.key, '']));
-
-export const emptyForm = () => ({
-  customer_id: '',
-  source: 'store_owner',
-  profile_name: '',
-  status: 'finalized' as 'finalized' | 'pending_fitting',
-  metrics: emptyMetrics(),
-  notes: '',
-  photo_urls: [] as string[],
-});
-
 // Custom fields are stored verbatim (e.g. "Sleeve to Wrist"), but legacy
 // profiles still use short-code keys (e.g. "sleeve_length") from before
 // fields were freely nameable — look those up for a nicer label, otherwise
@@ -40,20 +25,20 @@ export function humanizeMetricKey(key: string): string {
   return key.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export function MetricPill({ label, value }: { readonly label: string; readonly value?: string }) {
+export function MetricPill({ label, value, unit = 'in', showIn = '' }: { readonly label: string; readonly value?: string; readonly unit?: MeasureUnit; readonly showIn?: MeasureUnit | '' }) {
   if (!value) return null;
   return (
     <span className="inline-flex items-center gap-1 bg-sunken text-ink-body text-xs px-2.5 py-1 rounded-full font-medium border border-line">
       <span className="text-ink-faint">{label}</span>
-      <span className="font-semibold text-ink">{value} cm</span>
+      <span className="font-semibold text-ink">{showIn ? withUnit(convertValue(value, unit, showIn), showIn) : withUnit(value, unit)}</span>
     </span>
   );
 }
 
 export function CustomerInitial({ name }: { readonly name: string }) {
   const colors = [
-    'bg-taupe text-white', 'bg-sage text-white',
-    'bg-[#6B7FA8] text-white', 'bg-[#A88B6B] text-white',
+    'bg-espresso text-white', 'bg-sage text-white',
+    'bg-taupe text-white', 'bg-taupe-dark text-white',
   ];
   const idx = (name.codePointAt(0) || 0) % colors.length;
   return (

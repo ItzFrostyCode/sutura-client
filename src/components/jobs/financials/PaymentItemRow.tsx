@@ -183,7 +183,7 @@ export function PaymentItemRow({
               type="button"
               disabled={savingEdit}
               onClick={onSaveEdit}
-              className="px-3 py-1 rounded-lg text-xs font-bold bg-taupe hover:bg-taupe-hover text-white flex items-center gap-1 shadow-2xs cursor-pointer"
+              className="px-3 py-1 rounded-lg text-xs font-bold bg-espresso hover:bg-espresso/90 text-white flex items-center gap-1 shadow-2xs cursor-pointer"
             >
               <Check size={12} /> {savingEdit ? 'Saving…' : 'Save'}
             </button>

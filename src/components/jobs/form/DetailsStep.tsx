@@ -1,16 +1,12 @@
 import { AlertTriangle } from 'lucide-react';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { FIELD, LABEL, Chip } from './FormStep';
-import MeasurementField from './MeasurementField';
 import ServiceQuestions from './ServiceQuestions';
-import RosterEditor from './RosterEditor';
-import ReferenceNotes from './ReferenceNotes';
 import type { JobCreateForm } from './useJobCreateForm';
 
-/** Everything the chosen service needs to know: questions, measurements, fabric, condition (repairs), team list (bulk), photo and notes. */
+/** What the chosen service needs to know: its questions, the garment's condition (repairs), the fabric, and whether it is a team order. */
 export default function DetailsStep({ form }: Readonly<{ form: JobCreateForm }>) {
-  const { service, formData, set, isRepair, isBulk } = form;
-  const needsMeasurements = !isBulk && service?.measurement_requirement !== 'none';
+  const { service, formData, set, isRepair } = form;
   const ownFabric = formData.material_source === 'customer_supplied';
 
   if (!service) return <p className="text-sm text-ink-faint">Choose a service above and its details appear here.</p>;
@@ -34,13 +30,6 @@ export default function DetailsStep({ form }: Readonly<{ form: JobCreateForm }>)
         </div>
       )}
 
-      {needsMeasurements && (
-        <MeasurementField
-          customerId={formData.customer_id} measurements={form.measurements} selectedId={formData.measurement_id}
-          onSelect={(id) => set({ measurement_id: id })} standardSize={form.standardSize} onStandardSize={form.setStandardSize}
-        />
-      )}
-
       <div>
         <span className={LABEL}>Fabric</span>
         <div className="flex flex-wrap gap-2">
@@ -48,31 +37,22 @@ export default function DetailsStep({ form }: Readonly<{ form: JobCreateForm }>)
           <Chip active={ownFabric} onClick={() => set({ material_source: 'customer_supplied' })}>Customer’s own fabric / garment</Chip>
         </div>
         {ownFabric && (
-          <p className="mt-2 flex items-start gap-2 text-xs text-amber-700">
+          <p className="mt-2 flex items-start gap-2 text-sm text-espresso/70">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            Add a photo of what they brought below, so the cutter does not reach for shop stock.
+            Add a photo of what they brought under Photos and notes, so the cutter does not reach for shop stock.
           </p>
         )}
       </div>
 
       {!isRepair && !serviceHasType(service, 'bulk_sublimation') && (
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink">
-          <input type="checkbox" checked={form.bulkChosen} onChange={(e) => form.setBulkChosen(e.target.checked)} className="h-5 w-5 accent-taupe" />
-          This is a team or group order (uniforms, jerseys) — list each person and size
-        </label>
+        <div>
+          <span className={LABEL}>People to measure</span>
+          <div className="flex flex-wrap gap-2">
+            <Chip active={!form.bulkChosen} onClick={() => { form.setBulkChosen(false); set({ quantity: String(Math.max(1, form.pricing.quantity)) }); }}>One person</Chip>
+            <Chip active={form.bulkChosen} onClick={() => { form.setBulkChosen(true); const n = Math.max(2, Number(formData.quantity) || 1); form.setRoster((cur) => (cur.length >= n ? cur : [...cur, ...Array.from({ length: n - cur.length }, form.blankRow)])); }}>2 or more — list each person</Chip>
+          </div>
+        </div>
       )}
-      {isBulk && (
-        <RosterEditor
-          teamName={form.teamName} onTeamName={form.setTeamName} roster={form.roster} onRoster={form.setRoster}
-          newRow={form.blankRow} minQty={service.min_order_qty}
-        />
-      )}
-
-      <ReferenceNotes
-        storeId={form.store?.id} images={form.referenceImages} onImages={form.setReferenceImages} link={form.referenceLink}
-        onLink={form.setReferenceLink} notes={formData.notes} onNotes={(v) => set({ notes: v })}
-        photoLabel={isRepair ? 'Photo of the garment as received' : 'Photo of what they want'}
-      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { Store, CalendarDays, Wallet, ChevronRight } from 'lucide-react';
-import { getMediaUrl } from '@/lib/media';
+import { CalendarDays, Wallet, ChevronRight } from 'lucide-react';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { type MyOrder, getPhaseMeta } from './ordersTypes';
 
 /** One job order as a soft card: shop, what it is and where it stands, due date, and what is still to pay. */
@@ -12,9 +11,12 @@ export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
 
   return (
     <Link href={`/account/orders/${order.id}`} className="card-soft flex gap-3 p-4 transition-opacity active:opacity-80">
-      <span className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-sunken">
-        {order.store?.logo_path ? <Image src={getMediaUrl(order.store.logo_path)} alt="" fill className="object-cover" /> : <Store size={20} className="text-ink-faint" />}
-      </span>
+      <StoreLogoAvatar
+        src={order.store?.logo_path}
+        name={order.store?.name ?? 'Store'}
+        className="w-[52px] h-[52px] rounded-full border border-line-strong shadow-none"
+        textClassName="text-lg font-serif font-bold text-taupe-dark"
+      />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">

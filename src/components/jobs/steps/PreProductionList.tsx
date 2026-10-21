@@ -24,7 +24,7 @@ const ITEMS: Record<PreProductionStep['key'], ChecklistItem['key'][]> = {
   start: ['materials', 'confirmed', 'started'],
 };
 
-const ghost = 'h-11 sm:h-9 whitespace-nowrap rounded-lg bg-taupe px-3 text-xs font-bold text-white hover:bg-taupe-hover disabled:opacity-50';
+const ghost = 'h-11 sm:h-9 whitespace-nowrap rounded-lg bg-espresso px-3 text-xs font-bold text-white hover:bg-espresso/90 disabled:opacity-50';
 
 /** The seven steps before work starts, in order. Leaving and coming back always lands on the first unfinished one. */
 export default function PreProductionList({ data, api, onOpen, onGoToFinancials }: PreProductionListProps) {
@@ -39,7 +39,7 @@ export default function PreProductionList({ data, api, onOpen, onGoToFinancials 
         const items = ITEMS[step.key].map((k) => byKey.get(k)).filter((i): i is ChecklistItem => Boolean(i && i.applicable));
         return (
           <li key={step.key} className={`flex gap-3 px-4 py-3 ${current ? 'bg-taupe/5' : ''}`} aria-current={current ? 'step' : undefined}>
-            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${step.done ? 'bg-sage text-white' : current ? 'bg-taupe text-white' : 'bg-sunken text-ink-faint'}`}>
+            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${step.done ? 'bg-sage text-white' : current ? 'bg-espresso text-white' : 'bg-sunken text-ink-faint'}`}>
               {step.done ? <Check size={13} strokeWidth={3} /> : index + 1}
             </span>
             <div className="min-w-0 flex-1">

@@ -33,7 +33,7 @@ export default function WalkInClashDialog({ clash, isSubmitting, onChoose }: Pro
         )}
         <div className="flex flex-col gap-2.5">
           <button type="button" disabled={isSubmitting} onClick={() => onChoose('serve_walkin_reschedule_online')}
-            className="min-h-[52px] px-4 bg-taupe hover:bg-taupe-hover text-white text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            className="min-h-[52px] px-4 bg-espresso hover:bg-espresso/90 text-white text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
             {isSubmitting && <Loader2 size={16} className="animate-spin" />} Serve the walk-in, ask the online customer to move
           </button>
           <button type="button" disabled={isSubmitting} onClick={() => onChoose('other_time')}

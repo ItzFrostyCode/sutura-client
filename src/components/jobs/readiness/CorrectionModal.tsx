@@ -54,7 +54,7 @@ export default function CorrectionModal({ isOpen, onClose, storeId, kind, busy, 
       footer={(
         <div className="flex w-full justify-end gap-2">
           <button type="button" onClick={onClose} className="h-11 rounded-lg px-4 text-sm font-medium text-ink-body hover:text-ink">Cancel</button>
-          <button type="button" disabled={busy || description.trim().length < 3 || (isChange && amount === '')} onClick={save} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">
+          <button type="button" disabled={busy || description.trim().length < 3 || (isChange && amount === '')} onClick={save} className="h-11 rounded-lg bg-espresso px-4 text-sm font-semibold text-white hover:bg-espresso/90 disabled:opacity-50">
             {isChange ? 'Quote change' : 'Record correction'}
           </button>
         </div>
@@ -78,7 +78,7 @@ export default function CorrectionModal({ isOpen, onClose, storeId, kind, busy, 
         <label className={label}>Assigned tailor
           <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className={`${field} ${plain}`}>
             <option value="">Not assigned yet</option>
-            {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {people.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.role}</option>)}
           </select>
         </label>
         {!isChange && (

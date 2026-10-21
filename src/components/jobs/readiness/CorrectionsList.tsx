@@ -45,7 +45,7 @@ export default function CorrectionsList({ corrections, canApprove, busy, onResol
               <button type="button" disabled={busy} onClick={() => onResolve(c.id)} className="flex h-10 items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 sm:h-9"><Check size={13} />Done</button>
             )}
             {c.status === 'awaiting_approval' && canApprove && (
-              <button type="button" disabled={busy} onClick={() => onApprove(c)} className="h-10 rounded-lg bg-taupe px-3 text-xs font-bold text-white hover:bg-taupe-hover disabled:opacity-50 sm:h-9">Approve</button>
+              <button type="button" disabled={busy} onClick={() => onApprove(c)} className="h-10 rounded-lg bg-espresso px-3 text-xs font-bold text-white hover:bg-espresso/90 disabled:opacity-50 sm:h-9">Approve</button>
             )}
             {(c.status === 'open' || c.status === 'awaiting_approval') && canApprove && (
               <button type="button" aria-label="Cancel this correction" disabled={busy} onClick={() => onCancel(c.id)} className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-muted hover:bg-sunken hover:text-rose-600 sm:h-9 sm:w-9"><X size={14} /></button>

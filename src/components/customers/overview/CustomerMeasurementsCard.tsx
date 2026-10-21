@@ -1,4 +1,5 @@
 import React from 'react';
+import { unitOfMetrics, withUnit } from '@/lib/measurementUnit';
 import { Ruler } from 'lucide-react';
 import { MeasurementProfile } from '../customerTypes';
 
@@ -35,7 +36,7 @@ export default function CustomerMeasurementsCard({
           </div>
           <div>
             <h3 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wider">Body Measurements</h3>
-            <p className="text-[11px] text-ink-muted">All values in inches (″)</p>
+            <p className="text-[11px] text-ink-muted">Each value shows the unit it was measured in</p>
           </div>
         </div>
         <button
@@ -54,7 +55,7 @@ export default function CustomerMeasurementsCard({
           <button
             type="button"
             onClick={onManage}
-            className="inline-flex items-center gap-1.5 text-xs font-bold bg-taupe text-white px-3.5 py-2 rounded-xl hover:bg-taupe-hover transition-colors cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 text-xs font-bold bg-espresso text-white px-3.5 py-2 rounded-xl hover:bg-espresso/90 transition-colors cursor-pointer shadow-2xs"
           >
             <Ruler size={12} /> Record Specs
           </button>
@@ -62,7 +63,7 @@ export default function CustomerMeasurementsCard({
       ) : (
         <div className="space-y-4">
           {measurements.slice(0, 2).map((m) => {
-            const entries = Object.entries(m.metrics || {});
+            const entries = Object.entries(m.metrics || {}).filter(([k, v]) => Boolean(v) && !k.startsWith('_'));
             return (
               <div key={m.id} className="p-3.5 bg-canvas border border-line rounded-xl space-y-3 shadow-2xs">
                 <div className="flex items-center justify-between">
@@ -79,8 +80,7 @@ export default function CustomerMeasurementsCard({
                         {KNOWN_LABELS[k] ?? k.replace(/_/g, ' ')}
                       </p>
                       <p className="text-xs font-black font-mono text-ink mt-0.5">
-                        {String(v)}
-                        <span className="text-[9px] font-normal text-ink-faint ml-0.5">″</span>
+                        {withUnit(v, unitOfMetrics(m.metrics))}
                       </p>
                     </div>
                   ))}

@@ -39,7 +39,7 @@ export default function StatementsTab() {
       )}
 
       <div className="flex flex-col min-[700px]:flex-row gap-3">
-        <button type="button" disabled={locked || s.selected.length === 0 || s.busy !== null} onClick={() => s.download('selected', 'zip')} className={`${btn} bg-taupe hover:bg-taupe-hover text-white`}>
+        <button type="button" disabled={locked || s.selected.length === 0 || s.busy !== null} onClick={() => s.download('selected', 'zip')} className={`${btn} bg-espresso hover:bg-espresso/90 text-white`}>
           {s.busy === 'selected-zip' ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />} Download selected ({s.selected.length}) as ZIP
         </button>
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'zip')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
@@ -54,7 +54,7 @@ export default function StatementsTab() {
       <div className="border border-line bg-surface">
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-line">
           <label className="flex items-center gap-3 text-sm text-ink cursor-pointer min-h-11">
-            <input type="checkbox" checked={s.selectableKeys.length > 0 && s.selected.length === s.selectableKeys.length} onChange={s.toggleAll} disabled={s.selectableKeys.length === 0} className="w-5 h-5 accent-[#6B5346]" />
+            <input type="checkbox" checked={s.selectableKeys.length > 0 && s.selected.length === s.selectableKeys.length} onChange={s.toggleAll} disabled={s.selectableKeys.length === 0} className="w-5 h-5 accent-taupe-dark" />
             Select all with a receipt image
           </label>
           {s.loading && <Loader2 size={16} className="animate-spin text-taupe" />}

@@ -214,7 +214,7 @@ export default function ReportCharts({
                       y="47%"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      className="fill-[#2D2A26] text-xl font-bold"
+                      className="fill-ink text-xl font-bold"
                       style={{ fontSize: 18, fontWeight: 700, fill: '#2D2A26' }}
                     >
                       {completionRate}%

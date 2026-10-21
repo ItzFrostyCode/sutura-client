@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { CalendarClock, CalendarDays, Shirt, Store, Wallet, Wrench } from 'lucide-react';
-import { getMediaUrl } from '@/lib/media';
+import { CalendarClock, CalendarDays, Shirt, Wallet, Wrench } from 'lucide-react';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import type { TrackedOrder } from '@/components/shared/OrderTrackingView';
 
 interface OrderSummaryCardProps {
@@ -20,9 +19,12 @@ export default function OrderSummaryCard({ order, phase }: OrderSummaryCardProps
   return (
     <div className="card-soft p-4">
       <div className="flex gap-3">
-        <span className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-sunken">
-          {order.store?.logo_path ? <Image src={getMediaUrl(order.store.logo_path)} alt="" fill className="object-cover" /> : <Store size={20} className="text-ink-faint" />}
-        </span>
+        <StoreLogoAvatar
+          src={order.store?.logo_path}
+          name={order.store?.name ?? 'Store'}
+          className="w-[52px] h-[52px] rounded-full border border-line-strong shadow-none"
+          textClassName="text-lg font-serif font-bold text-taupe-dark"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             {order.store?.slug ? (

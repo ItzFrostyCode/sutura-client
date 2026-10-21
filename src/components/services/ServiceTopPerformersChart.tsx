@@ -115,7 +115,7 @@ export default function ServiceTopPerformersChart({ services, loading }: Service
         <p className="px-6 pt-4 pb-2 text-xs font-semibold text-ink-faint uppercase tracking-wider">
           All {allRankedServices.length} Service{allRankedServices.length === 1 ? '' : 's'}
         </p>
-        <div className="md:hidden overflow-y-auto max-h-[420px] divide-y divide-[#F0EAE3]">
+        <div className="md:hidden overflow-y-auto max-h-[420px] divide-y divide-sunken">
           {allRankedServices.map(service => (
             <div key={service.id} className="px-6 py-3 hover:bg-sunken/20 transition-colors">
               <p className="font-medium text-ink truncate">{service.name}</p>
@@ -140,7 +140,7 @@ export default function ServiceTopPerformersChart({ services, loading }: Service
                 <th className="px-6 py-3 font-medium bg-canvas">Revenue</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F0EAE3]">
+            <tbody className="divide-y divide-sunken">
               {allRankedServices.map(service => (
                 <tr key={service.id} className="hover:bg-sunken/20 transition-colors">
                   <td className="px-6 py-3 font-medium text-ink max-w-[220px] truncate">{service.name}</td>

@@ -46,7 +46,7 @@ export default function JobBalancesTab({
               onClick={() => setBalanceTier(tier)}
               className={`h-[34px] px-3 rounded-lg text-xs font-semibold border transition-all capitalize ${
                 balanceTier === tier
-                  ? 'bg-taupe text-white border-taupe shadow-xs'
+                  ? 'bg-espresso text-white border-taupe shadow-xs'
                   : 'bg-canvas text-ink border-line hover:bg-sunken'
               }`}
             >
@@ -100,7 +100,7 @@ export default function JobBalancesTab({
                   <button
                     type="button"
                     onClick={() => onSelectJobToPay(job)}
-                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-espresso hover:bg-espresso/90 text-white shadow-2xs transition-colors"
                   >
                     <CreditCard size={13} /> <span>Log Payment</span>
                   </button>
@@ -153,7 +153,7 @@ export default function JobBalancesTab({
                         <button
                           type="button"
                           onClick={() => onSelectJobToPay(job)}
-                          className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                          className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-espresso hover:bg-espresso/90 text-white shadow-2xs transition-colors"
                         >
                           <CreditCard size={12} /> <span>Log Pay</span>
                         </button>

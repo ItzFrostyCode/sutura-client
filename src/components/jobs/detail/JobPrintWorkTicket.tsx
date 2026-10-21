@@ -1,5 +1,6 @@
 'use client';
 
+import { unitOfMetrics, withUnit } from '@/lib/measurementUnit';
 import React from 'react';
 import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
@@ -11,7 +12,7 @@ interface JobPrintWorkTicketProps {
 
 export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketProps) {
   const measurementMetrics = job.measurement?.metrics || {};
-  const metricEntries = Object.entries(measurementMetrics);
+  const metricEntries = Object.entries(measurementMetrics).filter(([k, v]) => Boolean(v) && !k.startsWith('_'));
 
   const customSpecEntries = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(
@@ -66,7 +67,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
                 <div key={k} className="flex flex-col">
                   <span className="text-[10px] text-gray-500 uppercase font-semibold">{k.replaceAll('_', ' ')}</span>
                   <span className="font-medium text-base border-b border-dashed border-gray-300 pb-1">
-                    {typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '')}″
+                    {typeof v === 'object' && v !== null ? JSON.stringify(v) : withUnit(v, unitOfMetrics(measurementMetrics))}
                   </span>
                 </div>
               ))}

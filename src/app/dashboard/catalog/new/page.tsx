@@ -23,14 +23,14 @@ function NewCatalogItemContent() {
       <div className="pt-2 pb-6 space-y-4">
         <p className="px-4 min-[375px]:px-6 min-[600px]:px-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">New design · Step {w.step + 1} of {CATALOG_STEPS.length}</p>
         <div className="flex gap-1 mx-4 min-[375px]:mx-6 min-[600px]:mx-0" aria-hidden>
-          {CATALOG_STEPS.map((s, i) => <span key={s.key} className={`h-1 flex-1 ${i <= w.step ? 'bg-taupe' : 'bg-line'}`} />)}
+          {CATALOG_STEPS.map((s, i) => <span key={s.key} className={`h-1 flex-1 ${i <= w.step ? 'bg-espresso' : 'bg-line'}`} />)}
         </div>
         <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
           <h1 className="text-[28px] min-[600px]:text-[32px] leading-[1.2] font-bold text-ink">{w.current.title}</h1>
-          <p className="text-base text-ink-muted mt-2">{w.current.hint}</p>
+          <p className="text-base min-[600px]:text-lg text-ink-body mt-2 leading-relaxed">{w.current.hint}</p>
         </div>
         <div className="border-y max-[599px]:border-x-0 min-[600px]:border border-line bg-white p-4 min-[600px]:p-6">
-          <CatalogWizardStep section={w.current.key} edit={{ form: w.form, storeId: w.storeId, itemId: 0 }} requirements={w.requirements} onRequirements={w.setRequirements} />
+          <CatalogWizardStep section={w.current.key} edit={{ form: w.form, storeId: w.storeId, itemId: 0, fromServiceId: w.fromService }} requirements={w.requirements} onRequirements={w.setRequirements} />
           <ServiceWizardBar step={w.step} total={CATALOG_STEPS.length} last={w.last} saving={w.saving} optional={w.current.optional} finishLabel="Publish design" onBack={w.back} onNext={w.next} />
         </div>
       </div>

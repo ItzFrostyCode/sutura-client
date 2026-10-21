@@ -1,110 +1,177 @@
-import React from 'react';
-import { Wallet, Upload, Loader2 } from 'lucide-react';
-import { StoreSettingsData } from '@/components/settings/useSettings';
+import React, { useState } from 'react';
+import { Wallet, X } from 'lucide-react';
 import EditableCard from './EditableCard';
+import PaymentChannelEdit from './PaymentChannelEdit';
+import PaymentChannelView from './PaymentChannelView';
+
+interface PaymentDetailsData {
+  gcash_number?: string | null;
+  gcash_account_name?: string | null;
+  gcash_qr_path?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
+  bank_qr_path?: string | null;
+}
 
 interface PaymentDetailsCardProps {
-  readonly formData: StoreSettingsData;
-  readonly onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  readonly isEditing: boolean;
-  readonly saving: boolean;
-  readonly onEdit: () => void;
-  readonly onCancel: () => void;
-  readonly onSave: () => void;
-  readonly onGcashQrUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  readonly onBankQrUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-}
-
-const inputClass = 'w-full px-3 py-2 bg-canvas border border-line text-ink text-sm focus:outline-none focus:border-taupe';
-const labelClass = 'text-xs font-medium text-ink-body';
-
-function Field({ id, label, name, value, onChange, placeholder }: {
-  readonly id: string; readonly label: string; readonly name: string; readonly value: string;
-  readonly onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; readonly placeholder?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <label htmlFor={id} className={labelClass}>{label}</label>
-      <input id={id} name={name} type="text" value={value} onChange={onChange} placeholder={placeholder} className={inputClass} />
-    </div>
-  );
-}
-
-function QrSlot({ path, uploading, onUpload }: { readonly path: string; readonly uploading: boolean; readonly onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="w-14 h-14 border border-line bg-canvas overflow-hidden shrink-0 flex items-center justify-center">
-        {path ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={path} alt="QR code" className="w-full h-full object-contain" />
-        ) : (
-          <Upload size={16} className="text-ink-faint" />
-        )}
-      </div>
-      <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-taupe hover:text-[#8A7063] bg-canvas hover:bg-sunken border border-line px-3 py-2 transition-colors">
-        {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-        <span>{uploading ? 'Uploading...' : 'Upload QR'}</span>
-        <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={onUpload} />
-      </label>
-    </div>
-  );
+  readonly formData: PaymentDetailsData;
+  readonly onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  readonly isEditing?: boolean;
+  readonly saving?: boolean;
+  readonly canEdit?: boolean;
+  readonly onEdit?: () => void;
+  readonly onCancel?: () => void;
+  readonly onSave?: () => void;
+  readonly onGcashQrUpload?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  readonly onBankQrUpload?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  readonly onRemoveGcashQr?: () => void;
+  readonly onRemoveBankQr?: () => void;
 }
 
 export default function PaymentDetailsCard({
-  formData, onChange, isEditing, saving, onEdit, onCancel, onSave, onGcashQrUpload, onBankQrUpload,
+  formData,
+  onChange,
+  isEditing = false,
+  saving = false,
+  canEdit = true,
+  onEdit,
+  onCancel,
+  onSave,
+  onGcashQrUpload,
+  onBankQrUpload,
+  onRemoveGcashQr,
+  onRemoveBankQr,
 }: PaymentDetailsCardProps) {
-  const [uploadingGcash, setUploadingGcash] = React.useState(false);
-  const [uploadingBank, setUploadingBank] = React.useState(false);
-  const hasAny = formData.gcash_number || formData.bank_name;
+  const [zoomQr, setZoomQr] = useState<{ url: string; title: string } | null>(null);
+
+  const hasGcash = Boolean(formData.gcash_number || formData.gcash_qr_path);
+  const hasQrPh = Boolean(formData.bank_account_number || formData.bank_qr_path);
+  const hasAny = hasGcash || hasQrPh;
 
   return (
-    <EditableCard
-      icon={<Wallet size={16} className="text-taupe" />}
-      title="Payment Details"
-      isEditing={isEditing}
-      saving={saving}
-      onEdit={onEdit}
-      onCancel={onCancel}
-      onSave={onSave}
-      editBody={
-        <div className="space-y-4">
-          <p className="text-xs text-ink-muted">
-            Where customers send GCash/bank payments — printed on receipts. The system only tracks payment status, it never moves money itself.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field id="gcash-number" label="GCash Number" name="gcash_number" value={formData.gcash_number} onChange={onChange} placeholder="09XX XXX XXXX" />
-            <Field id="gcash-name" label="GCash Account Name" name="gcash_account_name" value={formData.gcash_account_name} onChange={onChange} />
+    <>
+      <EditableCard
+        icon={<Wallet size={16} className="text-taupe" />}
+        title="Payment Details"
+        isEditing={isEditing}
+        saving={saving}
+        canEdit={canEdit}
+        onEdit={onEdit}
+        onCancel={onCancel}
+        onSave={onSave}
+        editBody={
+          <div className="space-y-4">
+            <p className="text-xs text-ink-muted">
+              Where customers send payments (printed on receipts and available on your store profile).
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left Column: GCash / Maya */}
+              <PaymentChannelEdit
+                title="GCash / Maya"
+                badgeLabel="E-Wallet"
+                badgeColor="blue"
+                dotColor="#0057e0"
+                numberId="gcash-number"
+                numberName="gcash_number"
+                numberLabel="GCash / Maya Number"
+                numberPlaceholder="09XX XXX XXXX"
+                numberValue={formData.gcash_number || ''}
+                nameId="gcash-name"
+                nameName="gcash_account_name"
+                nameValue={formData.gcash_account_name || ''}
+                qrPath={formData.gcash_qr_path}
+                onUpload={onGcashQrUpload}
+                onRemoveQr={onRemoveGcashQr}
+                onChange={onChange}
+              />
+
+              {/* Right Column: QR Ph */}
+              <PaymentChannelEdit
+                title="QR Ph"
+                badgeLabel="All Banks & Wallets"
+                badgeColor="amber"
+                dotColor="#e52427"
+                numberId="qrph-number"
+                numberName="bank_account_number"
+                numberLabel="Account / QR Ph Number"
+                numberPlaceholder="09XX XXX XXXX or Account #"
+                numberValue={formData.bank_account_number || ''}
+                nameId="qrph-name"
+                nameName="bank_account_name"
+                nameValue={formData.bank_account_name || ''}
+                qrPath={formData.bank_qr_path}
+                onUpload={onBankQrUpload}
+                onRemoveQr={onRemoveBankQr}
+                onChange={onChange}
+              />
+            </div>
           </div>
-          <QrSlot
-            path={formData.gcash_qr_path}
-            uploading={uploadingGcash}
-            onUpload={async (e) => { setUploadingGcash(true); await onGcashQrUpload(e); setUploadingGcash(false); e.target.value = ''; }}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-line/60">
-            <Field id="bank-name" label="Bank Name" name="bank_name" value={formData.bank_name} onChange={onChange} placeholder="e.g. BDO, BPI" />
-            <Field id="bank-number" label="Bank Account Number" name="bank_account_number" value={formData.bank_account_number} onChange={onChange} />
-            <Field id="bank-account-name" label="Bank Account Name" name="bank_account_name" value={formData.bank_account_name} onChange={onChange} />
+        }
+      >
+        {hasAny ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <PaymentChannelView
+              title="GCash / Maya"
+              badgeLabel="E-Wallet"
+              badgeColor="blue"
+              dotColor="#0057e0"
+              numberLabel="GCash / Maya Number"
+              numberValue={formData.gcash_number}
+              nameValue={formData.gcash_account_name}
+              qrPath={formData.gcash_qr_path}
+              onPreviewQr={(url, title) => setZoomQr({ url, title })}
+            />
+
+            <PaymentChannelView
+              title="QR Ph"
+              badgeLabel="All Banks & Wallets"
+              badgeColor="amber"
+              dotColor="#e52427"
+              numberLabel="Account / QR Ph Number"
+              numberValue={formData.bank_account_number}
+              nameValue={formData.bank_account_name}
+              qrPath={formData.bank_qr_path}
+              onPreviewQr={(url, title) => setZoomQr({ url, title })}
+            />
           </div>
-          <QrSlot
-            path={formData.bank_qr_path}
-            uploading={uploadingBank}
-            onUpload={async (e) => { setUploadingBank(true); await onBankQrUpload(e); setUploadingBank(false); e.target.value = ''; }}
-          />
+        ) : (
+          <p className="mobile-body-sm text-ink-muted">No payment details set yet.</p>
+        )}
+      </EditableCard>
+
+      {/* QR Zoom Preview Modal */}
+      {zoomQr && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${zoomQr.title} QR Code preview`}
+          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
+          onClick={() => setZoomQr(null)}
+        >
+          <div
+            className="bg-surface rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-line"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <h4 className="text-sm font-bold text-ink">{zoomQr.title} QR Code</h4>
+              <button
+                type="button"
+                onClick={() => setZoomQr(null)}
+                className="w-8 h-8 rounded-full hover:bg-canvas flex items-center justify-center text-ink-muted hover:text-ink cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="bg-white p-3 rounded-xl border border-line flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={zoomQr.url} alt={`${zoomQr.title} QR Code`} className="w-64 h-64 object-contain" />
+            </div>
+            <p className="text-xs text-ink-muted">Scan using GCash, Maya, or any QR Ph banking app</p>
+          </div>
         </div>
-      }
-    >
-      {hasAny ? (
-        <div className="space-y-1.5 text-sm">
-          {formData.gcash_number && (
-            <div className="flex justify-between gap-3"><span className="text-ink-muted text-xs">GCash</span><span className="text-ink-body font-medium">{formData.gcash_number} {formData.gcash_account_name && `(${formData.gcash_account_name})`}</span></div>
-          )}
-          {formData.bank_name && (
-            <div className="flex justify-between gap-3"><span className="text-ink-muted text-xs">Bank</span><span className="text-ink-body font-medium">{formData.bank_name} — {formData.bank_account_number}</span></div>
-          )}
-        </div>
-      ) : (
-        <p className="mobile-body-sm text-ink-muted">No payment details set yet.</p>
       )}
-    </EditableCard>
+    </>
   );
 }

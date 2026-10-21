@@ -98,7 +98,7 @@ export default function SendCustomerMessageModal({
                 type="button"
                 disabled={!canSend || !subject.trim() || !message.trim()}
                 onClick={() => setStep('preview')}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-taupe text-white hover:bg-taupe/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-espresso text-white hover:bg-taupe/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Eye size={15} /> Preview
               </button>
@@ -122,7 +122,7 @@ export default function SendCustomerMessageModal({
                   ))}
                 </div>
                 <div className="pt-2">
-                  <span className="inline-block bg-taupe text-white text-xs font-semibold px-4 py-2 rounded-lg">
+                  <span className="inline-block bg-espresso text-white text-xs font-semibold px-4 py-2 rounded-lg">
                     Visit {storeName}
                   </span>
                 </div>

@@ -28,9 +28,9 @@ export function useCatalogWizard() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [requirements, setRequirements] = useState(emptyRequirementsDraft);
-  const form = useCatalogForm({ onSubmit: async () => {}, submitting: saving });
   // Arrived from a service ("Add a design"): file the design under it and go back there afterwards.
   const fromService = useSearchParams().get('service_id');
+  const form = useCatalogForm({ initialServiceId: fromService ?? undefined, onSubmit: async () => {}, submitting: saving });
   const { setFormData } = form;
   useEffect(() => {
     if (fromService) setFormData((prev) => ({ ...prev, service_id: fromService }));
@@ -62,5 +62,5 @@ export function useCatalogWizard() {
 
   const back = () => (step === 0 ? router.push(fromService ? `/dashboard/services/${fromService}` : '/dashboard/services') : setStep(step - 1));
 
-  return { step, current: CATALOG_STEPS[step], last, form, requirements, setRequirements, saving, next, back, storeId: store?.id ?? 0 };
+  return { step, current: CATALOG_STEPS[step], last, form, requirements, setRequirements, saving, next, back, storeId: store?.id ?? 0, fromService };
 }

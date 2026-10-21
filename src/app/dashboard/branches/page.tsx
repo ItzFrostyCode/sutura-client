@@ -285,7 +285,7 @@ export default function BranchesPage() {
               <button
                 type="button"
                 onClick={openAddModal}
-                className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm shadow-2xs transition-colors min-h-[38px]"
+                className="flex items-center gap-1.5 bg-espresso hover:bg-espresso/90 text-white px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm shadow-2xs transition-colors min-h-[38px]"
               >
                 <Plus size={16} />
                 Add Location

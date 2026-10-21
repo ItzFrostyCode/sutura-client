@@ -57,7 +57,9 @@ export default function SearchMapView() {
     setPanelOpen(true);
   };
   const choose = (branch: Parameters<typeof map.selectPin>[0]) => {
-    setShopPath(null);
+    if (branch && map.selected?.storeSlug !== branch.storeSlug) {
+      setShopPath(null);
+    }
     map.selectPin(branch);
     if (branch) grow();
   };
@@ -85,8 +87,11 @@ export default function SearchMapView() {
   const locate = () => {
     enableCompass();
     setFocusMe(true);
-    if (nav.position) nav.recenter(fitPadding);
-    else map.locate(fitPadding);
+    map.locate(fitPadding, (loc) => {
+      if (nav.route) {
+        nav.reroute?.({ lat: loc.lat, lng: loc.lng });
+      }
+    });
   };
 
   const handleBack = () => {
@@ -138,6 +143,7 @@ export default function SearchMapView() {
           inputRef={s.searchInputRef}
           isExpanded={sheet.expanded}
           onToggleExpand={sheet.toggle}
+          onSelectBranch={choose}
         />
       </aside>
 
@@ -158,6 +164,11 @@ export default function SearchMapView() {
             compact
             isExpanded={sheet.expanded}
             onToggleExpand={sheet.toggle}
+            onSelectBranch={choose}
+            onClosePanel={() => {
+              setPanelOpen(false);
+              sheet.setExpanded(false);
+            }}
           />
         </section>
       )}
@@ -172,6 +183,15 @@ export default function SearchMapView() {
           onZoomIn={map.zoomIn}
           onZoomOut={map.zoomOut}
           locating={map.locating}
+          onTogglePanel={() => {
+            if (panelOpen) {
+              setPanelOpen(false);
+              sheet.setExpanded(false);
+            } else {
+              setPanelOpen(true);
+            }
+          }}
+          panelOpen={panelOpen}
           className={controlsPlacement}
         />
       )}

@@ -11,7 +11,7 @@ import { focusOn, type FocusPad } from '@/lib/mapFocus';
  * the user's chosen location.
  */
 export function useNavigation(savedOrigin: Point | null, mapRef: MutableRefObject<LeafletMap | null>) {
-  const { route, loading, start, cancel } = useRouteTo(savedOrigin);
+  const { route, loading, start, reroute, cancel } = useRouteTo(savedOrigin);
   const [following, setFollowing] = useState(true);
 
   const begin = useCallback((to: Point, slug: string, name: string) => {
@@ -35,6 +35,7 @@ export function useNavigation(savedOrigin: Point | null, mapRef: MutableRefObjec
     following,
     loading,
     start: begin,
+    reroute,
     cancel,
     stopFollowing,
     recenter,

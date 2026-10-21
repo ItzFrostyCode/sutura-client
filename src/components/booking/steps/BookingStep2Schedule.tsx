@@ -1,5 +1,6 @@
 'use client';
 
+import BookingPhotos from '../BookingPhotos';
 import React from 'react';
 import { AlertCircle, Phone } from 'lucide-react';
 import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
@@ -11,10 +12,13 @@ import {
   BookingCustomer,
   Service,
 } from '../types';
+import type { BookingKind } from '../hooks/useBookingWizard';
 import BookingServiceQuestions from './BookingServiceQuestions';
 import BookingServicePicker from './schedule/BookingServicePicker';
 import BookingBranchSelector from './schedule/BookingBranchSelector';
 import BookingMaterialSelector from './schedule/BookingMaterialSelector';
+import DesignSourceField from '@/components/shared/DesignSourceField';
+import type { DesignSource } from '@/lib/designSource';
 
 interface UserInfo {
   name?: string | null;
@@ -23,12 +27,20 @@ interface UserInfo {
 }
 
 interface BookingStep2ScheduleProps {
+  readonly kind: BookingKind;
   readonly appointmentType: string;
   readonly refName: string | null;
   readonly materialSource: 'own' | 'shop' | '';
   readonly setMaterialSource: (val: 'own' | 'shop' | '') => void;
   readonly materialDescription: string;
   readonly setMaterialDescription: (val: string) => void;
+  readonly design: { design_source: DesignSource | null; design_link: string | null };
+  readonly setDesign: (val: { design_source: DesignSource | null; design_link: string | null }) => void;
+  readonly peopleCount: string;
+  readonly setPeopleCount: (val: string) => void;
+  readonly storeId: string;
+  readonly photos: string[];
+  readonly setPhotos: (val: string[]) => void;
   readonly needsServicePicker: boolean;
   readonly selectedServiceId: string;
   readonly setSelectedServiceId: (val: string) => void;
@@ -57,12 +69,20 @@ interface BookingStep2ScheduleProps {
 }
 
 export default function BookingStep2Schedule({
+  kind,
   appointmentType,
   refName,
   materialSource,
   setMaterialSource,
   materialDescription,
   setMaterialDescription,
+  design,
+  setDesign,
+  peopleCount,
+  setPeopleCount,
+  storeId,
+  photos,
+  setPhotos,
   needsServicePicker,
   selectedServiceId,
   setSelectedServiceId,
@@ -99,11 +119,9 @@ export default function BookingStep2Schedule({
         storeSettings={storeSettings}
       />
 
-      {/* A catalog design being custom-made always needs this answered
-          (regardless of appointmentType — catalog bookings default to
-          ref_type=fitting, which this condition used to miss entirely),
-          same as the general consultation/measurement flows. */}
-      {(appointmentType === 'consultation' || appointmentType === 'measurement' || appointmentType === 'alteration' || !!refName) && (
+      {/* Material selection is ONLY relevant for a custom service/design or alteration,
+          never for a general shop visit/consultation. */}
+      {kind === 'service' && (!!refName || appointmentType === 'alteration') && (
         <BookingMaterialSelector
           materialSource={materialSource}
           setMaterialSource={setMaterialSource}
@@ -111,6 +129,21 @@ export default function BookingStep2Schedule({
           setMaterialDescription={setMaterialDescription}
         />
       )}
+
+      {/* Where the design comes from: told to the shop before the consultation. */}
+      {kind === 'service' && appointmentType !== 'alteration' && (
+        <DesignSourceField audience="customer" source={design.design_source} link={design.design_link} onChange={setDesign} />
+      )}
+
+      {kind === 'service' && appointmentType !== 'alteration' && (
+        <div>
+          <label htmlFor="booking-people" className="mobile-caption font-semibold text-ink-body mb-1 block">People to measure <span className="font-normal text-ink-muted">(optional)</span></label>
+          <input id="booking-people" type="number" inputMode="numeric" min={1} max={500} value={peopleCount} onChange={(e) => setPeopleCount(e.target.value)} placeholder="Just me" className="w-full form-input-mobile bg-white border-2 border-line focus:border-taupe rounded-xl text-base text-ink px-4" />
+          <p className="mobile-caption mt-1 text-ink-muted">Leave it empty if it is just you. For a team or a group, the shop measures everyone, and each person gets their own measurements.</p>
+        </div>
+      )}
+
+      {kind === 'service' && <BookingPhotos storeId={storeId} photos={photos} setPhotos={setPhotos} />}
 
       <BookingBranchSelector
         storeSettings={storeSettings}
@@ -122,10 +155,10 @@ export default function BookingStep2Schedule({
 
       {/* Interactive Date & Time Picker */}
       <div className="space-y-2 pt-1">
-        <label className="mobile-h4 text-ink block">
-          Select Date & Time <span className="text-danger">*</span>
+        <label className="mobile-h4 font-semibold text-ink block">
+          Select Date &amp; Time <span className="text-danger">*</span>
         </label>
-        <div className="bg-surface border border-line rounded-none p-4 sm:p-5 shadow-xs">
+        <div className="bg-surface border border-line rounded-xl p-4 sm:p-5 shadow-xs">
           <InteractiveCalendar
             selectedDate={date}
             selectedTime={time}
@@ -142,7 +175,7 @@ export default function BookingStep2Schedule({
 
       {specialHoursForDate && (
         specialHoursForDate.is_closed ? (
-          <div className="bg-danger/10 border border-danger/20 rounded-none p-4 flex gap-3 text-xs text-danger animate-in slide-in-from-top-2">
+          <div className="bg-danger/10 border border-danger/20 rounded-xl p-4 flex gap-3 text-xs text-danger animate-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-sm">Temporarily Closed ({specialHoursForDate.title})</p>
@@ -150,7 +183,7 @@ export default function BookingStep2Schedule({
             </div>
           </div>
         ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-none p-4 flex gap-3 text-xs text-ink-body animate-in slide-in-from-top-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-xs text-ink-body animate-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
             <div>
               <p className="font-semibold text-sm text-amber-900">Special Holiday Hours ({specialHoursForDate.title})</p>
@@ -167,29 +200,33 @@ export default function BookingStep2Schedule({
       <div className="pt-4 border-t border-line space-y-4">
         <h3 className="mobile-h3 font-semibold text-ink">Relevant Details</h3>
 
-        {/* Only asked here when the account itself never collected it at
-            signup — an existing contact number already covers appointment
-            updates/SMS, so re-asking a returning customer for data the
-            account already has is exactly the redundant step this section
-            used to be. */}
-        {!user?.phone && (
-          <div className="space-y-1.5">
-            <label htmlFor="customer-quick-phone" className="mobile-caption font-semibold text-ink-body flex items-center gap-1">
-              <Phone size={14} className="text-taupe" /> Contact Number
-            </label>
-            <input
-              id="customer-quick-phone"
-              type="tel"
-              value={customer.phone}
-              onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
-              placeholder="e.g. 0912 345 6789"
-              className="w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe"
-            />
-            <p className="mobile-caption text-ink-faint font-normal">
+        <div className="space-y-1.5">
+          <label htmlFor="customer-quick-phone" className="mobile-caption font-semibold text-ink-body flex items-center gap-1">
+            <Phone size={14} className="text-taupe" /> Contact Number <span className="text-danger">*</span>
+          </label>
+          <input
+            id="customer-quick-phone"
+            type="tel"
+            required
+            value={customer.phone}
+            onChange={(e) => setCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+            placeholder="e.g. 0912 345 6789"
+            className="w-full form-input-mobile bg-white border-2 border-line hover:border-taupe/60 focus:border-taupe focus:ring-2 focus:ring-taupe/10 rounded-xl text-base text-ink font-normal px-4 transition-colors shadow-xs"
+          />
+          {(!customer.phone || customer.phone.trim().length === 0) ? (
+            <p className="mobile-caption text-danger font-medium mt-1 flex items-center gap-1">
+              <AlertCircle size={13} className="shrink-0" /> Contact number is required to proceed.
+            </p>
+          ) : customer.phone.trim().replace(/\D/g, '').length < 7 ? (
+            <p className="mobile-caption text-danger font-medium mt-1 flex items-center gap-1">
+              <AlertCircle size={13} className="shrink-0" /> Please enter a valid phone number (at least 7 digits).
+            </p>
+          ) : (
+            <p className="mobile-caption text-ink-faint font-normal mt-1">
               {user?.name ? `Booking as ${user.name} (${user.email})` : 'For appointment updates and SMS notifications.'}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
@@ -206,8 +243,8 @@ export default function BookingStep2Schedule({
             maxLength={120}
             value={remarks}
             onChange={(e) => setRemarks(e.target.value.slice(0, 120))}
-            placeholder="Specify the details..."
-            className="w-full bg-canvas border border-line rounded-none px-3.5 py-2.5 text-ink text-base font-normal focus:outline-none focus:border-taupe resize-none leading-relaxed"
+            placeholder="Specify any details or requests..."
+            className="w-full bg-white border-2 border-line hover:border-taupe/60 focus:border-taupe focus:ring-2 focus:ring-taupe/10 rounded-xl px-4 py-3 text-ink text-base font-normal resize-none leading-relaxed transition-colors shadow-xs"
           />
         </div>
 
@@ -224,7 +261,7 @@ export default function BookingStep2Schedule({
                   required
                   value={answers[question] || ''}
                   onChange={(e) => setAnswers({ ...answers, [question]: e.target.value })}
-                  className="w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe"
+                  className="w-full form-input-mobile bg-white border-2 border-line hover:border-taupe/60 focus:border-taupe focus:ring-2 focus:ring-taupe/10 rounded-xl text-base text-ink font-normal px-4 transition-colors shadow-xs"
                 />
               </div>
             ))}

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Scissors, Star, Clock, MapPin } from 'lucide-react';
+import { Scissors, Star, Clock, MapPin, Shirt, Heart } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
@@ -91,10 +91,18 @@ export default function SearchServiceCard({
             {service.name}
           </h3>
 
-          {/* 3. Service Type */}
-          <span className="text-[10px] font-medium uppercase tracking-wide text-taupe truncate block">
-            {serviceTypeDisplay}
-          </span>
+          {/* 3. Service Type & Designs count */}
+          <div className="flex items-center justify-between gap-1 text-[10px]">
+            <span className="font-medium uppercase tracking-wide text-taupe truncate">
+              {serviceTypeDisplay}
+            </span>
+            {service.designs_count != null && service.designs_count > 0 && (
+              <span className="shrink-0 text-ink-muted flex items-center gap-0.5 font-medium">
+                <Shirt size={10} className="text-taupe" />
+                <span>{service.designs_count}</span>
+              </span>
+            )}
+          </div>
 
           {/* 4. Price */}
           <div>
@@ -117,7 +125,7 @@ export default function SearchServiceCard({
             )}
           </div>
 
-          {/* 5. Star (Average Rating) | (count) sold */}
+          {/* 5. Star (Average Rating) | (count) sold | (count) favorites */}
           <div className="flex items-center gap-1.5 text-[10px] text-ink-muted">
             <div className="flex items-center gap-0.5 shrink-0">
               <Star size={10} className="fill-amber-400 text-amber-500 shrink-0" />
@@ -129,6 +137,11 @@ export default function SearchServiceCard({
             </div>
             <span className="text-ink-faint">|</span>
             <span className="truncate">{soldCount} sold</span>
+            <span className="text-ink-faint">|</span>
+            <span className="flex items-center gap-0.5 text-rose-600 shrink-0" title={`${service.saves_count ?? 0} favorites`}>
+              <Heart size={10} className="fill-rose-500 text-rose-500 shrink-0" />
+              <span>{service.saves_count ?? 0}</span>
+            </span>
           </div>
 
           {/* 6. Clock {estimated exact count days day-day/monthday - day} */}

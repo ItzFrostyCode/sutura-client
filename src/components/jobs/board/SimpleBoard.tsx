@@ -1,10 +1,10 @@
+'use client';
+
 import React, { useState } from 'react';
 import type { Job } from '../jobHelpers';
 import { SHOP_STAGES, type ShopStageKey } from '../jobStage';
 import BoardCard from './BoardCard';
 import BoardLane from './BoardLane';
-import WaitingAppointments from './WaitingAppointments';
-import type { Appointment } from '@/components/appointments/appointmentHelpers';
 
 interface SimpleBoardProps {
   readonly byStage: Record<ShopStageKey, Job[]>;
@@ -13,56 +13,118 @@ interface SimpleBoardProps {
   readonly canSeeMoney: boolean;
   readonly canDecline: boolean;
   readonly busyId: number | null;
-  readonly waiting: Appointment[];
   readonly onAdvance: (job: Job, status: string) => void;
   readonly onDecline: (jobId: number) => void;
 }
 
 const DONE_LIMIT = 12;
 
-/** Five columns on a wide screen, one stage at a time on a phone. Oldest order on top. */
-export default function SimpleBoard({ byStage, closed, showClosed, canSeeMoney, canDecline, busyId, waiting, onAdvance, onDecline }: SimpleBoardProps) {
+/**
+ * Kanban workflow board view: 5 stages left-to-right on wide screens,
+ * tab-navigable stage lanes on mobile.
+ */
+export default function SimpleBoard({
+  byStage,
+  closed,
+  showClosed,
+  canSeeMoney,
+  canDecline,
+  busyId,
+  onAdvance,
+  onDecline,
+}: SimpleBoardProps) {
   const first = SHOP_STAGES.find((s) => byStage[s.key].length > 0)?.key ?? 'request';
   const [active, setActive] = useState<ShopStageKey>(first);
   const [allDone, setAllDone] = useState(false);
 
-  const card = (job: Job, rank: number | null) => (
-    <BoardCard key={job.id} job={job} rank={rank} canSeeMoney={canSeeMoney} canDecline={canDecline} busy={busyId === job.id} onAdvance={onAdvance} onDecline={onDecline} />
+  const renderCard = (job: Job, rank: number | null) => (
+    <BoardCard
+      key={job.id}
+      job={job}
+      rank={rank}
+      canSeeMoney={canSeeMoney}
+      canDecline={canDecline}
+      busy={busyId === job.id}
+      onAdvance={onAdvance}
+      onDecline={onDecline}
+    />
   );
 
   return (
-    <div>
-      <div role="tablist" aria-label="Order stage" className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 hide-scrollbar lg:hidden">
-        {SHOP_STAGES.map((s) => (
-          <button key={s.key} type="button" role="tab" aria-selected={active === s.key} onClick={() => setActive(s.key)}
-            className={`flex h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold ${active === s.key ? 'bg-ink text-white' : 'bg-sunken text-ink-body'}`}>
-            {s.label}<span className={`text-xs ${active === s.key ? 'text-white/80' : 'text-ink-muted'}`}>{byStage[s.key].length}</span>
-          </button>
-        ))}
+    <div className="flex min-h-0 flex-col gap-4 lg:h-full">
+      {/* Mobile Stage Selector Tabs (< 1024px) */}
+      <div
+        role="tablist"
+        aria-label="Order stages"
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 hide-scrollbar lg:hidden"
+      >
+        {SHOP_STAGES.map((s) => {
+          const isSelected = active === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              role="tab"
+              aria-selected={isSelected}
+              onClick={() => setActive(s.key)}
+              className={`flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full border px-4 text-[13px] font-medium transition-colors ${
+                isSelected ? 'border-ink bg-ink text-white' : 'border-espresso/[0.12] bg-white text-ink-body'
+              }`}
+            >
+              <span>{s.label}</span>
+              <span className={isSelected ? 'text-white/70' : 'text-ink-faint'}>{byStage[s.key].length}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-5">
+      {/* 5-Column Grid */}
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-5">
         {SHOP_STAGES.map((s) => {
           const list = s.key === 'done' && !allDone ? byStage.done.slice(0, DONE_LIMIT) : byStage[s.key];
           return (
             <BoardLane
-              key={s.key} stage={s} count={byStage[s.key].length} visible={active === s.key} canCreate={canDecline}
-              leading={s.key === 'request' ? <WaitingAppointments appointments={waiting} /> : undefined}
-              footer={s.key === 'done' && byStage.done.length > DONE_LIMIT ? (
-                <button type="button" onClick={() => setAllDone((v) => !v)} className="mt-2 h-10 w-full text-xs font-semibold text-taupe">{allDone ? 'Show fewer' : `Show all ${byStage.done.length}`}</button>
-              ) : undefined}
+              key={s.key}
+              stage={s}
+              count={byStage[s.key].length}
+              visible={active === s.key}
+              canCreate
+              footer={
+                s.key === 'done' && byStage.done.length > DONE_LIMIT ? (
+                  <button
+                    type="button"
+                    onClick={() => setAllDone((v) => !v)}
+                    className="h-10 w-full cursor-pointer rounded-lg text-sm font-medium text-taupe hover:bg-espresso/[0.04]"
+                  >
+                    {allDone ? 'Show fewer' : `Show all ${byStage.done.length}`}
+                  </button>
+                ) : undefined
+              }
             >
-              {list.map((job, i) => card(job, s.key === 'done' ? null : i + 1))}
+              {list.map((job, i) => renderCard(job, s.key === 'done' ? null : i + 1))}
             </BoardLane>
           );
         })}
       </div>
 
+      {/* Closed Orders Section */}
       {showClosed && (
-        <section aria-label="Closed orders" className="mt-6">
-          <h2 className="mb-2 text-sm font-bold text-ink">Closed ({closed.length})</h2>
-          <ul className="grid gap-2 md:grid-cols-2 lg:grid-cols-5">{closed.map((job) => card(job, null))}</ul>
-          {closed.length === 0 && <p className="text-xs text-ink-muted">No cancelled or declined orders.</p>}
+        <section aria-label="Closed orders" className="rounded-xl border border-espresso/[0.08] bg-white p-4">
+          <div className="mb-3 flex items-baseline justify-between border-b border-espresso/[0.06] pb-3">
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink">Closed orders</h2>
+              <p className="text-[13px] text-ink-muted">Cancelled or declined</p>
+            </div>
+            <span className="text-[13px] text-ink-muted">{closed.length}</span>
+          </div>
+
+          {closed.length === 0 ? (
+            <p className="text-xs text-ink-muted py-4 text-center">No cancelled or declined orders found.</p>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {closed.map((job) => renderCard(job, null))}
+            </ul>
+          )}
         </section>
       )}
     </div>

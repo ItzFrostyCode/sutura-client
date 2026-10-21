@@ -103,7 +103,7 @@ export default function RescheduleAppointmentModal({
       }
     >
       <p className="text-sm text-ink-muted mb-4">
-        Choose another date and time. Your request stays with the store and is still waiting for their confirmation.
+        Choose another date and time. The shop will need to approve the new time; until they do, your request stays pending.
       </p>
       <InteractiveCalendar
         selectedDate={date}

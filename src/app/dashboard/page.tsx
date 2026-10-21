@@ -270,7 +270,7 @@ function DashboardPageContent() {
         {/* Four equal stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Outstanding Balance — hero card */}
-          <div className="bg-taupe rounded-xl p-5 text-white flex flex-col justify-between min-h-[120px]">
+          <div className="bg-espresso rounded-xl p-5 text-white flex flex-col justify-between min-h-[120px]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
               Outstanding Balance
             </p>

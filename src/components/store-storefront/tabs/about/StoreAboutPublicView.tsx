@@ -4,6 +4,7 @@ import OpeningHoursCard from './OpeningHoursCard';
 import SocialLinksCard from './SocialLinksCard';
 import DescriptionCard from './DescriptionCard';
 import SpecializationBadges from './SpecializationBadges';
+import PaymentDetailsCard from './PaymentDetailsCard';
 
 interface StoreAboutPublicViewProps {
   readonly store: StoreProfile;
@@ -11,9 +12,15 @@ interface StoreAboutPublicViewProps {
 }
 
 // Read-only About tab shown to everyone who isn't the store's own owner —
-// no pencils, no edit state, just the three cards in the shop's preferred
-// reading order: Hours + Social Links on the left, Description on the right.
+// no pencils, no edit state, with store information and payment methods visible.
 export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: StoreAboutPublicViewProps) {
+  const hasPaymentDetails = Boolean(
+    store.gcash_number ||
+    store.gcash_qr_path ||
+    store.bank_account_number ||
+    store.bank_qr_path
+  );
+
   return (
     <div className="space-y-3.5">
       <SpecializationBadges specializations={store.specializations} />
@@ -29,6 +36,13 @@ export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: St
         </div>
         <DescriptionCard description={store.description} />
       </div>
+
+      {hasPaymentDetails && (
+        <PaymentDetailsCard
+          formData={store}
+          canEdit={false}
+        />
+      )}
     </div>
   );
 }

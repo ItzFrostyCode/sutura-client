@@ -37,7 +37,7 @@ export default function CustomerHistoryTab({
         description: `Customer profile for ${customer.name} was added to the store database.`,
         date: new Date(customer.created_at),
         icon: User,
-        color: 'bg-taupe text-white border-taupe',
+        color: 'bg-espresso text-white border-taupe',
       });
     }
 

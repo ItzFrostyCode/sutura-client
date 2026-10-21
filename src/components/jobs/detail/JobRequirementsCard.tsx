@@ -4,11 +4,12 @@ import React from 'react';
 import { CheckCircle2, Circle, MinusCircle } from 'lucide-react';
 import { Job } from '../jobTypes';
 import { measurementLabel, paymentPolicyLabel } from '../requirements';
+import OrderRulesButton from './OrderRulesButton';
 
 interface Row { label: string; value: string; state: 'done' | 'todo' | 'na'; }
 
 // What this order needs, from the requirements snapshotted when it was created.
-export default function JobRequirementsCard({ job, paymentMet }: Readonly<{ job: Job; paymentMet: boolean }>) {
+export default function JobRequirementsCard({ job, paymentMet, onChanged }: Readonly<{ job: Job; paymentMet: boolean; onChanged?: () => Promise<void> | void }>) {
   const measurement = job.measurement_requirement ?? 'none';
   const fitting = job.fitting_requirement ?? 'optional';
   const policy = job.payment_policy ?? 'deposit';
@@ -50,7 +51,8 @@ export default function JobRequirementsCard({ job, paymentMet }: Readonly<{ job:
           );
         })}
       </ul>
-      <p className="text-[11px] text-ink-faint mt-3">Copied from the design / service / shop settings when the order was created.</p>
+      <p className="text-[11px] text-ink-faint mt-3">Usually the service’s rules, copied when the order was made. They can be changed for this order.</p>
+      <OrderRulesButton job={job} onChanged={onChanged} className="mt-1" />
     </section>
   );
 }

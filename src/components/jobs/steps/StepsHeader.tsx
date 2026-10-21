@@ -15,7 +15,7 @@ export default function StepsHeader({ job }: Readonly<{ job: Job }>) {
       <ol className="grid grid-cols-5 gap-1" aria-label="Order stage">
         {SHOP_STAGES.map((s, i) => (
           <li key={s.key} className="text-center" aria-current={i === index ? 'step' : undefined}>
-            <span className={`block h-1.5 rounded-full ${index < 0 ? 'bg-line' : i <= index ? (i === index ? 'bg-taupe' : 'bg-sage') : 'bg-line'}`} />
+            <span className={`block h-1.5 rounded-full ${index < 0 ? 'bg-line' : i <= index ? (i === index ? 'bg-espresso' : 'bg-sage') : 'bg-line'}`} />
             <span className={`mt-1.5 block text-[11px] leading-tight ${i === index ? 'font-bold text-ink' : 'text-ink-muted'}`}>{s.label}</span>
           </li>
         ))}

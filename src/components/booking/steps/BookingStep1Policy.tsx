@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { ChevronDown, MapPin } from 'lucide-react';
 import { StoreSettings, BookingTypeOption } from '../types';
 import BookingTypeSelector from './schedule/BookingTypeSelector';
-import BookingKindSelector from './schedule/BookingKindSelector';
 import type { BookingKind } from '../hooks/useBookingWizard';
 import PurposeLabelField from '@/components/appointments/PurposeLabelField';
 
@@ -13,9 +12,9 @@ interface BookingStep1PolicyProps {
   readonly availableBookingTypes: BookingTypeOption[];
   readonly appointmentType: string;
   readonly setAppointmentType: (val: string) => void;
-  readonly kind: BookingKind;
-  readonly setKind: (val: BookingKind) => void;
-  readonly kindLocked: boolean;
+  readonly kind?: BookingKind;
+  readonly setKind?: (val: BookingKind) => void;
+  readonly kindLocked?: boolean;
   readonly purposeLabel: string;
   readonly setPurposeLabel: (val: string) => void;
 }
@@ -29,9 +28,6 @@ export default function BookingStep1Policy({
   availableBookingTypes,
   appointmentType,
   setAppointmentType,
-  kind,
-  setKind,
-  kindLocked,
   purposeLabel,
   setPurposeLabel,
 }: BookingStep1PolicyProps) {
@@ -41,15 +37,13 @@ export default function BookingStep1Policy({
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4">
       <h2 className="mobile-h2 text-ink">Book a visit</h2>
 
-      <div className="flex items-start gap-2.5 p-3 bg-sunken border border-line text-xs text-ink-body">
-        <MapPin size={15} className="text-taupe shrink-0 mt-0.5" />
-        <p>
+      <div className="flex items-start gap-2.5 p-3.5 bg-sunken border border-line rounded-xl text-xs text-ink-body shadow-2xs">
+        <MapPin size={16} className="text-taupe shrink-0 mt-0.5" />
+        <p className="leading-relaxed">
           This is a visit to the shop, not a delivery. Once the shop accepts your request, go to the shop on the day.
           Nothing is paid now.
         </p>
       </div>
-
-      <BookingKindSelector kind={kind} onChange={setKind} locked={kindLocked} />
 
       <BookingTypeSelector
         availableBookingTypes={availableBookingTypes}
@@ -57,14 +51,32 @@ export default function BookingStep1Policy({
         onSelectType={setAppointmentType}
       />
 
-      {appointmentType === 'other' && <PurposeLabelField value={purposeLabel} onChange={setPurposeLabel} />}
+      {appointmentType === 'other' && (
+        <PurposeLabelField
+          value={purposeLabel}
+          onChange={setPurposeLabel}
+          label="What is it for?"
+          placeholder="e.g. Fabric selection, Inquiry, Custom question"
+          helperText="Tell the tailor what your visit is about"
+        />
+      )}
+
+      {appointmentType === 'alteration' && (
+        <PurposeLabelField
+          value={purposeLabel}
+          onChange={setPurposeLabel}
+          label="What is it for?"
+          placeholder="e.g. Barong hem shortening, Replace zipper, Suit resizing"
+          helperText="Specify the garment and adjustment needed"
+        />
+      )}
 
       {storeSettings?.booking_policy && (
-        <div className="border border-line rounded-none overflow-hidden">
+        <div className="border border-line rounded-xl overflow-hidden bg-surface shadow-2xs">
           <button
             type="button"
             onClick={() => setPolicyOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left cursor-pointer"
+            className="w-full flex items-center justify-between px-4 py-3 text-left cursor-pointer hover:bg-canvas/40 transition-colors"
           >
             <span className="mobile-caption font-semibold text-ink-body">Booking Policy</span>
             <ChevronDown size={16} className={`text-ink-faint transition-transform ${policyOpen ? 'rotate-180' : ''}`} />

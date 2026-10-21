@@ -69,7 +69,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 | Requirement | Status | Evidence / gap |
 |---|---|---|
 | Staff record and retrieve digital measurements | ✅ | versioned profiles, paper-sheet photos, Finalized / Pending fitting, manual entry only |
-| Appointment-based order intake; staff create job orders from fittings | ✅ | Create Job on an approved appointment (own branch, one per appointment) |
+| Appointment-based order intake; staff create job orders from fittings | ✅ | Create Job Order on a visit that happened, or directly for a walk-in (staff: own branch, unpaid) |
 | Update production stages | ✅ | 13-stage pipeline with Kanban, per-stage attribution, a repair lane |
 | Customers monitor progress, placement to pickup | ✅ | My Orders (stepper, photos, balance) and the public tracking code |
 | Automated notifications at each stage | 🟡 | In-app **and email** at stage transitions and "ready"; **no SMS** |

@@ -3,6 +3,7 @@
 import { StepActions, TextField } from './ApplicationFields';
 import type { StoreApplicationState } from './useStoreApplication';
 import type { OwnerFields } from './applicationTypes';
+import GenderPicker from '@/components/shared/GenderPicker';
 
 // 18+ only — mirrors StoreApplicationRequest's `before:-18 years`.
 const MAX_BIRTHDAY = (() => {
@@ -36,6 +37,14 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
           <p className="mt-1.5 text-xs text-ink-muted">
             Example: Juan V. Dela Cruz II
           </p>
+        </div>
+        <div className="sm:col-span-2">
+          <GenderPicker
+            value={owner.gender}
+            onChange={(gender) => setOwner({ ...owner, gender })}
+            label="Gender"
+            optional={false}
+          />
         </div>
         <TextField id="app-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} />
         <TextField id="app-phone" label="Contact Number" type="tel" required placeholder="09XX XXX XXXX" autoComplete="tel" {...bind('contact_number')} />

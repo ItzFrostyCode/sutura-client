@@ -16,6 +16,8 @@ interface SearchPickerProps<T> {
   readonly emptyText?: string;
   readonly id?: string;
   readonly required?: boolean;
+  /** The plain form look: white, black border (Create Job Order). */
+  readonly plain?: boolean;
 }
 
 const MAX_SHOWN = 50;
@@ -24,7 +26,7 @@ const MAX_SHOWN = 50;
  * A box you type in. Matching items appear under it as you type, the first one is already highlighted, and
  * leaving the box or pressing Enter picks it. Arrow keys move, Escape closes, the X clears.
  */
-export default function SearchPicker<T>({ items, value, onChange, getId, getText, getSearchText, renderItem, placeholder, emptyText = 'Nothing matches', id, required }: SearchPickerProps<T>) {
+export default function SearchPicker<T>({ items, value, onChange, getId, getText, getSearchText, renderItem, placeholder, emptyText = 'Nothing matches', id, required, plain }: SearchPickerProps<T>) {
   const autoId = useId();
   const listId = `${id ?? autoId}-list`;
   const input = useRef<HTMLInputElement>(null);
@@ -59,7 +61,7 @@ export default function SearchPicker<T>({ items, value, onChange, getId, getText
       if (open && query.trim() && matches[0]) pick(matches[0]);
       else { setOpen(false); setQuery(''); }
     }}>
-      <div className="flex min-h-12 items-center gap-2 rounded-lg border border-line bg-canvas px-3 focus-within:border-taupe">
+      <div className={`flex min-h-12 items-center gap-2 px-3 ${plain ? 'rounded-md border border-espresso/25 bg-white focus-within:ring-2 focus-within:ring-espresso/25' : 'rounded-lg border border-line bg-canvas focus-within:border-taupe'}`}>
         <Search size={16} className="shrink-0 text-ink-faint" aria-hidden />
         <input
           ref={input} id={id} role="combobox" aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
@@ -78,7 +80,7 @@ export default function SearchPicker<T>({ items, value, onChange, getId, getText
       </div>
 
       {open && (
-        <ul id={listId} role="listbox" className="mt-1 max-h-72 overflow-y-auto rounded-lg border border-line bg-surface">
+        <ul id={listId} role="listbox" className={`mt-1 max-h-72 overflow-y-auto rounded-lg border bg-surface ${plain ? 'border-espresso/25 bg-white' : 'border-line'}`}>
           {matches.map((item, i) => (
             <li key={getId(item)} id={`${listId}-${i}`} role="option" aria-selected={getId(item) === value}>
               <button
@@ -86,7 +88,7 @@ export default function SearchPicker<T>({ items, value, onChange, getId, getText
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(item)}
                 onMouseEnter={() => setActive(i)}
-                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${i === active ? 'bg-taupe/10' : ''}`}
+                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${i === active ? (plain ? 'bg-espresso/[0.06]' : 'bg-taupe/10') : ''}`}
               >
                 {renderItem(item)}
               </button>

@@ -10,18 +10,27 @@ export const BOTTOM_NAV_PATHS = ['/', '/search', '/categories', '/shops', '/stor
  * opening one does not swap the layout under the person's thumb: same side margins, same top margin, same bar at the bottom — the
  * page's own back row (`AccountHeader`) takes the place of the SUTURA name row.
  */
-export function usesBottomNav(pathname: string): boolean {
+export const AUTH_PATHS = ['/login', '/register', '/register/store', '/forgot-password', '/reset-password'];
+
+export function isAuthPath(pathname: string): boolean {
   return (
-    BOTTOM_NAV_PATHS.includes(pathname) ||
-    pathname.startsWith('/account/') ||
+    AUTH_PATHS.includes(pathname) ||
+    pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
-    AUTH_PATHS.includes(pathname)
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password')
   );
 }
 
-/**
- * Log In, Sign Up, and Open a Shop are reached from the Profile tab, so they keep its layout too: no header bar, the bottom
- * navigation stays, and the Profile tab stays lit.
- */
-export const AUTH_PATHS = ['/login', '/register', '/register/store'];
+export function usesBottomNav(pathname: string): boolean {
+  // Authentication screens never show the bottom navigation bar
+  if (isAuthPath(pathname)) {
+    return false;
+  }
+
+  return (
+    BOTTOM_NAV_PATHS.includes(pathname) ||
+    pathname.startsWith('/account/')
+  );
+}
 

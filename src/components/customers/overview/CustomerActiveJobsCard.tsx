@@ -79,7 +79,7 @@ export default function CustomerActiveJobsCard({
           <p className="text-xs font-medium">No active production runs right now</p>
           <Link
             href={`/dashboard/jobs/new?customer_id=${customerId}`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-taupe text-white text-xs font-bold uppercase tracking-wider shadow-2xs hover:bg-taupe-hover transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-espresso text-white text-xs font-bold uppercase tracking-wider shadow-2xs hover:bg-espresso/90 transition-colors"
           >
             <Scissors size={12} /> Create Job Order
           </Link>

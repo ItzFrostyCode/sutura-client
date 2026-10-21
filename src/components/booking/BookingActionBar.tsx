@@ -37,7 +37,7 @@ export default function BookingActionBar({
             type="button"
             onClick={onNextStep}
             disabled={step1NextDisabled}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span>{returnToReview ? 'Return to Review' : 'Continue'}</span>
             <ArrowRight size={18} />
@@ -48,7 +48,7 @@ export default function BookingActionBar({
             type="button"
             onClick={onNextStep}
             disabled={step2NextDisabled}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs active:scale-[0.99]"
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs active:scale-[0.99]"
           >
             <span>{returnToReview ? 'Return to Review' : 'Review & Confirm'}</span>
             <ArrowRight size={18} />
@@ -59,7 +59,7 @@ export default function BookingActionBar({
             type="submit"
             form="booking-form"
             disabled={submitting}
-            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-none transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.99]"
+            className="w-full min-h-[48px] h-[52px] bg-taupe hover:bg-taupe-hover text-white text-base font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.99]"
           >
             {submitting && <Loader2 size={18} className="animate-spin" />}
             <span>

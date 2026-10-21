@@ -142,4 +142,6 @@ export function useCatalogSectionEdit(loadedItem: DetailedCatalogItem | null, on
 export type CatalogSectionEdit = ReturnType<typeof useCatalogSectionEdit>;
 
 /** What the field editors actually need — the create steps supply the same three. */
-export type CatalogDraftEdit = Pick<CatalogSectionEdit, 'form' | 'storeId' | 'itemId'>;
+export type CatalogDraftEdit = Pick<CatalogSectionEdit, 'form' | 'storeId' | 'itemId'> & {
+  fromServiceId?: string | null;
+};

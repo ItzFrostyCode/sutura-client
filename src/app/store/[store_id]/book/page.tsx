@@ -4,7 +4,7 @@ import { use, Suspense } from 'react';
 import { Loader2, MapPin, ClipboardList, CalendarDays as CalendarDaysIcon, CheckCircle2 } from 'lucide-react';
 import BookingHeader from '@/components/booking/BookingHeader';
 import BookingSuccessState from '@/components/booking/BookingSuccessState';
-import BookingReferenceCard from '@/components/booking/BookingReferenceCard';
+import RequestedItemsSection from '@/components/booking/RequestedItemsSection';
 import BookingActionBar from '@/components/booking/BookingActionBar';
 import BookingDesktopSummary from '@/components/booking/BookingDesktopSummary';
 import BookingStep1Policy from '@/components/booking/steps/BookingStep1Policy';
@@ -54,12 +54,12 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas text-ink">
+    <div className="min-h-dvh flex flex-col bg-canvas text-ink overflow-x-hidden w-full max-w-full">
       <BookingHeader onBack={() => (b.step > 1 ? b.setStep(b.prevStep) : b.router.back())} />
 
-      <div className="flex-1 mobile-screen-margins py-4 pb-[calc(140px+env(safe-area-inset-bottom))]">
-        <div className="w-full max-w-xl lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:items-start">
-        <div className="lg:flex-1 lg:max-w-xl">
+      <div className="flex-1 mobile-screen-margins py-4 pb-[calc(140px+env(safe-area-inset-bottom))] overflow-x-hidden">
+        <div className="w-full max-w-xl lg:max-w-5xl mx-auto lg:flex lg:gap-8 lg:items-start min-w-0">
+        <div className="lg:flex-1 lg:max-w-xl min-w-0">
           {/* Header Context */}
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-semibold text-ink">{b.storeSettings?.name}</p>
@@ -76,17 +76,32 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             <StatusStepper stages={BOOKING_STAGES} currentKey={BOOKING_STAGE_KEYS[b.step - 1]} layout="horizontal" />
           </div>
 
-          {/* Compact Design Reference Preview for Steps 1 & 2 */}
-          {b.step < 3 && (
-            <BookingReferenceCard
-              refName={b.refName}
-              refImage={b.refImage}
-              refPrice={b.refPrice}
-              refSize={b.refSize}
-              refColor={b.refColor}
-              selectedService={b.selectedService}
-              serviceName={b.serviceNameParam}
-              quantity={b.quantity}
+          {/* Requested Services & Designs section (only when service or design items exist) */}
+          {b.step === 1 && b.requestedItems.length > 0 && (
+            <div className="mb-6">
+              <RequestedItemsSection
+                items={b.requestedItems}
+                storeSettings={b.storeSettings}
+                onUpdateQuantity={b.handleUpdateQuantity}
+                onRemoveItem={b.handleRemoveItem}
+                onUpdateNotes={b.handleUpdateNotes}
+                onRemoveCatalogDesign={b.handleRemoveCatalogDesign}
+                allowEdit={true}
+                compact={false}
+              />
+            </div>
+          )}
+
+          {b.step === 2 && b.requestedItems.length > 0 && (
+            <RequestedItemsSection
+              items={b.requestedItems}
+              storeSettings={b.storeSettings}
+              onUpdateQuantity={b.handleUpdateQuantity}
+              onRemoveItem={b.handleRemoveItem}
+              onUpdateNotes={b.handleUpdateNotes}
+              onRemoveCatalogDesign={b.handleRemoveCatalogDesign}
+              allowEdit={true}
+              compact={true}
             />
           )}
 
@@ -98,9 +113,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 availableBookingTypes={b.availableBookingTypes}
                 appointmentType={b.appointmentType}
                 setAppointmentType={b.setAppointmentType}
-                kind={b.kind}
-                setKind={b.setKind}
-                kindLocked={b.kindLocked}
                 purposeLabel={b.purposeLabel}
                 setPurposeLabel={b.setPurposeLabel}
               />
@@ -108,12 +120,20 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
 
             {b.step === 2 && (
               <BookingStep2Schedule
+                kind={b.kind}
                 appointmentType={b.appointmentType}
                 refName={b.refName}
                 materialSource={b.materialSource}
                 setMaterialSource={b.setMaterialSource}
                 materialDescription={b.materialDescription}
                 setMaterialDescription={b.setMaterialDescription}
+                design={b.design}
+                setDesign={b.setDesign}
+                peopleCount={b.peopleCount}
+                setPeopleCount={b.setPeopleCount}
+                storeId={storeId}
+                photos={b.photos}
+                setPhotos={b.setPhotos}
                 needsServicePicker={b.needsServicePicker}
                 selectedServiceId={b.selectedServiceId}
                 setSelectedServiceId={b.setSelectedServiceId}
@@ -143,6 +163,15 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
 
             {b.step === 3 && (
               <BookingStep3Review
+                storeId={storeId}
+                bookingError={b.bookingError}
+                onClearBookingError={b.clearBookingError}
+                requestedItems={b.requestedItems}
+                onUpdateQuantity={b.handleUpdateQuantity}
+                onRemoveItem={b.handleRemoveItem}
+                onOpenAddModal={() => b.handleOpenAddModal()}
+                onUpdateNotes={b.handleUpdateNotes}
+                onRemoveCatalogDesign={b.handleRemoveCatalogDesign}
                 purposeLabel={b.purposeLabel}
                 refName={b.refName}
                 refDetailHref={b.refItemId ? `/store/${storeId}/catalog/${b.refItemId}` : null}
@@ -151,6 +180,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 refPrice={b.refPrice}
                 refSize={b.refSize}
                 refColor={b.refColor}
+                refAddOns={b.refAddOns}
                 selectedService={b.selectedService}
                 appointmentType={b.appointmentType}
                 date={b.date}
@@ -176,6 +206,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
 
         {b.step < 3 && (
           <BookingDesktopSummary
+            requestedItems={b.requestedItems}
             refName={b.refName}
             refPrice={b.refPrice}
             selectedService={b.selectedService}

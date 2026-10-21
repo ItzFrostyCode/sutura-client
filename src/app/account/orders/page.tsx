@@ -8,6 +8,7 @@ import AccountHeader from '@/components/account/AccountHeader';
 import FilterChips from '@/components/account/FilterChips';
 import EmptyState from '@/components/account/EmptyState';
 import OrderCard from '@/components/account/orders/OrderCard';
+import OrderGroup from '@/components/account/orders/OrderGroup';
 import { type MyOrder, TABS } from '@/components/account/orders/ordersTypes';
 
 export default function MyOrdersPage() {
@@ -44,6 +45,20 @@ function MyOrdersPageContent() {
     [orders, activeMatch],
   );
 
+  // Linked orders (batches or a set of services) are shown together, in the order of the first one.
+  const entries = useMemo(() => {
+    const seen = new Set<number>();
+    const list: { key: string; orders: MyOrder[] }[] = [];
+    for (const o of filteredOrders) {
+      const root = o.parent_order_id ?? o.id;
+      if (seen.has(root)) continue;
+      seen.add(root);
+      const family = filteredOrders.filter((x) => (x.parent_order_id ?? x.id) === root).sort((a, b) => (a.batch_no ?? 1) - (b.batch_no ?? 1));
+      list.push({ key: String(root), orders: family });
+    }
+    return list;
+  }, [filteredOrders]);
+
   return (
     <div className="w-full">
       <AccountHeader title="My Job Orders" backHref="/account" />
@@ -74,9 +89,9 @@ function MyOrdersPageContent() {
         // mostly-empty full-width row — OrderCard's own layout (avatar left,
         // info right) already works fine inside a grid cell as-is.
         <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filteredOrders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+          {entries.map((e) => (e.orders.length > 1
+            ? <div key={e.key} className="md:col-span-2 xl:col-span-3"><OrderGroup orders={e.orders} /></div>
+            : <OrderCard key={e.key} order={e.orders[0]} />))}
         </div>
       )}
     </div>

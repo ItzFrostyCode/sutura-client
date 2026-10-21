@@ -17,7 +17,7 @@ const OPTIONS: { id: SidebarMode; label: string }[] = [
 ];
 
 /**
- * Sidebar width control, pinned to the bottom of the rail. Three explicit
+ * Sidebar width control, in the header next to the shop switcher (shown while the rail is expanded). Three explicit
  * modes rather than a binary toggle — "expand on hover" is the one people
  * actually want on a laptop: permanent icons, labels on demand, no click.
  */
@@ -44,7 +44,7 @@ export default function SidebarControl({ mode, onChange }: SidebarControlProps) 
       {open && (
         <div
           role="menu"
-          className="absolute bottom-full left-0 mb-2 w-[196px] bg-surface border border-line rounded-xl overflow-hidden z-50 animate-rise"
+          className="absolute top-full right-0 mt-2 w-[196px] bg-surface border border-line rounded-xl overflow-hidden z-50 animate-rise"
         >
           <p className="px-3 py-2.5 text-xs font-medium text-ink-muted border-b border-line">
             Sidebar control

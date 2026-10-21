@@ -1,8 +1,10 @@
 import { Scissors, Sparkles, MapPin, Calendar, Clock, Shirt, CheckCircle2 } from 'lucide-react';
 import { getServicePriceLabel } from '@/lib/servicePricing';
+import { RequestedServiceItem } from '@/store/useRequestedItemsStore';
 import { Branch, Service } from './types';
 
 interface BookingDesktopSummaryProps {
+  readonly requestedItems?: RequestedServiceItem[];
   readonly refName: string | null;
   readonly refPrice: string | null;
   readonly selectedService: Service | null;
@@ -21,6 +23,7 @@ interface BookingDesktopSummaryProps {
 // show in the mobile Review step, kept visible throughout Steps 1-2 on wide
 // screens instead of only appearing at the end.
 export default function BookingDesktopSummary({
+  requestedItems,
   refName,
   refPrice,
   selectedService,
@@ -33,9 +36,12 @@ export default function BookingDesktopSummary({
   materialSource,
   quantity,
 }: BookingDesktopSummaryProps) {
+  const items = requestedItems;
+  const hasRequestedItems = items && items.length > 0;
+
   return (
     <div className="hidden lg:block lg:w-[300px] lg:shrink-0">
-      <div className="sticky top-6 bg-surface border border-line rounded-none p-4 space-y-4">
+      <div className="sticky top-6 bg-surface border border-line rounded-xl shadow-xs p-4 space-y-4">
         <p className="text-xs font-bold uppercase tracking-wider text-ink-faint">Appointment Summary</p>
 
         <div className="space-y-1">
@@ -45,18 +51,72 @@ export default function BookingDesktopSummary({
           <p className="text-sm font-medium text-ink">
             {appointmentType === 'alteration'
               ? 'Alteration / Repair'
-              : appointmentType === 'consultation' && selectedService && (
-                  selectedService.name.toLowerCase().includes('print') ||
-                  selectedService.name.toLowerCase().includes('sublimat') ||
-                  selectedService.name.toLowerCase().includes('bulk') ||
-                  selectedService.name.toLowerCase().includes('uniform')
-                )
+              : appointmentType === 'measurement'
+              ? 'Measurement'
+              : appointmentType === 'consultation'
               ? 'Consultation / Order Discussion'
               : appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1)}
           </p>
         </div>
 
-        {refName && (
+        {hasRequestedItems && (
+          <div className="space-y-2 pt-3 border-t border-line">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint flex items-center gap-1.5">
+              {items.length === 1 && items[0].catalogItemId ? (
+                <>
+                  <Sparkles size={13} className="text-taupe" /> Design Reference
+                </>
+              ) : items.length === 1 ? (
+                <>
+                  <Scissors size={13} className="text-taupe" /> Service Consultation
+                </>
+              ) : (
+                <>
+                  <Scissors size={13} className="text-taupe" /> Requested Consultations ({items.length})
+                </>
+              )}
+            </span>
+            {items.length === 1 ? (
+              <div className="space-y-1 text-xs">
+                <div className="flex items-center justify-between font-medium text-ink">
+                  <span className="truncate pr-1">{items[0].name}</span>
+                  <span className="text-taupe shrink-0 font-semibold">{items[0].quantity} pcs</span>
+                </div>
+                {items[0].catalogItemId && items[0].serviceName && (
+                  <p className="text-[11px] text-ink-muted truncate">
+                    Parent: {items[0].serviceName}
+                  </p>
+                )}
+                {items[0].basePrice != null && Number(items[0].basePrice) > 0 && (
+                  <p className="text-xs font-semibold text-taupe pt-0.5">
+                    From ₱{Number(items[0].basePrice).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {items.map((it) => (
+                  <div key={it.id} className="text-xs border-b border-line/40 pb-1.5 last:border-b-0 last:pb-0">
+                    <div className="flex items-center justify-between font-medium text-ink">
+                      <span className="truncate pr-1">{it.name}</span>
+                      <span className="text-taupe shrink-0 font-semibold">{it.quantity} pcs</span>
+                    </div>
+                    {it.catalogItemId && it.serviceName && (
+                      <p className="text-[11px] text-ink-muted truncate">
+                        Parent: {it.serviceName}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-ink-faint italic pt-1">
+              * Final specifications &amp; price confirmed in-store
+            </p>
+          </div>
+        )}
+
+        {!hasRequestedItems && refName && (
           <div className="space-y-1 pt-3 border-t border-line">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint flex items-center gap-1.5">
               <Sparkles size={13} className="text-taupe" /> Design
@@ -66,7 +126,7 @@ export default function BookingDesktopSummary({
           </div>
         )}
 
-        {!refName && selectedService && (
+        {!hasRequestedItems && !refName && selectedService && (
           <div className="space-y-1 pt-3 border-t border-line">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint flex items-center gap-1.5">
               <Scissors size={13} className="text-taupe" /> Service
@@ -118,7 +178,7 @@ export default function BookingDesktopSummary({
         )}
 
         {materialSource === 'own' && (
-          <div className="p-3 bg-sunken border border-line rounded-none space-y-1">
+          <div className="p-3 bg-sunken border border-line rounded-xl space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-taupe block">What to Bring</span>
             <p className="text-xs font-medium text-ink flex items-center gap-1.5">
               <CheckCircle2 size={13} className="text-emerald-600 shrink-0" /> Your fabric/sample

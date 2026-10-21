@@ -16,9 +16,9 @@ const button = 'mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-
 export default function AppointmentDetailActions({ appt, canSelfCancel, cancelling, onCancel, onReschedule }: AppointmentDetailActionsProps) {
   return (
     <>
-      {appt.status === 'pending' && (
+      {(appt.status === 'pending' || (appt.status === 'confirmed' && !appt.checked_in_at)) && (
         <button type="button" onClick={onReschedule} className={`${button} ${appt.needs_new_time ? 'bg-ink text-white' : 'bg-sunken text-ink'}`}>
-          <CalendarClock size={16} /> Pick a new time
+          <CalendarClock size={16} /> {appt.status === 'confirmed' ? 'Move to another time' : 'Pick a new time'}
         </button>
       )}
 

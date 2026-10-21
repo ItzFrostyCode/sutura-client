@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Mail, Phone, Package, Eye, Pencil, Trash2, Users } from 'lucide-react';
+import { Mail, Phone, Package, Eye, Pencil, Trash2, Users, ShieldCheck } from 'lucide-react';
 import { CustomerData } from './customerTypes';
 import { isWalkInEmail, SUKI_TAG_CONFIG } from './customerHelpers';
 
@@ -54,6 +54,16 @@ export default function CustomerMobileCards({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-bold text-ink text-sm truncate">{customer.name}</span>
+                  {customer.gender && (
+                    <span className="text-[10px] font-medium text-ink-muted bg-canvas border border-line px-1.5 py-0.2 rounded-md">
+                      {customer.gender.charAt(0).toUpperCase() + customer.gender.slice(1)}
+                    </span>
+                  )}
+                  {customer.is_trusted && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded border border-sage/30 bg-sage/10 text-sage">
+                      <ShieldCheck size={9} /> Trusted
+                    </span>
+                  )}
                   {sukiCfg && (
                     <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${sukiCfg.badgeCls}`}>
                       {sukiCfg.label}

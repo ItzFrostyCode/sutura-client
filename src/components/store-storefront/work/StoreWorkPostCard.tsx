@@ -111,7 +111,7 @@ export default function StoreWorkPostCard({
 
           {post.service && (
             <Link
-              href={`/store/${storeId}/book?service_id=${post.service.id}`}
+              href={`/store/${storeId}/book?service_id=${post.service.id}&service_name=${encodeURIComponent(post.service.name)}`}
               className="w-full min-h-[48px] h-[52px] rounded-lg flex items-center justify-center gap-2 bg-surface border border-line hover:bg-sunken text-ink text-sm font-medium transition-colors active:scale-[0.99] cursor-pointer"
             >
               <Calendar size={16} /> Book &quot;{post.service.name}&quot;

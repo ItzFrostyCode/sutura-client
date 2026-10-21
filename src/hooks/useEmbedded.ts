@@ -9,9 +9,8 @@ import { useEffect, useState } from 'react';
 export function useEmbedded(): boolean {
   const [embedded, setEmbedded] = useState(false);
   useEffect(() => {
-    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
     const hasEmbed = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('embed') === '1';
-    setEmbedded(isIframe || hasEmbed);
+    setEmbedded(hasEmbed);
   }, []);
   return embedded;
 }

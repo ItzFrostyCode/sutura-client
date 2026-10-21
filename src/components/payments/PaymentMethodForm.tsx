@@ -98,12 +98,12 @@ export default function PaymentMethodForm({ value, onChange, onSave, onCancel, s
         </div>
       </div>
       <label className="flex items-center gap-3 min-h-11 cursor-pointer">
-        <input type="checkbox" checked={value.is_active} onChange={(e) => set({ is_active: e.target.checked })} className="w-4 h-4 accent-[#6B5346]" />
+        <input type="checkbox" checked={value.is_active} onChange={(e) => set({ is_active: e.target.checked })} className="w-4 h-4 accent-taupe-dark" />
         <span className="text-sm text-ink">Active — customers can pay with this</span>
       </label>
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 border-t border-line">
         <button type="button" onClick={onCancel} disabled={saving} className="h-11 px-5 border border-line-strong bg-white text-sm font-medium text-ink hover:bg-sunken cursor-pointer">Cancel</button>
-        <button type="button" onClick={onSave} disabled={!valid || saving} className="h-11 px-5 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
+        <button type="button" onClick={onSave} disabled={!valid || saving} className="h-11 px-5 bg-espresso hover:bg-espresso/90 text-white text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
           {saving && <Loader2 size={16} className="animate-spin" />} Save
         </button>
       </div>

@@ -61,12 +61,19 @@ export default function LoginForm({
         }
         setAuth(user, token, activeStore, staff_profile);
         onDone?.();
-        if (isAuthorized) router.push(staffRedirect);
-        else if (customerRedirect) router.push(customerRedirect);
+        // replace, not push: Back from where they land must not show the sign-in page again.
+        if (isAuthorized) router.replace(staffRedirect);
+        else if (customerRedirect) router.replace(customerRedirect);
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Login failed. Please try again.');
+      const error = err as { response?: { status?: number; data?: { message?: string } } };
+      if (!error.response) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (error.response.status && error.response.status >= 500) {
+        setError('Our service is temporarily unavailable. Please try again in a few moments.');
+      } else {
+        setError(error.response.data?.message || 'Incorrect email or password.');
+      }
     } finally {
       setLoading(false);
     }
@@ -74,12 +81,7 @@ export default function LoginForm({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <h1 id={titleId} className="text-display text-2xl text-ink">Sign In</h1>
-        <button type="button" onClick={onClose} aria-label="Close" className="w-11 h-11 -mr-2.5 flex items-center justify-center text-ink">
-          <X size={22} />
-        </button>
-      </div>
+      <h1 id={titleId} className="text-display text-2xl text-ink mb-6">Sign In</h1>
 
       <LoginPortalSwitch value={portal} onChange={(next) => { setPortal(next); setError(''); }} />
       {portal === 'store' && (

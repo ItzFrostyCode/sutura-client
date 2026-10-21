@@ -40,6 +40,8 @@ export interface StoreSettingsData {
   cancellation_policy: string;
   // Shop-wide defaults for new orders; designs and services can override them.
   default_measurement_requirement: 'none' | 'existing' | 'shop';
+  /** The unit the shop measures in; new measurements start in it. */
+  default_measurement_unit: 'in' | 'cm';
   default_fitting_requirement: 'none' | 'optional' | 'required';
   default_payment_policy: 'none' | 'full' | 'deposit' | 'custom';
   default_payment_percent: number;
@@ -104,6 +106,7 @@ export function useSettings() {
     repair_requires_downpayment: false,
     cancellation_policy: '',
     default_measurement_requirement: 'shop' as 'none' | 'existing' | 'shop',
+    default_measurement_unit: 'in' as 'in' | 'cm',
     default_fitting_requirement: 'optional' as 'none' | 'optional' | 'required',
     default_payment_policy: 'deposit' as 'none' | 'full' | 'deposit' | 'custom',
     default_payment_percent: 50,
@@ -168,6 +171,7 @@ export function useSettings() {
             repair_requires_downpayment: !!s.repair_requires_downpayment,
             cancellation_policy: s.cancellation_policy || '',
             default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
+            default_measurement_unit: s.default_measurement_unit === 'cm' ? 'cm' : 'in',
             default_fitting_requirement: s.default_fitting_requirement ?? 'optional',
             default_payment_policy: s.default_payment_policy ?? 'deposit',
             default_payment_percent: s.default_payment_percent ?? 50,
@@ -267,9 +271,9 @@ export function useSettings() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({ ...prev, gcash_qr_path: res.data.data.url }));
-        toast.success('GCash QR uploaded — click Save Changes to apply.');
+        toast.success('GCash / Maya QR uploaded — click Save to apply.');
       } catch (err) {
-        toast.error(getErrorMessage(err, 'Failed to upload GCash QR. Please try again.'));
+        toast.error(getErrorMessage(err, 'Failed to upload GCash / Maya QR. Please try again.'));
       }
     }
   };
@@ -283,10 +287,10 @@ export function useSettings() {
         const res = await api.post(`/stores/${store.id}/upload`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        setFormDataWithDirty(prev => ({ ...prev, bank_qr_path: res.data.data.url }));
-        toast.success('Bank QR uploaded — click Save Changes to apply.');
+        setFormDataWithDirty(prev => ({ ...prev, bank_qr_path: res.data.data.url, bank_name: prev.bank_name || 'QR Ph' }));
+        toast.success('QR Ph code uploaded — click Save to apply.');
       } catch (err) {
-        toast.error(getErrorMessage(err, 'Failed to upload bank QR. Please try again.'));
+        toast.error(getErrorMessage(err, 'Failed to upload QR Ph code. Please try again.'));
       }
     }
   };

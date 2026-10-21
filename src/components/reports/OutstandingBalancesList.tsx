@@ -21,7 +21,7 @@ export default function OutstandingBalancesList({ rows }: OutstandingBalancesLis
       <p className="text-sm text-ink-faint mb-4">Who still owes money, ranked by amount — chase the biggest ones first.</p>
 
       {/* Mobile cards — no sideways scroll needed */}
-      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-sunken border-t border-line">
         {rows.map(row => {
           const isOverdue = row.due_date ? new Date(row.due_date) < today : false;
           return (
@@ -68,7 +68,7 @@ export default function OutstandingBalancesList({ rows }: OutstandingBalancesLis
               <th className="px-6 py-3 font-medium">Due Date</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F0EAE3]">
+          <tbody className="divide-y divide-sunken">
             {rows.map(row => {
               const isOverdue = row.due_date ? new Date(row.due_date) < today : false;
               return (

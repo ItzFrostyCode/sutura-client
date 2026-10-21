@@ -19,7 +19,7 @@ export default function PaymentStatsCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 items-stretch">
       {/* Card 1: Total Outstanding */}
-      <div className="bg-taupe text-white rounded-xl p-5 shadow-2xs flex flex-col justify-between h-full min-h-[125px] transition-all">
+      <div className="bg-espresso text-white rounded-xl p-5 shadow-2xs flex flex-col justify-between h-full min-h-[125px] transition-all">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">Total Outstanding</span>
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">

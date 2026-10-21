@@ -109,16 +109,20 @@ export default function FindLocationMap({ branches, selectedBranchId, onSelectBr
         <FlyToController branches={branches} selectedId={selectedBranchId} />
         <LocateFlyController userPosition={userPosition ?? null} branches={branches} paused={!!routePath} />
         {routePath && <RouteLayer path={routePath} />}
-        {branches.map(b => (
-          <Marker
-            key={b.id}
-            position={[b.latitude, b.longitude]}
-            icon={buildStorePinIcon(logoPath, !!b.isMain, isOpen, selectedBranchId === b.id)}
-            title={b.name}
-            zIndexOffset={selectedBranchId === b.id ? 1000 : 0}
-            eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b.id) } : undefined}
-          />
-        ))}
+        {branches.map((b, idx) => {
+          const isMain = Boolean(b.isMain);
+          const badgeText = branches.length > 1 ? (isMain ? 'MAIN' : `${idx + 1}`) : null;
+          return (
+            <Marker
+              key={b.id}
+              position={[b.latitude, b.longitude]}
+              icon={buildStorePinIcon(logoPath, badgeText, isOpen, selectedBranchId === b.id)}
+              title={b.name}
+              zIndexOffset={selectedBranchId === b.id ? 1000 : 0}
+              eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b.id) } : undefined}
+            />
+          );
+        })}
         {userPosition && (
           <Marker position={[userPosition.lat, userPosition.lng]} icon={userLocationIcon} title="You are here" />
         )}

@@ -46,7 +46,7 @@ export default function CustomerTabNav({ activeTab, setActiveTab, showTexts = fa
               {tab.id === 'payments' && balanceDue && <span className="text-[11px] font-bold text-danger">{balanceDue}</span>}
 
               {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-taupe rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-espresso rounded-full" />
               )}
             </button>
           );

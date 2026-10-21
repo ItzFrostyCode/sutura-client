@@ -33,11 +33,43 @@ export interface ServiceDraft {
   requirements: RequirementsDraft;
 }
 
+function normalizeCustomFields(fields?: any[] | null): ServiceField[] {
+  if (!Array.isArray(fields)) return [];
+  const typeMap: Record<string, ServiceField['type']> = {
+    short_text: 'text',
+    text: 'text',
+    number: 'number',
+    dropdown: 'select',
+    select: 'select',
+    single_choice: 'select',
+    checkbox: 'checkbox',
+    radio: 'radio',
+  };
+  return fields.map((f, idx) => ({
+    id: String(f.id ?? f.name ?? `f_${idx}_${Date.now().toString(36)}`),
+    label: String(f.label ?? f.name ?? ''),
+    type: typeMap[f.type] ?? 'text',
+    required: Boolean(f.required),
+    options: Array.isArray(f.options) ? f.options.map(String) : undefined,
+  }));
+}
+
+function normalizeRosterFields(fields?: any[] | null): ServiceField[] {
+  if (!Array.isArray(fields)) return [];
+  return fields.map((f, idx) => ({
+    id: String(f.id ?? `r_${idx}_${Date.now().toString(36)}`),
+    label: String(f.label ?? ''),
+    type: (f.type === 'number' || f.type === 'select') ? f.type : 'text',
+    required: Boolean(f.required),
+    options: Array.isArray(f.options) ? f.options.map(String) : undefined,
+  }));
+}
+
 export function toDraft(service: Service): ServiceDraft {
   return {
     name: service.name ?? '',
     description: service.description ?? '',
-    base_price: service.base_price != null ? String(Number(service.base_price)) : '',
+    base_price: service.base_price != null && Number(service.base_price) > 0 ? String(Number(service.base_price)) : '',
     estimated_days: service.estimated_days != null ? String(service.estimated_days) : '',
     estimated_days_max: service.estimated_days_max != null ? String(service.estimated_days_max) : '',
     turnaround_depends: service.estimated_days == null,
@@ -54,8 +86,8 @@ export function toDraft(service: Service): ServiceDraft {
       columns: service.size_chart_columns ?? [],
       rows: service.size_chart_rows ?? [],
     },
-    custom_fields: service.custom_fields ?? [],
-    roster_fields: service.roster_fields ?? [],
+    custom_fields: normalizeCustomFields(service.custom_fields),
+    roster_fields: normalizeRosterFields(service.roster_fields),
     requirements: requirementsToDraft(service),
   } satisfies ServiceDraft;
 }
@@ -90,7 +122,12 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
     if (!d.min_order_qty || Number(d.min_order_qty) < 1) return 'Enter the minimum order for bulk orders.';
   }
   if (section === 'spec') {
-    if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one price or add-on.';
+    const hasTiers = d.tiers.some((t) => t.label.trim() !== '');
+    const halfFilled = d.tiers.some((t) => t.amount.trim() !== '' && t.label.trim() === '');
+    if (halfFilled) return 'Enter a label for every price or add-on you entered.';
+    if (!d.base_price.trim() && !hasTiers) {
+      return 'Add at least one price or add-on, or enter a starting price under Basics.';
+    }
   }
   if (section === 'requirements') return validateRequirements(d.requirements);
   return null;
@@ -109,7 +146,12 @@ export function orderTypesOf(d: ServiceDraft): ServiceType[] {
 export function buildServicePayload(service: Service | null, draft: ServiceDraft, isActive = service?.is_active ?? true) {
   const tiers = draft.tiers
     .filter((t) => t.label.trim() !== '')
-    .map((t) => ({ label: t.label.trim(), amount: t.amount.trim() === '' ? null : Number.parseFloat(t.amount) }));
+    .map((t) => ({
+      label: t.label.trim(),
+      amount: t.amount.trim() === '' || isNaN(Number(t.amount)) ? null : Number.parseFloat(t.amount),
+    }));
+
+  const validRows = (draft.sizeChart?.rows ?? []).filter((r) => r.size && r.size.trim() !== '');
 
   return {
     name: draft.name.trim(),
@@ -120,17 +162,17 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     service_category: draft.service_category || null,
     garment_types: draft.garment_types,
     capabilities: draft.capabilities,
-    base_price: draft.base_price.trim() === '' ? null : Number.parseFloat(draft.base_price),
+    base_price: draft.base_price.trim() === '' || isNaN(Number(draft.base_price)) ? null : Number.parseFloat(draft.base_price),
     estimated_days: draft.turnaround_depends || draft.estimated_days.trim() === '' ? null : Number.parseInt(draft.estimated_days, 10),
     estimated_days_max: draft.turnaround_depends || draft.estimated_days_max.trim() === '' ? null : Number.parseInt(draft.estimated_days_max, 10),
     min_order_qty: Number.parseInt(draft.min_order_qty, 10) || 1,
-    custom_fields: draft.custom_fields.filter((f) => f.label.trim() !== ''),
+    custom_fields: draft.custom_fields.filter((f) => (f.label || '').trim() !== ''),
     roster_fields: orderTypesOf(draft).includes('bulk_sublimation') ? draft.roster_fields : [],
     is_active: isActive,
     image_url: draft.image_url || null,
-    size_chart_image_url: draft.sizeChart.image_url,
-    size_chart_columns: draft.sizeChart.columns.length > 0 ? draft.sizeChart.columns : null,
-    size_chart_rows: draft.sizeChart.rows.length > 0 ? draft.sizeChart.rows : null,
+    size_chart_image_url: draft.sizeChart?.image_url || null,
+    size_chart_columns: (draft.sizeChart?.columns ?? []).length > 0 ? draft.sizeChart.columns.filter((c) => c.trim() !== '') : null,
+    size_chart_rows: validRows.length > 0 ? validRows : null,
     pricing_tiers: tiers,
     ...requirementsPayload(draft.requirements),
   };
@@ -161,6 +203,9 @@ export function toPublicService(service: Service): PublicService {
     base_price: service.base_price ?? '',
     description: service.description ?? undefined,
     reviews_avg_rating: service.reviews_avg_rating ?? null,
+    reviews_count: service.reviews_count ?? 0,
+    orders_count: service.job_orders_count ?? (service as any).orders_count ?? 0,
+    saves_count: service.saves_count ?? 0,
     pricing: service.pricing?.map((p) => ({ id: p.id, label: p.label, amount: p.amount })),
   } as unknown as PublicService;
 }

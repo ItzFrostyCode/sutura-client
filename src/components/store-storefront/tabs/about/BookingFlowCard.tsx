@@ -48,6 +48,10 @@ export default function BookingFlowCard({ formData, onChange, setFormData, isEdi
           <span className="text-ink-body font-medium">{formData.repair_requires_downpayment ? 'Yes' : 'No'}</span>
         </div>
         <div className="flex justify-between gap-3">
+          <span className="text-ink-muted text-xs">Measuring unit</span>
+          <span className="text-ink-body font-medium">{formData.default_measurement_unit === 'cm' ? 'Centimeters' : 'Inches'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
           <span className="text-ink-muted text-xs">Default for new orders</span>
           <span className="text-ink-body font-medium text-right">{requirementsSummary({ measurement_requirement: formData.default_measurement_requirement, fitting_requirement: formData.default_fitting_requirement, payment_policy: formData.default_payment_policy, payment_policy_percent: formData.default_payment_percent })}</span>
         </div>

@@ -1,6 +1,9 @@
 import { type EditableField } from './useAccountDetail';
 import ProfileFieldForm from './ProfileFieldForm';
 import PasswordForm from './PasswordForm';
+import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
+import FormActions from './FormActions';
+import FormMessage from './FormMessage';
 
 interface AccountEditSheetProps {
   openField: EditableField;
@@ -9,6 +12,8 @@ interface AccountEditSheetProps {
   setName: (val: string) => void;
   phone: string;
   setPhone: (val: string) => void;
+  gender: Gender | '';
+  setGender: (val: Gender | '') => void;
   savingProfile: boolean;
   profileMessage: { type: 'success' | 'error'; text: string } | null;
   onProfileSubmit: (e: React.FormEvent) => void;
@@ -26,11 +31,33 @@ interface AccountEditSheetProps {
 const SHEET_TITLES: Record<EditableField, string> = {
   name: 'Edit Name',
   phone: 'Edit Phone',
+  gender: 'Edit Gender',
   password: 'Change Password',
 };
 
 /** The bottom sheet that edits one field. */
-export default function AccountEditSheet({ openField, onClose, name, setName, phone, setPhone, savingProfile, profileMessage, onProfileSubmit, currentPassword, setCurrentPassword, newPassword, setNewPassword, confirmPassword, setConfirmPassword, savingPassword, passwordMessage, onPasswordSubmit }: Readonly<AccountEditSheetProps>) {
+export default function AccountEditSheet({
+  openField,
+  onClose,
+  name,
+  setName,
+  phone,
+  setPhone,
+  gender,
+  setGender,
+  savingProfile,
+  profileMessage,
+  onProfileSubmit,
+  currentPassword,
+  setCurrentPassword,
+  newPassword,
+  setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
+  savingPassword,
+  passwordMessage,
+  onPasswordSubmit,
+}: Readonly<AccountEditSheetProps>) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 animate-in fade-in bg-ink/40 backdrop-blur-[2px] duration-200" />
@@ -51,6 +78,14 @@ export default function AccountEditSheet({ openField, onClose, name, setName, ph
             onSubmit={onProfileSubmit}
             onClose={onClose}
           />
+        )}
+
+        {openField === 'gender' && (
+          <form onSubmit={onProfileSubmit}>
+            <GenderPicker value={gender} onChange={setGender} optional={false} />
+            <FormMessage message={profileMessage} />
+            <FormActions saving={savingProfile} label="Save" savingLabel="Saving…" onCancel={onClose} />
+          </form>
         )}
 
         {openField === 'password' && (

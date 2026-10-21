@@ -1,23 +1,94 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import {
   List, LayoutGrid, Calendar as CalendarIcon, AlertCircle,
-  Plus, Clock, CheckCircle2, Scissors,
-  RotateCcw, CalendarPlus
+  Plus, Coffee
 } from 'lucide-react';
-import SearchInput from '@/components/shared/SearchInput';
-import PageHeader from '@/components/shared/PageHeader';
+import ApplePage, { AppleBar } from '@/components/jobs/ui/ApplePage';
 import AppointmentToolbar from '@/components/appointments/AppointmentToolbar';
+import AppointmentKpis from '@/components/appointments/AppointmentKpis';
+import { APPOINTMENTS_COLUMN } from '@/components/appointments/pageColumn';
 import { useAppointments } from '@/components/appointments/useAppointments';
 import type { Appointment } from '@/components/appointments/appointmentHelpers';
 import AppointmentCreateModal from '@/components/appointments/AppointmentCreateModal';
+import ConsultationStartModal from '@/components/appointments/ConsultationStartModal';
 import AppointmentActionModals from '@/components/appointments/AppointmentActionModals';
 import AppointmentCalendarView from '@/components/appointments/AppointmentCalendarView';
 import AppointmentListView from '@/components/appointments/AppointmentListView';
+import AppointmentDetailPanel from '@/components/appointments/AppointmentDetailPanel';
 import WalkInClashDialog from '@/components/appointments/WalkInClashDialog';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
+import { useAuthStore } from '@/store/useAuthStore';
 import { APPOINTMENT_TYPES, TYPE_CONFIG, STATUS_CONFIG, AppointmentType } from '@/components/appointments/appointmentHelpers';
+
+/** The column every part of this page sits in (shared with the detail, so their edges line up). */
+const COL = APPOINTMENTS_COLUMN;
+/** The white card under the filters. The table sits in it; the cards view is only cards on the canvas (no box around them), and on a phone the list is a stack of its own cards too. */
+const CARD_BOX = 'overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(43,30,26,0.04),0_4px_12px_rgba(43,30,26,0.02)]';
+const CARD_BOX_FROM_SM = 'sm:overflow-hidden sm:rounded-2xl sm:border sm:border-line sm:bg-white sm:shadow-[0_1px_3px_rgba(43,30,26,0.04),0_4px_12px_rgba(43,30,26,0.02)]';
+
+/** Table | Cards | Calendar. Its own component (not made inside the page), so it is not rebuilt on every render. */
+function ViewSwitcherPill({ viewMode, setViewMode }: Readonly<{ viewMode: 'table' | 'cards' | 'calendar'; setViewMode: (v: 'table' | 'cards' | 'calendar') => void }>) {
+  return (
+  <div
+    role="group"
+    aria-label="View mode selector"
+    className="inline-flex shrink-0 items-center gap-0.5 rounded-xl border border-line bg-sunken p-1"
+  >
+    {/* Table View */}
+    <button
+      type="button"
+      onClick={() => setViewMode('table')}
+      title="Table View"
+      aria-label="Table View"
+      aria-pressed={viewMode === 'table'}
+      className={`hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all cursor-pointer ${
+        viewMode === 'table'
+          ? 'bg-surface text-ink shadow-xs border border-line/80'
+          : 'text-ink-muted hover:text-ink hover:bg-surface/60'
+      }`}
+    >
+      <List size={16} className={viewMode === 'table' ? 'text-taupe' : 'text-ink-muted'} />
+    </button>
+
+    {/* Cards View */}
+    <button
+      type="button"
+      onClick={() => setViewMode('cards')}
+      title="Cards View"
+      aria-label="Cards View"
+      aria-pressed={viewMode === 'cards'}
+      className={`inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all cursor-pointer ${
+        viewMode === 'cards'
+          ? 'bg-surface text-ink shadow-xs border border-line/80'
+          : 'text-ink-muted hover:text-ink hover:bg-surface/60'
+      }`}
+    >
+      <LayoutGrid size={16} className={viewMode === 'cards' ? 'text-taupe' : 'text-ink-muted'} />
+    </button>
+
+    {/* Subtle Divider */}
+    <div className="h-4 w-px bg-line/80 mx-0.5 shrink-0" aria-hidden="true" />
+
+    {/* Calendar View */}
+    <button
+      type="button"
+      onClick={() => setViewMode('calendar')}
+      title="Calendar View"
+      aria-label="Calendar View"
+      aria-pressed={viewMode === 'calendar'}
+      className={`inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all cursor-pointer ${
+        viewMode === 'calendar'
+          ? 'bg-surface text-ink shadow-xs border border-line/80'
+          : 'text-ink-muted hover:text-ink hover:bg-surface/60'
+      }`}
+    >
+      <CalendarIcon size={16} className={viewMode === 'calendar' ? 'text-taupe' : 'text-ink-muted'} />
+    </button>
+  </div>
+  );
+}
 
 export default function AppointmentsPage() {
   // useSearchParams (a customer's "Book appointment" link) needs a Suspense boundary.
@@ -94,14 +165,16 @@ function AppointmentsPageContent() {
     updateStatus,
     handleCheckIn,
     handleDidntCome,
+    handleDiscard,
     clash,
     resolveClash,
     services,
-    handleAccommodateEarly,
-    handleAskToWait,
-    refreshAppointments,
     handleCreateFollowUp,
     handleCreateSubmit,
+    showConsultModal,
+    setShowConsultModal,
+    handleStartConsultation,
+    refreshAppointments,
     handleRescheduleSubmit,
     handleCompleteSubmit,
     handleCancelConfirm,
@@ -115,6 +188,23 @@ function AppointmentsPageContent() {
 
   // The appointment a follow-up visit is being booked for. A follow-up always belongs to an existing record.
   const [followUpFor, setFollowUpFor] = useState<Appointment | null>(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectApt, setRejectApt] = useState<Appointment | null>(null);
+
+  const { store, user } = useAuthStore();
+  const storeOwner = store?.owner ?? (user?.roles?.some(r => r.name === 'store_owner') ? { id: user.id, name: user.name } : null);
+
+  // A phone has no table: its "list" and its "cards" are the same card stack, so it offers Cards and Calendar only.
+  useEffect(() => {
+    const phone = window.matchMedia('(max-width: 639px)');
+    const fix = () => { if (phone.matches && viewMode === 'table') setViewMode('cards'); };
+    fix();
+    phone.addEventListener('change', fix);
+    return () => phone.removeEventListener('change', fix);
+  }, [viewMode, setViewMode]);
+
+  // Keep viewApt synced with refreshed appointments
+  const currentViewApt = viewApt ? (appointments.find(a => a.id === viewApt.id) || viewApt) : null;
 
   const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (whenFilter !== 'any' ? 1 : 0) + (search ? 1 : 0);
 
@@ -125,223 +215,174 @@ function AppointmentsPageContent() {
     setSearch('');
   };
 
-  // Compact & perfectly proportional View Switcher Pill (38px height with 10px item spacing)
-  const ViewSwitcherPill = () => (
-    <div className="h-[38px] flex items-center gap-[10px] bg-canvas border border-line rounded-lg px-1.5 shadow-2xs shrink-0">
-      <button
-        type="button"
-        onClick={() => setViewMode('table')}
-        title="Table View"
-        aria-label="Table View"
-        className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${
-          viewMode === 'table'
-            ? 'bg-surface text-ink shadow-xs border border-line/60'
-            : 'text-ink-muted hover:text-ink'
-        }`}
-      >
-        <List size={15} />
-      </button>
-      <button
-        type="button"
-        onClick={() => setViewMode('cards')}
-        title="Card List View"
-        aria-label="Card List View"
-        className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${
-          viewMode === 'cards'
-            ? 'bg-surface text-ink shadow-xs border border-line/60'
-            : 'text-ink-muted hover:text-ink'
-        }`}
-      >
-        <LayoutGrid size={15} />
-      </button>
-      <button
-        type="button"
-        onClick={() => setViewMode('calendar')}
-        title="Calendar View"
-        aria-label="Calendar View"
-        className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${
-          viewMode === 'calendar'
-            ? 'bg-surface text-ink shadow-xs border border-line/60'
-            : 'text-ink-muted hover:text-ink'
-        }`}
-      >
-        <CalendarIcon size={15} />
-      </button>
-    </div>
-  );
 
   return (
-    <div className="space-y-6">
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <PageHeader
-        title="Schedule & Appointments"
-        description="Book and manage fittings, measurements and consultations."
-        actions={
-          // flex-wrap — on the narrowest real phones (320px, e.g. iPhone SE)
-          // "Schedule Follow-Up" + "New Appointment" together are wider than
-          // the available width and this row has no sibling to wrap between
-          // (PageHeader's own flex-wrap only applies above this one child),
-          // so without its own wrap the second button would overflow off
-          // the edge of the screen instead of dropping to its own line.
-          <div className="flex items-center gap-2 flex-wrap">
+    <ApplePage>
+      {/* ── Title row, inside the main panel (the detail has its own with the same margins) ── */}
+      {!currentViewApt && (
+        <div className={COL}>
+        <AppleBar flush>
+          <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+            <h1 className="text-2xl font-semibold sm:text-[30px] leading-tight tracking-tight text-ink">Appointments</h1>
+            <p className="text-[13px] text-ink-muted">{stats.todayCount} today · {stats.pendingCount} waiting for approval · {stats.totalCount} in total</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+            <button
+              type="button"
+              onClick={() => { setError(''); setShowConsultModal(true); }}
+              className="flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-taupe-hover px-4 text-[13px] font-medium text-white shadow-sm transition-opacity hover:opacity-95 sm:px-5"
+            >
+              <Coffee size={16} /> Start consultation
+            </button>
             {isOwnerOrManager && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditingApt(null);
-                  setError('');
-                  setShowCreateModal(true);
-                }}
-                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
+                onClick={() => { setEditingApt(null); setError(''); setShowCreateModal(true); }}
+                className="flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-espresso px-4 text-[13px] font-medium text-white shadow-sm hover:bg-espresso/90 sm:px-5"
               >
-                <Plus size={16} /> New Appointment
+                <Plus size={16} /> Schedule a visit
               </button>
             )}
           </div>
-        }
-      />
+        </AppleBar>
+        </div>
+      )}
 
-      {/* ── Operational KPI Cards (Clickable Quick Filters) ───────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Today's Schedule */}
-        <button
-          type="button"
-          onClick={() => { setStatusFilter('all'); setSearch(''); }}
-          className="bg-surface border border-line rounded-xl p-4 flex flex-col justify-between min-h-[96px] shadow-2xs hover:border-taupe/60 transition-all text-left group"
-        >
-          <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Today</span>
-            <Clock size={15} className="text-taupe shrink-0" />
-          </div>
-          <p className="text-figure text-2xl font-bold text-ink mt-2 tabular-nums">{stats.todayCount}</p>
-        </button>
+      {/* ── The four counts (not shown on an appointment's own page) ────── */}
+      {!currentViewApt && (
+        <div className={`${COL} mt-6`}>
+          <AppointmentKpis loading={loading} stats={stats} status={statusFilter} onStatus={setStatusFilter} onToday={() => { setStatusFilter('all'); setSearch(''); }} />
+        </div>
+      )}
 
-        {/* Pending Review */}
-        <button
-          type="button"
-          onClick={() => setStatusFilter('pending')}
-          className={`bg-surface border rounded-xl p-4 flex flex-col justify-between min-h-[96px] shadow-2xs transition-all text-left group ${
-            statusFilter === 'pending' ? 'border-taupe ring-1 ring-taupe' : 'border-line hover:border-taupe/60'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">
-              Waiting for approval
-            </span>
-            <AlertCircle size={15} className={stats.pendingCount > 0 ? 'text-amber-600' : 'text-ink-faint'} />
-          </div>
-          <p className="text-figure text-2xl font-bold mt-2 tabular-nums text-ink">
-            {stats.pendingCount}
-          </p>
-        </button>
-
-        {/* Confirmed & Active */}
-        <button
-          type="button"
-          onClick={() => setStatusFilter('confirmed')}
-          className={`bg-surface border rounded-xl p-4 flex flex-col justify-between min-h-[96px] shadow-2xs transition-all text-left group ${
-            statusFilter === 'confirmed' ? 'border-taupe ring-1 ring-taupe' : 'border-line hover:border-taupe/60'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Approved & in progress</span>
-            <Scissors size={15} className="text-taupe shrink-0" />
-          </div>
-          <p className="text-figure text-2xl font-bold text-ink mt-2 tabular-nums">{stats.activeCount}</p>
-        </button>
-
-        {/* Completed Sessions */}
-        <button
-          type="button"
-          onClick={() => setStatusFilter('completed')}
-          className={`bg-surface border rounded-xl p-4 flex flex-col justify-between min-h-[96px] shadow-2xs transition-all text-left group ${
-            statusFilter === 'completed' ? 'border-taupe ring-1 ring-taupe' : 'border-line hover:border-taupe/60'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink">Done</span>
-            <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
-          </div>
-          <p className="text-figure text-2xl font-bold text-ink mt-2 tabular-nums">{stats.completedCount}</p>
-        </button>
-      </div>
-
-      {/* ── Main Container Card ──────────────────────────────────────────── */}
-      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
-        <AppointmentToolbar
-          search={search} onSearch={setSearch}
-          status={statusFilter} onStatus={setStatusFilter}
-          type={typeFilter} onType={setTypeFilter}
-          when={whenFilter} onWhen={setWhenFilter}
-          mine={assignedToMe ?? isPlainStaff} onMine={setAssignedToMe}
-          counts={{
-            all: stats.totalCount, pending: stats.pendingCount, confirmed: stats.confirmedCount,
-            in_progress: stats.inProgressCount, completed: stats.completedCount,
-            closed: stats.cancelledCount + stats.rejectedCount + stats.noShowCount,
+      {/* ── Main Container: In-place Detail View OR List/Calendar View ──── */}
+      {currentViewApt ? (
+        <AppointmentDetailPanel
+          apt={currentViewApt}
+          onBack={() => setViewApt(null)}
+          storeSlug={store?.slug}
+          storeOwner={storeOwner}
+          staff={staff}
+          canAssign={isOwnerOrManager}
+          onAssign={handleAssign}
+          actionLoadingId={actionLoadingId}
+          onConfirmReview={handleConfirmReview}
+          onRejectClick={() => {
+            setRejectApt(currentViewApt);
+            setShowRejectModal(true);
           }}
-          viewSwitcher={<ViewSwitcherPill />}
-          hasFilters={activeFiltersCount > 0}
-          onReset={clearAllFilters}
+          onRescheduleClick={() => {
+            setRescheduleApt(currentViewApt);
+            setShowRescheduleModal(true);
+          }}
+          onCheckInClick={handleCheckIn}
+          onCreateJob={handleCreateJob}
+          onDidntComeClick={(apt) => {
+            if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+              handleDidntCome(apt.id);
+            }
+          }}
+          onCompleteClick={(apt) => {
+            setCompleteApt(apt);
+            setShowCompleteModal(true);
+          }}
+          onFinish={(apt, result, notes) => handleCompleteSubmit(apt.id, result, notes)}
+          onDiscard={async (apt) => {
+            if (!window.confirm(`Remove this visit with ${apt.customer?.name || 'this customer'}? It disappears from the list completely.`)) return;
+            if (await handleDiscard(apt.id)) setViewApt(null);
+          }}
+          onAppointmentUpdated={refreshAppointments}
+          onCancelClick={() => {
+            setCancelApt(currentViewApt);
+            setShowCancelModal(true);
+          }}
+          onFollowUp={(apt) => {
+            setFollowUpError('');
+            setFollowUpFor(apt);
+            setShowFollowUpModal(true);
+          }}
         />
+      ) : (
+        <div className={`${COL} space-y-4 pb-10 pt-6`}>
+          <AppointmentToolbar
+            search={search} onSearch={setSearch}
+            status={statusFilter} onStatus={setStatusFilter}
+            type={typeFilter} onType={setTypeFilter}
+            when={whenFilter} onWhen={setWhenFilter}
+            mine={assignedToMe ?? isPlainStaff} onMine={setAssignedToMe}
+            counts={{
+              all: stats.totalCount, pending: stats.pendingCount, confirmed: stats.confirmedCount,
+              in_progress: stats.inProgressCount, completed: stats.completedCount,
+              closed: stats.cancelledCount + stats.rejectedCount + stats.noShowCount,
+            }}
+            viewSwitcher={<ViewSwitcherPill viewMode={viewMode} setViewMode={setViewMode} />}
+            hasFilters={activeFiltersCount > 0}
+            onReset={clearAllFilters}
+          />
 
-        {/* View Mode Content */}
-        {viewMode === 'calendar' ? (
-          <AppointmentCalendarView
-            appointments={appointments}
-            currentDate={currentDate}
-            setCurrentDate={setCurrentDate}
-            selectedDay={selectedDay}
-            setSelectedDay={setSelectedDay}
-            calSubMode={calSubMode}
-            setCalSubMode={setCalSubMode}
-            hoveredAptId={hoveredAptId}
-            setHoveredAptId={setHoveredAptId}
-            actionLoadingId={actionLoadingId}
-            isOwnerOrManager={isOwnerOrManager}
-            onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
-            onCheckInClick={handleCheckIn}
-            onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
-            onCreateJobClick={handleCreateJob}
-            onNoShowClick={(apt) => {
-              if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
-                handleDidntCome(apt.id);
-              }
-            }}
-            onDetailsClick={(apt) => { setViewApt(apt); setShowViewModal(true); }}
-            onAddClick={() => {
-              setEditingApt(null);
-              setError('');
-              setShowCreateModal(true);
-            }}
-          />
-        ) : (
-          <AppointmentListView
-            filtered={filtered}
-            loading={loading}
-            viewMode={viewMode}
-            actionLoadingId={actionLoadingId}
-            isOwnerOrManager={isOwnerOrManager}
-            onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
-            onCheckInClick={handleCheckIn}
-            onCreateJobClick={handleCreateJob}
-            onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
-            onRescheduleClick={(apt) => { setRescheduleApt(apt); setShowRescheduleModal(true); }}
-            onDetailsClick={(apt) => { setViewApt(apt); setShowViewModal(true); }}
-            onEditClick={(apt) => { setEditingApt(apt); setShowCreateModal(true); }}
-            onCancelClick={(apt) => { setCancelApt(apt); setShowCancelModal(true); }}
-            onNoShowClick={(apt) => {
-              if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
-                handleDidntCome(apt.id);
-              }
-            }}
-            onNewAppointmentClick={() => {
-              setEditingApt(null);
-              setError('');
-              setShowCreateModal(true);
-            }}
-          />
-        )}
-      </div>
+          <div className={viewMode === 'table' ? CARD_BOX_FROM_SM : ''}>
+          {/* View Mode Content */}
+          {viewMode === 'calendar' ? (
+            <AppointmentCalendarView
+              appointments={appointments}
+              loading={loading}
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+              selectedDay={selectedDay}
+              setSelectedDay={setSelectedDay}
+              calSubMode={calSubMode}
+              setCalSubMode={setCalSubMode}
+              hoveredAptId={hoveredAptId}
+              setHoveredAptId={setHoveredAptId}
+              actionLoadingId={actionLoadingId}
+              isOwnerOrManager={isOwnerOrManager}
+              onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
+              onCheckInClick={handleCheckIn}
+              onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
+              onCreateJobClick={handleCreateJob}
+              onNoShowClick={(apt) => {
+                if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+                  handleDidntCome(apt.id);
+                }
+              }}
+              onDetailsClick={(apt) => { setViewApt(apt); }}
+              onAddClick={() => {
+                setEditingApt(null);
+                setError('');
+                setShowCreateModal(true);
+              }}
+            />
+          ) : (
+            <AppointmentListView
+              filtered={filtered}
+              loading={loading}
+              resetKey={`${statusFilter}|${typeFilter}|${whenFilter}|${search}|${assignedToMe}`}
+              viewMode={viewMode}
+              actionLoadingId={actionLoadingId}
+              isOwnerOrManager={isOwnerOrManager}
+              onReviewClick={(apt) => { setReviewApt(apt); setShowReviewModal(true); }}
+              onCheckInClick={handleCheckIn}
+              onCreateJobClick={handleCreateJob}
+              onCompleteClick={(apt) => { setCompleteApt(apt); setShowCompleteModal(true); }}
+              onRescheduleClick={(apt) => { setRescheduleApt(apt); setShowRescheduleModal(true); }}
+              onDetailsClick={(apt) => { setViewApt(apt); }}
+              onEditClick={(apt) => { setEditingApt(apt); setShowCreateModal(true); }}
+              onCancelClick={(apt) => { setCancelApt(apt); setShowCancelModal(true); }}
+              onNoShowClick={(apt) => {
+                if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+                  handleDidntCome(apt.id);
+                }
+              }}
+              onNewAppointmentClick={() => {
+                setEditingApt(null);
+                setError('');
+                setShowCreateModal(true);
+              }}
+            />
+          )}
+          </div>
+        </div>
+      )}
 
       {/* ── Action Modals ────────────────────────────────────────────────── */}
       <AppointmentCreateModal
@@ -360,9 +401,20 @@ function AppointmentsPageContent() {
         error={error}
       />
 
+      <ConsultationStartModal
+        isOpen={showConsultModal}
+        onClose={() => { setShowConsultModal(false); setError(''); }}
+        customers={customers}
+        services={services}
+        isSubmitting={isSubmitting}
+        error={error}
+        onStart={handleStartConsultation}
+      />
+
       <WalkInClashDialog clash={clash} isSubmitting={isSubmitting} onChoose={resolveClash} />
 
       <AppointmentActionModals
+        appointments={appointments}
         showReviewModal={showReviewModal}
         setShowReviewModal={setShowReviewModal}
         reviewApt={reviewApt}
@@ -379,10 +431,10 @@ function AppointmentsPageContent() {
         setShowCancelModal={setShowCancelModal}
         cancelApt={cancelApt}
         setCancelApt={setCancelApt}
-        showViewModal={showViewModal}
-        setShowViewModal={setShowViewModal}
-        viewApt={viewApt}
-        setViewApt={setViewApt}
+        showRejectModal={showRejectModal}
+        setShowRejectModal={setShowRejectModal}
+        rejectApt={rejectApt}
+        setRejectApt={setRejectApt}
         todayStr={todayStr}
         minTimeFor={minTimeFor}
         isSubmitting={isSubmitting}
@@ -396,10 +448,14 @@ function AppointmentsPageContent() {
         onCompleteSubmit={handleCompleteSubmit}
         onCancelConfirm={handleCancelConfirm}
         onCreateJob={handleCreateJob}
-        onAccommodateEarly={handleAccommodateEarly}
-        onAskToWait={handleAskToWait}
-        onAppointmentUpdated={refreshAppointments}
         onFollowUp={(apt) => { setFollowUpError(''); setFollowUpFor(apt); setShowFollowUpModal(true); }}
+        onEditClick={(apt) => { setEditingApt(apt); setShowCreateModal(true); }}
+        onCheckInClick={handleCheckIn}
+        onDidntComeClick={(apt) => {
+          if (window.confirm(`Record that ${apt.customer?.name || 'this customer'} didn't come?`)) {
+            handleDidntCome(apt.id);
+          }
+        }}
       />
 
       <FollowUpAppointmentModal
@@ -415,6 +471,6 @@ function AppointmentsPageContent() {
         isSubmitting={isSubmitting}
         error={followUpError}
       />
-    </div>
+    </ApplePage>
   );
 }

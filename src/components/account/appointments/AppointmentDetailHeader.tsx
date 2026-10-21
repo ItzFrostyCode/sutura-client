@@ -1,14 +1,12 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { Store } from 'lucide-react';
-import { getMediaUrl } from '@/lib/media';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { catalogCategoryPath, serviceCategoryPath } from '@/lib/garmentTaxonomy';
-import { KIND_LABELS, STATUS_META, TYPE_LABELS } from './appointmentTypes';
+import { KIND_LABELS, statusMetaFor, TYPE_LABELS } from './appointmentTypes';
 import type { AppointmentDetailData } from './AppointmentDetailContent';
 
 /** Who and what: the shop and status, the kind of appointment, and the design / service it is for. */
 export default function AppointmentDetailHeader({ appt }: { readonly appt: AppointmentDetailData }) {
-  const meta = STATUS_META[appt.status] ?? STATUS_META.pending;
+  const meta = statusMetaFor(appt);
   const StatusIcon = meta.Icon;
   const type = appt.appointment_type === 'other' && appt.purpose_label ? `Other — ${appt.purpose_label}` : (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type);
   const designPath = appt.catalog_item ? catalogCategoryPath(appt.catalog_item) : [];
@@ -17,9 +15,12 @@ export default function AppointmentDetailHeader({ appt }: { readonly appt: Appoi
   return (
     <>
       <div className="flex items-center gap-2.5">
-        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-sunken text-ink-faint">
-          {appt.store?.logo_path ? <Image src={getMediaUrl(appt.store.logo_path)} alt="" fill className="object-cover" /> : <Store size={16} />}
-        </span>
+        <StoreLogoAvatar
+          src={appt.store?.logo_path}
+          name={appt.store?.name ?? 'Store'}
+          className="w-9 h-9 rounded-full border border-line-strong shadow-none"
+          textClassName="text-sm font-serif font-bold text-taupe-dark"
+        />
         {appt.store?.slug ? (
           <Link href={`/store/${appt.store.slug}`} className="mobile-h4 min-w-0 flex-1 truncate text-ink hover:text-taupe">{appt.store.name}</Link>
         ) : (
@@ -33,7 +34,7 @@ export default function AppointmentDetailHeader({ appt }: { readonly appt: Appoi
       <div className="mt-3 flex items-center gap-1.5">
         {appt.kind && <span className="mobile-caption rounded-full bg-sunken px-2.5 py-0.5 font-semibold text-ink-body">{KIND_LABELS[appt.kind] ?? appt.kind}</span>}
         <span className="mobile-caption rounded-full bg-sunken px-2.5 py-0.5 text-ink-muted">{type}</span>
-        {appt.intake_channel === 'walk_in' && <span className="rounded-full bg-sunken px-2.5 py-0.5 text-[10px] font-semibold text-ink-muted">WALK-IN</span>}
+        {appt.intake_channel === 'walk_in' && <span className="rounded-full bg-sunken px-2.5 py-0.5 text-[10px] font-semibold text-ink-muted">Booked by the shop</span>}
       </div>
 
       <h2 className="mobile-h3 mt-2 text-ink">

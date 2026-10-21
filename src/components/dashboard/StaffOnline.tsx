@@ -44,10 +44,10 @@ export default function StaffOnline({
                 ? member.role.charAt(0).toUpperCase() + member.role.slice(1).replaceAll('_', ' ')
                 : 'Staff';
               const avatarColors = [
-                'bg-taupe text-white',
+                'bg-espresso text-white',
                 'bg-sage text-white',
-                'bg-[#8B7B6B] text-white',
-                'bg-[#6B7B8B] text-white',
+                'bg-taupe text-white',
+                'bg-taupe-dark text-white',
               ];
               const avatarClass = avatarColors[idx % avatarColors.length];
 

@@ -23,12 +23,29 @@ const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 // glance the way real map apps (Google/Waze business pins) do. A crisp dark ring
 // + "MAIN" badge marks a store's main branch versus a satellite branch.
 // `selected` (the branch picked on the catalog item's Find-in-store map): a taupe ring and a little larger.
-export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false): L.DivIcon {
+export function buildStorePinIcon(
+  logoPath: string | null,
+  badgeTextOrIsMain?: string | boolean | null,
+  isOpen?: boolean,
+  selected = false,
+): L.DivIcon {
   const ringColor = selected ? '#9A8073' : '#2D2A26';
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
   const logoHtml = logoPath
     ? `<img src="${getMediaUrl(logoPath)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`
     : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`;
+
+  let badge: string | null = null;
+  if (typeof badgeTextOrIsMain === 'string') {
+    badge = badgeTextOrIsMain.trim() || null;
+  } else if (badgeTextOrIsMain === true) {
+    badge = 'MAIN';
+  }
+
+  const isMainBadge = badge === 'MAIN';
+  const badgeHtml = badge
+    ? `<span style="position:absolute;top:-4px;right:-7px;background:${isMainBadge ? '#2D2A26' : '#8A7063'};color:#fff;font-size:8.5px;font-weight:700;line-height:1;letter-spacing:0.02em;${isMainBadge ? 'padding:2px 4.5px;border-radius:6px;' : 'width:17px;height:17px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;'}border:1.5px solid #fff;z-index:11;box-shadow:0 1px 4px rgba(0,0,0,0.35);">${badge}</span>`
+    : '';
 
   const html = `
     <div style="position:relative;width:40px;height:52px;transform-origin:50% 100%;transform:scale(${selected ? 1.15 : 1});">
@@ -40,7 +57,7 @@ export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOp
       <!-- Online (Green) / Offline (Red) Indicator -->
       <span style="position:absolute;bottom:10px;right:-2px;width:12px;height:12px;border-radius:50%;background:${statusColor};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);z-index:10;" title="${isOpen ? 'Online (Open now)' : 'Offline (Closed now)'}"></span>
 
-      ${isMain ? '<span style="position:absolute;top:-3px;right:-6px;background:#2D2A26;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.02em;padding:1.5px 4px;border-radius:6px;border:1.5px solid #fff;z-index:11;">MAIN</span>' : ''}
+      ${badgeHtml}
     </div>
   `;
 
@@ -62,13 +79,13 @@ export const userLocationIcon = L.divIcon({
 });
 
 // Leaflet re-creates a pin whenever its icon object changes, and the live navigation re-renders the map about once a second,
-// so an icon is built once per look (logo, main, open) and reused.
+// so an icon is built once per look (logo, badge, open, selected) and reused.
 const pinIcons = new Map<string, L.DivIcon>();
-function pinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean): L.DivIcon {
-  const key = `${logoPath ?? ''}|${isMain}|${isOpen}`;
+function pinIcon(logoPath: string | null, badgeText?: string | boolean | null, isOpen?: boolean, selected = false): L.DivIcon {
+  const key = `${logoPath ?? ''}|${badgeText ?? ''}|${isOpen}|${selected}`;
   let icon = pinIcons.get(key);
   if (!icon) {
-    icon = buildStorePinIcon(logoPath, isMain, isOpen);
+    icon = buildStorePinIcon(logoPath, badgeText, isOpen, selected);
     pinIcons.set(key, icon);
   }
   return icon;
@@ -212,6 +229,8 @@ export interface DiscoveryMapBranch {
   latitude: number;
   longitude: number;
   isOpen?: boolean;
+  badgeText?: string | null;
+  isSelected?: boolean;
 }
 
 /** Locks all map panning and zooming when interactive is false (e.g. when panel is expanded). */
@@ -343,7 +362,8 @@ export default function DiscoveryMap({
             <Marker
               key={key}
               position={[b.latitude, b.longitude]}
-              icon={pinIcon(b.storeLogoPath, b.isMain, b.isOpen)}
+              icon={pinIcon(b.storeLogoPath, b.badgeText ?? null, b.isOpen, Boolean(b.isSelected))}
+              zIndexOffset={b.isSelected ? 1000 : 0}
               eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b) } : undefined}
             >
               {!onSelectBranch && (

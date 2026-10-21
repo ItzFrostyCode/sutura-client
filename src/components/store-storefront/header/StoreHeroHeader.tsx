@@ -1,8 +1,7 @@
 'use client';
 
 import { useCanGoBack } from '@/hooks/useCanGoBack';
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -17,12 +16,17 @@ import {
   Clock,
   Phone,
   LayoutDashboard,
-  Wrench,
+  Upload,
+  Trash2,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { StoreProfile, StoreBranch, StorefrontTab } from '../types';
 import { getMediaUrl } from '@/lib/media';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
-import StoreImageEditModal from './StoreImageEditModal';
+import api from '@/lib/axios';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useToast } from '@/context/ToastContext';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -73,6 +77,12 @@ function formatCleanAddress(branch?: StoreBranch | null, store?: StoreProfile | 
   return parts.length > 0 ? parts.join(', ') : 'Davao City';
 }
 
+interface PendingImageChange {
+  file?: File;
+  previewUrl?: string;
+  isRemove: boolean;
+}
+
 export default function StoreHeroHeader({
   store,
   storeId,
@@ -95,9 +105,190 @@ export default function StoreHeroHeader({
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
   const router = useRouter();
+  const { user, token, setAuth, staffProfile } = useAuthStore();
+  const toast = useToast();
   // A tab opened from the dashboard's Eye icon (or a shared link) has nothing to go back to: no Back button there.
   const canGoBack = useCanGoBack();
-  const [editingImage, setEditingImage] = useState<'logo' | 'banner' | null>(null);
+
+  // Banner direct editing state
+  const [pendingBanner, setPendingBanner] = useState<PendingImageChange | null>(null);
+  const [savingBanner, setSavingBanner] = useState(false);
+  const [bannerMenuOpen, setBannerMenuOpen] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const bannerMenuRef = useRef<HTMLDivElement>(null);
+
+  // Logo direct editing state
+  const [pendingLogo, setPendingLogo] = useState<PendingImageChange | null>(null);
+  const [savingLogo, setSavingLogo] = useState(false);
+  const [logoMenuOpen, setLogoMenuOpen] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoMenuRef = useRef<HTMLDivElement>(null);
+
+  // Compute effective banner URL based on pending changes
+  const baseBannerUrl = store.banner_path || activeBranch?.guide_image_url;
+  const effectiveBannerUrl = pendingBanner
+    ? (pendingBanner.isRemove ? null : pendingBanner.previewUrl)
+    : baseBannerUrl;
+  const hasBanner = Boolean(effectiveBannerUrl) && !bannerFailed;
+
+  // Compute effective logo URL based on pending changes
+  const effectiveLogoUrl = pendingLogo
+    ? (pendingLogo.isRemove ? null : pendingLogo.previewUrl)
+    : store.logo_path;
+
+  useEffect(() => {
+    setBannerFailed(false);
+  }, [effectiveBannerUrl]);
+
+  // Clean up blob URLs when pending changes cancel or unmount
+  useEffect(() => {
+    return () => {
+      if (pendingBanner?.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(pendingBanner.previewUrl);
+      }
+    };
+  }, [pendingBanner]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingLogo?.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(pendingLogo.previewUrl);
+      }
+    };
+  }, [pendingLogo]);
+
+  // Dismiss dropdown menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bannerMenuRef.current && !bannerMenuRef.current.contains(e.target as Node)) {
+        setBannerMenuOpen(false);
+      }
+      if (logoMenuRef.current && !logoMenuRef.current.contains(e.target as Node)) {
+        setLogoMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // --- Banner Handlers ---
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (pendingBanner?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingBanner.previewUrl);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setPendingBanner({ file, previewUrl, isRemove: false });
+    setBannerMenuOpen(false);
+    setBannerFailed(false);
+    e.target.value = '';
+  };
+
+  const handleRemoveBannerClick = () => {
+    if (pendingBanner?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingBanner.previewUrl);
+    }
+    setPendingBanner({ isRemove: true });
+    setBannerMenuOpen(false);
+  };
+
+  const handleCancelBanner = () => {
+    if (pendingBanner?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingBanner.previewUrl);
+    }
+    setPendingBanner(null);
+    setBannerFailed(false);
+  };
+
+  const handleSaveBanner = async () => {
+    if (!pendingBanner || !store) return;
+    setSavingBanner(true);
+    try {
+      let finalUrl: string | null = null;
+      if (!pendingBanner.isRemove && pendingBanner.file) {
+        const fd = new FormData();
+        fd.append('file', pendingBanner.file);
+        const uploadRes = await api.post(`/stores/${store.id}/upload`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        finalUrl = uploadRes.data.data.url;
+      }
+      const saveRes = await api.put(`/stores/${store.id}`, { banner_path: finalUrl });
+      if (user && token) {
+        setAuth(user, token, saveRes.data.data, staffProfile || undefined);
+      }
+      toast.success(finalUrl ? 'Cover banner updated.' : 'Cover banner removed.');
+      if (pendingBanner.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(pendingBanner.previewUrl);
+      }
+      setPendingBanner(null);
+      onImagesSaved?.();
+    } catch {
+      toast.error('Failed to update cover banner. Please try again.');
+    } finally {
+      setSavingBanner(false);
+    }
+  };
+
+  // --- Logo Handlers ---
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (pendingLogo?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingLogo.previewUrl);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setPendingLogo({ file, previewUrl, isRemove: false });
+    setLogoMenuOpen(false);
+    e.target.value = '';
+  };
+
+  const handleRemoveLogoClick = () => {
+    if (pendingLogo?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingLogo.previewUrl);
+    }
+    setPendingLogo({ isRemove: true });
+    setLogoMenuOpen(false);
+  };
+
+  const handleCancelLogo = () => {
+    if (pendingLogo?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(pendingLogo.previewUrl);
+    }
+    setPendingLogo(null);
+  };
+
+  const handleSaveLogo = async () => {
+    if (!pendingLogo || !store) return;
+    setSavingLogo(true);
+    try {
+      let finalUrl: string | null = null;
+      if (!pendingLogo.isRemove && pendingLogo.file) {
+        const fd = new FormData();
+        fd.append('file', pendingLogo.file);
+        const uploadRes = await api.post(`/stores/${store.id}/upload`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        finalUrl = uploadRes.data.data.url;
+      }
+      const saveRes = await api.put(`/stores/${store.id}`, { logo_path: finalUrl });
+      if (user && token) {
+        setAuth(user, token, saveRes.data.data, staffProfile || undefined);
+      }
+      toast.success(finalUrl ? 'Store logo updated.' : 'Store logo removed.');
+      if (pendingLogo.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(pendingLogo.previewUrl);
+      }
+      setPendingLogo(null);
+      onImagesSaved?.();
+    } catch {
+      toast.error('Failed to update store logo. Please try again.');
+    } finally {
+      setSavingLogo(false);
+    }
+  };
 
   return (
     <>
@@ -118,55 +309,145 @@ export default function StoreHeroHeader({
         </div>
       )}
 
-      {/* 📸 1. Cover Banner Image */}
-      <div className="h-48 sm:h-64 md:h-72 w-full max-w-7xl mx-auto bg-surface px-0 sm:px-8">
-        <div className="relative w-full h-full overflow-hidden sm:rounded-2xl">
-          {/* Mobile Back button (width <= 599px, i.e. 320px - 599px) — Overlaid on banner image for compact mobile screens */}
+      {/* 📸 1. Cover Banner Image — Facebook precise responsive heights: mobile 220-240px (16:9), tablet 312px, desktop 360px */}
+      <div className="h-[220px] min-[420px]:h-[240px] sm:h-[312px] lg:h-[360px] w-full max-w-7xl mx-auto bg-surface px-0 sm:px-8">
+        <div className="relative w-full h-full overflow-hidden sm:rounded-2xl border border-line/60">
+          {/* Mobile Back button (width <= 599px, i.e. 320px - 599px) — Overlaid on banner for compact mobile screens */}
           {!isShopViewingOwnStore && !embedded && canGoBack && (
             <button
               type="button"
               onClick={() => router.back()}
               aria-label="Back"
-              className="min-[600px]:hidden absolute top-4 left-4 z-20 w-9 h-9 rounded-full bg-ink/60 backdrop-blur-sm text-white flex items-center justify-center hover:bg-ink/80 transition-colors cursor-pointer active:scale-95"
+              className={`min-[600px]:hidden absolute top-4 left-4 z-20 w-9 h-9 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors cursor-pointer active:scale-95 ${
+                hasBanner
+                  ? 'bg-ink/60 text-white hover:bg-ink/80'
+                  : 'bg-surface/85 border border-line text-ink hover:bg-surface'
+              }`}
             >
               <ArrowLeft size={18} />
             </button>
           )}
 
-          {(activeBranch?.guide_image_url || store.banner_path) ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={getMediaUrl(activeBranch?.guide_image_url || store.banner_path || '')}
-              alt={activeBranch?.name ? `${store.name} - ${activeBranch.name}` : store.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = '/images/hero_banner.jpg';
-              }}
-            />
-          ) : (
-            <Image
-              src="/images/hero_banner.jpg"
-              alt={store.name}
-              fill
-              className="object-cover"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/30" />
+          {/* Hidden File Input for Banner */}
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+            className="hidden"
+            onChange={handleBannerFileChange}
+          />
 
-          {/* Banner only ever shows the store's own image when no branch is
-              selected — a branch's guide_image_url takes over otherwise, so
-              editing store.banner_path wouldn't visibly change anything. */}
-          {isOwnerViewingOwnStore && !activeBranch && (
-            <button
-              type="button"
-              onClick={() => setEditingImage('banner')}
-              aria-label="Change cover banner"
-              className="absolute bottom-3 right-3 z-20 min-h-[44px] px-3.5 flex items-center gap-1.5 bg-ink/60 hover:bg-ink/80 backdrop-blur-sm text-white text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <Camera size={14} />
-              <span>Change Cover</span>
-            </button>
+          {hasBanner ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getMediaUrl(effectiveBannerUrl || '')}
+                alt={activeBranch?.name ? `${store.name} - ${activeBranch.name}` : store.name}
+                className="w-full h-full object-cover"
+                onError={() => setBannerFailed(true)}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/30" />
+            </>
+          ) : (
+            <div className="w-full h-full bg-sunken flex flex-col items-center justify-center p-4 text-center select-none">
+              {isOwnerViewingOwnStore && !activeBranch ? (
+                <div className="flex flex-col items-center gap-1.5 text-ink-faint">
+                  <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center text-ink-faint shadow-2xs">
+                    <Camera size={18} />
+                  </div>
+                  <span className="text-xs font-semibold text-ink-muted">
+                    {pendingBanner?.isRemove ? 'Cover photo removed' : 'No cover photo yet'}
+                  </span>
+                  <span className="text-[11px] text-ink-faint">
+                    {pendingBanner?.isRemove
+                      ? 'Save changes to confirm removal, or Cancel to restore'
+                      : 'Upload a banner to customize your storefront'}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* Banner Floating Save/Cancel Action Bar (shown when there are pending banner changes) */}
+          {isOwnerViewingOwnStore && !activeBranch && pendingBanner && (
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 flex items-center gap-2 bg-black/85 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 shadow-2xl animate-in fade-in zoom-in-95">
+              <div className="flex items-center gap-1.5 text-white/90 text-xs font-medium mr-1">
+                <Camera size={14} className="text-white/70" />
+                <span className="hidden sm:inline">
+                  {pendingBanner.isRemove ? 'Remove cover photo?' : 'New cover preview'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelBanner}
+                disabled={savingBanner}
+                className="min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveBanner}
+                disabled={savingBanner}
+                className="min-h-[36px] px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-taupe hover:bg-taupe transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-60"
+              >
+                {savingBanner ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                <span>{savingBanner ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Banner Change/Remove Button & Popover Menu (when no pending banner changes) */}
+          {isOwnerViewingOwnStore && !activeBranch && !pendingBanner && (
+            <div ref={bannerMenuRef} className="absolute bottom-3 right-3 z-20">
+              {hasBanner ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setBannerMenuOpen(!bannerMenuOpen)}
+                    aria-label="Change cover banner"
+                    className="min-h-[44px] px-3.5 flex items-center gap-1.5 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-md border border-white/10"
+                  >
+                    <Camera size={14} />
+                    <span>Change Cover</span>
+                  </button>
+
+                  {bannerMenuOpen && (
+                    <div className="absolute bottom-full right-0 mb-2 w-48 bg-surface border border-line rounded-xl shadow-xl overflow-hidden py-1 z-30 animate-in fade-in zoom-in-95">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBannerMenuOpen(false);
+                          bannerInputRef.current?.click();
+                        }}
+                        className="w-full min-h-[40px] px-3.5 py-2 text-left text-xs font-medium text-ink hover:bg-sunken flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Upload size={14} className="text-ink-muted" />
+                        <span>Upload Photo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveBannerClick}
+                        className="w-full min-h-[40px] px-3.5 py-2 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer border-t border-line/60"
+                      >
+                        <Trash2 size={14} className="text-rose-600" />
+                        <span>Remove Cover Photo</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => bannerInputRef.current?.click()}
+                  aria-label="Add cover photo"
+                  className="min-h-[44px] px-3.5 flex items-center gap-1.5 bg-surface/95 hover:bg-surface border border-line text-ink text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-md"
+                >
+                  <Camera size={14} />
+                  <span>Add Cover Photo</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -197,34 +478,105 @@ export default function StoreHeroHeader({
       {/* 👤 2. Profile Details Container (Centered Social Profile Layout) */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-8">
         <div className="relative flex flex-col items-center text-center pb-2">
+          {/* Hidden File Input for Logo */}
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+            className="hidden"
+            onChange={handleLogoFileChange}
+          />
+
           {/* Centered Avatar Overlapping Cover Banner */}
-          <div className="-mt-14 sm:-mt-18 md:-mt-20 relative z-10 flex justify-center">
+          <div className="-mt-14 sm:-mt-18 md:-mt-20 relative z-10 flex flex-col items-center">
             <div className="relative inline-block">
               <StoreLogoAvatar
-                src={store.logo_path}
+                src={effectiveLogoUrl}
                 name={store.name}
                 className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
                 isOpen={isStoreCurrentlyOpen}
               />
-              {isOwnerViewingOwnStore && (
-                <button
-                  type="button"
-                  onClick={() => setEditingImage('logo')}
-                  aria-label="Change store logo"
-                  className="absolute bottom-0.5 right-0.5 w-9 h-9 rounded-full flex items-center justify-center bg-ink/80 hover:bg-ink text-white border-2 border-surface shadow-md transition-colors cursor-pointer"
-                >
-                  <Camera size={14} />
-                </button>
+              {isOwnerViewingOwnStore && !pendingLogo && (
+                <div ref={logoMenuRef} className="absolute bottom-0.5 right-0.5">
+                  {store.logo_path ? (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setLogoMenuOpen(!logoMenuOpen)}
+                        aria-label="Change store logo"
+                        className="w-9 h-9 rounded-full flex items-center justify-center bg-ink/80 hover:bg-ink text-white border-2 border-surface shadow-md transition-colors cursor-pointer"
+                      >
+                        <Camera size={14} />
+                      </button>
+                      {logoMenuOpen && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 bg-surface border border-line rounded-xl shadow-xl overflow-hidden py-1 z-30 animate-in fade-in zoom-in-95 text-left">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLogoMenuOpen(false);
+                              logoInputRef.current?.click();
+                            }}
+                            className="w-full min-h-[40px] px-3.5 py-2 text-left text-xs font-medium text-ink hover:bg-sunken flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <Upload size={14} className="text-ink-muted" />
+                            <span>Upload Logo</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRemoveLogoClick}
+                            className="w-full min-h-[40px] px-3.5 py-2 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer border-t border-line/60"
+                          >
+                            <Trash2 size={14} className="text-rose-600" />
+                            <span>Remove Logo</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      aria-label="Add store logo"
+                      className="w-9 h-9 rounded-full flex items-center justify-center bg-ink/80 hover:bg-ink text-white border-2 border-surface shadow-md transition-colors cursor-pointer"
+                    >
+                      <Camera size={14} />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
+
+            {/* Logo Floating Save/Cancel Action Bar (shown when there are pending logo changes) */}
+            {isOwnerViewingOwnStore && pendingLogo && (
+              <div className="mt-2.5 flex items-center justify-center gap-2 bg-surface border border-line px-3 py-1.5 rounded-xl shadow-lg animate-in fade-in zoom-in-95">
+                <span className="text-xs font-medium text-ink-muted px-1">
+                  {pendingLogo.isRemove ? 'Remove logo?' : 'New logo preview'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCancelLogo}
+                  disabled={savingLogo}
+                  className="min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold text-ink-body hover:text-ink bg-sunken hover:bg-line transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveLogo}
+                  disabled={savingLogo}
+                  className="min-h-[34px] px-3.5 py-1 rounded-lg text-xs font-semibold text-white bg-taupe hover:bg-taupe transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-60"
+                >
+                  {savingLogo ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                  <span>{savingLogo ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Main Store Name */}
-          {!embedded && (
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
-              {store.name}
-            </h1>
-          )}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
+            {store.name}
+          </h1>
 
           {/* Subtitle Metadata (Branch, Ratings, Services) */}
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
@@ -248,28 +600,17 @@ export default function StoreHeroHeader({
 
           </div>
 
-          {/* ⚡ 3. Centered Action Buttons Row — the only Dashboard/Edit on
-              the page; the sticky StoreOwnerTopBar (page.tsx) carries just
-              the notification/account menu. */}
+          {/* ⚡ 3. Centered Action Buttons Row */}
           <div className="flex items-center justify-center gap-2 mt-4 max-w-md w-full">
             {isOwnerViewingOwnStore ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="flex-1 min-h-[46px] px-5 py-2.5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
-                >
-                  <LayoutDashboard size={16} />
-                  <span>Dashboard</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={onEditProfile}
-                  className="min-h-[46px] px-4 py-2.5 bg-sunken hover:bg-line border border-line text-ink text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Pencil size={15} />
-                  <span>Edit</span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="min-h-[44px] px-6 py-2.5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer rounded-lg"
+              >
+                <Pencil size={15} />
+                <span>Edit Profile</span>
+              </button>
             ) : isShopViewingOwnStore ? (
               // Branch manager / staff: same way back as the owner, minus
               // Edit (store settings are owner-only).
@@ -379,16 +720,6 @@ export default function StoreHeroHeader({
           </div>
         </div>
       </div>
-
-      {isOwnerViewingOwnStore && editingImage && (
-        <StoreImageEditModal
-          isOpen={Boolean(editingImage)}
-          onClose={() => setEditingImage(null)}
-          imageType={editingImage}
-          currentUrl={editingImage === 'logo' ? store.logo_path : store.banner_path}
-          onSaved={() => onImagesSaved?.()}
-        />
-      )}
     </>
   );
 }

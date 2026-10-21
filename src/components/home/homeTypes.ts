@@ -21,7 +21,19 @@ export interface StoreResult {
   operating_hours?: OperatingHours | null;
   specializations?: string[] | null;
   /** The shop's active services (from /public/stores) — what it does and the garments it works on. */
-  services?: { id: number; name: string; service_category?: string | null; garment_types?: string[] | null }[];
+  services?: {
+    id: number;
+    name: string;
+    service_category?: string | null;
+    garment_types?: string[] | null;
+    base_price?: number | string | null;
+    image_url?: string | null;
+    description?: string | null;
+    reviews_count?: number;
+    reviews_avg_rating?: number | null;
+    orders_count?: number;
+    saves_count?: number;
+  }[];
   catalog_items?: {
     id: number;
     name: string;

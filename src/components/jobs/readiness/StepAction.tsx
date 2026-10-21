@@ -9,7 +9,7 @@ interface StepActionProps {
   readonly onGoToFinancials?: () => void;
 }
 
-const primary = 'h-11 sm:h-9 whitespace-nowrap rounded-lg bg-taupe px-3 text-xs font-bold text-white hover:bg-taupe-hover disabled:opacity-50';
+const primary = 'h-11 sm:h-9 whitespace-nowrap rounded-lg bg-espresso px-3 text-xs font-bold text-white hover:bg-espresso/90 disabled:opacity-50';
 const ghost = 'h-11 sm:h-9 whitespace-nowrap rounded-lg border border-line px-3 text-xs font-bold text-ink-body hover:bg-sunken disabled:opacity-50';
 
 /** The one button that moves a checklist step forward, if the viewer may press it. */

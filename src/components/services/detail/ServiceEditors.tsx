@@ -33,13 +33,16 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
         <label htmlFor="svc-name" className={LABEL}>Service name <span className="text-red-600">*</span></label>
         <input id="svc-name" value={d.name} onChange={e => patch({ name: e.target.value })} className={FIELD} />
       </div>
-      <div>
+      <div className="sm:col-span-2">
         <label htmlFor="svc-price" className={LABEL}>Starting price (PHP)</label>
         <input id="svc-price" type="number" min="0" value={d.base_price} onChange={e => patch({ base_price: e.target.value })} placeholder="Leave empty for a custom quote" className={FIELD} />
+        <p className="text-[11px] text-ink-faint mt-1.5">Leave empty for a custom quote.</p>
       </div>
       <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="svc-days" className={LABEL}>Production time — from (days) {!d.turnaround_depends && <span className="text-red-600">*</span>}</label>
+          <label htmlFor="svc-days" className={`${LABEL} sm:min-h-[2.5rem] flex items-end`}>
+            <span>Production time — from (days) {!d.turnaround_depends && <span className="text-red-600">*</span>}</span>
+          </label>
           <input
             id="svc-days"
             type="number"
@@ -50,10 +53,14 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
             placeholder="e.g. 5"
             className={`${FIELD} disabled:bg-sunken disabled:cursor-not-allowed`}
           />
-          <p className="text-[11px] text-ink-faint mt-1.5">Type this first.</p>
+          <p className="text-[11px] text-ink-faint mt-1.5">
+            {d.turnaround_depends ? 'Not needed.' : hasFrom ? 'Minimum days needed.' : 'Type this first.'}
+          </p>
         </div>
         <div>
-          <label htmlFor="svc-days-max" className={LABEL}>to (days)</label>
+          <label htmlFor="svc-days-max" className={`${LABEL} sm:min-h-[2.5rem] flex items-end`}>
+            <span>To (days)</span>
+          </label>
           <input
             id="svc-days-max"
             type="number"
@@ -73,7 +80,7 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
             type="checkbox"
             checked={d.turnaround_depends}
             onChange={e => patch(e.target.checked ? { turnaround_depends: true, estimated_days: '', estimated_days_max: '' } : { turnaround_depends: false })}
-            className="mt-1 w-4 h-4 accent-[#6B5346]"
+            className="mt-1 w-4 h-4 accent-taupe-dark"
           />
           <span>
             <span className="block text-sm font-semibold text-ink">It depends</span>

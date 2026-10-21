@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePrintAuthGuard } from '@/hooks/usePrintAuthGuard';
+import { designSourceLabel } from '@/lib/designSource';
 
 interface RosterItem { name?: string; print_name?: string; number?: string | number; size?: string; completed?: boolean; }
 
@@ -39,6 +40,9 @@ interface Job {
   completion_photo_url?: string | null;
   reference_images?: string[] | null;
   reference_link?: string | null;
+  design_source?: string | null;
+  design_link?: string | null;
+  consultation_notes?: string | null;
   material_source?: 'store_supplied' | 'customer_supplied' | null;
   garment_category?: string | null;
   quantity?: number;
@@ -254,6 +258,13 @@ export default function PrintWorkTicketPage() {
             </tbody>
           </table>
 
+          {(job.design_source || job.consultation_notes?.trim()) && (
+            <>
+              <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-3 mb-1">Design and Style Notes</p>
+              {designSourceLabel(job.design_source) && <p className="text-sm text-black font-medium">Design: {designSourceLabel(job.design_source)}{job.design_link ? ` (${job.design_link})` : ''}</p>}
+              {job.consultation_notes?.trim() && <p className="text-sm text-black whitespace-pre-wrap leading-relaxed">{job.consultation_notes}</p>}
+            </>
+          )}
           <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-3 mb-1">Written Instructions</p>
           <p className="text-sm text-black whitespace-pre-wrap leading-relaxed">
             {job.notes?.trim() || 'No specific instructions written. Proceed with standard production guidelines.'}

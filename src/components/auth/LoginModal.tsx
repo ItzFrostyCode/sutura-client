@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { useLoginModalStore } from '@/store/useLoginModalStore';
 import LoginForm from './LoginForm';
 import AuthBrand from './AuthBrand';
@@ -39,7 +40,7 @@ export default function LoginModal() {
           same markup becomes the full-page, edge-to-edge mobile Sign In — no
           overlay, no card. From 640px it is a card centered in the viewport
           (and scrolls inside itself if the screen is shorter than the card). */}
-      <div className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-canvas sm:bg-transparent">
+      <div className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-white sm:bg-transparent">
         <button
           type="button"
           aria-label="Close sign in"
@@ -51,8 +52,18 @@ export default function LoginModal() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="login-modal-title"
-            className="relative w-full px-[10px] py-6 sm:max-w-md sm:bg-surface sm:border sm:border-line sm:shadow-xl sm:p-8 sm:animate-scale-up"
+            className="relative w-full px-4 py-6 sm:max-w-md bg-white sm:border sm:border-line sm:shadow-xl sm:p-8 sm:animate-scale-up"
           >
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Close sign in"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink-muted transition-colors py-1.5 -ml-1 mb-4"
+            >
+              <ArrowLeft size={18} />
+              <span>Back</span>
+            </button>
+
             <AuthBrand className="mb-8" />
             <LoginForm
               customerRedirect={redirectTo}

@@ -29,8 +29,8 @@ export default function ServicePicker({ services, selectedId, onPick, garmentLab
           const price = Number(s.base_price) > 0 ? `From ${peso(Number(s.base_price))}` : 'Price on quotation';
           return (
             <li key={s.id}>
-              <label className={`flex min-h-14 cursor-pointer items-center gap-3 px-1 py-2.5 ${on ? 'bg-taupe/5' : 'hover:bg-canvas'}`}>
-                <input type="radio" name="job-service" required checked={on} onChange={() => onPick(s.id.toString())} className="h-5 w-5 shrink-0 accent-taupe" />
+              <label className={`flex min-h-14 cursor-pointer items-center gap-3 px-1 py-2.5 ${on ? 'bg-espresso/[0.05]' : 'hover:bg-canvas'}`}>
+                <input type="radio" name="job-service" required checked={on} onChange={() => onPick(s.id.toString())} className="h-5 w-5 shrink-0 accent-espresso" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink">{s.name}</span>
                   {kind && <span className="block truncate text-xs text-ink-muted">{kind}</span>}

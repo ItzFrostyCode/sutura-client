@@ -26,10 +26,9 @@ export const FITTING_OPTIONS: { value: FittingRequirement; label: string; hint: 
 ];
 
 export const PAYMENT_OPTIONS: { value: PaymentPolicy; label: string; hint: string }[] = [
-  { value: 'none', label: 'No payment first', hint: 'Production can start without a payment.' },
-  { value: 'full', label: 'Full payment', hint: 'Paid in full before production.' },
-  { value: 'deposit', label: 'Deposit', hint: 'A deposit before production (default 50%).' },
-  { value: 'custom', label: 'Custom percent', hint: 'You choose the percent required first.' },
+  { value: 'none', label: 'No payment first', hint: 'Production starts without advance payment (pay upon pickup).' },
+  { value: 'deposit', label: 'Deposit', hint: 'Require an advance deposit (default 50%, or set your preferred %).' },
+  { value: 'full', label: 'Full payment', hint: '100% paid in full before production starts.' },
 ];
 
 const labelOf = <T extends string>(list: { value: T; label: string }[], v: T | null | undefined) =>

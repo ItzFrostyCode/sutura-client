@@ -8,6 +8,34 @@ export interface RosterItem {
   completed?: boolean;
 }
 
+export interface GarmentSpecColumn {
+  id: string;
+  key: string;
+  label: string;
+  type?: 'text' | 'number' | 'select';
+  options?: string[];
+}
+
+export interface GarmentSpecRow {
+  id: string;
+  completed?: boolean;
+  [key: string]: unknown;
+}
+
+export interface GarmentSpecTable {
+  columns: GarmentSpecColumn[];
+  rows: GarmentSpecRow[];
+}
+
+export interface CustomizationInstruction {
+  id: string;
+  label: string;
+  details: string;
+  reference_link?: string | null;
+  reference_image?: string | null;
+  scope?: string | null;
+}
+
 export interface Payment {
   id: number;
   amount: string | number;
@@ -35,6 +63,8 @@ export interface Payment {
 export interface Job {
   id: number;
   order_number: string;
+  /** The consultation this order was made from, when there was one. */
+  appointment_id?: number | null;
   tracking_code?: string | null;
   intake_channel: string;
   fulfillment_type: string;
@@ -57,6 +87,11 @@ export interface Job {
     base_price?: number | string | null;
     min_order_qty?: number | null;
     estimated_days?: number | null;
+    /** The service's usual rules; this order's own copy is on the order itself. */
+    measurement_requirement?: 'none' | 'existing' | 'shop' | null;
+    fitting_requirement?: 'none' | 'optional' | 'required' | null;
+    payment_policy?: 'none' | 'full' | 'deposit' | 'custom' | null;
+    payment_policy_percent?: number | null;
   };
   assigned_staff?: { name: string; id: number };
   store_branch_id?: number | null;
@@ -69,6 +104,19 @@ export interface Job {
   completion_photo_url?: string | null;
   reference_images?: string[] | null;
   reference_link?: string | null;
+  /** Consultation first: where the design comes from, the customer's file and what was said. */
+  design_source?: import('@/lib/designSource').DesignSource | null;
+  design_link?: string | null;
+  consultation_notes?: string | null;
+  /** Split orders: the first order of the group, this order's place in it, who pays for it, and the group's figures. */
+  parent_order_id?: number | null;
+  batch_no?: number | null;
+  group_kind?: 'batch' | 'set' | null;
+  paid_by_name?: string | null;
+  batch?: import('./batches/batchTypes').BatchSummary | null;
+  can_split?: boolean;
+  released_with_balance_at?: string | null;
+  balance_due_by?: string | null;
   material_source?: 'store_supplied' | 'customer_supplied' | null;
   // Customer-facing tracker fields — surfaced on /account/orders/[id] and
   // /track/[code]. Meaningful only while the job is in progress; see
@@ -102,8 +150,10 @@ export interface Job {
   measurement?: {
     id: number;
     profile_name: string;
+    version?: number;
     metrics: Record<string, number | string>;
     notes?: string | null;
+    photo_urls?: string[] | null;
     is_stale?: boolean;
     current_version_id?: number | null;
   } | null;
