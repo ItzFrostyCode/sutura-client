@@ -56,7 +56,15 @@ If this is a fresh clone, complete the one-time setup in the `sutura-server` and
 
 ## Demo Accounts
 
-- Shop Owner: `maria.cruz@gmail.com` / `password`
-- i cant log`admin@sutura.com` / `password`
-- Customer: `jose.rizal@gmail.com` / `password` (or `juan.delacruz@gmail.com` / `password`)
-- Customer with no bookings yet (use this to test booking): `tess.tester@gmail.com` / `password`
+### Sakuragi Embroidery Davao (Active Shop)
+- **Shop Account (Owner)**: `sakuragiembroiderydavao@sutura.shop` / `Password!1`
+- **Staff Account**: `itzjoshuawaymantest@gmail.com` / `ItzFrosty6932!`
+
+### Seeded Demo Accounts
+- **Shop Owner**: `maria.cruz@gmail.com` / `password`
+- **Staff**: `juan.delacruz@sutura.com` / `password`
+- **Branch Manager**: `miguel.manager@sutura.com` / `password`
+- **System Admin**: `admin@sutura.com` / `password` (login at `/admin/login`)
+- **Customer**: `jose.rizal@gmail.com` / `password` (or `juan.delacruz@gmail.com` / `password`)
+- **Customer with no bookings yet** (use to test fresh booking): `tess.tester@gmail.com` / `password`
+

@@ -57,7 +57,7 @@ export default function CustomersModuleTabs({
             <span>{tab.label}</span>
 
             {active && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-taupe rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-espresso rounded-full" />
             )}
           </Link>
         );

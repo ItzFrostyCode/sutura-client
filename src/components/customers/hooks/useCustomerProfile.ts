@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { CustomerData, MeasurementProfile, JobOrder, Appointment } from '../customerTypes';
+import { type Gender } from '@/components/shared/GenderPicker';
 
 export function useCustomerProfile(id: string) {
   const { store } = useAuthStore();
@@ -18,6 +19,7 @@ export function useCustomerProfile(id: string) {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editGender, setEditGender] = useState<Gender | ''>('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -32,6 +34,7 @@ export function useCustomerProfile(id: string) {
         setCustomer(data.customer);
         setEditName(data.customer.name || '');
         setEditPhone(data.customer.phone || '');
+        setEditGender((data.customer.gender as Gender) || '');
         setMeasurements(data.measurements || []);
         setJobs(data.jobs || []);
         setAppointments(data.appointments || []);
@@ -69,6 +72,7 @@ export function useCustomerProfile(id: string) {
       await api.put(`/stores/${store.id}/customers/${customer.id}`, {
         name: editName.trim(),
         phone: editPhone.trim() || null,
+        gender: editGender || null,
       });
       setIsEditingProfile(false);
       toast.success('Profile updated successfully.');
@@ -115,6 +119,8 @@ export function useCustomerProfile(id: string) {
     setEditName,
     editPhone,
     setEditPhone,
+    editGender,
+    setEditGender,
     savingProfile,
     isDeleteOpen,
     setIsDeleteOpen,

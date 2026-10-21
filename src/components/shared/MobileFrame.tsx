@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { isAuthPath } from './publicNav/bottomNavPaths';
 
 /**
  * Breakpoint-aware layout frame:

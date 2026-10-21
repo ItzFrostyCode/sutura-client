@@ -1,13 +1,16 @@
 import React from 'react';
-import { User, FileText } from 'lucide-react';
+import { User, FileText, ShieldCheck } from 'lucide-react';
+import TrustedCustomerRow from './TrustedCustomerRow';
 import { CustomerData } from '../customerTypes';
 import { isWalkInEmail, SUKI_TAG_CONFIG } from '../customerHelpers';
 
 interface CustomerProfileCardProps {
   readonly customer: CustomerData | null;
+  readonly canTrust?: boolean;
+  readonly onTrustChanged?: () => void;
 }
 
-export default function CustomerProfileCard({ customer }: CustomerProfileCardProps) {
+export default function CustomerProfileCard({ customer, canTrust = false, onTrustChanged }: CustomerProfileCardProps) {
   const sukiCfg = customer?.suki_tag ? SUKI_TAG_CONFIG[customer.suki_tag] : null;
 
   return (
@@ -23,11 +26,18 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
           </div>
         </div>
 
-        {sukiCfg && (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${sukiCfg.badgeCls}`}>
-            {sukiCfg.label}
-          </span>
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {customer?.is_trusted && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-sage/30 bg-sage/10 text-sage uppercase tracking-wider">
+              <ShieldCheck size={11} /> Trusted
+            </span>
+          )}
+          {sukiCfg && (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${sukiCfg.badgeCls}`}>
+              {sukiCfg.label}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
@@ -53,6 +63,8 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
           <span className="text-ink font-semibold block">#{customer?.shop_number ?? customer?.id}</span>
         </div>
       </div>
+
+      {customer && <TrustedCustomerRow customerId={customer.id} trusted={!!customer.is_trusted} canChange={canTrust} onChanged={() => onTrustChanged?.()} />}
 
       {/* Atelier Store Notes Callout */}
       <div className="space-y-2 pt-1">

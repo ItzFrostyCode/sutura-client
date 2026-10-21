@@ -44,7 +44,7 @@ export default function ReportFilters({
             </button>
             <button
               onClick={onPrint}
-              className="flex items-center gap-1.5 bg-taupe hover:bg-taupe-hover text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors cursor-pointer min-h-[44px]"
+              className="flex items-center gap-1.5 bg-espresso hover:bg-espresso/90 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors cursor-pointer min-h-[44px]"
             >
               <Printer size={14} /> Print<span className="hidden sm:inline"> Report</span>
             </button>

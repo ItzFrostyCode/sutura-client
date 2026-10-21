@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -11,15 +11,53 @@ import {
   AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString, minTimeForDate, appointmentNo,
 } from './appointmentHelpers';
 
+// The last list per shop and branch, kept for this tab: the page shows it at once and refreshes quietly behind it, so
+// coming back to Appointments (or reloading) never waits on a skeleton. The lookups (services, customers, branches,
+// staff) are kept the same way, in memory only.
+const CACHE_PREFIX = 'sutura_appts:';
+const memory = new Map<string, Appointment[]>();
+const lookups = new Map<string, unknown[]>();
+function cached(key: string): Appointment[] | null {
+  if (!key) return null;
+  const hit = memory.get(key);
+  if (hit) return hit;
+  try {
+    const raw = sessionStorage.getItem(CACHE_PREFIX + key);
+    return raw ? (JSON.parse(raw) as Appointment[]) : null;
+  } catch {
+    return null;
+  }
+}
+function remember(key: string, list: Appointment[]) {
+  memory.set(key, list);
+  try { sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify(list)); } catch { /* full or blocked: memory still has it */ }
+}
+
+/** Open visits first (soonest first, so today's work is on page one), then the finished ones (newest first). */
+const OPEN = new Set(['pending', 'confirmed', 'in_progress']);
+function workOrder(list: Appointment[]): Appointment[] {
+  const t = (a: Appointment) => new Date(a.scheduled_at.includes('T') ? a.scheduled_at : a.scheduled_at.replace(' ', 'T')).getTime();
+  return [...list].sort((a, b) => {
+    const ao = OPEN.has(a.status), bo = OPEN.has(b.status);
+    if (ao !== bo) return ao ? -1 : 1;
+    return ao ? t(a) - t(b) : t(b) - t(a);
+  });
+}
+
 export function useAppointments() {
   const { store, user } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
   const { selectedBranchId } = useBranch();
+  // Per account too: staff of the same shop see only their branch, so one account's kept list is never shown to another.
+  const cacheKey = store?.id && user?.id ? `${user.id}:${store.id}:${selectedBranchId ?? 'all'}` : '';
+  const [appointments, setAppointments] = useState<Appointment[]>(() => cached(cacheKey) ?? []);
+  // The skeleton is only for a first visit with nothing kept yet; refreshes after an action never blank the page.
+  const [loading, setLoading]           = useState(() => cached(cacheKey) === null);
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; });
 
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading]           = useState(true);
   const [viewMode, setViewMode]         = useState<'table' | 'cards' | 'calendar'>('table');
   const [calSubMode, setCalSubMode]     = useState<'month' | 'day'>('month');
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all' | 'closed'>('all');
@@ -31,11 +69,16 @@ export function useAppointments() {
   const [currentDate, setCurrentDate]   = useState(new Date());
   const [selectedDay, setSelectedDay]   = useState<Date | null>(null);
   const [hoveredAptId, setHoveredAptId] = useState<number | null>(null);
+  // The list loads the last 30 days and everything still open; older history only when it is asked for.
+  // The whole history is loaded and paged in the list, so there is no "show older" step.
+  const [showOlder, setShowOlder] = useState(true);
+  const historyShown = showOlder || whenFilter === 'past' || (statusFilter !== 'all' && !['pending', 'confirmed', 'in_progress'].includes(statusFilter));
 
   // Modal visibility
   // Opened from a customer's profile (Book appointment): the new-appointment form is already open with that customer.
   const [presetCustomerId, setPresetCustomerId] = useState(() => searchParams.get('customer_id') ?? '');
   const [showCreateModal,    setShowCreateModal]    = useState(Boolean(searchParams.get('customer_id')));
+  const [showConsultModal,   setShowConsultModal]   = useState(false);
   const [showReviewModal,    setShowReviewModal]    = useState(false);
   const [showRescheduleModal,setShowRescheduleModal]= useState(false);
   const [showCompleteModal,  setShowCompleteModal]  = useState(false);
@@ -60,48 +103,69 @@ export function useAppointments() {
   const [clash, setClash] = useState<{ payload: Record<string, unknown>; conflicts: WalkInClash['conflicts'] } | null>(null);
 
   // Reference data
-  const [services,  setServices]  = useState<ServiceData[]>([]);
-  const [customers, setCustomers] = useState<CustomerData[]>([]);
-  const [branches,  setBranches]  = useState<BranchData[]>([]);
-  const [staff,     setStaff]     = useState<StaffData[]>([]);
+  const [services,  setServices]  = useState<ServiceData[]>(() => (lookups.get(`${store?.id}:services`) as ServiceData[]) ?? []);
+  const [customers, setCustomers] = useState<CustomerData[]>(() => (lookups.get(`${store?.id}:customers`) as CustomerData[]) ?? []);
+  const [branches,  setBranches]  = useState<BranchData[]>(() => (lookups.get(`${store?.id}:branches`) as BranchData[]) ?? []);
+  const [staff,     setStaff]     = useState<StaffData[]>(() => (lookups.get(`${store?.id}:staff`) as StaffData[]) ?? []);
 
   // Timezone-safe local date string
   const todayStr = getLocalDateString(new Date());
 
   const minTimeFor = (dateStr: string): string => minTimeForDate(dateStr, todayStr);
 
+  // Another shop or branch: show what was kept for it at once (or the skeleton when nothing was).
+  useEffect(() => {
+    if (!cacheKey) return;
+    const hit = cached(cacheKey);
+    setAppointments(hit ?? []); // eslint-disable-line react-hooks/set-state-in-effect
+    setLoading(hit === null);
+  }, [cacheKey]);
+
+  // Always the whole history (the list pages through it); a refresh keeps the current list on screen until it lands.
   const fetchAppointments = useCallback(() => {
-    if (!store?.id) return;
-    const timer = setTimeout(() => setLoading(true), 0);
-    const params: Record<string, string | number> = {};
-    if (selectedBranchId !== null) {
-      params.branch_id = selectedBranchId;
-    }
-    api.get(`/stores/${store.id}/appointments`, { params })
+    if (!store?.id || !cacheKey) return;
+    const key = cacheKey;
+    const params: Record<string, string | number> = { include_past: 1 };
+    if (selectedBranchId !== null) params.branch_id = selectedBranchId;
+    return api.get(`/stores/${store.id}/appointments`, { params })
       .then(res => {
-        setAppointments(res.data.data || []);
+        const list = workOrder(res.data.data || []);
+        remember(key, list);
+        setAppointments(list);
         setLoading(false);
       })
       .catch((err) => {
         setLoading(false);
-        toast.error(getErrorMessage(err, 'Failed to load appointments.'));
+        toastRef.current.error(getErrorMessage(err, 'Failed to load appointments.'));
       });
-    return () => clearTimeout(timer);
-  }, [store, selectedBranchId, toast]);
+  }, [store?.id, selectedBranchId, cacheKey]);
+
+  // A link from a job order ("From consultation A-0006") opens that appointment's details.
+  const opened = useRef(false);
+  useEffect(() => {
+    const id = Number(searchParams.get('open'));
+    if (!id || opened.current || appointments.length === 0) return;
+    const hit = appointments.find((a) => a.id === id);
+    if (hit) { opened.current = true; setViewApt(hit); }
+  }, [appointments, searchParams]);
 
   useEffect(() => {
-    const cleanup = fetchAppointments();
-    return () => {
-      if (cleanup) cleanup();
-    };
+    void fetchAppointments();
   }, [fetchAppointments]);
 
   useEffect(() => {
     if (store?.id) {
-      api.get(`/stores/${store.id}/services`).then(r => setServices(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-      api.get(`/stores/${store.id}/customers`).then(r => setCustomers(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-      api.get(`/stores/${store.id}/branches`).then(r => setBranches(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
-      api.get(`/stores/${store.id}/staff`).then(r => setStaff(Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => {});
+      const load = <T,>(name: string, url: string, set: (v: T[]) => void, params?: Record<string, unknown>) =>
+        api.get(url, { params }).then(r => {
+          const list = Array.isArray(r.data?.data) ? (r.data.data as T[]) : [];
+          lookups.set(`${store.id}:${name}`, list);
+          set(list);
+        }).catch(() => {});
+      load<ServiceData>('services', `/stores/${store.id}/services`, setServices);
+      // ?all=1: the picker also needs people who have only booked or visited so far (the Customers list shows only those with an order).
+      load<CustomerData>('customers', `/stores/${store.id}/customers`, setCustomers, { all: 1 });
+      load<BranchData>('branches', `/stores/${store.id}/branches`, setBranches);
+      load<StaffData>('staff', `/stores/${store.id}/staff`, setStaff);
     } else if (user?.id && !store?.id) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);
@@ -180,6 +244,9 @@ export function useAppointments() {
   // if another visit is still using the branch; tap again once it is free).
   const handleCheckIn = async (id: number) => {
     if (!store) return;
+    // "Customer arrived" starts the visit, and a first-time user taps buttons to see what they do: ask first.
+    const who = appointments.find((a) => a.id === id)?.customer?.name;
+    if (!window.confirm(`Has ${who && who !== 'Walk-in customer' ? who : 'the customer'} arrived? This starts the visit.`)) return;
     setActionLoadingId(id);
     try {
       const res = await api.post(`/stores/${store.id}/appointments/${id}/arrive`);
@@ -208,32 +275,18 @@ export function useAppointments() {
     }
   };
 
-  // Early-Arrival Accommodation — staff decides to start service now
-  // (capacity-checked server-side, see AppointmentController::update()) or
-  // ask the customer to keep waiting. Never touches scheduled_at.
-  const handleAccommodateEarly = async (id: number) => {
-    if (!store) return;
+  // A walk-in visit started by mistake goes away completely (the server refuses once a job order or measurements hang on it).
+  const handleDiscard = async (id: number): Promise<boolean> => {
+    if (!store) return false;
     setActionLoadingId(id);
     try {
-      await api.put(`/stores/${store.id}/appointments/${id}`, { early_arrival_decision: 'accommodated' });
-      toast.success('Early arrival accommodated — service started now.');
-      fetchAppointments();
+      await api.delete(`/stores/${store.id}/appointments/${id}/discard`);
+      toast.success('Visit removed.');
+      await fetchAppointments();
+      return true;
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Could not accommodate this early arrival right now.'));
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleAskToWait = async (id: number) => {
-    if (!store) return;
-    setActionLoadingId(id);
-    try {
-      await api.put(`/stores/${store.id}/appointments/${id}`, { early_arrival_decision: 'waiting' });
-      toast.success('Customer will wait for their scheduled time.');
-      fetchAppointments();
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to update.'));
+      toast.error(getErrorMessage(err, 'Could not remove this visit.'));
+      return false;
     } finally {
       setActionLoadingId(null);
     }
@@ -297,12 +350,36 @@ export function useAppointments() {
     }
   };
 
+  // "Start consultation": the customer is here now; the visit starts at once and opens so the notes can be written.
+  const handleStartConsultation = async (payload: Record<string, unknown>) => {
+    if (!store) return;
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const res = await api.post(`/stores/${store.id}/appointments/consultation`, payload);
+      toast.success('Consultation started.');
+      await fetchAppointments();
+      setShowConsultModal(false);
+      if (res.data?.data) setViewApt(res.data.data as Appointment);
+    } catch (err: unknown) {
+      const data = (err as { response?: { data?: { code?: string; conflicts?: WalkInClash['conflicts'] } } })?.response?.data;
+      if (data?.code === 'pending_online_request') {
+        setClash({ payload: { ...payload, _consult: true }, conflicts: data.conflicts ?? [] });
+      } else {
+        setError(getErrorMessage(err, 'Could not start the consultation.'));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // The owner's choice for a clash: serve the walk-in (the online customer is asked to move), or pick another time.
   const resolveClash = async (choice: 'serve_walkin_reschedule_online' | 'other_time') => {
     const pending = clash;
     setClash(null);
     if (choice === 'serve_walkin_reschedule_online' && pending) {
-      await handleCreateSubmit({ ...pending.payload, on_conflict: choice });
+      const { _consult, ...payload } = pending.payload;
+      await (_consult ? handleStartConsultation : handleCreateSubmit)({ ...payload, on_conflict: choice });
     }
   };
 
@@ -326,7 +403,7 @@ export function useAppointments() {
     }
   };
 
-  // "Done": Consultation only (completed) or Didn't come (no_show). Proceed to Production Order goes through
+  // "Done": Consultation only (completed) or Didn't come (no_show). Proceed to Job Order goes through
   // handleCreateJob: creating the order closes the visit.
   const handleCompleteSubmit = async (aptId: number, result: 'completed' | 'no_show', notes: string, fittingNotes?: string) => {
     if (!store) return;
@@ -388,17 +465,10 @@ export function useAppointments() {
       if (!matchStatus || !matchType || !matchWhen) return false;
       if (!q) return true;
 
-      return (
-        a.customer?.name?.toLowerCase().includes(q) ||
-        a.customer?.email?.toLowerCase().includes(q) ||
-        a.customer?.phone?.toLowerCase().includes(q) ||
-        appointmentNo(a.id).toLowerCase().includes(q) ||
-        a.service?.name?.toLowerCase().includes(q) ||
-        a.appointment_type?.toLowerCase().includes(q) ||
-        a.garment_category?.toLowerCase().includes(q) ||
-        a.notes?.toLowerCase().includes(q) ||
-        a.assigned_staff?.name?.toLowerCase().includes(q)
-      );
+      // The box says "name or ID": the customer's name or number, the appointment number (A-0033 or 33), the service or design.
+      const hay = [a.customer?.name, a.customer?.phone, appointmentNo(a.id), String(a.id), a.service?.name, a.catalog_item?.name, a.purpose_label]
+        .filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
     })
       // Requests whose slot a walk-in took go to the top so they are not missed (stable: the rest keep their order).
       .sort((x, y) => Number(needsNewTime(y)) - Number(needsNewTime(x)));
@@ -464,6 +534,7 @@ export function useAppointments() {
     selectedDay,
     setSelectedDay,
     hoveredAptId,
+    showOlder, setShowOlder, historyShown,
     setHoveredAptId,
     showCreateModal,
     presetCustomerId,
@@ -515,20 +586,22 @@ export function useAppointments() {
     handleCreateCustomer,
     updateStatus,
     handleCheckIn,
-    handleAccommodateEarly,
-    handleAskToWait,
     handleCreateFollowUp,
     handleCreateSubmit,
+    showConsultModal,
+    setShowConsultModal,
+    handleStartConsultation,
+    refreshAppointments: fetchAppointments,
     handleRescheduleSubmit,
     handleCompleteSubmit,
     handleCancelConfirm,
     handleCreateJob,
     handleDidntCome,
+    handleDiscard,
     clash,
     resolveClash,
     filtered,
     stats,
     pendingCount: stats.pendingCount,
-    refreshAppointments: fetchAppointments,
   };
 }

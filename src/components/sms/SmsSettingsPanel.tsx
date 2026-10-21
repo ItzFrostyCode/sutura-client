@@ -29,7 +29,7 @@ export default function SmsSettingsPanel({ data, isOwner, busy, onMode, onEvents
         <div className="space-y-1">
           {data.events.map((e) => (
             <label key={e.key} className="flex items-center gap-3 min-h-11 cursor-pointer">
-              <input type="checkbox" checked={e.enabled} onChange={() => toggle(e.key)} className="w-5 h-5 accent-[#6B5346]" />
+              <input type="checkbox" checked={e.enabled} onChange={() => toggle(e.key)} className="w-5 h-5 accent-taupe-dark" />
               <span className="text-sm text-ink">{e.label}</span>
               {e.recommended && <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Recommended</span>}
             </label>

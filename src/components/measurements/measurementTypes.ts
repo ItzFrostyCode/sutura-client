@@ -17,6 +17,11 @@ export interface MeasurementRecord {
   customer_id: number;
   source?: string;
   profile_name: string;
+  /** What it was measured for: a service and, optionally, one of its designs. */
+  service_id?: number | null;
+  catalog_item_id?: number | null;
+  service?: { id: number; name: string } | null;
+  catalog_item?: { id: number; name: string } | null;
   version?: number;
   status?: 'finalized' | 'pending_fitting';
   superseded_at?: string | null;
@@ -30,4 +35,12 @@ export interface MeasurementRecord {
 export interface CustomerData {
   id: number;
   name: string;
+}
+
+/** A service or design of the shop a measurement can be taken for. */
+export interface MeasurementTarget {
+  id: number;
+  name: string;
+  /** Designs only: the service this design belongs to. */
+  service_id?: number | null;
 }

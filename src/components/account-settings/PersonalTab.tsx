@@ -1,9 +1,10 @@
 import React from 'react';
 import { Loader2, Save } from 'lucide-react';
+import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
 
 interface PersonalTabProps {
-  readonly personalForm: { name: string; phone: string };
-  readonly setPersonalForm: React.Dispatch<React.SetStateAction<{ name: string; phone: string }>>;
+  readonly personalForm: { name: string; phone: string; gender: string };
+  readonly setPersonalForm: React.Dispatch<React.SetStateAction<{ name: string; phone: string; gender: string }>>;
   readonly personalErrors: { name?: string; phone?: string };
   readonly setPersonalErrors: React.Dispatch<React.SetStateAction<{ name?: string; phone?: string }>>;
   readonly handlePersonalSubmit: (e: React.SyntheticEvent) => void;
@@ -51,6 +52,15 @@ export default function PersonalTab({
           {personalErrors.name && (
             <p className="text-xs text-danger mt-1">{personalErrors.name}</p>
           )}
+        </div>
+
+        <div>
+          <GenderPicker
+            value={personalForm.gender as Gender | ''}
+            onChange={(gender) => setPersonalForm({ ...personalForm, gender })}
+            label="Gender"
+            optional={false}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

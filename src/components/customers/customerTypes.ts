@@ -9,6 +9,8 @@ export interface CustomerData {
   profile_picture?: string;
   suki_tag?: string | null;
   store_notes?: string | null;
+  /** The owner or a branch manager marked this customer as trusted at this shop: new orders start with no deposit. */
+  is_trusted?: boolean;
   total_spend?: number;
   active_jobs?: number;
   completed_jobs?: number;

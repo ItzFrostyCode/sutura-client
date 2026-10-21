@@ -15,6 +15,8 @@ export default function AccountDetailPage() {
     setName,
     phone,
     setPhone,
+    gender,
+    setGender,
     savingProfile,
     profileMessage,
     currentPassword,
@@ -59,6 +61,8 @@ export default function AccountDetailPage() {
           setName={setName}
           phone={phone}
           setPhone={setPhone}
+          gender={gender}
+          setGender={setGender}
           savingProfile={savingProfile}
           profileMessage={profileMessage}
           onProfileSubmit={handleProfileSubmit}

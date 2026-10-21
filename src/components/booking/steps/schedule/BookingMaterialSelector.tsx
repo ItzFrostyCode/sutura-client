@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shirt } from 'lucide-react';
+import { Shirt, Check } from 'lucide-react';
 
 interface BookingMaterialSelectorProps {
   readonly materialSource: 'own' | 'shop' | '';
@@ -20,7 +20,7 @@ export default function BookingMaterialSelector({
 }: BookingMaterialSelectorProps) {
   return (
     <div className="space-y-2.5">
-      <label className="mobile-h4 text-ink flex items-center gap-1.5">
+      <label className="mobile-h4 font-semibold text-ink flex items-center gap-1.5">
         <Shirt size={16} className="text-taupe" /> Material / Fabric
       </label>
       <p className="mobile-caption text-ink-faint font-normal -mt-1">How will the material be provided?</p>
@@ -38,18 +38,22 @@ export default function BookingMaterialSelector({
               key={opt.value}
               type="button"
               onClick={() => setMaterialSource(opt.value)}
-              className={`min-h-[52px] p-3.5 rounded-none border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                isSelected ? 'border-taupe bg-taupe/5 ring-2 ring-taupe/20' : 'border-line bg-surface hover:border-taupe/40'
+              className={`min-h-[56px] p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                isSelected
+                  ? 'border-taupe bg-taupe/[0.08] ring-2 ring-taupe/20 shadow-xs'
+                  : 'border-line bg-surface hover:border-taupe/40 hover:bg-canvas/50'
               }`}
             >
+              <span className={`text-sm sm:text-base font-semibold ${isSelected ? 'text-ink' : 'text-ink-body'}`}>
+                {opt.label}
+              </span>
               <div
-                className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                  isSelected ? 'border-taupe bg-taupe' : 'border-line bg-surface'
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  isSelected ? 'border-taupe bg-taupe text-white' : 'border-line-strong bg-white/70'
                 }`}
               >
-                {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                {isSelected && <Check size={12} strokeWidth={3} className="text-white" />}
               </div>
-              <span className={`text-sm font-medium ${isSelected ? 'text-ink' : 'text-ink-body'}`}>{opt.label}</span>
             </button>
           );
         })}
@@ -67,10 +71,11 @@ export default function BookingMaterialSelector({
             placeholder="e.g. Cotton fabric"
             value={materialDescription}
             onChange={(e) => setMaterialDescription(e.target.value)}
-            className="w-full h-[48px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint"
+            className="w-full h-[48px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe placeholder:text-ink-faint transition-colors"
           />
         </div>
       )}
     </div>
   );
 }
+

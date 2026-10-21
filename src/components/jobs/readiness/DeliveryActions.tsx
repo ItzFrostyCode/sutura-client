@@ -3,7 +3,7 @@ import type { OrderReadinessApi } from './useOrderReadiness';
 import type { ReadinessData } from './readinessTypes';
 import { peso } from './readinessFormat';
 
-export type DeliveryModal = 'qcFail' | 'fittingIssue' | 'handover';
+export type DeliveryModal = 'qcFail' | 'fittingIssue' | 'handover' | 'release';
 
 interface DeliveryActionsProps {
   readonly data: ReadinessData;
@@ -12,7 +12,7 @@ interface DeliveryActionsProps {
   readonly onGoToFinancials?: () => void;
 }
 
-const primary = 'h-11 sm:h-10 rounded-lg bg-taupe px-4 text-sm font-bold text-white hover:bg-taupe-hover disabled:opacity-50';
+const primary = 'h-11 sm:h-10 rounded-lg bg-espresso px-4 text-sm font-bold text-white hover:bg-espresso/90 disabled:opacity-50';
 const ghost = 'h-11 sm:h-10 rounded-lg border border-line px-4 text-sm font-bold text-ink-body hover:bg-sunken disabled:opacity-50';
 const danger = 'h-11 sm:h-10 rounded-lg border border-rose-300 px-4 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50';
 
@@ -48,21 +48,32 @@ export default function DeliveryActions({ data, api, onOpen, onGoToFinancials }:
       return d.open_corrections > 0
         ? note(`Finish the ${d.open_corrections} open correction${d.open_corrections === 1 ? '' : 's'} below first. Then the order goes back to Quality Check.`)
         : <>{note('All corrections are done. Send it back to Quality Check.')}{row(<button key="b" type="button" disabled={off} onClick={a.sendToQuality} className={primary}>Back to Quality Check</button>)}</>;
-    case 'handover':
+    case 'handover': {
+      const owner = data.permissions.can_see_money;
+      const allOut = d.handover.remaining === 0;
+      const given = d.handover.unit === 'people' ? `${d.handover.handed_over} of ${d.handover.quantity} people have their garments.` : `${d.handover.handed_over} of ${d.handover.quantity} garments handed over.`;
+      const payBy = d.balance_due_by ? new Date(d.balance_due_by).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : null;
       return (
         <>
-          {!d.balance_clear ? (
+          {!d.balance_clear && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              {d.balance !== null ? `The balance of ${peso(d.balance)} is not paid yet.` : 'The balance is not paid yet.'} The order stays here until it is settled — payments are recorded in Financials.
+              {d.balance !== null ? `The balance of ${peso(d.balance)} is not paid yet.` : 'The balance is not paid yet.'}{' '}
+              {d.released_with_balance ? `The garments were released; the balance is still to be paid${payBy ? ` by ${payBy}` : ''}.` : 'The order stays here until it is settled — payments are recorded in Financials.'}
             </div>
-          ) : note(`${d.handover.handed_over} of ${d.handover.quantity} garments handed over.`)}
+          )}
+          {(d.balance_clear || d.released_with_balance) && note(given)}
           {row(
-            !d.balance_clear && data.permissions.can_see_money && onGoToFinancials && <button key="c" type="button" onClick={onGoToFinancials} className={primary}>Collect balance</button>,
-            d.balance_clear && d.handover.remaining > 0 && <button key="h" type="button" disabled={off} onClick={() => onOpen('handover')} className={primary}>Record handover</button>,
+            !d.balance_clear && owner && onGoToFinancials && <button key="c" type="button" onClick={onGoToFinancials} className={primary}>Collect balance</button>,
+            d.balance_clear && !allOut && <button key="h" type="button" disabled={off} onClick={() => onOpen('handover')} className={primary}>Record handover</button>,
+            d.balance_clear && allOut && d.open_corrections === 0 && <button key="k" type="button" disabled={off} onClick={() => a.moveTo('completed', 'Order completed.')} className={primary}>Complete the order</button>,
             <button key="r" type="button" disabled={off} onClick={() => onOpen('fittingIssue')} className={ghost}>Report an issue</button>,
+          )}
+          {!d.balance_clear && owner && !allOut && (
+            <button type="button" disabled={off} onClick={() => onOpen('release')} className="min-h-11 cursor-pointer text-sm font-semibold text-taupe hover:underline disabled:opacity-50">Release the garments with the balance due…</button>
           )}
         </>
       );
+    }
     case 'completed':
       return note('This order is complete: the garments were handed over and nothing is left to correct.');
     default:

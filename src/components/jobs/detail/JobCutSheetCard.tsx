@@ -57,7 +57,7 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
             onChange={e => setNotes(e.target.value)}
             rows={5}
             placeholder="e.g. Use cocoon silk panel A for the back. French seam on collar. Add 1cm allowance all sides. Embroidery on left chest pocket only..."
-            className="w-full bg-[#FFFDF7] border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-ink placeholder-[#C5BDBA] focus:outline-none resize-y min-h-[120px] leading-relaxed shadow-2xs"
+            className="w-full bg-canvas border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none resize-y min-h-[120px] leading-relaxed shadow-2xs"
           />
         </div>
       ) : (
@@ -75,7 +75,7 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
                 alt={job.catalog_item?.name ?? 'Design reference'}
                 className="w-full h-full object-cover"
               />
-              <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 text-white text-[11px] font-semibold px-2 py-1 rounded-full group-hover:bg-black/80 transition-colors">
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-espresso/60 text-white text-[11px] font-semibold px-2 py-1 rounded-full group-hover:bg-espresso/80 transition-colors">
                 <Maximize2 size={11} />
                 {heroImages.length > 1 ? `${heroImages.length} photos` : 'Expand'}
               </span>
@@ -117,7 +117,7 @@ export default function JobCutSheetCard({ job, notes, setNotes }: JobCutSheetCar
             value={notes}
             onChange={e => setNotes(e.target.value)}
             placeholder="e.g. Use cocoon silk panel A for the back. French seam on collar. Add 1cm allowance all sides. Embroidery on left chest pocket only..."
-            className="w-full min-h-[220px] bg-[#FFFDF7] border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-ink placeholder-[#C5BDBA] focus:outline-none resize-none overflow-y-auto leading-relaxed shadow-2xs"
+            className="w-full min-h-[220px] bg-canvas border border-amber-200 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none resize-none overflow-y-auto leading-relaxed shadow-2xs"
           />
         </div>
       )}

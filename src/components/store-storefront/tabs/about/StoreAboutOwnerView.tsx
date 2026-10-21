@@ -49,6 +49,9 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
   const [editingSection, setEditingSection] = useState<SectionKey | null>(null);
 
   const commitSave = async () => {
+    if (editingSection === 'payment_details' && (formData.bank_account_number || formData.bank_qr_path)) {
+      setFormDataWithDirty(prev => ({ ...prev, bank_name: prev.bank_name || 'QR Ph' }));
+    }
     const ok = await handleSave();
     if (ok) {
       setEditingSection(null);
@@ -107,6 +110,8 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
         {...sectionProps('payment_details')}
         onGcashQrUpload={handleGcashQrUpload}
         onBankQrUpload={handleBankQrUpload}
+        onRemoveGcashQr={() => setFormDataWithDirty((prev) => ({ ...prev, gcash_qr_path: '' }))}
+        onRemoveBankQr={() => setFormDataWithDirty((prev) => ({ ...prev, bank_qr_path: '' }))}
       />
 
       <BookingFlowCard formData={formData} onChange={handleChange} setFormData={setFormDataWithDirty} {...sectionProps('booking_flow')} />

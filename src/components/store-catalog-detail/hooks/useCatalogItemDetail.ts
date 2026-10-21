@@ -17,6 +17,8 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   const [selectedVariation, setSelectedVariation] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState<number>(1);
   // Set only by handleBulkOrder now — the plain made-to-order path that
   // used to also set this (and its own orderSubmitting/orderError
   // companions) was removed once the catalog item detail page stopped
@@ -40,6 +42,8 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     api.get(`/catalog/${storeId}/${itemId}`)
       .then(res => {
         setItem(res.data.data);
+        const minQty = Math.max(1, Number(res.data.data?.service?.min_order_qty) || 1);
+        setQuantity(minQty);
 
         // Whichever color renders as swatch #1 and whichever photo renders
         // as bottom-thumbnail #1 must be what's already showing as the main
@@ -178,7 +182,8 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
 
   const handleReportClick = () => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=${encodeURIComponent(currentItemPath)}`);
+      // Straight on to the report form after signing in (back to the item page would just repeat it in the history).
+      router.push(`/login?redirect=${encodeURIComponent(`${currentItemPath}/report`)}`);
       return;
     }
     router.push(`/store/${storeId}/catalog/${itemId}/report`);
@@ -244,16 +249,33 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
       ? item.color.trim()
       : (isRealVariationLabel ? selectedVariation : (selectedImage ? colorFromFilename(selectedImage) : '')));
 
+  const handleToggleAddOn = () => {
+    // Add-ons are purely informational on catalog design detail pages
+  };
+
+  const basePrice = item?.pricing?.amount != null ? Number(item.pricing.amount) : (Number(item?.price) || 0);
+  const computedPrice = basePrice > 0 ? {
+    base: basePrice,
+    sizeExtra: 0,
+    addOnsTotal: 0,
+    total: basePrice,
+  } : null;
+
   // The design's worked price (its service's price, plus any extra charge) — never its old stored price.
   // A design that needs a quote sends none, so the booking shows no price for it.
   const refPriceParam = (it: CatalogItem) => {
-    const amount = it.pricing ? it.pricing.amount : Number(it.price) || null;
+    const amount = it.pricing ? it.pricing.amount : (Number(it.price) || null);
     return amount ? `&ref_price=${encodeURIComponent(String(amount))}` : '';
   };
 
+  const minQuantity = Math.max(1, Number(item?.service?.min_order_qty) || 1);
+
   const buildBookHref = (branchSlug?: string | null) => {
     if (!item) return '#';
-    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}&ref_item_id=${item.id}${selectedSize ? `&ref_size=${encodeURIComponent(selectedSize)}` : ''}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}${refPriceParam(item)}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${item.service ? `&service_id=${item.service.id}` : ''}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
+    const svcId = item.service?.id ?? item.service_id;
+    const svcName = item.service?.name ?? '';
+    const qtyParam = `&ref_qty=${quantity}&ref_min_qty=${minQuantity}`;
+    return `/store/${storeId}/book?ref=${encodeURIComponent(item.name)}&ref_item_id=${item.id}${selectedImage ? `&ref_image=${encodeURIComponent(selectedImage)}` : ''}${refPriceParam(item)}${displayColor ? `&ref_color=${encodeURIComponent(displayColor)}` : ''}${svcId ? `&service_id=${svcId}` : ''}${svcName ? `&service_name=${encodeURIComponent(svcName)}` : ''}${qtyParam}${branchSlug ? `&branch=${encodeURIComponent(branchSlug)}` : ''}`;
   };
 
   return {
@@ -268,6 +290,12 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     colorOptions,
     selectedSize,
     setSelectedSize,
+    selectedAddOns,
+    handleToggleAddOn,
+    computedPrice,
+    quantity,
+    setQuantity,
+    minQuantity,
     orderSuccess,
     isSaved,
     togglingSave,

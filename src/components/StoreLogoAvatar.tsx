@@ -23,7 +23,7 @@ export default function StoreLogoAvatar({
   name,
   className = 'w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white bg-[#FAF6F3] shadow-md',
   containerClassName = '',
-  textClassName = 'text-3xl md:text-4xl font-serif font-bold text-[#8C6B5D]',
+  textClassName = 'text-3xl md:text-4xl font-serif font-bold text-taupe',
   isOpen,
 }: StoreLogoAvatarProps) {
   const [imgError, setImgError] = useState(false);
@@ -52,7 +52,7 @@ export default function StoreLogoAvatar({
             {initial ? (
               <span className={textClassName}>{initial}</span>
             ) : (
-              <Store className="w-1/2 h-1/2 text-[#8C6B5D]" />
+              <Store className="w-1/2 h-1/2 text-taupe" />
             )}
           </div>
         )}

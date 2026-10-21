@@ -57,7 +57,7 @@ export default function CustomersPage() {
           <>
             <Link
               href="/dashboard/measurements"
-              title="Search and manage measurement profiles across all customers"
+              title="Look up measurement profiles across all customers"
               className="flex items-center gap-2 bg-surface hover:bg-sunken border border-line text-ink px-4 py-2.5 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors min-h-10.5 shadow-2xs"
             >
               <Ruler size={15} />
@@ -70,7 +70,7 @@ export default function CustomersPage() {
                 setError('');
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 bg-espresso hover:bg-espresso/90 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
             >
               <Plus size={16} />
               Add Customer

@@ -22,21 +22,27 @@ interface PublicBottomNavProps {
 export default function PublicBottomNav({ accountHref: propAccountHref }: PublicBottomNavProps = {}) {
   const pathname = usePathname() ?? '/';
   const [mounted, setMounted] = useState(false);
-  const isIframe = typeof window !== 'undefined' && window.self !== window.top;
-  const visible = usesBottomNav(pathname) && !isIframe;
+  const [isEmbed, setIsEmbed] = useState(false);
   const { accountHref } = usePublicNav();
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== 'undefined') {
+      setIsEmbed(new URLSearchParams(window.location.search).get('embed') === '1');
+    }
+  }, [pathname]);
+
+  const visible = usesBottomNav(pathname) && !isEmbed;
 
   // /search is a fixed-height screen that already leaves room for the bar, so it must not get extra padding.
   const padsPage = visible && pathname !== '/search';
   useEffect(() => {
-    if (!padsPage || isIframe) return;
+    if (!padsPage) return;
     document.body.classList.add('has-bottom-nav');
     return () => document.body.classList.remove('has-bottom-nav');
-  }, [padsPage, isIframe]);
+  }, [padsPage]);
 
-  if (!mounted || !visible || isIframe) return null;
+  if (!mounted || !visible) return null;
 
   const targetAccountHref = propAccountHref || accountHref || '/account';
 
@@ -80,7 +86,7 @@ export default function PublicBottomNav({ accountHref: propAccountHref }: Public
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4"
       style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
     >
       <nav

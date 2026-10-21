@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface ModalProps {
@@ -19,6 +19,8 @@ interface ModalProps {
    * a long list. Pass your Cancel/Confirm row here, not inside children.
    */
   readonly footer?: React.ReactNode;
+  /** A step form: the header shows a back arrow and a centered title (the customer's booking header) instead of the title and ✕. */
+  readonly onBack?: () => void;
 }
 
 /**
@@ -30,7 +32,7 @@ interface ModalProps {
  *      body scrolling between them. A phone user sees an app screen, not a
  *      floating box with the page bleeding through around it.
  */
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer, onBack }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
 
@@ -103,11 +105,16 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       >
         {/* Sticky header — title always visible, ✕ always reachable. */}
         <div className="sticky top-0 z-10 bg-surface flex items-center justify-between gap-4 px-5 py-4 border-b border-line shrink-0">
-          <h2 className="text-lg font-semibold text-ink truncate">{title}</h2>
+          {onBack && (
+            <button type="button" onClick={onBack} aria-label="Back" className="-ml-2 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink hover:bg-sunken active:scale-95">
+              <ArrowLeft size={22} />
+            </button>
+          )}
+          <h2 className={`truncate font-semibold text-ink ${onBack ? 'flex-1 text-center text-base' : 'text-lg'}`}>{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-ink-muted hover:text-ink transition-colors p-2 -m-2 hover:bg-sunken rounded-md shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+            className={`text-ink-muted hover:text-ink transition-colors p-2 -m-2 hover:bg-sunken rounded-md shrink-0 min-w-[44px] min-h-[44px] items-center justify-center cursor-pointer ${onBack ? 'invisible flex md:visible' : 'flex'}`}
           >
             <X size={20} />
           </button>

@@ -17,7 +17,7 @@ interface Props { readonly entry: StatementEntry; readonly checked: boolean; rea
 export default function StatementRow({ entry: e, checked, busy, onToggle, onDownload }: Props) {
   return (
     <li className="flex items-start gap-3 px-4 py-3 min-h-16">
-      <input type="checkbox" checked={checked} disabled={!e.receipt_available} onChange={onToggle} aria-label={`Select ${e.doc_no ?? e.key}`} className="mt-1 w-5 h-5 accent-[#6B5346] shrink-0 disabled:opacity-30" />
+      <input type="checkbox" checked={checked} disabled={!e.receipt_available} onChange={onToggle} aria-label={`Select ${e.doc_no ?? e.key}`} className="mt-1 w-5 h-5 accent-taupe-dark shrink-0 disabled:opacity-30" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-ink truncate">{e.doc_no ?? e.kind_label} · {e.customer ?? 'Customer'}</p>
         <p className="text-xs text-ink-muted truncate">{when(e.date)} · {e.kind_label} · {e.method}{e.payment_type ? ` · ${e.payment_type}` : ''}{e.reference ? ` · ${e.reference}` : ''}</p>

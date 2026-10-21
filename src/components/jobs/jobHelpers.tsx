@@ -180,7 +180,7 @@ export interface Job {
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
   customer?: { name: string; suki_tag?: string | null } | null;
-  service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
+  service?: { name: string; service_type?: string | null; service_types?: string[] | null; min_order_qty?: number | null } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;
@@ -197,6 +197,11 @@ export interface Job {
   customer_decision?: 'accepted' | 'changes_requested' | 'declined' | null;
   created_at?: string;
   quotation_status?: 'estimate' | 'final' | null;
+  /** Garments went out before the balance was paid (released by the owner or a branch manager). */
+  released_with_balance_at?: string | null;
+  balance_due_by?: string | null;
+  batch_no?: number | null;
+  group_kind?: 'batch' | 'set' | null;
   specs_approved_at?: string | null;
   customer_approved_at?: string | null;
   confirmed_at?: string | null;
@@ -299,4 +304,13 @@ export function ColumnIcon({ id }: { readonly id: string }) {
     default:
       return null;
   }
+}
+
+/** The garments went out before the balance was paid, and the date the customer promised to pay by has passed. */
+export function isLateBalance(job: Pick<Job, 'balance' | 'released_with_balance_at' | 'balance_due_by'>): boolean {
+  if (!job.released_with_balance_at || !job.balance_due_by) return false;
+  if ((Number.parseFloat(String(job.balance)) || 0) <= 0.005) return false;
+  const today = new Date();
+  const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  return job.balance_due_by.slice(0, 10) < key;
 }

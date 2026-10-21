@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Loader2, ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
 
 interface StaffFormModalProps {
   readonly isOpen: boolean;
@@ -12,6 +13,7 @@ interface StaffFormModalProps {
     email: string;
     password: string;
     phone: string;
+    gender: string;
     role: string;
     additional_roles: string[];
     specialization: string;
@@ -27,6 +29,7 @@ interface StaffFormModalProps {
     email: string;
     password: string;
     phone: string;
+    gender: string;
     role: string;
     additional_roles: string[];
     specialization: string;
@@ -153,6 +156,15 @@ export default function StaffFormModal({
                 className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs"
               />
             </div>
+          </div>
+
+          <div>
+            <GenderPicker
+              value={formData.gender as Gender | ''}
+              onChange={(gender) => setFormData(prev => ({ ...prev, gender }))}
+              label="Gender"
+              optional={false}
+            />
           </div>
 
           {/* Portal Login Credentials Section */}
@@ -339,7 +351,7 @@ export default function StaffFormModal({
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={e => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-                  className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-[#8A7063] cursor-pointer"
+                  className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-taupe cursor-pointer"
                 />
                 <span className="text-xs font-semibold text-ink leading-snug">
                   <span>Active Staff Member</span>
@@ -357,7 +369,7 @@ export default function StaffFormModal({
                   type="checkbox"
                   checked={formData.is_available}
                   onChange={e => setFormData(prev => ({ ...prev, is_available: e.target.checked }))}
-                  className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-[#8A7063] cursor-pointer"
+                  className="w-4 h-4 mt-0.5 rounded border-line text-taupe focus:ring-taupe accent-taupe cursor-pointer"
                 />
                 <span className="text-xs font-semibold text-ink leading-snug">
                   <span>Available for New Production Assignments</span>
@@ -383,7 +395,7 @@ export default function StaffFormModal({
             type="submit"
             form="staff-form"
             disabled={saving}
-            className="bg-taupe hover:bg-taupe-hover text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 shadow-2xs active:scale-95 cursor-pointer"
+            className="bg-espresso hover:bg-espresso/90 text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 shadow-2xs active:scale-95 cursor-pointer"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>

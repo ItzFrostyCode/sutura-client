@@ -59,7 +59,7 @@ export default function SpecializationsSelector({ specializations, onChange }: S
               <span className="flex-1">{spec.label}</span>
               <span
                 className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center text-[9px] shrink-0 ${
-                  isChecked ? 'border-taupe bg-taupe text-white' : 'border-line'
+                  isChecked ? 'border-taupe bg-espresso text-white' : 'border-line'
                 }`}
               >
                 {isChecked ? '✓' : ''}

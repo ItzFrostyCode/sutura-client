@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, Clock, MapPin, Pencil, Trash2 } from 'lucide-react';
+import { Store, Star, Clock, MapPin, Pencil, Trash2, Heart } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemDistanceInfo } from '@/lib/customerLocation';
@@ -123,6 +123,16 @@ export default function CatalogItemCard({
       {/* Card Info Body - Sequential order per user spec */}
       <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between gap-1.5">
         <div className="space-y-1">
+          {/* Service Link / Label */}
+          {(item.service_name || item.service?.name) && (
+            <span
+              title={item.service_name || item.service?.name}
+              className="text-[10px] font-semibold uppercase tracking-wider text-taupe truncate block"
+            >
+              {item.service_name || item.service?.name}
+            </span>
+          )}
+
           {/* 2. Name */}
           <h3 className="text-[13px] font-semibold text-ink line-clamp-2 leading-snug group-hover:text-taupe transition-colors min-h-[36px]">
             {item.name}
@@ -133,7 +143,7 @@ export default function CatalogItemCard({
             {designPriceLabel(item.pricing, item.price)}
           </p>
 
-          {/* 4. Star (Average Rating) | (count) sold */}
+          {/* 4. Star (Average Rating) | (count) sold | (count) favorites */}
           <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
             <div className="flex items-center gap-1 shrink-0">
               <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
@@ -145,6 +155,11 @@ export default function CatalogItemCard({
             </div>
             <span className="text-ink-faint">|</span>
             <span className="truncate">{item.order_count ?? 0} sold</span>
+            <span className="text-ink-faint">|</span>
+            <span className="flex items-center gap-0.5 text-rose-600 shrink-0" title={`${item.saves_count ?? (item as any).favorites_count ?? 0} favorites`}>
+              <Heart size={10} className="fill-rose-500 text-rose-500 shrink-0" />
+              <span>{item.saves_count ?? (item as any).favorites_count ?? 0}</span>
+            </span>
           </div>
 
           {/* 5. Clock {estimated exact count days day-day/monthday - day} */}

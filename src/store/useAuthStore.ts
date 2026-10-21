@@ -22,6 +22,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  gender?: 'male' | 'female' | null;
   profile_picture?: string;
   cover_photo?: string;
   roles: { id: number; name: string }[];
@@ -37,9 +38,13 @@ export interface User {
 
 export interface Store {
   id: number;
+  owner_id?: number;
+  owner?: { id: number; name: string; email?: string } | null;
   name: string;
   slug: string;
   store_code?: string;
+  /** The unit the shop measures in (inches or centimeters). */
+  default_measurement_unit?: 'in' | 'cm';
   status: string;
   rejection_reason?: string | null;
   business_type?: string;
@@ -156,6 +161,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       sessionStorage.removeItem('sutura_user');
       sessionStorage.removeItem('sutura_store');
       sessionStorage.removeItem('sutura_staff');
+      // Lists a page kept for quick reopening (e.g. Appointments) belong to the account that signed out.
+      for (const k of Object.keys(sessionStorage)) if (k.startsWith('sutura_appts:')) sessionStorage.removeItem(k);
       clearLegacySharedAuth();
     }
     set({ user: null, store: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });

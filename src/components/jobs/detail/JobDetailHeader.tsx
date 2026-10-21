@@ -1,8 +1,13 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, Zap, Mail, Check, CalendarPlus } from 'lucide-react';
+import Link from 'next/link';
+import { Users, ArrowLeft, Loader2, Save, ShoppingBag, Store, Zap, Check } from 'lucide-react';
+import JobMoreMenu from './JobMoreMenu';
 import { Job } from '../jobTypes';
+import { newFollowUpOrderHref } from '../board/newOrderHref';
+import { appointmentNo } from '@/components/appointments/appointmentHelpers';
+import { jobPeople, jobPieces, orderSize } from '@/lib/orderSize';
 
 interface JobDetailHeaderProps {
   job: Job;
@@ -16,6 +21,9 @@ interface JobDetailHeaderProps {
   onOpenDeleteModal: () => void;
   onUpdate: () => void;
   canDelete: boolean;
+  canCreateFollowUpOrder?: boolean;
+  /** Extra actions for the More menu (owner / branch manager only). */
+  moreActions?: { label: string; icon: React.ReactNode; onClick: () => void }[];
 }
 
 export default function JobDetailHeader({
@@ -30,6 +38,8 @@ export default function JobDetailHeader({
   onOpenDeleteModal,
   onUpdate,
   canDelete,
+  canCreateFollowUpOrder,
+  moreActions,
 }: JobDetailHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
@@ -57,6 +67,16 @@ export default function JobDetailHeader({
             <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200">
               <Store size={11} /> {job.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup'}
             </span>
+            {job.batch && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-taupe/10 text-taupe px-2.5 py-0.5 rounded-full border border-taupe/25">
+                {job.batch.kind === 'set' ? `Order ${job.batch_no ?? 1} of ${job.batch.count}` : `Batch ${job.batch_no ?? 1} of ${job.batch.count}${job.paid_by_name ? ` · ${job.paid_by_name}` : ''}`}
+              </span>
+            )}
+            {jobPeople(job) >= 2 && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-sunken text-ink-body px-2.5 py-0.5 rounded-full border border-line">
+                <Users size={11} /> {orderSize(jobPeople(job), job.service?.min_order_qty)} · {jobPieces(job)} pcs
+              </span>
+            )}
             {job.is_rush && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-300">
                 <Zap size={11} /> Rush Order
@@ -65,6 +85,12 @@ export default function JobDetailHeader({
           </h1>
           <p className="text-xs text-ink-muted mt-0.5">
             Manage lifecycle, specifications, and financials
+            {job.appointment_id && (
+              <span className="ml-2">
+                • From consultation{' '}
+                <Link href={`/dashboard/appointments?open=${job.appointment_id}`} className="font-semibold text-taupe hover:underline">{appointmentNo(job.appointment_id)}</Link>
+              </span>
+            )}
             {job.tracking_code && (
               <span className="ml-2 text-ink-faint">
                 • Tracking: <strong className="font-mono text-ink-body select-all">{job.tracking_code}</strong>
@@ -74,80 +100,25 @@ export default function JobDetailHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-        {hasUnsavedChanges && (
-          <span className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full animate-in fade-in">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Unsaved changes
-          </span>
+      <div className="flex shrink-0 items-center gap-2">
+        {hasUnsavedChanges ? (
+          <>
+            <span className="hidden items-center gap-1.5 text-xs font-bold text-amber-700 md:inline-flex">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> Unsaved changes
+            </span>
+            <button onClick={onResetChanges} type="button" className="h-11 cursor-pointer rounded-lg border border-espresso/[0.12] bg-white px-4 text-sm font-medium text-ink hover:bg-espresso/[0.03]">Discard</button>
+            <button onClick={onUpdate} disabled={saving} type="button" className="flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-espresso px-5 text-sm font-semibold text-white hover:bg-espresso/90 disabled:opacity-60">
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Changes
+            </button>
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-muted"><Check size={15} className="text-sage" /> Saved</span>
         )}
-
-        {hasUnsavedChanges && (
-          <button
-            onClick={onResetChanges}
-            type="button"
-            className="h-9 px-3 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors text-xs font-semibold shadow-2xs active:scale-95"
-            title="Discard draft changes"
-          >
-            Discard
-          </button>
-        )}
-
-        <button
-          onClick={onOpenMessageModal}
-          className="h-9 w-9 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors flex items-center justify-center shadow-2xs active:scale-95"
-          title="Message Customer"
-          type="button"
-        >
-          <Mail size={15} />
-        </button>
-        <button
-          onClick={onOpenFollowUpModal}
-          className="h-9 w-9 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors flex items-center justify-center shadow-2xs active:scale-95"
-          title="Schedule Follow-Up Visit"
-          type="button"
-        >
-          <CalendarPlus size={15} />
-        </button>
-        <button
-          onClick={onPrint}
-          className="h-9 w-9 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors flex items-center justify-center shadow-2xs active:scale-95"
-          title="Print Physical Work Ticket"
-          type="button"
-        >
-          <Printer size={15} />
-        </button>
-        {canDelete && (
-          <button
-            onClick={onOpenDeleteModal}
-            className="h-9 w-9 rounded-xl bg-surface hover:bg-rose-50 border border-line hover:border-rose-200 text-ink-faint hover:text-rose-600 transition-colors flex items-center justify-center shadow-2xs active:scale-95"
-            title="Delete Job Order"
-            type="button"
-          >
-            <Trash2 size={15} />
-          </button>
-        )}
-
-        <button
-          onClick={onUpdate}
-          disabled={saving || !hasUnsavedChanges}
-          className={`h-9 px-4 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 ${
-            hasUnsavedChanges
-              ? 'bg-taupe hover:bg-taupe-hover text-white ring-2 ring-taupe/30 shadow-md cursor-pointer'
-              : 'bg-surface border border-line text-ink-muted/70 font-semibold cursor-default hover:bg-surface opacity-80'
-          }`}
-          type="button"
-          title={hasUnsavedChanges ? 'Click to save all pending changes' : 'All changes are saved'}
-        >
-          {saving ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : hasUnsavedChanges ? (
-            <Save size={14} />
-          ) : (
-            <Check size={14} className="text-sage" />
-          )}
-          <span>{hasUnsavedChanges ? 'Save Changes' : 'Saved'}</span>
-        </button>
+        <JobMoreMenu
+          onPrint={onPrint} onMessage={onOpenMessageModal} onFollowUpVisit={onOpenFollowUpModal}
+          followUpOrderHref={canCreateFollowUpOrder ? newFollowUpOrderHref(job) : undefined}
+          onDelete={canDelete ? onOpenDeleteModal : undefined} extra={moreActions}
+        />
       </div>
     </div>
   );

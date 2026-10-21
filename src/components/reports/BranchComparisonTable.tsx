@@ -117,7 +117,7 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
       </div>
 
       {/* Mobile cards — no sideways scroll needed for a 9-column table */}
-      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-sunken border-t border-line">
         {safeData.map(row => (
           <div key={row.branch_id ?? 'unassigned'} className="px-6 py-4 space-y-2.5">
             <div className="flex items-center justify-between">
@@ -166,7 +166,7 @@ export default function BranchComparisonTable({ data, loading }: BranchCompariso
               <th className="px-6 py-3 font-medium">Staff</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F0EAE3]">
+          <tbody className="divide-y divide-sunken">
             {safeData.map(row => (
               <tr key={row.branch_id ?? 'unassigned'} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3 font-medium text-ink">

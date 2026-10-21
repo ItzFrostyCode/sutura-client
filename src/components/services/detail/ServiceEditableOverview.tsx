@@ -30,6 +30,8 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
   const ps = useMemo(() => toPublicService(service), [service]);
   const chart = hasServiceChart(ps);
 
+  const heroImage = service.image_url || null;
+
   return (
     <div className="space-y-4">
       <CatalogDetailGrid
@@ -39,10 +41,10 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
             label="photo"
             className="max-[599px]:border-x-0"
             view={
-              service.image_url ? (
+              heroImage ? (
                 <div className="aspect-square min-[600px]:aspect-auto min-[600px]:h-[560px] bg-sunken overflow-hidden relative w-full">
                   <Image
-                    src={getMediaUrl(service.image_url)}
+                    src={getMediaUrl(heroImage)}
                     alt={service.name}
                     className="w-full h-full object-cover object-top min-[600px]:object-center md:object-contain"
                     fill
@@ -62,7 +64,7 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
         }
         buyZone={
           <div className={`space-y-4 ${PAD}`}>
-            <EditableBox control={edit.control('info')} label="name, price and turnaround" view={<div className="p-4 pr-14"><ServiceProductInfo service={ps} hideStats /></div>}>
+            <EditableBox control={edit.control('info')} label="name, price and turnaround" view={<div className="p-4 pr-14"><ServiceProductInfo service={ps} /></div>}>
               <ServiceInfoEditor edit={edit} />
             </EditableBox>
           </div>

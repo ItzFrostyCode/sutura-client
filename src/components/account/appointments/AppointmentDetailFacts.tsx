@@ -1,13 +1,15 @@
+import Image from 'next/image';
 import { CalendarDays, CheckCircle2, Clock, FileText, Link as LinkIcon, MapPin, Wallet } from 'lucide-react';
+import { getMediaUrl } from '@/lib/media';
 import type { AppointmentDetailData } from './AppointmentDetailContent';
 
 const row = 'mobile-body-sm flex items-start gap-2.5 text-ink-body';
 const icon = 'mt-0.5 shrink-0 text-ink-faint';
 
-/** When, where and the small print: date, time, branch, payment, what to bring, the customer's note and link. */
+/** When, where and the small print: date, time, branch, payment, what to bring, the customer's note, link, and reference photos. */
 export default function AppointmentDetailFacts({ appt, scheduled }: { readonly appt: AppointmentDetailData; readonly scheduled: Date }) {
-  const bringsOwnFabric = !!appt.notes?.toLowerCase().includes('bring own fabric');
-  const sampleDetail = appt.notes?.match(/\[Material:\s*Customer will bring own fabric\/sample(?:\s*-\s*([^\]]+))?\]/i)?.[1]?.trim();
+  const bringsOwnFabric = appt.material_source === 'own';
+  const sampleDetail = appt.material_note;
 
   return (
     <div className="mt-4 space-y-2.5">
@@ -55,6 +57,31 @@ export default function AppointmentDetailFacts({ appt, scheduled }: { readonly a
         <div className={row}>
           <LinkIcon size={16} className={icon} />
           <a href={appt.reference_link} target="_blank" rel="noopener noreferrer" className="truncate text-taupe hover:text-taupe-hover">{appt.reference_link}</a>
+        </div>
+      )}
+      {appt.reference_images && appt.reference_images.length > 0 && (
+        <div className="pt-1">
+          <p className="mobile-caption mb-1.5 font-medium text-ink-muted">Reference Photos</p>
+          <div className="grid grid-cols-3 gap-2">
+            {appt.reference_images.map((url) => (
+              <a
+                key={url}
+                href={getMediaUrl(url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block aspect-square overflow-hidden rounded-xl bg-surface border border-line shadow-2xs hover:opacity-95 transition-opacity"
+              >
+                <Image
+                  src={getMediaUrl(url)}
+                  alt="Reference photo"
+                  fill
+                  sizes="120px"
+                  className="object-cover"
+                  unoptimized
+                />
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>

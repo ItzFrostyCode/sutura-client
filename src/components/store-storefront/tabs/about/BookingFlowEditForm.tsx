@@ -108,6 +108,17 @@ export default function BookingFlowEditForm({ formData, onChange, setFormData }:
         />
       </div>
 
+      <fieldset className="space-y-2 pt-2 border-t border-line/60">
+        <legend className="text-xs font-semibold text-ink">Measuring unit</legend>
+        <p className="text-xs text-ink-muted">New measurements start in this unit. Each measurement keeps the unit it was taken in, and it can be changed while measuring.</p>
+        <div className="flex gap-2">
+          {([['in', 'Inches'], ['cm', 'Centimeters']] as const).map(([v, t]) => (
+            <button key={v} type="button" aria-pressed={formData.default_measurement_unit === v} onClick={() => setFormData((prev) => ({ ...prev, default_measurement_unit: v }))}
+              className={`h-11 cursor-pointer rounded-lg border px-4 text-sm font-medium ${formData.default_measurement_unit === v ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-ink hover:bg-sunken'}`}>{t}</button>
+          ))}
+        </div>
+      </fieldset>
+
       <div className="space-y-1 pt-2 border-t border-line/60">
         <label htmlFor="cancellation-policy" className={labelClass}>Order cancellation &amp; refund policy</label>
         <p className="text-xs text-ink-muted">Shown to the customer when they approve a quotation, and kept with the order. Leave blank for the standard policy.</p>

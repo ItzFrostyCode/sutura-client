@@ -23,6 +23,7 @@ export interface RelatedStore {
     latitude: string | null;
     longitude: string | null;
     address?: string;
+    is_main?: boolean;
   }[];
   catalog_items?: {
     id: number;
@@ -77,6 +78,8 @@ export interface SearchServiceResult {
   reviews_count?: number | null;
   reviews_avg_rating?: number | null;
   orders_count?: number | null;
+  saves_count?: number | null;
+  designs_count?: number | null;
   store?: {
     id: number;
     name: string;

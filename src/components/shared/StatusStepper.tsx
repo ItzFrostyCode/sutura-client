@@ -87,9 +87,11 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
     );
   }
 
+  const isCompactStages = stages.length <= 4;
+
   return (
-    <div className="overflow-x-auto pb-2 -mb-2 hide-scrollbar touch-pan-x">
-      <div className="flex items-start min-w-[680px] sm:min-w-full">
+    <div className={`${isCompactStages ? 'w-full' : 'overflow-x-auto pb-2 -mb-2 hide-scrollbar touch-pan-x'}`}>
+      <div className={`flex items-start ${isCompactStages ? 'w-full min-w-0' : 'min-w-[680px] sm:min-w-full'}`}>
         {stages.map((stage, idx) => {
           const isCurrent = idx === currentIdx;
           const isDone = idx < currentIdx || (isCurrent && idx === stages.length - 1);

@@ -24,7 +24,7 @@ type Severity = 'critical' | 'money' | 'ready';
  *  different problems six different visual languages and no priority order. */
 const TONE: Record<Severity, { rail: string; figure: string; icon: string }> = {
   critical: { rail: 'bg-danger',       figure: 'text-danger', icon: 'bg-danger/10 text-danger' },
-  money:    { rail: 'bg-taupe',        figure: 'text-ink',    icon: 'bg-taupe/10 text-taupe' },
+  money:    { rail: 'bg-espresso',        figure: 'text-ink',    icon: 'bg-taupe/10 text-taupe' },
   ready:    { rail: 'bg-sage',         figure: 'text-sage',   icon: 'bg-sage/10 text-sage' },
 };
 
@@ -244,7 +244,7 @@ export default function ActionQueue({ data, unpaidJobs, pendingDpJobs, dueToday,
                           return (
                             <Link
                               href={`/dashboard/jobs/${j.id}#financials`}
-                              className="text-xs font-semibold text-white bg-taupe hover:bg-taupe-hover px-3 py-2 rounded-lg transition-colors shrink-0 min-h-[36px] flex items-center"
+                              className="text-xs font-semibold text-white bg-espresso hover:bg-espresso/90 px-3 py-2 rounded-lg transition-colors shrink-0 min-h-[36px] flex items-center"
                             >
                               Log DP
                             </Link>

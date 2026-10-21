@@ -141,12 +141,17 @@ export interface Delivery {
   corrections: Correction[];
   handover: {
     quantity: number;
+    /** What `quantity` counts: the people of a group order, or the garments. */
+    unit?: 'people' | 'garments';
     handed_over: number;
     remaining: number;
     records: { id: number; quantity: number; received_by: string | null; note: string | null; handed_over_at: string; recorded_by: string | null }[];
   };
   balance_clear: boolean;
   balance: number | null;
+  /** Garments went out before the balance was paid (released by the owner or a branch manager). */
+  released_with_balance?: boolean;
+  balance_due_by?: string | null;
 }
 
 export interface PreProductionStep {

@@ -46,7 +46,7 @@ export default function CustomerFilterBar({
               onClick={() => setFilterType(tab.id)}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-taupe text-white shadow-2xs'
+                  ? 'bg-espresso text-white shadow-2xs'
                   : 'bg-surface border border-line text-ink-muted hover:text-ink hover:bg-canvas'
               }`}
             >

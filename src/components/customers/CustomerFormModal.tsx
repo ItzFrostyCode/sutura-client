@@ -96,7 +96,7 @@ export default function CustomerFormModal({
           <button 
             type="submit"
             disabled={isSubmitting}
-            className="bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="bg-espresso hover:bg-taupe/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}
             {editingCustomer ? "Save Changes" : "Save Customer"}

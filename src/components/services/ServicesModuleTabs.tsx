@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Scissors, BarChart3 } from 'lucide-react';
+import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
 
 export type ServiceTabId = 'services' | 'analytics';
 
@@ -76,7 +76,7 @@ export default function ServicesModuleTabs({
 
             {/* Bottom stroke line resting right on the header divider line */}
             {active && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-taupe" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-espresso" />
             )}
           </button>
         );

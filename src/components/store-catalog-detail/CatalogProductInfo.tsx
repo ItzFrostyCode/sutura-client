@@ -1,5 +1,6 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import Link from 'next/link';
+import { Star, Scissors } from 'lucide-react';
 import { CatalogItem } from './types';
 import { formatTurnaround } from '@/lib/formatTurnaround';
 import { designPriceDetail } from '@/lib/designPricing';
@@ -9,16 +10,31 @@ interface CatalogProductInfoProps {
   isSaved?: boolean;
   /** Owner view: ratings and sold counts are customer activity, not part of the design itself. */
   hideStats?: boolean;
+  computedPrice?: { total: number; base: number; sizeExtra: number; addOnsTotal: number } | null;
 }
 
-export default function CatalogProductInfo({ item, hideStats }: CatalogProductInfoProps) {
+export default function CatalogProductInfo({ item, hideStats, computedPrice }: CatalogProductInfoProps) {
   const avgRating = item.reviews_avg_rating ?? 0;
   const reviewsCount = item.reviews_count ?? 0;
   // A design is priced by its service; the shop may add an extra charge or ask for a quote (lib/designPricing).
   const price = item.pricing ? designPriceDetail(item.pricing, item.service?.name) : null;
+  const minOrder = item.service?.min_order_qty && Number(item.service.min_order_qty) > 1 ? Number(item.service.min_order_qty) : null;
 
   return (
     <div className="space-y-0">
+      {/* Parent Service Link */}
+      {item.service && (
+        <div className="pb-2">
+          <Link
+            href={item.store?.slug ? `/store/${item.store.slug}/service/${item.service.id}` : `/dashboard/services/${item.service.id}`}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:underline"
+          >
+            <Scissors size={12} className="shrink-0" />
+            <span className="truncate">Service: {item.service.name}</span>
+          </Link>
+        </div>
+      )}
+
       {/* 1. Product Name */}
       <h1 className="text-xl font-semibold text-ink leading-snug pb-3">
         {item.name}
@@ -52,10 +68,23 @@ export default function CatalogProductInfo({ item, hideStats }: CatalogProductIn
               {price.main}
               {price.struck && <span className="ml-2 align-middle text-base font-normal text-ink-faint line-through">{price.struck}</span>}
             </p>
-            <p className="mobile-caption mt-2 text-ink-muted">{price.note}</p>
+            <p className="mobile-caption mt-2 text-ink-muted">
+              Base price for this design. The shop confirms the final price.
+            </p>
           </>
         ) : (
-          <p className="text-3xl font-bold text-taupe leading-none">₱{Number(item.price).toLocaleString()}</p>
+          <>
+            <p className="text-3xl font-bold text-taupe leading-none">₱{Number(item.price).toLocaleString()}</p>
+            <p className="mobile-caption mt-2 text-ink-muted">
+              Base price for this design. The shop confirms the final price.
+            </p>
+          </>
+        )}
+        {minOrder && (
+          <p className="text-xs text-ink-body mt-2.5 flex items-center gap-1.5 font-medium">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-taupe shrink-0" />
+            Minimum quantity: <span className="font-semibold text-ink">{minOrder} pieces</span>
+          </p>
         )}
       </div>
 

@@ -90,7 +90,7 @@ export default function RefundCard({ storeId, jobId, data, onRecorded }: RefundC
               </label>
             )}
             <label className="flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={handedBack} onChange={(e) => setHandedBack(e.target.checked)} className="h-4 w-4 accent-taupe" />Already handed back to the customer</label>
-            <button type="button" disabled={saving || (differs && !reason.trim())} onClick={record} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50 sm:h-10">Record refund</button>
+            <button type="button" disabled={saving || (differs && !reason.trim())} onClick={record} className="h-11 rounded-lg bg-espresso px-4 text-sm font-semibold text-white hover:bg-espresso/90 disabled:opacity-50 sm:h-10">Record refund</button>
           </div>
         )}
       </div>

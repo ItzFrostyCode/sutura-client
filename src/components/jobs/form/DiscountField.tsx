@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BTN, BTN_SM } from '@/components/shared/plainForm';
 import { FIELD, LABEL, Chip } from './FormStep';
 import type { JobCreateFormData } from './types';
 
@@ -20,13 +21,13 @@ export default function DiscountField({ formData, onChange }: Props) {
   const clear = () => { setOpen(false); onChange({ discount_value: '', discount_reason: '', discount_mode: 'fixed' }); };
 
   if (!open) {
-    return <button type="button" onClick={() => setOpen(true)} className="cursor-pointer text-sm font-semibold text-taupe hover:underline">+ Add a discount</button>;
+    return <button type="button" onClick={() => setOpen(true)} className={BTN}>Add a discount</button>;
   }
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className={`${LABEL} mb-0`}>Discount</span>
-        <button type="button" onClick={clear} className="cursor-pointer text-xs font-semibold text-danger hover:underline">Remove</button>
+        <button type="button" onClick={clear} className={BTN_SM}>Remove discount</button>
       </div>
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
@@ -36,9 +37,9 @@ export default function DiscountField({ formData, onChange }: Props) {
         ))}
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr_1.5fr]">
-        <div className="flex h-11 border border-line">
+        <div className="flex h-11 overflow-hidden rounded-md border border-espresso/25">
           {(['fixed', 'percent'] as const).map((m) => (
-            <button key={m} type="button" onClick={() => onChange({ discount_mode: m })} className={`cursor-pointer px-4 text-sm font-semibold ${formData.discount_mode === m ? 'bg-taupe text-white' : 'text-ink-muted hover:bg-sunken'}`}>
+            <button key={m} type="button" onClick={() => onChange({ discount_mode: m })} className={`cursor-pointer px-4 text-sm font-semibold ${formData.discount_mode === m ? 'bg-espresso text-white' : 'text-ink-muted hover:bg-sunken'}`}>
               {m === 'fixed' ? '₱' : '%'}
             </button>
           ))}

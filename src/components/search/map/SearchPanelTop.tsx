@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import LocationLine from '@/components/home/LocationLine';
 import SearchPill from '@/components/home/SearchPill';
 import { countAllFilters, type AllFilters } from '@/components/home/homeFilters';
@@ -16,28 +16,45 @@ interface SearchPanelTopProps {
   readonly compact?: boolean;
   readonly isExpanded?: boolean;
   readonly onToggleExpand?: () => void;
+  /** Hide / drop down the search and shops panel completely on mobile */
+  readonly onClosePanel?: () => void;
 }
 
 /** Where I am, one full-width search bar with the filter icon inside it (Open / Closed is in the filter pop-up), and the category the person arrived with. */
-export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact, isExpanded, onToggleExpand }: SearchPanelTopProps) {
+export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact, isExpanded, onToggleExpand, onClosePanel }: SearchPanelTopProps) {
   const here = `/search${s.searchParams.toString() ? `?${s.searchParams.toString()}` : ''}`;
   const changeHref = `/location?returnTo=${encodeURIComponent(here)}`;
   const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy };
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
-        <LocationLine location={s.savedLocation} changeHref={changeHref} compact={compact} small />
-        {onToggleExpand && (
-          <button
-            type="button"
-            onClick={onToggleExpand}
-            aria-label={isExpanded ? 'Collapse panel' : 'Expand panel'}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken active:opacity-70"
-          >
-            {isExpanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
-          </button>
-        )}
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <LocationLine location={s.savedLocation} changeHref={changeHref} compact={compact} small />
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {onToggleExpand && (
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              aria-label={isExpanded ? 'Collapse panel down' : 'Expand panel up'}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-sunken active:opacity-70 transition-colors"
+              title={isExpanded ? 'Slide down' : 'Expand full'}
+            >
+              {isExpanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
+            </button>
+          )}
+          {onClosePanel && (
+            <button
+              type="button"
+              onClick={onClosePanel}
+              aria-label="Close search panel"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken active:opacity-70"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="mt-2">
         <SearchPill

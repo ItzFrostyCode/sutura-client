@@ -163,7 +163,7 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       {/* Total Revenue is the one number that matters most on a reports
           page — was sitting at the exact same visual weight as "Forfeited
           Deposits," among 13 identical cards with no hierarchy at all. */}
-      <div className="bg-taupe rounded-xl p-6 text-white">
+      <div className="bg-espresso rounded-xl p-6 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70 flex items-center gap-1.5">
           <TrendingUp size={12} /> Total Revenue
         </p>

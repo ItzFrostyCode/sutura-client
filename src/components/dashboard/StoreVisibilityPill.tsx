@@ -29,7 +29,7 @@ export default function StoreVisibilityPill({ storeVisible, toggleVisibility, vi
         onClick={toggleVisibility}
         disabled={visibilityLoading}
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none shrink-0 ${
-          storeVisible ? 'bg-sage' : 'bg-[#D1C7BD]'
+          storeVisible ? 'bg-sage' : 'bg-line-strong'
         } disabled:opacity-60 cursor-pointer`}
         aria-label="Toggle store visibility"
       >

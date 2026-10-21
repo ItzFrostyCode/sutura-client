@@ -65,7 +65,7 @@ export default function BookingBranchSelector({
       </div>
 
       {/* Compact Selected Branch Summary Card */}
-      <div className="p-3.5 bg-surface border border-line rounded-none flex items-start justify-between gap-3 min-h-[56px]">
+      <div className="p-3.5 bg-surface border border-line rounded-xl flex items-start justify-between gap-3 min-h-[56px] shadow-xs">
         <div className="flex items-start gap-2.5 min-w-0">
           <MapPin size={18} className="text-taupe shrink-0 mt-0.5" />
           <div className="min-w-0">
@@ -105,7 +105,7 @@ export default function BookingBranchSelector({
           aria-labelledby="branch-modal-title"
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          <div className="w-full sm:max-w-md bg-surface border-t sm:border border-line rounded-none max-h-[85vh] flex flex-col shadow-xl animate-in slide-in-from-bottom-4 sm:fade-in">
+          <div className="w-full sm:max-w-md bg-surface border-t sm:border border-line rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col shadow-xl animate-in slide-in-from-bottom-4 sm:fade-in overflow-hidden">
             {/* Modal Header */}
             <div className="p-4 border-b border-line flex items-center justify-between">
               <div>
@@ -119,7 +119,7 @@ export default function BookingBranchSelector({
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-ink cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-ink cursor-pointer rounded-full hover:bg-sunken"
                 aria-label="Close branch selector"
               >
                 <X size={20} />
@@ -135,7 +135,7 @@ export default function BookingBranchSelector({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search branch name or address..."
-                  className="w-full h-11 pl-9 pr-9 bg-surface border border-line rounded-none text-sm text-ink focus:outline-none focus:border-taupe"
+                  className="w-full h-11 pl-9 pr-9 bg-surface border border-line rounded-xl text-sm text-ink focus:outline-none focus:border-taupe"
                 />
                 {searchQuery && (
                   <button
@@ -150,7 +150,7 @@ export default function BookingBranchSelector({
             </div>
 
             {/* Branch List */}
-            <div className="overflow-y-auto max-h-[50vh] divide-y divide-line p-2">
+            <div className="overflow-y-auto max-h-[50vh] p-3 space-y-2">
               {filteredBranches.length === 0 ? (
                 <div className="p-8 text-center mobile-caption text-ink-faint">
                   No branches found matching &ldquo;{searchQuery}&rdquo;
@@ -167,23 +167,23 @@ export default function BookingBranchSelector({
                         setSelectedBranchId(String(b.id));
                         setModalOpen(false);
                       }}
-                      className={`w-full min-h-[56px] p-3 text-left transition-colors flex items-center justify-between gap-3 cursor-pointer ${
+                      className={`w-full min-h-[56px] p-3 rounded-xl border-2 text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
                         isSelected
-                          ? 'bg-taupe/5 border-l-4 border-l-taupe'
-                          : 'hover:bg-sunken border-l-4 border-l-transparent'
+                          ? 'border-taupe bg-taupe/[0.08] ring-2 ring-taupe/20 shadow-xs'
+                          : 'border-line bg-surface hover:border-taupe/40 hover:bg-canvas/50'
                       }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p
                             className={`text-sm font-semibold truncate ${
-                              isSelected ? 'text-taupe' : 'text-ink'
+                              isSelected ? 'text-ink' : 'text-ink-body'
                             }`}
                           >
                             {b.name}
                           </p>
                           {distance && (
-                            <span className="text-[10px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded-none shrink-0">
+                            <span className="text-[10px] font-semibold bg-sunken text-ink-muted px-1.5 py-0.5 rounded shrink-0">
                               {distance}
                             </span>
                           )}
@@ -196,13 +196,13 @@ export default function BookingBranchSelector({
                       </div>
 
                       <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                           isSelected
                             ? 'border-taupe bg-taupe text-white'
-                            : 'border-line bg-surface'
+                            : 'border-line-strong bg-white/70'
                         }`}
                       >
-                        {isSelected && <Check size={12} strokeWidth={3} />}
+                        {isSelected && <Check size={12} strokeWidth={3} className="text-white" />}
                       </div>
                     </button>
                   );

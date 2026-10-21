@@ -20,12 +20,12 @@ import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGr
 import ServiceDesignsGrid from '@/components/store-service-detail/ServiceDesignsGrid';
 import { useEmbedded, embedSuffix } from '@/hooks/useEmbedded';
 import { canonicalGarment } from '@/lib/garmentTaxonomy';
-import ServiceRequestLink from '@/components/store-service-detail/ServiceRequestLink';
 import ServiceAccordionSections from '@/components/store-service-detail/ServiceAccordionSections';
 import ServiceStoreProfileCard from '@/components/store-service-detail/ServiceStoreProfileCard';
 import ServiceRecommendationsSection from '@/components/store-service-detail/ServiceRecommendationsSection';
 import ServiceDetailBreadcrumb from '@/components/store-service-detail/ServiceDetailBreadcrumb';
 import type { SearchServiceResult } from '@/components/search/types';
+import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
 
 // Dedicated page for a single service — was an in-place swap inside the
 // Store Profile's Service tab (the old ServiceDetailView.tsx component,
@@ -80,6 +80,8 @@ export default function ServiceDetailPage({
   const [savesCount, setSavesCount] = useState(0);
   const [togglingSave, setTogglingSave] = useState(false);
 
+  const [quantity, setQuantity] = useState<number>(1);
+
   useEffect(() => {
     // No single-service-by-id public endpoint exists yet — fetching the
     // store's whole service list and finding by id matches the same
@@ -93,6 +95,9 @@ export default function ServiceDetailPage({
         const list: PublicService[] = servicesRes.data.data ?? [];
         const found = list.find((s) => s.id === Number(serviceId)) ?? null;
         setService(found);
+        if (found) {
+          setQuantity(Math.max(1, Number(found.min_order_qty) || 1));
+        }
         setSavesCount(found?.saves_count ?? 0);
         // "From the Same Shop" reuses this same store-scoped fetch rather
         // than firing a second request — the store's own service list is
@@ -281,10 +286,9 @@ export default function ServiceDetailPage({
   }
 
   const facebookUrl = getSocialUrl(store.social_links, 'facebook');
-  const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`;
+  const minQuantity = Math.max(1, Number(service.min_order_qty) || 1);
+  const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}&ref_qty=${Math.max(minQuantity, quantity)}&ref_min_qty=${minQuantity}${service.base_price != null ? `&ref_price=${encodeURIComponent(String(service.base_price))}` : ''}${service.image_url ? `&ref_image=${encodeURIComponent(service.image_url)}` : ''}`;
   const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
-  const isRepair = (service.service_types ?? []).includes('alteration_repair');
-  const canRequest = !(service.service_types ?? []).some((t) => t === 'alteration_repair' || t === 'bulk_sublimation');
 
   return (
     <div className="min-h-full flex flex-col bg-canvas">
@@ -510,13 +514,18 @@ export default function ServiceDetailPage({
           buyZone={
             <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
               <ServiceProductInfo service={service} />
-              <ServiceInlineActions bookHref={bookHref} messageHref={messageHref} />
+              <ItemQuantitySelector
+                quantity={quantity}
+                minQuantity={minQuantity}
+                onChange={setQuantity}
+              />
+              <ServiceInlineActions
+                bookHref={bookHref}
+                messageHref={messageHref}
+              />
             </div>
           }
         />
-
-        {canRequest && <ServiceRequestLink href={`/store/${storeId}/request?service_id=${service.id}`} />}
-        {isRepair && <ServiceRequestLink kind="repair" href={`/store/${storeId}/repair-request?service_id=${service.id}`} />}
 
         {/* Specification · Description — same numbered-card system as the
             Catalog Item Detail page's Size Guide/Specification/Description. */}
@@ -529,7 +538,7 @@ export default function ServiceDetailPage({
 
         {/* Every design made under this service, two columns — after the service's own details. */}
         <div className="mt-6 px-4 min-[375px]:px-6 min-[600px]:px-0">
-          <ServiceDesignsGrid storeId={storeId} serviceId={service.id} embedded={embedded} />
+          <ServiceDesignsGrid storeId={storeId} serviceId={service.id} embedded={embedded} store={store} />
         </div>
 
         {/* Ratings — below the specification, like the Catalog Design page */}
@@ -555,7 +564,10 @@ export default function ServiceDetailPage({
         </div>
       </main>
 
-      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} />
+      <ServiceBottomBar
+        bookHref={bookHref}
+        messageHref={messageHref}
+      />
     </div>
   );
 }

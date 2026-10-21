@@ -1,6 +1,5 @@
-import Image from 'next/image';
-import { CalendarDays, Hash, Store, Wallet } from 'lucide-react';
-import { getMediaUrl } from '@/lib/media';
+import { CalendarDays, Hash, Wallet } from 'lucide-react';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { ageOf, fullDateTime, kindOf, type AppNotification } from './inboxTypes';
 
 /**
@@ -27,9 +26,12 @@ export default function NotificationRow({ notif, onOpen }: { readonly notif: App
   return (
     <button type="button" onClick={() => onOpen(notif)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-sunken active:bg-sunken">
       <span className="relative shrink-0">
-        <span className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-sunken text-ink-faint">
-          {picture ? <Image src={getMediaUrl(picture)} alt="" fill className="object-cover" /> : <Store size={22} />}
-        </span>
+        <StoreLogoAvatar
+          src={picture}
+          name={d.store?.name ?? d.actor?.name ?? 'Store'}
+          className="w-14 h-14 rounded-full border border-line-strong shadow-none"
+          textClassName="text-xl font-serif font-bold text-taupe-dark"
+        />
         <span className={`absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface ${kind.tone}`}>
           <kind.Icon size={14} />
         </span>

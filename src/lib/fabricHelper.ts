@@ -166,6 +166,26 @@ export interface CatalogColorOption {
   fabricLabel?: string;
 }
 
+export function parseColorNames(rawColor?: string | null): string[] {
+  if (!rawColor) return [];
+  const trimmed = rawColor.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.map((c) => String(c).trim()).filter(Boolean);
+      }
+    } catch {
+      // Fall through to comma split
+    }
+  }
+  return trimmed
+    .split(',')
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
 export function getItemColorOptions(
   item: FabricResolveOptions & {
     color?: string | null;
@@ -179,15 +199,7 @@ export function getItemColorOptions(
   const primaryFabric = resolveFabricImage(item);
   const primaryFabricLabel = getFabricLabel(item);
 
-  const rawColor = (item.color ?? '').trim();
-
-  // Extract colors explicitly defined on the item (supports comma-separated if multiple)
-  const definedColors: string[] = rawColor
-    ? rawColor
-        .split(',')
-        .map((c) => c.trim())
-        .filter(Boolean)
-    : [];
+  const definedColors: string[] = parseColorNames(item.color);
 
   // Check if any additional images define specific color angles (e.g. view_angle="Navy")
   const imageColorAngles: { name: string; image_url: string }[] = [];
@@ -200,22 +212,27 @@ export function getItemColorOptions(
     }
   }
 
-  // Combine unique colors in order
+  // Combine unique colors in order:
+  // If definedColors already has colors, respect definedColors as the master list.
+  // Only add from imageColorAngles if definedColors is empty.
   const colorNames: string[] = [];
-  for (const c of definedColors) {
-    if (!colorNames.some((existing) => existing.toLowerCase() === c.toLowerCase())) {
-      colorNames.push(c);
+  if (definedColors.length > 0) {
+    for (const c of definedColors) {
+      if (!colorNames.some((existing) => existing.toLowerCase() === c.toLowerCase())) {
+        colorNames.push(c);
+      }
     }
-  }
-  for (const ico of imageColorAngles) {
-    if (!colorNames.some((existing) => existing.toLowerCase() === ico.name.toLowerCase())) {
-      colorNames.push(ico.name);
+  } else {
+    for (const ico of imageColorAngles) {
+      if (!colorNames.some((existing) => existing.toLowerCase() === ico.name.toLowerCase())) {
+        colorNames.push(ico.name);
+      }
     }
   }
 
-  // Fallback to item color or Default if empty
+  // Fallback to Default if empty
   if (colorNames.length === 0) {
-    colorNames.push(rawColor || 'Default');
+    colorNames.push((item.color ?? '').trim() || 'Default');
   }
 
   return colorNames.map((colorName, idx) => {
@@ -223,11 +240,16 @@ export function getItemColorOptions(
     const hex = getColorHex(colorName);
 
     // Look for a specific model photo for this color
-    const matchedImage = item.images?.find(
-      (img) => img.view_angle?.toLowerCase() === colorName.toLowerCase()
+    let matchedImage = item.images?.find(
+      (img) => img.view_angle?.trim().toLowerCase() === colorName.trim().toLowerCase()
     )?.image_url;
 
-    const modelImage = matchedImage || primaryModel;
+    // 1-to-1 fallback by index if colors count aligns with images count
+    if (!matchedImage && item.images && item.images[idx] && item.images.length === colorNames.length) {
+      matchedImage = item.images[idx].image_url;
+    }
+
+    const modelImage = matchedImage || (isFirst ? primaryModel : (item.images?.[idx]?.image_url || primaryModel));
 
     // Use primary fabric for the main color, or compute fabric fallback for secondary color
     const fabricImage = isFirst

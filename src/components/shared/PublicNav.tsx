@@ -7,8 +7,7 @@ import { usePathname } from 'next/navigation';
 import { usePublicNav } from './publicNav/usePublicNav';
 import NavActionButtons from './publicNav/NavActionButtons';
 import PublicTopLinks from './publicNav/PublicTopLinks';
-import PublicBottomNav from './publicNav/PublicBottomNav';
-import { usesBottomNav } from './publicNav/bottomNavPaths';
+import { isAuthPath, usesBottomNav } from './publicNav/bottomNavPaths';
 
 /**
  * The main pages (bottomNavPaths) have no header bar at any screen size: the name and Order Tracking icon sit in
@@ -34,11 +33,12 @@ export default function PublicNav({
     user,
     isAuthenticated,
   } = usePublicNav();
-  const bottomNavLayout = usesBottomNav(usePathname() ?? '/');
+  const pathname = usePathname() ?? '/';
+  const hideHeader = usesBottomNav(pathname) || isAuthPath(pathname);
 
   return (
     <>
-      <header className={`${isSticky ? 'sticky top-0' : 'relative'} z-50 w-full shrink-0 border-b border-line bg-surface text-ink ${bottomNavLayout ? 'hidden' : ''} ${className}`}>
+      <header className={`${isSticky ? 'sticky top-0' : 'relative'} z-50 w-full shrink-0 border-b border-line bg-surface text-ink ${hideHeader ? 'hidden' : ''} ${className}`}>
         <div className="relative mx-auto flex h-[52px] max-w-7xl items-center justify-between px-4 sm:h-[60px] sm:px-6 lg:px-8">
           <Link href="/" aria-label="SUTURA home" className="flex min-h-11 shrink-0 items-center">
             <SuturaLogo halo="var(--card-bg)" className="h-7 w-auto text-espresso sm:h-8" />

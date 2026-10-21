@@ -59,7 +59,7 @@ export default function QuotationModal({ isOpen, onClose, data, currentTotal, bu
           <p className="text-sm text-ink-muted">Total <strong className="text-lg text-ink">{peso(total)}</strong></p>
           <div className="flex gap-2">
             <button type="button" disabled={busy} onClick={() => submit('estimate')} className="h-11 rounded-lg border border-line px-4 text-sm font-semibold text-ink-body hover:bg-sunken disabled:opacity-50">Save as estimate</button>
-            <button type="button" disabled={busy || (needsReason && !reason.trim())} onClick={() => submit('final')} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">Finalize quotation</button>
+            <button type="button" disabled={busy || (needsReason && !reason.trim())} onClick={() => submit('final')} className="h-11 rounded-lg bg-espresso px-4 text-sm font-semibold text-white hover:bg-espresso/90 disabled:opacity-50">Finalize quotation</button>
           </div>
         </div>
       )}

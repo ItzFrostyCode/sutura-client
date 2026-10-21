@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import { ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { getMediaUrl } from '@/lib/media';
 import { roleLabel } from '@/components/staff/staffHelpers';
 
 // The account-menu cluster (bell + profile dropdown) from the dashboard
@@ -30,6 +31,7 @@ export default function AccountHeaderMenu() {
   // dashboard instead, whenever we're currently on a /store/ route.
   const isOnStorefront = pathname?.startsWith('/store/') ?? false;
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function AccountHeaderMenu() {
       console.error('Logout failed', e);
     } finally {
       logout();
-      router.push('/login');
+      router.replace('/login'); // signed out: Back must not reopen the dashboard
     }
   };
 
@@ -63,9 +65,15 @@ export default function AccountHeaderMenu() {
           className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer"
         >
           <div className="w-10 h-10 rounded-full overflow-hidden bg-taupe flex items-center justify-center text-white font-semibold">
-            {user?.name?.charAt(0) || 'U'}
+            {user?.profile_picture && !photoFailed ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={getMediaUrl(user.profile_picture)} alt={user.name ?? 'Profile'} onError={() => setPhotoFailed(true)} className="h-full w-full object-cover" />
+            ) : (
+              user?.name?.charAt(0) || 'U'
+            )}
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-line rounded-full border-[1.5px] border-white flex items-center justify-center text-ink-body">
+          {/* A solid grey disc: the translucent hairline colour went dark over the photo. */}
+          <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-gray-200 rounded-full border-[1.5px] border-white flex items-center justify-center text-ink-body">
             <ChevronDown size={12} strokeWidth={3} />
           </div>
         </button>

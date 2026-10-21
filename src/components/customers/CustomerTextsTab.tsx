@@ -53,7 +53,7 @@ export default function CustomerTextsTab({ storeId, customerId, customerName }: 
           />
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-ink-muted">{body.length}/{MAX} · {d.sms_mode === 'auto' ? 'sent right away' : 'you check it before it is sent'}</span>
-            <button type="submit" disabled={body.trim().length < 5 || t.busy === 'new'} className="flex h-11 items-center gap-2 bg-taupe px-5 text-sm font-bold text-white hover:bg-taupe-hover disabled:opacity-50">
+            <button type="submit" disabled={body.trim().length < 5 || t.busy === 'new'} className="flex h-11 items-center gap-2 bg-espresso px-5 text-sm font-bold text-white hover:bg-espresso/90 disabled:opacity-50">
               {t.busy === 'new' && <Loader2 size={14} className="animate-spin" />}
               {d.sms_mode === 'auto' ? 'Send text' : 'Prepare text'}
             </button>

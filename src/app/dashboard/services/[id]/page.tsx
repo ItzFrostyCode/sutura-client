@@ -47,11 +47,15 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
   const reload = useCallback(async () => {
     if (!store?.id) return;
     try {
-      const [own, pub] = await Promise.all([
-        api.get(`/stores/${store.id}/services`),
+      const [ownRes, pub] = await Promise.all([
+        api.get(`/stores/${store.id}/services/${id}`).catch(async () => {
+          const list = await api.get(`/stores/${store.id}/services`);
+          const matched = ((list.data.data ?? []) as Service[]).find((s) => s.id === Number(id)) ?? null;
+          return { data: { data: matched } };
+        }),
         api.get(`/public/stores/${store.slug}/services`).catch(() => ({ data: { data: [] } })),
       ]);
-      const found = ((own.data.data ?? []) as Service[]).find((s) => s.id === Number(id)) ?? null;
+      const found = (ownRes.data.data ?? null) as Service | null;
       setService(found);
       setPublicView(((pub.data.data ?? []) as PublicService[]).find((s) => s.id === Number(id)) ?? null);
     } catch {
@@ -61,27 +65,41 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     }
   }, [store?.id, store?.slug, id, toast]);
 
+  const onSavedSection = useCallback(async (updated?: Service) => {
+    if (updated) {
+      setService(updated);
+    }
+    await reload();
+  }, [reload]);
+
   useEffect(() => {
     reload();
   }, [reload]);
 
   const canManage = useCanManageOfferings();
-  const edit = useServiceSectionEdit(service, reload, canManage);
+  const edit = useServiceSectionEdit(service, onSavedSection, canManage);
   const { guard, pending, clearPending } = useUnsavedChangesGuard(edit.isDirty);
 
-  // Ratings come from the public list (it carries each rating); the owner's
-  // own list carries the rest.
+  // Ratings come from the service's own loaded reviews or public list fallback
   const ratingsView = useMemo<PublicService | null>(() => {
     if (!service) return null;
-    return { ...toPublicService(service), reviews: publicView?.reviews ?? [], reviews_count: publicView?.reviews_count ?? service.reviews_count ?? 0, reviews_avg_rating: publicView?.reviews_avg_rating ?? service.reviews_avg_rating ?? null };
+    return {
+      ...toPublicService(service),
+      reviews: service.reviews ?? publicView?.reviews ?? [],
+      reviews_count: service.reviews_count ?? publicView?.reviews_count ?? 0,
+      reviews_avg_rating: service.reviews_avg_rating ?? publicView?.reviews_avg_rating ?? null,
+    };
   }, [service, publicView]);
 
   const saveWithActive = async (isActive: boolean) => {
     if (!store?.id || !service) return;
     setToggling(true);
     try {
-      await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
+      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
       toast.success(isActive ? 'Service is live again.' : 'Service paused.');
+      if (res.data?.data) {
+        setService(res.data.data);
+      }
       await reload();
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not change the service status.'));
@@ -119,7 +137,7 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         <AlertCircle size={44} className="text-ink-muted mx-auto mb-3" />
         <h2 className="text-lg font-bold text-ink">Service not found</h2>
         <p className="text-xs text-ink-muted mt-1 mb-6">It may have been removed or does not belong to your store.</p>
-        <Link href="/dashboard/services" className="px-5 py-2.5 bg-taupe text-white text-xs font-bold hover:bg-[#8A7063] transition-colors inline-flex items-center gap-2">
+        <Link href="/dashboard/services" className="px-5 py-2.5 bg-espresso text-white text-xs font-bold hover:bg-taupe transition-colors inline-flex items-center gap-2">
           <ArrowLeft size={16} /> Back to Services
         </Link>
       </div>

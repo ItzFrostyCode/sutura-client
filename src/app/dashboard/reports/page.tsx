@@ -319,7 +319,7 @@ export default function ReportsPage() {
           <div className="h-80 bg-white rounded-2xl border border-line p-6 flex flex-col animate-pulse">
             <div className="h-5 bg-line rounded w-48 mb-6"></div>
             <div className="flex-1 flex items-center justify-center">
-              <div className="w-40 h-40 rounded-full border-[12px] border-[#FAF6F3]"></div>
+              <div className="w-40 h-40 rounded-full border-[12px] border-canvas"></div>
             </div>
           </div>
         </div>

@@ -59,16 +59,14 @@ export default function CatalogHeroGallery({
   // this garment's angle views (front/back/side/etc.) so a color photo never
   // shows up twice. With no color variants, nothing to exclude — every image
   // is just an angle view, same as before this changed.
-  const hasColorVariants = colorOptions.length > 1;
   const uniqueImages = useMemo(() => {
     const seen = new Set<string>();
     return item.images.filter((img) => {
       if (!img.image_url || seen.has(img.image_url)) return false;
-      if (hasColorVariants && !isAngleLabel(img.view_angle)) return false;
       seen.add(img.image_url);
       return true;
     });
-  }, [item.images, hasColorVariants]);
+  }, [item.images]);
 
   const currentIndex = uniqueImages.findIndex(img => img.image_url === selectedImage);
   const displayIndex = currentIndex >= 0 ? currentIndex + 1 : 1;

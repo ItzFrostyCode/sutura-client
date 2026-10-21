@@ -45,4 +45,11 @@ export interface StoreServiceOption {
   /** The service's price — a design under it costs this by default. */
   base_price?: string | number | null;
   service_types?: string[];
+  service_category?: string | null;
+  estimated_days?: number | string | null;
+  estimated_days_max?: number | string | null;
+  garment_types?: string[];
+  capabilities?: string[];
+  pricing?: { id: number; label: string; amount: number | string }[];
+  description?: string | null;
 }

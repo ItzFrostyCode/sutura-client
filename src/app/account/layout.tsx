@@ -8,6 +8,7 @@ import api from '@/lib/axios';
 import PublicNav from '@/components/shared/PublicNav';
 import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import AccountWebSidebar from '@/components/account/hub/AccountWebSidebar';
+import { withRedirect } from '@/lib/authRedirect';
 
 // A thin auth-guard shell — one hydration-guard/redirect/refetch bootstrap
 // shared by every /account/* page. PublicNav sits above all of it, same as
@@ -35,7 +36,7 @@ export default function AccountLayout({ children }: { readonly children: React.R
     if (!hydrated) return;
 
     if (!isAuthenticated) {
-      if (!isGuestViewableRoute) router.replace('/login');
+      if (!isGuestViewableRoute) router.replace(withRedirect('/login', pathname));
     } else if (!user && token) {
       api.get('/auth/me')
         .then(res => {
@@ -47,7 +48,7 @@ export default function AccountLayout({ children }: { readonly children: React.R
         .catch((err) => {
           if (err?.response?.status === 401) {
             logout();
-            router.replace('/login');
+            router.replace(withRedirect('/login', pathname));
           }
         });
     }

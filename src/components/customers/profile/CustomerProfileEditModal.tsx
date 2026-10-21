@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Loader2 } from 'lucide-react';
+import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
 
 interface CustomerProfileEditModalProps {
   readonly isOpen: boolean;
@@ -8,6 +9,8 @@ interface CustomerProfileEditModalProps {
   readonly setEditName: (v: string) => void;
   readonly editPhone: string;
   readonly setEditPhone: (v: string) => void;
+  readonly editGender: Gender | '';
+  readonly setEditGender: (g: Gender | '') => void;
   readonly savingProfile: boolean;
   readonly onSubmit: (e: React.SyntheticEvent) => Promise<void>;
 }
@@ -19,13 +22,15 @@ export default function CustomerProfileEditModal({
   setEditName,
   editPhone,
   setEditPhone,
+  editGender,
+  setEditGender,
   savingProfile,
   onSubmit,
 }: CustomerProfileEditModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#2D2A26]/60 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-ink/60 z-50 flex items-center justify-center p-4">
       <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
         <div className="flex justify-between items-center border-b border-line pb-3 mb-4">
           <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Edit Customer Profile</h3>
@@ -66,6 +71,7 @@ export default function CustomerProfileEditModal({
               className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             />
           </div>
+          <GenderPicker value={editGender} onChange={setEditGender} optional={false} />
           <div className="flex justify-end gap-2 pt-3 border-t border-line">
             <button
               type="button"
@@ -77,7 +83,7 @@ export default function CustomerProfileEditModal({
             <button
               type="submit"
               disabled={savingProfile}
-              className="px-5 py-2.5 bg-taupe hover:bg-taupe-hover text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
+              className="px-5 py-2.5 bg-espresso hover:bg-espresso/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
             >
               {savingProfile && <Loader2 size={14} className="animate-spin" />}
               Save Changes

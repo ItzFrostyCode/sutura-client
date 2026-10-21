@@ -336,7 +336,7 @@ export default function JobProductionTimeline({
                       alt={`Progress at ${photo.stage}`}
                       className="h-20 w-20 object-cover rounded-lg border border-line hover:opacity-80 transition-opacity"
                     />
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-semibold text-center py-0.5 rounded-b-lg capitalize">
+                    <span className="absolute bottom-0 inset-x-0 bg-espresso/60 text-white text-[9px] font-semibold text-center py-0.5 rounded-b-lg capitalize">
                       {STAGES.find(s => s.key === photo.stage)?.label ?? photo.stage.replaceAll('_', ' ')}
                     </span>
                   </a>
@@ -363,7 +363,7 @@ export default function JobProductionTimeline({
               ))}
             </div>
           )}
-          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-sage hover:text-[#6B7C67] bg-sage/5 hover:bg-sage/10 border border-sage/20 px-3 py-1.5 rounded-lg transition-colors mt-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-sage hover:text-sage bg-sage/5 hover:bg-sage/10 border border-sage/20 px-3 py-1.5 rounded-lg transition-colors mt-1">
             {uploadingProgressPhoto ? <Loader2 size={14} className="animate-spin text-sage" /> : <Camera size={14} />}
             <span>{uploadingProgressPhoto ? 'Uploading...' : 'Add a progress photo'}</span>
             <input

@@ -14,6 +14,9 @@ export interface CatalogFilterState {
   readonly garmentTypeFilter: string;
   readonly setGarmentTypeFilter: (v: string) => void;
   readonly garmentTypeOptions: string[];
+  readonly serviceOptions?: { id: number; name: string }[];
+  readonly serviceFilter?: string;
+  readonly setServiceFilter?: (v: string) => void;
   readonly sortOrder: CatalogSortOption;
   readonly setSortOrder: (v: CatalogSortOption) => void;
 }
@@ -62,6 +65,9 @@ export default function CatalogFilterBody({
   garmentTypeFilter,
   setGarmentTypeFilter,
   garmentTypeOptions,
+  serviceOptions,
+  serviceFilter,
+  setServiceFilter,
   sortOrder,
   setSortOrder,
 }: Readonly<CatalogFilterState>) {
@@ -78,6 +84,23 @@ export default function CatalogFilterBody({
           </FilterOption>
         ))}
       </FilterSection>
+
+      {serviceOptions && serviceOptions.length > 0 && setServiceFilter && (
+        <FilterSection title="Parent Service">
+          <FilterOption selected={!serviceFilter} onClick={() => setServiceFilter('')}>
+            All services
+          </FilterOption>
+          {serviceOptions.map(svc => (
+            <FilterOption
+              key={svc.id}
+              selected={serviceFilter === String(svc.id)}
+              onClick={() => setServiceFilter(serviceFilter === String(svc.id) ? '' : String(svc.id))}
+            >
+              {svc.name}
+            </FilterOption>
+          ))}
+        </FilterSection>
+      )}
 
       <FilterSection title="Garment category">
         <FilterOption selected={!categoryFilter} onClick={() => { setCategoryFilter(''); setGarmentTypeFilter(''); }}>

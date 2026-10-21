@@ -1,5 +1,5 @@
 import React from 'react';
-import { getFabricLabel } from '@/lib/fabricHelper';
+import { getFabricLabel, parseColorNames } from '@/lib/fabricHelper';
 import { catalogCategoryPath } from '@/lib/garmentTaxonomy';
 import { CatalogItem } from './types';
 import GuideImage from '@/components/shared/GuideImage';
@@ -43,7 +43,10 @@ export function CatalogSpecTable({ item }: Readonly<{ item: CatalogItem }>) {
   if (item.service?.name) rows.push(['Service', item.service.name]);
   rows.push(['Fabric', getFabricLabel(item)]);
   if (item.material) rows.push(['Material', item.material]);
-  if (item.color) rows.push(['Color', item.color]);
+  if (item.color) {
+    const parsedColors = parseColorNames(item.color);
+    rows.push(['Color', parsedColors.length > 0 ? parsedColors.join(' • ') : item.color]);
+  }
   if (item.sizes && item.sizes.length > 0) rows.push(['Sizes Available', item.sizes.join(', ')]);
   rows.push(['Estimated Completion', formatTurnaround(item.estimated_days, item.estimated_days_max)]);
 

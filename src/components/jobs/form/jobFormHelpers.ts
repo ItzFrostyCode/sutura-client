@@ -142,3 +142,9 @@ export function dateInDays(days: number): string {
 }
 
 export const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** The size chart this order reads: the design's own when it has one, else its service's. */
+export function chartFor(design: CatalogItem | null, service: ServiceData | undefined) {
+  const source = design && ((design.size_chart_columns?.length ?? 0) > 0 || design.size_chart_image_url) ? design : service;
+  return { columns: source?.size_chart_columns ?? [], rows: source?.size_chart_rows ?? [], image: source?.size_chart_image_url ?? null };
+}

@@ -281,7 +281,7 @@ export default function InteractiveCalendar({
             onTimeChange(''); // reset time when date changes
           }}
           className={`relative h-10 w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
-            ${isSelected ? 'bg-taupe text-white hover:bg-[#856D60]' : ''}
+            ${isSelected ? 'bg-taupe text-white hover:bg-taupe-hover' : ''}
             ${!isSelected && !disabled && isToday ? 'border-2 border-taupe text-taupe' : ''}
             ${!isSelected && !disabled && !isToday ? 'text-ink hover:bg-line' : ''}
             ${!isSelected && fullyBooked ? 'bg-danger/10 text-danger line-through' : ''}
@@ -380,19 +380,19 @@ export default function InteractiveCalendar({
         {hasAnyOpen && mode === 'public' && selectedDate === todayStr && (
           <p className="text-xs text-ink-muted">Same-day appointments need at least 2 hours’ notice.</p>
         )}
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {availableSlots.map(({ time: slot, isBooked: booked, hasPendingOnly, blocked }) => {
             // A passed / too-soon time is greyed out exactly like a booked one.
             const isBooked = booked || blocked !== null;
-            let slotClass = 'border-line text-ink-body hover:border-taupe/50 hover:bg-canvas cursor-pointer';
+            let slotClass = 'bg-white border-2 border-line text-ink-body hover:border-taupe/60 hover:bg-taupe/5 cursor-pointer shadow-2xs';
             if (blocked && !booked) {
-              slotClass = 'bg-sunken border-line/60 text-ink-faint cursor-not-allowed opacity-50';
+              slotClass = 'bg-sunken border-2 border-line/50 text-ink-faint cursor-not-allowed opacity-50';
             } else if (isBooked) {
-              slotClass = 'bg-canvas/40 border-line/60 text-ink-faint cursor-not-allowed opacity-60';
+              slotClass = 'bg-canvas/40 border-2 border-line/50 text-ink-faint cursor-not-allowed opacity-60';
             } else if (selectedTime === slot) {
-              slotClass = 'border-taupe bg-taupe text-white cursor-pointer shadow-2xs';
+              slotClass = 'border-2 border-taupe bg-taupe text-white cursor-pointer shadow-xs font-semibold';
             } else if (hasPendingOnly) {
-              slotClass = 'border-amber-300/80 bg-amber-50/40 text-amber-900 hover:border-amber-400 hover:bg-amber-50/70 cursor-pointer';
+              slotClass = 'border-2 border-amber-300 bg-amber-50/50 text-amber-900 hover:border-amber-400 hover:bg-amber-50/80 cursor-pointer';
             }
 
             return (
@@ -413,7 +413,7 @@ export default function InteractiveCalendar({
                     : undefined
                 }
                 aria-label={blocked && !booked ? `${formatSlotLabel(slot)} — unavailable` : undefined}
-                className={`min-h-11 min-w-0 rounded-lg border px-2 py-1.5 text-sm font-medium transition-all flex flex-col items-center justify-center gap-0.5 ${slotClass}`}
+                className={`min-h-[46px] min-w-0 rounded-xl px-2.5 py-2 text-sm font-medium transition-all flex flex-col items-center justify-center gap-0.5 ${slotClass}`}
               >
                 <span className={`whitespace-nowrap ${booked ? 'line-through' : ''}`}>{formatSlotLabel(slot)}</span>
                 {booked && (
@@ -497,7 +497,7 @@ export default function InteractiveCalendar({
           <Clock size={16} /> Select Time <span className="text-danger">*</span>
         </label>
 
-        <div className="bg-surface border border-line rounded-xl p-3 max-h-80 overflow-y-auto overflow-x-hidden">
+        <div>
           {renderTimePickerContent()}
         </div>
       </div>

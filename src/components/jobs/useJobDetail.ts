@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { Job } from './jobTypes';
+import { Job, GarmentSpecTable, CustomizationInstruction } from './jobTypes';
 
 // Local (not UTC) YYYY-MM-DDTHH:mm for a <input type="datetime-local">,
 // same timezone-drift avoidance as appointmentHelpers' getLocalDateString.
@@ -372,6 +372,68 @@ export function useJobDetail(jobId: string) {
     }
   };
 
+  const handleSaveSpecTable = async (specTable: GarmentSpecTable) => {
+    if (!store || !job) return;
+    setSaving(true);
+    try {
+      // Sync with team_roster if applicable for backward compatibility
+      const teamRoster = specTable.rows.map((row) => ({
+        name: String(row.player_name || row.name || row.customer_name || ''),
+        print_name: String(row.print_name || ''),
+        number: String(row.number || row.jersey_number || ''),
+        position: String(row.position || ''),
+        size: String(row.size || ''),
+        remarks: String(row.remarks || row.notes || ''),
+        completed: Boolean(row.completed),
+      }));
+
+      const res = await api.put(`/stores/${store.id}/jobs/${job.id}`, {
+        custom_order_data: {
+          spec_table: specTable,
+          team_roster: teamRoster.length > 0 ? teamRoster : undefined,
+        },
+      });
+
+      const updatedJob = res.data?.data || (await api.get(`/stores/${store.id}/jobs/${job.id}`)).data?.data;
+      if (updatedJob) {
+        setJob(updatedJob);
+      }
+      toast.success('Garment specifications updated successfully.');
+    } catch (err: unknown) {
+      console.error('Failed to save spec table', err);
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to save specification table.');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCustomizationInstructions = async (instructions: CustomizationInstruction[]) => {
+    if (!store || !job) return;
+    setSaving(true);
+    try {
+      const res = await api.put(`/stores/${store.id}/jobs/${job.id}`, {
+        custom_order_data: {
+          customization_instructions: instructions,
+        },
+      });
+
+      const updatedJob = res.data?.data || (await api.get(`/stores/${store.id}/jobs/${job.id}`)).data?.data;
+      if (updatedJob) {
+        setJob(updatedJob);
+      }
+      toast.success('Customization instructions saved successfully.');
+    } catch (err: unknown) {
+      console.error('Failed to save customization instructions', err);
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to save customization instructions.');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!store || !job) return;
     setIsDeleting(true);
@@ -418,6 +480,8 @@ export function useJobDetail(jobId: string) {
     handleRejectOrder,
     handleUseCurrentMeasurement,
     handleToggleRosterItem,
+    handleSaveSpecTable,
+    handleSaveCustomizationInstructions,
     cancellationReason,
     setCancellationReason,
     holdReason,

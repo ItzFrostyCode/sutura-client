@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors, Trash2, CalendarPlus, MessageSquare, Printer } from 'lucide-react';
+import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors, Trash2, CalendarPlus, MessageSquare, Printer, UserCircle } from 'lucide-react';
 import { CustomerData } from '../customerTypes';
 import { isWalkInCustomer, isWalkInEmail } from '../customerHelpers';
 
@@ -45,6 +45,11 @@ export default function CustomerProfileHeader({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-black text-ink tracking-tight">{customer?.name}</h1>
+              {customer?.gender && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-canvas border border-line text-ink-muted">
+                  {customer.gender.charAt(0).toUpperCase() + customer.gender.slice(1)}
+                </span>
+              )}
               {sukiBadge && (
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${sukiBadge.badgeCls}`}>
                   {sukiBadge.label}
@@ -88,7 +93,7 @@ export default function CustomerProfileHeader({
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/dashboard/jobs/new?customer_id=${customer?.id}`}
-            className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
+            className="h-9 px-3.5 rounded-xl bg-espresso hover:bg-espresso/90 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
           >
             <Scissors size={13} />
             <span>New Order</span>

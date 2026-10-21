@@ -123,7 +123,7 @@ export default function LogPaymentModal({
                 type="button"
                 onClick={handleLogPayment}
                 disabled={paySubmitting}
-                className="bg-taupe hover:bg-taupe-hover disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                className="bg-espresso hover:bg-espresso/90 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs"
               >
                 {paySubmitting ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
                 <span>{paySubmitting ? 'Recording…' : 'Confirm & Record'}</span>
@@ -187,7 +187,7 @@ export default function LogPaymentModal({
                       onClick={() => { setPayMethod(m.id); setPayAccountId(''); }}
                       className={`py-2.5 min-h-11 rounded-lg border text-xs font-bold transition-all ${
                         payMethod === m.id
-                          ? 'bg-taupe text-white border-taupe shadow-xs'
+                          ? 'bg-espresso text-white border-taupe shadow-xs'
                           : 'bg-canvas text-ink border-line hover:bg-sunken'
                       }`}
                     >
@@ -327,7 +327,7 @@ export default function LogPaymentModal({
                 type="button"
                 onClick={() => setPayReviewing(true)}
                 disabled={!canReview}
-                className="bg-taupe hover:bg-taupe-hover disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                className="bg-espresso hover:bg-espresso/90 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs"
               >
                 <span>Review (₱{parsedAmount.toFixed(2)})</span>
               </button>

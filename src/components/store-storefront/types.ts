@@ -157,6 +157,13 @@ export interface StoreProfile {
     announcement_message: string | null;
     announcement_image_url: string | null;
   }>;
+  gcash_number?: string | null;
+  gcash_account_name?: string | null;
+  gcash_qr_path?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
+  bank_qr_path?: string | null;
 }
 
 export interface PublicStoreProfilePageProps {

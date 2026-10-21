@@ -7,16 +7,21 @@ import JobRejectModal from '@/components/jobs/JobRejectModal';
 import JobTrashModal from '@/components/jobs/JobTrashModal';
 import JobsPageHeader from '@/components/jobs/JobsPageHeader';
 import SimpleBoard from '@/components/jobs/board/SimpleBoard';
+import JobsTableView from '@/components/jobs/board/JobsTableView';
 import BoardToolbar from '@/components/jobs/board/BoardToolbar';
 import BoardSummary from '@/components/jobs/board/BoardSummary';
+import AppointmentIntakeBanner from '@/components/jobs/board/AppointmentIntakeBanner';
 import { useJobsBoard } from '@/components/jobs/board/useJobsBoard';
 import { useWaitingAppointments } from '@/components/jobs/board/useWaitingAppointments';
 import { useAuthStore } from '@/store/useAuthStore';
 import { KanbanSkeleton } from '@/components/ui/Skeleton';
+import ApplePage from '@/components/jobs/ui/ApplePage';
+import { isLateBalance } from '@/components/jobs/jobHelpers';
+import { BTN_PRIMARY } from '@/components/shared/plainForm';
 
 export default function JobOrdersPage() {
   return (
-    <Suspense fallback={<div className="p-4"><KanbanSkeleton columns={4} /></div>}>
+    <Suspense fallback={<ApplePage><div className="p-4"><KanbanSkeleton columns={4} /></div></ApplePage>}>
       <JobOrdersPageContent />
     </Suspense>
   );
@@ -25,47 +30,141 @@ export default function JobOrdersPage() {
 function JobOrdersPageContent() {
   const { user } = useAuthStore();
   const isStaff = user?.roles?.[0]?.name === 'staff';
-  const isOwnerOrManager = Boolean(user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)));
+  const isOwnerOrManager = Boolean(
+    user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
+  );
+
   const board = useJobsBoard();
   const waiting = useWaitingAppointments();
   const [trashOpen, setTrashOpen] = useState(false);
   const [declining, setDeclining] = useState<number | null>(null);
-  const filtered = board.statusFilter || board.overdueOnly || board.garment;
+
+  const isDeepFiltered = Boolean(board.statusFilter || board.overdueOnly || board.garment);
+  const activeOrdersCount = Math.max(0, board.stageCounts.all - board.stageCounts.done);
 
   return (
-    <div className="space-y-4">
-      <JobsPageHeader jobsCount={board.jobs.length} onOpenTrash={() => setTrashOpen(true)} isOwnerOrManager={isOwnerOrManager} />
-
-      {filtered && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-taupe/20 bg-taupe/10 px-4 py-2.5 text-sm font-medium text-taupe">
-          <span className="flex items-center gap-2"><AlertCircle size={16} /> Showing only part of your orders</span>
-          <Link href="/dashboard/jobs" className="flex items-center gap-1 text-xs font-semibold hover:underline"><X size={13} /> Show all</Link>
-        </div>
-      )}
-
-      {!board.loading && <BoardSummary jobs={board.jobs} canSeeMoney={isOwnerOrManager} />}
-
-      <BoardToolbar
-        search={board.search} onSearch={board.setSearch} showMine={isStaff} mine={board.mine} onMine={board.setMine}
-        closedCount={board.closed.length} showClosed={board.showClosed} onShowClosed={board.setShowClosed}
+    <ApplePage plain>
+      <JobsPageHeader
+        activeCount={activeOrdersCount}
+        totalCount={board.jobs.length}
+        onOpenTrash={() => setTrashOpen(true)}
+        isOwnerOrManager={isOwnerOrManager}
       />
 
-      {board.loading ? <KanbanSkeleton columns={4} /> : (
-        <SimpleBoard
-          byStage={board.byStage} closed={board.closed} showClosed={board.showClosed}
-          canSeeMoney={isOwnerOrManager} canDecline={isOwnerOrManager} busyId={board.busyId} waiting={waiting}
-          onAdvance={board.advance} onDecline={setDeclining}
-        />
-      )}
+      <div className="space-y-4 p-4 sm:p-6">
 
+        {/* Consultations Ready for Job Order Conversion */}
+        <AppointmentIntakeBanner appointments={waiting} />
+
+        {/* Alert Banner for Deep Links from Home Dashboard */}
+        {isDeepFiltered && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-espresso/[0.08] bg-white px-4 py-3 text-[13px] text-ink-body">
+            <span className="flex items-center gap-2">
+              <AlertCircle size={15} className="text-espresso" />
+              Showing the orders you opened from the dashboard
+              {board.statusFilter && ` (Stage: ${board.statusFilter})`}
+              {board.overdueOnly && ' (Overdue only)'}
+              {board.garment && ` (Garment: ${board.garment})`}
+            </span>
+            <Link
+              href="/dashboard/jobs"
+              className="inline-flex h-9 items-center gap-1 rounded-md border border-espresso/25 bg-white px-3 text-sm font-medium text-espresso hover:bg-espresso/[0.06]"
+            >
+              <X size={13} /> Clear
+            </Link>
+          </div>
+        )}
+
+        {/* Executive Summary Cards */}
+        {!board.loading && (
+          <BoardSummary
+            jobs={board.jobs}
+            canSeeMoney={isOwnerOrManager}
+            waitingAppointmentsCount={waiting.length}
+          />
+        )}
+
+        {/* Filter and Operations Toolbar */}
+        <BoardToolbar
+          search={board.search}
+          onSearch={board.setSearch}
+          viewMode={board.viewMode}
+          onViewMode={board.setViewMode}
+          stageFilter={board.stageFilter}
+          onStageFilter={board.setStageFilter}
+          urgencyFilter={board.urgencyFilter}
+          onUrgencyFilter={board.setUrgencyFilter}
+          paymentFilter={board.paymentFilter}
+          onPaymentFilter={board.setPaymentFilter}
+          sortBy={board.sortBy}
+          onSortBy={board.setSortBy}
+          stageCounts={board.stageCounts}
+          urgencyCounts={board.urgencyCounts}
+          showMine={isStaff}
+          mine={board.mine}
+          onMine={board.setMine}
+          closedCount={board.closed.length}
+          showClosed={board.showClosed}
+          onShowClosed={board.setShowClosed}
+          canSeeMoney={isOwnerOrManager}
+          lateBalanceCount={board.jobs.filter(isLateBalance).length}
+          hasActiveFilters={board.hasActiveFilters}
+          onResetFilters={board.resetFilters}
+        />
+
+        {/* Content: Operational Table View OR Kanban Workflow Board */}
+        {board.loading ? (
+          <KanbanSkeleton columns={4} />
+        ) : board.loadError ? (
+          <div role="alert" className="flex flex-col items-start gap-3 border-y border-espresso/15 py-6">
+            <p className="text-base font-semibold text-espresso">The orders could not be loaded.</p>
+            <p className="text-sm text-espresso/60">This is a connection problem, not an empty list: nothing was deleted. Check the connection, then try again.</p>
+            <button type="button" onClick={board.refetch} className={BTN_PRIMARY}>Try again</button>
+          </div>
+        ) : board.viewMode === 'table' ? (
+          <JobsTableView
+            jobs={board.visible}
+            canSeeMoney={isOwnerOrManager}
+            canDecline={isOwnerOrManager}
+            busyId={board.busyId}
+            onAdvance={board.advance}
+            onDecline={setDeclining}
+          />
+        ) : (
+          <div className="lg:h-[max(30rem,calc(100dvh-20rem))]">
+            <SimpleBoard
+              byStage={board.byStage}
+              closed={board.closed}
+              showClosed={board.showClosed}
+              canSeeMoney={isOwnerOrManager}
+              canDecline={isOwnerOrManager}
+              busyId={board.busyId}
+              onAdvance={board.advance}
+              onDecline={setDeclining}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
       <JobRejectModal
         isOpen={declining !== null}
         onClose={() => setDeclining(null)}
-        onConfirm={async (reason) => { if (declining !== null) await board.decline(declining, reason); setDeclining(null); }}
+        onConfirm={async (reason) => {
+          if (declining !== null) await board.decline(declining, reason);
+          setDeclining(null);
+        }}
         actionLoading={board.busyId !== null}
       />
 
-      {board.store && <JobTrashModal isOpen={trashOpen} onClose={() => setTrashOpen(false)} storeId={board.store.id} onRestored={board.refetch} />}
-    </div>
+      {board.store && (
+        <JobTrashModal
+          isOpen={trashOpen}
+          onClose={() => setTrashOpen(false)}
+          storeId={board.store.id}
+          onRestored={board.refetch}
+        />
+      )}
+    </ApplePage>
   );
 }

@@ -26,7 +26,10 @@ api.interceptors.response.use(
     // validation) — a warning, not console.error, which Next's dev overlay
     // turns into a red "Issue". Server errors and network failures stay errors.
     const expected = typeof error.response?.status === 'number' && error.response.status < 500;
-    (expected ? console.warn : console.error)(`[AxiosError] ${status} on ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
+    (expected ? console.warn : console.error)(
+      `[AxiosError] ${status} on ${error.config?.method?.toUpperCase()} ${error.config?.url}:`,
+      error.response?.data?.message || error.response?.data || error.message
+    );
     if (error.response?.status === 401) {
       if (globalThis.window !== undefined) {
         // Clear invalid auth credentials from storage
@@ -44,7 +47,8 @@ api.interceptors.response.use(
           (pathname.startsWith('/account/') && pathname !== '/account');
 
         if (isProtectedRoute && pathname !== '/login' && !isAuthEndpoint) {
-          globalThis.location.href = `/login?redirect=${encodeURIComponent(pathname)}`;
+          // replace: the page that failed should not stay behind the sign-in page in the history.
+          globalThis.location.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
         }
       }
     }

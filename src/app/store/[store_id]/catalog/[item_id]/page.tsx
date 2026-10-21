@@ -11,6 +11,7 @@ import CatalogHeroGallery from '@/components/store-catalog-detail/CatalogHeroGal
 import CatalogProductInfo from '@/components/store-catalog-detail/CatalogProductInfo';
 import CatalogColorSelector from '@/components/store-catalog-detail/CatalogColorSelector';
 import CatalogSizeSelector from '@/components/store-catalog-detail/CatalogSizeSelector';
+import CatalogAddOnsSelector from '@/components/store-catalog-detail/CatalogAddOnsSelector';
 import CatalogAccordionSections from '@/components/store-catalog-detail/CatalogAccordionSections';
 import CatalogRatingsSection from '@/components/store-catalog-detail/CatalogRatingsSection';
 import CatalogStoreProfileCard from '@/components/store-catalog-detail/CatalogStoreProfileCard';
@@ -20,6 +21,7 @@ import { useEmbedded } from '@/hooks/useEmbedded';
 import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogDetailBreadcrumb from '@/components/store-catalog-detail/CatalogDetailBreadcrumb';
+import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
 
 export default function PublicProductDetailPage({
   params,
@@ -41,6 +43,12 @@ export default function PublicProductDetailPage({
     colorOptions,
     selectedSize,
     setSelectedSize,
+    selectedAddOns,
+    handleToggleAddOn,
+    computedPrice,
+    quantity,
+    setQuantity,
+    minQuantity,
     orderSuccess,
     isSaved,
     togglingSave,
@@ -128,7 +136,7 @@ export default function PublicProductDetailPage({
           buyZone={
           <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
             {/* Name → Rating → Price → Production Estimate → Service/Fabric */}
-            <CatalogProductInfo item={item} />
+            <CatalogProductInfo item={item} computedPrice={computedPrice} />
 
             {/* Color row — only rendered when the item actually has more
                 than one color; picking a swatch switches the hero gallery
@@ -153,16 +161,25 @@ export default function PublicProductDetailPage({
             {/* Size row */}
             <CatalogSizeSelector
               sizes={item.sizes}
-              selectedSize={selectedSize}
-              onSelectSize={setSelectedSize}
               orderSuccess={orderSuccess}
               onViewOrder={id => router.push(`/account/orders/${id}`)}
             />
 
-            {/* Book an Appointment (desktop/tablet inline button) */}
-            <CatalogDesktopActionButtons
-              bookHref={bookHref}
+            {/* Add-ons row (Design and Service add-ons clearly separated) */}
+            <CatalogAddOnsSelector
+              designAddOns={item.add_ons}
+              serviceAddOns={item.service?.pricing}
             />
+
+            {/* Quantity Selector */}
+            <ItemQuantitySelector
+              quantity={quantity}
+              minQuantity={minQuantity}
+              onChange={setQuantity}
+            />
+
+            {/* Book an Appointment (desktop/tablet inline button) */}
+            <CatalogDesktopActionButtons bookHref={bookHref} />
           </div>
           }
         />
@@ -214,9 +231,7 @@ export default function PublicProductDetailPage({
       </main>
 
       {/* Mobile sticky bottom action bar */}
-      <CatalogBottomActionBar
-        bookHref={bookHref}
-      />
+      <CatalogBottomActionBar bookHref={bookHref} />
     </div>
   );
 }

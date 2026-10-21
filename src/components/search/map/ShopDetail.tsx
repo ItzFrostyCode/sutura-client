@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
@@ -20,13 +20,15 @@ interface ShopDetailProps {
   /** Toggle the sheet between half and full snap. */
   readonly onToggleExpand?: () => void;
   readonly searchQuery?: string;
+  readonly onSelectBranch?: (branch: DiscoveryMapBranch) => void;
 }
 
 /**
  * A shop opened inside the panel.
  *
- * Header layout (three columns, mobile touch targets):
- *   [← Back]  [Store name  ·  address  ·  X.X km]  [⤢ Expand / ⤡ Minimise]
+ * Header layout:
+ *   [← Back]  [Address  ·  X.X km]  [View Store]  [⤢ Expand / ⤡ Minimise]
+ *   [MAIN · Branch Name] [2 · Branch 2] [3 · Branch 3] (when multiple branches exist)
  *
  * The real storefront page is an iframe below it (/store/[slug]?embed=1).
  * One Back always returns to the list.
@@ -40,14 +42,41 @@ export default function ShopDetail({
   isExpanded = false,
   onToggleExpand,
   searchQuery,
+  onSelectBranch,
 }: ShopDetailProps) {
   const queryParam = searchQuery?.trim() ? `q=${encodeURIComponent(searchQuery.trim())}` : '';
-  const initialPath = path ?? (queryParam ? `?tab=services&${queryParam}` : '');
-  const sep = initialPath.includes('?') ? '&' : '?';
-  const src = `/store/${store.slug}${initialPath}${sep}embed=1`;
-  const [loaded, setLoaded] = useState(false);
-  const address = branch.address || branch.city || 'Davao City';
+  const branchParam = branch?.branchId ? `branch=${branch.branchId}` : '';
 
+  let targetPath = path;
+  if (!targetPath) {
+    const parts = [queryParam, branchParam].filter(Boolean).join('&');
+    targetPath = parts ? `?tab=services&${parts}` : (branchParam ? `?${branchParam}` : '');
+  } else if (branchParam && !targetPath.includes('branch=')) {
+    const sep = targetPath.includes('?') ? '&' : '?';
+    targetPath = `${targetPath}${sep}${branchParam}`;
+  }
+
+  const sep = targetPath.includes('?') ? '&' : '?';
+  const src = `/store/${store.slug}${targetPath}${sep}embed=1`;
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
+  const validBranches = (store.branches ?? []).filter(
+    (b) =>
+      b.latitude != null &&
+      b.longitude != null &&
+      !Number.isNaN(Number(b.latitude)) &&
+      !Number.isNaN(Number(b.longitude)),
+  );
+  const mainBranch =
+    validBranches.find((b) => Boolean(b.is_main)) ?? validBranches[0];
+  const otherBranches = validBranches.filter((b) => b.id !== mainBranch?.id);
+  const orderedBranches = mainBranch ? [mainBranch, ...otherBranches] : [];
+
+  const address = branch.address || branch.city || 'Davao City';
   const distanceLabel = km != null && Number.isFinite(km) ? `${km.toFixed(1)} km away` : null;
   const subtitle = [address, distanceLabel].filter(Boolean).join(' · ');
 
@@ -65,11 +94,10 @@ export default function ShopDetail({
           <ChevronLeft size={22} />
         </button>
 
-        {/* CENTRE: Name + address + distance */}
+        {/* CENTRE: Address + distance */}
         <div className="min-w-0 flex-1 px-1">
-          <h2 className="mobile-h4 truncate font-semibold text-ink">{store.name}</h2>
           {subtitle && (
-            <p className="mobile-caption line-clamp-1 text-ink-muted">{subtitle}</p>
+            <p className="mobile-caption truncate text-ink-muted">{subtitle}</p>
           )}
         </div>
 
@@ -93,6 +121,63 @@ export default function ShopDetail({
           </button>
         )}
       </div>
+
+      {/* ── Companion Branches Switcher (when 2+ branches exist) ─────────── */}
+      {orderedBranches.length > 1 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 border-t border-line bg-surface/50 no-scrollbar shrink-0">
+          <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider shrink-0 mr-0.5">
+            Branches:
+          </span>
+          {orderedBranches.map((b, idx) => {
+            const isMain = b.id === mainBranch.id;
+            const badge = isMain ? 'MAIN' : `${idx + 1}`;
+            const isCurrent = branch.branchId === b.id;
+            return (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => {
+                  onSelectBranch?.({
+                    storeSlug: store.slug,
+                    storeName: store.name,
+                    storeLogoPath: store.logo_path,
+                    branchId: b.id,
+                    branchName: b.name,
+                    isMain,
+                    address: b.address ?? null,
+                    city: b.city,
+                    district: b.district,
+                    landmark: null,
+                    latitude: Number(b.latitude),
+                    longitude: Number(b.longitude),
+                    isOpen: branch.isOpen,
+                    badgeText: badge,
+                    isSelected: true,
+                  });
+                }}
+                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                  isCurrent
+                    ? 'bg-ink text-white shadow-sm'
+                    : 'bg-surface border border-line text-ink hover:bg-sunken'
+                }`}
+              >
+                <span
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                    isCurrent
+                      ? 'bg-white/20 text-white'
+                      : isMain
+                      ? 'bg-ink text-white'
+                      : 'bg-taupe text-white'
+                  }`}
+                >
+                  {badge}
+                </span>
+                <span className="truncate max-w-[120px]">{b.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Store iframe ─────────────────────────────────────────────────── */}
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-b-[28px]">

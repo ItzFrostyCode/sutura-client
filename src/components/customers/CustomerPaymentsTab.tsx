@@ -48,7 +48,7 @@ export default function CustomerPaymentsTab({ jobs, canCollect }: Props) {
                 <span className="flex shrink-0 items-center gap-3">
                   <span className="text-sm font-semibold text-danger">{peso(amountOf(j.balance))}</span>
                   {canCollect && (
-                    <Link href={`/dashboard/jobs/${j.id}#payments`} className="flex h-10 items-center gap-1.5 bg-taupe px-3 text-xs font-bold text-white hover:bg-taupe-hover">
+                    <Link href={`/dashboard/jobs/${j.id}#payments`} className="flex h-10 items-center gap-1.5 bg-espresso px-3 text-xs font-bold text-white hover:bg-espresso/90">
                       <HandCoins size={14} /> Collect
                     </Link>
                   )}

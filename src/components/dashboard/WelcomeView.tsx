@@ -78,7 +78,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 export default function WelcomeView() {
   return (
     <div className="bg-surface border border-line rounded-3xl p-8 max-w-5xl mx-auto space-y-8 animate-fade-in text-ink">
-      <div className="text-center space-y-3 pb-6 border-b border-[#FAF6F3]">
+      <div className="text-center space-y-3 pb-6 border-b border-canvas">
         <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto text-taupe">
           <BookOpen size={28} />
         </div>
@@ -98,7 +98,7 @@ export default function WelcomeView() {
                 <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">{item.step}</span>
                 <h4 className="font-semibold text-sm text-ink">{item.title}</h4>
                 <p className="text-xs text-ink-muted leading-relaxed mb-3">{item.desc}</p>
-                <Link href={item.href} className="text-xs font-semibold text-taupe hover:text-[#91756A] flex items-center gap-1.5 transition-colors">
+                <Link href={item.href} className="text-xs font-semibold text-taupe hover:text-taupe-hover flex items-center gap-1.5 transition-colors">
                   Configure now →
                 </Link>
               </div>
@@ -120,9 +120,9 @@ export default function WelcomeView() {
         </div>
       </div>
 
-      <div className="pt-6 border-t border-[#FAF6F3] flex justify-between items-center flex-wrap gap-4 text-xs text-ink-faint">
+      <div className="pt-6 border-t border-canvas flex justify-between items-center flex-wrap gap-4 text-xs text-ink-faint">
         <p>Need support? Feel free to contact our administrative team via Support Tickets.</p>
-        <Link href="/dashboard/support" className="px-4 py-2 bg-taupe hover:bg-[#91756A] text-white rounded-lg font-medium transition-all">
+        <Link href="/dashboard/support" className="px-4 py-2 bg-espresso hover:bg-taupe-hover text-white rounded-lg font-medium transition-all">
           Create Ticket
         </Link>
       </div>

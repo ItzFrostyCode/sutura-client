@@ -41,6 +41,8 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
     setEditName,
     editPhone,
     setEditPhone,
+    editGender,
+    setEditGender,
     savingProfile,
     isDeleteOpen,
     setIsDeleteOpen,
@@ -92,6 +94,8 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         setEditName={setEditName}
         editPhone={editPhone}
         setEditPhone={setEditPhone}
+        editGender={editGender}
+        setEditGender={setEditGender}
         savingProfile={savingProfile}
         onSubmit={handleUpdateProfile}
       />
@@ -119,6 +123,8 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
             setActiveTab={setActiveTab}
             canCollect={canManageMoney}
             canText={canManageMoney}
+            canTrust={canManageMoney}
+            onTrustChanged={loadData}
           />
         )}
 
@@ -126,9 +132,7 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
           <CustomerMeasurementsTab
             customerId={Number.parseInt(id, 10)}
             customerName={customer?.name || ''}
-            storeId={store?.id || 0}
             measurements={measurements}
-            onReload={loadData}
           />
         )}
 

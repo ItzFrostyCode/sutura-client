@@ -50,7 +50,7 @@ export default function SmsMessageCard({ message: m, busy, onSave, onApprove, on
             <label htmlFor={`num-${m.id}`} className="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1">Send to this number</label>
             <input id={`num-${m.id}`} inputMode="tel" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="09XX XXX XXXX" className="w-full h-12 px-3.5 bg-surface border border-line text-base text-ink focus:outline-none focus:border-taupe" />
             {number !== (m.to_number ?? m.raw_number ?? '') && (
-              <label className="flex items-center gap-2 text-xs text-ink-muted mt-2 min-h-11 cursor-pointer"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-[#6B5346]" /> Also save this as the customer&apos;s number</label>
+              <label className="flex items-center gap-2 text-xs text-ink-muted mt-2 min-h-11 cursor-pointer"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-taupe-dark" /> Also save this as the customer&apos;s number</label>
             )}
           </div>
           <div>

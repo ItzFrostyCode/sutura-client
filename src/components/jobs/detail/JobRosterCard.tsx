@@ -31,6 +31,14 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
       }, new Set<string>())
     );
 
+    // The names the owner gave the columns when the order was written up.
+    const specColumns = (job.custom_order_data?.spec_table as { columns?: { key: string; label: string; type?: string }[] } | undefined)?.columns ?? [];
+    // "12 Polo · 5 With jacket": how many of each style, when the order has a Style dropdown column.
+    const styleKey = specColumns.find((c) => c.type === 'select' && /style/i.test(c.label))?.key;
+    const styleCounts = styleKey
+      ? Object.entries(teamRoster.reduce<Record<string, number>>((acc, r) => { const v = String((r as unknown as Record<string, unknown>)[styleKey] ?? '').trim(); if (v) acc[v] = (acc[v] || 0) + 1; return acc; }, {}))
+      : [];
+    const labelOf = (key: string, fallback: string) => specColumns.find((c) => c.key === key || (key === 'name' && c.key === 'player_name'))?.label ?? fallback;
     const teamName = job.custom_order_data?.team_name as string | undefined;
     const showTeamName = Boolean(teamName && teamName !== job.catalog_item?.name);
 
@@ -41,6 +49,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
             <h2 className="text-base font-bold text-ink flex items-center gap-2">
               <Shirt size={17} className="text-taupe" /> Team Roster & Size Sheet
             </h2>
+            {styleCounts.length > 0 && <p className="text-xs text-ink-muted mt-0.5">{styleCounts.map(([k, n]) => `${n} ${k}`).join(' · ')}</p>}
             {showTeamName && (
               <p className="text-xs text-ink-muted mt-0.5">
                 Organization: <span className="font-semibold text-ink-body">{teamName}</span>
@@ -75,12 +84,12 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
               <tr className="text-ink-muted font-bold uppercase tracking-wider text-[10px]">
                 <th className="pb-2.5 w-10">Done</th>
                 <th className="pb-2.5 w-12">#</th>
-                <th className="pb-2.5">Player / Staff Name</th>
-                <th className="pb-2.5">Print Name</th>
-                <th className="pb-2.5 w-20">Number</th>
-                <th className="pb-2.5 w-20">Size</th>
+                <th className="pb-2.5">{labelOf('name', 'Player / Staff Name')}</th>
+                <th className="pb-2.5">{labelOf('print_name', 'Print Name')}</th>
+                <th className="pb-2.5 w-20">{labelOf('number', 'Number')}</th>
+                <th className="pb-2.5 w-20">{labelOf('size', 'Size')}</th>
                 {extraColumns.map(col => (
-                  <th key={col} className="pb-2.5">{col}</th>
+                  <th key={col} className="pb-2.5">{labelOf(col, col)}</th>
                 ))}
               </tr>
             </thead>

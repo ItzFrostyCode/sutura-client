@@ -29,9 +29,13 @@ export const requirementsPayload = (d: RequirementsDraft) => ({
 });
 
 export function validateRequirements(d: RequirementsDraft): string | null {
-  if (d.payment_policy === 'custom') {
-    const n = Number(d.payment_policy_percent);
-    if (!Number.isInteger(n) || n < 1 || n > 100) return 'Enter the percent required first, from 1 to 100.';
+  if (d.payment_policy === 'deposit' || d.payment_policy === 'custom') {
+    const percentStr = (d.payment_policy_percent ?? '').trim();
+    if (!percentStr) return 'Enter the required deposit percentage.';
+    const n = Number(percentStr);
+    if (!Number.isInteger(n) || n < 1 || n > 99) {
+      return 'Deposit percentage must be between 1% and 99%.';
+    }
   }
   return null;
 }

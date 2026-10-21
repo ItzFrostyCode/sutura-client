@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Ruler, Search, X } from 'lucide-react';
+import { useViewUnit } from '@/lib/useViewUnit';
 import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
 import EmptyState from '@/components/account/EmptyState';
@@ -17,6 +18,7 @@ export default function MyMeasurementsPage() {
   const [records, setRecords] = useState<MyMeasurement[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showIn, setShowIn] = useViewUnit();
 
   useEffect(() => {
     setLoading(true);
@@ -31,16 +33,26 @@ export default function MyMeasurementsPage() {
   const groups = useMemo(() => groupMeasurements(records.filter((r) => !(r.job_orders?.length))), [records]);
 
   const q = search.trim().toLowerCase();
-  const filteredOrders = byOrder.filter(({ order, measurement }) => !q || [measurement.profile_name, order.order_number, order.catalog_item?.name, order.service?.name, order.garment_category, measurement.store?.name].some((t) => t?.toLowerCase().includes(q)));
-  const filteredGroups = groups.filter((g) => !q || g.profileName.toLowerCase().includes(q) || g.storeName.toLowerCase().includes(q));
+  const filteredOrders = byOrder.filter(({ order, measurement }) => !q || [measurement.profile_name, measurement.service?.name, measurement.catalog_item?.name, order.order_number, order.catalog_item?.name, order.service?.name, order.garment_category, measurement.store?.name].some((t) => t?.toLowerCase().includes(q)));
+  const filteredGroups = groups.filter((g) => !q || g.profileName.toLowerCase().includes(q) || g.storeName.toLowerCase().includes(q) || g.versions.some((v) => [v.service?.name, v.catalog_item?.name].some((t) => t?.toLowerCase().includes(q))));
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <AccountHeader title="My Measurements" backHref="/account" />
 
       <p className="mobile-body-sm mb-4 text-ink-muted">
-        Recorded by store staff during your fittings. Private to you — only shown to a store after you have an active order or appointment with them.
+        Your body measurements, recorded by a shop&apos;s staff. Each one shows what it was measured for. Private to you — only shown to a store after you have an active order or appointment with them.
       </p>
+
+      {!loading && records.length > 0 && (
+        <div role="radiogroup" aria-label="Show measurements in" className="mb-4 flex items-center gap-2">
+          <span className="mobile-caption shrink-0 text-ink-muted">Show in</span>
+          {([['', 'As recorded'], ['in', 'Inches'], ['cm', 'Centimeters']] as const).map(([v, t]) => (
+            <button key={v || 'asis'} type="button" role="radio" aria-checked={showIn === v} onClick={() => setShowIn(v)}
+              className={`touch-target-44 rounded-full border px-4 text-sm font-medium ${showIn === v ? 'border-ink bg-ink text-white' : 'border-line bg-surface text-ink-body'}`}>{t}</button>
+          ))}
+        </div>
+      )}
 
       {!loading && records.length > 0 && (
         <div className="mb-4 flex h-12 items-center gap-2.5 rounded-full border border-line/60 bg-surface px-4 shadow-[0_1px_2px_rgba(45,42,38,0.04),0_8px_24px_rgba(45,42,38,0.06)] transition-colors focus-within:border-line-strong">
@@ -81,7 +93,7 @@ export default function MyMeasurementsPage() {
         <section className="mb-5">
           <h2 className="mobile-overline mb-2 ml-4 text-ink-faint">By order</h2>
           <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
-            {filteredOrders.map(({ order, measurement }) => <OrderMeasurementCard key={order.id} order={order} measurement={measurement} />)}
+            {filteredOrders.map(({ order, measurement }) => <OrderMeasurementCard key={order.id} order={order} measurement={measurement} showIn={showIn} />)}
           </div>
         </section>
       )}
@@ -90,7 +102,7 @@ export default function MyMeasurementsPage() {
         <section>
           <h2 className="mobile-overline mb-2 ml-4 text-ink-faint">{byOrder.length > 0 ? 'Not used in an order yet' : 'On file'}</h2>
           <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
-            {filteredGroups.map((g) => <MeasurementProfileCard key={`${g.storeId}-${g.profileName}`} group={g} />)}
+            {filteredGroups.map((g) => <MeasurementProfileCard key={`${g.storeId}-${g.profileName}`} group={g} showIn={showIn} />)}
           </div>
         </section>
       )}

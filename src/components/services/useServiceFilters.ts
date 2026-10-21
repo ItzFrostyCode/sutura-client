@@ -5,7 +5,15 @@ import type { ServiceStatusFilter } from './ServiceFilterBody';
 import { DEFAULT_SERVICE_SORT, isServicePriceSort, type ServiceSortOption } from './serviceSort';
 import { garmentOptions, kindOptions, matchesGarmentCategory, searchText, taskOptions } from './serviceTaxonomyFilters';
 
-const effectivePrice = (s: Service) => Number(s.sale_price ?? s.base_price ?? 0);
+const effectivePrice = (s: Service) => {
+  if (s.sale_price != null && Number(s.sale_price) > 0) return Number(s.sale_price);
+  if (s.base_price != null && Number(s.base_price) > 0) return Number(s.base_price);
+  const minTierPrice = (s.pricing ?? [])
+    .map((p) => Number(p.amount))
+    .filter((a) => !isNaN(a) && a > 0);
+  if (minTierPrice.length > 0) return Math.min(...minTierPrice);
+  return 0;
+};
 
 /** Search, sort and the filters of the Services page: status, kind of work, garment category, task. */
 export function useServiceFilters(services: Service[]) {

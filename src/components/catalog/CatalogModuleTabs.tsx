@@ -2,12 +2,10 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, BarChart3 } from 'lucide-react';
+import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
 
-// Reviews used to be its own top-level tab — merged into Analytics as a
-// section (with the rest of the charts/KPIs) instead, since it had no
-// numbers of its own worth a whole separate destination.
-export type CatalogTabId = 'catalog' | 'analytics';
+// Unified module tabs: Services, Designs, and Analytics
+export type CatalogTabId = 'services' | 'catalog' | 'analytics';
 
 export interface CatalogTabItem {
   id: CatalogTabId;
@@ -17,7 +15,8 @@ export interface CatalogTabItem {
 }
 
 export const CATALOG_TABS: readonly CatalogTabItem[] = [
-  { id: 'catalog', label: 'Designs', href: '/dashboard/catalog', icon: ShoppingBag },
+  { id: 'services', label: 'Services', href: '/dashboard/services', icon: Scissors },
+  { id: 'catalog', label: 'Service Designs', href: '/dashboard/catalog', icon: ShoppingBag },
   { id: 'analytics', label: 'Analytics', href: '/dashboard/catalog/analytics', icon: BarChart3 },
 ] as const;
 

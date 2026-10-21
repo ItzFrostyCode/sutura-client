@@ -36,7 +36,7 @@ function PencilButton({ control, label, floating }: Readonly<{ control: Editable
       disabled={control.locked}
       aria-label={`Edit ${label}`}
       title={control.locked ? 'Save or cancel the section you are editing first' : `Edit ${label}`}
-      className={`w-11 h-11 shrink-0 flex items-center justify-center border border-[#6B5346] bg-[#6B5346] text-white shadow-sm hover:bg-ink hover:border-ink transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${floating ? 'absolute top-2 right-2 z-20' : ''}`}
+      className={`w-11 h-11 shrink-0 flex items-center justify-center border border-taupe-dark bg-taupe-dark text-white shadow-sm hover:bg-ink hover:border-ink transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${floating ? 'absolute top-2 right-2 z-20' : ''}`}
     >
       <Pencil size={16} />
     </button>
@@ -60,11 +60,11 @@ export default function EditableBox({
 
   return (
     <section
-      className={`relative bg-white border transition-shadow ${editing ? 'border-[#6B5346] shadow-[0_0_0_3px_rgba(107,83,70,0.3),0_6px_24px_rgba(107,83,70,0.35)]' : 'border-line'} ${className}`}
+      className={`relative bg-white border transition-shadow ${editing ? 'border-taupe-dark shadow-[0_0_0_3px_rgba(107,83,70,0.3),0_6px_24px_rgba(107,83,70,0.35)]' : 'border-line'} ${className}`}
       aria-label={label}
     >
       {title ? (
-        <div className={`flex items-center justify-between gap-3 pl-4 pr-2 min-h-12 border-b ${editing ? 'border-[#6B5346]/40 bg-[#6B5346]/10' : 'border-line'}`}>
+        <div className={`flex items-center justify-between gap-3 pl-4 pr-2 min-h-12 border-b ${editing ? 'border-taupe-dark/40 bg-taupe-dark/10' : 'border-line'}`}>
           <span className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wider text-ink min-w-0">
             {badge !== undefined && (
               <span className="w-5 h-5 rounded-full bg-taupe text-white text-[11px] font-bold flex items-center justify-center shrink-0">{badge}</span>

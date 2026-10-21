@@ -38,7 +38,7 @@ export interface SubscriptionActivityData {
 const EVENT_META: Record<SubscriptionEventRow['event_type'], { label: string; Icon: typeof Sparkles; cls: string }> = {
   created: { label: 'Subscribed', Icon: Sparkles, cls: 'bg-sage text-white border-white' },
   renewed: { label: 'Renewed', Icon: RefreshCw, cls: 'bg-sage text-white border-white' },
-  upgraded: { label: 'Upgraded', Icon: TrendingUp, cls: 'bg-taupe text-white border-white' },
+  upgraded: { label: 'Upgraded', Icon: TrendingUp, cls: 'bg-espresso text-white border-white' },
   downgraded: { label: 'Downgraded', Icon: TrendingDown, cls: 'bg-surface text-taupe border-taupe' },
   expired: { label: 'Expired', Icon: XCircle, cls: 'bg-danger text-white border-white' },
 };

@@ -13,7 +13,7 @@ export interface CatalogItemResponse {
   name: string;
   price: number;
   /** How the design is priced against its service (lib/designPricing); null = same as the service. */
-  pricing_mode?: 'same' | 'extra' | 'quote' | null;
+  pricing_mode?: 'same' | 'set' | 'extra' | 'quote' | null;
   extra_charge?: string | number | null;
   service_id?: number | null;
   estimated_days?: number | null;
@@ -22,6 +22,7 @@ export interface CatalogItemResponse {
   color?: string;
   fabric_image_url?: string;
   sizes?: string[] | null;
+  add_ons?: { id?: string; name: string; price: number }[] | null;
   description?: string;
   features?: string;
   size_chart_image_url?: string | null;
@@ -68,7 +69,7 @@ export interface CatalogFormData {
   name: string;
   /** Only used by a design with no service. */
   price: string;
-  pricing_mode: 'same' | 'extra' | 'quote';
+  pricing_mode: 'same' | 'set' | 'extra' | 'quote';
   extra_charge: string;
   service_id: string;
   estimated_days: string;
@@ -80,6 +81,7 @@ export interface CatalogFormData {
   measurement_guide: string;
   garment_type: string;
   sizes: string[];
+  add_ons: { id?: string; name: string; price: number }[];
   external_gallery_url: string;
   is_active: boolean;
 }

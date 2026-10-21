@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import { PublicService } from '@/components/store-storefront/types';
 import { getActiveSale } from '@/lib/salePricing';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
@@ -16,15 +16,23 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
   const avgRating = Number(service.reviews_avg_rating ?? 0);
   const reviewsCount = service.reviews_count ?? 0;
 
-  const sale = service.base_price
+  const tierAmounts = (service.pricing ?? [])
+    .map((p) => Number(p.amount))
+    .filter((a) => !isNaN(a) && a > 0);
+  const derivedPrice = tierAmounts.length > 0 ? Math.min(...tierAmounts) : null;
+  const rawBase = service.base_price !== null && service.base_price !== undefined && service.base_price !== '' && Number(service.base_price) > 0
+    ? Number(service.base_price)
+    : derivedPrice;
+  const hasPrice = rawBase !== null && rawBase !== undefined;
+
+  const sale = rawBase
     ? getActiveSale({
-        price: service.base_price,
+        price: rawBase,
         sale_price: service.sale_price,
         sale_starts_at: service.sale_starts_at,
         sale_ends_at: service.sale_ends_at,
       })
     : null;
-  const hasPrice = service.base_price !== null && service.base_price !== undefined && service.base_price !== '';
   // Minimum order is displayed whenever the service has a configured minimum order quantity greater than 1 (e.g. bulk uniforms, jerseys). If none or 1, it is hidden.
   const minOrder = service.min_order_qty && Number(service.min_order_qty) > 1 ? Number(service.min_order_qty) : null;
 
@@ -44,6 +52,11 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
           <span className="text-ink-muted">{reviewsCount} Ratings</span>
           <div className="w-px h-4 bg-line" />
           <span className="text-ink-muted">{service.orders_count ?? 0} Sold</span>
+          <div className="w-px h-4 bg-line" />
+          <span className="text-ink-muted flex items-center gap-1">
+            <Heart size={14} className="fill-rose-500 text-rose-500" />
+            {(service as any).saves_count ?? (service as any).favorites_count ?? 0} Favorites
+          </span>
         </div>
       )}
 
@@ -56,7 +69,7 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
         ) : hasPrice ? (
           <p className="flex items-baseline gap-2 leading-none">
             <span className="text-sm text-ink-muted">From</span>
-            <span className="text-3xl font-bold text-taupe">₱{Number(service.base_price).toLocaleString()}</span>
+            <span className="text-3xl font-bold text-taupe">₱{Number(rawBase).toLocaleString()}</span>
           </p>
         ) : (
           <>
@@ -64,7 +77,7 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
             <p className="text-xs text-ink-muted mt-2 leading-snug">Get a quotation, or walk in with the item. The shop confirms the price before any work starts.</p>
           </>
         )}
-        {minOrder && <p className="text-sm text-ink-body mt-3">Minimum order: <span className="font-semibold">{minOrder} pieces</span></p>}
+        {minOrder && <p className="text-sm text-ink-body mt-3">Usual minimum: <span className="font-semibold">{minOrder} pieces</span></p>}
       </div>
 
       {(

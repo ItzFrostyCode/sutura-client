@@ -20,8 +20,9 @@ function suggestedUnit(service: ServiceData | undefined, design: CatalogItem | n
  * the owner types their own (then `formData.price` / `formData.due_date` are not null) — no effects, so a changed
  * service or quantity can never leave a stale number behind.
  */
-export function useJobPricing(formData: JobCreateFormData, service: ServiceData | undefined, design: CatalogItem | null, isBulk: boolean) {
-  const quantity = isBulk ? 1 : Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
+export function useJobPricing(formData: JobCreateFormData, service: ServiceData | undefined, design: CatalogItem | null, isBulk: boolean, teamPieces = 1) {
+  // A team order is priced per piece: every person's pieces count, so adding a person adds to the total.
+  const quantity = isBulk ? Math.max(1, teamPieces) : Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
   const unit = suggestedUnit(service, design, formData.service_id);
   const suggestedPrice = unit == null ? '' : (unit * quantity).toFixed(2);
   const price = formData.price ?? suggestedPrice;

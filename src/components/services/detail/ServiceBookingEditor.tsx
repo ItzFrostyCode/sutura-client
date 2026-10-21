@@ -6,6 +6,7 @@ import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles'
 import type { ServiceField } from '../serviceHelpers';
 import { orderTypesOf } from './serviceEditing';
 import type { DraftEdit } from './ServiceEditors';
+import RosterStyles from './RosterStyles';
 
 const ROSTER_PRESETS = ['Jersey Number', 'Position', 'Department', 'Section/Grade'];
 const TYPES: { value: ServiceField['type']; label: string }[] = [
@@ -43,7 +44,7 @@ export function ServiceBookingEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
                   {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
                 <label className="flex items-center gap-2 text-sm text-ink min-h-11 cursor-pointer">
-                  <input type="checkbox" checked={f.required} onChange={e => setQ(i, { required: e.target.checked })} className="w-4 h-4 accent-[#6B5346]" /> Required
+                  <input type="checkbox" checked={f.required} onChange={e => setQ(i, { required: e.target.checked })} className="w-4 h-4 accent-taupe-dark" /> Required
                 </label>
               </div>
               {f.type === 'select' && (
@@ -61,8 +62,9 @@ export function ServiceBookingEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
         <div>
           <p className={LABEL}>Team roster columns</p>
           <p className="text-xs text-ink-muted mb-2">Asked per person, next to Name and Size — e.g. a jersey number.</p>
+          <div className="mb-3"><RosterStyles fields={d.roster_fields} onChange={(next) => patch({ roster_fields: next })} /></div>
           <div className="flex flex-wrap gap-2 mb-2">
-            {d.roster_fields.map(f => (
+            {d.roster_fields.filter(f => !(f.label === 'Style' && f.type === 'select')).map(f => (
               <span key={f.id} className="inline-flex items-center gap-1.5 h-9 pl-3 pr-1 border border-line-strong text-sm text-ink">
                 {f.label}
                 <button type="button" onClick={() => patch({ roster_fields: d.roster_fields.filter(x => x.id !== f.id) })} aria-label={`Remove ${f.label}`} className="w-8 h-8 flex items-center justify-center text-ink-faint hover:text-danger cursor-pointer"><X size={14} /></button>
@@ -87,7 +89,7 @@ export function ServiceBookingView({ customFields, rosterFields }: Readonly<{ cu
   return (
     <div className="space-y-3 text-sm text-ink">
       {q.length > 0 && <ul className="space-y-1">{q.map((f, i) => <li key={f.id ?? f.label ?? i}>{f.label}{f.required && <span className="text-red-600"> *</span>}</li>)}</ul>}
-      {r.length > 0 && <p><span className="text-ink-muted">Roster columns: </span>{r.map(f => f.label).join(', ')}</p>}
+      {r.length > 0 && <p><span className="text-ink-muted">Roster columns: </span>{r.map(f => f.type === 'select' && f.options?.length ? `${f.label} (${f.options.join(', ')})` : f.label).join(', ')}</p>}
     </div>
   );
 }

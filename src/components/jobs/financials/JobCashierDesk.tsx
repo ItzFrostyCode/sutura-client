@@ -108,7 +108,7 @@ export function JobCashierDesk({
             type="button"
             onClick={onConfirmCharge}
             disabled={charging}
-            className="flex-1 h-11 bg-taupe hover:bg-taupe-hover text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+            className="flex-1 h-11 bg-espresso hover:bg-espresso/90 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 cursor-pointer"
           >
             {charging ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
             <span>{charging ? 'Recording…' : 'Confirm & Record'}</span>
@@ -293,7 +293,7 @@ export function JobCashierDesk({
               saving || charging || !amount || parsedAmount <= 0 ||
               (method === 'cash' ? (!cashTendered || cashShortfall) : !receiptUrl)
             }
-            className="w-full h-11 bg-taupe hover:bg-taupe-hover text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 active:scale-95 cursor-pointer"
+            className="w-full h-11 bg-espresso hover:bg-espresso/90 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 active:scale-95 cursor-pointer"
           >
             <CreditCard size={15} />
             <span>Review Payment</span>

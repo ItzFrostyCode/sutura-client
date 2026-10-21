@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Mail, Phone, Package, Eye, Pencil, Trash2, Users } from 'lucide-react';
+import { Mail, Phone, Package, Eye, Pencil, Trash2, Users, ShieldCheck } from 'lucide-react';
 import { CustomerData } from './customerTypes';
 import { isWalkInCustomer, isWalkInEmail, SUKI_TAG_CONFIG } from './customerHelpers';
 
@@ -67,6 +67,16 @@ export default function CustomerTable({
                           <span className="font-bold text-ink group-hover:text-taupe transition-colors text-sm">
                             {customer.name}
                           </span>
+                          {customer.gender && (
+                            <span className="text-[10px] font-medium text-ink-muted bg-canvas border border-line px-1.5 py-0.5 rounded-md">
+                              {customer.gender.charAt(0).toUpperCase() + customer.gender.slice(1)}
+                            </span>
+                          )}
+                          {customer.is_trusted && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded border border-sage/30 bg-sage/10 text-sage">
+                              <ShieldCheck size={9} /> Trusted
+                            </span>
+                          )}
                           {sukiCfg && (
                             <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${sukiCfg.badgeCls}`}>
                               {sukiCfg.label}

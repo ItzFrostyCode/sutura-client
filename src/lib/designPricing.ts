@@ -4,7 +4,7 @@
  * add an extra charge for a design, or say it needs a quotation. Service prices are starting
  * prices; the confirmed price is the order's quotation, which the customer approves.
  */
-export type DesignPricingMode = 'same' | 'extra' | 'quote' | 'own';
+export type DesignPricingMode = 'same' | 'set' | 'extra' | 'quote' | 'own';
 
 export interface DesignPricing {
   mode: DesignPricingMode;
@@ -19,9 +19,10 @@ export interface DesignPricing {
 
 /** The owner's choice on a design (`own` is never chosen — it is a design with no service). */
 export const DESIGN_PRICING_CHOICES: { value: Exclude<DesignPricingMode, 'own'>; label: string; hint: string }[] = [
-  { value: 'same', label: 'Same as the service', hint: 'The customer pays the service price.' },
-  { value: 'extra', label: 'Extra charge', hint: 'The service price plus an amount for this design.' },
-  { value: 'quote', label: 'Ask for a quote', hint: 'You give the price after seeing the request.' },
+  { value: 'same', label: 'Same as the service', hint: 'The customer pays the parent service base price.' },
+  { value: 'set', label: 'Set price for this design', hint: 'This design has its own standalone base price (service price is not added).' },
+  { value: 'extra', label: 'Add a charge to the service price', hint: 'The service base price plus an additional surcharge for this design.' },
+  { value: 'quote', label: 'Price on quotation', hint: 'You give the price after seeing and reviewing the request.' },
 ];
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`;
@@ -42,6 +43,9 @@ export function designPriceDetail(pricing: DesignPricing, serviceName?: string |
     return { main: 'Price on quotation', struck: null, note: 'The shop gives you the price after looking at your request. You approve it before any work starts.' };
   }
   const main = `From ${peso(pricing.amount)}`;
+  if (pricing.mode === 'set') {
+    return { main, struck, note: `Base price for this design. The shop confirms the final price.` };
+  }
   if (pricing.mode === 'extra' && pricing.service_price != null) {
     return { main, struck, note: `${peso(pricing.service_price)} for ${service} + ${peso(pricing.extra_charge ?? 0)} for this design. The shop confirms the final price.` };
   }

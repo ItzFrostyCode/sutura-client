@@ -30,7 +30,7 @@ export default function StaffHome({ storeId, name }: Readonly<{ storeId?: number
         </>
       )}
       <div className="flex flex-wrap gap-3">
-        <Link href="/dashboard/jobs" className="h-11 px-4 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center gap-2"><Scissors size={15} /> Orders</Link>
+        <Link href="/dashboard/jobs" className="h-11 px-4 bg-espresso hover:bg-espresso/90 text-white text-sm font-semibold flex items-center gap-2"><Scissors size={15} /> Orders</Link>
         <Link href="/dashboard/appointments" className="h-11 px-4 border border-line-strong bg-white hover:bg-sunken text-ink text-sm font-semibold flex items-center gap-2"><Calendar size={15} /> Appointments</Link>
         <Link href="/dashboard/customers" className="h-11 px-4 border border-line-strong bg-white hover:bg-sunken text-ink text-sm font-semibold flex items-center gap-2"><Users size={15} /> Customers</Link>
       </div>

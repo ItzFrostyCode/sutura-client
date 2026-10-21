@@ -5,7 +5,7 @@ import type { Service } from '../types';
 
 type Field = NonNullable<Service['custom_fields']>[number];
 
-const INPUT = 'w-full form-input-mobile bg-canvas border border-line rounded-none text-base text-ink font-normal focus:outline-none focus:border-taupe';
+const INPUT = 'w-full form-input-mobile bg-white border-2 border-line hover:border-taupe/60 focus:border-taupe focus:ring-2 focus:ring-taupe/10 rounded-xl text-base text-ink font-normal px-4 transition-colors shadow-xs';
 
 // The questions the shop set on this service (Services → Booking Form), answered here
 // so the shop has them before the visit. Saved with the booking's other answers.
@@ -31,7 +31,7 @@ export default function BookingServiceQuestions({ fields, answers, setAnswers }:
         if (f.type === 'checkbox') {
           return (
             <label key={f.id} className="flex items-center gap-3 min-h-11 cursor-pointer">
-              <input id={id} type="checkbox" checked={v === 'Yes'} onChange={e => set(f.label, e.target.checked ? 'Yes' : 'No')} className="w-5 h-5 accent-[#6B5346]" />
+              <input id={id} type="checkbox" checked={v === 'Yes'} onChange={e => set(f.label, e.target.checked ? 'Yes' : 'No')} className="w-5 h-5 accent-taupe-dark" />
               <span className="text-base text-ink">{f.label}</span>
             </label>
           );

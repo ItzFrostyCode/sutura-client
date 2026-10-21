@@ -25,18 +25,11 @@ export default function ServicesPage() {
   );
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
 
-  // Modals state
-  // Set when the owner arrived from a design's "+" (?add=1&return=/dashboard/catalog/12):
-  // the add form opens right away, and saving it sends them back to that design.
+  // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
 
   type Tab = 'services' | 'analytics';
   const [activeTab, setActiveTabState] = useState<Tab>('services');
@@ -50,6 +43,18 @@ export default function ServicesPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (t === 'analytics') setActiveTabState(t);
   }, []);
+
+  const handleDeleteDesign = async (designId: number) => {
+    if (!store?.id) return;
+    if (!confirm('Are you sure you want to delete this service design?')) return;
+    try {
+      await api.delete(`/stores/${store.id}/catalog/${designId}`);
+      toast.success('Service design deleted.');
+      fetchServices();
+    } catch {
+      toast.error('Failed to delete service design.');
+    }
+  };
 
   const fetchServices = useCallback(() => {
     if (!store?.id) {
@@ -98,24 +103,7 @@ export default function ServicesPage() {
     }
   };
 
-  // Editing happens on the service's own page now (every section has a pencil);
-  // the modal stays for adding a new service.
-  const handleEditClick = (service: Service) => {
-    router.push(`/dashboard/services/${service.id}`);
-  };
 
-  const handleDeleteClick = (id: number) => {
-    setDeletingId(id);
-    setIsDeleteModalOpen(true);
-  };
-
-  const categoriesList = ['All', ...Array.from(new Set(services.flatMap(s => s.categories || [])))];
-
-  const filtered = services.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || (s.categories || []).some(c => c.toLowerCase().includes(search.toLowerCase()));
-    const matchCategory = categoryFilter === 'All' || (s.categories || []).includes(categoryFilter);
-    return matchSearch && matchCategory;
-  });
 
 
 
@@ -130,7 +118,7 @@ export default function ServicesPage() {
             <>
               <button
                 onClick={() => router.push('/dashboard/services/new')}
-                className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 min-h-11 bg-espresso hover:bg-espresso/90 text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
               >
                 <Plus size={17} />
                 Create New
@@ -148,7 +136,18 @@ export default function ServicesPage() {
       </PageHeader>
 
       {activeTab === 'services' ? (
-        <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} />
+        <ServiceGridView
+          services={services}
+          loading={loading}
+          canManage={isOwnerOrManager}
+          storeSlug={store?.slug}
+          onEdit={(id) => router.push(`/dashboard/services/${id}`)}
+          onDelete={(id) => {
+            setDeletingId(id);
+            setIsDeleteModalOpen(true);
+          }}
+          onDeleteDesign={handleDeleteDesign}
+        />
       ) : isOwnerOrManager ? (
         <ServiceAnalyticsView />
       ) : null}

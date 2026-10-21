@@ -24,6 +24,7 @@ interface Job {
   total_amount: string | number;
   balance?: string | number;
   discount_amount?: string | number | null;
+  custom_order_data?: { discount_reason?: string | null } | null;
   customer?: { id: number; name: string; phone?: string; email?: string };
   service?: { name: string };
   payments?: Payment[];
@@ -223,7 +224,7 @@ function PaymentReceiptContent() {
                   <tbody>
                     <tr><td className="text-gray-600 pr-12 pb-1">Total Amount</td><td className="font-bold text-right pb-1">{money(total)}</td></tr>
                     {discount > 0 && (
-                      <tr><td className="text-gray-600 pr-12 pb-1">Discount Applied</td><td className="font-bold text-right pb-1">−{money(discount)}</td></tr>
+                      <tr><td className="text-gray-600 pr-12 pb-1">Discount Applied{job.custom_order_data?.discount_reason ? ` (${job.custom_order_data.discount_reason})` : ''}</td><td className="font-bold text-right pb-1">−{money(discount)}</td></tr>
                     )}
                     <tr><td className="text-gray-600 pr-12 pb-1">Paid to Date (as of this receipt)</td><td className="font-bold text-right pb-1">{money(runningPaidAtSingle)}</td></tr>
                     <tr className="border-t border-gray-400">

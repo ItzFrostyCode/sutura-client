@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { LifeBuoy, ChevronRight, Store, Loader2 } from 'lucide-react';
+import { LifeBuoy, ChevronRight, Loader2 } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
 import EmptyState from '@/components/account/EmptyState';
-import { getMediaUrl } from '@/lib/media';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import api from '@/lib/axios';
 
 interface MyTicket {
@@ -69,9 +68,12 @@ export default function SupportTicketListPage() {
             const meta = STATUS_META[t.status] ?? STATUS_META.open;
             return (
               <Link key={t.id} href={`/account/settings/support/${t.id}`} className="card-soft flex items-start gap-3 px-4 py-3.5 transition-opacity active:opacity-80">
-                <span className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-sunken">
-                  {t.store?.logo_path ? <Image src={getMediaUrl(t.store.logo_path)} alt="" fill className="object-cover" /> : <Store size={15} className="text-ink-faint" />}
-                </span>
+                <StoreLogoAvatar
+                  src={t.store?.logo_path}
+                  name={t.store?.name ?? 'SUTURA'}
+                  className="w-9 h-9 rounded-full border border-line-strong shadow-none"
+                  textClassName="text-xs font-serif font-bold text-taupe-dark"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="mobile-body-md truncate font-medium text-ink">{t.subject}</p>

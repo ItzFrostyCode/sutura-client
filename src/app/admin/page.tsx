@@ -7,6 +7,7 @@ import adminApi from '@/lib/adminApi';
 import PageHeader from '@/components/shared/PageHeader';
 import { ListState, StatCard } from '@/components/admin/ui/AdminPrimitives';
 import SubscriptionReportPanel from '@/components/admin/SubscriptionReportPanel';
+import SystemHealthPanel from '@/components/admin/SystemHealthPanel';
 import { formatDate } from '@/components/admin/useAdminList';
 
 interface Overview {
@@ -81,6 +82,8 @@ export default function AdminOverviewPage() {
           </p>
 
           <SubscriptionReportPanel />
+
+          <SystemHealthPanel />
         </>
       )}
     </div>

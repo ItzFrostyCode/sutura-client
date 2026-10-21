@@ -7,7 +7,16 @@ Source: the "Final Workflow Specification" (3 flows), 2026-10-10. Scope rules: [
 | 1. Appointment & consultation | **Not changed.** Appointments already have an `outcome` and "Create Job"; Bongo's appointment flow replaces this part, so only the hand-off (an approved appointment → an order) is used. |
 | 2. Customer decision → production started | **Built.** |
 | 3. Production → QC → fitting → handover → completed | **Built** (sequence, corrections, partial handover, completion rules). |
-| Scenarios B (change request) and D (follow-up order), due-date log, workload view | B and the due-date log are built; **D (linked follow-up order) and a full workload view are not.** |
+| Scenarios B (change request) and D (follow-up order), due-date log, workload view | **Built** (Scenario B change requests, Scenario D linked follow-up orders via `newFollowUpOrderHref`, due-date log, and staff workload views). |
+
+## Update 2026-10-21 — consultation first, order rules, people, release, batches
+
+Details and endpoints: [`STATUS.md`](STATUS.md) ("Consultation first, order rules, batches"). Code beats this note.
+
+- **Before the order:** a consultation starts only once the shop knows who it is (a customer the shop has, or a new name + mobile number; a number the shop already knows reuses that customer). The walk-in account's placeholder `walkin_…` email is never shown. What was said (`visit_notes`), how many people and where the design comes from (`design_source`: shop's · customer's finished · customer's to redo · none) are copied onto the order as "Consultation notes" and shown on the order and the work ticket.
+- **Gates are unchanged in order:** specs approved → measurements verified → price final → customer accepts → deposit → authorize → production. Measuring after the design is approved needs no new lock. Service rules (measurements, fitting, payment, minimum quantity) are the order's **starting values**; the owner / branch manager can change them for one order with a reason (`order_rules_changed`). The minimum quantity only warns.
+- **Handover and completion:** a group order counts its people (`people_count`), not `quantity`. A handover needs the balance paid unless the owner / branch manager **releases with a balance due**; the order then stays in Balance Payment & Handover and **Completed needs the balance at 0**.
+- **Batches:** a group order can be split before production into linked orders (one per payer). Each part has its own total, deposit, due date, handover and tracking code; the overall figures are worked out from the parts.
 
 ## Update 2026-10-16 — simple sequence (pre-production steps, five plain stages)
 

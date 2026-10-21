@@ -5,13 +5,14 @@ interface EditableCardProps {
   readonly icon: React.ReactNode;
   readonly title: string;
   readonly headerExtra?: React.ReactNode;
-  readonly isEditing: boolean;
-  readonly saving: boolean;
-  readonly onEdit: () => void;
-  readonly onCancel: () => void;
-  readonly onSave: () => void;
+  readonly isEditing?: boolean;
+  readonly saving?: boolean;
+  readonly canEdit?: boolean;
+  readonly onEdit?: () => void;
+  readonly onCancel?: () => void;
+  readonly onSave?: () => void;
   readonly children: React.ReactNode;
-  readonly editBody: React.ReactNode;
+  readonly editBody?: React.ReactNode;
   readonly className?: string;
 }
 
@@ -25,8 +26,9 @@ export default function EditableCard({
   icon,
   title,
   headerExtra,
-  isEditing,
-  saving,
+  isEditing = false,
+  saving = false,
+  canEdit = true,
   onEdit,
   onCancel,
   onSave,
@@ -43,7 +45,7 @@ export default function EditableCard({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {headerExtra}
-          {!isEditing && (
+          {canEdit && !isEditing && onEdit && (
             <button
               type="button"
               onClick={onEdit}
@@ -57,7 +59,7 @@ export default function EditableCard({
         </div>
       </div>
 
-      {isEditing ? (
+      {canEdit && isEditing && editBody ? (
         <div className="space-y-3.5 flex-1 flex flex-col">
           <div className="flex-1">{editBody}</div>
           <div className="flex items-center justify-end gap-2 pt-1 border-t border-line/60 mt-1 shrink-0">
@@ -73,7 +75,7 @@ export default function EditableCard({
               type="button"
               onClick={onSave}
               disabled={saving}
-              className="min-h-[40px] px-4 bg-taupe text-white text-xs font-bold hover:bg-[#8A7063] transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+              className="min-h-[40px] px-4 bg-taupe text-white text-xs font-bold hover:bg-taupe transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
             >
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
               Save

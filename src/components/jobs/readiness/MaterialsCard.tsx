@@ -64,7 +64,7 @@ export default function MaterialsCard({ data, api, locked }: MaterialsCardProps)
                 className="w-full resize-none rounded-lg border border-line bg-canvas px-3 py-2 text-base text-ink focus:border-taupe focus:outline-none sm:text-sm"
               />
               <div className="flex flex-wrap gap-2">
-                <button type="button" disabled={off} onClick={() => api.actions.setMaterials('ready', note)} className={`${btn} bg-taupe text-white hover:bg-taupe-hover`}>Materials are ready</button>
+                <button type="button" disabled={off} onClick={() => api.actions.setMaterials('ready', note)} className={`${btn} bg-espresso text-white hover:bg-espresso/90`}>Materials are ready</button>
                 <button type="button" disabled={off || data.status === 'pending'} title={data.status === 'pending' ? 'Available once the order is confirmed' : undefined} onClick={() => api.actions.setMaterials('waiting', note)} className={`${btn} border border-line text-ink-body hover:bg-sunken`}>Waiting for materials</button>
               </div>
             </>

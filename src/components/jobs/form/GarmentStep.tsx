@@ -2,6 +2,8 @@ import { useState } from 'react';
 import SearchPicker from '@/components/shared/SearchPicker';
 import { canonicalGarment, categoryOfGarment, type GarmentCategory } from '@/lib/garmentTaxonomy';
 import { FIELD, LABEL } from './FormStep';
+import { X } from 'lucide-react';
+import { BTN_GREY } from '@/components/shared/plainForm';
 import { CUSTOM_PREFIX, type GarmentOption } from './jobFormHelpers';
 
 interface Props {
@@ -32,26 +34,31 @@ export default function GarmentStep({ options, garment, onGarment }: Props) {
   return (
     <div>
       <label htmlFor="job-garment" className={LABEL}>
-        Garment <span className="font-normal normal-case tracking-normal text-ink-faint">(optional — narrows the services and designs)</span>
+        Garment <span className="font-normal text-ink-faint">(optional — filled from the service; change it if it is wrong)</span>
       </label>
       <SearchPicker
-        id="job-garment" items={items} value={value} onChange={choose}
+        id="job-garment" plain items={items} value={value} onChange={choose}
         getId={(o) => o.id} getText={(o) => o.label} getSearchText={(o) => o.search}
         placeholder="Search a garment — barong, gown, pants…" emptyText="No garment like that. Use “Not listed?” below."
         renderItem={(o) => (
           <>
             <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{o.label}</span>
-            <span className="shrink-0 text-xs text-ink-muted">{o.mine ? <span className="mr-2 font-semibold text-sage">Yours</span> : null}{o.group}</span>
+            <span className="shrink-0 text-xs text-ink-muted">{o.mine ? <span className="mr-2 font-semibold text-espresso">Yours</span> : null}{o.group}</span>
           </>
         )}
       />
       {typing ? (
-        <input
-          type="text" maxLength={100} autoFocus value={known ? '' : garment} onChange={(e) => onGarment(e.target.value, 'other')}
-          placeholder="Type the garment, e.g. Kimono, Malong" className={`${FIELD} mt-2`}
-        />
+        <div className="relative mt-2">
+          <input
+            type="text" maxLength={100} autoFocus value={known ? '' : garment} onChange={(e) => onGarment(e.target.value, 'other')}
+            placeholder="Type the garment, e.g. Kimono, Malong" className={`${FIELD} pr-12`}
+          />
+          <button type="button" aria-label="Close and go back to the list" onClick={() => { setTyping(false); if (!known) onGarment('', ''); }} className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-espresso/60 hover:bg-espresso/[0.06] hover:text-espresso">
+            <X size={18} />
+          </button>
+        </div>
       ) : (
-        <button type="button" onClick={() => setTyping(true)} className="mt-1 min-h-11 cursor-pointer text-sm font-semibold text-taupe hover:underline">Not listed? Type the garment name</button>
+        <button type="button" onClick={() => setTyping(true)} className={`${BTN_GREY} mt-2`}>Not listed? Type the garment name</button>
       )}
     </div>
   );

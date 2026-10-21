@@ -9,9 +9,10 @@ import { CatalogFormProps, StoreServiceOption } from './formTypes';
 
 export function useCatalogForm({
   initialData,
+  initialServiceId,
   onSubmit,
   submitting,
-}: Pick<CatalogFormProps, 'initialData' | 'onSubmit' | 'submitting'>) {
+}: Pick<CatalogFormProps, 'initialData' | 'onSubmit' | 'submitting'> & { initialServiceId?: string }) {
   const { store } = useAuthStore();
 
   const [formData, setFormData] = useState<CatalogFormData>({
@@ -19,7 +20,7 @@ export function useCatalogForm({
     price: '',
     pricing_mode: 'same',
     extra_charge: '',
-    service_id: '',
+    service_id: initialServiceId ?? '',
     estimated_days: '',
     estimated_days_max: '',
     material: '',
@@ -29,6 +30,7 @@ export function useCatalogForm({
     measurement_guide: '',
     garment_type: '',
     sizes: [],
+    add_ons: [],
     external_gallery_url: '',
     is_active: true,
   });

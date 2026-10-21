@@ -46,7 +46,7 @@ const TOP_LINKS = [
 
 const MID_LINKS = [
   { href: '/account/orders', label: 'My Job Orders', icon: Package },
-  { href: '/account/appointments', label: 'Appointments & Fittings', icon: Calendar },
+  { href: '/account/appointments', label: 'Appointments', icon: Calendar },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/account/measurements', label: 'My Measurements', icon: Ruler },
   { href: '/account/saved', label: 'My Saved Items', icon: Heart },

@@ -19,7 +19,7 @@ export default function JobsOnHoldList({ rows }: JobsOnHoldListProps) {
       <p className="text-sm text-ink-faint mb-4">Paused 7+ days — worth a check-in before it&apos;s genuinely forgotten.</p>
 
       {/* Mobile cards — no sideways scroll needed */}
-      <div className="md:hidden -mx-6 -mb-6 divide-y divide-[#F0EAE3] border-t border-line">
+      <div className="md:hidden -mx-6 -mb-6 divide-y divide-sunken border-t border-line">
         {rows.map(row => (
           <div key={row.id} className="px-6 py-3.5">
             <div className="flex items-start justify-between gap-2">
@@ -49,7 +49,7 @@ export default function JobsOnHoldList({ rows }: JobsOnHoldListProps) {
               <th className="px-6 py-3 font-medium">Days Held</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F0EAE3]">
+          <tbody className="divide-y divide-sunken">
             {rows.map(row => (
               <tr key={row.id} className="hover:bg-sunken/20 transition-colors">
                 <td className="px-6 py-3">

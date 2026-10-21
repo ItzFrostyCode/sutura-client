@@ -90,8 +90,36 @@ export interface Service extends RequirementFields {
   // as CatalogItem's own (total_amount - balance - discount_amount).
   reviews_count?: number;
   reviews_avg_rating?: number | null;
+  reviews?: {
+    id: number;
+    rating: number;
+    created_at: string;
+    user: { id: number; name: string; profile_picture: string | null } | null;
+  }[];
   saves_count?: number;
   job_orders_count?: number;
+  orders_count?: number;
+  catalog_items_count?: number;
+  catalog_items?: {
+    id: number;
+    name: string;
+    price?: number | string | null;
+    sale_price?: number | string | null;
+    estimated_days?: number | null;
+    material?: string | null;
+    garment_type?: string | null;
+    garment_category?: string | null;
+    color?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    apparel_review?: any;
+    images?: { id?: number; image_url: string; is_primary?: boolean; view_angle?: string | null; sort_order?: number }[];
+    reviews_avg_rating?: number | null;
+    reviews_count?: number;
+    order_count?: number;
+    saves_count?: number;
+    pricing?: any;
+  }[];
   total_revenue?: number;
 }
 
@@ -107,7 +135,10 @@ export interface PricingTierInput {
  */
 export function deriveTiersFromService(service: Service): PricingTierInput[] {
   if (service.pricing && service.pricing.length > 0) {
-    return service.pricing.map(p => ({ label: p.label, amount: p.amount ? String(Number(p.amount)) : '' }));
+    return service.pricing.map(p => ({
+      label: p.label,
+      amount: p.amount && Number(p.amount) > 0 ? String(Number(p.amount)) : '',
+    }));
   }
   return (service.tags || []).map(tag => ({ label: tag, amount: '' }));
 }

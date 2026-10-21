@@ -61,13 +61,13 @@ export function FinancialStatementSummary({ job, financials }: FinancialStatemen
         <div className="h-2 w-full bg-sunken rounded-full overflow-hidden relative">
           <div
             className={`h-full transition-all duration-500 rounded-full ${
-              remainingBalance === 0 ? 'bg-emerald-600' : 'bg-taupe'
+              remainingBalance === 0 ? 'bg-emerald-600' : 'bg-espresso'
             }`}
             style={{ width: `${percentCollected}%` }}
           />
           {/* Required-payment marker, from this job's payment policy */}
           {requiredDeposit > 0 && markerLeft < 100 && (
-            <div className="absolute top-0 bottom-0 w-0.5 bg-black/15 z-10" style={{ left: `${markerLeft}%` }} title={`${depositLabel} threshold`} />
+            <div className="absolute top-0 bottom-0 w-0.5 bg-espresso/15 z-10" style={{ left: `${markerLeft}%` }} title={`${depositLabel} threshold`} />
           )}
         </div>
         <div className="flex justify-between items-center text-[10px] text-ink-faint pt-0.5">

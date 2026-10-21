@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 import PageHeader from '@/components/shared/PageHeader';
 import CatalogModuleTabs, { CatalogTabId } from '@/components/catalog/CatalogModuleTabs';
 import CatalogGridView from '@/components/catalog/CatalogGridView';
@@ -23,6 +25,7 @@ function resolveTabFromPath(): CatalogTabId {
 }
 
 function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcaseShellProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<CatalogTabId>(() => {
     if (typeof window !== 'undefined') {
       const fromPath = resolveTabFromPath();
@@ -42,12 +45,16 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
 
   // Seamless in-page tab switching without whole-panel unmount or reload
   const handleTabChange = useCallback((tabId: CatalogTabId, href: string) => {
+    if (tabId === 'services' || href.startsWith('/dashboard/services')) {
+      router.push(href);
+      return;
+    }
     setActiveTab(tabId);
     if (typeof window !== 'undefined' && window.location.pathname !== href) {
       window.history.pushState(null, '', href);
       window.dispatchEvent(new Event('sutura-tab-change'));
     }
-  }, []);
+  }, [router]);
 
   const headerActions = (
     <Link
@@ -61,16 +68,9 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/*
-        Standard SUTURA PageHeader:
-        - Eyebrow: "Collections"
-        - Title: "Catalog Designs"
-        - Actions on the right
-        - Tabs as children, sitting flush directly on the header bottom border rule
-      */}
       <PageHeader
-        title="Catalog Designs"
-        description="Curated garment designs, collection performance metrics, and client reviews."
+        title="Service Designs"
+        description="Curated garment designs filed under your tailoring services."
         actions={headerActions}
         inlineActions
       >

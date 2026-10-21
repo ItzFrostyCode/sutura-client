@@ -4,7 +4,7 @@ import { catalogCategoryPath, serviceCategoryPath } from '@/lib/garmentTaxonomy'
 import type { Appointment } from './appointmentHelpers';
 
 interface AppointmentSubjectProps {
-  readonly apt: Pick<Appointment, 'catalog_item' | 'service' | 'selected_size' | 'selected_color' | 'garment_category'>;
+  readonly apt: Pick<Appointment, 'catalog_item' | 'service' | 'selected_size' | 'selected_color' | 'garment_category' | 'items'>;
   /** Store slug for linking the design to its public page (full variant only). */
   readonly storeSlug?: string;
   readonly variant?: 'compact' | 'full';
@@ -17,6 +17,26 @@ interface AppointmentSubjectProps {
  * modal so owners, branch managers, and staff all see the same thing.
  */
 export default function AppointmentSubject({ apt, storeSlug, variant = 'compact' }: AppointmentSubjectProps) {
+  const items = apt.items;
+  const isMultiItem = items && items.length > 1;
+
+  if (variant === 'compact' && isMultiItem) {
+    const totalQty = items.reduce((sum, it) => sum + it.quantity, 0);
+    const itemNames = items.map((it) => it.item_name).slice(0, 2).join(', ');
+    const moreCount = items.length > 2 ? ` +${items.length - 2} more` : '';
+
+    return (
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-xs text-ink font-semibold truncate">
+          {items.length} items ({totalQty} pcs)
+        </p>
+        <p className="text-[11px] text-ink-muted truncate">
+          {itemNames}{moreCount}
+        </p>
+      </div>
+    );
+  }
+
   const design = apt.catalog_item;
   const designPath = design ? catalogCategoryPath(design) : [];
   const servicePath = apt.service ? serviceCategoryPath(apt.service) : [];

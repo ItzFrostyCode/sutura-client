@@ -80,7 +80,8 @@ export function useCustomers() {
         setCustomers(prev => prev.map(c => c.id === editingId ? { ...c, ...res.data.data } : c));
         toast.success('Customer updated successfully.');
       } else {
-        const res = await api.post(`/stores/${store.id}/customers`, payload);
+        // Added here, on the Customers page: they go on the list now (from a visit or an order form they join it with their first order).
+        const res = await api.post(`/stores/${store.id}/customers`, { ...payload, add_to_list: true });
         const returnedId = res.data.data.id;
         const alreadyListed = customers.some(c => c.id === returnedId);
         setCustomers(prev => {

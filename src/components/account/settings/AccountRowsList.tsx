@@ -5,6 +5,7 @@ interface AccountRowsListProps {
   user: {
     name: string;
     phone?: string | null;
+    gender?: 'male' | 'female' | null;
   };
   onOpenSheet: (field: EditableField) => void;
 }
@@ -19,14 +20,19 @@ function Row({ label, value, onClick }: { readonly label: string; readonly value
   );
 }
 
-/** What can be changed: name, phone number and password. The email is the login and is not editable here. */
+/** What can be changed: name, phone number, gender, and password. The email is the login and is not editable here. */
 export default function AccountRowsList({ user, onOpenSheet }: Readonly<AccountRowsListProps>) {
+  const genderLabel = user.gender
+    ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1)
+    : 'Not set';
+
   return (
     <section>
       <h2 className="mobile-overline mb-2 ml-4 text-ink-faint">Account</h2>
       <div className="card-soft overflow-hidden">
         <Row label="Name" value={user.name} onClick={() => onOpenSheet('name')} />
         <Row label="Phone" value={user.phone || 'Not set'} onClick={() => onOpenSheet('phone')} />
+        <Row label="Gender" value={genderLabel} onClick={() => onOpenSheet('gender')} />
         <Row label="Change Password" onClick={() => onOpenSheet('password')} />
       </div>
     </section>

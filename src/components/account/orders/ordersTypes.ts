@@ -12,6 +12,10 @@ export interface MyOrder {
   catalog_item_name: string | null;
   service_name: string | null;
   quantity?: number;
+  /** Linked orders: the first order of the group, this one's place in it, and the kind ('batch' | 'set'). */
+  parent_order_id?: number | null;
+  batch_no?: number | null;
+  group_kind?: 'batch' | 'set' | null;
   is_rush: boolean;
   due_date: string | null;
   total_amount: number;

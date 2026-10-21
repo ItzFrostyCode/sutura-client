@@ -52,7 +52,7 @@ export default function TailorsModal({ isOpen, onClose, storeId, current, capaci
       footer={(
         <div className="flex w-full justify-end gap-2">
           <button type="button" onClick={onClose} className="h-11 rounded-lg px-4 text-sm font-medium text-ink-body hover:text-ink">Cancel</button>
-          <button type="button" disabled={busy || (needsReason && !reason.trim())} onClick={async () => { if (await onSave(Object.entries(picked).map(([id, role]) => ({ user_id: Number(id), role })), reason.trim() || undefined)) onClose(); }} className="h-11 rounded-lg bg-taupe px-4 text-sm font-semibold text-white hover:bg-taupe-hover disabled:opacity-50">Save</button>
+          <button type="button" disabled={busy || (needsReason && !reason.trim())} onClick={async () => { if (await onSave(Object.entries(picked).map(([id, role]) => ({ user_id: Number(id), role })), reason.trim() || undefined)) onClose(); }} className="h-11 rounded-lg bg-espresso px-4 text-sm font-semibold text-white hover:bg-espresso/90 disabled:opacity-50">Save</button>
         </div>
       )}
     >

@@ -49,7 +49,7 @@ export function useJobFormLookups() {
       return;
     }
     Promise.all([
-      api.get(`/stores/${store.id}/customers`),
+      api.get(`/stores/${store.id}/customers`, { params: { all: 1 } }), // also people who have only booked or visited so far
       api.get(`/stores/${store.id}/services`),
       // Designs are owner/manager-only to read; staff opening a job from an appointment just go without them.
       api.get(`/stores/${store.id}/catalog`).catch(() => ({ data: { data: [] } })),

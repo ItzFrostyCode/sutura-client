@@ -49,7 +49,7 @@ export function ServiceTypeEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
           const on = d.service_category === key;
           return (
             <label key={key} className={`flex items-start gap-3 p-4 border cursor-pointer min-h-11 ${on ? 'border-ink bg-canvas' : 'border-line hover:border-line-strong'}`}>
-              <input type="radio" name="svc-group" checked={on} onChange={() => pick(key)} className="mt-1 w-4 h-4 accent-[#6B5346]" />
+              <input type="radio" name="svc-group" checked={on} onChange={() => pick(key)} className="mt-1 w-4 h-4 accent-taupe-dark" />
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-ink">{g.label}</span>
                 <span className="block text-xs text-ink-muted mt-0.5">{g.description}</span>
@@ -175,9 +175,9 @@ export function ServiceCapabilitiesEditor({ edit }: Readonly<{ edit: DraftEdit }
       </fieldset>
       {chosen.has('bulk_orders') && (
         <div>
-          <label htmlFor="svc-minqty" className={LABEL}>Minimum order (pieces) <span className="text-red-600">*</span></label>
+          <label htmlFor="svc-minqty" className={LABEL}>Usual minimum order (pieces) <span className="text-red-600">*</span></label>
           <input id="svc-minqty" type="number" min="1" value={d.min_order_qty} onChange={e => patch({ min_order_qty: e.target.value })} className={FIELD} />
-          <p className="text-[11px] text-ink-faint mt-1.5">Shown on the service so teams know how many to order. Bulk orders get a team roster.</p>
+          <p className="text-[11px] text-ink-faint mt-1.5">Shown on the service so teams know how many to order. It is a guide, not a rule: the shop can still take a smaller order and is warned when it does. Bulk orders get a team roster.</p>
         </div>
       )}
     </div>

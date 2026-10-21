@@ -22,7 +22,7 @@ export default function BookingServicePicker({ needsServicePicker, selectedServi
         value={selectedServiceId}
         required
         onChange={(e) => setSelectedServiceId(e.target.value)}
-        className="w-full h-[52px] bg-canvas border border-line rounded-none px-4 text-base text-ink focus:outline-none focus:border-taupe"
+        className="w-full h-[52px] bg-canvas border border-line rounded-xl px-4 text-base text-ink focus:outline-none focus:border-taupe transition-colors shadow-xs"
       >
         <option value="">Select a service...</option>
         {storeSettings?.services?.map((s) => (

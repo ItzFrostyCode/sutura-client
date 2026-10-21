@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Modal from '@/components/Modal';
-import { REJECTION_REASONS } from './appointmentHelpers';
+import { REJECTION_REASONS, sameText } from './appointmentHelpers';
 
 interface RejectAppointmentDialogProps {
   readonly isOpen: boolean;
@@ -11,18 +11,26 @@ interface RejectAppointmentDialogProps {
   readonly onClose: () => void;
   /** Resolves true when the server accepted the rejection. */
   readonly onConfirm: (reasonCode: string, note: string) => Promise<boolean>;
+  readonly hasService?: boolean;
 }
 
 // Declining a request always needs a reason — the customer is told, and it is kept in the audit log.
-export default function RejectAppointmentDialog({ isOpen, busy, onClose, onConfirm }: Readonly<RejectAppointmentDialogProps>) {
+export default function RejectAppointmentDialog({ isOpen, busy, onClose, onConfirm, hasService = true }: Readonly<RejectAppointmentDialogProps>) {
   const [code, setCode] = useState('');
   const [note, setNote] = useState('');
 
   const close = () => { setCode(''); setNote(''); onClose(); };
   const submit = async () => {
     if (!code) return;
-    if (await onConfirm(code, note.trim())) close();
+    // A note that only repeats the reason is left out: the customer would read it twice.
+    const label = REJECTION_REASONS.find((r) => r.code === code)?.label;
+    if (await onConfirm(code, sameText(note, label) ? '' : note.trim())) close();
   };
+
+  const filteredReasons = REJECTION_REASONS.filter(r => {
+    if (r.requiresService && !hasService) return false;
+    return true;
+  });
 
   return (
     <Modal isOpen={isOpen} onClose={close} title="Reject appointment request">
@@ -30,9 +38,9 @@ export default function RejectAppointmentDialog({ isOpen, busy, onClose, onConfi
         <fieldset>
           <legend className="text-xs font-bold uppercase tracking-wider text-ink mb-2">Reason <span className="text-red-600">*</span></legend>
           <div className="space-y-2">
-            {REJECTION_REASONS.map(r => (
+            {filteredReasons.map(r => (
               <label key={r.code} className={`flex items-center gap-3 min-h-11 px-3 border cursor-pointer ${code === r.code ? 'border-ink bg-white' : 'border-line hover:bg-sunken'}`}>
-                <input type="radio" name="reject-reason" value={r.code} checked={code === r.code} onChange={() => setCode(r.code)} className="w-4 h-4 accent-[#6B5346]" />
+                <input type="radio" name="reject-reason" value={r.code} checked={code === r.code} onChange={() => setCode(r.code)} className="w-4 h-4 accent-taupe-dark" />
                 <span className="text-sm text-ink">{r.label}</span>
               </label>
             ))}

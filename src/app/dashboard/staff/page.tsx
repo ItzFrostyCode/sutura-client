@@ -31,6 +31,7 @@ export default function StaffPage() {
     email: '',
     password: '',
     phone: '',
+    gender: '',
     role: 'tailor',
     additional_roles: [] as string[],
     specialization: '',
@@ -81,6 +82,7 @@ export default function StaffPage() {
         name: string;
         email: string;
         phone: string;
+        gender?: string | null;
         role: string;
         additional_roles: string[];
         specialization: string[];
@@ -93,6 +95,7 @@ export default function StaffPage() {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
+        gender: formData.gender || null,
         role: formData.role,
         // Sent even when empty so clearing all secondary roles on an existing
         // profile actually takes — the backend uses request->only(), which
@@ -128,6 +131,7 @@ export default function StaffPage() {
         email: '',
         password: '',
         phone: '',
+        gender: '',
         role: 'tailor',
         additional_roles: [],
         specialization: '',
@@ -154,6 +158,7 @@ export default function StaffPage() {
       email: member.user?.email || '',
       password: '',
       phone: member.user?.phone || '',
+      gender: member.user?.gender || '',
       role: member.role || 'tailor',
       additional_roles: member.additional_roles || [],
       specialization: Array.isArray(member.specialization)
@@ -224,6 +229,7 @@ export default function StaffPage() {
                   email: '',
                   password: '',
                   phone: '',
+                  gender: '',
                   role: 'tailor',
                   additional_roles: [],
                   specialization: '',
@@ -236,7 +242,7 @@ export default function StaffPage() {
                 });
                 setShowModal(true);
               }}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
+              className="flex items-center gap-2 bg-espresso hover:bg-espresso/90 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
             >
               <Plus size={16} />
               <span>Add Staff Member</span>

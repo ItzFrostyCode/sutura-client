@@ -128,7 +128,7 @@ export default function StoreReviewRow({
               type="button"
               onClick={submitReply}
               disabled={saving}
-              className="min-h-[36px] px-3 bg-taupe text-white text-xs font-bold hover:bg-[#8A7063] transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+              className="min-h-[36px] px-3 bg-taupe text-white text-xs font-bold hover:bg-taupe transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
             >
               {saving && <Loader2 size={12} className="animate-spin" />} Save Reply
             </button>

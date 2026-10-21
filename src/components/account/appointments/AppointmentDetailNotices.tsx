@@ -8,7 +8,12 @@ const note = 'mobile-caption mt-3 flex items-start gap-2 rounded-xl bg-sunken p-
 
 /** What the status means, quietly: soft notes, what the store handed over, and why a request was rejected. */
 export default function AppointmentDetailNotices({ appt, isPastDue }: { readonly appt: AppointmentDetailData; readonly isPastDue: boolean }) {
-  const hasHandOff = appt.shared_link || (appt.shared_images && appt.shared_images.length > 0);
+  const links = (appt.shared_links && appt.shared_links.length > 0)
+    ? appt.shared_links
+    : appt.shared_link
+    ? [appt.shared_link]
+    : [];
+  const hasHandOff = Boolean(appt.shared_notes || links.length > 0 || (appt.shared_images && appt.shared_images.length > 0));
 
   return (
     <>
@@ -29,22 +34,46 @@ export default function AppointmentDetailNotices({ appt, isPastDue }: { readonly
       {!isPastDue && appt.status === 'pending' && !appt.needs_new_time && (
         <p className={note}>
           <Info size={16} className="mt-0.5 shrink-0 text-ink-muted" />
-          Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.
+          {appt.kind === 'production'
+            ? 'The shop chose this time for your fitting and will confirm it with you. If it does not suit you, pick another time.'
+            : appt.previous_scheduled_at
+            ? 'You asked to move this appointment. The shop needs to approve the new time. Until they do, the time you had before is released.'
+            : 'Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.'}
         </p>
       )}
 
+      {appt.previous_scheduled_at && appt.status !== 'pending' && !['cancelled', 'rejected'].includes(appt.status) && (
+        <p className="mobile-caption mt-3 text-ink-muted">Moved from {new Date(appt.previous_scheduled_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
+      )}
+
       {hasHandOff && (
-        <div className="mt-3 space-y-2 rounded-2xl bg-sunken p-3">
-          <p className="mobile-overline text-ink-faint">From the store</p>
-          {appt.shared_link && (
-            <a href={safeHref(appt.shared_link)} target="_blank" rel="noopener noreferrer" className="mobile-body-sm flex items-center gap-2 break-all text-taupe hover:underline">
-              <LinkIcon size={16} className="shrink-0" /> {appt.shared_link}
-            </a>
+        <div className="mt-3 space-y-2.5 rounded-2xl bg-sunken p-3.5 border border-line">
+          <p className="mobile-overline text-ink-faint">Shared from the Atelier</p>
+          {appt.shared_notes && (
+            <p className="text-xs sm:text-sm text-ink whitespace-pre-wrap leading-relaxed bg-surface border border-line rounded-xl p-3">
+              {appt.shared_notes}
+            </p>
+          )}
+          {links.length > 0 && (
+            <div className="space-y-1.5">
+              {links.map((url) => (
+                <a
+                  key={url}
+                  href={safeHref(url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mobile-body-sm flex items-center gap-2 break-all text-taupe hover:underline bg-surface border border-line rounded-lg p-2 text-xs"
+                >
+                  <LinkIcon size={14} className="shrink-0 text-taupe" />
+                  <span className="truncate">{url}</span>
+                </a>
+              ))}
+            </div>
           )}
           {appt.shared_images && appt.shared_images.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 pt-1">
               {appt.shared_images.map((url) => (
-                <a key={url} href={getMediaUrl(url)} target="_blank" rel="noopener noreferrer" className="relative block aspect-square overflow-hidden rounded-xl bg-surface">
+                <a key={url} href={getMediaUrl(url)} target="_blank" rel="noopener noreferrer" className="relative block aspect-square overflow-hidden rounded-xl bg-surface border border-line shadow-2xs">
                   <Image src={getMediaUrl(url)} alt="Shared by the store" fill sizes="120px" className="object-cover" unoptimized />
                 </a>
               ))}

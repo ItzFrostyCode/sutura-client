@@ -27,7 +27,7 @@ export default function PaymentMethodsTab() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm text-ink-muted max-w-xl">The accounts customers see when they pay. SUTURA never handles the money — they pay you directly and send proof for you to verify.</p>
-        {!form && <button type="button" onClick={() => open()} className="h-11 px-4 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"><Plus size={16} /> Add</button>}
+        {!form && <button type="button" onClick={() => open()} className="h-11 px-4 bg-espresso hover:bg-espresso/90 text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"><Plus size={16} /> Add</button>}
       </div>
 
       {form && (

@@ -1,10 +1,9 @@
 'use client';
 
 import { use, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
-import { Store, Send, Loader2 } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
-import { getMediaUrl } from '@/lib/media';
+import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 
@@ -87,15 +86,12 @@ export default function SupportTicketDetailPage({ params }: Readonly<{ params: P
           <div className="flex-1">
             <div className="card-soft mb-3 p-4">
               <div className="mb-3 flex items-center gap-2.5">
-                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-line-strong bg-sunken">
-                  {ticket.store?.logo_path ? (
-                    <Image src={getMediaUrl(ticket.store.logo_path)} alt="" fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Store size={13} className="text-ink-faint" />
-                    </div>
-                  )}
-                </div>
+                <StoreLogoAvatar
+                  src={ticket.store?.logo_path}
+                  name={ticket.store?.name ?? 'SUTURA'}
+                  className="w-8 h-8 rounded-full border border-line-strong shadow-none"
+                  textClassName="text-xs font-serif font-bold text-taupe-dark"
+                />
                 <span className="text-xs font-semibold text-ink-muted truncate">{ticket.store?.name ?? 'SUTURA'}</span>
                 <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_META[ticket.status].tone}`}>
                   {STATUS_META[ticket.status].label}

@@ -39,7 +39,7 @@ export default function NeedsDecisionCard({ storeId, enabled }: Readonly<{ store
                   {a.needs_new_time && <p className="text-[11px] font-semibold text-amber-700 mt-0.5">Slot was taken — needs a new time</p>}
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button type="button" onClick={() => approve(a.id)} disabled={busyId === a.id} className="h-11 px-4 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                  <button type="button" onClick={() => approve(a.id)} disabled={busyId === a.id} className="h-11 px-4 bg-espresso hover:bg-espresso/90 text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
                     {busyId === a.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve
                   </button>
                   <button type="button" onClick={() => setRejecting(a.id)} disabled={busyId === a.id} className="h-11 px-4 border border-rose-200 text-rose-700 hover:bg-rose-50 text-sm font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
@@ -101,6 +101,7 @@ export default function NeedsDecisionCard({ storeId, enabled }: Readonly<{ store
         isOpen={rejecting !== null}
         busy={busyId === rejecting}
         onClose={() => setRejecting(null)}
+        hasService={Boolean(appointments.items.find(a => a.id === rejecting)?.what)}
         onConfirm={async (code, note) => (rejecting !== null ? reject(rejecting, code, note) : false)}
       />
     </section>

@@ -17,7 +17,7 @@ interface DeliveryPanelProps {
 
 const STATE = {
   done: 'border-emerald-600 bg-emerald-600 text-white',
-  current: 'border-taupe bg-taupe text-white',
+  current: 'border-taupe bg-espresso text-white',
   upcoming: 'border-line bg-surface text-ink-muted',
 } as const;
 
@@ -67,7 +67,8 @@ export default function DeliveryPanel({ storeId, data, api, onGoToFinancials }: 
       {modal === 'qcFail' && <CorrectionModal isOpen onClose={() => setModal(null)} storeId={storeId} kind="defect" busy={busy} onSave={api.actions.failQuality} />}
       {modal === 'fittingIssue' && <CorrectionModal isOpen onClose={() => setModal(null)} storeId={storeId} kind="fitting_issue" busy={busy} onSave={api.actions.fittingIssue} />}
       {modal === 'change' && <CorrectionModal isOpen onClose={() => setModal(null)} storeId={storeId} kind="change_request" busy={busy} onSave={api.actions.addCorrection} />}
-      {modal === 'handover' && <HandoverModal isOpen onClose={() => setModal(null)} remaining={d.handover.remaining} busy={busy} onSave={api.actions.recordHandover} />}
+      {modal === 'release' && <HandoverModal isOpen release onClose={() => setModal(null)} remaining={d.handover.remaining} people={d.handover.unit === 'people'} busy={busy} onSave={api.actions.recordHandover} />}
+      {modal === 'handover' && <HandoverModal isOpen onClose={() => setModal(null)} remaining={d.handover.remaining} people={d.handover.unit === 'people'} busy={busy} onSave={api.actions.recordHandover} />}
       {approving && (
         <ApproveChangeModal isOpen onClose={() => setApproving(null)} change={approving} currentDue={data.order?.due_date ?? null} busy={busy} onApprove={(body) => api.actions.approveChange(approving.id, body)} />
       )}

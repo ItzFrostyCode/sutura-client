@@ -29,6 +29,8 @@ There is one demo shop, with one branch.
 | Shop ID | Shop name | Owner user ID | Owner name | Owner account | Password |
 |---|---|---|---|---|---|
 | 1 | Thread & Needle Tailoring (`thread-needle`) | 2 | Maria Cruz | `maria.cruz@gmail.com` | `password` |
+| 4 | Sakuragi Embroidery Davao (`sakuragi-embroidery-davao-...`) | 20 | Joshua Arabejo | `sakuragiembroiderydavao@sutura.shop` | `Password!1` |
+
 
 ### Branch
 
@@ -44,6 +46,8 @@ There is one demo shop, with one branch.
 | 1 | 3 | 1 | Juan Dela Cruz | Head tailor + sublimation | `juan.delacruz@sutura.com` | `password` | **Plain staff** (the main staff test account) |
 | 3 | 5 | 1 | Ana Santos | Senior designer | `ana.santos@sutura.com` | `password` | Plain staff |
 | 4 | 6 | 1 | Pedro Penduko | Cutter / sewer | `pedro.penduko@sutura.com` | `password` | Plain staff |
+| 8 | 23 | 5 | Joshua Arabejo | Tailor | `itzjoshuawaymantest@gmail.com` | `ItzFrosty6932!` | **Plain staff** (Sakuragi Embroidery Davao - Shop 4) |
+
 
 > Every account is named after its person (no generic `staff@` / `customer@` logins). `juan.delacruz@sutura.com` (staff) and `juan.delacruz@gmail.com` (customer) are two different people with the same name — the domain tells them apart.
 

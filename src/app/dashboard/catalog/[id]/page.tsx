@@ -149,7 +149,7 @@ export default function CatalogItemDetailPage({
         </p>
         <Link
           href="/dashboard/catalog"
-          className="px-5 py-2.5 bg-taupe text-white text-xs font-bold rounded-xl hover:bg-[#8A7063] transition-colors inline-flex items-center gap-2"
+          className="px-5 py-2.5 bg-espresso text-white text-xs font-bold rounded-xl hover:bg-taupe transition-colors inline-flex items-center gap-2"
         >
           <ArrowLeft size={16} /> Back to Catalog
         </Link>

@@ -38,6 +38,287 @@
   --nav-inactive: #D8CABF;    /* icons + labels of the other tabs (≈8:1 on the bar) */
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   Espresso Atelier (DESIGN.md): the dashboard's palette. The user chose it for the whole dashboard (2026-10-21), so it
+   replaces the older locked hex values *inside the dashboard only*; the public site and the customer account keep :root.
+   It is switched on by the dashboard layout (class on <body>, so portaled modals get it too). Type is Inter, weights
+   400 / 500 / 600; cards are white with a warm hairline; the primary action is deep espresso.
+   ──────────────────────────────────────────────────────────────────────────── */
+.theme-espresso {
+  --background: #FBF9F6;        /* Porcelain Linen */
+  --card-bg: #FFFFFF;
+  --surface-sunken: #F5EFEB;    /* Warm Milk Foam */
+  --surface-sunken-hover: #F0E7DE;
+  --brand-border: rgba(43, 30, 26, 0.08);   /* warm sepia hairline */
+  --border-hover: rgba(43, 30, 26, 0.16);
+  --border-strong: rgba(43, 30, 26, 0.22);
+  --foreground: #2B1E1A;        /* Deep Roast Espresso */
+  --ink-body: #4F4542;
+  --ink-muted: #6C665F;         /* Roasted Earth */
+  --ink-faint: #807471;
+  --brand-taupe: #8A6D58;       /* Steamed Latte */
+  --brand-taupe-hover: #745945;
+  --brand-taupe-dark: #5A422F;
+  --accent-danger: #A64B44;     /* Terracotta Rose */
+  --accent-sage: #4A6B53;       /* Olive Sage */
+  --accent-alert: #B47836;      /* Amber Ochre */
+  --accent-slate: #6C665F;
+  --nav-bar: #2B1E1A;
+  --nav-inactive: #D8C2BB;
+  --font-outfit: var(--font-inter), Inter, system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1;
+  /* Tailwind's stock colors re-mapped to the DESIGN.md palette, so no screen can show a color outside it:
+     amber / orange / yellow -> Amber Ochre, red / rose / pink -> Terracotta Rose, green / emerald / teal / lime -> Olive Sage,
+     blue / sky / indigo / violet / purple -> Mocha, gray / slate / zinc / neutral / stone -> warm neutrals. */
+  --color-amber-50: #FBF3E8;
+  --color-amber-100: #F6E6CF;
+  --color-amber-200: #EDCFA3;
+  --color-amber-300: #E0B375;
+  --color-amber-400: #CD9654;
+  --color-amber-500: #B47836;
+  --color-amber-600: #9A642B;
+  --color-amber-700: #7E5122;
+  --color-amber-800: #5F3D1A;
+  --color-amber-900: #452C13;
+  --color-amber-950: #2B1B0B;
+  --color-yellow-50: #FBF3E8;
+  --color-yellow-100: #F6E6CF;
+  --color-yellow-200: #EDCFA3;
+  --color-yellow-300: #E0B375;
+  --color-yellow-400: #CD9654;
+  --color-yellow-500: #B47836;
+  --color-yellow-600: #9A642B;
+  --color-yellow-700: #7E5122;
+  --color-yellow-800: #5F3D1A;
+  --color-yellow-900: #452C13;
+  --color-yellow-950: #2B1B0B;
+  --color-orange-50: #FBF3E8;
+  --color-orange-100: #F6E6CF;
+  --color-orange-200: #EDCFA3;
+  --color-orange-300: #E0B375;
+  --color-orange-400: #CD9654;
+  --color-orange-500: #B47836;
+  --color-orange-600: #9A642B;
+  --color-orange-700: #7E5122;
+  --color-orange-800: #5F3D1A;
+  --color-orange-900: #452C13;
+  --color-orange-950: #2B1B0B;
+  --color-red-50: #FBEEEC;
+  --color-red-100: #F6DAD7;
+  --color-red-200: #EDB9B4;
+  --color-red-300: #DE918A;
+  --color-red-400: #C96E65;
+  --color-red-500: #A64B44;
+  --color-red-600: #8F3F39;
+  --color-red-700: #733330;
+  --color-red-800: #572725;
+  --color-red-900: #3E1C1B;
+  --color-red-950: #2A1110;
+  --color-rose-50: #FBEEEC;
+  --color-rose-100: #F6DAD7;
+  --color-rose-200: #EDB9B4;
+  --color-rose-300: #DE918A;
+  --color-rose-400: #C96E65;
+  --color-rose-500: #A64B44;
+  --color-rose-600: #8F3F39;
+  --color-rose-700: #733330;
+  --color-rose-800: #572725;
+  --color-rose-900: #3E1C1B;
+  --color-rose-950: #2A1110;
+  --color-pink-50: #FBEEEC;
+  --color-pink-100: #F6DAD7;
+  --color-pink-200: #EDB9B4;
+  --color-pink-300: #DE918A;
+  --color-pink-400: #C96E65;
+  --color-pink-500: #A64B44;
+  --color-pink-600: #8F3F39;
+  --color-pink-700: #733330;
+  --color-pink-800: #572725;
+  --color-pink-900: #3E1C1B;
+  --color-pink-950: #2A1110;
+  --color-emerald-50: #EEF4F0;
+  --color-emerald-100: #DAE7DE;
+  --color-emerald-200: #B8D0BF;
+  --color-emerald-300: #8FB29B;
+  --color-emerald-400: #6A9078;
+  --color-emerald-500: #4A6B53;
+  --color-emerald-600: #3F5C48;
+  --color-emerald-700: #334A3A;
+  --color-emerald-800: #273A2D;
+  --color-emerald-900: #1C2A20;
+  --color-emerald-950: #121C15;
+  --color-green-50: #EEF4F0;
+  --color-green-100: #DAE7DE;
+  --color-green-200: #B8D0BF;
+  --color-green-300: #8FB29B;
+  --color-green-400: #6A9078;
+  --color-green-500: #4A6B53;
+  --color-green-600: #3F5C48;
+  --color-green-700: #334A3A;
+  --color-green-800: #273A2D;
+  --color-green-900: #1C2A20;
+  --color-green-950: #121C15;
+  --color-teal-50: #EEF4F0;
+  --color-teal-100: #DAE7DE;
+  --color-teal-200: #B8D0BF;
+  --color-teal-300: #8FB29B;
+  --color-teal-400: #6A9078;
+  --color-teal-500: #4A6B53;
+  --color-teal-600: #3F5C48;
+  --color-teal-700: #334A3A;
+  --color-teal-800: #273A2D;
+  --color-teal-900: #1C2A20;
+  --color-teal-950: #121C15;
+  --color-lime-50: #EEF4F0;
+  --color-lime-100: #DAE7DE;
+  --color-lime-200: #B8D0BF;
+  --color-lime-300: #8FB29B;
+  --color-lime-400: #6A9078;
+  --color-lime-500: #4A6B53;
+  --color-lime-600: #3F5C48;
+  --color-lime-700: #334A3A;
+  --color-lime-800: #273A2D;
+  --color-lime-900: #1C2A20;
+  --color-lime-950: #121C15;
+  --color-blue-50: #F7F1EC;
+  --color-blue-100: #EFE4DB;
+  --color-blue-200: #E0CCBC;
+  --color-blue-300: #CBAE97;
+  --color-blue-400: #B08D74;
+  --color-blue-500: #8A6D58;
+  --color-blue-600: #745945;
+  --color-blue-700: #5C4637;
+  --color-blue-800: #45342A;
+  --color-blue-900: #2F231C;
+  --color-blue-950: #1E1511;
+  --color-sky-50: #F7F1EC;
+  --color-sky-100: #EFE4DB;
+  --color-sky-200: #E0CCBC;
+  --color-sky-300: #CBAE97;
+  --color-sky-400: #B08D74;
+  --color-sky-500: #8A6D58;
+  --color-sky-600: #745945;
+  --color-sky-700: #5C4637;
+  --color-sky-800: #45342A;
+  --color-sky-900: #2F231C;
+  --color-sky-950: #1E1511;
+  --color-indigo-50: #F7F1EC;
+  --color-indigo-100: #EFE4DB;
+  --color-indigo-200: #E0CCBC;
+  --color-indigo-300: #CBAE97;
+  --color-indigo-400: #B08D74;
+  --color-indigo-500: #8A6D58;
+  --color-indigo-600: #745945;
+  --color-indigo-700: #5C4637;
+  --color-indigo-800: #45342A;
+  --color-indigo-900: #2F231C;
+  --color-indigo-950: #1E1511;
+  --color-violet-50: #F7F1EC;
+  --color-violet-100: #EFE4DB;
+  --color-violet-200: #E0CCBC;
+  --color-violet-300: #CBAE97;
+  --color-violet-400: #B08D74;
+  --color-violet-500: #8A6D58;
+  --color-violet-600: #745945;
+  --color-violet-700: #5C4637;
+  --color-violet-800: #45342A;
+  --color-violet-900: #2F231C;
+  --color-violet-950: #1E1511;
+  --color-purple-50: #F7F1EC;
+  --color-purple-100: #EFE4DB;
+  --color-purple-200: #E0CCBC;
+  --color-purple-300: #CBAE97;
+  --color-purple-400: #B08D74;
+  --color-purple-500: #8A6D58;
+  --color-purple-600: #745945;
+  --color-purple-700: #5C4637;
+  --color-purple-800: #45342A;
+  --color-purple-900: #2F231C;
+  --color-purple-950: #1E1511;
+  --color-cyan-50: #F7F1EC;
+  --color-cyan-100: #EFE4DB;
+  --color-cyan-200: #E0CCBC;
+  --color-cyan-300: #CBAE97;
+  --color-cyan-400: #B08D74;
+  --color-cyan-500: #8A6D58;
+  --color-cyan-600: #745945;
+  --color-cyan-700: #5C4637;
+  --color-cyan-800: #45342A;
+  --color-cyan-900: #2F231C;
+  --color-cyan-950: #1E1511;
+  --color-fuchsia-50: #F7F1EC;
+  --color-fuchsia-100: #EFE4DB;
+  --color-fuchsia-200: #E0CCBC;
+  --color-fuchsia-300: #CBAE97;
+  --color-fuchsia-400: #B08D74;
+  --color-fuchsia-500: #8A6D58;
+  --color-fuchsia-600: #745945;
+  --color-fuchsia-700: #5C4637;
+  --color-fuchsia-800: #45342A;
+  --color-fuchsia-900: #2F231C;
+  --color-fuchsia-950: #1E1511;
+  --color-gray-50: #FBF9F6;
+  --color-gray-100: #F5EFEB;
+  --color-gray-200: #EAE1D8;
+  --color-gray-300: #D2C3BF;
+  --color-gray-400: #A89D98;
+  --color-gray-500: #807471;
+  --color-gray-600: #6C665F;
+  --color-gray-700: #4F4542;
+  --color-gray-800: #34302A;
+  --color-gray-900: #1F1B16;
+  --color-gray-950: #120805;
+  --color-slate-50: #FBF9F6;
+  --color-slate-100: #F5EFEB;
+  --color-slate-200: #EAE1D8;
+  --color-slate-300: #D2C3BF;
+  --color-slate-400: #A89D98;
+  --color-slate-500: #807471;
+  --color-slate-600: #6C665F;
+  --color-slate-700: #4F4542;
+  --color-slate-800: #34302A;
+  --color-slate-900: #1F1B16;
+  --color-slate-950: #120805;
+  --color-zinc-50: #FBF9F6;
+  --color-zinc-100: #F5EFEB;
+  --color-zinc-200: #EAE1D8;
+  --color-zinc-300: #D2C3BF;
+  --color-zinc-400: #A89D98;
+  --color-zinc-500: #807471;
+  --color-zinc-600: #6C665F;
+  --color-zinc-700: #4F4542;
+  --color-zinc-800: #34302A;
+  --color-zinc-900: #1F1B16;
+  --color-zinc-950: #120805;
+  --color-neutral-50: #FBF9F6;
+  --color-neutral-100: #F5EFEB;
+  --color-neutral-200: #EAE1D8;
+  --color-neutral-300: #D2C3BF;
+  --color-neutral-400: #A89D98;
+  --color-neutral-500: #807471;
+  --color-neutral-600: #6C665F;
+  --color-neutral-700: #4F4542;
+  --color-neutral-800: #34302A;
+  --color-neutral-900: #1F1B16;
+  --color-neutral-950: #120805;
+  --color-stone-50: #FBF9F6;
+  --color-stone-100: #F5EFEB;
+  --color-stone-200: #EAE1D8;
+  --color-stone-300: #D2C3BF;
+  --color-stone-400: #A89D98;
+  --color-stone-500: #807471;
+  --color-stone-600: #6C665F;
+  --color-stone-700: #4F4542;
+  --color-stone-800: #34302A;
+  --color-stone-900: #1F1B16;
+  --color-stone-950: #120805;
+  --font-playfair: var(--font-inter), Inter, system-ui, sans-serif;  /* display headings and figures are Inter here */
+  /* --font-sans / --font-serif are computed once on :root from the old fonts, so the two lines above never reach the
+     <body> base rule or the h1-h6 rule. Set the final values here too. */
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-serif: var(--font-inter), Inter, system-ui, sans-serif;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

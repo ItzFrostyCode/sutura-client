@@ -1,5 +1,6 @@
 'use client';
 
+import { unitOfMetrics } from '@/lib/measurementUnit';
 import { MeasurementStatusBadge } from '@/components/measurements/MeasurementStatus';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -7,13 +8,14 @@ import Image from 'next/image';
 import { Store, Ruler, ChevronDown } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
+import MeasurementPurpose from '@/components/measurements/MeasurementPurpose';
 import { type ProfileGroup, SOURCE_LABELS } from './measurementAccountTypes';
 
-export default function MeasurementProfileCard({ group }: Readonly<{ group: ProfileGroup }>) {
+export default function MeasurementProfileCard({ group, showIn = '' }: Readonly<{ group: ProfileGroup; showIn?: 'in' | 'cm' | '' }>) {
   const [selectedId, setSelectedId] = useState(group.versions.at(-1)!.id);
   const active = group.versions.find((v) => v.id === selectedId) ?? group.versions.at(-1)!;
   const activeIndex = group.versions.indexOf(active);
-  const metricEntries = Object.entries(active.metrics || {}).filter(([, v]) => v);
+  const metricEntries = Object.entries(active.metrics || {}).filter(([k, v]) => Boolean(v) && !k.startsWith('_'));
 
   return (
     <div className="card-soft p-4">
@@ -71,6 +73,8 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
         </div>
       </div>
 
+      <MeasurementPurpose record={active} className="mb-1" />
+
       {active.source && (
         <p className="mobile-caption text-ink-faint mb-3 font-normal">
           {SOURCE_LABELS[active.source] ?? active.source} · {new Date(active.updated_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -80,7 +84,7 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
       {metricEntries.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {metricEntries.map(([key, value]) => (
-            <MetricPill key={key} label={humanizeMetricKey(key)} value={value} />
+            <MetricPill key={key} label={humanizeMetricKey(key)} value={value} unit={unitOfMetrics(active.metrics)} showIn={showIn} />
           ))}
         </div>
       ) : (

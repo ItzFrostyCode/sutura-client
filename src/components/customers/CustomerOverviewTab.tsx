@@ -16,6 +16,8 @@ interface CustomerOverviewTabProps {
   readonly setActiveTab: (tab: CustomerTabType) => void;
   readonly canCollect?: boolean;
   readonly canText?: boolean;
+  readonly canTrust?: boolean;
+  readonly onTrustChanged?: () => void;
 }
 
 export default function CustomerOverviewTab({
@@ -25,12 +27,14 @@ export default function CustomerOverviewTab({
   setActiveTab,
   canCollect = false,
   canText = false,
+  canTrust = false,
+  onTrustChanged,
 }: CustomerOverviewTabProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in">
       {/* LEFT COLUMN: Client Details & Active Production (8 cols) */}
       <div className="lg:col-span-8 space-y-6">
-        <CustomerProfileCard customer={customer} />
+        <CustomerProfileCard customer={customer} canTrust={canTrust} onTrustChanged={onTrustChanged} />
         <CustomerActiveJobsCard
           jobs={jobs}
           customerId={customer?.id}

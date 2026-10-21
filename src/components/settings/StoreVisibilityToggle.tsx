@@ -21,7 +21,7 @@ function ToggleRow({ label, description, checked, onChange, badge }: {
       <button
         type="button"
         onClick={onChange}
-        className={`shrink-0 relative w-11 h-6 rounded-full transition-colors cursor-pointer ${checked ? 'bg-taupe' : 'bg-line'}`}
+        className={`shrink-0 relative w-11 h-6 rounded-full transition-colors cursor-pointer ${checked ? 'bg-espresso' : 'bg-line'}`}
         aria-pressed={checked}
         aria-label={label}
       >
