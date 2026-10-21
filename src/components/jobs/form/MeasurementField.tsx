@@ -15,6 +15,7 @@ import AreaSelector, {
 } from '@/components/measurements/recorder/AreaSelector';
 import AreaGrid from '@/components/measurements/recorder/AreaGrid';
 import PaperSheets from '@/components/measurements/recorder/PaperSheets';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
@@ -100,11 +101,11 @@ export default function MeasurementField({
     if (onUpdatePerson && persons) persons.forEach((_, i) => onUpdatePerson(i, apply));
     else onInlineMeasurementChange(apply);
   };
-  const copyFromPrevious = () => {
+  const copyFromPrevious = async () => {
     const before = effectivePersons[activeIdx - 1];
     if (!before) return;
     const typed = Object.entries(currentPerson.metrics ?? {}).some(([k, v]) => !k.startsWith('_') && String(v).trim() !== '');
-    if (typed && !window.confirm('Replace what you typed for this person with the previous person\'s measurements?')) return;
+    if (typed && !(await confirmDialog({ title: 'Replace these measurements?', message: 'What you typed for this person is replaced with the previous person’s measurements.', confirmLabel: 'Replace' }))) return;
     updateCurrentPerson((prev) => ({
       ...prev, measurement_area: before.measurement_area, top_columns: [...before.top_columns], bottom_columns: [...before.bottom_columns],
       metrics: { ...before.metrics },

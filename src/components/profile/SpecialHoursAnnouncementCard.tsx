@@ -5,6 +5,7 @@ import { Loader2, Plus, Trash2, Pencil, Megaphone } from 'lucide-react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useToast } from '@/context/ToastContext';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 interface SpecialHour {
   id: number;
@@ -138,7 +139,7 @@ export default function SpecialHoursAnnouncementCard({ storeId, onSaved, branche
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Remove this special schedule/announcement?')) return;
+    if (!(await confirmDialog({ title: 'Remove this special schedule?', message: 'The announcement is removed from the shop page.', confirmLabel: 'Remove', danger: true }))) return;
     try {
       await api.delete(`/stores/${storeId}/special-hours/${id}`);
       toast.success('Removed.');

@@ -4,6 +4,7 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { Payment } from '../jobTypes';
 import { JobFinancialsCardProps, ComputedFinancials } from './financialsTypes';
+import { noticeDialog } from '@/store/useConfirmStore';
 
 export function useJobFinancials(
   job: JobFinancialsCardProps['job'],
@@ -66,7 +67,7 @@ export function useJobFinancials(
       });
       onDone(res.data?.data?.url || res.data?.url || '');
     } catch (err) {
-      alert(getErrorMessage(err, 'Failed to upload receipt image.'));
+      void noticeDialog(getErrorMessage(err, 'Failed to upload receipt image.'));
     } finally {
       setUploading(false);
     }

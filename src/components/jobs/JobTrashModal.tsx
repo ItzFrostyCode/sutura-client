@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2, RotateCcw, Trash2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { noticeDialog } from '@/store/useConfirmStore';
 
 interface TrashedJob {
   id: number;
@@ -52,7 +53,7 @@ export default function JobTrashModal({ isOpen, onClose, storeId, onRestored }: 
       onRestored();
     } catch (err) {
       console.error(err);
-      alert('Failed to restore this job order.');
+      void noticeDialog('Failed to restore this job order.');
     } finally {
       setRestoringId(null);
     }

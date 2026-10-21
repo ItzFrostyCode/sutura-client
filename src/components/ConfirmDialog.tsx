@@ -17,6 +17,8 @@ interface ConfirmDialogProps {
   /** Danger styles the confirm button rust; default keeps it taupe. */
   readonly tone?: 'danger' | 'default';
   readonly busy?: boolean;
+  /** Only the confirm button (a message to read, e.g. "OK"). */
+  readonly hideCancel?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export default function ConfirmDialog({
   cancelLabel = 'Cancel',
   tone = 'default',
   busy = false,
+  hideCancel = false,
 }: ConfirmDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useScrollLock(isOpen);
@@ -81,14 +84,16 @@ export default function ConfirmDialog({
           </div>
         </div>
         <div className="flex items-center justify-end gap-2.5 mt-5">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-semibold text-ink-body hover:bg-sunken transition-colors disabled:opacity-50"
-          >
-            {cancelLabel}
-          </button>
+          {!hideCancel && (
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy}
+              className="px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-semibold text-ink-body hover:bg-sunken transition-colors disabled:opacity-50"
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             type="button"
             onClick={onConfirm}

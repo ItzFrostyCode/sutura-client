@@ -32,6 +32,7 @@ import { getErrorMessage } from '@/lib/apiError';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
 import StatusStepper from '@/components/shared/StatusStepper';
+import { confirmDialog, noticeDialog } from '@/store/useConfirmStore';
 
 interface JobProductionTimelineProps {
   readonly job: Job;
@@ -78,7 +79,7 @@ export default function JobProductionTimeline({
       });
       setCompletionPhotoUrl(res.data?.data?.url || res.data?.url || '');
     } catch (err) {
-      alert(getErrorMessage(err, 'Failed to upload completion photo.'));
+      void noticeDialog(getErrorMessage(err, 'Failed to upload completion photo.'));
     } finally {
       setUploadingPhoto(false);
     }
@@ -98,7 +99,7 @@ export default function JobProductionTimeline({
       await api.post(`/stores/${store.id}/jobs/${job.id}/progress-photos`, { url });
       onProgressPhotoAdded();
     } catch (err) {
-      alert(getErrorMessage(err, 'Failed to upload progress photo.'));
+      void noticeDialog(getErrorMessage(err, 'Failed to upload progress photo.'));
     } finally {
       setUploadingProgressPhoto(false);
     }
@@ -113,7 +114,7 @@ export default function JobProductionTimeline({
       });
       onProgressPhotoAdded();
     } catch {
-      alert('Failed to remove progress photo.');
+      void noticeDialog('Failed to remove progress photo.');
     } finally {
       setDeletingPhotoUrl(null);
     }
@@ -342,10 +343,10 @@ export default function JobProductionTimeline({
                   </a>
                   <button
                     type="button"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if (confirm('Are you sure you want to remove this progress photo?')) {
+                      if (await confirmDialog({ title: 'Remove this progress photo?', confirmLabel: 'Remove', danger: true })) {
                         handleDeleteProgressPhoto(photo.url);
                       }
                     }}

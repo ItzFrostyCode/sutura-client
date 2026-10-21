@@ -26,6 +26,7 @@ import ServiceRecommendationsSection from '@/components/store-service-detail/Ser
 import ServiceDetailBreadcrumb from '@/components/store-service-detail/ServiceDetailBreadcrumb';
 import type { SearchServiceResult } from '@/components/search/types';
 import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 // Dedicated page for a single service — was an in-place swap inside the
 // Store Profile's Service tab (the old ServiceDetailView.tsx component,
@@ -225,7 +226,7 @@ export default function ServiceDetailPage({
 
   const handleDelete = async () => {
     if (!service || !store?.slug) return;
-    if (!window.confirm(`Delete "${service.name}"? This can't be undone.`)) return;
+    if (!(await confirmDialog({ title: `Delete "${service.name}"?`, message: "This can't be undone.", confirmLabel: 'Delete', danger: true }))) return;
     try {
       await api.delete(`/stores/${store.slug}/services/${service.id}`);
       toast.success('Service deleted.');

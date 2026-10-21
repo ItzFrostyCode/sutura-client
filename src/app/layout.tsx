@@ -11,6 +11,7 @@ import ShopRouteGuard from "@/components/auth/ShopRouteGuard";
 import { ToastProvider } from "@/context/ToastContext";
 import LastPageTracker from "@/components/shared/LastPageTracker";
 import PublicBottomNav from "@/components/shared/publicNav/PublicBottomNav";
+import ConfirmHost from '@/components/shared/ConfirmHost';
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -46,6 +47,7 @@ export default function RootLayout({
               <ShopRouteGuard>{children}</ShopRouteGuard>
             </MobileFrame>
             <LoginModal />
+            <ConfirmHost />
             <SignInFromQuery />
             <PublicBottomNav />
           </NetworkGuard>

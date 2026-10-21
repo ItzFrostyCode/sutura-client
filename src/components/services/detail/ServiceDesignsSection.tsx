@@ -7,6 +7,7 @@ import type { CatalogItemResult } from '@/types/publicCatalog';
 import type { CatalogItemResponse } from '@/components/catalog/catalogTypes';
 
 import { useToast } from '@/context/ToastContext';
+import { confirmDialog } from '@/store/useConfirmStore';
 
 interface ServiceDesignsSectionProps {
   readonly storeId: number;
@@ -29,7 +30,7 @@ export default function ServiceDesignsSection({ storeId, serviceId, canManage }:
   }, [storeId, serviceId]);
 
   const handleDeleteDesign = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this service design?')) return;
+    if (!(await confirmDialog({ title: 'Delete this service design?', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
     try {
       await api.delete(`/stores/${storeId}/catalog/${id}`);
       toast.success('Service design deleted.');

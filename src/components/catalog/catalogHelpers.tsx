@@ -5,6 +5,7 @@ import { BulletItem, ImageItem, ColorItem, CatalogFormData, CatalogItemResponse,
 import type { SizeChartValue } from '@/components/shared/SizeChartEditor';
 import type { DesignPricing } from '@/lib/designPricing';
 import { parseColorNames } from '@/lib/fabricHelper';
+import { noticeDialog } from '@/store/useConfirmStore';
 
 export interface CatalogItem {
   id: number;
@@ -222,7 +223,7 @@ export async function uploadSectionImage({
     else if (section === 'measurement_guide') setMeasurementGuideImage(url);
   } catch (err) {
     console.error(`${section} image upload failed`, err);
-    alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
+    void noticeDialog(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
   } finally {
     setUploadingSection(null);
   }
@@ -256,7 +257,7 @@ export async function uploadCatalogImage({
     setImages(prev => prev.map(img => (img.id === imageId ? { ...img, url, uploading: false } : img)));
   } catch (err) {
     console.error('Upload failed', err);
-    alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
+    void noticeDialog(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
     setImages(prev => prev.map(img => (img.id === imageId ? { ...img, uploading: false } : img)));
   }
 }
