@@ -19,11 +19,13 @@ interface HomeNearShopsProps {
   readonly filters: NearFilters & Partial<MoreFilters>;
   readonly onRequestLocation: () => void;
   readonly onResetDistance: () => void;
+  /** Turns Open / Closed back to all shops (the empty "open now" list offers it). */
+  readonly onResetStatus?: () => void;
 }
 
 const box = 'card-soft flex flex-col items-center gap-3 px-6 py-8 text-center';
 
-export default function HomeNearShops({ location, denied, locating, stores, loading, filters, onRequestLocation, onResetDistance }: HomeNearShopsProps) {
+export default function HomeNearShops({ location, denied, locating, stores, loading, filters, onRequestLocation, onResetDistance, onResetStatus }: HomeNearShopsProps) {
   let body: React.ReactNode;
   if (loading) {
     body = (
@@ -65,10 +67,16 @@ export default function HomeNearShops({ location, denied, locating, stores, load
     body = (
       <div className={box}>
         <p className="mobile-body-md text-ink-body">
-          {filters.radiusKm !== null ? `No shop within ${filters.radiusKm} km.` : filters.status !== 'all' ? 'No shops match this filter.' : 'No shops found near this location yet.'}
+          {filters.radiusKm !== null ? `No shop within ${filters.radiusKm} km.`
+            : filters.status === 'open' ? 'No shop is open right now. The shops are there; they are closed at this hour.'
+            : filters.status === 'closed' ? 'Every shop near you is open right now.'
+            : 'No shops found near this location yet.'}
         </p>
         {filters.radiusKm !== null && (
           <button type="button" onClick={onResetDistance} className="h-12 rounded-full border border-line px-6 text-sm text-ink transition-colors hover:border-ink">Show all distances</button>
+        )}
+        {filters.radiusKm === null && filters.status !== 'all' && onResetStatus && (
+          <button type="button" onClick={onResetStatus} className="h-12 rounded-full border border-line px-6 text-sm text-ink transition-colors hover:border-ink">Show all shops</button>
         )}
       </div>
     );

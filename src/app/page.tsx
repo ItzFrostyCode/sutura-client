@@ -89,6 +89,7 @@ export default function HomePage() {
               filters={filters}
               onRequestLocation={place.request}
               onResetDistance={() => setFilters({ ...filters, radiusKm: null })}
+              onResetStatus={() => setFilters({ ...filters, status: 'all' })}
             />
           </main>
 

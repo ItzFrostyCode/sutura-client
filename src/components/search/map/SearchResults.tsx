@@ -29,6 +29,18 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
     <div className={`min-h-0 space-y-3 overflow-y-auto px-4 pb-4 pt-2 ${className}`}>
       {s.radiusKm !== null && !s.userCoords && <p className={note}>Distance is on, but your location is not set. Use the location button on the map.</p>}
       {s.openStatus !== 'all' && s.activeTab === 'showroom' && <p className={note}>Open / Closed applies to shops and services, not to designs.</p>}
+      {s.openStatus === 'open' && s.activeTab === 'store' && !s.storesLoading && s.stores.length === 0 && (
+        <div className={`${note} flex flex-wrap items-center justify-between gap-2`}>
+          <span>No shop is open right now. The shops are there; they are closed at this hour.</span>
+          <button
+            type="button"
+            onClick={() => s.applyAllFilters({ radiusKm: s.radiusKm, status: 'all', minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy })}
+            className="h-10 shrink-0 cursor-pointer rounded-full border border-line bg-white px-4 text-sm font-medium text-ink hover:border-ink"
+          >
+            Show all shops
+          </button>
+        </div>
+      )}
 
       {s.activeTab === 'store' && (
         <SearchStoresTab
