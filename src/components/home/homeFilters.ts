@@ -6,7 +6,8 @@ export interface NearFilters {
   status: ShopStatusFilter;
 }
 
-export const DEFAULT_NEAR_FILTERS: NearFilters = { radiusKm: null, status: 'open' };
+// All shops by default: "open now only" hid every shop at night (each card already says Open or Closed).
+export const DEFAULT_NEAR_FILTERS: NearFilters = { radiusKm: null, status: 'all' };
 
 /** 50 km from the city centre covers the whole of Davao City, so the slider stops there. */
 export const MIN_RADIUS_KM = 5;
@@ -51,5 +52,7 @@ export const DEFAULT_ALL_FILTERS: AllFilters = { ...DEFAULT_NEAR_FILTERS, ...DEF
 
 /** How many filters are on, for the dot on the filter icon. */
 export function countAllFilters(f: NearFilters & Partial<MoreFilters>): number {
-  return activeFilterCount(f) + (f.minPrice || f.maxPrice || f.sortBy ? 1 : 0) + (f.minRating ? 1 : 0);
+  // The default sort (price, low to high) is not a filter the person turned on: it does not light the dot.
+  const sorted = !!f.sortBy && f.sortBy !== DEFAULT_MORE_FILTERS.sortBy;
+  return activeFilterCount(f) + (f.minPrice || f.maxPrice || sorted ? 1 : 0) + (f.minRating ? 1 : 0);
 }
