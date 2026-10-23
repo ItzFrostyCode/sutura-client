@@ -2,18 +2,17 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Plus, Trash2 } from 'lucide-react';
+import { Archive, Plus } from 'lucide-react';
 import { AppleBar } from './ui/ApplePage';
 import { BTN, BTN_PRIMARY } from '@/components/shared/plainForm';
 
 interface JobsPageHeaderProps {
   activeCount: number;
   totalCount: number;
-  onOpenTrash: () => void;
   isOwnerOrManager: boolean;
 }
 
-export default function JobsPageHeader({ activeCount, totalCount, onOpenTrash, isOwnerOrManager }: JobsPageHeaderProps) {
+export default function JobsPageHeader({ activeCount, totalCount, isOwnerOrManager }: JobsPageHeaderProps) {
   return (
     <AppleBar>
       <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
@@ -21,22 +20,18 @@ export default function JobsPageHeader({ activeCount, totalCount, onOpenTrash, i
         <p className="text-[13px] text-ink-muted">{activeCount} active · {totalCount} total</p>
       </div>
       {isOwnerOrManager && (
-        <button
-          type="button"
-          onClick={onOpenTrash}
-          title="View deleted job orders"
-          aria-label="View deleted job orders"
-          className={BTN}
-        >
-          <Trash2 size={16} />
-          <span className="hidden sm:inline">Deleted Orders</span>
-        </button>
+        <Link href="/dashboard/jobs/archived" title="View archived job orders" aria-label="View archived job orders" className={BTN}>
+          <Archive size={16} />
+          <span className="hidden sm:inline">Archived</span>
+        </Link>
       )}
-      {/* Staff open a walk-in order here too; an owner or manager can also collect the deposit. */}
-      <Link href="/dashboard/jobs/new" className={BTN_PRIMARY}>
-        <Plus size={16} />
-        New Job Order
-      </Link>
+      {/* Making an order is the owner's and branch manager's job; plain staff only work on production. */}
+      {isOwnerOrManager && (
+        <Link href="/dashboard/jobs/new" className={BTN_PRIMARY}>
+          <Plus size={16} />
+          New Job Order
+        </Link>
+      )}
     </AppleBar>
   );
 }

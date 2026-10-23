@@ -1,9 +1,16 @@
 import React from 'react';
-import Link from 'next/link';
-import { Banknote, CreditCard, Loader2, Upload, CheckCircle2, Printer } from 'lucide-react';
+import { Banknote, BadgeCheck } from 'lucide-react';
 import { Job } from '../jobTypes';
-import { ComputedFinancials, METHOD_CONFIG } from './financialsTypes';
+import { ComputedFinancials } from './financialsTypes';
 import { CashierMethodSelector } from './CashierMethodSelector';
+import { CashierPresetSection, CashierAmountField, CASHIER_LABEL } from './CashierAmountSection';
+import { CashTenderedPanel } from './CashTenderedPanel';
+import { CashierNonCashPanel } from './CashierNonCashPanel';
+import { CashierRecorded } from './CashierRecorded';
+import type { RecordedPayment } from './useJobFinancials';
+import { CashierReview, CashierSettled, CASHIER_SHELL } from './CashierReview';
+import SectionHeader from '../ui/SectionHeader';
+import { PLAIN_FIELD } from '@/components/shared/plainForm';
 
 interface JobCashierDeskProps {
   readonly job: Job;
@@ -29,6 +36,8 @@ interface JobCashierDeskProps {
   readonly reviewingCharge: boolean;
   readonly onConfirmCharge: () => Promise<void>;
   readonly onCancelChargeReview: () => void;
+  readonly recorded: RecordedPayment | null;
+  readonly onDismissRecorded: () => void;
 }
 
 export function JobCashierDesk({
@@ -55,265 +64,70 @@ export function JobCashierDesk({
   reviewingCharge,
   onConfirmCharge,
   onCancelChargeReview,
+  recorded,
+  onDismissRecorded,
 }: JobCashierDeskProps) {
-  const { remainingBalance, totalAmount, amountPaid, isDownpaymentMet, requiredDeposit, depositLabel } = financials;
+  const { remainingBalance } = financials;
   const parsedAmount = Number.parseFloat(amount) || 0;
   const parsedTendered = Number.parseFloat(cashTendered) || 0;
   const change = method === 'cash' ? Math.max(0, parsedTendered - parsedAmount) : 0;
   const cashShortfall = method === 'cash' && cashTendered !== '' && parsedTendered < parsedAmount;
 
+  if (recorded && !reviewingCharge) return <CashierRecorded job={job} recorded={recorded} onDone={onDismissRecorded} />;
+
   if (reviewingCharge) {
     return (
-      <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
-        <div className="flex items-center gap-2 border-b border-line pb-3">
-          <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage flex items-center justify-center font-bold">
-            <Banknote size={16} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-ink">Review Payment</h3>
-            <p className="text-[11px] text-ink-muted">Confirm before this is recorded</p>
-          </div>
-        </div>
-
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-ink-muted">Amount</span><strong className="text-ink">₱{parsedAmount.toFixed(2)}</strong></div>
-          <div className="flex justify-between"><span className="text-ink-muted">Method</span><strong className="text-ink capitalize">{method}</strong></div>
-          {method === 'cash' && (
-            <>
-              <div className="flex justify-between"><span className="text-ink-muted">Cash Tendered</span><strong className="text-ink">₱{parsedTendered.toFixed(2)}</strong></div>
-              <div className="flex justify-between border-t border-line pt-2"><span className="text-ink-muted">Change</span><strong className="text-emerald-700">₱{change.toFixed(2)}</strong></div>
-            </>
-          )}
-          {method !== 'cash' && reference && (
-            <div className="flex justify-between"><span className="text-ink-muted">Reference #</span><strong className="text-ink font-mono">{reference}</strong></div>
-          )}
-        </div>
-
-        {method !== 'cash' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            This {METHOD_CONFIG[method]?.label ?? 'e-payment'} payment will be logged as <strong>Pending Verification</strong> — it won&apos;t reduce the balance until an owner or branch manager verifies the receipt.
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onCancelChargeReview}
-            disabled={charging}
-            className="flex-1 h-11 border border-line rounded-xl text-xs font-bold text-ink-muted hover:text-ink hover:bg-canvas transition-colors cursor-pointer"
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            onClick={onConfirmCharge}
-            disabled={charging}
-            className="flex-1 h-11 bg-espresso hover:bg-espresso/90 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 cursor-pointer"
-          >
-            {charging ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
-            <span>{charging ? 'Recording…' : 'Confirm & Record'}</span>
-          </button>
-        </div>
-      </div>
+      <CashierReview
+        method={method} amount={parsedAmount} cashTendered={parsedTendered} change={change} reference={reference} receiptUrl={receiptUrl}
+        charging={charging} onConfirm={onConfirmCharge} onBack={onCancelChargeReview}
+      />
     );
   }
 
   return (
-    <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage flex items-center justify-center font-bold">
-            <Banknote size={16} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-ink">Cashier Desk</h3>
-            <p className="text-[11px] text-ink-muted">Record deposit or settlement</p>
-          </div>
-        </div>
-        {remainingBalance > 0 && (
-          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-            Due: ₱{remainingBalance.toFixed(2)}
-          </span>
-        )}
-      </div>
+    <div className={CASHIER_SHELL}>
+      <SectionHeader
+        icon={Banknote}
+        title="Cashier Desk"
+        subtitle="Record deposit or settlement"
+        as="h3"
+        actions={remainingBalance > 0 ? (
+          <span className="rounded-full bg-rose-500/10 px-3 py-1 text-[13px] font-semibold text-rose-700">Due: ₱{remainingBalance.toFixed(2)}</span>
+        ) : undefined}
+      />
 
       {remainingBalance > 0 ? (
-        <form onSubmit={onChargeSubmit} className="space-y-4">
-          {/* Quick Fill Chips */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Quick Amount Presets</span>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setAmount(remainingBalance.toFixed(2))}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-canvas hover:bg-surface border border-line text-ink hover:border-taupe transition-colors shadow-2xs cursor-pointer"
-              >
-                Full Balance (₱{remainingBalance.toFixed(2)})
-              </button>
-              {!isDownpaymentMet && requiredDeposit > 0 && requiredDeposit < totalAmount && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const dpShortfall = Math.max(0, requiredDeposit - amountPaid);
-                    if (dpShortfall > 0) setAmount(dpShortfall.toFixed(2));
-                  }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-sage/10 hover:bg-sage/20 border border-sage/30 text-sage transition-colors shadow-2xs cursor-pointer"
-                >
-                  {depositLabel} (₱{requiredDeposit.toFixed(2)})
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Amount Input */}
-          <div className="space-y-1.5">
-            <label htmlFor="payment-amount" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              Payment Amount <span className="text-danger">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted font-bold text-base">₱</span>
-              <input
-                id="payment-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={remainingBalance}
-                required
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full pl-8 pr-4 py-2.5 bg-canvas border border-line rounded-xl text-ink font-bold text-base focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-              />
-            </div>
-          </div>
-
-          {/* Payment Method Selector */}
+        <form onSubmit={onChargeSubmit} className="space-y-5">
+          <CashierPresetSection financials={financials} amount={amount} setAmount={setAmount} />
           <CashierMethodSelector method={method} setMethod={setMethod} />
+          <CashierAmountField financials={financials} amount={amount} setAmount={setAmount} method={method} />
 
-          {/* Cash Tendered & Change */}
-          {method === 'cash' && (
-            <div className="space-y-1.5 p-3 bg-canvas border border-line rounded-xl">
-              <label htmlFor="cash-tendered" className="text-[11px] font-bold text-ink-muted uppercase">
-                Cash Tendered <span className="text-danger">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-bold text-sm">₱</span>
-                <input
-                  id="cash-tendered"
-                  type="number"
-                  step="0.01"
-                  min={amount || '0'}
-                  required
-                  value={cashTendered}
-                  onChange={e => setCashTendered(e.target.value)}
-                  placeholder="0.00"
-                  className={`w-full pl-7 pr-3 py-2 bg-surface border rounded-lg text-sm font-bold focus:outline-none ${cashShortfall ? 'border-danger text-danger' : 'border-line text-ink focus:border-taupe'}`}
-                />
-              </div>
-              {cashShortfall ? (
-                <p className="text-[11px] font-semibold text-danger">Cash tendered can&apos;t be less than the amount being paid.</p>
-              ) : (
-                <div className="flex justify-between text-xs pt-1">
-                  <span className="text-ink-muted">Change</span>
-                  <strong className="text-emerald-700">₱{change.toFixed(2)}</strong>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Reference & Receipt Screenshot */}
-          {method !== 'cash' && (
-            <div className="space-y-3 p-3 bg-canvas border border-line rounded-xl">
-              <div className="space-y-1">
-                <label htmlFor="ref-no" className="text-[11px] font-bold text-ink-muted uppercase">
-                  {method === 'gcash' ? 'GCash Reference Number' : method === 'paymaya' ? 'PayMaya Reference Number' : 'Bank Reference Number'}
-                </label>
-                <input
-                  id="ref-no"
-                  type="text"
-                  value={reference}
-                  onChange={e => setReference(e.target.value)}
-                  placeholder={method === 'gcash' ? 'e.g. 90218492049' : 'e.g. BDO-REF-4920'}
-                  className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs text-ink font-mono focus:outline-none focus:border-taupe"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold text-ink-muted uppercase block">
-                  Receipt Proof <span className="text-danger">*</span>
-                </span>
-                {receiptUrl ? (
-                  <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={receiptUrl} alt="Receipt Screenshot" className="h-16 w-16 object-cover rounded-lg border border-line" />
-                    <button
-                      type="button"
-                      onClick={() => setReceiptUrl('')}
-                      className="text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
-                    >
-                      Remove Screenshot
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex items-center justify-center gap-1.5 p-2 bg-surface hover:bg-canvas border border-dashed border-line hover:border-taupe rounded-lg cursor-pointer text-xs text-ink-muted font-medium transition-colors">
-                    {uploadingReceipt ? <Loader2 size={13} className="animate-spin text-taupe" /> : <Upload size={13} />}
-                    <span>{uploadingReceipt ? 'Uploading receipt…' : 'Attach Screenshot'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={uploadingReceipt}
-                      onChange={e => uploadReceipt(e.target.files?.[0], setReceiptUrl, setUploadingReceipt)}
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Remarks / Cashier Notes */}
-          <div className="space-y-1">
-            <label htmlFor="cashier-notes" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              Remarks / Notes <span className="text-[10px] font-normal text-ink-faint lowercase">(optional)</span>
-            </label>
-            <input
-              id="cashier-notes"
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="e.g. Paid in cash at front counter"
-              className="w-full px-3 py-2 bg-canvas border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe"
+          {method === 'cash' ? (
+            <CashTenderedPanel amount={amount} cashTendered={cashTendered} setCashTendered={setCashTendered} change={change} shortfall={cashShortfall} />
+          ) : (
+            <CashierNonCashPanel
+              method={method} reference={reference} setReference={setReference} receiptUrl={receiptUrl} setReceiptUrl={setReceiptUrl}
+              uploadingReceipt={uploadingReceipt} setUploadingReceipt={setUploadingReceipt} uploadReceipt={uploadReceipt}
             />
+          )}
+
+          <div>
+            <label htmlFor="cashier-notes" className={CASHIER_LABEL}>Remarks / Notes (optional)</label>
+            <input id="cashier-notes" type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. Paid in cash at front counter" className={PLAIN_FIELD} />
           </div>
 
-          {/* Submit Action Button — opens the Review step, nothing is sent yet */}
+          {/* Opens the Review step; nothing is sent yet */}
           <button
             type="submit"
-            disabled={
-              saving || charging || !amount || parsedAmount <= 0 ||
-              (method === 'cash' ? (!cashTendered || cashShortfall) : !receiptUrl)
-            }
-            className="w-full h-11 bg-espresso hover:bg-espresso/90 text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 active:scale-95 cursor-pointer"
+            disabled={saving || charging || !amount || parsedAmount <= 0 || (method === 'cash' ? (!cashTendered || cashShortfall) : !receiptUrl)}
+            className="inline-flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-espresso text-[15px] font-semibold text-white transition-colors hover:bg-espresso/90 disabled:cursor-default disabled:opacity-40"
           >
-            <CreditCard size={15} />
+            <BadgeCheck size={18} />
             <span>Review Payment</span>
           </button>
         </form>
       ) : (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center space-y-2">
-          <CheckCircle2 size={32} className="text-emerald-600 mx-auto" />
-          <h4 className="text-sm font-bold text-emerald-900">Order Fully Settled</h4>
-          <p className="text-xs text-emerald-700">
-            There is no outstanding balance due on this job order.
-          </p>
-          <Link
-            href={`/print/jobs/${job.id}/receipt`}
-            target="_blank"
-            className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors"
-          >
-            <Printer size={13} /> Print Final Statement
-          </Link>
-        </div>
+        <CashierSettled job={job} />
       )}
     </div>
   );

@@ -14,10 +14,12 @@ import { withRedirect } from '@/lib/authRedirect';
  * otherwise silently stalls any page that fetches by store.id.
  */
 export function usePrintAuthGuard() {
-  const { user, store, token, isAuthenticated, setAuth, logout } = useAuthStore();
+  const { user, store, token, isAuthenticated, hydrated, setAuth, logout } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
+    // Wait for AuthHydrator (root layout) to read sessionStorage; before that, `isAuthenticated` is always false.
+    if (!hydrated) return;
     if (!isAuthenticated) {
       router.replace(withRedirect('/login', typeof window !== 'undefined' ? window.location.pathname : null, 'as=store'));
     } else if (!store && token) {
@@ -37,5 +39,5 @@ export function usePrintAuthGuard() {
           router.replace(withRedirect('/login', typeof window !== 'undefined' ? window.location.pathname : null, 'as=store'));
         });
     }
-  }, [isAuthenticated, user, store, token, router, setAuth, logout]);
+  }, [hydrated, isAuthenticated, user, store, token, router, setAuth, logout]);
 }

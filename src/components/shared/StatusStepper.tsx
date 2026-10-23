@@ -9,6 +9,8 @@ export interface StepperStage {
    *  a date/time line under the label (vertical layout only). Null/absent
    *  stages just show the label alone, never a guessed date. */
   timestamp?: string | null;
+  /** A shorter label for the horizontal layout, where space is tight. The full label stays in the tooltip and the vertical layout. */
+  short?: string;
 }
 
 function formatStageTimestamp(iso: string): string {
@@ -132,7 +134,7 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
                 {/* Top-aligned Label Container: handles 1-line and 2-line labels without shifting circle position */}
                 <div className="h-8 flex items-start justify-center w-full mt-1.5 px-0.5">
                   <span className={`text-[10px] leading-tight text-center ${labelColor}`}>
-                    {stage.label}
+                    {stage.short ?? stage.label}
                   </span>
                 </div>
               </button>

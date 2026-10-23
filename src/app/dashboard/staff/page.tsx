@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/shared/PageHeader';
 import { Plus } from 'lucide-react';
 import SubscriptionGate from '@/components/SubscriptionGate';
@@ -15,6 +16,7 @@ import StaffDeleteModal from '@/components/staff/StaffDeleteModal';
 import StaffListView from '@/components/staff/StaffListView';
 
 export default function StaffPage() {
+  const router = useRouter();
   const { store, user } = useAuthStore();
   const toast = useToast();
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -222,26 +224,7 @@ export default function StaffPage() {
           canAddStaff ? (
             <button
               type="button"
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  name: '',
-                  email: '',
-                  password: '',
-                  phone: '',
-                  gender: '',
-                  role: 'tailor',
-                  additional_roles: [],
-                  specialization: '',
-                  hired_at: new Date().toISOString().split('T')[0],
-                  is_active: true,
-                  store_branch_id: '',
-                  is_branch_manager: false,
-                  bio: '',
-                  is_available: true,
-                });
-                setShowModal(true);
-              }}
+              onClick={() => router.push('/dashboard/staff/new')}
               className="flex items-center gap-2 bg-espresso hover:bg-espresso/90 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
             >
               <Plus size={16} />

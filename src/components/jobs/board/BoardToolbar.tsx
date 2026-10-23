@@ -36,24 +36,24 @@ interface BoardToolbarProps {
 
 const STAGES: { key: ShopStageKey | 'all'; label: string }[] = [{ key: 'all', label: 'All' }, ...SHOP_STAGES.map((s) => ({ key: s.key, label: s.label }))];
 
-const CHIP = 'flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition-colors';
+const CHIP = 'flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-4 text-[13px] font-medium transition-colors';
 const chip = (on: boolean) => `${CHIP} ${on ? 'border-ink bg-ink text-white' : 'border-espresso/[0.12] bg-white text-ink-body hover:bg-espresso/[0.03]'}`;
 
-/** Search, view switch and sort on one row; the quick filters below it. Stage tabs appear only in the table (the board already has its columns). */
+/** Search, sort, quick filters and the view switch on one row (it wraps on a narrow screen). Stage tabs appear only in the table (the board already has its columns). */
 export default function BoardToolbar({
   search, onSearch, viewMode, onViewMode, stageFilter, onStageFilter, urgencyFilter, onUrgencyFilter, paymentFilter, onPaymentFilter,
   sortBy, onSortBy, stageCounts, urgencyCounts, showMine, mine, onMine, closedCount, showClosed, onShowClosed, canSeeMoney, lateBalanceCount = 0, hasActiveFilters, onResetFilters,
 }: BoardToolbarProps) {
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-[240px] flex-1 sm:max-w-md">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="min-w-0 basis-full sm:min-w-[240px] sm:max-w-sm sm:flex-1 sm:basis-auto">
           <SearchInput value={search} onChange={onSearch} placeholder="Search order #, customer, garment" className="w-full" onCanvasBackground />
         </div>
         <select
           value={sortBy}
           onChange={(e) => onSortBy(e.target.value as SortOption)}
-          className="h-11 cursor-pointer rounded-lg border border-espresso/[0.12] bg-white px-3 text-sm text-ink focus:outline-hidden"
+          className="h-11 cursor-pointer rounded-xl border border-espresso/[0.12] bg-white px-3 text-sm text-ink focus:outline-hidden"
           aria-label="Sort orders by"
         >
           <option value="due_date">Due date</option>
@@ -62,22 +62,6 @@ export default function BoardToolbar({
           <option value="customer">Customer</option>
           <option value="order_number">Order #</option>
         </select>
-        <div role="group" aria-label="View" className="ml-auto flex rounded-lg bg-espresso/[0.06] p-0.5">
-          {([['table', LayoutList, 'Table'], ['board', Kanban, 'Board']] as const).map(([mode, Icon, label]) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => onViewMode(mode)}
-              aria-pressed={viewMode === mode}
-              className={`flex h-10 cursor-pointer items-center gap-1.5 rounded-md px-3.5 text-[13px] font-medium transition-colors ${viewMode === mode ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
-            >
-              <Icon size={15} />{label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
         {urgencyCounts.overdue > 0 && <button type="button" onClick={() => onUrgencyFilter(urgencyFilter === 'overdue' ? 'all' : 'overdue')} className={chip(urgencyFilter === 'overdue')}>Overdue <span className={urgencyFilter === 'overdue' ? '' : 'text-danger'}>{urgencyCounts.overdue}</span></button>}
         {urgencyCounts.dueSoon > 0 && <button type="button" onClick={() => onUrgencyFilter(urgencyFilter === 'due_soon' ? 'all' : 'due_soon')} className={chip(urgencyFilter === 'due_soon')}>Due in 2 days {urgencyCounts.dueSoon}</button>}
         {urgencyCounts.rush > 0 && <button type="button" onClick={() => onUrgencyFilter(urgencyFilter === 'rush' ? 'all' : 'rush')} className={chip(urgencyFilter === 'rush')}>Rush {urgencyCounts.rush}</button>}
@@ -90,6 +74,21 @@ export default function BoardToolbar({
             <RotateCcw size={13} />Reset
           </button>
         )}
+        <div role="group" aria-label="View" className="ml-auto flex rounded-xl border border-espresso/[0.08] bg-espresso/[0.05] p-1">
+          {([['table', LayoutList, 'Table'], ['board', Kanban, 'Board']] as const).map(([mode, Icon, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onViewMode(mode)}
+              aria-pressed={viewMode === mode}
+              aria-label={`${label} view`}
+              title={`${label} view`}
+              className={`flex h-9 w-11 cursor-pointer items-center justify-center rounded-lg transition-colors ${viewMode === mode ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+            >
+              <Icon size={17} />
+            </button>
+          ))}
+        </div>
       </div>
 
       {viewMode === 'table' && (

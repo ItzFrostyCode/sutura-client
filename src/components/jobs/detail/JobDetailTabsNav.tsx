@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LayoutGrid, CreditCard, ClipboardCheck } from 'lucide-react';
+import { ListChecks, FileText, Wallet } from 'lucide-react';
 
 export type JobDetailTabKey = 'steps' | 'details' | 'payments';
 
@@ -16,12 +16,14 @@ interface JobDetailTabsNavProps {
   showFinancials: boolean;
   // Orders that use the ordering flow get an extra first tab with the steps to confirm and start them.
   showReadiness?: boolean;
+  /** How many payments the order has; shown as a small count after "Payments". */
+  paymentsCount?: number;
 }
 
 const TABS = [
-  { key: 'steps', label: 'Steps', icon: ClipboardCheck },
-  { key: 'details', label: 'Details', icon: LayoutGrid },
-  { key: 'payments', label: 'Payments', icon: CreditCard },
+  { key: 'steps', label: 'Steps', icon: ListChecks },
+  { key: 'details', label: 'Details', icon: FileText },
+  { key: 'payments', label: 'Payments', icon: Wallet },
 ] as const;
 
 export default function JobDetailTabsNav({
@@ -29,10 +31,10 @@ export default function JobDetailTabsNav({
   onSelectTab,
   dirtyTabs,
   showFinancials,
-  showReadiness = false,
+  paymentsCount = 0,
 }: JobDetailTabsNavProps) {
   return (
-    <div className="flex items-center gap-1 border-b border-line overflow-x-auto hide-scrollbar">
+    <div className="flex overflow-x-auto border-b border-line hide-scrollbar">
       {TABS.filter(tab => tab.key !== 'payments' || showFinancials).map(tab => {
         const TabIcon = tab.icon;
         const active = activeTab === tab.key;
@@ -42,16 +44,20 @@ export default function JobDetailTabsNav({
             key={tab.key}
             type="button"
             onClick={() => onSelectTab(tab.key)}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 -mb-px transition-colors shrink-0 ${
+            aria-current={active ? 'page' : undefined}
+            className={`-mb-px mr-6 flex h-12 shrink-0 cursor-pointer items-center gap-2 border-b-2 px-1 text-[15px] transition-colors ${
               active
-                ? 'border-taupe text-ink bg-surface/40 rounded-t-lg'
-                : 'border-transparent text-ink-muted hover:text-ink'
+                ? 'border-espresso font-semibold text-ink'
+                : 'border-transparent font-medium text-ink-muted hover:text-ink'
             }`}
           >
-            <TabIcon size={15} />
+            <TabIcon size={17} />
             <span>{tab.label}</span>
+            {tab.key === 'payments' && paymentsCount > 0 && (
+              <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-medium text-amber-800">{paymentsCount}</span>
+            )}
             {isTabDirty && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Unsaved changes in this tab" />
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" title="Unsaved changes in this tab" />
             )}
           </button>
         );

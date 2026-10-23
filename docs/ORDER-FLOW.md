@@ -22,7 +22,7 @@ Details and endpoints: [`STATUS.md`](STATUS.md) ("Consultation first, order rule
 
 Spec: `SUTURA/chatgpt Reply to  your executive summary.md`. Code beats this note.
 
-- **Before work starts: seven saved steps** (`App\Support\OrderPreProduction`, shown on the order's Steps tab): request accepted · details (specs, measurements) · price sent · customer answer · payment terms and deposit · tailor assigned · production authorized. Nothing extra is stored; coming back lands on the first unfinished step.
+- **A request has six saved steps** (`App\Support\OrderPreProduction`, shown on the order's Steps tab): request accepted · details & sizes (specs, measurements, the customer's own items, pieces/people/sizes edited inline) · price sent · customer answer · deposit · order confirmed (**Confirm order** appears only when 1–5 are done). Nothing extra is stored; coming back lands on the first unfinished step. Once confirmed, the Steps tab shows **Getting ready** instead: materials ready, tailor assigned, **Start production** (first task `pattern_making`, `mass_cutting_printing` for a bulk order, `in_repair` for a repair — never `design`; the server refuses any other first move).
 - **Online request without an appointment:** `POST /stores/{slug}/order-requests` (client `/store/{slug}/request`). It waits as `pending` until the owner/manager accepts it (`POST …/jobs/{job}/accept-request`); nothing is paid or started.
 - **Quotation versions:** every save of the quotation adds a row in `order_quotation_versions` (who, why, total, terms). A change after the price was sent needs a reason. The proposed **payment terms** (deposit %, full, or pay on pick-up) and a **valid-until** date travel with the price; the customer sees them before answering and they lock when the customer agrees. Changing price, date or terms after that voids the answer.
 - **Customer decision:** `POST /my-orders/{id}/decision` with `accept | changes | decline`. Decline closes the order as `cancelled` with reason `quotation_declined` (only if nothing was paid). The customer cannot send payment proof before accepting.
@@ -70,7 +70,7 @@ Paths: A) production → QC → ready → handover → completed. B) …→ read
 | --- | --- |
 | Make the quotation **final** | price, completion date, specs approved, measurements verified (unless not needed), the customer's own fabric assessed *suitable* (when they bring it) |
 | **Confirm** | final quotation, specs approved, customer approval, deposit **verified** |
-| **Start production** (`confirmed` → first task) | materials marked ready, measurements verified, a tailor planned |
+| **Start production** (`confirmed` → first task only: `JobOrder::firstProductionTask()`) | materials marked ready, measurements verified, a tailor planned, production authorized, **deposit still met** (a change approved after confirming can raise the total) |
 | → **Ready for Final Fitting / Collection** | quality check recorded as passed, no open correction |
 | → **Customer Fitting / Inspection** | QC passed, fitting needed (not `none`), coming from Ready |
 | → **Adjustment / Correction** | at least one open correction (a QC defect, a fitting issue, or a customer change) |

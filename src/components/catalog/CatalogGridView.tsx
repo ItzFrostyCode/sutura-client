@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import api from '@/lib/axios';
+import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Plus, Image as ImageIcon, Eye, TrendingUp, Star, Scissors, Clock, Heart, Pencil } from 'lucide-react';
 import Link from 'next/link';
@@ -61,6 +62,7 @@ function toCatalogItemResult(item: CatalogItem): CatalogItemResult {
 export default function CatalogGridView() {
   const router = useRouter();
   const { store, user } = useAuthStore();
+  const canManage = useCanManageOfferings();
   const searchParams = useSearchParams();
   const initialServiceId = searchParams?.get('service_id') || '';
 
@@ -238,13 +240,15 @@ export default function CatalogGridView() {
           <p className="text-ink-muted text-sm mb-6 max-w-md mx-auto">
             Showcase your best tailoring work. Add items like Tuxedos, Dresses, or suits with detailed specs and images.
           </p>
-          <Link
-            href="/dashboard/catalog/new"
-            className="inline-flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2 font-medium text-sm transition-colors"
-          >
-            <Plus size={16} />
-            <span>Create Item</span>
-          </Link>
+          {canManage && (
+            <Link
+              href="/dashboard/catalog/new"
+              className="inline-flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2 font-medium text-sm transition-colors"
+            >
+              <Plus size={16} />
+              <span>Create Item</span>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-5">
@@ -316,18 +320,22 @@ export default function CatalogGridView() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-line">
-                    <Link
-                      href={`/dashboard/catalog/new?service_id=${activeService.id}`}
-                      className="flex items-center gap-1 text-xs font-semibold text-white bg-ink hover:bg-taupe px-3.5 py-2 rounded-full transition-colors cursor-pointer"
-                    >
-                      <Plus size={14} /> Add Design
-                    </Link>
-                    <Link
-                      href={`/dashboard/services/${activeService.id}`}
-                      className="flex items-center gap-1 text-xs font-semibold text-ink bg-sunken hover:bg-canvas border border-line px-3.5 py-2 rounded-full transition-colors cursor-pointer"
-                    >
-                      <Pencil size={13} /> Edit Service
-                    </Link>
+                    {canManage && (
+                      <>
+                        <Link
+                          href={`/dashboard/catalog/new?service_id=${activeService.id}`}
+                          className="flex items-center gap-1 text-xs font-semibold text-white bg-ink hover:bg-taupe px-3.5 py-2 rounded-full transition-colors cursor-pointer"
+                        >
+                          <Plus size={14} /> Add Design
+                        </Link>
+                        <Link
+                          href={`/dashboard/services/${activeService.id}`}
+                          className="flex items-center gap-1 text-xs font-semibold text-ink bg-sunken hover:bg-canvas border border-line px-3.5 py-2 rounded-full transition-colors cursor-pointer"
+                        >
+                          <Pencil size={13} /> Edit Service
+                        </Link>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={handleClearServiceFilter}

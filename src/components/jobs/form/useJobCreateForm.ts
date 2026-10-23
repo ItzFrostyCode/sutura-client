@@ -231,7 +231,7 @@ export function useJobCreateForm() {
     storeId: store?.id ?? 0, branchId, formData, pricing, service, intakeChannel, appointmentId,
     catalogItemId, standardSize, customFieldValues, isBulk, teamName, roster, rosterColumns, damageNotes, referenceImages, referenceLink, assignees,
     measurementMode, inlineMeasurement: activeInlineMeasurement,
-    inlineMeasurements, extras, defaultUnit: store?.default_measurement_unit === 'cm' ? 'cm' as const : 'in' as const,
+    inlineMeasurements, extras, followUpOfId: params.get('follow_up_of'), defaultUnit: store?.default_measurement_unit === 'cm' ? 'cm' as const : 'in' as const,
   };
 
   const { submitting, error, below, handleSubmit, continueAnyway } = useJobSubmit({ storeId: store?.id, submission, appointment });

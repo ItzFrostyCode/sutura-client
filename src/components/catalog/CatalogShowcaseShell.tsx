@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 
+import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import PageHeader from '@/components/shared/PageHeader';
 import CatalogModuleTabs, { CatalogTabId } from '@/components/catalog/CatalogModuleTabs';
 import CatalogGridView from '@/components/catalog/CatalogGridView';
@@ -56,7 +57,8 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
     }
   }, [router]);
 
-  const headerActions = (
+  const canManage = useCanManageOfferings();
+  const headerActions = !canManage ? null : (
     <Link
       href="/dashboard/catalog/new"
       className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"

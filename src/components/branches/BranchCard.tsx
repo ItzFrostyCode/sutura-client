@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { formatAddress } from '@/lib/formatAddress';
 import React from 'react';
 import {
@@ -133,9 +134,17 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs text-ink-faint">
+            <div className="flex items-center gap-2 text-xs text-ink-faint">
               <User size={13} className="shrink-0" />
               <span>No manager assigned yet</span>
+              {onSetMain && (
+                <Link
+                  href={`/dashboard/branches/${branch.id}/manager`}
+                  className="ml-1 text-xs font-semibold text-taupe underline underline-offset-2 hover:text-taupe/80 transition-colors"
+                >
+                  Assign one
+                </Link>
+              )}
             </div>
           )}
         </div>

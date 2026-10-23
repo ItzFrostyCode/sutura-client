@@ -35,7 +35,7 @@ function Statement() {
   if (!rows) return <p className="p-8 text-sm">Preparing statement…</p>;
 
   return (
-    <main className="max-w-[1000px] mx-auto p-8 text-black bg-white text-[12px] leading-snug">
+    <main id="receipt-print-area" className="max-w-[1000px] mx-auto p-8 text-black bg-white text-[12px] leading-snug">
       <header className="border-b border-black pb-3 mb-4">
         <h1 className="text-xl font-bold">Payment statement</h1>
         <p>{store?.name}</p>

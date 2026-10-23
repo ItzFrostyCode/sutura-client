@@ -119,6 +119,8 @@ export function newFollowUpOrderHref(job: OrderSourceJob): string {
   if (job.order_number) {
     params.set('notes', `Follow-up to Order #${job.order_number}`);
   }
+  // The new order remembers the completed order it follows (sent as follow_up_of_id).
+  params.set('follow_up_of', String(job.id));
 
   return `/dashboard/jobs/new?${params.toString()}`;
 }

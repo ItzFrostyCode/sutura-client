@@ -56,6 +56,8 @@ export interface ReadinessData {
   status: string;
   permissions: {
     can_see_money: boolean;
+    /** Owner / branch manager: details & sizes, measurements, materials, in-person approval. */
+    can_prepare?: boolean;
     can_edit_quotation: boolean;
     can_assign: boolean;
     can_confirm: boolean;
@@ -135,6 +137,8 @@ export interface Delivery {
   current: DeliveryStage['key'] | null;
   stages: DeliveryStage[];
   qc_passed_at: string | null;
+  /** When the customer was told the order is ready (stamped with the notification). */
+  ready_at?: string | null;
   fitting_requirement: 'none' | 'optional' | 'required' | null;
   fitting_passed_at: string | null;
   open_corrections: number;
@@ -152,10 +156,12 @@ export interface Delivery {
   /** Garments went out before the balance was paid (released by the owner or a branch manager). */
   released_with_balance?: boolean;
   balance_due_by?: string | null;
+  /** Payments waiting to be verified (GCash / Maya); owner / branch manager only. */
+  pending_verification?: number | null;
 }
 
 export interface PreProductionStep {
-  key: 'request' | 'details' | 'quotation' | 'decision' | 'payment' | 'staff' | 'start';
+  key: 'request' | 'details' | 'quotation' | 'decision' | 'payment' | 'confirmed';
   label: string;
   done: boolean;
   note: string | null;

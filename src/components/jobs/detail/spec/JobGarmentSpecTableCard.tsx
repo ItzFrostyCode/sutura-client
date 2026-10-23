@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  ListChecks,
+  Table2,
   Plus,
   ArrowLeft,
   ArrowRight,
@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Job, GarmentSpecColumn, GarmentSpecRow, GarmentSpecTable, RosterItem } from '../../jobTypes';
+import SectionHeader from '../../ui/SectionHeader';
 import JobGarmentSpecRowDesktop from './JobGarmentSpecRowDesktop';
 import JobGarmentSpecRowMobile from './JobGarmentSpecRowMobile';
 import JobGarmentSpecColumnModal from './JobGarmentSpecColumnModal';
@@ -245,39 +246,33 @@ export default function JobGarmentSpecTableCard({
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
       {/* 1. Header with Decoupled Quantity Badges */}
-      <div className="flex items-start justify-between gap-4 flex-wrap pb-3 border-b border-line">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <ListChecks size={18} className="text-taupe" />
-              <span>Per-Garment / Per-Person Specifications</span>
-            </h2>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-taupe bg-taupe/10 border border-taupe/20 px-2 py-0.5 rounded-md">
-              {contextLabel}
-            </span>
-          </div>
-          <p className="text-xs text-ink-muted mt-0.5">
-            Individualized size, cut, and personalization details per piece. Add or adjust columns to match this job&apos;s requirements.
-          </p>
-        </div>
-
-        {/* Quantities Status Tracker */}
-        <div className="flex items-center gap-2 text-xs flex-wrap">
-          <span className="px-2.5 py-1 bg-canvas border border-line rounded-lg font-semibold text-ink">
-            Order Qty: <strong className="text-ink font-bold font-mono">{orderQty} pcs</strong>
+      <SectionHeader
+        icon={Table2}
+        title="Per-Garment / Per-Person Specifications"
+        subtitle="Individualized size, cut, and personalization details per piece. Add or adjust columns to match this job's requirements."
+        badge={(
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-taupe bg-taupe/10 px-2 py-0.5 rounded-md">
+            {contextLabel}
           </span>
-          <span className="px-2.5 py-1 bg-canvas border border-line rounded-lg font-semibold text-ink">
-            Specs Defined: <strong className="text-ink font-bold font-mono">{specRowsCount}</strong>
-          </span>
-          <span className={`px-2.5 py-1 rounded-lg font-semibold border ${
-            completedCount === specRowsCount && specRowsCount > 0
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-canvas text-ink-muted border-line'
-          }`}>
-            Completed: <strong className="font-bold font-mono">{completedCount}/{specRowsCount}</strong>
-          </span>
-        </div>
+        )}
+        actions={(
+      <div className="flex items-center gap-2 text-xs flex-wrap">
+        <span className="px-2.5 py-1 bg-sunken rounded-lg font-medium text-ink">
+          Order Qty: <strong className="text-ink font-semibold font-mono">{orderQty} pcs</strong>
+        </span>
+        <span className="px-2.5 py-1 bg-sunken rounded-lg font-medium text-ink">
+          Specs Defined: <strong className="text-ink font-semibold font-mono">{specRowsCount}</strong>
+        </span>
+        <span className={`px-2.5 py-1 rounded-lg font-medium ${
+          completedCount === specRowsCount && specRowsCount > 0
+            ? 'bg-emerald-500/10 text-emerald-800'
+            : 'bg-sunken text-ink-muted'
+        }`}>
+          Completed: <strong className="font-semibold font-mono">{completedCount}/{specRowsCount}</strong>
+        </span>
       </div>
+        )}
+      />
 
       {/* 2. Action Toolbar */}
       <div className="flex items-center justify-between gap-2.5 flex-wrap pt-1">
@@ -285,7 +280,7 @@ export default function JobGarmentSpecTableCard({
           <button
             type="button"
             onClick={handleAddRow}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-canvas hover:bg-line border border-line text-xs font-semibold text-ink transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-espresso/[0.05] hover:bg-espresso/[0.09] text-xs font-medium text-ink transition-colors cursor-pointer"
           >
             <Plus size={13} className="text-taupe" />
             <span>Add Garment Row</span>
@@ -295,7 +290,7 @@ export default function JobGarmentSpecTableCard({
             <button
               type="button"
               onClick={handleFillRemainingRows}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200 text-xs font-semibold text-amber-800 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 text-xs font-medium text-amber-800 transition-colors cursor-pointer"
             >
               <Sparkles size={13} />
               <span>Fill Remaining Rows to Match Qty ({orderQty - specRowsCount} pcs)</span>
@@ -308,7 +303,7 @@ export default function JobGarmentSpecTableCard({
               setEditingColumn(null);
               setIsColumnModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-canvas hover:bg-line border border-line text-xs font-semibold text-ink transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-espresso/[0.05] hover:bg-espresso/[0.09] text-xs font-medium text-ink transition-colors cursor-pointer"
           >
             <Plus size={13} className="text-taupe" />
             <span>Add Column</span>
@@ -351,14 +346,14 @@ export default function JobGarmentSpecTableCard({
       </div>
 
       {/* 3. Desktop Table (>=640px) */}
-      <div className="hidden sm:block overflow-x-auto border border-line rounded-xl bg-surface shadow-2xs">
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-line bg-canvas">
-              <th className="py-2.5 px-3 w-10 text-center font-bold text-[10px] text-ink-muted uppercase">Done</th>
-              <th className="py-2.5 px-2.5 w-10 text-center font-bold text-[10px] text-ink-muted uppercase">#</th>
+              <th className="py-2.5 px-3 w-10 text-center font-semibold text-[10px] text-ink-muted uppercase">Done</th>
+              <th className="py-2.5 px-2.5 w-10 text-center font-semibold text-[10px] text-ink-muted uppercase">#</th>
               {columns.map((col, idx) => (
-                <th key={col.id} className="py-2.5 px-2.5 font-bold text-[10px] text-ink-muted uppercase tracking-wider min-w-[120px]">
+                <th key={col.id} className="py-2.5 px-2.5 font-semibold text-[10px] text-ink-muted uppercase tracking-wider min-w-[120px]">
                   <div className="flex items-center justify-between gap-1 group">
                     <span className="truncate">{col.label}</span>
                     <div className="flex items-center opacity-40 group-hover:opacity-100 transition-opacity">
@@ -407,7 +402,7 @@ export default function JobGarmentSpecTableCard({
                   </div>
                 </th>
               ))}
-              <th className="py-2.5 px-2.5 w-12 text-center font-bold text-[10px] text-ink-muted uppercase">Act</th>
+              <th className="py-2.5 px-2.5 w-12 text-center font-semibold text-[10px] text-ink-muted uppercase">Act</th>
             </tr>
           </thead>
           <tbody>
@@ -443,7 +438,7 @@ export default function JobGarmentSpecTableCard({
 
       {/* Empty State */}
       {rows.length === 0 && (
-        <div className="text-center py-8 border border-dashed border-line rounded-xl bg-canvas/40 space-y-2">
+        <div className="text-center py-8 rounded-xl bg-sunken/70 space-y-2">
           <p className="text-xs text-ink-muted font-medium">No garment specification rows recorded yet.</p>
           <button
             type="button"

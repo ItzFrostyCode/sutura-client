@@ -16,12 +16,14 @@ export default function JobFinancialsCard({
   isOwnerOrManager,
   onCharge,
   onApplyDiscount,
+  onRemoveDiscount,
   onUpdatePayment,
   onRejectPayment,
   onVerifyPayment,
   onRefresh,
 }: JobFinancialsCardProps) {
   const financials = computeFinancials(job);
+  const discountAvailable = !(financials.jobIsCompleted || financials.jobIsCancelled || financials.remainingBalance <= 0);
   const {
     method,
     setMethod,
@@ -43,10 +45,10 @@ export default function JobFinancialsCard({
     reviewingCharge,
     confirmCharge,
     cancelChargeReview,
+    recorded,
+    dismissRecorded,
     verifyingPaymentId,
     handleVerifyPayment,
-    showDiscountForm,
-    setShowDiscountForm,
     discountType,
     setDiscountType,
     discountInput,
@@ -84,86 +86,90 @@ export default function JobFinancialsCard({
     onVerifyPayment
   );
 
+  const canRemoveDiscount = isOwnerOrManager && !financials.jobIsCompleted && !financials.jobIsCancelled && job.status !== 'rejected';
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Financial Statement & Audit Ledger */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
-            <FinancialStatementSummary job={job} financials={financials} />
-            <FinancialDiscountForm
-              financials={financials}
-              showDiscountForm={showDiscountForm}
-              setShowDiscountForm={setShowDiscountForm}
-              discountType={discountType}
-              setDiscountType={setDiscountType}
-              discountInput={discountInput}
-              setDiscountInput={setDiscountInput}
-              discountReason={discountReason}
-              setDiscountReason={setDiscountReason}
-              applyingDiscount={applyingDiscount}
-              onApplyDiscountSubmit={handleApplyDiscountSubmit}
-            />
-            {onRefresh && <OrderRulesButton job={job} onChanged={onRefresh} label="Change the payment rule for this order" />}
-          </div>
-
-          <PaymentAuditLedger
+    <div className="space-y-4">
+      {/* Statement (and discount) beside the cashier desk. */}
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
+        <div className="space-y-4 lg:col-span-2">
+          <FinancialStatementSummary
             job={job}
             financials={financials}
-            isOwnerOrManager={isOwnerOrManager}
-            verifyingPaymentId={verifyingPaymentId}
-            onVerifyPayment={handleVerifyPayment}
-            editingPaymentId={editingPaymentId}
-            setEditingPaymentId={setEditingPaymentId}
-            editMethod={editMethod}
-            setEditMethod={setEditMethod}
-            editReference={editReference}
-            setEditReference={setEditReference}
-            editNotes={editNotes}
-            setEditNotes={setEditNotes}
-            savingEdit={savingEdit}
-            onSaveEdit={handleSaveEdit}
-            onStartEditPayment={startEditingPayment}
-            menuOpenPaymentId={menuOpenPaymentId}
-            setMenuOpenPaymentId={setMenuOpenPaymentId}
-            rejectingPaymentId={rejectingPaymentId}
-            setRejectingPaymentId={setRejectingPaymentId}
-            rejectReason={rejectReason}
-            setRejectReason={setRejectReason}
-            submittingReject={submittingReject}
-            onSubmitReject={handleSubmitReject}
+            onRemoveDiscount={onRemoveDiscount}
+            canRemoveDiscount={canRemoveDiscount}
+            footer={!discountAvailable && onRefresh ? <OrderRulesButton job={job} onChanged={onRefresh} label="Edit payment before work starts" /> : undefined}
+          />
+          <FinancialDiscountForm
+            job={job}
+            financials={financials}
+            discountType={discountType}
+            setDiscountType={setDiscountType}
+            discountInput={discountInput}
+            setDiscountInput={setDiscountInput}
+            discountReason={discountReason}
+            setDiscountReason={setDiscountReason}
+            applyingDiscount={applyingDiscount}
+            onApplyDiscountSubmit={handleApplyDiscountSubmit}
+            footer={onRefresh ? <OrderRulesButton job={job} onChanged={onRefresh} label="Edit payment before work starts" /> : undefined}
           />
         </div>
 
-        {/* Right Column: Cashier Desk */}
-        <div className="lg:col-span-5 space-y-6">
-          <JobCashierDesk
-            job={job}
-            financials={financials}
-            saving={saving}
-            method={method}
-            setMethod={setMethod}
-            amount={amount}
-            setAmount={setAmount}
-            reference={reference}
-            setReference={setReference}
-            notes={notes}
-            setNotes={setNotes}
-            receiptUrl={receiptUrl}
-            setReceiptUrl={setReceiptUrl}
-            uploadingReceipt={uploadingReceipt}
-            setUploadingReceipt={setUploadingReceipt}
-            charging={charging}
-            onChargeSubmit={handleChargeSubmit}
-            uploadReceipt={uploadReceipt}
-            cashTendered={cashTendered}
-            setCashTendered={setCashTendered}
-            reviewingCharge={reviewingCharge}
-            onConfirmCharge={confirmCharge}
-            onCancelChargeReview={cancelChargeReview}
-          />
-        </div>
+        <JobCashierDesk
+          job={job}
+          financials={financials}
+          saving={saving}
+          method={method}
+          setMethod={setMethod}
+          amount={amount}
+          setAmount={setAmount}
+          reference={reference}
+          setReference={setReference}
+          notes={notes}
+          setNotes={setNotes}
+          receiptUrl={receiptUrl}
+          setReceiptUrl={setReceiptUrl}
+          uploadingReceipt={uploadingReceipt}
+          setUploadingReceipt={setUploadingReceipt}
+          charging={charging}
+          onChargeSubmit={handleChargeSubmit}
+          uploadReceipt={uploadReceipt}
+          cashTendered={cashTendered}
+          setCashTendered={setCashTendered}
+          reviewingCharge={reviewingCharge}
+          onConfirmCharge={confirmCharge}
+          onCancelChargeReview={cancelChargeReview}
+          recorded={recorded}
+          onDismissRecorded={dismissRecorded}
+        />
       </div>
+
+      <PaymentAuditLedger
+        job={job}
+        financials={financials}
+        isOwnerOrManager={isOwnerOrManager}
+        verifyingPaymentId={verifyingPaymentId}
+        onVerifyPayment={handleVerifyPayment}
+        editingPaymentId={editingPaymentId}
+        setEditingPaymentId={setEditingPaymentId}
+        editMethod={editMethod}
+        setEditMethod={setEditMethod}
+        editReference={editReference}
+        setEditReference={setEditReference}
+        editNotes={editNotes}
+        setEditNotes={setEditNotes}
+        savingEdit={savingEdit}
+        onSaveEdit={handleSaveEdit}
+        onStartEditPayment={startEditingPayment}
+        menuOpenPaymentId={menuOpenPaymentId}
+        setMenuOpenPaymentId={setMenuOpenPaymentId}
+        rejectingPaymentId={rejectingPaymentId}
+        setRejectingPaymentId={setRejectingPaymentId}
+        rejectReason={rejectReason}
+        setRejectReason={setRejectReason}
+        submittingReject={submittingReject}
+        onSubmitReject={handleSubmitReject}
+      />
     </div>
   );
 }

@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { Clock, Scissors } from 'lucide-react';
 import type { Appointment } from '@/components/appointments/appointmentHelpers';
 import { cleanCustomerNotes } from '@/components/appointments/appointmentHelpers';
-import { newOrderHref } from './newOrderHref';
-import { BTN } from '@/components/shared/plainForm';
+import ConsultationActions from './ConsultationActions';
+import ConsultationFacts from './ConsultationFacts';
 
 const SHOWN = 8;
 
@@ -18,8 +17,8 @@ const when = (iso: string) => {
   }
 };
 
-/** Completed consultations with no job order yet. Every one is listed with a button that opens the Create Job Order form already filled in. */
-export default function AppointmentIntakeBanner({ appointments }: Readonly<{ appointments: Appointment[] }>) {
+/** Consultations with no job order yet. Each one has Create Job Order (form filled in), No order, and Book another visit. */
+export default function AppointmentIntakeBanner({ appointments, onRemove }: Readonly<{ appointments: Appointment[]; onRemove: (id: number) => void }>) {
   const [all, setAll] = useState(false);
   if (appointments.length === 0) return null;
   const shown = all ? appointments : appointments.slice(0, SHOWN);
@@ -43,11 +42,10 @@ export default function AppointmentIntakeBanner({ appointments }: Readonly<{ app
                   <span className="truncate">{qty > 1 ? `${qty} × ` : ''}{a.catalog_item?.name ?? a.service?.name ?? 'Custom Tailoring'}</span>
                 </p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-muted"><Clock size={12} className="shrink-0" />{when(a.scheduled_at)}</p>
+                <div className="mt-1 space-y-1"><ConsultationFacts appointment={a} /></div>
                 {note && <p className="mt-1 line-clamp-2 text-[13px] text-ink-muted">{note}</p>}
               </div>
-              <Link href={newOrderHref(a)} className={`${BTN} mt-auto w-full`}>
-                Create Job Order
-              </Link>
+              <div className="mt-auto"><ConsultationActions appointment={a} onRemove={onRemove} /></div>
             </li>
           );
         })}

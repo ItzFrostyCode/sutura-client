@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors, Trash2, CalendarPlus, MessageSquare, Printer, UserCircle } from 'lucide-react';
 import { CustomerData } from '../customerTypes';
 import { isWalkInCustomer, isWalkInEmail } from '../customerHelpers';
+import { printInPlace } from '@/lib/printInPlace';
+import { useShopRole } from '@/hooks/useShopRole';
 
 interface CustomerProfileHeaderProps {
   readonly customer: CustomerData | null;
@@ -22,6 +24,7 @@ export default function CustomerProfileHeader({
   onDelete,
   onText,
 }: CustomerProfileHeaderProps) {
+  const { isOwnerOrManager } = useShopRole();
   const sukiTagMap: Record<string, { label: string; badgeCls: string }> = {
     b2b_suki: { label: 'B2B Suki ⭐', badgeCls: 'bg-amber-50 text-amber-800 border-amber-200' },
     reseller: { label: 'Reseller 🏬', badgeCls: 'bg-purple-50 text-purple-800 border-purple-200' },
@@ -91,13 +94,15 @@ export default function CustomerProfileHeader({
 
         {/* Quick Header Actions */}
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/dashboard/jobs/new?customer_id=${customer?.id}`}
-            className="h-9 px-3.5 rounded-xl bg-espresso hover:bg-espresso/90 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
-          >
-            <Scissors size={13} />
-            <span>New Order</span>
-          </Link>
+          {isOwnerOrManager && (
+            <Link
+              href={`/dashboard/jobs/new?customer_id=${customer?.id}`}
+              className="h-9 px-3.5 rounded-xl bg-espresso hover:bg-espresso/90 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
+            >
+              <Scissors size={13} />
+              <span>New Order</span>
+            </Link>
+          )}
           <Link href={`/dashboard/appointments?customer_id=${customer?.id}`} className={ACTION}>
             <CalendarPlus size={13} /> <span>Book</span>
           </Link>
@@ -106,9 +111,9 @@ export default function CustomerProfileHeader({
               <MessageSquare size={13} /> <span>Text</span>
             </button>
           )}
-          <Link href={`/print/customers/${customer?.id}/statement`} target="_blank" className={ACTION}>
+          <button type="button" onClick={() => printInPlace(`/print/customers/${customer?.id}/statement`)} className={ACTION}>
             <Printer size={13} /> <span>Statement</span>
-          </Link>
+          </button>
           <button
             type="button"
             onClick={onDelete}

@@ -118,7 +118,7 @@ export default function ServiceGridView({
           </div>
         )}
 
-        {!canManage && <p className="text-xs text-ink-faint">You can view services here. Only the owner or a branch manager can edit them.</p>}
+        {!canManage && <p className="text-xs text-ink-faint">You can view services here. Only the shop owner can edit them.</p>}
       </div>
 
       <CatalogFilterSheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)} activeFiltersCount={activeFiltersCount} onResetAll={resetAll} resultCount={filtered.length}>

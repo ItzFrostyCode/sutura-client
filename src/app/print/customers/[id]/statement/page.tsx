@@ -35,7 +35,7 @@ export default function CustomerStatementPage({ params }: Readonly<{ params: Pro
   const payments = jobs.flatMap((j) => (j.payments ?? []).map((p) => ({ p, order: j }))).sort((a, b) => a.p.created_at.localeCompare(b.p.created_at));
 
   return (
-    <main className="mx-auto max-w-[900px] bg-white p-8 text-[12px] leading-snug text-black">
+    <main id="receipt-print-area" className="mx-auto max-w-[900px] bg-white p-8 text-[12px] leading-snug text-black">
       <header className="mb-4 border-b border-black pb-3">
         <h1 className="text-xl font-bold">Customer statement</h1>
         <p>{store?.name}</p>

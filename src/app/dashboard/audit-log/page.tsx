@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ScrollText, Loader2, ChevronLeft, ChevronRight, Tag, Percent, XCircle, CalendarClock, CheckCircle2, Trash2, RotateCcw, UserMinus, Scissors, MapPinOff, ImageOff, Building2 } from 'lucide-react';
+import { ScrollText, Loader2, ChevronLeft, ChevronRight, Tag, Percent, XCircle, CalendarClock, CheckCircle2, Trash2, Archive, RotateCcw, UserMinus, Scissors, MapPinOff, ImageOff, Building2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import PageHeader from '@/components/shared/PageHeader';
@@ -24,7 +24,10 @@ const ACTION_META: Record<string, { label: string; icon: typeof Tag; color: stri
   payment_rejected:        { label: 'Payment Rejected',        icon: XCircle,       color: 'bg-red-50 text-red-600 border-red-200' },
   appointment_rescheduled: { label: 'Appointment Rescheduled',   icon: CalendarClock, color: 'bg-blue-50 text-blue-700 border-blue-200' },
   appointment_completed:   { label: 'Appointment Completed',    icon: CheckCircle2,  color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  job_order_deleted:       { label: 'Job Order Deleted',        icon: Trash2,        color: 'bg-red-50 text-red-600 border-red-200' },
+  // Archiving was called "deleted" before the Archived page; older rows keep the old action key.
+  job_order_deleted:       { label: 'Job Order Archived',       icon: Archive,       color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  job_order_archived:      { label: 'Job Order Archived',       icon: Archive,       color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  job_order_deleted_permanently: { label: 'Job Order Deleted for Good', icon: Trash2,  color: 'bg-red-50 text-red-600 border-red-200' },
   job_order_restored:      { label: 'Job Order Restored',       icon: RotateCcw,     color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   staff_removed:           { label: 'Staff Removed',            icon: UserMinus,     color: 'bg-red-50 text-red-600 border-red-200' },
   service_deleted:         { label: 'Service Deleted',          icon: Scissors,      color: 'bg-red-50 text-red-600 border-red-200' },
@@ -70,8 +73,11 @@ const formatPayload = (action: string, rawPayload: Record<string, unknown> | str
     case 'appointment_completed':
       return `Type: ${payload.type ?? '—'}${payload.job_order_id ? ` · Job #${payload.job_order_id}` : ''}`;
     case 'job_order_deleted':
+    case 'job_order_archived':
     case 'job_order_restored':
       return `${payload.order_number ?? '—'} (was: ${payload.status ?? '—'})`;
+    case 'job_order_deleted_permanently':
+      return `${payload.order_number ?? '—'}${payload.customer ? ` · ${payload.customer}` : ''}`;
     case 'staff_removed':
       return `${payload.name ?? '—'} (${payload.role ?? '—'})`;
     case 'service_deleted':

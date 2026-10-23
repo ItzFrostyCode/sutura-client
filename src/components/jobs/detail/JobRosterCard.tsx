@@ -1,15 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Shirt, CheckCircle2, Circle, Ruler } from 'lucide-react';
+import { Users, CheckCircle2, Circle, Ruler } from 'lucide-react';
+import SectionHeader from '../ui/SectionHeader';
 import { Job, RosterItem, CUSTOM_SIZE } from '../jobTypes';
 
 interface JobRosterCardProps {
   job: Job;
   onToggleRosterItem: (index: number) => void;
+  /** A completed order: the done marks show but cannot be changed. */
+  readOnly?: boolean;
 }
 
-export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCardProps) {
+export default function JobRosterCard({ job, onToggleRosterItem, readOnly }: JobRosterCardProps) {
   const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
 
   // Render Personalized Team Roster if present
@@ -44,25 +47,24 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
 
     return (
       <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-3">
-          <div>
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <Shirt size={17} className="text-taupe" /> Team Roster & Size Sheet
-            </h2>
-            {styleCounts.length > 0 && <p className="text-xs text-ink-muted mt-0.5">{styleCounts.map(([k, n]) => `${n} ${k}`).join(' · ')}</p>}
-            {showTeamName && (
-              <p className="text-xs text-ink-muted mt-0.5">
-                Organization: <span className="font-semibold text-ink-body">{teamName}</span>
-              </p>
-            )}
-          </div>
-          <span className={`text-xs font-bold px-3 py-1 rounded-full shrink-0 ${doneCount === teamRoster.length ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-sunken text-ink-muted border border-line'}`}>
-            {doneCount}/{teamRoster.length} Completed
-          </span>
-        </div>
+        <SectionHeader
+          icon={Users}
+          title="Team Roster & Size Sheet"
+          subtitle={(styleCounts.length > 0 || showTeamName) ? (
+            <>
+              {styleCounts.length > 0 && <p>{styleCounts.map(([k, n]) => `${n} ${k}`).join(' · ')}</p>}
+              {showTeamName && <p>Organization: <span className="font-semibold text-ink-body">{teamName}</span></p>}
+            </>
+          ) : undefined}
+          badge={(
+            <span className={`text-[11px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full shrink-0 ${doneCount === teamRoster.length ? 'bg-emerald-500/10 text-emerald-700' : 'bg-sunken text-ink-muted'}`}>
+              {doneCount}/{teamRoster.length} Completed
+            </span>
+          )}
+        />
 
         {customFitCount > 0 && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-500/[0.07] rounded-xl px-3.5 py-3">
             <Ruler size={13} />
             {customFitCount} {customFitCount === 1 ? 'person needs' : 'people need'} to be measured in person before cutting.
           </div>
@@ -71,7 +73,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
         {Object.keys(sizeCounts).length > 0 && (
           <div className="flex flex-wrap gap-2">
             {Object.entries(sizeCounts).map(([size, qty]) => (
-              <span key={size} className="text-xs font-bold px-2.5 py-1 rounded-lg bg-canvas border border-line text-ink">
+              <span key={size} className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-sunken text-ink">
                 {size} <span className="text-ink-muted font-semibold">× {qty}</span>
               </span>
             ))}
@@ -81,7 +83,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs divide-y divide-line">
             <thead>
-              <tr className="text-ink-muted font-bold uppercase tracking-wider text-[10px]">
+              <tr className="text-ink-muted font-semibold uppercase tracking-wider text-[10px]">
                 <th className="pb-2.5 w-10">Done</th>
                 <th className="pb-2.5 w-12">#</th>
                 <th className="pb-2.5">{labelOf('name', 'Player / Staff Name')}</th>
@@ -95,30 +97,34 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
             </thead>
             <tbody className="divide-y divide-line/60">
               {teamRoster.map((row, idx: number) => (
-                <tr key={`${row.name}-${row.number}-${idx}`} className={row.completed ? 'bg-emerald-50/40' : undefined}>
+                <tr key={`${row.name}-${row.number}-${idx}`} className={row.completed ? 'bg-emerald-500/[0.06]' : undefined}>
                   <td className="py-2.5">
-                    <button
-                      type="button"
-                      onClick={() => onToggleRosterItem(idx)}
-                      title={row.completed ? 'Mark as pending' : 'Mark as completed'}
-                    >
-                      {row.completed ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Circle size={16} className="text-line-strong" />}
-                    </button>
+                    {readOnly ? (
+                      row.completed ? <CheckCircle2 size={16} className="text-emerald-600" aria-label="Done" /> : <Circle size={16} className="text-line-strong" aria-label="Not marked" />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onToggleRosterItem(idx)}
+                        title={row.completed ? 'Mark as pending' : 'Mark as completed'}
+                      >
+                        {row.completed ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Circle size={16} className="text-line-strong" />}
+                      </button>
+                    )}
                   </td>
                   <td className="py-2.5 text-ink-faint font-mono">{idx + 1}</td>
-                  <td className={`py-2.5 font-bold ${row.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>{row.name || '—'}</td>
+                  <td className={`py-2.5 font-semibold ${row.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>{row.name || '—'}</td>
                   <td className="py-2.5 text-ink-muted">{row.print_name || '—'}</td>
-                  <td className="py-2.5 font-mono text-ink font-bold">{row.number || '—'}</td>
+                  <td className="py-2.5 font-mono text-ink font-semibold">{row.number || '—'}</td>
                   <td className="py-2.5">
                     {row.size === CUSTOM_SIZE ? (
                       <span
                         title="Needs to be measured in person — not one of the service's standard sizes"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-700"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 rounded text-[10px] font-semibold text-amber-700"
                       >
                         <Ruler size={10} /> Custom
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{row.size}</span>
+                      <span className="px-2 py-0.5 bg-sunken rounded text-[10px] font-semibold text-ink">{row.size}</span>
                     )}
                   </td>
                   {extraColumns.map(col => (
@@ -147,24 +153,19 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
 
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div>
-          <h2 className="text-base font-bold text-ink flex items-center gap-2">
-            <Shirt size={17} className="text-taupe" /> Size Breakdown
-          </h2>
-          {(garmentType || orderPurpose) && (
-            <p className="text-xs text-ink-muted mt-0.5">
-              {[garmentType, orderPurpose].filter(Boolean).join(' — ')}
-            </p>
-          )}
-        </div>
-        <span className="text-xs font-bold px-3 py-1 rounded-full shrink-0 bg-sunken text-ink-muted border border-line">
-          {total} pcs total
-        </span>
-      </div>
+      <SectionHeader
+        icon={Users}
+        title="Size Breakdown"
+        subtitle={(garmentType || orderPurpose) ? [garmentType, orderPurpose].filter(Boolean).join(' — ') : undefined}
+        badge={(
+          <span className="text-xs font-semibold px-3 py-1 rounded-full shrink-0 bg-sunken text-ink-muted uppercase tracking-wider text-[11px]">
+            {total} pcs total
+          </span>
+        )}
+      />
       <div className="flex flex-wrap gap-2">
         {entries.map(([size, qty]) => (
-          <span key={size} className="text-xs font-bold px-2.5 py-1 rounded-lg bg-canvas border border-line text-ink">
+          <span key={size} className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-sunken text-ink">
             {size} <span className="text-ink-muted font-semibold">× {qty}</span>
           </span>
         ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
@@ -26,6 +27,7 @@ const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
 });
 
 export default function BranchesPage() {
+  const router = useRouter();
   const { store, user, staffProfile } = useAuthStore();
   const { refreshBranches } = useBranch();
   const toast = useToast();
@@ -75,10 +77,7 @@ export default function BranchesPage() {
   }, [fetchBranches]);
 
   const openAddModal = () => {
-    setEditingId(null);
-    setFormData(EMPTY_FORM);
-    setErrorMsg('');
-    setIsModalOpen(true);
+    router.push('/dashboard/branches/new');
   };
 
   const handleEditClickGated = (branch: StoreBranch) => {
@@ -105,10 +104,13 @@ export default function BranchesPage() {
       status: branch.status || 'active',
       guide_image_url: branch.guide_image_url || '',
       manager_current: branch.manager?.user?.name ? `${branch.manager.user.name} (${branch.manager.user.email})` : '',
+      manager_mode: 'none',
+      manager_staff_id: '',
       manager_name: '',
       manager_email: '',
       manager_phone: '',
       manager_password: '',
+      manager_password_confirmation: '',
     });
     setErrorMsg('');
     setIsModalOpen(true);
@@ -127,8 +129,12 @@ export default function BranchesPage() {
     setIsSubmitting(true);
     setErrorMsg('');
 
-    // The manager's login is sent only when the owner filled it in.
-    const { manager_current: _current, manager_name, manager_email, manager_phone, manager_password, ...branchFields } = formData;
+    // The manager's login is sent only when the owner filled it in (edit mode).
+    const {
+      manager_current: _current, manager_mode: _mode, manager_staff_id: _sid,
+      manager_name, manager_email, manager_phone, manager_password, manager_password_confirmation: _confirm,
+      ...branchFields
+    } = formData;
     const payload = manager_name && manager_email && manager_password
       ? { ...branchFields, manager: { name: manager_name, email: manager_email, phone: manager_phone || undefined, password: manager_password } }
       : branchFields;
@@ -284,7 +290,7 @@ export default function BranchesPage() {
             ) : (
               <button
                 type="button"
-                onClick={openAddModal}
+                onClick={() => router.push('/dashboard/branches/new')}
                 className="flex items-center gap-1.5 bg-espresso hover:bg-espresso/90 text-white px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm shadow-2xs transition-colors min-h-[38px]"
               >
                 <Plus size={16} />

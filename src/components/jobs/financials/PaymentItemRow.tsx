@@ -1,8 +1,13 @@
 import React from 'react';
-import Link from 'next/link';
-import { CreditCard, Printer, MoreVertical, Pencil, Flag, Check, Receipt, Loader2, ShieldCheck } from 'lucide-react';
+import { CreditCard, Printer, MoreVertical, Pencil, Flag } from 'lucide-react';
 import { Payment } from '../jobTypes';
 import { METHOD_CONFIG } from './financialsTypes';
+import { PaymentLedgerDetails } from './PaymentLedgerDetails';
+import { printInPlace } from '@/lib/printInPlace';
+import { PaymentEditPanel, PaymentVerifyPanel, PaymentRejectPanel, PaymentRejectedNote } from './PaymentRowPanels';
+
+const ICON_BTN = 'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-sunken hover:text-ink';
+const TYPE_LABEL: Record<string, string> = { partial: 'Partial', balance: 'Balance', full: 'Full' };
 
 interface PaymentItemRowProps {
   readonly payment: Payment;
@@ -67,220 +72,72 @@ export function PaymentItemRow({
     badgeCls: 'bg-sunken text-ink-muted border-line',
   };
 
+  const typeText = payment.type
+    ? `${TYPE_LABEL[payment.type] ?? 'Deposit'}${payment.source ? ` · ${payment.source === 'online' ? 'Online' : 'Walk-in'}` : ''}`
+    : null;
+  const pending = !payment.rejected_at && payment.status === 'pending_verification';
+
   return (
-    <div className="bg-canvas border border-line rounded-xl p-3.5 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold border ${cfg.badgeCls}`}>
-            {cfg.icon}
-            {cfg.label}
-          </span>
-          {payment.type && (
-            <span className="text-[10px] font-semibold uppercase tracking-wider bg-sunken text-ink-body border border-line px-2 py-0.5 rounded-full">
-              {payment.type === 'partial' ? 'Partial' : payment.type === 'balance' ? 'Balance' : payment.type === 'full' ? 'Full' : 'Deposit'}{payment.source ? ` · ${payment.source === 'online' ? 'Online' : 'Walk-in'}` : ''}
-            </span>
-          )}
-          {payment.rejected_at && (
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full">
-              Rejected
-            </span>
-          )}
-          {!payment.rejected_at && payment.status === 'pending_verification' && (
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full">
-              Pending Verification
-            </span>
-          )}
+    <div className="py-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sunken">{cfg.icon}</div>
+
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="rounded-md bg-sunken px-2 py-0.5 text-xs font-medium text-ink">{cfg.label}</span>
+            {typeText && <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">{typeText}</span>}
+            {payment.rejected_at && <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-rose-700">Rejected</span>}
+            {pending && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700">Pending Verification</span>}
+          </div>
+          <p className="text-[13px] text-ink-muted">
+            {new Date(payment.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {payment.recorded_by && <> · Logged by: <span className="text-ink-body">{payment.recorded_by.name}</span></>}
+          </p>
+          <PaymentLedgerDetails payment={payment} />
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className={`text-base font-black font-mono ${payment.rejected_at ? 'line-through text-ink-faint' : 'text-ink'}`}>
+        <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <span className={`text-lg font-semibold ${payment.rejected_at ? 'text-ink-faint line-through' : 'text-ink'}`}>
             ₱{Number.parseFloat(String(payment.amount)).toFixed(2)}
           </span>
-
-          <Link
-            href={`/print/jobs/${jobId}/receipt?payment=${payment.id}`}
-            target="_blank"
-            title="Print Official Receipt"
-            className="p-1 rounded-md text-ink-muted hover:text-taupe hover:bg-surface transition-colors"
-          >
-            <Printer size={14} />
-          </Link>
-
-          {!payment.rejected_at && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={onToggleMenu}
-                title="Actions"
-                className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
-              >
-                <MoreVertical size={14} />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-6 bg-surface border border-line rounded-xl shadow-lg min-w-37.5 z-20 overflow-hidden py-1">
-                  {!jobIsCompleted && (
-                    <button
-                      type="button"
-                      onClick={onStartEdit}
-                      className="w-full text-left px-3 py-2 text-xs text-ink-body hover:bg-canvas flex items-center gap-2 cursor-pointer"
-                    >
-                      <Pencil size={12} /> Edit Details
+          <div className="flex items-center">
+            <button type="button" onClick={() => printInPlace(`/print/jobs/${jobId}/receipt?payment=${payment.id}`)} title="Print receipt" aria-label="Print receipt" className={ICON_BTN}>
+              <Printer size={16} />
+            </button>
+            {!payment.rejected_at && (
+              <div className="relative">
+                <button type="button" onClick={onToggleMenu} title="Actions" aria-label="Payment actions" className={ICON_BTN}>
+                  <MoreVertical size={16} />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-10 z-20 min-w-40 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-lg">
+                    {!jobIsCompleted && (
+                      <button type="button" onClick={onStartEdit} className="flex min-h-11 w-full cursor-pointer items-center gap-2 px-3 text-left text-sm text-ink-body hover:bg-sunken">
+                        <Pencil size={14} /> Edit Details
+                      </button>
+                    )}
+                    <button type="button" onClick={onStartReject} className="flex min-h-11 w-full cursor-pointer items-center gap-2 px-3 text-left text-sm font-medium text-rose-700 hover:bg-rose-500/10">
+                      <Flag size={14} /> Flag / Reject…
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={onStartReject}
-                    className="w-full text-left px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 flex items-center gap-2 font-medium cursor-pointer"
-                  >
-                    <Flag size={12} /> Flag / Reject…
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Payment Metadata / Edit Row */}
-      {isEditing ? (
-        <div className="space-y-2 mt-2 pt-2 border-t border-line">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <select
-              value={editMethod}
-              onChange={e => setEditMethod(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-surface border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-            >
-              <option value="cash">Cash</option>
-              <option value="gcash">GCash</option>
-              <option value="paymaya">PayMaya</option>
-            </select>
-            {editMethod !== 'cash' && (
-              <input
-                type="text"
-                value={editReference}
-                onChange={e => setEditReference(e.target.value)}
-                placeholder="Reference #"
-                className="w-full px-2.5 py-1.5 bg-surface border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-              />
-            )}
-          </div>
-          <input
-            type="text"
-            value={editNotes}
-            onChange={e => setEditNotes(e.target.value)}
-            placeholder="Internal notes..."
-            className="w-full px-2.5 py-1.5 bg-surface border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-          />
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onCancelEdit}
-              className="px-2.5 py-1 rounded-lg text-xs text-ink-muted hover:text-ink cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={savingEdit}
-              onClick={onSaveEdit}
-              className="px-3 py-1 rounded-lg text-xs font-bold bg-espresso hover:bg-espresso/90 text-white flex items-center gap-1 shadow-2xs cursor-pointer"
-            >
-              <Check size={12} /> {savingEdit ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center justify-between text-[11px] text-ink-muted pt-1 border-t border-line/60 gap-y-1">
-          <div className="flex items-center gap-2">
-            <span>{new Date(payment.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-            {payment.recorded_by && (
-              <span>• Logged by: <strong className="text-ink-body font-semibold">{payment.recorded_by.name}</strong></span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {payment.payment_method === 'cash' && payment.change_amount != null && (
-              <span className="bg-surface px-1.5 py-0.5 rounded border border-line text-ink-body">
-                Tendered ₱{Number.parseFloat(String(payment.cash_tendered)).toFixed(2)} · Change ₱{Number.parseFloat(String(payment.change_amount)).toFixed(2)}
-              </span>
-            )}
-            {payment.reference && (
-              <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-line text-ink-body">
-                Ref: {payment.reference}
-              </span>
-            )}
-            {payment.receipt_path && (
-              <a
-                href={payment.receipt_path}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-taupe font-bold hover:underline"
-              >
-                <Receipt size={11} /> Receipt Image
-              </a>
-            )}
-          </div>
-        </div>
+      {isEditing && (
+        <PaymentEditPanel
+          editMethod={editMethod} setEditMethod={setEditMethod} editReference={editReference} setEditReference={setEditReference}
+          editNotes={editNotes} setEditNotes={setEditNotes} savingEdit={savingEdit} onSaveEdit={onSaveEdit} onCancelEdit={onCancelEdit}
+        />
       )}
-
-      {/* Pending Verification — owner/branch manager confirms the GCash/PayMaya proof before it counts toward the balance */}
-      {!payment.rejected_at && payment.status === 'pending_verification' && isOwnerOrManager && (
-        <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-amber-200 bg-amber-50/50 p-2.5 rounded-lg">
-          <p className="text-[11px] text-amber-800">
-            Confirm the {cfg.label} receipt before this counts toward the balance.
-          </p>
-          <button
-            type="button"
-            disabled={verifying}
-            onClick={onVerify}
-            className="shrink-0 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-2xs cursor-pointer disabled:opacity-50"
-          >
-            {verifying ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
-            {verifying ? 'Verifying…' : 'Verify'}
-          </button>
-        </div>
-      )}
-
-      {/* Reject Form Drawer */}
+      {pending && isOwnerOrManager && <PaymentVerifyPanel methodLabel={cfg.label} verifying={verifying} onVerify={onVerify} />}
       {isRejecting && (
-        <div className="space-y-2 mt-2 pt-2 border-t border-rose-200 bg-rose-50/50 p-2.5 rounded-lg">
-          <p className="text-[11px] font-bold text-rose-800">Reason for rejecting this transaction:</p>
-          <input
-            type="text"
-            value={rejectReason}
-            onChange={e => setRejectReason(e.target.value)}
-            placeholder="e.g. GCash screenshot forged / reference invalid"
-            className="w-full px-2.5 py-1.5 bg-surface border border-rose-300 rounded-lg text-xs text-ink focus:outline-none focus:border-rose-500"
-          />
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onCancelReject}
-              className="px-2.5 py-1 rounded-lg text-xs text-ink-muted hover:text-ink cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={submittingReject || !rejectReason.trim()}
-              onClick={onSubmitReject}
-              className="px-3 py-1 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs cursor-pointer"
-            >
-              {submittingReject ? 'Rejecting…' : 'Confirm Rejection'}
-            </button>
-          </div>
-        </div>
+        <PaymentRejectPanel rejectReason={rejectReason} setRejectReason={setRejectReason} submittingReject={submittingReject} onSubmitReject={onSubmitReject} onCancelReject={onCancelReject} />
       )}
-
-      {payment.rejected_at && (
-        <div className="bg-rose-50 border border-rose-200 rounded-lg p-2 text-[10px] text-rose-700">
-          <p className="font-bold">
-            Rejected on {new Date(payment.rejected_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-            {payment.rejected_by && ` by ${payment.rejected_by.name}`}
-          </p>
-          {payment.rejected_reason && <p className="italic mt-0.5">{payment.rejected_reason}</p>}
-        </div>
-      )}
+      <PaymentRejectedNote payment={payment} />
     </div>
   );
 }

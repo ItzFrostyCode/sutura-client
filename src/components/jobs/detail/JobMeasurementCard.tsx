@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Ruler, AlertTriangle, Lock, Sparkles, Edit2, ExternalLink, Image as ImageIcon, X } from 'lucide-react';
 import { Job } from '../jobTypes';
 import { STAGES_REQUIRING_DOWNPAYMENT } from '../jobHelpers';
+import { useShopRole } from '@/hooks/useShopRole';
+import SectionHeader from '../ui/SectionHeader';
 import JobEditMeasurementModal from './JobEditMeasurementModal';
 
 interface JobMeasurementCardProps {
@@ -39,11 +41,15 @@ export default function JobMeasurementCard({
   storeId,
   onRefreshJob = async () => {},
 }: JobMeasurementCardProps) {
+  const { isOwnerOrManager } = useShopRole();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Mirrors JobOrderController::update()'s measurement snapshot lock exactly
-  const isSnapshotLocked = STAGES_REQUIRING_DOWNPAYMENT.has(job.status);
+  // A completed order is read only too: no editing, no linking a newer version.
+  const isSnapshotLocked = STAGES_REQUIRING_DOWNPAYMENT.has(job.status) || job.status === 'completed';
+  // Recording or linking measurements on an order is the owner's / branch manager's step; staff read them.
+  const canEdit = isOwnerOrManager && !isSnapshotLocked;
   const standardSize = typeof job.custom_order_data?.standard_size === 'string'
     ? job.custom_order_data.standard_size
     : null;
@@ -53,29 +59,26 @@ export default function JobMeasurementCard({
     return (
       <>
         <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <Ruler size={17} className="text-taupe" /> Garment Sizing
-            </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-taupe/10 text-taupe border border-taupe/20">
-              Standard Sizing
-            </span>
-          </div>
+          <SectionHeader
+            icon={Ruler}
+            title="Garment Sizing"
+            badge={<span className="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-taupe/10 text-taupe">Standard Sizing</span>}
+          />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-canvas/60 border border-line rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-sunken/70 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface border border-line text-lg font-bold text-ink">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface text-lg font-semibold text-ink">
                 {standardSize}
               </div>
               <div>
-                <p className="text-sm font-bold text-ink">Standard Size: {standardSize}</p>
-                <p className="text-xs text-ink-muted mt-0.5">
+                <p className="text-sm font-semibold text-ink">Standard Size: {standardSize}</p>
+                <p className="text-[13px] text-ink-muted mt-0.5">
                   Scheduled for production using standard off-the-rack dimensions instead of bespoke measurements.
                 </p>
               </div>
             </div>
 
-            {!isSnapshotLocked && (
+            {canEdit && (
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
@@ -103,41 +106,38 @@ export default function JobMeasurementCard({
   if (!job.measurement) {
     return (
       <>
-        <div className="bg-surface border border-amber-200/80 rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <Ruler size={17} className="text-taupe" /> Garment Measurements
-            </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-              Measurements Needed
-            </span>
-          </div>
+        <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+          <SectionHeader
+            icon={Ruler}
+            title="Garment Measurements"
+            badge={<span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700">Measurements Needed</span>}
+          />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-amber-500/[0.07] rounded-xl p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-bold text-amber-900">No measurement profile linked to this order yet</p>
+                <p className="text-xs font-semibold text-amber-900">No measurement profile linked to this order yet</p>
                 <p className="text-xs text-amber-800/80 mt-0.5">
                   Tailors require body measurements or sizing before pattern making and cutting can begin.
                 </p>
               </div>
             </div>
 
-            {!isSnapshotLocked ? (
+            {canEdit ? (
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-espresso hover:bg-espresso/90 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-espresso hover:bg-espresso/90 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer shrink-0"
               >
                 <Sparkles size={13} />
                 <span>Record or Link Measurements</span>
               </button>
-            ) : (
+            ) : isSnapshotLocked ? (
               <span className="text-xs font-semibold text-ink-muted flex items-center gap-1">
                 <Lock size={12} /> Production Locked
               </span>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -174,63 +174,67 @@ export default function JobMeasurementCard({
     <>
       <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <Ruler size={17} className="text-taupe" /> {job.measurement.profile_name}
-            </h2>
-            {job.measurement.version && (
-              <span className="text-[10px] font-semibold text-taupe bg-taupe/10 px-1.5 py-0.5 rounded">
-                v{job.measurement.version}
+        <SectionHeader
+          icon={Ruler}
+          title={job.measurement.profile_name}
+          badge={(
+            <>
+              {job.measurement.version && (
+                <span className="text-[10px] font-semibold text-taupe bg-taupe/10 px-1.5 py-0.5 rounded">
+                  v{job.measurement.version}
+                </span>
+              )}
+              <span className="text-[10px] font-semibold text-ink-muted bg-sunken px-2 py-0.5 rounded-full capitalize">
+                {areaChoice === 'both' ? 'Top & Bottom' : `${areaChoice} Only`}
               </span>
-            )}
-            <span className="text-[10px] font-semibold text-ink-muted bg-sunken px-2 py-0.5 rounded-full capitalize">
-              {areaChoice === 'both' ? 'Top & Bottom' : `${areaChoice} Only`}
-            </span>
-          </div>
+            </>
+          )}
+          actions={(
+            <>
+              {canEdit ? (
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-taupe hover:text-ink hover:bg-sunken border border-line transition-colors cursor-pointer"
+                >
+                  <Edit2 size={12} />
+                  <span>Edit Measurements</span>
+                </button>
+              ) : !isSnapshotLocked ? null : (
+                <span
+                  title="Production started — measurement snapshot locked"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted bg-sunken px-2 py-1 rounded-md"
+                >
+                  <Lock size={11} /> Locked
+                </span>
+              )}
 
-          <div className="flex items-center gap-2">
-            {!isSnapshotLocked ? (
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-taupe hover:text-ink hover:bg-sunken border border-line transition-colors cursor-pointer"
-              >
-                <Edit2 size={12} />
-                <span>Edit Measurements</span>
-              </button>
-            ) : (
-              <span
-                title="Production started — measurement snapshot locked"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted bg-sunken px-2 py-1 rounded-md"
-              >
-                <Lock size={11} /> Locked
-              </span>
-            )}
-
-            {job.customer && (
-              <Link
-                href={`/dashboard/customers/${job.customer.id}?tab=measurements`}
-                className="inline-flex items-center gap-1 text-xs font-bold text-taupe hover:underline ml-1"
-              >
-                <span>Customer Profiles</span>
-                <ExternalLink size={11} />
-              </Link>
-            )}
-          </div>
-        </div>
+              {job.customer && (
+                <Link
+                  href={`/dashboard/customers/${job.customer.id}?tab=measurements`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-taupe hover:underline ml-1"
+                >
+                  <span>Customer Profiles</span>
+                  <ExternalLink size={11} />
+                </Link>
+              )}
+            </>
+          )}
+        />
 
         {/* Stale Warning */}
         {job.measurement.is_stale && (
-          <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl p-3.5 shadow-2xs">
+          <div className="flex items-start gap-2.5 bg-amber-500/[0.07] text-amber-800 text-xs rounded-xl p-3.5">
             <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-600" />
             <div className="flex-1">
-              <p className="font-bold">A newer measurement profile was updated after this order was placed.</p>
+              <p className="font-semibold">A newer measurement profile was updated after this order was placed.</p>
               {isSnapshotLocked ? (
                 <p className="mt-0.5 text-amber-700 flex items-center gap-1.5">
                   <Lock size={11} className="shrink-0" />
                   Production has already started — this job stays pinned to the snapshot it was cut/sewn against and can no longer be switched.
                 </p>
+              ) : !isOwnerOrManager ? (
+                <p className="mt-0.5 text-amber-700">The owner or a branch manager can switch this order to the newer version.</p>
               ) : (
                 <>
                   <p className="mt-0.5 text-amber-700">Would you like to sync this job with the latest customer measurements?</p>
@@ -238,7 +242,7 @@ export default function JobMeasurementCard({
                     <button
                       type="button"
                       onClick={() => onUseCurrentMeasurement(job.measurement!.current_version_id!)}
-                      className="mt-2 text-xs font-bold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors shadow-2xs cursor-pointer"
+                      className="mt-2 text-xs font-semibold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 transition-colors shadow-2xs cursor-pointer"
                     >
                       Sync with Current Version
                     </button>
@@ -255,14 +259,14 @@ export default function JobMeasurementCard({
             {/* Top Measurements Grid */}
             {topMetrics.length > 0 && (
               <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted flex items-center gap-1">
                   <span>👔</span> Top Measurements
                 </span>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                   {topMetrics.map(([k, v]) => (
-                    <div key={k} className="bg-canvas/50 border border-line rounded-xl p-2.5 text-center">
-                      <p className="text-[10px] text-ink-muted font-bold uppercase truncate">{k.replaceAll('_', ' ')}</p>
-                      <p className="text-sm font-bold text-ink mt-0.5">
+                    <div key={k} className="bg-sunken/70 rounded-xl p-2.5 text-center">
+                      <p className="text-[10px] text-ink-muted font-semibold uppercase truncate">{k.replaceAll('_', ' ')}</p>
+                      <p className="text-sm font-semibold text-ink mt-0.5">
                         {typeof v === 'object' && v !== null ? JSON.stringify(v) : withUnit(v, unitOfMetrics(rawMetrics))}
                       </p>
                     </div>
@@ -274,14 +278,14 @@ export default function JobMeasurementCard({
             {/* Bottom Measurements Grid */}
             {bottomMetrics.length > 0 && (
               <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted flex items-center gap-1">
                   <span>👖</span> Bottom Measurements
                 </span>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                   {bottomMetrics.map(([k, v]) => (
-                    <div key={k} className="bg-canvas/50 border border-line rounded-xl p-2.5 text-center">
-                      <p className="text-[10px] text-ink-muted font-bold uppercase truncate">{k.replaceAll('_', ' ')}</p>
-                      <p className="text-sm font-bold text-ink mt-0.5">
+                    <div key={k} className="bg-sunken/70 rounded-xl p-2.5 text-center">
+                      <p className="text-[10px] text-ink-muted font-semibold uppercase truncate">{k.replaceAll('_', ' ')}</p>
+                      <p className="text-sm font-semibold text-ink mt-0.5">
                         {typeof v === 'object' && v !== null ? JSON.stringify(v) : withUnit(v, unitOfMetrics(rawMetrics))}
                       </p>
                     </div>
@@ -297,7 +301,7 @@ export default function JobMeasurementCard({
         {/* Paper Measurement Sheet Photos */}
         {photoList.length > 0 && (
           <div className="border-t border-line pt-3.5 space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
               <ImageIcon size={12} className="text-taupe" />
               <span>Paper Measurement Sheet Photos ({photoList.length})</span>
             </span>
