@@ -1,5 +1,7 @@
-import React from 'react';
-import { Plus, X } from 'lucide-react';
+import React, { useId } from 'react';
+import { X } from 'lucide-react';
+import { BTN_SM, PLAIN_FIELD, PLAIN_LABEL } from '@/components/shared/plainForm';
+import PesoInput from './PesoInput';
 import type { ChargeRow } from './readinessTypes';
 
 interface ChargeRowsProps {
@@ -10,32 +12,31 @@ interface ChargeRowsProps {
   readonly labelPlaceholder: string;
 }
 
-const input = 'w-full px-3 py-2 bg-canvas border border-line rounded-lg text-base sm:text-sm text-ink focus:outline-none focus:border-taupe';
-
 /** A small list of "what for / how much" lines (extra charges, or items the customer supplies). */
 export default function ChargeRows({ title, hint, rows, onChange, labelPlaceholder }: ChargeRowsProps) {
+  const titleId = useId();
   const set = (i: number, patch: Partial<ChargeRow>) => onChange(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   return (
-    <fieldset className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <legend className="text-xs font-bold uppercase tracking-wide text-ink-muted">{title}</legend>
-          <p className="text-[11px] text-ink-faint">{hint}</p>
-        </div>
-        <button type="button" onClick={() => onChange([...rows, { label: '', amount: 0 }])} className="flex h-8 items-center gap-1 rounded-lg border border-line px-2.5 text-xs font-semibold text-ink-body hover:bg-sunken">
-          <Plus size={13} />Add
-        </button>
+    <div role="group" aria-labelledby={titleId}>
+      <div className="flex items-center justify-between gap-3">
+        <span id={titleId} className={`${PLAIN_LABEL} mb-0`}>{title}</span>
+        <button type="button" onClick={() => onChange([...rows, { label: '', amount: 0 }])} className={BTN_SM}>+ Add</button>
       </div>
-      {rows.map((row, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <input aria-label={`${title} description ${i + 1}`} value={row.label} onChange={(e) => set(i, { label: e.target.value })} placeholder={labelPlaceholder} maxLength={80} className={`${input} flex-1`} />
-          <input aria-label={`${title} amount ${i + 1}`} type="number" inputMode="decimal" min={0} step="0.01" value={row.amount || ''} onChange={(e) => set(i, { amount: Number(e.target.value) })} placeholder="0.00" className={`${input} w-28`} />
-          <button type="button" onClick={() => onChange(rows.filter((_, idx) => idx !== i))} aria-label="Remove line" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-sunken hover:text-rose-600">
-            <X size={15} />
-          </button>
+      <p className="mt-1 text-[13px] text-ink-muted">{hint}</p>
+      {rows.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {rows.map((row, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-2">
+              <input aria-label={`${title} description ${i + 1}`} value={row.label} onChange={(e) => set(i, { label: e.target.value })} placeholder={labelPlaceholder} maxLength={80} className={`${PLAIN_FIELD} min-w-[9rem] flex-1`} />
+              <PesoInput ariaLabel={`${title} amount ${i + 1}`} value={row.amount} onChange={(amount) => set(i, { amount })} className="w-32" />
+              <button type="button" onClick={() => onChange(rows.filter((_, idx) => idx !== i))} aria-label="Remove line" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-muted hover:bg-sunken hover:text-rose-600">
+                <X size={16} />
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
-    </fieldset>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
+import type { DesignPricing } from '@/lib/designPricing';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
 import {
   GARMENTS,
@@ -112,7 +113,7 @@ export function designImage(item: CatalogItem): string | null {
 }
 
 /** What one piece of a design costs: its service's price plus any extra charge (lib/designPricing); null when it needs a quote. */
-export function designUnitPrice(item: CatalogItem): number | null {
+export function designUnitPrice(item: { pricing?: DesignPricing | null; price?: string | number | null }): number | null {
   if (item.pricing) return item.pricing.amount;
   const own = Number(item.price);
   return own > 0 ? own : null;

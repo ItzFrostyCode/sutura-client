@@ -6,6 +6,7 @@ import { FileSpreadsheet, FileText, Loader2, Lock, Package } from 'lucide-react'
 import StatementFilters from './StatementFilters';
 import StatementRow from './StatementRow';
 import { useStatements } from './useStatements';
+import { printInPlace } from '@/lib/printInPlace';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 const btn = 'h-12 px-4 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
@@ -48,7 +49,7 @@ export default function StatementsTab() {
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'csv')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
           {s.busy === 'range-csv' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (CSV / Excel)
         </button>
-        <Link href={s.printHref} target="_blank" className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}><FileText size={16} /> Print / save as PDF</Link>
+        <button type="button" onClick={() => printInPlace(s.printHref)} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}><FileText size={16} /> Print / save as PDF</button>
       </div>
 
       <div className="border border-line bg-surface">

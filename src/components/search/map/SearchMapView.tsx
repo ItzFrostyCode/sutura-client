@@ -24,7 +24,7 @@ const DiscoveryMap = dynamic(() => import('@/components/discovery/DiscoveryMap')
 const DESKTOP_PANEL_PX = 460;
 const NAV_PX = 76;
 // Top right on mobile/tablet, bottom right on desktop.
-const controlsPlacement = 'max-lg:top-3 max-lg:right-4 lg:bottom-[calc(var(--bottom-nav-space)+8px)] lg:right-4';
+// controlsPlacement removed — MapControls positions itself with inline style + lg: class
 
 /**
  * Search and map in one screen. The map fills the whole screen and ONE panel holds the search and the shops:
@@ -154,6 +154,7 @@ export default function SearchMapView() {
           className="absolute inset-x-4 bottom-[var(--bottom-nav-space)] z-20 mx-auto flex max-w-[var(--col-w)] flex-col overflow-hidden rounded-[28px] bg-surface shadow-[0_8px_40px_rgba(45,42,38,0.16)] transition-[height] duration-300 ease-in-out lg:hidden"
           style={{ height: sheet.height }}
         >
+          {/* X button removed from inside the panel — toggle lives in MapControls */}
           <SearchPanelBody
             s={s}
             onOpenFilter={openFilter}
@@ -165,36 +166,32 @@ export default function SearchMapView() {
             isExpanded={sheet.expanded}
             onToggleExpand={sheet.toggle}
             onSelectBranch={choose}
-            onClosePanel={() => {
-              setPanelOpen(false);
-              sheet.setExpanded(false);
-            }}
           />
         </section>
       )}
 
-      {/* Map card and 3 controls: hidden when expanded, visible when collapsed */}
+      {/* Map top card: directions or active navigation — hidden when sheet is fully expanded */}
       {!sheet.expanded && (
         <MapTopCard nav={nav} selected={map.selected} userCoords={s.userCoords} onGetDirections={getDirections} />
       )}
-      {!sheet.expanded && (
-        <MapControls
-          onLocate={locate}
-          onZoomIn={map.zoomIn}
-          onZoomOut={map.zoomOut}
-          locating={map.locating}
-          onTogglePanel={() => {
-            if (panelOpen) {
-              setPanelOpen(false);
-              sheet.setExpanded(false);
-            } else {
-              setPanelOpen(true);
-            }
-          }}
-          panelOpen={panelOpen}
-          className={controlsPlacement}
-        />
-      )}
+
+      {/* Map controls: always visible, float above bottom sheet on mobile */}
+      <MapControls
+        onLocate={locate}
+        onZoomIn={map.zoomIn}
+        onZoomOut={map.zoomOut}
+        locating={map.locating}
+        onTogglePanel={() => {
+          if (panelOpen) {
+            setPanelOpen(false);
+            sheet.setExpanded(false);
+          } else {
+            setPanelOpen(true);
+          }
+        }}
+        panelOpen={panelOpen}
+        sheetHeight={sheetPx}
+      />
 
       <HomeFilterSheet isOpen={filterOpen} onClose={() => setFilterOpen(false)} value={filters} showMore onApply={s.applyAllFilters} />
     </div>

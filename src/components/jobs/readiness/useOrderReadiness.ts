@@ -24,6 +24,8 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [blockers, setBlockers] = useState<Blocker[]>([]);
+  /** The server's last refusal and which action it was for, so a button can show its reason as text (phones have no hover). */
+  const [error, setError] = useState<{ key: string; message: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -42,6 +44,7 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
   const run = useCallback(async (key: string, call: () => Promise<AxiosResponse>, opts: RunOptions = {}): Promise<boolean> => {
     setBusy(key);
     setBlockers([]);
+    setError(null);
     try {
       const res = await call();
       if (res.data?.data?.checklist) setData(res.data.data);
@@ -51,7 +54,9 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
       return true;
     } catch (err) {
       if (axios.isAxiosError(err) && Array.isArray(err.response?.data?.blockers)) setBlockers(err.response?.data.blockers);
-      toast.error(getErrorMessage(err, 'That did not go through.'));
+      const message = getErrorMessage(err, 'That did not go through.');
+      setError({ key, message });
+      toast.error(message);
       return false;
     } finally {
       setBusy(null);
@@ -71,37 +76,41 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
     approveInPerson: () => post('approval', 'quotation/approve', { accepted_terms: true }),
     confirm: () => post('confirmed', 'confirm'),
     saveQuotation: (body: Record<string, unknown>) => run('quotation', () => api.put(`${base}/quotation`, body)),
+    /** Pieces, people and sizes of the order, saved from the Details & sizes step (only while the order is pending). */
+    savePieces: (body: Record<string, unknown>) => run('pieces', () => api.put(base, body), { message: 'Pieces and sizes saved.' }),
     saveAssignees: (assignees: { user_id: number; role: string }[], reason?: string) => run('tailor', () => api.put(`${base}/assignees`, { assignees, reason: reason || undefined })),
-    startProduction: async () => {
-      const ok = await moveTo('design', 'Production started.');
+    /** `first` is the first production task for this order (jobStage `firstTask`): never "design". */
+    startProduction: async (first: string) => {
+      const ok = await moveTo(first, 'Production started.');
       if (ok) onStarted?.();
       return ok;
     },
 
     // Flow 3 -- delivery
     moveTo,
-    sendToQuality: () => moveTo('qc_ironing', 'Sent to Quality Check.'),
+    sendToQuality: () => moveTo('qc_ironing', 'Back at the quality check.'),
     passQuality: async () => (await post('qc', 'quality-check', { result: 'pass' }, { quiet: true })) && moveTo('ready_for_pickup', 'Quality check passed. The customer is told it is ready.'),
-    failQuality: async (body: Record<string, unknown>) => (await post('qc', 'quality-check', { result: 'fail', ...body }, { quiet: true })) && moveTo('final_adjustments', 'Sent to Adjustment / Correction.'),
+    failQuality: async (body: Record<string, unknown>) => (await post('qc', 'quality-check', { result: 'fail', ...body }, { quiet: true })) && moveTo('final_adjustments', 'Sent to fixing.'),
+    /** Needs a fix at the quality check, the customer's request: a quoted change (owner / manager) that the customer approves, then the order goes to fixing. */
+    chargedFix: async (body: Record<string, unknown>) => (await post('correction', 'corrections', { kind: 'change_request', ...body }, { quiet: true })) && moveTo('final_adjustments', 'Change quoted. It waits for the customer to approve it.'),
     fittingIssue: async (body: Record<string, unknown>) => (await post('correction', 'corrections', { kind: 'fitting_issue', ...body }, { quiet: true })) && moveTo('final_adjustments', 'Sent to Adjustment / Correction.'),
+    // Being made -- instant: Next / Back one step, Put on hold (with a reason), Resume.
+    productionNext: () => post('production', 'production/next'),
+    productionBack: () => post('production', 'production/back'),
+    hold: (reason: string) => post('production', 'production/hold', { reason }),
+    resume: () => post('production', 'production/resume'),
     addCorrection: (body: Record<string, unknown>) => post('correction', 'corrections', body),
     resolveCorrection: (id: number) => post('correction', `corrections/${id}/resolve`),
     cancelCorrection: (id: number) => post('correction', `corrections/${id}/cancel`),
     approveChange: (id: number, body: Record<string, unknown>) => post('correction', `corrections/${id}/approve`, { accepted: true, ...body }),
+    /** Hand over: from Ready the order first moves to payment & handover (quietly), then the handover is recorded. Completing the order is its own step. */
     recordHandover: async (body: Record<string, unknown>) => {
-      const ok = await post('handover', 'handovers', body);
-      if (!ok) return false;
-      // Everything handed over and nothing left to correct: the order is complete.
-      const res = await api.get(`${base}/readiness`).catch(() => null);
-      const d = res?.data?.data as ReadinessData | undefined;
-      if (d?.delivery && d.delivery.handover.remaining === 0 && d.delivery.open_corrections === 0 && d.delivery.balance_clear) {
-        return moveTo('completed', 'Order completed.');
-      }
-      return true;
+      if (data?.status !== 'balance_handover' && !(await run('move', () => api.put(base, { status: 'balance_handover' }), { quiet: true }))) return false;
+      return post('handover', 'handovers', body, { message: 'Handover recorded.' });
     },
   };
 
-  return { data, loading, busy, blockers, clearBlockers: () => setBlockers([]), reload: load, actions };
+  return { data, loading, busy, blockers, error, clearBlockers: () => setBlockers([]), reload: load, actions };
 }
 
 export type OrderReadinessApi = ReturnType<typeof useOrderReadiness>;

@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import LocationLine from '@/components/home/LocationLine';
 import SearchPill from '@/components/home/SearchPill';
 import { countAllFilters, type AllFilters } from '@/components/home/homeFilters';
@@ -16,12 +16,10 @@ interface SearchPanelTopProps {
   readonly compact?: boolean;
   readonly isExpanded?: boolean;
   readonly onToggleExpand?: () => void;
-  /** Hide / drop down the search and shops panel completely on mobile */
-  readonly onClosePanel?: () => void;
 }
 
 /** Where I am, one full-width search bar with the filter icon inside it (Open / Closed is in the filter pop-up), and the category the person arrived with. */
-export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact, isExpanded, onToggleExpand, onClosePanel }: SearchPanelTopProps) {
+export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact, isExpanded, onToggleExpand }: SearchPanelTopProps) {
   const here = `/search${s.searchParams.toString() ? `?${s.searchParams.toString()}` : ''}`;
   const changeHref = `/location?returnTo=${encodeURIComponent(here)}`;
   const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy };
@@ -32,8 +30,8 @@ export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact, isE
         <div className="min-w-0 flex-1">
           <LocationLine location={s.savedLocation} changeHref={changeHref} compact={compact} small />
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {onToggleExpand && (
+        {onToggleExpand && (
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={onToggleExpand}
@@ -43,18 +41,8 @@ export default function SearchPanelTop({ s, onOpenFilter, inputRef, compact, isE
             >
               {isExpanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
             </button>
-          )}
-          {onClosePanel && (
-            <button
-              type="button"
-              onClick={onClosePanel}
-              aria-label="Close search panel"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken active:opacity-70"
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       <div className="mt-2">
         <SearchPill

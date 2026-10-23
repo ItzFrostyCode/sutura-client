@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import StepAction from './StepAction';
+import TailorsCard from './TailorsCard';
+import ClientCard from './ClientCard';
+import PreStepsSection from './PreStepsSection';
+import WorkSection from './WorkSection';
 import QuotationCard from './QuotationCard';
-import QuotationModal from './QuotationModal';
-import ApprovalModal from './ApprovalModal';
-import MaterialsCard from './MaterialsCard';
-import TailorsModal from './TailorsModal';
+import GettingReadySection from './GettingReadySection';
+import ReadinessModals, { type OpenModal } from './ReadinessModals';
+import { GettingReadyFold, HandOverFold } from './FoldedColumns';
+import FollowUpLinks from './FollowUpLinks';
+import { makingProgress, stepsColumn } from './stepsColumn';
 import RefundCard from './RefundCard';
 import DeliveryPanel from './DeliveryPanel';
-import { useOrderReadiness } from './useOrderReadiness';
-import PreProductionList from '../steps/PreProductionList';
+import { useOrderReadiness, type OrderReadinessApi } from './useOrderReadiness';
 import StepsHeader from '../steps/StepsHeader';
+import CancelOrderPanel from '../detail/CancelOrderPanel';
+import CancelledNotice from '../detail/CancelledNotice';
 import type { Job } from '../jobHelpers';
+import { jobPieces } from '@/lib/orderSize';
 
 interface OrderReadinessTabProps {
   readonly storeId: number;
@@ -22,103 +28,99 @@ interface OrderReadinessTabProps {
   readonly onChanged: () => void;
   readonly onStarted: () => void;
   readonly onGoToFinancials?: () => void;
-  /** The work-stage controls, photos and notes. Shown folded once work has started. */
-  readonly work?: React.ReactNode;
+  /** Switch the page to its Details tab (team list, measurements). */
+  readonly onGoToDetails?: () => void;
+  /** The work-stage controls, photos and notes (given the order's steps and actions). Shown in its own section once work has started. */
+  readonly work?: (rd: OrderReadinessApi) => React.ReactNode;
+  /** Production snapshot and customer-facing status cards (two sibling cards), shown in the people-and-dates row. */
+  readonly aside?: React.ReactNode;
+  /** The owner picked "Cancel this order" from the menu: show the cancel panel at the top. */
+  readonly cancelOpen?: boolean;
+  readonly onCancelClose?: () => void;
 }
 
-type Open = 'quotation' | 'approval' | 'tailors' | null;
-
-const shell = 'overflow-hidden rounded-xl border border-line bg-surface';
-const day = (iso: string) => new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
-
 /** One screen for an order: where it is, the steps before work starts, then the steps to hand it over. */
-export default function OrderReadinessTab({ storeId, jobId, job, currentTotal, onChanged, onStarted, onGoToFinancials, work }: OrderReadinessTabProps) {
+export default function OrderReadinessTab({ storeId, jobId, job, currentTotal, onChanged, onStarted, onGoToFinancials, onGoToDetails, work, aside, cancelOpen, onCancelClose }: OrderReadinessTabProps) {
   const rd = useOrderReadiness(storeId, jobId, onChanged, onStarted);
-  const [open, setOpen] = useState<Open>(null);
+  const [open, setOpen] = useState<OpenModal>(null);
+  /** The inline pieces and sizes editor under the Details & sizes step; the quotation window's "Change" link opens it too. */
+  const [piecesOpen, setPiecesOpen] = useState(false);
   const { data } = rd;
+  // Something moved the order outside these steps (the phone's Next button): read the steps again.
+  const seenStatus = useRef(job.status);
+  const { reload } = rd;
+  const loadedStatus = data?.status;
+  useEffect(() => {
+    if (seenStatus.current === job.status) return;
+    seenStatus.current = job.status;
+    if (loadedStatus !== job.status) void reload();
+  }, [job.status, loadedStatus, reload]);
+  const cancelledNotice = <CancelledNotice job={job} />;
+  const cancelPanel = cancelOpen && onCancelClose && (
+    <CancelOrderPanel storeId={storeId} jobId={jobId} job={job} onClose={onCancelClose} onCancelled={() => { void rd.reload(); onChanged(); onCancelClose(); }} />
+  );
 
   if (rd.loading) return <div className="flex items-center justify-center py-12 text-ink-faint"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Loading…</div>;
   if (!data) return <p className="py-8 text-center text-sm text-ink-muted">Could not load the order steps.</p>;
   if (!data.uses_confirmation_flow || !data.pre_production) {
-    return <div className="space-y-4"><StepsHeader job={job} />{work}</div>;
+    return (
+      <div className="space-y-4">
+        {cancelPanel}
+        <StepsHeader job={job} />
+        {cancelledNotice}
+        {work?.(rd)}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {aside}
+          <ClientCard job={job} />
+        </div>
+      </div>
+    );
   }
 
+  const column = stepsColumn(data);
   const closed = ['completed', 'cancelled', 'rejected'].includes(data.status);
   const started = Boolean(data.quotation?.production_started_at) || data.status === 'completed';
-  const waiting = data.status === 'pending' ? data.blockers?.confirm : ['confirmed', 'awaiting_materials'].includes(data.status) ? data.blockers?.start : [];
   const closeModal = () => { setOpen(null); rd.clearBlockers(); };
+  const pieces = { job, open: piecesOpen, setOpen: setPiecesOpen, onGoToDetails };
+  const making = makingProgress(job, column);
+  // The column the order is in is open; every earlier column folds to its header and "x of y done". All folding is decided here.
+  const preSteps = <PreStepsSection data={data} api={rd} folded={column !== 'request'} readOnly={column === 'done'} onOpen={setOpen} onGoToFinancials={onGoToFinancials} pieces={pieces} />;
+  const earlier = column === 'being_made' || column === 'hand_over' || column === 'done';
 
   return (
     <div className="space-y-4">
+      {cancelPanel}
       <StepsHeader job={job} />
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          {started && !['cancelled', 'rejected'].includes(data.status) && <DeliveryPanel storeId={storeId} data={data} api={rd} onGoToFinancials={onGoToFinancials} />}
+      {cancelledNotice}
 
-          <details open={!started && !closed} className={`group ${shell}`}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 border-b border-line px-4 py-3 [&::-webkit-details-marker]:hidden">
-              <span className="text-sm font-bold text-ink">{started ? 'Steps before work started' : 'Steps before work starts'}</span>
-              <span aria-hidden className="text-xs text-ink-muted group-open:hidden">Show</span>
-            </summary>
-            <PreProductionList data={data} api={rd} onOpen={setOpen} onGoToFinancials={onGoToFinancials} />
-            {waiting && waiting.length > 0 && !closed && (
-              <ul className="list-disc space-y-0.5 border-t border-amber-200 bg-amber-50 py-2.5 pl-9 pr-4 text-xs text-amber-900">
-                <li className="-ml-4 list-none font-bold">Still needed:</li>
-                {waiting.map((b) => <li key={b.key}>{b.message}</li>)}
-              </ul>
-            )}
-          </details>
-
-          {!started && !closed && <MaterialsCard data={data} api={rd} locked={false} />}
-
-          {work && started && (
-            <details className={`group ${shell}`}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-bold text-ink">Work stage, photos and notes</span>
-                <span aria-hidden className="text-xs text-ink-muted group-open:hidden">Show</span>
-              </summary>
-              <div className="border-t border-line p-4">{work}</div>
-            </details>
-          )}
+      {/* The column you are in, beside the price. */}
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
+        <div className="lg:col-span-2">
+          {(column === 'request' || column === 'closed') && preSteps}
+          {column === 'getting_ready' && <GettingReadySection data={data} api={rd} job={job} onOpen={setOpen} onGoToFinancials={onGoToFinancials} />}
+          {(column === 'being_made' || column === 'hand_over') && <DeliveryPanel storeId={storeId} data={data} api={rd} onGoToFinancials={onGoToFinancials} />}
+          {column === 'done' && <HandOverFold data={data} />}
         </div>
-
-        <div className="space-y-4">
-          <QuotationCard data={data} />
-          <section className={shell}>
-            <header className="flex items-center justify-between border-b border-line px-4 py-3">
-              <h3 className="text-sm font-bold text-ink">Tailors</h3>
-              {data.permissions.can_assign && !closed && (
-                <StepAction item={{ key: 'tailor', label: '', done: (data.assignees?.length ?? 0) > 0, detail: null, applicable: true }} api={rd} onOpen={setOpen} />
-              )}
-            </header>
-            {data.assignees && data.assignees.length > 0 ? (
-              <ul className="divide-y divide-line">
-                {data.assignees.map((a) => <li key={a.user_id} className="flex items-center justify-between px-4 py-2 text-sm"><span className="font-medium text-ink">{a.name}</span><span className="text-[11px] capitalize text-ink-muted">{a.role}</span></li>)}
-              </ul>
-            ) : <p className="px-4 py-4 text-xs text-ink-muted">Nobody assigned yet.</p>}
-            {data.capacity?.has_conflict && <p className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">A tailor on this order has another order due within a day of this one.</p>}
-            {(data.assignee_history?.length ?? 0) > 0 && (
-              <details className="border-t border-line px-4 py-2 text-xs">
-                <summary className="cursor-pointer font-semibold text-ink-body">History ({data.assignee_history?.length})</summary>
-                <ul className="mt-2 space-y-1 text-ink-muted">
-                  {data.assignee_history?.map((e, i) => (
-                    <li key={i}>
-                      {day(e.at)} · {e.action === 'replaced' ? `${e.from} → ${e.to}` : e.action === 'added' ? `${e.to} added` : `${e.from} removed`}{e.by ? ` (by ${e.by})` : ''}{e.reason ? `. ${e.reason}` : ''}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </section>
-          {data.permissions.can_manage_refund && <RefundCard storeId={storeId} jobId={jobId} data={data} onRecorded={() => { void rd.reload(); onChanged(); }} />}
-        </div>
+        <QuotationCard data={data} pieces={jobPieces(job)} onEdit={data.permissions.can_edit_quotation && !closed ? () => setOpen('quotation') : undefined} />
       </div>
 
-      {open === 'quotation' && (
-        <QuotationModal isOpen onClose={closeModal} data={data} currentTotal={currentTotal} busy={rd.busy === 'quotation'} blockers={rd.blockers} onSave={rd.actions.saveQuotation} />
-      )}
-      {open === 'approval' && <ApprovalModal isOpen onClose={closeModal} data={data} busy={rd.busy === 'approval'} onApprove={rd.actions.approveInPerson} />}
-      {open === 'tailors' && <TailorsModal isOpen onClose={closeModal} storeId={storeId} current={data.assignees ?? []} capacity={data.capacity} busy={rd.busy === 'tailor'} onSave={rd.actions.saveAssignees} started={started} />}
+      {/* Earlier columns, latest first, folded. */}
+      <div className="space-y-4">
+        {column === 'done' && <FollowUpLinks followUps={job.follow_ups} />}
+        {work && started && <WorkSection folded={column !== 'being_made'} done={making.done} total={making.total}>{work(rd)}</WorkSection>}
+        {earlier && <GettingReadyFold data={data} />}
+        {column !== 'request' && column !== 'closed' && preSteps}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {started && <TailorsCard data={data} closed={closed} onOpen={setOpen} />}
+        {started && aside}
+        <ClientCard job={job} />
+      </div>
+
+      {data.permissions.can_manage_refund && <RefundCard storeId={storeId} jobId={jobId} data={data} onRecorded={() => { void rd.reload(); onChanged(); }} />}
+
+      <ReadinessModals open={open} onClose={closeModal} storeId={storeId} job={job} data={data} rd={rd} currentTotal={currentTotal} started={started} onChangePieces={() => setPiecesOpen(true)} />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  FileCode2,
+  PenLine,
   Plus,
   ExternalLink,
   Edit2,
@@ -17,6 +17,7 @@ import {
 import { Job, CustomizationInstruction } from '../../jobTypes';
 import { getMediaUrl } from '@/lib/media';
 import PostImageLightbox from '@/components/profile/PostImageLightbox';
+import SectionHeader from '../../ui/SectionHeader';
 import JobCustomizationInstructionModal from './JobCustomizationInstructionModal';
 
 interface JobCustomizationInstructionsCardProps {
@@ -76,60 +77,54 @@ export default function JobCustomizationInstructionsCard({
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
       {/* 1. Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap pb-3 border-b border-line">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <FileCode2 size={18} className="text-taupe" />
-              <span>Customization Instructions & References</span>
-            </h2>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-taupe bg-taupe/10 border border-taupe/20 px-2 py-0.5 rounded-md">
-              Order Specs
-            </span>
-          </div>
-          <p className="text-xs text-ink-muted mt-0.5">
-            Discrete tailoring guidelines, logo placements, stitching notes, and design mockups for this Job Order.
-          </p>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {isDirty && (
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={saving}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-ink-muted hover:text-ink cursor-pointer"
-            >
-              <RotateCcw size={12} />
-              <span>Reset</span>
-            </button>
-          )}
-
+      <SectionHeader
+        icon={PenLine}
+        title="Customization Instructions & References"
+        subtitle="Discrete tailoring guidelines, logo placements, stitching notes, and design mockups for this Job Order."
+        badge={(
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-taupe bg-taupe/10 px-2 py-0.5 rounded-md">
+            Order Specs
+          </span>
+        )}
+        actions={(
+      <div className="flex items-center gap-2">
+        {isDirty && (
           <button
             type="button"
-            onClick={handleSaveAll}
-            disabled={!isDirty || saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-espresso hover:bg-espresso/90 text-white text-xs font-semibold shadow-2xs transition-colors disabled:opacity-40 cursor-pointer"
+            onClick={handleReset}
+            disabled={saving}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-ink-muted hover:text-ink cursor-pointer"
           >
-            {saving ? (
-              <>
-                <Loader2 size={13} className="animate-spin" />
-                <span>Saving…</span>
-              </>
-            ) : (
-              <>
-                <Save size={13} />
-                <span>Save Instructions</span>
-              </>
-            )}
+            <RotateCcw size={12} />
+            <span>Reset</span>
           </button>
-        </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSaveAll}
+          disabled={!isDirty || saving}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-espresso hover:bg-espresso/90 text-white text-xs font-semibold shadow-2xs transition-colors disabled:opacity-40 cursor-pointer"
+        >
+          {saving ? (
+            <>
+              <Loader2 size={13} className="animate-spin" />
+              <span>Saving…</span>
+            </>
+          ) : (
+            <>
+              <Save size={13} />
+              <span>Save Instructions</span>
+            </>
+          )}
+        </button>
       </div>
+        )}
+      />
 
       {/* 2. Top Add Button */}
       <div className="flex items-center justify-between gap-2 pt-1">
-        <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+        <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
           Active Directives ({instructions.length})
         </span>
         <button
@@ -138,7 +133,7 @@ export default function JobCustomizationInstructionsCard({
             setEditingInstruction(null);
             setIsModalOpen(true);
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-canvas hover:bg-line border border-line text-xs font-semibold text-ink transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-espresso/[0.05] hover:bg-espresso/[0.09] text-xs font-medium text-ink transition-colors cursor-pointer"
         >
           <Plus size={13} className="text-taupe" />
           <span>Add Customization Note</span>
@@ -151,17 +146,17 @@ export default function JobCustomizationInstructionsCard({
           {instructions.map((inst, idx) => (
             <div
               key={inst.id}
-              className="bg-canvas border border-line rounded-xl p-4 space-y-3 shadow-2xs hover:border-line-strong transition-colors"
+              className="bg-sunken/70 rounded-xl p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-5 h-5 rounded-md bg-surface border border-line flex items-center justify-center font-mono text-[10px] font-bold text-ink-muted">
+                  <span className="w-5 h-5 rounded-md bg-surface flex items-center justify-center font-mono text-[10px] font-semibold text-ink-muted">
                     {idx + 1}
                   </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-ink">
+                  <h3 className="text-xs sm:text-sm font-semibold text-ink">
                     {inst.label}
                   </h3>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-line text-ink-body">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface text-ink-body">
                     {inst.scope === 'entire_job'
                       ? 'Entire Order'
                       : inst.scope === 'custom_pieces'
@@ -216,7 +211,7 @@ export default function JobCustomizationInstructionsCard({
                   <button
                     type="button"
                     onClick={() => setLightboxImage(getMediaUrl(inst.reference_image))}
-                    className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface border border-line text-xs font-semibold text-ink hover:border-taupe transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface text-xs font-medium text-ink hover:bg-sunken transition-colors cursor-pointer"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -233,7 +228,7 @@ export default function JobCustomizationInstructionsCard({
           ))}
         </div>
       ) : (
-        <div className="text-center py-7 border border-dashed border-line rounded-xl bg-canvas/30 space-y-2">
+        <div className="text-center py-7 rounded-xl bg-sunken/70 space-y-2">
           <HelpCircle size={24} className="mx-auto text-ink-faint" />
           <p className="text-xs text-ink-muted">
             No customization instructions added yet (e.g. Logo Placement, Special Printing, Lining).
@@ -244,7 +239,7 @@ export default function JobCustomizationInstructionsCard({
               setEditingInstruction(null);
               setIsModalOpen(true);
             }}
-            className="px-3.5 py-1.5 rounded-lg bg-canvas hover:bg-line border border-line text-xs font-semibold text-ink cursor-pointer"
+            className="px-3.5 py-1.5 rounded-lg bg-espresso/[0.05] hover:bg-espresso/[0.09] text-xs font-medium text-ink cursor-pointer"
           >
             + Add First Instruction
           </button>

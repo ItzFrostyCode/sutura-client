@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Plus } from 'lucide-react';
@@ -19,8 +20,9 @@ export default function ServicesPage() {
   const { store, user } = useAuthStore();
   const toast = useToast();
   const router = useRouter();
-  // POST/PUT/DELETE on services are role:store_owner,branch_manager-only in routes/api.php, but the
-  // Services nav is shown to plain staff too since they need read access to pick a service on a job/appointment.
+  // POST/PUT/DELETE on services are role:store_owner-only in routes/api.php. Branch managers and staff can read the
+  // list (they pick a service on a job/appointment), and a manager also sees the analytics tab.
+  const canManage = useCanManageOfferings();
   const isOwnerOrManager = Boolean(
     user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
   );
@@ -115,7 +117,7 @@ export default function ServicesPage() {
         description="Your tailoring services and how long they take."
         inlineActions
         actions={
-          !isOwnerOrManager ? null : activeTab === 'services' ? (
+          !canManage ? null : activeTab === 'services' ? (
             <>
               <button
                 onClick={() => router.push('/dashboard/services/new')}
@@ -140,7 +142,7 @@ export default function ServicesPage() {
         <ServiceGridView
           services={services}
           loading={loading}
-          canManage={isOwnerOrManager}
+          canManage={canManage}
           storeSlug={store?.slug}
           onEdit={(id) => router.push(`/dashboard/services/${id}`)}
           onDelete={(id) => {

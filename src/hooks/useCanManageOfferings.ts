@@ -1,8 +1,8 @@
 import { useAuthStore } from '@/store/useAuthStore';
 
-// Services and catalog designs are written only by the owner or a branch
-// manager (role:store_owner,branch_manager on the API). Plain staff can read them.
+// Services and catalog designs are shop-wide, so only the shop owner writes them (role:store_owner on the API).
+// Branch managers and staff can read them, so every edit control is hidden for them.
 export function useCanManageOfferings(): boolean {
   const { user } = useAuthStore();
-  return Boolean(user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)));
+  return Boolean(user?.roles?.some((r) => ['store_owner', 'super_admin'].includes(r.name)));
 }

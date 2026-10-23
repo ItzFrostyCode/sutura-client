@@ -107,7 +107,10 @@ export interface Appointment {
   /** Whose fabric: the shop's or the customer's own (with a short note). */
   material_source?: 'shop' | 'own' | null;
   material_note?: string | null;
-  outcome?: 'completed' | 'rescheduled' | 'no_show' | 'converted_to_job' | 'cancelled' | null;
+  outcome?: 'completed' | 'rescheduled' | 'no_show' | 'converted_to_job' | 'cancelled' | 'no_order' | null;
+  /** The booking deposit: how it was paid and whether the shop has confirmed it ('pending' | 'paid' | 'rejected'). No amount is stored. */
+  payment_method?: string | null;
+  payment_status?: 'pending' | 'paid' | 'rejected' | null;
   priority?: 'normal' | 'urgent' | 'rush';
   garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
   fitting_notes?: string | null;
@@ -246,7 +249,9 @@ export function StatusBadge({ status, scheduledAt, outcome, jobOrderId, jobStatu
 
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   // "Done" says how the visit ended: with a job order, or as a consultation only.
-  const label = status === 'completed' && kind !== 'production'
+  const label = status === 'completed' && outcome === 'no_order'
+    ? 'No order'
+    : status === 'completed' && kind !== 'production'
     ? (jobOrderId ? (jobStatus === 'cancelled' || jobStatus === 'rejected' ? 'Job order cancelled' : 'Job order made') : type && type !== 'consultation' ? 'Done' : 'Consultation done')
     : cfg.label;
   return (

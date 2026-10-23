@@ -1,4 +1,5 @@
 import { isBulkOrder, isRepairOnly, type Job } from './jobHelpers';
+import { lineView, STEP_LABEL } from './productionLine';
 import { depositMet } from './kanban/flowChip';
 
 /** The shop's five stages. Same names the customer sees; the internal tasks (cutting, sewing...) sit inside "Being made". */
@@ -24,10 +25,7 @@ export function shopStageOf(job: Job): ShopStageKey | null {
   return 'making';
 }
 
-const TASK_LABEL: Record<string, string> = {
-  design: 'Design', pattern_making: 'Pattern', mass_cutting_printing: 'Mass cutting', cutting: 'Cutting', sewing: 'Sewing',
-  qc_ironing: 'Final check', qc_check: 'Final check', in_repair: 'Repair', final_adjustments: 'Adjusting', ready_for_fitting: 'Fitting',
-};
+const TASK_LABEL: Record<string, string> = { ...STEP_LABEL, ready_for_fitting: 'Fitting' };
 
 /** One short line: what this order is doing, or what it is waiting for. */
 export function stageNote(job: Job): string {
@@ -53,13 +51,15 @@ export function stageNote(job: Job): string {
   return TASK_LABEL[s] ?? s.replaceAll('_', ' ');
 }
 
-/** The next task on the table, for the one-tap button on a card. Final check and later steps happen on the order page. */
+/** The one-tap Next on a card: the next step of the fixed production line (never from Quality check on an ordered order, never on hold). */
 export function nextTask(job: Job): { status: string; label: string } | null {
-  const next: Record<string, string> = isRepairOnly(job)
-    ? { queued: 'in_repair', in_repair: 'qc_check' }
-    : { design: isBulkOrder(job) ? 'mass_cutting_printing' : 'pattern_making', pattern_making: 'cutting', mass_cutting_printing: 'cutting', cutting: 'sewing', sewing: 'qc_ironing' };
-  const to = next[job.status];
-  return to ? { status: to, label: TASK_LABEL[to] ?? to } : null;
+  return lineView(job).next;
+}
+
+/** The task production starts with (never Design): Pattern, Mass cutting for a bulk order, Repair for a repair. Same rule as JobOrder::firstProductionTask(). */
+export function firstTask(job: Job): { status: string; label: string } {
+  const status = isRepairOnly(job) ? 'in_repair' : isBulkOrder(job) ? 'mass_cutting_printing' : 'pattern_making';
+  return { status, label: TASK_LABEL[status] ?? status };
 }
 
 /** True when the next move is the shop's, not the customer's: worth a highlight on the board. */

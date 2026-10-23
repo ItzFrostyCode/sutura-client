@@ -180,7 +180,7 @@ export interface Job {
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
   customer?: { name: string; suki_tag?: string | null } | null;
-  service?: { name: string; service_type?: string | null; service_types?: string[] | null; min_order_qty?: number | null } | null;
+  service?: { id?: number; name: string; service_type?: string | null; service_types?: string[] | null; min_order_qty?: number | null; base_price?: number | string | null; estimated_days?: number | null } | null;
   assigned_staff?: { name: string } | null;
   due_date?: string | null;
   updated_at?: string;
@@ -206,16 +206,38 @@ export interface Job {
   customer_approved_at?: string | null;
   confirmed_at?: string | null;
   production_started_at?: string | null;
+  /** The Confirmed column's checks, straight from the list: materials marked ready, how the customer's own fabric was judged, tailors planned. */
+  material_source?: 'store_supplied' | 'customer_supplied' | null;
+  materials_verified_at?: string | null;
+  customer_items_assessment?: 'suitable' | 'not_suitable' | null;
+  assignees_count?: number;
+  /** The list names the tailors (lead first) so the Being made card can show who has it. */
+  assignees?: { role: string; user?: { name: string } | null }[];
+  qc_passed_at?: string | null;
+  /** The Ready card's facts: when the customer was told, whether the fitting was passed, and how many pieces / people have been handed over. */
+  ready_for_pickup_at?: string | null;
+  fitting_passed_at?: string | null;
+  handed_over_count?: number | string | null;
+  /** The Done card's "Handed over Oct 22": the latest handover (the list sends it with the order). */
+  last_handover_at?: string | null;
+  /** Orders made as a follow-up to this one (a free fix is flagged); sent with the order page. */
+  follow_ups?: { id: number; order_number: string; status: string; free_fix: boolean }[];
+  status_before_hold?: string | null;
   catalog_item?: {
     id: number;
     name: string;
     category?: string | null;
     garment_type?: string | null;
     price?: number | string | null;
+    /** The service this design is a style of, and what one piece of it costs (set by the server for the order page). */
+    service_id?: number | string | null;
+    pricing?: import('@/lib/designPricing').DesignPricing | null;
     fabric_image_url?: string | null;
     images?: Array<{ id?: number; image_url: string; is_primary?: boolean | number }>;
   } | null;
   reference_images?: string[] | null;
+  /** The group this order belongs to (a set from one consultation, or a split by who pays). */
+  batch?: import('./batches/batchTypes').BatchSummary | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';
@@ -224,6 +246,7 @@ export const CANCELLATION_REASON_LABELS: Record<string, string> = {
   customer_request: 'Customer requested cancellation',
   store_unable_to_fulfill: 'Store unable to fulfill',
   forfeited_deposit_abandoned: 'Forfeited deposit — customer went uncontactable',
+  quotation_declined: 'Customer declined the quotation',
   other: 'Other',
 };
 

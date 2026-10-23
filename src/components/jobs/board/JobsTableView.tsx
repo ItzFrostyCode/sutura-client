@@ -11,7 +11,7 @@ interface JobsTableViewProps {
   readonly canSeeMoney: boolean;
   readonly canDecline: boolean;
   readonly busyId: number | null;
-  readonly onAdvance: (job: Job, status: string) => void;
+  readonly onAdvance: (job: Job) => void;
   readonly onDecline: (jobId: number) => void;
 }
 
@@ -230,7 +230,7 @@ export default function JobsTableView({
                         <button
                           type="button"
                           disabled={isBusy}
-                          onClick={() => onAdvance(job, next.status)}
+                          onClick={() => onAdvance(job)}
                           className="h-8 rounded-lg bg-espresso px-2.5 text-xs font-bold text-white hover:bg-espresso/90 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
                         >
                           {isBusy ? 'Moving…' : `Next: ${next.label}`}
@@ -344,7 +344,7 @@ export default function JobsTableView({
                     <button
                       type="button"
                       disabled={isBusy}
-                      onClick={() => onAdvance(job, next.status)}
+                      onClick={() => onAdvance(job)}
                       className="h-10 flex-1 rounded-lg bg-espresso px-3 text-xs font-bold text-white hover:bg-espresso/90 disabled:opacity-50 transition-colors shadow-2xs"
                     >
                       {isBusy ? 'Moving…' : `Next Task: ${next.label}`}

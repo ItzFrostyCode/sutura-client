@@ -5,8 +5,8 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
 import { useToast } from '@/context/ToastContext';
-import { isLateBalance, getDueStatus, STAGES_REQUIRING_DOWNPAYMENT, type Job } from '../jobHelpers';
-import { depositMet } from '../kanban/flowChip';
+import { isLateBalance, getDueStatus, type Job } from '../jobHelpers';
+import { getErrorMessage } from '@/lib/apiError';
 import { shopStageOf, type ShopStageKey } from '../jobStage';
 
 const CLOSED = ['cancelled', 'rejected'];
@@ -212,26 +212,31 @@ export function useJobsBoard() {
 
   const closed = useMemo(() => jobs.filter((j) => CLOSED.includes(j.status)), [jobs]);
 
-  /**
-   * Safely advances an order: validates business rules (e.g. downpayment gate)
-   * before sending request, preventing confusing blind failures.
-   */
-  const advance = async (job: Job, targetStatus: string) => {
+  /** Next: the order moves one step along the production line, at once. The server owns the rules (deposit, gates) and says why when it refuses. */
+  const advance = async (job: Job) => {
     if (!store) return;
-
-    // Pre-flight check: downpayment requirement for production stages
-    if (STAGES_REQUIRING_DOWNPAYMENT.has(targetStatus) && !depositMet(job)) {
-      toast.error('Downpayment Required: A 50% deposit must be logged before moving into production.');
-      return;
-    }
-
     setBusyId(job.id);
     try {
-      await api.put(`/stores/${store.id}/jobs/${job.id}`, { status: targetStatus });
-      toast.success(`Order ${job.order_number ?? ''} advanced successfully.`);
+      const res = await api.post(`/stores/${store.id}/jobs/${job.id}/production/next`);
+      toast.success(`${job.order_number ?? 'Order'}: ${res.data?.message ?? 'moved to the next step.'}`);
       fetchJobs();
     } catch (err) {
-      toast.error((axios.isAxiosError(err) && err.response?.data?.message) || 'That transition is not permitted right now.');
+      toast.error(getErrorMessage(err, 'That move is not allowed right now.'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  /** A one-tap status move from a card (Start fitting, Complete). The server owns the rules and says why when it refuses. */
+  const moveTo = async (job: Job, status: string, message: string) => {
+    if (!store) return;
+    setBusyId(job.id);
+    try {
+      await api.put(`/stores/${store.id}/jobs/${job.id}`, { status });
+      toast.success(`${job.order_number ?? 'Order'}: ${message}`);
+      fetchJobs();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'That move is not allowed right now.'));
     } finally {
       setBusyId(null);
     }
@@ -300,6 +305,7 @@ export function useJobsBoard() {
     byStage,
     closed,
     advance,
+    moveTo,
     decline,
     refetch: fetchJobs,
     resetFilters,

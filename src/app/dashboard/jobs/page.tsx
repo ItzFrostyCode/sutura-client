@@ -4,7 +4,6 @@ import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, X } from 'lucide-react';
 import JobRejectModal from '@/components/jobs/JobRejectModal';
-import JobTrashModal from '@/components/jobs/JobTrashModal';
 import JobsPageHeader from '@/components/jobs/JobsPageHeader';
 import SimpleBoard from '@/components/jobs/board/SimpleBoard';
 import JobsTableView from '@/components/jobs/board/JobsTableView';
@@ -35,8 +34,7 @@ function JobOrdersPageContent() {
   );
 
   const board = useJobsBoard();
-  const waiting = useWaitingAppointments();
-  const [trashOpen, setTrashOpen] = useState(false);
+  const { waiting, remove: removeWaiting } = useWaitingAppointments();
   const [declining, setDeclining] = useState<number | null>(null);
 
   const isDeepFiltered = Boolean(board.statusFilter || board.overdueOnly || board.garment);
@@ -47,14 +45,13 @@ function JobOrdersPageContent() {
       <JobsPageHeader
         activeCount={activeOrdersCount}
         totalCount={board.jobs.length}
-        onOpenTrash={() => setTrashOpen(true)}
         isOwnerOrManager={isOwnerOrManager}
       />
 
       <div className="space-y-4 p-4 sm:p-6">
 
         {/* Consultations Ready for Job Order Conversion */}
-        <AppointmentIntakeBanner appointments={waiting} />
+        {board.viewMode === 'table' && <AppointmentIntakeBanner appointments={waiting} onRemove={removeWaiting} />}
 
         {/* Alert Banner for Deep Links from Home Dashboard */}
         {isDeepFiltered && (
@@ -135,11 +132,14 @@ function JobOrdersPageContent() {
             <SimpleBoard
               byStage={board.byStage}
               closed={board.closed}
+              consultations={waiting}
+              onConsultationRemove={removeWaiting}
               showClosed={board.showClosed}
               canSeeMoney={isOwnerOrManager}
               canDecline={isOwnerOrManager}
               busyId={board.busyId}
               onAdvance={board.advance}
+              onMove={board.moveTo}
               onDecline={setDeclining}
             />
           </div>
@@ -156,15 +156,6 @@ function JobOrdersPageContent() {
         }}
         actionLoading={board.busyId !== null}
       />
-
-      {board.store && (
-        <JobTrashModal
-          isOpen={trashOpen}
-          onClose={() => setTrashOpen(false)}
-          storeId={board.store.id}
-          onRestored={board.refetch}
-        />
-      )}
     </ApplePage>
   );
 }

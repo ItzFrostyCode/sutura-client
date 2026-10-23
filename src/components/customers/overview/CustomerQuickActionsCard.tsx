@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Sparkles, Scissors, Calendar, ChevronRight, HandCoins, MessageSquare, Printer } from 'lucide-react';
 import type { CustomerTabType } from '../profile/CustomerTabNav';
 import { peso } from '../customerMoney';
+import { printInPlace } from '@/lib/printInPlace';
+import { useShopRole } from '@/hooks/useShopRole';
 
 interface CustomerQuickActionsCardProps {
   readonly customerId?: number;
@@ -17,6 +19,7 @@ const ROW = 'w-full flex items-center justify-between p-3 rounded-xl bg-canvas h
 
 /** One-tap jumps into the other parts of the shop, each already knowing who the customer is. */
 export default function CustomerQuickActionsCard({ customerId, balance = 0, canCollect = false, canText = false, onOpenTab }: CustomerQuickActionsCardProps) {
+  const { isOwnerOrManager } = useShopRole();
   const chevron = <ChevronRight size={13} className="text-ink-muted group-hover:text-taupe transition-colors" />;
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
@@ -25,9 +28,11 @@ export default function CustomerQuickActionsCard({ customerId, balance = 0, canC
         <h4 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wider">Quick Actions</h4>
       </div>
       <div className="space-y-2.5">
-        <Link href={`/dashboard/jobs/new?customer_id=${customerId}`} className={ROW}>
-          <span className="flex items-center gap-2.5"><Scissors size={14} className="text-taupe" /> New order</span>{chevron}
-        </Link>
+        {isOwnerOrManager && (
+          <Link href={`/dashboard/jobs/new?customer_id=${customerId}`} className={ROW}>
+            <span className="flex items-center gap-2.5"><Scissors size={14} className="text-taupe" /> New order</span>{chevron}
+          </Link>
+        )}
         <Link href={`/dashboard/appointments?customer_id=${customerId}`} className={ROW}>
           <span className="flex items-center gap-2.5"><Calendar size={14} className="text-taupe" /> Book an appointment</span>{chevron}
         </Link>
@@ -41,9 +46,9 @@ export default function CustomerQuickActionsCard({ customerId, balance = 0, canC
             <span className="flex items-center gap-2.5"><MessageSquare size={14} className="text-taupe" /> Send a text</span>{chevron}
           </button>
         )}
-        <Link href={`/print/customers/${customerId}/statement`} target="_blank" className={ROW}>
+        <button type="button" onClick={() => printInPlace(`/print/customers/${customerId}/statement`)} className={ROW}>
           <span className="flex items-center gap-2.5"><Printer size={14} className="text-taupe" /> Print statement</span>{chevron}
-        </Link>
+        </button>
       </div>
     </div>
   );

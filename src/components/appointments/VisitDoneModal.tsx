@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Modal from '@/components/Modal';
+import { useShopRole } from '@/hooks/useShopRole';
 import ConfirmClose from './detail/ConfirmClose';
 import { Appointment, TypeBadge } from './appointmentHelpers';
 
@@ -21,6 +22,7 @@ const btn = 'w-full min-h-[52px] px-4 flex items-center justify-center gap-3 bor
 /** "Done" for a visit: exactly three results. */
 export default function VisitDoneModal({ isOpen, apt, isSubmitting, onClose, onSubmit, onProceed }: Props) {
   const [notes, setNotes] = useState('');
+  const { isOwnerOrManager } = useShopRole();
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (apt) setNotes('');
@@ -56,7 +58,7 @@ export default function VisitDoneModal({ isOpen, apt, isSubmitting, onClose, onS
 
         <p className="text-sm font-semibold text-ink">How did it end?</p>
         <div className="space-y-2.5">
-          {!isProduction && (
+          {!isProduction && isOwnerOrManager && (
             <button type="button" disabled={isSubmitting} onClick={() => onProceed(apt)} className={`${btn} bg-espresso text-white border-taupe hover:bg-espresso/90`}>
               Create Job Order
             </button>
@@ -70,7 +72,9 @@ export default function VisitDoneModal({ isOpen, apt, isSubmitting, onClose, onS
           />
         </div>
         {!isProduction && (
-          <p className="text-xs text-ink-faint">Creating the Job Order closes this visit for you.</p>
+          <p className="text-xs text-ink-faint">
+            {isOwnerOrManager ? 'Creating the Job Order closes this visit for you.' : 'The owner or a branch manager makes the job order.'}
+          </p>
         )}
       </div>
     </Modal>

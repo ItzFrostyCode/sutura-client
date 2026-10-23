@@ -35,6 +35,8 @@ export interface JobSubmission {
   defaultUnit?: 'in' | 'cm';
   /** Other services asked for at the same visit; each becomes its own linked order. */
   extras?: import('./types').ExtraService[];
+  /** The completed order this one follows up (from "New follow-up order"); sent as follow_up_of_id. */
+  followUpOfId?: string | null;
 }
 
 /** A team order's list in both shapes: the job's own Spec Table (with the owner's column names) and the roster the tracker and ticket read. */
@@ -156,6 +158,7 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
       measurements: savedMeasurementsMeta.length > 0 ? savedMeasurementsMeta : null,
     },
     appointment_id: s.appointmentId ? Number(s.appointmentId) : null,
+    follow_up_of_id: s.followUpOfId ? Number(s.followUpOfId) : undefined,
     catalog_item_id: s.catalogItemId ? Number(s.catalogItemId) : null,
     reference_images: s.referenceImages.length > 0 ? s.referenceImages : null,
     reference_link: s.referenceLink.trim() || null,

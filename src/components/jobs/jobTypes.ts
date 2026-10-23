@@ -113,6 +113,10 @@ export interface Job {
   batch_no?: number | null;
   group_kind?: 'batch' | 'set' | null;
   paid_by_name?: string | null;
+  /** The completed order this one follows up, and the follow-ups made from this one (a free fix is flagged). */
+  follow_up_of_id?: number | null;
+  follow_up_of?: { id: number; order_number: string } | null;
+  follow_ups?: { id: number; order_number: string; status: string; free_fix: boolean }[];
   batch?: import('./batches/batchTypes').BatchSummary | null;
   can_split?: boolean;
   released_with_balance_at?: string | null;
@@ -128,6 +132,8 @@ export interface Job {
   rejection_reason?: string | null;
   cancellation_reason?: string | null;
   hold_reason?: string | null;
+  status_before_hold?: string | null;
+  qc_passed_at?: string | null;
   discount_amount?: number | string | null;
   // Snapshotted at creation from design -> service -> store defaults.
   measurement_requirement?: 'none' | 'existing' | 'shop' | null;
@@ -143,6 +149,10 @@ export interface Job {
   quotation_status?: 'estimate' | 'final' | null;
   confirmed_at?: string | null;
   production_started_at?: string | null;
+  /** The Confirmed column's checks, straight from the list: materials marked ready, how the customer's own fabric was judged, and the tailors planned. */
+  materials_verified_at?: string | null;
+  customer_items_assessment?: 'suitable' | 'not_suitable' | null;
+  assignees_count?: number;
   adjustment_count?: number;
   first_adjustment_at?: string | null;
   garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;

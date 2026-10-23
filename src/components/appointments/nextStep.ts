@@ -10,13 +10,14 @@ export interface NextStep {
 
 /**
  * request → Approve · confirmed → Customer arrived (starts the visit) · visit on → Done (then: Create Job Order,
- * Consultation only, or Didn't come) · visit done with no order → Create Job Order. Nothing to do after that.
+ * Consultation only, or Didn't come) · visit done with no order → Create Job Order (owner / manager only). Nothing to do after that.
  */
 export function nextStep(apt: Pick<Appointment, 'status' | 'job_order_id' | 'kind' | 'checked_in_at'>, canDecide: boolean): NextStep | null {
   if (apt.status === 'pending') return canDecide ? { key: 'approve', label: 'Approve' } : null;
   // An early customer who already arrived is waiting for their time: the same tap then starts the visit.
   if (apt.status === 'confirmed') return { key: 'arrived', label: apt.checked_in_at ? 'Start visit' : 'Customer arrived' };
   if (apt.status === 'in_progress') return { key: 'done', label: 'Done' };
-  if (apt.status === 'completed' && !apt.job_order_id && apt.kind !== 'production') return { key: 'create_job', label: 'Create Job Order' };
+  // Making the order is the owner's / branch manager's step (canDecide); plain staff have nothing to press here.
+  if (apt.status === 'completed' && !apt.job_order_id && apt.kind !== 'production') return canDecide ? { key: 'create_job', label: 'Create Job Order' } : null;
   return null;
 }

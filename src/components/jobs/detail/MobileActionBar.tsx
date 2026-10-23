@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useToast } from '@/context/ToastContext';
-import { STAGES_REQUIRING_DOWNPAYMENT, type Job as StageJob } from '../jobHelpers';
-import { depositMet } from '../kanban/flowChip';
+import { getErrorMessage } from '@/lib/apiError';
+import type { Job as StageJob } from '../jobHelpers';
 import { nextTask } from '../jobStage';
 
 /**
@@ -23,17 +22,13 @@ export default function MobileActionBar({ storeId, job, dirty, saving, onSave, o
 
   const advance = async () => {
     if (!next) return;
-    if (STAGES_REQUIRING_DOWNPAYMENT.has(next.status) && !depositMet(job)) {
-      toast.error('The deposit has to be recorded before this order goes into production.');
-      return;
-    }
     setBusy(true);
     try {
-      await api.put(`/stores/${storeId}/jobs/${job.id}`, { status: next.status });
-      toast.success(`Moved to ${next.label}.`);
+      const res = await api.post(`/stores/${storeId}/jobs/${job.id}/production/next`);
+      toast.success(res.data?.message ?? `Moved to ${next.label}.`);
       await onMoved();
     } catch (err) {
-      toast.error((axios.isAxiosError(err) && err.response?.data?.message) || 'That move is not allowed right now.');
+      toast.error(getErrorMessage(err, 'That move is not allowed right now.'));
     } finally {
       setBusy(false);
     }

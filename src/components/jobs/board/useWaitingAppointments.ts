@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
 import type { Appointment } from '@/components/appointments/appointmentHelpers';
 
 /** Visits that happened (or are on) and have no job order yet: the next orders to create. The server decides which (`awaiting_job`). */
-export function useWaitingAppointments(): Appointment[] {
+export function useWaitingAppointments(): { waiting: Appointment[]; remove: (id: number) => void } {
   const { store } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const [waiting, setWaiting] = useState<Appointment[]>([]);
@@ -22,5 +22,8 @@ export function useWaitingAppointments(): Appointment[] {
     return () => { live = false; };
   }, [store, selectedBranchId]);
 
-  return waiting;
+  /** Takes a visit out of the list at once (marked "No order"), without reloading. */
+  const remove = useCallback((id: number) => setWaiting((rows) => rows.filter((a) => a.id !== id)), []);
+
+  return { waiting, remove };
 }

@@ -17,7 +17,7 @@ Staff log in to the **same `/dashboard`** as the owner. Their menus and buttons 
 | Add, view and update **measurements** | Create a new **job order** (owner/branch manager only, see gaps) |
 | View job orders and **move them through production stages** | Record payments, apply discounts, reject payments |
 | Upload **progress photos** | Assign or reassign staff |
-| Tick off **roster pieces** as done on bulk orders | Delete or restore job orders |
+| Tick off **roster pieces** as done on bulk orders | Archive or restore job orders |
 | View and update **appointments**, mark them complete | View analytics/reports |
 | Create a **follow-up appointment** (e.g. next fitting) | Manage services, catalog, staff accounts or billing |
 | Record **walk-in ready-to-wear sales** | Create a new appointment from scratch (owner/manager only) |

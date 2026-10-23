@@ -1,11 +1,13 @@
 import React from 'react';
 import { Tag, Loader2 } from 'lucide-react';
+import { Job } from '../jobTypes';
+import SectionHeader from '../ui/SectionHeader';
 import { ComputedFinancials } from './financialsTypes';
+import { BTN, BTN_PRIMARY, PLAIN_FIELD, PLAIN_LABEL } from '@/components/shared/plainForm';
 
 interface FinancialDiscountFormProps {
+  readonly job: Job;
   readonly financials: ComputedFinancials;
-  readonly showDiscountForm: boolean;
-  readonly setShowDiscountForm: (show: boolean) => void;
   readonly discountType: 'fixed' | 'percent';
   readonly setDiscountType: (type: 'fixed' | 'percent') => void;
   readonly discountInput: string;
@@ -14,6 +16,8 @@ interface FinancialDiscountFormProps {
   readonly setDiscountReason: (val: string) => void;
   readonly applyingDiscount: boolean;
   readonly onApplyDiscountSubmit: () => Promise<void>;
+  /** Left side of the footer row (the payment-rule link). */
+  readonly footer?: React.ReactNode;
 }
 
 const PRESET_CHIPS = [
@@ -24,10 +28,11 @@ const PRESET_CHIPS = [
   { label: 'Promo / Seasonal', reason: 'Store Promotional Courtesy Discount', type: 'fixed' as const, val: 0 },
 ];
 
+const SEG = 'h-9 cursor-pointer rounded-lg px-3 text-[13px] transition-colors';
+
 export function FinancialDiscountForm({
+  job,
   financials,
-  showDiscountForm,
-  setShowDiscountForm,
   discountType,
   setDiscountType,
   discountInput,
@@ -36,165 +41,113 @@ export function FinancialDiscountForm({
   setDiscountReason,
   applyingDiscount,
   onApplyDiscountSubmit,
+  footer,
 }: FinancialDiscountFormProps) {
-  const { remainingBalance, totalAmount, jobIsCompleted, jobIsCancelled } = financials;
-
-  if (jobIsCompleted || jobIsCancelled || remainingBalance <= 0) {
-    return null;
-  }
-
-  if (!showDiscountForm) {
-    return (
-      <div className="pt-1">
-        <button
-          type="button"
-          onClick={() => setShowDiscountForm(true)}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-rose-300 hover:border-rose-400 text-rose-700 hover:bg-rose-50/50 text-xs font-semibold rounded-xl transition-all shadow-2xs cursor-pointer"
-        >
-          <Tag size={13} />
-          <span>Apply Suki / Courtesy Discount</span>
-        </button>
-      </div>
-    );
-  }
+  const { remainingBalance, totalAmount, jobIsCompleted, jobIsCancelled, discountApplied } = financials;
+  const currentReason = typeof job.custom_order_data?.discount_reason === 'string' ? job.custom_order_data.discount_reason : '';
+  if (jobIsCompleted || jobIsCancelled || remainingBalance <= 0) return null;
 
   const rawVal = Number.parseFloat(discountInput) || 0;
   const computedAmt = discountType === 'percent'
     ? Math.min(remainingBalance, Math.round(((totalAmount * rawVal) / 100) * 100) / 100)
     : Math.min(remainingBalance, rawVal);
   const projectedBal = Math.max(0, remainingBalance - computedAmt);
+  const clear = () => { setDiscountInput(''); setDiscountReason(''); };
 
   return (
-    <div className="pt-1">
-      <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 uppercase tracking-wider">
-            <Tag size={14} className="text-rose-600" />
-            Apply Suki / Tawad / Courtesy Discount
+    <section className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-2xs sm:p-6" aria-label="Apply discount">
+      <SectionHeader
+        icon={Tag}
+        title="Apply Suki / Tawad / Courtesy Discount"
+        actions={(
+          <div className="flex rounded-xl bg-espresso/[0.05] p-1">
+            {([['fixed', '₱ Fixed'], ['percent', '% Percent']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setDiscountType(key)}
+                className={`${SEG} ${discountType === key ? 'bg-white font-medium text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-1 bg-white border border-rose-200 rounded-lg p-0.5 text-[11px] font-bold">
-            <button
-              type="button"
-              onClick={() => setDiscountType('fixed')}
-              className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                discountType === 'fixed'
-                  ? 'bg-rose-600 text-white shadow-2xs'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              ₱ Fixed
-            </button>
-            <button
-              type="button"
-              onClick={() => setDiscountType('percent')}
-              className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                discountType === 'percent'
-                  ? 'bg-rose-600 text-white shadow-2xs'
-                  : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              % Percent
-            </button>
-          </div>
-        </div>
+        )}
+      />
 
-        {/* Quick Preset Chips */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-bold text-rose-800/70 uppercase tracking-wider mr-0.5">Quick Presets:</span>
-          {PRESET_CHIPS.map(chip => (
-            <button
-              key={chip.label}
-              type="button"
-              onClick={() => {
-                setDiscountType(chip.type);
-                setDiscountReason(chip.reason);
-                if (chip.val > 0) {
-                  setDiscountInput(String(chip.val));
-                }
-              }}
-              className="px-2.5 py-1 bg-white hover:bg-rose-100/70 border border-rose-200 hover:border-rose-300 text-[11px] font-medium text-rose-800 rounded-lg transition-all shadow-2xs cursor-pointer"
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
+      {discountApplied > 0 && (
+        <p className="text-[13px] text-ink-body">
+          Current discount: <span className="font-medium text-ink">₱{discountApplied.toFixed(2)}</span>{currentReason ? ` — ${currentReason}` : ''}. A new discount is added on top of it.
+        </p>
+      )}
 
-        {/* Inputs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+        {PRESET_CHIPS.map((chip) => (
+          <button
+            key={chip.label}
+            type="button"
+            onClick={() => {
+              setDiscountType(chip.type);
+              setDiscountReason(chip.reason);
+              if (chip.val > 0) setDiscountInput(String(chip.val));
+            }}
+            className="h-9 cursor-pointer rounded-full border border-line bg-surface px-3.5 text-[13px] text-ink-body transition-colors hover:bg-sunken"
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor="discount-amount" className={PLAIN_LABEL}>{discountType === 'fixed' ? 'Discount in ₱ (e.g. 150)' : 'Discount in % (e.g. 10)'}</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-bold text-xs">
-              {discountType === 'fixed' ? '₱' : '%'}
-            </span>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-faint">{discountType === 'fixed' ? '₱' : '%'}</span>
             <input
+              id="discount-amount"
               type="number"
               step={discountType === 'fixed' ? '0.01' : '1'}
               min="0.01"
               max={discountType === 'fixed' ? remainingBalance : 100}
               value={discountInput}
-              onChange={e => setDiscountInput(e.target.value)}
-              placeholder={discountType === 'fixed' ? 'Discount in ₱ (e.g. 150)' : 'Discount in % (e.g. 10)'}
-              className="w-full pl-7 pr-3 py-2 bg-surface border border-rose-200 rounded-lg text-ink focus:outline-none focus:border-rose-400 text-xs shadow-2xs font-semibold"
+              onChange={(e) => setDiscountInput(e.target.value)}
+              className={`${PLAIN_FIELD} pl-8`}
             />
           </div>
-          <input
-            type="text"
-            value={discountReason}
-            onChange={e => setDiscountReason(e.target.value)}
-            placeholder="Reason (e.g. Suki loyal customer / Tawad)"
-            className="w-full px-3 py-2 bg-surface border border-rose-200 rounded-lg text-xs text-ink focus:outline-none focus:border-rose-400 shadow-2xs"
-          />
         </div>
+        <div>
+          <label htmlFor="discount-reason" className={PLAIN_LABEL}>Reason (e.g. Suki loyal customer / Tawad)</label>
+          <input id="discount-reason" type="text" value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} className={PLAIN_FIELD} />
+        </div>
+      </div>
 
-        {/* Live Calculation Preview Card */}
-        {rawVal > 0 && (
-          <div className="bg-white border border-rose-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs shadow-2xs gap-2">
-            <div className="flex items-center gap-3">
-              <div>
-                <span className="text-[10px] text-ink-muted uppercase block">Remaining</span>
-                <span className="font-bold text-ink font-mono">₱{remainingBalance.toFixed(2)}</span>
-              </div>
-              <span className="text-rose-500 font-bold">−</span>
-              <div>
-                <span className="text-[10px] text-rose-700 uppercase block">Discount</span>
-                <span className="font-bold text-rose-700 font-mono">₱{computedAmt.toFixed(2)}</span>
-              </div>
-              <span className="text-ink-muted font-bold">=</span>
-              <div>
-                <span className="text-[10px] text-emerald-700 uppercase block">New Balance</span>
-                <span className="font-bold text-emerald-700 font-mono">₱{projectedBal.toFixed(2)}</span>
-              </div>
-            </div>
-            <div className="text-[11px] text-rose-800 font-medium italic">
-              {discountReason ? `"${discountReason}"` : 'Courtesy discount'}
-            </div>
+      {rawVal > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sunken/70 px-4 py-3 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-ink-muted">Remaining <span className="font-medium text-ink">₱{remainingBalance.toFixed(2)}</span></span>
+            <span className="text-ink-faint">−</span>
+            <span className="text-rose-700">Discount <span className="font-medium">₱{computedAmt.toFixed(2)}</span></span>
+            <span className="text-ink-faint">=</span>
+            <span className="text-emerald-700">New balance <span className="font-semibold">₱{projectedBal.toFixed(2)}</span></span>
           </div>
-        )}
+          <span className="text-xs italic text-ink-muted">{discountReason ? `"${discountReason}"` : 'Courtesy discount'}</span>
+        </div>
+      )}
 
-        <div className="flex justify-end gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => { setShowDiscountForm(false); setDiscountInput(''); setDiscountReason(''); }}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        <div>{footer}</div>
+        <div className="flex gap-2">
+          <button type="button" onClick={clear} className={BTN}>Cancel</button>
           <button
             type="button"
             disabled={applyingDiscount || !discountInput || Number.parseFloat(discountInput) <= 0}
             onClick={onApplyDiscountSubmit}
-            className="px-4 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
+            className={BTN_PRIMARY}
           >
-            {applyingDiscount ? (
-              <>
-                <Loader2 size={12} className="animate-spin" />
-                <span>Applying…</span>
-              </>
-            ) : (
-              <span>Apply Discount</span>
-            )}
+            {applyingDiscount ? <><Loader2 size={14} className="animate-spin" /><span>Applying…</span></> : <span>Apply Discount</span>}
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -1,120 +1,110 @@
 import React from 'react';
-import Link from 'next/link';
-import { Receipt, Printer, CheckCircle2, Tag } from 'lucide-react';
+import { FileText, Printer, CheckCircle2, Tag } from 'lucide-react';
 import { Job } from '../jobTypes';
 import { ComputedFinancials } from './financialsTypes';
+import { BTN_SM } from '@/components/shared/plainForm';
+import { printInPlace } from '@/lib/printInPlace';
+import { confirmDialog } from '@/store/useConfirmStore';
+import SectionHeader from '../ui/SectionHeader';
 
 interface FinancialStatementSummaryProps {
   readonly job: Job;
   readonly financials: ComputedFinancials;
+  /** Takes the discount off the order again (owner or branch manager). */
+  readonly onRemoveDiscount?: () => Promise<void>;
+  readonly canRemoveDiscount?: boolean;
+  /** Shown at the bottom of the card (the payment-rule link when there is no discount form). */
+  readonly footer?: React.ReactNode;
 }
 
-export function FinancialStatementSummary({ job, financials }: FinancialStatementSummaryProps) {
-  const {
-    totalAmount,
-    remainingBalance,
-    discountApplied,
-    amountPaid,
-    percentCollected,
-    isDownpaymentMet,
-    requiredDeposit,
-    depositLabel,
-    statusBadge,
-  } = financials;
+const money = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export function FinancialStatementSummary({ job, financials, footer, onRemoveDiscount, canRemoveDiscount }: FinancialStatementSummaryProps) {
+  const { totalAmount, remainingBalance, discountApplied, amountPaid, percentCollected, isDownpaymentMet, requiredDeposit, depositLabel, statusBadge } = financials;
   const markerLeft = totalAmount > 0 ? Math.min(100, (requiredDeposit / totalAmount) * 100) : 0;
+  const settled = remainingBalance === 0;
+  const discountReason = typeof job.custom_order_data?.discount_reason === 'string' ? job.custom_order_data.discount_reason : '';
+  const removeDiscount = async () => {
+    if (!onRemoveDiscount) return;
+    const ok = await confirmDialog({
+      title: 'Remove this discount?',
+      message: `The ${money(discountApplied)} discount is taken off and the balance goes back up by ${money(discountApplied)}. You can apply a new discount after.`,
+      confirmLabel: 'Remove discount',
+      danger: true,
+    });
+    if (ok) await onRemoveDiscount();
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between border-b border-line pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-canvas border border-line flex items-center justify-center text-taupe shrink-0">
-            <Receipt size={18} />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-ink">Financial Statement</h2>
-            <p className="text-xs text-ink-muted">Contract balance, collections, and discounts</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border ${statusBadge.cls}`}>
-            {statusBadge.label}
-          </span>
-          <Link
-            href={`/print/jobs/${job.id}/receipt`}
-            target="_blank"
-            title="Print full statement"
-            className="h-8 px-2.5 rounded-lg bg-canvas hover:bg-surface border border-line text-ink-muted hover:text-ink text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
-          >
-            <Printer size={13} />
+    <section className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-2xs sm:p-6" aria-label="Financial statement">
+      <SectionHeader
+        icon={FileText}
+        title="Financial Statement"
+        subtitle="Contract balance, collections, and discounts"
+        badge={<span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${statusBadge.cls}`}>{statusBadge.label}</span>}
+        actions={(
+          <button type="button" onClick={() => printInPlace(`/print/jobs/${job.id}/receipt`)} title="Print full statement" className={BTN_SM}>
+            <Printer size={14} />
             <span className="hidden sm:inline">Print Statement</span>
-          </Link>
-        </div>
-      </div>
+          </button>
+        )}
+      />
 
-      {/* Collection Progress Bar */}
-      <div className="space-y-2">
-        <div className="flex justify-between items-center text-xs">
-          <span className="font-semibold text-ink-muted">Collection Progress</span>
-          <span className="font-bold text-ink">{percentCollected}% Collected</span>
+      {/* Collection progress */}
+      <div className="space-y-2 rounded-xl bg-sunken/70 p-4">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm font-semibold text-ink">{percentCollected}% Collected</span>
+          <span className="text-[13px] text-ink-muted">{money(amountPaid + discountApplied)} of {money(totalAmount)}</span>
         </div>
-        <div className="h-2 w-full bg-sunken rounded-full overflow-hidden relative">
-          <div
-            className={`h-full transition-all duration-500 rounded-full ${
-              remainingBalance === 0 ? 'bg-emerald-600' : 'bg-espresso'
-            }`}
-            style={{ width: `${percentCollected}%` }}
-          />
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-espresso/[0.08]">
+          <div className={`h-full rounded-full transition-all duration-500 ${settled ? 'bg-sage' : 'bg-espresso'}`} style={{ width: `${percentCollected}%` }} />
           {/* Required-payment marker, from this job's payment policy */}
           {requiredDeposit > 0 && markerLeft < 100 && (
-            <div className="absolute top-0 bottom-0 w-0.5 bg-espresso/15 z-10" style={{ left: `${markerLeft}%` }} title={`${depositLabel} threshold`} />
+            <div className="absolute bottom-0 top-0 z-10 w-0.5 bg-espresso/25" style={{ left: `${markerLeft}%` }} title={`${depositLabel} threshold`} />
           )}
         </div>
-        <div className="flex justify-between items-center text-[10px] text-ink-faint pt-0.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 text-xs text-ink-muted">
           <span>Intake: ₱0.00</span>
-          <span className={`font-semibold ${isDownpaymentMet ? 'text-emerald-700' : 'text-amber-700'}`}>
-            {requiredDeposit > 0 ? `${depositLabel}: ₱${requiredDeposit.toFixed(2)} ${isDownpaymentMet ? '✓' : '(Required)'}` : 'No payment needed first'}
+          <span className={`font-medium ${isDownpaymentMet ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {requiredDeposit > 0 ? `${depositLabel}: ${money(requiredDeposit)} ${isDownpaymentMet ? '✓' : '(Required)'}` : 'No payment needed first'}
           </span>
-          <span>Total: ₱{totalAmount.toFixed(2)}</span>
+          <span>Total: {money(totalAmount)}</span>
         </div>
       </div>
 
-      {/* Statement Breakdown Table */}
-      <div className="bg-canvas border border-line rounded-xl p-4 space-y-3">
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-ink-muted">Total Contract Price:</span>
-          <span className="font-bold text-ink">₱{totalAmount.toFixed(2)}</span>
+      {/* Breakdown */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-ink-muted">Total Contract Price</span>
+          <span className="font-medium text-ink">{money(totalAmount)}</span>
         </div>
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-emerald-700 font-medium flex items-center gap-1">
-            <CheckCircle2 size={12} className="text-emerald-600" />
-            Payments Collected:
-          </span>
-          <span className="font-bold text-emerald-700">−₱{amountPaid.toFixed(2)}</span>
+        <div className="flex items-center justify-between text-sm">
+          <span className="flex items-center gap-1.5 text-emerald-700"><CheckCircle2 size={14} /> Payments Collected</span>
+          <span className="font-medium text-emerald-700">−{money(amountPaid)}</span>
         </div>
-
         {discountApplied > 0 && (
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-rose-700 font-medium flex items-center gap-1">
-              <Tag size={12} className="text-rose-600" />
-              Courtesy Discount:
-            </span>
-            <span className="font-bold text-rose-700">−₱{discountApplied.toFixed(2)}</span>
+          <div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5 text-rose-700"><Tag size={14} /> Courtesy Discount</span>
+              <span className="font-medium text-rose-700">−{money(discountApplied)}</span>
+            </div>
+            {discountReason && <p className="mt-0.5 text-[13px] text-ink-muted">{discountReason}</p>}
+            {canRemoveDiscount && onRemoveDiscount && (
+              <button type="button" onClick={removeDiscount} className="min-h-11 cursor-pointer text-[13px] font-medium text-ink-muted hover:text-danger">
+                Remove
+              </button>
+            )}
           </div>
         )}
-
-        <div className="border-t border-line-strong pt-3 flex justify-between items-baseline">
+        <div className="flex items-end justify-between gap-3 border-t border-line pt-4">
           <div>
-            <span className="text-xs font-bold text-ink uppercase tracking-wider block">Remaining Balance</span>
-            <span className="text-[10px] text-ink-muted">
-              {remainingBalance === 0 ? 'Fully settled order' : 'Payable upon fitting or claim'}
-            </span>
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">Remaining Balance</span>
+            <span className="text-[13px] text-ink-muted">{settled ? 'Fully settled order' : 'Payable upon fitting or claim'}</span>
           </div>
-          <span className={`text-xl font-black font-mono ${remainingBalance > 0 ? 'text-danger' : 'text-emerald-700'}`}>
-            ₱{remainingBalance.toFixed(2)}
-          </span>
+          <span className={`text-[32px] font-semibold leading-none tracking-tight sm:text-[36px] ${settled ? 'text-sage' : 'text-ink'}`}>{money(remainingBalance)}</span>
         </div>
       </div>
-    </div>
+      {footer}
+    </section>
   );
 }
