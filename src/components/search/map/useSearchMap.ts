@@ -31,15 +31,19 @@ export function useSearchMap(stores: RelatedStore[]) {
     if (branch && map) map.setView([branch.latitude, branch.longitude], Math.max(map.getZoom(), 15), { animate: true });
   }, []);
 
-  // From the results list: show this shop's pin. False when it has none.
-  const selectStore = useCallback((slug: string) => {
+  // From the results list: show this shop's pin. Pass branchId to open a specific branch (e.g. when restoring from URL). False when it has none.
+  const selectStore = useCallback((slug: string, branchId?: number | null) => {
     const store = stores.find((s) => s.slug === slug);
     if (!store) return false;
     const validBranches = (store.branches ?? []).filter(
       (b) => b.latitude != null && b.longitude != null && !Number.isNaN(Number(b.latitude))
     );
     if (validBranches.length === 0) return false;
-    const primary = validBranches.find((b) => Boolean((b as { is_main?: boolean }).is_main)) ?? validBranches[0];
+    // Prefer the requested branch, then main, then first.
+    const primary =
+      (branchId != null ? validBranches.find((b) => b.id === branchId) : null) ??
+      validBranches.find((b) => Boolean((b as { is_main?: boolean }).is_main)) ??
+      validBranches[0];
 
     const pin: DiscoveryMapBranch = {
       storeSlug: store.slug,
@@ -55,12 +59,13 @@ export function useSearchMap(stores: RelatedStore[]) {
       latitude: Number(primary.latitude),
       longitude: Number(primary.longitude),
       isOpen: false,
-      badgeText: 'MAIN',
+      badgeText: (primary as { is_main?: boolean }).is_main ? 'MAIN' : '1',
       isSelected: true,
     };
     selectPin(pin);
     return true;
   }, [stores, selectPin]);
+
 
   const zoomIn = useCallback(() => mapRef.current?.zoomIn(), []);
   const zoomOut = useCallback(() => mapRef.current?.zoomOut(), []);

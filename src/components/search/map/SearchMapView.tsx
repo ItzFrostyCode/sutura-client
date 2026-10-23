@@ -63,21 +63,54 @@ export default function SearchMapView() {
     map.selectPin(branch);
     if (branch) grow();
   };
-  const showOnMap = (slug: string, path?: string) => {
+  const showOnMap = (slug: string, path?: string, branchId?: number | null) => {
     setShopPath(path ?? null);
-    const found = map.selectStore(slug);
+    const found = map.selectStore(slug, branchId);
     if (found) grow();
     return found;
   };
 
-  // Deep link from Home page or URL: auto-open store if ?store= or ?shop= is specified
-  const handledStoreParamRef = useRef<string | null>(null);
+  // ── URL ↔ selected-shop sync ──────────────────────────────────────────────
+  // When map.selected changes, reflect it in the URL via replace (no history push).
+  // This means pressing browser Back from /store/[slug] returns to
+  // /search?store=slug&branch=id and the shop is re-opened automatically.
+  const syncingRef = useRef(false); // prevent the URL change from re-triggering itself
+  useEffect(() => {
+    if (syncingRef.current) return;
+    const params = new URLSearchParams(s.searchParams.toString());
+    if (map.selected) {
+      params.set('store', map.selected.storeSlug);
+      if (map.selected.branchId) params.set('branch', String(map.selected.branchId));
+      else params.delete('branch');
+    } else {
+      params.delete('store');
+      params.delete('branch');
+    }
+    // Only replace if actually different to avoid extra history entries / loops
+    const next = `/search?${params.toString()}`;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next !== current) {
+      syncingRef.current = true;
+      s.router.replace(next, { scroll: false });
+      // Reset flag after the router settles (next microtask)
+      setTimeout(() => { syncingRef.current = false; }, 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map.selected?.storeSlug, map.selected?.branchId]);
+
+  // ── Deep link / URL → selected-shop ──────────────────────────────────────
+  // Auto-open the shop named in ?store= (e.g. from Home, or after browser Back).
+  // Uses map.selected to detect "already open" so it works even after a replace().
   useEffect(() => {
     const targetStore = s.searchParams.get('store') || s.searchParams.get('shop');
-    if (targetStore && s.stores.length > 0 && handledStoreParamRef.current !== targetStore) {
-      handledStoreParamRef.current = targetStore;
-      showOnMap(targetStore);
-    }
+    const targetBranch = s.searchParams.get('branch') ? Number(s.searchParams.get('branch')) : null;
+    if (!targetStore || s.stores.length === 0) return;
+    // Already showing the right shop — nothing to do.
+    if (map.selected?.storeSlug === targetStore) return;
+    showOnMap(targetStore, undefined, targetBranch);
+  // showOnMap is stable per render; map.selected is intentionally excluded to avoid
+  // re-running after the sync effect updates it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.searchParams, s.stores]);
 
   const getDirections = (branch: { latitude: number; longitude: number; storeSlug: string }, name: string) => {
