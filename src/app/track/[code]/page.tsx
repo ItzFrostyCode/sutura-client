@@ -25,7 +25,7 @@ export default function TrackResultPage({ params }: Readonly<{ params: Promise<{
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
+      <PublicNav featureNav />
       {/* max-w-4xl, not max-w-2xl — OrderTrackingView now sets its own
           md:max-w-3xl/two-column layout internally (shared with
           /account/orders/[id]'s wider AccountLayout shell), so this outer

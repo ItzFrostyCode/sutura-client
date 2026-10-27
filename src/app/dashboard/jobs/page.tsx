@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import { AlertCircle, X } from 'lucide-react';
 import JobRejectModal from '@/components/jobs/JobRejectModal';
 import JobKanbanBoard from '@/components/jobs/JobKanbanBoard';
-import QuickJobModal from '@/components/jobs/QuickJobModal';
 import JobTrashModal from '@/components/jobs/JobTrashModal';
 import { useJobs } from '@/components/jobs/useJobs';
 import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
@@ -64,10 +63,13 @@ function JobOrdersPageContent() {
     catalogJobsCount,
     customBespokeCount,
     alterationJobsCount,
+    staffList,
+    assignStaff,
   } = useJobs();
 
-  const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [trashModalOpen, setTrashModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'kanban' | 'list' | 'columns'>('kanban');
+  const [showFilters, setShowFilters] = useState(false);
   // Home's "Quality checks needed" card deep-links here with ?stage=qc_ironing.
   const [stageFilter, setStageFilter] = useState<string>(useSearchParams().get('stage') || 'all');
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -112,7 +114,6 @@ function JobOrdersPageContent() {
       <JobsPageHeader
         jobsCount={jobs.length}
         onOpenTrash={() => setTrashModalOpen(true)}
-        onOpenQuickJob={() => setQuickModalOpen(true)}
         isOwnerOrManager={isOwnerOrManager}
       />
 
@@ -137,31 +138,32 @@ function JobOrdersPageContent() {
       )}
 
       {/* Main White Surface Card Panel (Enclosing Toolbar + Kanban Board) */}
-      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs flex flex-col flex-1">
+      <div className="bg-surface/60 border border-line rounded-3xl overflow-hidden shadow-2xs flex flex-col flex-1">
         <JobsPageToolbar
           tab={tab}
           setTab={setTab}
           totalJobsCount={jobs.length}
           walkInCount={walkInCount}
           onlineCount={onlineCount}
-          onOpenSettings={() => setSettingsModalOpen(true)}
-          showMyJobsToggle={isStaff}
-          myJobsOnly={myJobsOnly}
-          setMyJobsOnly={setMyJobsOnly}
+          search={search}
+          setSearch={setSearch}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
           designOriginFilter={designOriginFilter}
           setDesignOriginFilter={setDesignOriginFilter}
           catalogJobsCount={catalogJobsCount}
           customBespokeCount={customBespokeCount}
           alterationJobsCount={alterationJobsCount}
-          stageFilter={stageFilter}
-          setStageFilter={setStageFilter}
-          stageIconFilters={stageIconFilters}
-          search={search}
-          setSearch={setSearch}
-          activeColumns={activeColumns}
+          showMyJobsToggle={isStaff}
+          myJobsOnly={myJobsOnly}
+          setMyJobsOnly={setMyJobsOnly}
+          onOpenSettings={() => setSettingsModalOpen(true)}
+          onRefresh={() => fetchJobs({ silent: true })}
         />
 
-        <div className="p-3 sm:p-4 flex-1 overflow-hidden">
+        <div className="p-3 sm:p-5 flex-1 overflow-hidden">
           {loading ? (
             <KanbanSkeleton columns={4} />
           ) : (
@@ -175,6 +177,9 @@ function JobOrdersPageContent() {
               onReject={openRejectModal}
               highlightedJobId={null}
               stageFilter={stageFilter}
+              viewMode={viewMode}
+              staffList={staffList}
+              onAssignStaff={assignStaff}
             />
           )}
         </div>
@@ -200,18 +205,13 @@ function JobOrdersPageContent() {
         actionLoading={actionLoadingId !== null}
       />
 
-      <QuickJobModal
-        isOpen={quickModalOpen}
-        onClose={() => setQuickModalOpen(false)}
-        onCreated={() => { if (fetchJobs) fetchJobs(); }}
-      />
 
       {store && (
         <JobTrashModal
           isOpen={trashModalOpen}
           onClose={() => setTrashModalOpen(false)}
           storeId={store.id}
-          onRestored={() => { if (fetchJobs) fetchJobs(); }}
+          onRestored={() => fetchJobs({ silent: true })}
         />
       )}
     </div>

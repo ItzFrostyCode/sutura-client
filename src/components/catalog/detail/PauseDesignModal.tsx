@@ -16,7 +16,7 @@ interface PauseDesignModalProps {
 }
 
 const HIDDEN = [
-  'Not shown in search, your store profile, or as a related design.',
+  'Not shown in search, your shop profile, or as a related design.',
   'Its own page stops working for customers, so they can’t open it, save it, or book from it.',
 ];
 const KEPT = [

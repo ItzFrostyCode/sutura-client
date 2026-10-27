@@ -99,7 +99,7 @@ export default function AppointmentDetailContent({
               {appt.store.name}
             </Link>
           ) : (
-            <span className="mobile-h4 font-medium text-ink truncate min-w-0">Store</span>
+            <span className="mobile-h4 font-medium text-ink truncate min-w-0">Shop</span>
           )}
           <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0 ${meta.tone}`}>
             <StatusIcon size={12} /> {meta.label}
@@ -239,7 +239,7 @@ export default function AppointmentDetailContent({
       {!isPastDue && appt.status === 'pending' && !appt.needs_new_time && (
         <div className="flex items-start gap-2 mb-3 bg-sunken border border-line p-3 mobile-caption text-ink-body leading-relaxed font-normal">
           <Info size={16} className="text-ink-muted shrink-0 mt-0.5" />
-          Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.
+          Waiting for the shop to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.
         </div>
       )}
 
@@ -257,7 +257,7 @@ export default function AppointmentDetailContent({
 
       {(appt.shared_link || (appt.shared_images && appt.shared_images.length > 0)) && (
         <div className="mb-3 border border-line p-3 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-ink">From the store</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-ink">From the shop</p>
           {appt.shared_link && (
             <a href={safeHref(appt.shared_link)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mobile-body-sm text-taupe hover:underline break-all">
               <LinkIcon size={16} className="shrink-0" /> {appt.shared_link}
@@ -267,7 +267,7 @@ export default function AppointmentDetailContent({
             <div className="grid grid-cols-3 gap-2">
               {appt.shared_images.map((url) => (
                 <a key={url} href={getMediaUrl(url)} target="_blank" rel="noopener noreferrer" className="relative block aspect-square bg-sunken border border-line overflow-hidden">
-                  <Image src={getMediaUrl(url)} alt="Shared by the store" fill sizes="120px" className="object-cover" unoptimized />
+                  <Image src={getMediaUrl(url)} alt="Shared by the shop" fill sizes="120px" className="object-cover" unoptimized />
                 </a>
               ))}
             </div>
@@ -288,7 +288,7 @@ export default function AppointmentDetailContent({
         <div className="mb-3">
           {appt.cancellation_reason && (
             <p className="mobile-caption text-ink-muted leading-relaxed mb-3 font-normal">
-              <span className="font-semibold text-ink-body">Reason from store:</span> {appt.cancellation_reason}
+              <span className="font-semibold text-ink-body">Reason from shop:</span> {appt.cancellation_reason}
             </p>
           )}
           {appt.rebooking_blocked ? (

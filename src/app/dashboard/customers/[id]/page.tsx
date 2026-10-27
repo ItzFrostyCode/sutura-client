@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, use } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import CustomerOverviewTab from '@/components/customers/CustomerOverviewTab';
 import CustomerMeasurementsTab from '@/components/customers/CustomerMeasurementsTab';
@@ -18,8 +18,26 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab') as CustomerTabType | null;
 
-  const [activeTab, setActiveTab] = useState<CustomerTabType>('overview');
+  const [activeTab, setActiveTab] = useState<CustomerTabType>(
+    requestedTab && ['overview', 'measurements', 'orders', 'appointments', 'history'].includes(requestedTab)
+      ? requestedTab
+      : 'overview'
+  );
+  const [triggerNewMeasurementModal, setTriggerNewMeasurementModal] = useState(false);
+
+  const handleOpenMeasurementsModal = () => {
+    setActiveTab('measurements');
+    setTriggerNewMeasurementModal(true);
+  };
+
+  useEffect(() => {
+    if (requestedTab && ['overview', 'measurements', 'orders', 'appointments', 'history'].includes(requestedTab)) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
 
   const {
     customer,
@@ -64,6 +82,7 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         onBack={() => router.back()}
         onEditProfile={() => setIsEditingProfile(true)}
         onViewMeasurements={() => setActiveTab('measurements')}
+        onOpenNewMeasurementModal={handleOpenMeasurementsModal}
       />
 
       {/* Stats Summary 5-Column Grid */}
@@ -112,6 +131,8 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
             storeId={store?.id || 0}
             measurements={measurements}
             onReload={loadData}
+            triggerOpenModal={triggerNewMeasurementModal}
+            onModalOpened={() => setTriggerNewMeasurementModal(false)}
           />
         )}
 

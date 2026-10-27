@@ -147,7 +147,7 @@ function SearchPageContent() {
             {(['store', 'showroom', 'services'] as const).map((tab) => {
               const isSelected = s.activeTab === tab;
               const label =
-                tab === 'store' ? 'Stores' : tab === 'showroom' ? 'Catalog' : 'Services';
+                tab === 'store' ? 'Shops' : tab === 'showroom' ? 'Catalog' : 'Services';
               return (
                 <button
                   key={tab}

@@ -46,7 +46,7 @@ export default function CredentialsModal({ credentials, onClose }: { readonly cr
             Emailed to <strong className="font-semibold text-ink break-all">{credentials.sent_to}</strong>. The owner must
             choose a new password the first time they sign in on the Shop tab.
           </p>
-          <div className="mt-4 border border-line bg-surface px-4">
+          <div className="mt-4 border-2 border-line-strong bg-surface px-4">
             <CopyRow label="Login" value={credentials.login_email} />
             <CopyRow label="Temporary password" value={credentials.temporary_password} />
           </div>

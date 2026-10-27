@@ -23,7 +23,7 @@ export default function TrackLandingPage() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
+      <PublicNav featureNav />
       <main className="flex-1 flex items-center justify-center mobile-screen-margins py-10 sm:py-16">
         <div className="w-full max-w-sm sm:max-w-md text-center">
           <div className="w-14 h-14 border border-line flex items-center justify-center mx-auto mb-4">
@@ -60,7 +60,7 @@ export default function TrackLandingPage() {
                 href={isCustomer ? '/account/orders' : '/dashboard/jobs'}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:text-taupe-hover transition-colors"
               >
-                {isCustomer ? 'View all your Job Orders in My Orders →' : 'View Store Job Orders →'}
+                {isCustomer ? 'View all your Job Orders in My Orders →' : 'View Shop Job Orders →'}
               </Link>
             </div>
           )}

@@ -152,7 +152,7 @@ export default function AppointmentCustomerToolkit({ apt, onChanged }: Readonly<
             <button
               type="button"
               disabled={!apt.customer?.id}
-              onClick={() => router.push(`/dashboard/measurements?customer_id=${apt.customer.id}&return=${encodeURIComponent('/dashboard/appointments')}`)}
+              onClick={() => router.push(`/dashboard/customers/${apt.customer.id}?tab=measurements`)}
               className={`${BTN} w-full`}
             >
               <Ruler size={16} /> Record measurements

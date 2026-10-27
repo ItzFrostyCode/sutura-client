@@ -5,7 +5,7 @@ import type { PageMeta } from '../useAdminList';
 
 export function StatCard({ label, value, hint }: { readonly label: string; readonly value: React.ReactNode; readonly hint?: string }) {
   return (
-    <div className="border border-line bg-surface p-5">
+    <div className="border-2 border-line-strong bg-surface p-5">
       <p className="text-eyebrow">{label}</p>
       <p className="mt-2 text-3xl font-bold text-ink">{value}</p>
       {hint && <p className="mt-1 text-sm text-ink-muted">{hint}</p>}

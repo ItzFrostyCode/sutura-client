@@ -87,7 +87,7 @@ export default function CustomerProfileEditModal({
           </div>
           <div>
             <label htmlFor="customer-edit-notes" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-              Private Store Notes <span className="text-[10px] text-ink-faint font-normal lowercase">(Internal atelier reference)</span>
+              Private Shop Notes <span className="text-[10px] text-ink-faint font-normal lowercase">(Internal atelier reference)</span>
             </label>
             <textarea
               id="customer-edit-notes"

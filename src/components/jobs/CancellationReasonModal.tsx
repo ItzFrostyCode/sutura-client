@@ -17,13 +17,13 @@ const REASONS: { value: string; title: string; description: string; flagged?: bo
   },
   {
     value: 'store_unable_to_fulfill',
-    title: 'Store unable to fulfill',
+    title: 'Shop unable to fulfill',
     description: 'Material shortage, scheduling conflict, or similar store-side reason.',
   },
   {
     value: 'forfeited_deposit_abandoned',
     title: 'Forfeited deposit — customer went uncontactable',
-    description: 'Fabric was already cut, customer never returned. Per store policy, the deposit already collected is kept, not refunded. This shows up separately in cross-branch loss reporting.',
+    description: 'Fabric was already cut, customer never returned. Per shop policy, the deposit already collected is kept, not refunded. This shows up separately in cross-branch loss reporting.',
     flagged: true,
   },
   {

@@ -134,7 +134,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store
       {!loading && notFound && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <p className="text-sm font-semibold text-ink mb-1">Service not found</p>
-          <p className="text-xs text-ink-muted">This store has no matching repair/alteration service.</p>
+          <p className="text-xs text-ink-muted">This shop has no matching repair/alteration service.</p>
         </div>
       )}
 
@@ -148,7 +148,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store
             Order {submitted.order_number} · Tracking code {submitted.tracking_code}
           </p>
           <p className="text-xs text-ink-muted leading-relaxed max-w-[260px] mb-6">
-            The store will review your request and confirm pricing before starting the repair.
+            The shop will review your request and confirm pricing before starting the repair.
           </p>
           <button
             type="button"
@@ -219,7 +219,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store
               Pre-existing damage / condition
             </label>
             <p className="text-[11px] text-ink-muted mb-2">
-              Note any existing wear, stains, or damage before drop-off — this protects both you and the store.
+              Note any existing wear, stains, or damage before drop-off — this protects both you and the shop.
             </p>
             <textarea
               id="damage-notes"

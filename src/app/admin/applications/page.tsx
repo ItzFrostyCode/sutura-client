@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
+import Badge from '@/components/shared/Badge';
 import SearchInput from '@/components/shared/SearchInput';
 import { FilterTabs, ListState, Pager } from '@/components/admin/ui/AdminPrimitives';
 import { formatDate, useAdminList, useDebounced } from '@/components/admin/useAdminList';
@@ -16,7 +17,11 @@ interface ApplicationRow {
   updated_at: string;
   rejection_reason: string | null;
   owner: { name: string; email: string; contact_email: string | null } | null;
-  application: { billing_cycle: string; requested_plan: { name: string } | null } | null;
+  application: {
+    billing_cycle: string;
+    requested_plan: { name: string } | null;
+    review_state: 'changes_requested' | 'resubmitted' | null;
+  } | null;
 }
 
 const STATUSES = [
@@ -43,15 +48,20 @@ export default function AdminApplicationsPage() {
         <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search shop or owner email" />
       </div>
 
-      <div className="border border-line bg-surface">
+      {/* Bolder outline and row rules so each application reads as its own card. */}
+      <div className="border-2 border-line-strong bg-surface">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText={status === 'pending' ? 'No shops are waiting for review.' : `No ${status} applications.`} />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-2 divide-line-strong">
             {items.map((row) => (
               <li key={row.id}>
                 <Link href={`/admin/applications/${row.id}`} className="grid min-h-16 grid-cols-[1fr_auto] items-center gap-4 px-5 py-3 hover:bg-canvas sm:grid-cols-[2fr_1fr_1fr_auto]">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-ink">{row.name}</p>
+                    <p className="flex min-w-0 items-center gap-2">
+                      <span className="truncate font-semibold text-ink">{row.name}</span>
+                      {status === 'pending' && row.application?.review_state === 'changes_requested' && <Badge variant="neutral" className="shrink-0">Waiting on owner</Badge>}
+                      {status === 'pending' && row.application?.review_state === 'resubmitted' && <Badge variant="warning" className="shrink-0">Updated</Badge>}
+                    </p>
                     <p className="truncate text-sm text-ink-muted">{row.owner?.name} · {row.owner?.contact_email ?? row.owner?.email}</p>
                     {status === 'rejected' && row.rejection_reason && <p className="mt-1 truncate text-sm text-danger">{row.rejection_reason}</p>}
                   </div>

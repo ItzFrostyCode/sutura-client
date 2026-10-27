@@ -42,10 +42,11 @@ export function humanizeMetricKey(key: string): string {
 
 export function MetricPill({ label, value }: { readonly label: string; readonly value?: string }) {
   if (!value) return null;
+  const displayVal = /["'a-zA-Z]/.test(value) ? value : `${value}″`;
   return (
-    <span className="inline-flex items-center gap-1 bg-sunken text-ink-body text-xs px-2.5 py-1 rounded-full font-medium border border-line">
-      <span className="text-ink-faint">{label}</span>
-      <span className="font-semibold text-ink">{value} cm</span>
+    <span className="inline-flex items-center gap-1.5 bg-sunken text-ink-body text-xs px-2.5 py-1 rounded-full font-medium border border-line shadow-2xs">
+      <span className="text-ink-faint font-medium">{label}:</span>
+      <span className="font-bold text-ink font-mono">{displayVal}</span>
     </span>
   );
 }

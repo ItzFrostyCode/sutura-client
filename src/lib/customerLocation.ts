@@ -10,7 +10,18 @@ export interface SavedLocation {
   lng: number;
   address: string;
   district: string;
+  /** True when this is the Davao City fallback, not the visitor's real spot. */
+  isDefault?: boolean;
 }
+
+/** Fallback when detection is declined, ignored or too slow: Davao City centre. */
+export const DEFAULT_LOCATION: SavedLocation = {
+  lat: 7.0731,
+  lng: 125.6128,
+  address: 'Davao City',
+  district: 'Davao City',
+  isDefault: true,
+};
 
 import { reverseGeocodeCoords } from './geocoding';
 
@@ -64,7 +75,8 @@ export function saveOldLocation(loc: SavedLocation): void {
 
 export function saveLocationWithHistory(newLoc: SavedLocation): void {
   const current = getSavedLocation();
-  if (current && (current.lat !== newLoc.lat || current.lng !== newLoc.lng)) {
+  // The Davao City fallback isn't a place the visitor chose — don't keep it as "previous".
+  if (current && !current.isDefault && (current.lat !== newLoc.lat || current.lng !== newLoc.lng)) {
     saveOldLocation(current);
   }
   saveLocation(newLoc);
@@ -280,4 +292,120 @@ export function requestCurrentLocation(
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
+}
+
+const sleep = (ms: number) => new Promise<null>((r) => setTimeout(() => r(null), ms));
+
+export interface StartupLocation {
+  /** Settles with the visitor's spot, or the fallback (see below). */
+  result: Promise<SavedLocation>;
+  /** "Skip for now": stop waiting and use the fallback. */
+  skip: () => void;
+}
+
+/**
+ * Landing-splash location.
+ *
+ * The countdown never runs while the browser's "Allow location?" prompt is
+ * open — the visitor's reading time isn't the GPS's time:
+ *   - permission already granted → up to `fixMs` (8 s) for a position;
+ *   - prompt showing → wait for the answer. Allow → then up to `fixMs`;
+ *     Block / dismiss → fall back at once; ignoring it → the splash offers
+ *     "Skip for now" (`skip`);
+ *   - permission blocked → fall back at once.
+ * Fallback = the visitor's last saved real location, else Davao City centre.
+ *
+ * Normal accuracy (Wi-Fi / network position) — quick on a cold laptop and
+ * plenty for "shops near you". The request itself stays alive for 30 s, so a
+ * position that lands after the fallback still replaces it (banner updates).
+ * `hasResolved` makes whichever path finishes first the only one that counts.
+ */
+export function startStartupLocation({ fixMs = 8000 }: { fixMs?: number } = {}): StartupLocation {
+  let hasResolved = false;
+  let fixTimer: ReturnType<typeof setTimeout> | undefined;
+  let settle!: (loc: SavedLocation) => void;
+  const result = new Promise<SavedLocation>((r) => { settle = r; });
+
+  const finish = (loc: SavedLocation, save: (l: SavedLocation) => void) => {
+    if (hasResolved) return;
+    hasResolved = true;
+    clearTimeout(fixTimer);
+    save(loc);
+    settle(loc);
+  };
+  const fallBack = () => {
+    const last = getSavedLocation();
+    if (last && !last.isDefault) finish(last, () => { /* already saved */ });
+    else finish(DEFAULT_LOCATION, saveLocation);
+  };
+  // Starts once there's nothing left to wait for but the position itself.
+  const startFixTimer = () => {
+    if (hasResolved || fixTimer) return;
+    fixTimer = setTimeout(fallBack, fixMs);
+  };
+
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    fallBack();
+    return { result, skip: () => {} };
+  }
+
+  // Ask straight away (this is what shows the browser prompt).
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      if (hasResolved) {
+        // Arrived after the fallback: swap in the real spot.
+        void toLocation(pos, 8000).then(saveLocationWithHistory);
+        return;
+      }
+      clearTimeout(fixTimer);
+      // At least 2.5 s to name the place (the lookup itself takes 1–2 s); if
+      // slower still, the name fills in when it arrives (toLocation upgrade).
+      void toLocation(pos, 2500, true).then((loc) => finish(loc, saveLocationWithHistory));
+    },
+    () => fallBack(), // blocked, dismissed, unavailable
+    { enableHighAccuracy: false, timeout: 30_000, maximumAge: 60_000 },
+  );
+
+  // Is the prompt up? Only then do we hold the countdown.
+  if (navigator.permissions?.query) {
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((status) => {
+        if (status.state === 'denied') { fallBack(); return; }
+        if (status.state === 'granted') { startFixTimer(); return; }
+        status.onchange = () => {
+          if (status.state === 'granted') startFixTimer();
+          else if (status.state === 'denied') fallBack();
+        };
+      })
+      .catch(startFixTimer);
+  } else {
+    // No way to tell (older Safari): don't hold forever — prompt time included.
+    fixTimer = setTimeout(fallBack, fixMs + 6000);
+  }
+
+  return { result, skip: fallBack };
+}
+
+async function toLocation(pos: GeolocationPosition, geocodeMs: number, upgradeLate = false): Promise<SavedLocation> {
+  const { latitude, longitude } = pos.coords;
+  const lookup = reverseGeocodeCoords(latitude, longitude).catch(() => null);
+  const geo = await Promise.race([lookup, sleep(geocodeMs)]);
+  if (!geo && upgradeLate) {
+    // Too slow for the splash: save the real place name once it arrives,
+    // unless the visitor has picked another spot in the meantime.
+    void lookup.then((late) => {
+      const current = getSavedLocation();
+      if (!late || !current || current.lat !== latitude || current.lng !== longitude) return;
+      if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(late.address)) return; // lookup failed too
+      saveLocation({ ...current, address: late.address, district: late.district });
+    });
+  }
+  return {
+    lat: latitude,
+    lng: longitude,
+    // Coordinates as the label read as "Davao City" in the banner (formatFullLocationAddress).
+    address: geo?.address ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+    district: geo?.district ?? 'Davao City',
+  };
 }

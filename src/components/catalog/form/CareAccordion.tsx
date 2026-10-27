@@ -40,7 +40,7 @@ export function CareAccordion({
       {isOpen && (
         <div className="p-5 border-t border-line bg-canvas/20 space-y-4">
           <div>
-            <span className="block text-xs text-ink-muted mb-1">Detailed text description for garment upkeep and store policies:</span>
+            <span className="block text-xs text-ink-muted mb-1">Detailed text description for garment upkeep and shop policies:</span>
             <textarea
               rows={4}
               name="care_instructions"

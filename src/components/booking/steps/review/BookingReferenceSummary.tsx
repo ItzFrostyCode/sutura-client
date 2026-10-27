@@ -113,7 +113,7 @@ export default function BookingReferenceSummary({
   const PURPOSE_DETAILS: Record<string, { label: string; hint: string }> = {
     consultation: {
       label: 'Consultation',
-      hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
+      hint: 'Discuss your garment idea, materials, design, and pricing with the shop.',
     },
     measurement: {
       label: 'Measurement',
@@ -125,17 +125,17 @@ export default function BookingReferenceSummary({
     },
     fitting: {
       label: 'Fitting',
-      hint: 'Try on your garment in progress so the store can adjust the fit.',
+      hint: 'Try on your garment in progress so the shop can adjust the fit.',
     },
     pickup: {
       label: 'Pickup',
-      hint: 'Collect your finished garment or order at the store.',
+      hint: 'Collect your finished garment or order at the shop.',
     },
   };
 
   const purpose = PURPOSE_DETAILS[appointmentType] ?? {
     label: appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1),
-    hint: 'Visit the store for your tailoring appointment.',
+    hint: 'Visit the shop for your tailoring appointment.',
   };
 
   return (

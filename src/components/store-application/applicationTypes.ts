@@ -40,7 +40,18 @@ export interface ShopFields {
   city: string;
   province: string;
   specializations: string[];
+  /** "Add Other Service": services typed in that aren't in the list (max 5). */
+  custom_services: string[];
   location: SavedLocation | null;
+  /** "Branches (Optional)": other locations, display only (stores.declared_branches), any plan. */
+  branches: BranchDraft[];
+}
+
+export interface BranchDraft {
+  /** Client-only list key. */
+  key: string;
+  name: string;
+  address: string;
 }
 
 /** Keys match the API's multipart field names. */
@@ -70,7 +81,7 @@ export const EMPTY_OWNER: OwnerFields = {
 
 export const EMPTY_SHOP: ShopFields = {
   store_name: '', address: '', barangay: '', city: 'Davao City', province: 'Davao del Sur',
-  specializations: [], location: null,
+  specializations: [], custom_services: [], location: null, branches: [],
 };
 
 export function formatPeso(value: string | number): string {

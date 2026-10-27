@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { Ruler, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import { useCustomers } from '@/components/customers/useCustomers';
 import { TableSkeleton } from '@/components/ui/Skeleton';
@@ -51,31 +50,21 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Client Book"
-        description="Manage your customer directory, loyalty suki tiers, and lifetime value."
+        title="Customer Records"
+        description="Manage your customer directory, loyalty suki tiers, and customer profiles."
         actions={
-          <>
-            <Link
-              href="/dashboard/measurements"
-              title="Search and manage measurement profiles across all customers"
-              className="flex items-center gap-2 bg-surface hover:bg-sunken border border-line text-ink px-4 py-2.5 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors min-h-10.5 shadow-2xs"
-            >
-              <Ruler size={15} />
-              <span className="hidden sm:inline">All </span>Measurements
-            </Link>
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({ name: '', email: '', phone: '' });
-                setError('');
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
-            >
-              <Plus size={16} />
-              Add Customer
-            </button>
-          </>
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setFormData({ name: '', email: '', phone: '' });
+              setError('');
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
+          >
+            <Plus size={16} />
+            Add Customer
+          </button>
         }
       >
         <CustomersModuleTabs activeTab="customers" />

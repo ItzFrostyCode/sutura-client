@@ -1,34 +1,40 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useJobCreateForm } from './form/useJobCreateForm';
-import GarmentDesignSection from './form/GarmentDesignSection';
-import CustomerServiceSection from './form/CustomerServiceSection';
-import CustomSpecsSection from './form/CustomSpecsSection';
-import ProductionFulfillmentSection from './form/ProductionFulfillmentSection';
-import PricingScheduleSection from './form/PricingScheduleSection';
+import JobOrderWizardStepper from './wizard/JobOrderWizardStepper';
+import Step1CustomerInfo from './wizard/Step1CustomerInfo';
+import Step2Measurements, { IndividualMeasurements } from './wizard/Step2Measurements';
+import Step3OrderSpecs from './wizard/Step3OrderSpecs';
+import Step4InvoicePayment from './wizard/Step4InvoicePayment';
+import type { CustomerData } from './form/types';
+import type { CatalogItem } from '@/components/catalog/catalogHelpers';
+import type { Staff } from '@/components/staff/staffHelpers';
 
 export default function JobCreateForm() {
-  // Arrived from a specific page (e.g. a design's "Tailor this Design")? Back and
-  // Cancel return there instead of the jobs list. Dashboard paths only.
+  const router = useRouter();
   const searchParams = useSearchParams();
   const returnParam = searchParams.get('return');
-  const roleNames = useAuthStore((s) => s.user?.roles?.map((r) => r.name) ?? []);
-  const canCollectMoney = roleNames.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r));
-  // Staff open a job from an approved appointment, never from scratch.
+  const canCollectMoney = useAuthStore((s) =>
+    (s.user?.roles ?? []).some((r) =>
+      ['store_owner', 'branch_manager', 'super_admin'].includes(r.name)
+    )
+  );
+
   const staffWithoutAppointment = !canCollectMoney && !searchParams.get('appointment_id');
-  const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//') ? returnParam : '/dashboard/jobs';
+  const backHref = returnParam?.startsWith('/dashboard/') && !returnParam.startsWith('//')
+    ? returnParam
+    : '/dashboard/jobs';
 
   const {
     store,
     loading,
-    submitting,
-    error,
-    handleSubmit,
+    error: formHookError,
     customers,
     services,
     catalogItems,
@@ -36,24 +42,13 @@ export default function JobCreateForm() {
     catalogItemId,
     setCatalogItemId,
     handleSelectCatalogItem,
-    standardSize,
-    setStandardSize,
     appointmentId,
-    setAppointmentId,
     servicePackage,
     effectiveIntakeChannel,
     referenceImages,
     setReferenceImages,
     referenceLink,
     setReferenceLink,
-    uploadingReference,
-    setUploadingReference,
-    customerLocked,
-    setCustomerLocked,
-    isTotalAmountCustom,
-    setIsTotalAmountCustom,
-    isDueDateCustom,
-    setIsDueDateCustom,
     isBulkOrder,
     setIsBulkOrder,
     teamName,
@@ -65,182 +60,507 @@ export default function JobCreateForm() {
     formData,
     setFormData,
     customFieldValues,
-    setCustomFieldValues,
-    handleCheckboxChange,
-    selectedService,
-    selectedCatalogItem,
-    isSelectedAlterationRepair,
-    isCustomTailoring,
-    sectionTwoMeta,
   } = useJobCreateForm();
+
+  // Wizard Navigation State
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [maxCompletedStep, setMaxCompletedStep] = useState<number>(1);
+  const [wizardError, setWizardError] = useState<string>('');
+  const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Step 1: Customer Info
+  const [customerMode, setCustomerMode] = useState<'search' | 'new'>('new');
+  const [fullName, setFullName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+
+  // Step 2: Measurements
+  const [measurements, setMeasurements] = useState<IndividualMeasurements>({
+    unit: 'in',
+    chest: '',
+    waist: '',
+    hips: '',
+    shoulders: '',
+    length: '',
+    neck: '',
+    sleeve: '',
+    inseam: '',
+  });
+  const [selectedMeasurementProfileId, setSelectedMeasurementProfileId] = useState<string>('');
+  const [sizeBreakdown, setSizeBreakdown] = useState<Record<string, string>>({
+    XS: '',
+    S: '',
+    M: '',
+    L: '',
+    XL: '',
+    '2XL': '',
+    '3XL': '',
+  });
+  const [measurementSheets, setMeasurementSheets] = useState<string[]>([]);
+  const [uploadingSheet, setUploadingSheet] = useState<boolean>(false);
+
+  // Step 3: Order Specifications
+  const [orderType, setOrderType] = useState<'catalog' | 'custom' | 'alteration'>('custom');
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [assignedStaffId, setAssignedStaffId] = useState<string>('');
+
+  // Fetch shop staff directory for tailor assignment
+  useEffect(() => {
+    if (!store?.id) return;
+    api
+      .get(`/stores/${store.id}/staff`)
+      .then((res) => {
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setStaffList(list.filter((s: Staff) => s.is_active !== false));
+      })
+      .catch((err) => {
+        console.warn('Could not load staff directory for job creation:', err);
+      });
+  }, [store?.id]);
+
+  // Step 4: Invoice & Payment
+  const [itemRate, setItemRate] = useState<string>('');
+  const [paymentTerm, setPaymentTerm] = useState<'full' | 'downpayment'>('downpayment');
+
+  // Sync incoming customer if prefilled from query
+  useEffect(() => {
+    if (formData.customer_id && customers.length > 0) {
+      const match = customers.find((c) => c.id.toString() === formData.customer_id);
+      if (match) {
+        setCustomerMode('search');
+        setFullName(match.name);
+        setEmail(match.email || '');
+        setPhone(match.phone || '');
+      }
+    }
+  }, [formData.customer_id, customers]);
+
+  // Sync unit price from service or catalog item
+  useEffect(() => {
+    if (catalogItemId) {
+      const cat = catalogItems.find((c) => c.id.toString() === catalogItemId);
+      if (cat && cat.price) {
+        setItemRate(cat.price.toString());
+      }
+    } else if (formData.service_id) {
+      const svc = services.find((s) => s.id.toString() === formData.service_id);
+      if (svc && svc.base_price) {
+        setItemRate(svc.base_price.toString());
+      }
+    }
+  }, [catalogItemId, formData.service_id, catalogItems, services]);
+
+  // Sync bulk quantities
+  useEffect(() => {
+    if (isBulkOrder) {
+      const totalPcs = Object.values(sizeBreakdown).reduce(
+        (sum, val) => sum + (parseInt(val, 10) || 0),
+        0
+      );
+      if (totalPcs > 0) {
+        setFormData((prev) => ({ ...prev, quantity: totalPcs.toString() }));
+      }
+    }
+  }, [isBulkOrder, sizeBreakdown, setFormData]);
+
+  // When saved measurement profile is picked
+  const handleSelectSavedProfile = (profileId: string) => {
+    setSelectedMeasurementProfileId(profileId);
+    setFormData((prev) => ({ ...prev, measurement_id: profileId }));
+    const profile = customerMeasurements.find((m) => m.id.toString() === profileId);
+    if (profile?.metrics) {
+      setMeasurements((prev) => ({
+        ...prev,
+        chest: profile.metrics?.chest || profile.metrics?.bust || '',
+        waist: profile.metrics?.waist || '',
+        hips: profile.metrics?.hips || '',
+        shoulders: profile.metrics?.shoulder || profile.metrics?.shoulders || '',
+        length: profile.metrics?.length || profile.metrics?.shirt_length || '',
+        neck: profile.metrics?.neck || '',
+        sleeve: profile.metrics?.sleeve_length || '',
+        inseam: profile.metrics?.inseam || '',
+      }));
+    }
+  };
+
+  // Auto-pull latest saved body measurements into Step 2 when measurements load for selected customer
+  useEffect(() => {
+    if (customerMeasurements.length > 0) {
+      const sorted = [...customerMeasurements].sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+      const latest = sorted[0];
+      if (latest) {
+        setSelectedMeasurementProfileId(latest.id.toString());
+        setFormData((prev) => ({ ...prev, measurement_id: latest.id.toString() }));
+        if (latest.metrics) {
+          setMeasurements((prev) => ({
+            ...prev,
+            chest: latest.metrics?.chest || latest.metrics?.bust || prev.chest,
+            waist: latest.metrics?.waist || prev.waist,
+            hips: latest.metrics?.hips || prev.hips,
+            shoulders: latest.metrics?.shoulder || latest.metrics?.shoulders || prev.shoulders,
+            length: latest.metrics?.length || latest.metrics?.shirt_length || prev.length,
+            neck: latest.metrics?.neck || prev.neck,
+            sleeve: latest.metrics?.sleeve_length || prev.sleeve,
+            inseam: latest.metrics?.inseam || prev.inseam,
+          }));
+        }
+      }
+    }
+  }, [customerMeasurements, setFormData]);
+
+  const handleSelectCustomer = (cust: CustomerData | null) => {
+    if (cust) {
+      setFormData((prev) => ({ ...prev, customer_id: cust.id.toString() }));
+    } else {
+      setFormData((prev) => ({ ...prev, customer_id: '', measurement_id: '' }));
+      setSelectedMeasurementProfileId('');
+    }
+  };
+
+  const handleCatalogPick = (item: CatalogItem) => {
+    setCatalogItemId(item.id.toString());
+    handleSelectCatalogItem(item.id.toString());
+    if (item.price) {
+      setItemRate(item.price.toString());
+    }
+  };
+
+  // Upload helpers
+  const handleUploadFile = async (file: File): Promise<string> => {
+    if (!store) throw new Error('Shop not loaded');
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await api.post(`/stores/${store.id}/upload`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data?.url || res.data?.data?.url || '';
+  };
+
+  const handleUploadSheet = async (file: File) => {
+    try {
+      setUploadingSheet(true);
+      const url = await handleUploadFile(file);
+      if (url) {
+        setMeasurementSheets((prev) => [...prev, url]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload sheet photo. Please try again.');
+    } finally {
+      setUploadingSheet(false);
+    }
+  };
+
+  const handleUploadPhoto = async (file: File) => {
+    try {
+      setUploadingPhoto(true);
+      const url = await handleUploadFile(file);
+      if (url) {
+        setReferenceImages((prev) => [...prev, url]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload reference photo. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Navigation handlers
+  const goToStep = (step: number) => {
+    setWizardError('');
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStep1Proceed = () => {
+    if (!fullName.trim()) {
+      setWizardError('Please enter the customer\'s name.');
+      return;
+    }
+    setWizardError('');
+    setMaxCompletedStep((prev) => Math.max(prev, 1));
+    goToStep(2);
+  };
+
+  const handleStep2Proceed = () => {
+    setWizardError('');
+    setMaxCompletedStep((prev) => Math.max(prev, 2));
+    goToStep(3);
+  };
+
+  const handleStep3Proceed = () => {
+    if (!formData.service_id) {
+      setWizardError('Please select a Type of Service before proceeding.');
+      return;
+    }
+    if (orderType === 'alteration' && !preExistingDamageNotes.trim()) {
+      setWizardError('Please document any pre-existing garment condition or damage notes for alteration jobs.');
+      return;
+    }
+    setWizardError('');
+    setMaxCompletedStep((prev) => Math.max(prev, 3));
+    goToStep(4);
+  };
+
+  // Step 4 Final Submission
+  const handleFinalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!store) return;
+
+    if (!fullName.trim()) {
+      setWizardError('Customer name is required.');
+      goToStep(1);
+      return;
+    }
+
+    if (!formData.due_date) {
+      setWizardError('Please specify a production due date.');
+      return;
+    }
+
+    setSubmitting(true);
+    setWizardError('');
+
+    try {
+      let finalCustomerId = formData.customer_id;
+
+      // 1. Create customer if new walk-in or customer_id is empty
+      if (!finalCustomerId && fullName.trim()) {
+        const custRes = await api.post(`/stores/${store.id}/customers`, {
+          name: fullName.trim(),
+          email: email.trim() || null,
+          phone: phone.trim() || null,
+        });
+        const createdCust = custRes.data?.data || custRes.data;
+        if (createdCust?.id) {
+          finalCustomerId = createdCust.id.toString();
+        }
+      }
+
+      // 2. Calculations
+      const totalAmt = parseFloat(formData.total_amount) || 0;
+      const downPay = paymentTerm === 'full' ? totalAmt : (parseFloat(formData.downpayment) || 0);
+      const appliedDownPay = Math.min(downPay, totalAmt);
+      const balance = Math.max(0, totalAmt - appliedDownPay);
+
+      // 3. Merge all image references
+      const combinedImages = Array.from(
+        new Set([...referenceImages, ...measurementSheets])
+      );
+
+      // 4. API Job creation payload
+      await api.post(`/stores/${store.id}/jobs`, {
+        intake_channel: effectiveIntakeChannel,
+        fulfillment_type: 'pickup',
+        customer_id: finalCustomerId,
+        service_id: formData.service_id,
+        assigned_staff_id: assignedStaffId ? Number(assignedStaffId) : null,
+        assigned_to: assignedStaffId ? Number(assignedStaffId) : null,
+        measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
+        quantity: isBulkOrder
+          ? Math.max(1, Object.values(sizeBreakdown).reduce((s, c) => s + (parseInt(c, 10) || 0), 0))
+          : Math.max(1, parseInt(formData.quantity, 10) || 1),
+        total_amount: totalAmt.toFixed(2),
+        discount_amount: 0,
+        balance: balance.toFixed(2),
+        due_date: formData.due_date || null,
+        notes: formData.notes,
+        custom_order_data: {
+          ...customFieldValues,
+          individual_measurements: !isBulkOrder ? measurements : null,
+          size_breakdown: isBulkOrder ? sizeBreakdown : null,
+          measurement_sheets: measurementSheets.length > 0 ? measurementSheets : null,
+          team_name: isBulkOrder ? teamName || null : null,
+          team_roster: isBulkOrder ? roster : null,
+          pre_existing_damage_notes: orderType === 'alteration' ? preExistingDamageNotes.trim() : null,
+          item_rate: itemRate || null,
+          payment_term: paymentTerm,
+        },
+        appointment_id: appointmentId ? Number(appointmentId) : null,
+        catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
+        service_package_id: servicePackage?.id ?? null,
+        reference_images: combinedImages.length > 0 ? combinedImages : null,
+        reference_link: referenceLink.trim() || null,
+        material_source: formData.material_source,
+        garment_category: formData.garment_category || null,
+        is_rush: formData.is_rush,
+        rush_fee: formData.is_rush ? Number(formData.rush_fee) : 0,
+      });
+
+      // 5. Success -> Redirect to dashboard
+      router.push('/dashboard/jobs');
+    } catch (err: unknown) {
+      console.error(err);
+      const errorResponse = err as { response?: { data?: { message?: string } } };
+      setWizardError(
+        errorResponse.response?.data?.message || 'Failed to create job order. Please review your inputs.'
+      );
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-ink-faint animate-pulse flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-6 h-6 animate-spin text-taupe" />
-        <span>Loading form data...</span>
+      <div className="py-16 text-center text-ink-muted animate-pulse flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-7 h-7 animate-spin text-taupe" />
+        <span className="text-sm font-semibold">Loading tailoring workspace...</span>
       </div>
     );
   }
 
   if (staffWithoutAppointment) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-4">
-        <h1 className="mobile-h2 font-semibold text-ink">Start from an appointment</h1>
-        <p className="mobile-body-md text-ink-muted">Staff open a job order from an approved appointment. Pick the appointment and tap Create Job Order.</p>
-        <Link href="/dashboard/appointments" className="inline-flex items-center justify-center h-[52px] px-6 bg-taupe hover:bg-taupe-hover text-white font-semibold">Go to Appointments</Link>
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <h1 className="text-2xl font-bold text-ink">Start from an appointment</h1>
+        <p className="text-sm text-ink-muted">
+          Staff create job orders directly from an approved customer appointment.
+        </p>
+        <Link
+          href="/dashboard/appointments"
+          className="inline-flex items-center justify-center h-12 px-6 bg-taupe hover:bg-taupe-hover text-white rounded-xl font-bold text-sm shadow-2xs"
+        >
+          Go to Appointments
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      {/* Top Header */}
       <div className="flex items-center gap-4">
         <Link
           href={backHref}
-          className="p-2 bg-surface border border-line rounded-lg hover:bg-sunken text-ink-muted hover:text-ink transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center hover:bg-canvas text-ink-muted hover:text-ink transition-colors shadow-2xs cursor-pointer"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Create Job Order</h1>
-          <p className="text-ink-muted text-sm mt-1">
-            Start a new garment production workflow.
+          <h1 className="font-serif text-2xl sm:text-3xl font-medium text-ink tracking-tight">
+            Create Job Order
+          </h1>
+          <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
+            Follow the 4-step wizard to register customer info, sizing, specifications, and invoice.
           </p>
         </div>
       </div>
 
-      <div className="bg-surface border border-line rounded-2xl p-6">
-        {error && (
-          <div className="mb-6 bg-danger/10 border border-danger/50 text-danger px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
+      {/* Horizontal Stepper Header */}
+      <JobOrderWizardStepper
+        currentStep={currentStep}
+        onStepClick={goToStep}
+        maxCompletedStep={maxCompletedStep}
+      />
 
-        {appointmentId && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
-            <div>
-              <span className="font-semibold">Linked Booking:</span> This Job Order will automatically link to and update Appointment{' '}
-              <span className="font-mono bg-blue-100 px-1.5 py-0.5 rounded text-xs font-bold">
-                #{appointmentId}
-              </span>.
-            </div>
-            <button
-              type="button"
-              onClick={() => setAppointmentId(null)}
-              className="text-blue-500 hover:text-blue-700 text-xs font-semibold cursor-pointer"
-            >
-              Clear Link
-            </button>
-          </div>
-        )}
+      {/* Error Banner */}
+      {(wizardError || formHookError) && (
+        <div className="p-4 bg-danger/10 border border-danger/30 rounded-2xl text-xs sm:text-sm text-danger font-semibold flex items-center gap-2.5">
+          <AlertCircle size={18} className="shrink-0" />
+          <span>{wizardError || formHookError}</span>
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {servicePackage && (
-            <div className="border border-taupe/40 bg-taupe/5 p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-taupe">Combo package · one order for the whole set</p>
-              <p className="text-base font-semibold text-ink mt-1">{servicePackage.name}</p>
-              {(servicePackage.services?.length ?? 0) > 0 && (
-                <p className="text-sm text-ink-body mt-1">Includes: {servicePackage.services!.map(s => s.name).join(', ')}</p>
-              )}
-              <p className="text-xs text-ink-muted mt-1">The total is set to the bundle price; you can still adjust it below.</p>
-            </div>
-          )}
-          {/* Section 1: Garment Type & Design */}
-          <GarmentDesignSection
-            formData={formData}
-            setFormData={setFormData}
-            catalogItems={catalogItems}
-            catalogItemId={catalogItemId}
-            setCatalogItemId={setCatalogItemId}
-            onSelectCatalogItem={handleSelectCatalogItem}
-            standardSize={standardSize}
-            setStandardSize={setStandardSize}
-            isSelectedAlterationRepair={isSelectedAlterationRepair}
-            appointmentId={appointmentId}
-            referenceImages={referenceImages}
-            setReferenceImages={setReferenceImages}
-            referenceLink={referenceLink}
-            setReferenceLink={setReferenceLink}
-            uploadingReference={uploadingReference}
-            setUploadingReference={setUploadingReference}
-            storeId={store?.id}
-          />
+      {/* Linked Booking Notice if came from appointment */}
+      {appointmentId && (
+        <div className="p-3.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs flex items-center justify-between">
+          <span>
+            Linked Booking: This job order is connected to Appointment #{appointmentId}.
+          </span>
+        </div>
+      )}
 
-          {/* Section 2: Customer & Service Details */}
-          <CustomerServiceSection
-            formData={formData}
-            setFormData={setFormData}
-            effectiveIntakeChannel={effectiveIntakeChannel}
-            appointmentId={appointmentId}
-            customerLocked={customerLocked}
-            setCustomerLocked={setCustomerLocked}
-            customers={customers}
-            services={services}
-            customerMeasurements={customerMeasurements}
-            isBulkOrder={isBulkOrder}
-            setIsBulkOrder={setIsBulkOrder}
-            setIsTotalAmountCustom={setIsTotalAmountCustom}
-            setIsDueDateCustom={setIsDueDateCustom}
-            setCustomFieldValues={setCustomFieldValues}
-            selectedCatalogItem={selectedCatalogItem}
-          />
+      {/* Active Wizard Step Content */}
+      {currentStep === 1 && (
+        <Step1CustomerInfo
+          storeId={store?.id}
+          customerMode={customerMode}
+          setCustomerMode={setCustomerMode}
+          customers={customers}
+          selectedCustomerId={formData.customer_id}
+          onSelectCustomer={handleSelectCustomer}
+          fullName={fullName}
+          setFullName={setFullName}
+          email={email}
+          setEmail={setEmail}
+          phone={phone}
+          setPhone={setPhone}
+          onProceed={handleStep1Proceed}
+        />
+      )}
 
-          {/* Section 3: Custom Specifications & Notes */}
-          <CustomSpecsSection
-            formData={formData}
-            setFormData={setFormData}
-            selectedService={selectedService}
-            isSelectedAlterationRepair={isSelectedAlterationRepair}
-            preExistingDamageNotes={preExistingDamageNotes}
-            setPreExistingDamageNotes={setPreExistingDamageNotes}
-            customFieldValues={customFieldValues}
-            setCustomFieldValues={setCustomFieldValues}
-            handleCheckboxChange={handleCheckboxChange}
-            isBulkOrder={isBulkOrder}
-            setIsBulkOrder={setIsBulkOrder}
-            teamName={teamName}
-            setTeamName={setTeamName}
-            roster={roster}
-            setRoster={setRoster}
-            sectionTwoMeta={sectionTwoMeta}
-          />
+      {currentStep === 2 && (
+        <Step2Measurements
+          isBulkOrder={isBulkOrder}
+          setIsBulkOrder={setIsBulkOrder}
+          measurements={measurements}
+          setMeasurements={setMeasurements}
+          customerMeasurements={customerMeasurements}
+          selectedMeasurementProfileId={selectedMeasurementProfileId}
+          onSelectSavedProfile={handleSelectSavedProfile}
+          sizeBreakdown={sizeBreakdown}
+          setSizeBreakdown={setSizeBreakdown}
+          roster={roster}
+          setRoster={setRoster}
+          teamName={teamName}
+          setTeamName={setTeamName}
+          measurementSheets={measurementSheets}
+          setMeasurementSheets={setMeasurementSheets}
+          uploadingSheet={uploadingSheet}
+          onUploadSheet={handleUploadSheet}
+          onBack={() => goToStep(1)}
+          onProceed={handleStep2Proceed}
+        />
+      )}
 
-          {/* Section 4: Production & Fulfillment */}
-          <ProductionFulfillmentSection />
+      {currentStep === 3 && (
+        <Step3OrderSpecs
+          orderType={orderType}
+          setOrderType={setOrderType}
+          catalogItems={catalogItems}
+          selectedCatalogItemId={catalogItemId}
+          onSelectCatalogItem={handleCatalogPick}
+          services={services}
+          selectedServiceId={formData.service_id}
+          onSelectService={(svcId) => setFormData((prev) => ({ ...prev, service_id: svcId }))}
+          garmentCategory={formData.garment_category}
+          setGarmentCategory={(cat) => setFormData((prev) => ({ ...prev, garment_category: cat }))}
+          fabricSource={formData.material_source}
+          setFabricSource={(src) => setFormData((prev) => ({ ...prev, material_source: src }))}
+          referenceImages={referenceImages}
+          setReferenceImages={setReferenceImages}
+          referenceLink={referenceLink}
+          setReferenceLink={setReferenceLink}
+          uploadingPhoto={uploadingPhoto}
+          onUploadPhoto={handleUploadPhoto}
+          staffList={staffList}
+          assignedStaffId={assignedStaffId}
+          setAssignedStaffId={setAssignedStaffId}
+          notes={formData.notes}
+          setNotes={(n) => setFormData((prev) => ({ ...prev, notes: n }))}
+          preExistingDamageNotes={preExistingDamageNotes}
+          setPreExistingDamageNotes={setPreExistingDamageNotes}
+          onBack={() => goToStep(2)}
+          onProceed={handleStep3Proceed}
+        />
+      )}
 
-          {/* Section 5: Pricing & Schedule */}
-          <PricingScheduleSection
-            formData={formData}
-            setFormData={setFormData}
-            selectedService={selectedService}
-            isCustomTailoring={isCustomTailoring}
-            isTotalAmountCustom={isTotalAmountCustom}
-            setIsTotalAmountCustom={setIsTotalAmountCustom}
-            setIsDueDateCustom={setIsDueDateCustom}
-            isBulkOrder={isBulkOrder}
-            canCollectMoney={canCollectMoney}
-          />
-
-          {/* Action Buttons */}
-          <div className="pt-6 border-t border-line flex justify-end gap-4">
-            <Link
-              href={backHref}
-              className="px-6 py-2.5 rounded-lg font-medium text-ink-muted hover:text-ink hover:bg-sunken transition-colors"
-            >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="bg-taupe hover:bg-taupe-hover text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-2xs"
-            >
-              {submitting && <Loader2 size={18} className="animate-spin" />}
-              Create Job Order
-            </button>
-          </div>
-        </form>
-      </div>
+      {currentStep === 4 && (
+        <Step4InvoicePayment
+          formData={formData}
+          setFormData={setFormData}
+          itemRate={itemRate}
+          setItemRate={setItemRate}
+          paymentTerm={paymentTerm}
+          setPaymentTerm={setPaymentTerm}
+          submitting={submitting}
+          onBack={() => goToStep(3)}
+          onSubmit={handleFinalSubmit}
+        />
+      )}
     </div>
   );
 }

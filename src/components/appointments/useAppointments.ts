@@ -237,7 +237,7 @@ export function useAppointments() {
 
   // Quick "Add New Customer" from inside the Schedule Appointment modal
   const handleCreateCustomer = async (payload: Record<string, string | null>): Promise<CustomerData> => {
-    if (!store) throw new Error('No store selected.');
+    if (!store) throw new Error('No shop selected.');
     const res = await api.post(`/stores/${store.id}/customers`, payload);
     const newCustomer = res.data.data as CustomerData;
     setCustomers(prev => [...prev, newCustomer]);
@@ -303,7 +303,7 @@ export function useAppointments() {
       if (measurementAction === 'record') {
         const targetApt = appointments.find(a => a.id === aptId);
         const custId = targetApt?.customer?.id;
-        if (custId) router.push(`/dashboard/measurements?customer_id=${custId}`);
+        if (custId) router.push(`/dashboard/customers/${custId}?tab=measurements`);
       }
       setCompleteApt(null);
       toast.success('Appointment marked as completed!');

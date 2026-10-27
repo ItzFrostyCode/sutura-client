@@ -308,14 +308,14 @@ export default function InteractiveCalendar({
     if (special?.is_closed) {
       return {
         title: `Closed: ${special.title || 'Holiday'}`,
-        description: 'The store is closed for this date. Please pick another day.',
+        description: 'The shop is closed for this date. Please pick another day.',
       };
     }
     const opHours = getOperatingHoursForDate(selectedDate);
     if (opHours && !opHours.is_open) {
       return {
         title: 'Closed on this day',
-        description: "This day is closed according to the store's Standard Operating Hours.",
+        description: "This day is closed according to the shop's Standard Operating Hours.",
       };
     }
     if (isDateFullyBooked(selectedDate)) {

@@ -244,8 +244,8 @@ export default function BranchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Store Branches"
-        description="Manage every physical location of your store. Each branch appears on the customer discovery map."
+        title="Shop Branches"
+        description="Manage every physical location of your shop. Each branch appears on the customer discovery map."
         actions={
           <>
             <div className="flex items-center bg-sunken rounded-lg p-1">

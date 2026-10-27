@@ -47,7 +47,7 @@ export default function PlanStoresModal({ plan, onClose }: { readonly plan: { id
     setError('');
     adminApi.get(`/admin/reports/subscriptions/plans/${plan.id}/stores`, { params: { cycle } })
       .then((res) => { if (!cancelled) setData(res.data.data); })
-      .catch(() => { if (!cancelled) setError('Could not load the stores on this plan.'); })
+      .catch(() => { if (!cancelled) setError('Could not load the shops on this plan.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [plan, cycle]);
@@ -77,7 +77,7 @@ export default function PlanStoresModal({ plan, onClose }: { readonly plan: { id
 
       <ListState loading={loading} error={error} empty={!loading && stores.length === 0} emptyText={emptyText} />
       {!loading && !error && stores.length > 0 && (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y-2 divide-line-strong">
           {stores.map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
               <div className="min-w-0 flex-1 basis-56">

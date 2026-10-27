@@ -249,7 +249,7 @@ export default function ServiceDetailModal({
                   </table>
                 </div>
               )}
-              <p className="text-[11px] text-ink-faint">Follow this store&apos;s own size chart when submitting measurements — sizing can vary between stores.</p>
+              <p className="text-[11px] text-ink-faint">Follow this shop&apos;s own size chart when submitting measurements — sizing can vary between shops.</p>
             </div>
           )}
 

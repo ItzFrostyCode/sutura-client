@@ -58,10 +58,10 @@ export default function AdminApparelPage() {
         <FilterTabs options={tabs} value={status} onChange={changeTab} />
       </PageHeader>
 
-      <div className="border border-line bg-surface">
+      <div className="border-2 border-line-strong bg-surface">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText={status === 'pending' ? 'No apparel names waiting for review.' : 'Nothing here yet.'} />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-2 divide-line-strong">
             {items.map((t) => <ApparelTypeRow key={t.id} type={t} onApprove={approve} onReject={setRejecting} />)}
           </ul>
         )}

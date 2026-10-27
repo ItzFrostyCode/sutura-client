@@ -93,7 +93,7 @@ export default function SizeGuidePage({ params }: Readonly<{ params: Promise<{ s
                   </table>
                 </div>
               ) : !chartImage ? (
-                <p className="text-sm text-ink-faint">No size guide available yet for this item — sizes follow this store&apos;s own standard. Contact the store if you&apos;re unsure.</p>
+                <p className="text-sm text-ink-faint">No size guide available yet for this item — sizes follow this shop&apos;s own standard. Contact the shop if you&apos;re unsure.</p>
               ) : null}
 
               {chartImage && (

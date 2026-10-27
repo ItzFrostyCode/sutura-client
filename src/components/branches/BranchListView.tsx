@@ -133,7 +133,7 @@ export default function BranchListView({
                   {satelliteBranches.length} {satelliteBranches.length === 1 ? 'Location' : 'Locations'}
                 </span>
               </div>
-              <p className="text-xs text-ink-muted">Branch locations sharing the store workspace with designated managers and staff.</p>
+              <p className="text-xs text-ink-muted">Branch locations sharing the shop workspace with designated managers and staff.</p>
             </div>
           </div>
 

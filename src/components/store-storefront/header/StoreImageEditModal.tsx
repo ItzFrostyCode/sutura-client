@@ -53,7 +53,7 @@ export default function StoreImageEditModal({ isOpen, onClose, imageType, curren
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Store ${label}`} maxWidth="max-w-lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Shop ${label}`} maxWidth="max-w-lg">
       <div className="p-5 space-y-5">
         <div
           className={`w-full border border-line bg-canvas overflow-hidden flex items-center justify-center ${

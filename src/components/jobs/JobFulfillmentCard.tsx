@@ -15,7 +15,7 @@ export default function JobFulfillmentCard() {
       </div>
       <div className="bg-canvas/60 border border-line/60 rounded-lg p-3 text-xs text-ink-muted flex items-center gap-2">
         <Store size={14} className="shrink-0" />
-        <span>Customer will pick up garments in-store. (Store address will be used)</span>
+        <span>Customer will pick up garments in-store. (Shop address will be used)</span>
       </div>
     </div>
   );

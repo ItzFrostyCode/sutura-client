@@ -145,7 +145,7 @@ export default function CatalogItemDetailPage({
         <AlertCircle size={44} className="text-ink-muted mx-auto mb-3" />
         <h2 className="text-lg font-bold text-ink">Design Not Found</h2>
         <p className="text-xs text-ink-muted mt-1 mb-6">
-          This catalog item may have been removed or does not belong to your store.
+          This catalog item may have been removed or does not belong to your shop.
         </p>
         <Link
           href="/dashboard/catalog"

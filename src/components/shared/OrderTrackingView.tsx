@@ -78,16 +78,19 @@ export interface TrackedOrder {
 export const CUSTOMER_PHASE_STATUS_MAP: Record<string, string> = {
   pending: 'Order Received',
   queued: 'Order Received',
+  production: 'In Production',
   design: 'In Production',
   pattern_making: 'In Production',
   mass_cutting_printing: 'In Production',
   cutting: 'In Production',
   sewing: 'In Production',
   in_repair: 'In Production',
-  ready_for_fitting: 'Fitting / Adjustment',
-  final_adjustments: 'Fitting / Adjustment',
-  qc_ironing: 'Finalizing',
-  qc_check: 'Finalizing',
+  quality_check: 'Quality Check',
+  ready_for_fitting: 'Ready for Fitting',
+  adjustments: 'Adjustments',
+  final_adjustments: 'Adjustments',
+  qc_ironing: 'Quality Check',
+  qc_check: 'Quality Check',
   ready_for_pickup: 'Ready for Pickup',
   completed: 'Completed',
 };
@@ -97,16 +100,18 @@ export function getCustomerPhase(status: string): string | null {
   return CUSTOMER_PHASE_STATUS_MAP[status] ?? null;
 }
 
-// Mirrors JobProductionTimeline.tsx's STAGES exactly — the real, current
-// JobOrder::STATUSES pipeline, not the idealized thesis-narrative version.
-// The tracking response carries only a single `status`, no timeline[], so
-// this static ordering (client-side, per the build plan) is what drives the
-// stepper. Shared by /track/[code] (guest, by tracking code) and
-// /account/orders/[id] (authenticated, by order id) — one source of truth
-// for what "order tracking" actually looks like, not two hand-copies that
-// can quietly drift apart.
+// Order Tracking Stepper Stages
 const REPAIR_STATUSES = new Set(['queued', 'in_repair', 'qc_check']);
-const FITTING_STATUSES = new Set(['ready_for_fitting', 'final_adjustments']);
+const FITTING_STATUSES = new Set(['ready_for_fitting', 'final_adjustments', 'adjustments']);
+const GRANULAR_STATUSES = new Set([
+  'design',
+  'pattern_making',
+  'mass_cutting_printing',
+  'cutting',
+  'sewing',
+  'final_adjustments',
+  'qc_ironing',
+]);
 
 export function buildStages(
   status: string,
@@ -116,9 +121,7 @@ export function buildStages(
   const withTimestamps = (list: StepperStage[]) =>
     timestamps ? list.map((s) => ({ ...s, timestamp: timestamps[s.key] ?? null })) : list;
 
-  // Repair Override: pending → queued → in repair → QC check → ready. The
-  // tailoring stages below have none of these keys, so a repair used to
-  // render with no current step at all.
+  // 1. Repair Override: pending → queued → in repair → QC check → ready → completed
   if (pipeline === 'repair' || REPAIR_STATUSES.has(status)) {
     return withTimestamps([
       { key: 'pending', label: 'Pending', Icon: Clock },
@@ -130,32 +133,40 @@ export function buildStages(
     ]);
   }
 
-  const stages: StepperStage[] = [
-    { key: 'pending', label: 'Pending', Icon: Clock },
-    { key: 'design', label: 'Design', Icon: Palette },
-    // A bulk (sublimation) order always uses Mass Cutting & Printing, never
-    // Pattern Making — show that label from the very first render, not just
-    // once the job actually reaches that exact status. Falls back to the
-    // status check alone for an older response with no `pipeline` field.
-    (pipeline === 'bulk' || status === 'mass_cutting_printing')
-      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
-      : { key: 'pattern_making', label: 'Pattern Making', Icon: Ruler },
-    { key: 'cutting', label: 'Cutting', Icon: Scissors },
-    { key: 'sewing', label: 'Sewing / Assembly', Icon: Shirt },
-    { key: 'ready_for_fitting', label: 'Ready for Fitting', Icon: Ruler },
-    { key: 'final_adjustments', label: 'Final Adjustments', Icon: Wrench },
-    { key: 'qc_ironing', label: 'QC & Ironing', Icon: Sparkles },
-    { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
-    { key: 'completed', label: 'Completed', Icon: Flag },
-  ];
+  // 2. Granular sub-stages (legacy or detailed view if active status is one of them)
+  const hasGranularTimestamps = timestamps && (timestamps.design || timestamps.cutting || timestamps.sewing);
+  if (GRANULAR_STATUSES.has(status) || (hasGranularTimestamps && !['production', 'quality_check', 'adjustments'].includes(status))) {
+    const granularStages: StepperStage[] = [
+      { key: 'pending', label: 'Pending', Icon: Clock },
+      { key: 'design', label: 'Design', Icon: Palette },
+      (pipeline === 'bulk' || status === 'mass_cutting_printing')
+        ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
+        : { key: 'pattern_making', label: 'Pattern Making', Icon: Ruler },
+      { key: 'cutting', label: 'Cutting', Icon: Scissors },
+      { key: 'sewing', label: 'Sewing / Assembly', Icon: Shirt },
+      { key: 'ready_for_fitting', label: 'Ready for Fitting', Icon: Ruler },
+      { key: 'final_adjustments', label: 'Final Adjustments', Icon: Wrench },
+      { key: 'qc_ironing', label: 'QC & Ironing', Icon: Sparkles },
+      { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
+      { key: 'completed', label: 'Completed', Icon: Flag },
+    ];
 
-  // Standard bulk orders skip fitting — hide those two steps so they don't
-  // show as "done" when they never happened. A custom-bulk job that does get
-  // a sample fitting keeps them (its status is then a fitting status).
-  if (pipeline === 'bulk' && !FITTING_STATUSES.has(status)) {
-    return withTimestamps(stages.filter((s) => !FITTING_STATUSES.has(s.key)));
+    if (pipeline === 'bulk' && !FITTING_STATUSES.has(status)) {
+      return withTimestamps(granularStages.filter((s) => !FITTING_STATUSES.has(s.key)));
+    }
+    return withTimestamps(granularStages);
   }
-  return withTimestamps(stages);
+
+  // 3. Main Tailoring Pipeline: Production → Quality Check → Ready for Fitting → Adjustments → Completed
+  return withTimestamps([
+    { key: 'pending', label: 'Order Intake', Icon: Clock },
+    { key: 'production', label: 'Production', Icon: Scissors },
+    { key: 'quality_check', label: 'Quality Check', Icon: Sparkles },
+    { key: 'ready_for_fitting', label: 'Ready for Fitting', Icon: Ruler },
+    { key: 'adjustments', label: 'Adjustments', Icon: Wrench },
+    { key: 'ready_for_pickup', label: 'Ready for Pickup', Icon: Package },
+    { key: 'completed', label: 'Completed', Icon: Flag },
+  ]);
 }
 
 export const TERMINAL_STATUSES: Record<string, { label: string; Icon: typeof Ban; tone: string }> = {
@@ -227,6 +238,18 @@ export default function OrderTrackingView({ order, stepperLayout = 'horizontal' 
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-taupe/10 text-taupe border border-taupe/20 mb-2">
             {phase}
           </span>
+        )}
+
+        {order.status === 'ready_for_fitting' && (
+          <div className="mb-3 p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-ink space-y-1 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider">
+              <Ruler size={15} />
+              <span>Ready for In-Store Fitting</span>
+            </div>
+            <p className="text-xs text-ink-muted leading-relaxed">
+              Your custom garment is ready for your fitting session! Please visit the shop to check sizing and fit before final adjustments.
+            </p>
+          </div>
         )}
 
         <div className="space-y-1.5">

@@ -5,6 +5,12 @@ export interface CustomerData {
   name: string;
   email?: string;
   phone?: string;
+  is_walk_in?: boolean;
+  intake_channel?: string;
+  active_jobs?: number;
+  completed_jobs?: number;
+  total_spend?: number;
+  suki_tag?: string | null;
 }
 
 export interface ServiceField {
@@ -77,7 +83,7 @@ export interface JobCreateFormData {
   is_rush: boolean;
   rush_fee: string;
   material_source: 'store_supplied' | 'customer_supplied';
-  garment_category: '' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair';
+  garment_category: '' | 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair';
   discount_amount?: string;
   discount_reason?: string;
 }

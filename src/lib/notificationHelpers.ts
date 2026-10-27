@@ -44,9 +44,9 @@ export interface NotificationSender {
 export function getSenderInfo(notif: AppNotification): NotificationSender {
   const data = notif.data || {};
   let rawName =
+    data.sender_name ||
     data.customer_name ||
     data.staff_name ||
-    data.sender_name ||
     data.store_name;
 
   if (!rawName) {
@@ -161,6 +161,12 @@ export const TYPE_CONFIG: Record<string, TypeConfig> = {
     bg: 'bg-sunken',
     color: 'text-taupe',
     label: 'Staff Assigned',
+  },
+  job_order_assigned: {
+    icon: UserCog,
+    bg: 'bg-sunken',
+    color: 'text-taupe',
+    label: 'Order Assigned',
   },
   payment_rejected: {
     icon: XCircle,

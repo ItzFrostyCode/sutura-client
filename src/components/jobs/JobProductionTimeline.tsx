@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Job } from './jobTypes';
-import { isRepairOnly, serviceHasType } from './jobHelpers';
+import { isRepairOnly, serviceHasType, normalizeJobStatus } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
@@ -127,33 +127,22 @@ export default function JobProductionTimeline({
   // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the
   // backend (docs/REPAIR-WORKFLOW.md §5): a repair job skips the full
   // custom-tailoring pipeline entirely instead of running through it.
-  const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = isRepair ? [
-    { key: 'pending',              label: 'Pending',               Icon: Clock },
-    { key: 'queued',               label: 'Queued for Repair',     Icon: Hourglass },
-    { key: 'in_repair',            label: 'In Repair',             Icon: Wrench },
-    { key: 'qc_check',             label: 'QC Check',              Icon: ShieldCheck },
-    { key: 'ready_for_pickup',     label: 'Ready',                 Icon: Package },
-    { key: 'completed',            label: 'Completed',             Icon: Flag },
-  ] : [
-    { key: 'pending',              label: 'Pending',               Icon: Clock },
-    { key: 'design',               label: 'Design',                Icon: Palette },
-    isBulkOrder
-      ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', Icon: Printer }
-      : { key: 'pattern_making',        label: 'Pattern Making',          Icon: Ruler },
-    { key: 'cutting',              label: 'Cutting',               Icon: Scissors },
-    { key: 'sewing',               label: 'Sewing / Assembly',     Icon: Shirt },
-    { key: 'ready_for_fitting',    label: 'Ready for Fitting',     Icon: Ruler },
-    { key: 'final_adjustments',    label: 'Final Adjustments',     Icon: Wrench },
-    { key: 'qc_ironing',           label: 'QC & Ironing',          Icon: Sparkles },
-    { key: 'ready_for_pickup',     label: 'Ready',                 Icon: Package },
-    { key: 'completed',            label: 'Completed',             Icon: Flag },
+  const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = [
+    { key: 'pending',           label: 'Pending',            Icon: Clock },
+    { key: 'production',        label: 'Production',         Icon: Scissors },
+    { key: 'quality_check',     label: 'Quality Check',      Icon: ShieldCheck },
+    { key: 'ready_for_fitting', label: 'Ready for Fitting',  Icon: Sparkles },
+    { key: 'adjustments',       label: 'Adjustments',        Icon: Wrench },
+    { key: 'ready_for_pickup',  label: 'Ready for Pickup',   Icon: Package },
+    { key: 'completed',         label: 'Completed',          Icon: Flag },
   ];
 
+  const normalizedStatus = normalizeJobStatus(status);
   const cancelled = status === 'cancelled';
   const onHold = status === 'on_hold';
-  const currentIdx = STAGES.findIndex(s => s.key === status);
+  const currentIdx = STAGES.findIndex(s => s.key === normalizedStatus);
   const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : null;
-  const qcIdx = STAGES.findIndex(s => s.key === 'qc_ironing');
+  const qcIdx = STAGES.findIndex(s => s.key === 'quality_check');
   const atOrPastQC = currentIdx >= qcIdx;
 
   return (
@@ -206,8 +195,8 @@ export default function JobProductionTimeline({
             )}
             <select
               id="update-production-phase"
-              value={status}
-              onChange={e => {
+              value={normalizedStatus}
+              onChange={(e) => {
                 if (e.target.value === 'cancelled') {
                   setShowCancelModal(true);
                 } else if (e.target.value === 'on_hold') {
@@ -216,30 +205,13 @@ export default function JobProductionTimeline({
                   setStatus(e.target.value);
                 }
               }}
-              className="flex-1 h-10 px-4 bg-canvas border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
+              className="flex-1 h-10 px-4 bg-canvas border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs cursor-pointer"
             >
               <option value="pending">Pending</option>
-              {isRepair ? (
-                <>
-                  <option value="queued">Queued for Repair</option>
-                  <option value="in_repair">In Repair</option>
-                  <option value="qc_check">QC Check</option>
-                </>
-              ) : (
-                <>
-                  <option value="design">Design</option>
-                  {isBulkOrder ? (
-                    <option value="mass_cutting_printing">Mass Cutting & Printing</option>
-                  ) : (
-                    <option value="pattern_making">Pattern Making</option>
-                  )}
-                  <option value="cutting">Cutting</option>
-                  <option value="sewing">Sewing / Assembly</option>
-                  <option value="ready_for_fitting">Ready for Fitting</option>
-                  <option value="final_adjustments">Final Adjustments</option>
-                  <option value="qc_ironing">QC & Ironing</option>
-                </>
-              )}
+              <option value="production">Production</option>
+              <option value="quality_check">Quality Check</option>
+              <option value="ready_for_fitting">Ready for Fitting</option>
+              <option value="adjustments">Adjustments</option>
               <option value="ready_for_pickup">Ready for Pickup</option>
               <option value="completed">Completed</option>
               <option value="on_hold">On Hold</option>
@@ -252,7 +224,7 @@ export default function JobProductionTimeline({
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-amber-900">
             <AlertTriangle size={16} className="text-amber-700 shrink-0" />
             <p className="text-xs font-bold uppercase tracking-wide">
-              Customer-supplied fabric/garment — do not cut from store stock
+              Customer-supplied fabric/garment — do not cut from shop stock
             </p>
           </div>
         )}
@@ -264,7 +236,7 @@ export default function JobProductionTimeline({
               Design Reference
             </span>
             <p className="text-[11px] text-ink-faint">
-              What the customer wants — attached at booking, or by the store for a walk-in custom order.
+              What the customer wants — attached at booking, or by the shop for a walk-in custom order.
             </p>
             {job.reference_images && job.reference_images.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-1">

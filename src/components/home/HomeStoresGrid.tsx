@@ -5,13 +5,42 @@ import Link from 'next/link';
 import { Clock, LocateFixed, MapPin, SlidersHorizontal, Star, Store } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
-import type { SavedLocation } from '@/lib/customerLocation';
+import { haversineKm, type SavedLocation } from '@/lib/customerLocation';
+import { formatAddress } from '@/lib/formatAddress';
 import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { isStoreOpen } from '@/lib/storeStatus';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import HomeCarouselRow from './HomeCarouselRow';
 import type { StoreResult } from './homeTypes';
+
+const RADIUS_MIN = 1;
+const RADIUS_MAX = 50;
+
+type Branch = StoreResult['branches'][number];
+const num = (v: unknown) => (v === null || v === undefined || v === '' ? NaN : Number(v));
+
+/**
+ * The branch the card's distance is measured to (the server's distance_km is
+ * to a store's nearest live branch): nearest to the visitor when we know
+ * where they are, otherwise the main branch.
+ */
+function pickBranch(store: StoreResult, location: SavedLocation | null): Branch | null {
+  const branches = store.branches ?? [];
+  if (branches.length === 0) return null;
+  if (location) {
+    let best: Branch | null = null;
+    let bestKm = Infinity;
+    for (const b of branches) {
+      const lat = num(b.latitude), lng = num(b.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const km = haversineKm(location.lat, location.lng, lat, lng);
+      if (km < bestKm) { bestKm = km; best = b; }
+    }
+    if (best) return best;
+  }
+  return branches.find((b) => Boolean(b.is_main)) ?? branches[0];
+}
 
 const RADIUS_PRESETS = [2, 5, 10, 20, 50] as const;
 const DEFAULT_RADIUS = 10;
@@ -92,16 +121,19 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
   const subtitle = loading
     ? 'Searching…'
     : location
-      ? `${total} ${total === 1 ? 'store' : 'stores'} found within ${radius} km`
-      : `${total} ${total === 1 ? 'store' : 'stores'} found — turn on location to see distances`;
+      ? `${total} ${total === 1 ? 'shop' : 'shops'} found within ${radius} km`
+      : `${total} ${total === 1 ? 'shop' : 'shops'} found — turn on location to see distances`;
 
   const chip = (active: boolean) =>
     `inline-flex min-h-10 shrink-0 items-center gap-1.5 border px-3 text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taupe disabled:cursor-not-allowed disabled:opacity-40 ${
       active ? 'border-ink bg-ink text-white' : 'border-line bg-surface text-ink-body hover:border-ink'
     }`;
   const activeFilterCount = (specialization ? 1 : 0) + (openNow ? 1 : 0) + (minRating ? 1 : 0) + (location && radius !== DEFAULT_RADIUS ? 1 : 0);
-  // "Expand" can jump to a radius between presets (e.g. 7 km) — show it as its own chip.
-  const radiusOptions = (RADIUS_PRESETS as readonly number[]).includes(radius) ? RADIUS_PRESETS : [...RADIUS_PRESETS, radius].sort((a, b) => a - b);
+  // Pills and slider share `radius`: a pill jumps the slider; a slider value
+  // between presets (e.g. 7 km) simply leaves no pill selected. The fetch
+  // effect above already waits 300 ms after the last change, so dragging
+  // sends one request when the thumb rests, not one per step.
+  const radiusPct = ((Math.min(radius, RADIUS_MAX) - RADIUS_MIN) / (RADIUS_MAX - RADIUS_MIN)) * 100;
   const groupLabel = 'mb-2 block text-xs font-medium text-ink-muted';
 
   return (
@@ -109,7 +141,7 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
           <h2 id="home-stores-title" className="mobile-h2 sm:tablet-h2 text-ink">
-            {location ? 'Stores near you' : 'Stores'}
+            {location ? 'Shops near you' : 'Shops'}
           </h2>
           <p className="mt-0.5 text-xs text-ink-muted" aria-live="polite">{subtitle}</p>
         </div>
@@ -173,18 +205,39 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
               </div>
             </div>
 
-            <div role="group" aria-label="Search radius" className="min-w-0">
-              <span className={`${groupLabel} inline-flex items-center gap-1`}>
-                <LocateFixed size={12} className="text-taupe" aria-hidden="true" /> Within
-              </span>
+            <div role="group" aria-label="Search radius" className="min-w-0 flex-1 basis-72">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted">
+                  <LocateFixed size={12} className="text-taupe" aria-hidden="true" /> Within
+                </span>
+                {location && (
+                  <span className="text-xs text-ink-muted" aria-hidden="true">
+                    Radius: <strong className="font-semibold tabular-nums text-ink">{radius} km</strong>
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-1.5">
-                {radiusOptions.map((p) => (
+                {RADIUS_PRESETS.map((p) => (
                   <button key={p} type="button" disabled={!location} aria-pressed={location !== null && radius === p} onClick={() => setRadius(p)}
                     className={`${chip(location !== null && radius === p)} tabular-nums`}>
                     {p} km
                   </button>
                 ))}
               </div>
+              <label htmlFor="home-radius" className="sr-only">Search radius in kilometres</label>
+              <input
+                id="home-radius"
+                type="range"
+                min={RADIUS_MIN}
+                max={RADIUS_MAX}
+                step={1}
+                value={Math.min(radius, RADIUS_MAX)}
+                disabled={!location}
+                onChange={(e) => setRadius(Number(e.target.value))}
+                aria-valuetext={`${radius} kilometres`}
+                style={{ background: `linear-gradient(to right, #2D2A26 ${radiusPct}%, #E5DDD5 ${radiusPct}%)` }}
+                className="radius-slider mt-3 h-1.5 w-full max-w-md cursor-pointer appearance-none rounded-full disabled:cursor-not-allowed disabled:opacity-40"
+              />
               {!location && (
                 <p className="mt-2 text-xs text-ink-muted">
                   Needs your location. <Link href="/location" className="font-semibold text-taupe underline underline-offset-2">Set location</Link>
@@ -212,7 +265,7 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
           <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-sunken">
             <Store size={24} className="text-taupe" aria-hidden="true" />
           </span>
-          <p className="font-semibold text-ink">{location ? 'No stores nearby' : 'No stores match these filters'}</p>
+          <p className="font-semibold text-ink">{location ? 'No shops nearby' : 'No shops match these filters'}</p>
           <p className="mt-1 text-sm text-ink-muted">
             {location ? `Nothing within ${radius} km of you${filtersActive ? ' with these filters' : ''}.` : 'Try a different specialty or turn off a filter.'}
           </p>
@@ -229,13 +282,16 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
             const open = isStoreOpen(store.operating_hours);
             const rating = store.reviews_avg_rating ? Number(store.reviews_avg_rating) : null;
             const km = store.distance_km != null && !Number.isNaN(Number(store.distance_km)) ? Number(store.distance_km) : null;
+            const branch = pickBranch(store, location);
+            const isMain = branch ? Boolean(branch.is_main) : true;
+            const fullAddress = branch ? formatAddress(branch) || branch.name : '';
             return (
               <Link
                 key={store.id}
                 href={gate(`/store/${store.slug}`)}
-                className="group flex w-[236px] shrink-0 snap-start flex-col bg-surface border border-line overflow-hidden transition-[border-color,box-shadow] duration-200 ease-out hover:border-line-strong hover:shadow-[0_4px_14px_rgba(45,42,38,0.08)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taupe"
+                className="group flex h-full w-[236px] shrink-0 snap-start flex-col bg-surface border border-line overflow-hidden transition-[border-color,box-shadow] duration-200 ease-out hover:border-line-strong hover:shadow-[0_4px_14px_rgba(45,42,38,0.08)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taupe"
               >
-                <div className="relative h-28 overflow-hidden bg-[#EFE6DA]">
+                <div className="relative h-28 shrink-0 overflow-hidden bg-[#EFE6DA]">
                   {store.banner_path ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
@@ -248,11 +304,21 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
                       }}
                     />
                   ) : (
-                    // No cover photo yet: a stitched frame, not a bare icon on grey.
+                    // No cover photo yet: a stitched frame with the shop's initial, not a bare icon on grey.
                     <div className="absolute inset-2.5 flex items-center justify-center border border-dashed border-taupe/40">
-                      <Store size={22} className="text-taupe/50" aria-hidden="true" />
+                      <span className="text-display text-3xl text-taupe/45" aria-hidden="true">
+                        {(store.name || 'S').trim().charAt(0).toUpperCase()}
+                      </span>
                     </div>
                   )}
+                  {/* Same colours as the map pins: deep brown = main store, taupe = branch. */}
+                  <span
+                    className={`absolute left-2 top-2 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                      isMain ? 'bg-[#2E1C14] text-white' : 'border border-[#8D7B68] bg-[#F3EEE8] text-[#5E4E40]'
+                    }`}
+                  >
+                    {isMain ? 'Main Shop' : 'Branch'}
+                  </span>
                   <span className={`absolute right-2 top-2 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${open ? 'bg-surface text-sage' : 'bg-surface text-danger'}`}>
                     {open ? 'Open' : 'Closed'}
                   </span>
@@ -267,17 +333,17 @@ export default function HomeStoresGrid({ location }: { readonly location: SavedL
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col p-3.5 pt-7">
-                  <h3 className="mobile-h4 text-ink truncate group-hover:text-taupe transition-colors">
+                  <h3 className="mobile-h4 text-ink truncate group-hover:text-taupe transition-colors" title={store.name}>
                     {store.name}
                   </h3>
-                  {store.branches[0] && (
-                    <p className="mobile-caption text-ink-muted flex items-center gap-1 mt-1 truncate font-normal">
+                  {branch && (
+                    <p className="mobile-caption mt-1 flex min-w-0 items-center gap-1 font-normal text-ink-muted">
                       <MapPin size={12} className="shrink-0 text-taupe" aria-hidden="true" />
-                      {store.branches[0].city ?? store.branches[0].name}
-                      {km !== null && <span className="text-ink-faint tabular-nums"> · {km.toFixed(1)} km away</span>}
+                      <span className="min-w-0 truncate" title={fullAddress}>{fullAddress}</span>
+                      {km !== null && <span className="shrink-0 whitespace-nowrap tabular-nums text-ink-faint">· {km.toFixed(1)} km away</span>}
                     </p>
                   )}
-                  <p className="mt-2 flex items-center gap-1 text-xs">
+                  <p className="mt-auto flex items-center gap-1 pt-2 text-xs">
                     {rating ? (
                       <>
                         <Star size={13} className="fill-[#D9A441] text-[#D9A441]" aria-hidden="true" />

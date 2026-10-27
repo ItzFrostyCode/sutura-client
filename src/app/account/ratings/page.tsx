@@ -19,7 +19,7 @@ type RatedStore = StoreResult & { rating: number };
 type Tab = 'showroom' | 'stores';
 const TABS: { key: Tab; label: string; shortLabel: string }[] = [
   { key: 'showroom', label: 'Catalog Designs', shortLabel: 'Catalog' },
-  { key: 'stores', label: 'Stores', shortLabel: 'Stores' },
+  { key: 'stores', label: 'Shops', shortLabel: 'Shops' },
 ];
 
 export default function MyRatingsPage() {

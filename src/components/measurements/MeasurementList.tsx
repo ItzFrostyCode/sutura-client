@@ -89,7 +89,7 @@ export default function MeasurementList({
                             {activeRec.source === 'customer' ? (
                               <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">Customer-Side</span>
                             ) : (
-                              <span className="text-[10px] bg-sage/10 text-sage border border-sage/20 px-2 py-0.5 rounded-full font-medium">Store Owner</span>
+                              <span className="text-[10px] bg-sage/10 text-sage border border-sage/20 px-2 py-0.5 rounded-full font-medium">Shop Owner</span>
                             )}
                             <MeasurementStatusBadge status={activeRec.status} />
                             <span className="text-[10px] bg-taupe/10 text-taupe border border-taupe/20 px-2 py-0.5 rounded-full font-medium">
@@ -169,13 +169,26 @@ export default function MeasurementList({
                           </div>
                         </div>
                         {(activeRec.photo_urls?.length ?? 0) > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {activeRec.photo_urls!.map((u, i) => (
-                              <a key={u} href={getMediaUrl(u)} target="_blank" rel="noopener noreferrer" className="w-20 h-20 border border-line bg-sunken overflow-hidden block">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={getMediaUrl(u)} alt={`Measurement sheet ${i + 1}`} className="w-full h-full object-cover" />
-                              </a>
-                            ))}
+                          <div className="mt-3">
+                            <p className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider mb-2">Attached Sheets & Notes</p>
+                            <div className="flex flex-wrap gap-2.5">
+                              {activeRec.photo_urls!.map((u, i) => (
+                                <a
+                                  key={u}
+                                  href={getMediaUrl(u)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group relative w-24 h-24 rounded-xl border border-line bg-sunken overflow-hidden block shadow-2xs hover:border-taupe transition-all hover:scale-[1.02]"
+                                  title={`View sheet #${i + 1}`}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={getMediaUrl(u)} alt={`Measurement sheet ${i + 1}`} className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-ink/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider">
+                                    View
+                                  </div>
+                                </a>
+                              ))}
+                            </div>
                           </div>
                         )}
                         {activeRec.notes && (

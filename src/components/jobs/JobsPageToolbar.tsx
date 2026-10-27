@@ -1,8 +1,23 @@
+'use client';
+
+import React, { useState } from 'react';
 import {
-  Store, ShoppingBag, SlidersHorizontal, Sparkles, Scissors, Shirt, Truck, UserCheck,
+  Store,
+  ShoppingBag,
+  SlidersHorizontal,
+  Search,
+  LayoutGrid,
+  List,
+  Columns2,
+  ChevronDown,
+  Sparkles,
+  Scissors,
+  Shirt,
+  UserCheck,
+  Bell,
+  RefreshCw,
+  X,
 } from 'lucide-react';
-import SearchInput from '@/components/shared/SearchInput';
-import type { StageIconFilter } from './stageIconFilters';
 
 interface JobsPageToolbarProps {
   tab: 'all' | 'walk_in' | 'online';
@@ -10,23 +25,22 @@ interface JobsPageToolbarProps {
   totalJobsCount: number;
   walkInCount: number;
   onlineCount: number;
-  onOpenSettings: () => void;
-  // "My Assigned Jobs" — shown only for staff, who aren't looking at the
-  // whole store's production board, just what they personally need to work.
-  showMyJobsToggle?: boolean;
-  myJobsOnly?: boolean;
-  setMyJobsOnly?: (val: boolean) => void;
+  search: string;
+  setSearch: (val: string) => void;
+  viewMode: 'kanban' | 'list' | 'columns';
+  setViewMode: (mode: 'kanban' | 'list' | 'columns') => void;
+  showFilters: boolean;
+  setShowFilters: React.Dispatch<React.SetStateAction<boolean>>;
   designOriginFilter: 'all' | 'catalog' | 'custom' | 'alteration';
   setDesignOriginFilter: (val: 'all' | 'catalog' | 'custom' | 'alteration') => void;
   catalogJobsCount: number;
   customBespokeCount: number;
   alterationJobsCount: number;
-  stageFilter: string;
-  setStageFilter: (val: string) => void;
-  stageIconFilters: StageIconFilter[];
-  search: string;
-  setSearch: (val: string) => void;
-  activeColumns: { id: string; title: string }[];
+  showMyJobsToggle?: boolean;
+  myJobsOnly?: boolean;
+  setMyJobsOnly?: (val: boolean) => void;
+  onOpenSettings?: () => void;
+  onRefresh?: () => void;
 }
 
 export default function JobsPageToolbar({
@@ -35,204 +49,302 @@ export default function JobsPageToolbar({
   totalJobsCount,
   walkInCount,
   onlineCount,
-  onOpenSettings,
-  showMyJobsToggle = false,
-  myJobsOnly = false,
-  setMyJobsOnly,
+  search,
+  setSearch,
+  viewMode,
+  setViewMode,
+  showFilters,
+  setShowFilters,
   designOriginFilter,
   setDesignOriginFilter,
   catalogJobsCount,
   customBespokeCount,
   alterationJobsCount,
-  stageFilter,
-  setStageFilter,
-  stageIconFilters,
-  search,
-  setSearch,
-  activeColumns,
+  showMyJobsToggle = false,
+  myJobsOnly = false,
+  setMyJobsOnly,
+  onOpenSettings,
+  onRefresh,
 }: JobsPageToolbarProps) {
-  return (
-    <>
-      <div className="p-3 sm:p-3.5 border-b border-line bg-canvas/20 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
-          {/* Channel Tabs + Settings Button Group */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-            <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0">
-              <button
-                type="button"
-                onClick={() => setTab('all')}
-                className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === 'all'
-                    ? 'bg-surface text-ink shadow-xs border border-line/80'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-              >
-                <span>All Orders</span>
-                <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{totalJobsCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('walk_in')}
-                className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === 'walk_in'
-                    ? 'bg-surface text-ink shadow-xs border border-line/80'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-              >
-                <Store size={12} />
-                <span>Walk-in</span>
-                <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{walkInCount}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('online')}
-                className={`h-7 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                  tab === 'online'
-                    ? 'bg-surface text-ink shadow-xs border border-line/80'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-              >
-                <ShoppingBag size={12} />
-                <span>Online</span>
-                <span className="bg-sunken text-ink-muted text-[10px] px-1.5 py-0.2 rounded-full font-black tabular-nums">{onlineCount}</span>
-              </button>
-            </div>
+  const [toolsOpen, setToolsOpen] = useState(false);
 
-            {showMyJobsToggle && setMyJobsOnly && (
+  const hasActiveFilters = designOriginFilter !== 'all' || myJobsOnly;
+
+  return (
+    <div className="p-4 sm:p-5 border-b border-line/60 bg-surface/50 space-y-3.5">
+      {/* Row 1: Intake Channels (Left) & Filters Button (Right) */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Channel Switcher */}
+        <div className="flex items-center gap-1 p-1 bg-[#f4efe9] border border-line/60 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setTab('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              tab === 'all'
+                ? 'bg-surface text-ink shadow-2xs font-bold'
+                : 'text-ink-muted hover:text-ink'
+            }`}
+          >
+            <span>All Orders</span>
+            <span className="text-[11px] font-normal text-ink-muted/80 tabular-nums">
+              {totalJobsCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTab('walk_in')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              tab === 'walk_in'
+                ? 'bg-surface text-ink shadow-2xs font-bold'
+                : 'text-ink-muted hover:text-ink'
+            }`}
+          >
+            <Store size={13} className="text-ink-muted" />
+            <span>Walk-in</span>
+            <span className="text-[11px] font-normal text-ink-muted/80 tabular-nums">
+              {walkInCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTab('online')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              tab === 'online'
+                ? 'bg-surface text-ink shadow-2xs font-bold'
+                : 'text-ink-muted hover:text-ink'
+            }`}
+          >
+            <ShoppingBag size={13} className="text-ink-muted" />
+            <span>Online</span>
+            <span className="text-[11px] font-normal text-ink-muted/80 tabular-nums">
+              {onlineCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Filters Button */}
+        <button
+          type="button"
+          onClick={() => setShowFilters((prev) => !prev)}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border-2 transition-all cursor-pointer shadow-2xs ${
+            showFilters || hasActiveFilters
+              ? 'border-ink bg-ink text-white'
+              : 'border-ink bg-[#f4efe9] text-ink hover:bg-canvas'
+          }`}
+        >
+          <SlidersHorizontal size={14} className="stroke-[2.5]" />
+          <span>Filters</span>
+          {hasActiveFilters && (
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+          )}
+        </button>
+      </div>
+
+      {/* Row 2: Tools (Left) & Search + View Switcher (Right) */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Tools Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setToolsOpen((prev) => !prev)}
+            className="px-3.5 py-2 bg-[#f4efe9] hover:bg-canvas border border-line rounded-xl text-xs font-semibold text-ink flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+          >
+            <span>Tools</span>
+            <ChevronDown size={14} className="text-ink-muted" />
+          </button>
+
+          {toolsOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-20"
+                onClick={() => setToolsOpen(false)}
+              />
+              <div className="absolute left-0 mt-1.5 w-52 bg-surface border border-line rounded-xl shadow-lg p-1.5 z-30 space-y-0.5">
+                {onOpenSettings && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenSettings();
+                      setToolsOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-ink hover:bg-canvas flex items-center gap-2 cursor-pointer"
+                  >
+                    <Bell size={14} className="text-taupe" />
+                    <span>Notification Settings</span>
+                  </button>
+                )}
+                {onRefresh && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onRefresh();
+                      setToolsOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-ink hover:bg-canvas flex items-center gap-2 cursor-pointer"
+                  >
+                    <RefreshCw size={14} className="text-taupe" />
+                    <span>Refresh Orders</span>
+                  </button>
+                )}
+                {showMyJobsToggle && setMyJobsOnly && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMyJobsOnly(!myJobsOnly);
+                      setToolsOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-ink hover:bg-canvas flex items-center gap-2 cursor-pointer"
+                  >
+                    <UserCheck size={14} className="text-taupe" />
+                    <span>{myJobsOnly ? 'Show All Jobs' : 'Only My Jobs'}</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right side: Search Input + View Mode Switcher */}
+        <div className="flex items-center gap-2.5">
+          {/* Search Input */}
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted/70 pointer-events-none"
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search order or customer..."
+              className="h-9.5 pl-9 pr-3.5 bg-canvas/40 border border-line rounded-xl text-xs text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe w-60 sm:w-72 shadow-2xs transition-all"
+            />
+            {search && (
               <button
                 type="button"
-                onClick={() => setMyJobsOnly(!myJobsOnly)}
-                title="Show only jobs assigned to me"
-                className={`h-9.5 px-3 rounded-lg border text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                  myJobsOnly
-                    ? 'bg-taupe text-white border-taupe'
-                    : 'bg-canvas border-line text-ink-muted hover:text-ink hover:bg-surface'
-                }`}
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink cursor-pointer"
               >
-                <UserCheck size={14} />
-                <span>My Jobs</span>
+                <X size={12} />
               </button>
             )}
-
-            {/* Settings Button */}
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              title="Stage Notification Dot Settings"
-              className="h-9.5 w-9.5 rounded-lg bg-canvas border border-line text-ink-muted hover:text-ink hover:bg-surface flex items-center justify-center transition-all shadow-2xs shrink-0 active:scale-95 cursor-pointer"
-            >
-              <SlidersHorizontal size={15} />
-            </button>
           </div>
 
-          {/* Design Origin Filters */}
-          <div className="h-9.5 flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg shrink-0 overflow-x-auto hide-scrollbar">
+          {/* View Switcher: Kanban | List | Split */}
+          <div className="flex items-center p-0.5 bg-[#f4efe9] border border-line rounded-xl shrink-0">
             <button
               type="button"
-              onClick={() => setDesignOriginFilter('all')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
-                designOriginFilter === 'all'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
+              onClick={() => setViewMode('kanban')}
+              title="Kanban Board View"
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'kanban'
+                  ? 'bg-surface text-ink shadow-2xs'
                   : 'text-ink-muted hover:text-ink'
               }`}
             >
-              <span>All</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{totalJobsCount}</span>
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              title="Table List View"
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-surface text-ink shadow-2xs'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              <List size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('columns')}
+              title="Columns View"
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'columns'
+                  ? 'bg-surface text-ink shadow-2xs'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              <Columns2 size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Expandable Filter Drawer */}
+      {showFilters && (
+        <div className="pt-2 border-t border-line/60 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mr-1">
+              Order Type:
+            </span>
+            <button
+              type="button"
+              onClick={() => setDesignOriginFilter('all')}
+              className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all ${
+                designOriginFilter === 'all'
+                  ? 'bg-ink text-white'
+                  : 'bg-surface border border-line text-ink-muted hover:text-ink'
+              }`}
+            >
+              All Types
             </button>
             <button
               type="button"
               onClick={() => setDesignOriginFilter('catalog')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+              className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
                 designOriginFilter === 'catalog'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
+                  ? 'bg-taupe text-white'
+                  : 'bg-surface border border-line text-ink-muted hover:text-ink'
               }`}
             >
-              <Sparkles size={11} className="text-taupe" />
-              <span>Catalog</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{catalogJobsCount}</span>
+              <Sparkles size={12} />
+              <span>Catalog ({catalogJobsCount})</span>
             </button>
             <button
               type="button"
               onClick={() => setDesignOriginFilter('custom')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+              className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
                 designOriginFilter === 'custom'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
+                  ? 'bg-taupe text-white'
+                  : 'bg-surface border border-line text-ink-muted hover:text-ink'
               }`}
             >
-              <Scissors size={11} />
-              <span>Custom</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{customBespokeCount}</span>
+              <Scissors size={12} />
+              <span>Custom ({customBespokeCount})</span>
             </button>
             <button
               type="button"
               onClick={() => setDesignOriginFilter('alteration')}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer ${
+              className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
                 designOriginFilter === 'alteration'
-                  ? 'bg-surface text-ink shadow-xs border border-line/80'
-                  : 'text-ink-muted hover:text-ink'
+                  ? 'bg-taupe text-white'
+                  : 'bg-surface border border-line text-ink-muted hover:text-ink'
               }`}
             >
-              <Shirt size={11} />
-              <span>Alterations</span>
-              <span className="bg-sunken text-ink-muted text-[9px] px-1 py-0.2 rounded-full font-black tabular-nums">{alterationJobsCount}</span>
+              <Shirt size={12} />
+              <span>Alterations ({alterationJobsCount})</span>
             </button>
           </div>
 
-          {/* Icon-Only Stage Filters */}
-          <div className="h-11 sm:h-9.5 flex items-center gap-1.5 sm:gap-1 p-1 bg-canvas border border-line rounded-xl sm:rounded-lg overflow-x-auto hide-scrollbar w-full sm:w-auto touch-pan-x">
-            {stageIconFilters.map((stage) => {
-              const Icon = stage.icon;
-              const isSelected = stageFilter === stage.id;
-
-              return (
-                <button
-                  key={stage.id}
-                  type="button"
-                  onClick={() => {
-                    setStageFilter(stage.id);
-                    if (stage.id !== 'all') {
-                      const el = document.getElementById(`kanban-col-${stage.id}`);
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    }
-                  }}
-                  title={stage.title}
-                  className={`relative min-w-[38px] h-9 sm:min-w-8 sm:h-7 rounded-lg sm:rounded-md flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer ${
-                    isSelected
-                      ? 'bg-surface text-ink shadow-xs border border-line/90 font-bold'
-                      : 'text-ink-muted hover:text-ink hover:bg-surface/50'
-                  }`}
-                >
-                  <Icon size={16} className={`transition-colors ${stage.iconColor ?? ''}`} />
-                  {stage.dotColor && (
-                    <span className={`absolute top-1 right-1 w-2 h-2 sm:w-1.5 sm:h-1.5 rounded-full ${stage.dotColor} ring-1.5 ring-white`} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Search Input */}
-        <div className="w-full lg:w-60 shrink-0">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search order or customer..." className="w-full" />
-        </div>
-      </div>
-
-      {tab === 'online' && (
-        <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
-          <Truck size={13} />
-          <span>Online production flow: <strong>{activeColumns.map((c) => c.title).join(' → ')}</strong>.</span>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setDesignOriginFilter('all');
+                if (setMyJobsOnly) setMyJobsOnly(false);
+              }}
+              className="text-xs font-semibold text-taupe hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <X size={12} />
+              <span>Reset filters</span>
+            </button>
+          )}
         </div>
       )}
-
-      {tab === 'walk_in' && (
-        <div className="px-4 py-2 bg-canvas/40 border-b border-line flex items-center gap-2 text-xs text-ink-muted">
-          <Scissors size={13} />
-          <span>Walk-in production flow: <strong>{activeColumns.map((c) => c.title).join(' → ')}</strong>.</span>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

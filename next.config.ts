@@ -28,6 +28,21 @@ const nextConfig: NextConfig = {
         destination: '/search?tab=services',
         permanent: true,
       },
+      {
+        source: '/admin/dashboard',
+        destination: '/admin',
+        permanent: false,
+      },
+      {
+        source: '/console',
+        destination: '/admin',
+        permanent: false,
+      },
+      {
+        source: '/branch-locations',
+        destination: '/admin/branches',
+        permanent: false,
+      },
     ];
   },
 };

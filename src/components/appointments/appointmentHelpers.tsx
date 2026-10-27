@@ -94,7 +94,7 @@ export interface Appointment {
   answers?: Record<string, string | number | boolean> | null;
   outcome?: 'completed' | 'rescheduled' | 'no_show' | 'converted_to_job' | 'cancelled' | null;
   priority?: 'normal' | 'urgent' | 'rush';
-  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
+  garment_category?: 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
 }
 
 export interface ServiceData  { id: number; name: string }
@@ -231,7 +231,7 @@ export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'onli
           ? 'bg-sky-50 text-sky-700 border-sky-200'
           : 'bg-stone-50 text-stone-600 border-stone-200'
       }`}
-      title={isOnline ? 'Booked online by customer via store profile' : 'Walk-in booking entered in atelier'}
+      title={isOnline ? 'Booked online by customer via shop profile' : 'Walk-in booking entered in atelier'}
     >
       {isOnline ? <Globe size={11} className="text-sky-600 shrink-0" /> : <Store size={11} className="text-stone-500 shrink-0" />}
       <span>{isOnline ? 'Online Booking' : 'Walk-in'}</span>

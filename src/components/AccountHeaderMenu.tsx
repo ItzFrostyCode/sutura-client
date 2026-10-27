@@ -21,7 +21,7 @@ export default function AccountHeaderMenu() {
   const isStoreOwner = user?.roles?.some(r => r.name === 'store_owner');
   const roleDisplay = staffProfile?.role
     ? roleLabel(staffProfile.role)
-    : (user?.roles?.[0]?.name ? roleLabel(user.roles[0].name) : 'Store Owner');
+    : (user?.roles?.[0]?.name ? roleLabel(user.roles[0].name) : 'Shop Owner');
 
   // This menu renders both in the dashboard header and (reused, per the
   // comment above) on the owner's own public storefront page. "My

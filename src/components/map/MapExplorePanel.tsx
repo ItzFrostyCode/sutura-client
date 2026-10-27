@@ -27,6 +27,7 @@ interface MapExplorePanelProps {
   readonly loading: boolean;
   readonly selectedBranch: DiscoveryMapBranch | null;
   readonly onSelectBranch: (b: DiscoveryMapBranch | null) => void;
+  readonly onHoverBranch?: (b: DiscoveryMapBranch | null) => void;
   readonly onConfirmLocation: (loc?: SavedLocation) => void;
   readonly onDirections: (b: DiscoveryMapBranch) => void;
   readonly pickedAddress?: string;
@@ -159,7 +160,7 @@ export default function MapExplorePanel(p: MapExplorePanelProps) {
               </div>
             ) : (
               p.branches.map((b) => (
-                <MapShopCard key={`${b.storeSlug}-${b.branchId}`} branch={b} active={false} onSelect={(x) => p.onSelectBranch(x)} />
+                <MapShopCard key={`${b.storeSlug}-${b.branchId}`} branch={b} active={false} onSelect={(x) => { p.onHoverBranch?.(null); p.onSelectBranch(x); }} onHover={p.onHoverBranch} />
               ))
             )}
           </div>

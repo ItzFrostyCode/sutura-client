@@ -62,11 +62,16 @@ export default function LocationPickerHeader({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onSearchSubmit();
+              if (e.key !== 'Enter') return;
+              // Enter searches; it must never submit a form the picker sits in
+              // (shop registration's step form showed "Please fill out this field").
+              e.preventDefault();
+              e.stopPropagation();
+              if (query.trim() && !searching) onSearchSubmit();
             }}
             onFocus={onInputFocus}
             onBlur={onInputBlur}
-            placeholder="Search address, store, or link"
+            placeholder="Search address, shop, or link"
             className="w-full h-10 bg-sunken border border-line rounded-full pl-10 pr-9 text-base text-ink placeholder:text-ink-faint placeholder:text-base font-normal focus:outline-none focus:border-taupe"
           />
           {query && (
@@ -84,7 +89,7 @@ export default function LocationPickerHeader({
         <button
           type="button"
           onClick={() => setShowFilterDropdown((prev) => !prev)}
-          aria-label="Filter stores and districts"
+          aria-label="Filter shops and districts"
           className={`btn-icon-mobile touch-target-48 relative border transition-colors ${
             hasActiveFilters
               ? 'bg-taupe text-white border-taupe shadow-xs'

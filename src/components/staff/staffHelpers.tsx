@@ -21,7 +21,8 @@ export function roleLabel(role: string): string {
   return role
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+    .join(' ')
+    .replace(/^Store\b/, 'Shop'); // store_owner → "Shop Owner" (the key stays store_owner)
 }
 
 /**

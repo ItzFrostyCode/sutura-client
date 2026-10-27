@@ -349,7 +349,7 @@ export default function BranchFormModal({
           {formData.guide_image_url ? (
             <div className="relative aspect-video max-w-sm bg-canvas border border-line rounded-lg overflow-hidden group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={formData.guide_image_url} alt="Store Profile Guide" className="w-full h-full object-cover" />
+              <img src={formData.guide_image_url} alt="Shop Profile Guide" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, guide_image_url: '' }))}

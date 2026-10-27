@@ -35,7 +35,18 @@ export function useCustomerProfile(id: string) {
         setEditEmail(isWalkInEmail(data.customer.email) ? '' : (data.customer.email || ''));
         setEditPhone(data.customer.phone || '');
         setEditNotes(data.customer.store_notes || '');
-        setMeasurements(data.measurements || []);
+        let loadedMeasurements = data.measurements || [];
+        if (loadedMeasurements.length === 0) {
+          try {
+            const measRes = await api.get(`/stores/${store.id}/measurements?customer_id=${id}`);
+            if (measRes.data?.data && Array.isArray(measRes.data.data) && measRes.data.data.length > 0) {
+              loadedMeasurements = measRes.data.data;
+            }
+          } catch {
+            // fallback fetch ignored
+          }
+        }
+        setMeasurements(loadedMeasurements);
         setJobs(data.jobs || []);
         setAppointments(data.appointments || []);
       } else {

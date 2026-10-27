@@ -189,7 +189,7 @@ export default function StoreHeroHeader({
                 <button
                   type="button"
                   onClick={() => setEditingImage('logo')}
-                  aria-label="Change store logo"
+                  aria-label="Change shop logo"
                   className="absolute bottom-0.5 right-0.5 w-9 h-9 rounded-full flex items-center justify-center bg-ink/80 hover:bg-ink text-white border-2 border-surface shadow-md transition-colors cursor-pointer"
                 >
                   <Camera size={14} />
@@ -213,7 +213,7 @@ export default function StoreHeroHeader({
             )}
             <span className="text-ink-faint">·</span>
             <span>
-              Store Owner · <strong className="font-semibold text-ink-body">{store.owner?.name || 'Store Owner'}</strong>
+              Shop Owner · <strong className="font-semibold text-ink-body">{store.owner?.name || 'Shop Owner'}</strong>
             </span>
             <span className="text-ink-faint">·</span>
             {store.reviews_count && store.reviews_count > 0 ? (
@@ -272,8 +272,8 @@ export default function StoreHeroHeader({
                 <button
                   type="button"
                   onClick={onOpenRatingModal}
-                  aria-label="Rate this store"
-                  title={myReview?.rating ? `Your rating: ${myReview.rating}★` : 'Rate store'}
+                  aria-label="Rate this shop"
+                  title={myReview?.rating ? `Your rating: ${myReview.rating}★` : 'Rate shop'}
                   className="min-h-[46px] w-12 h-12 flex items-center justify-center bg-sunken hover:bg-line text-ink border border-line transition-colors cursor-pointer shrink-0"
                 >
                   <Star size={17} className={myReview?.rating ? 'fill-amber-400 text-amber-500' : ''} />
@@ -282,8 +282,8 @@ export default function StoreHeroHeader({
                 <button
                   type="button"
                   onClick={() => setIsBookmarked(!isBookmarked)}
-                  aria-label="Bookmark store"
-                  title={isBookmarked ? 'Bookmarked' : 'Bookmark store'}
+                  aria-label="Bookmark shop"
+                  title={isBookmarked ? 'Bookmarked' : 'Bookmark shop'}
                   className="min-h-[46px] w-12 h-12 flex items-center justify-center bg-sunken hover:bg-line text-ink border border-line transition-colors cursor-pointer shrink-0"
                 >
                   <Bookmark size={17} className={isBookmarked ? 'fill-current text-taupe' : ''} />

@@ -1,16 +1,16 @@
 import React from 'react';
 import Link from 'next/link';
-import { MessageCircle, CalendarDays } from 'lucide-react';
+import { MessageCircle, ShoppingCart } from 'lucide-react';
 
 interface ServiceActionButtonsProps {
-  bookHref: string;
+  orderHref: string;
   messageHref?: string | null;
   storeHref: string;
 }
 
 // 600px+: the inline pair in the info column (outline "Message" + filled
-// "Book an Appointment"), same sizes as the Catalog Design's buttons.
-export function ServiceInlineActions({ bookHref, messageHref }: Omit<ServiceActionButtonsProps, 'storeHref'>) {
+// "Online Order"), same sizes as the Catalog Design's buttons.
+export function ServiceInlineActions({ orderHref, messageHref }: Omit<ServiceActionButtonsProps, 'storeHref'>) {
   return (
     <div className="hidden min-[600px]:flex items-center gap-2 pt-4">
       {messageHref && (
@@ -24,17 +24,17 @@ export function ServiceInlineActions({ bookHref, messageHref }: Omit<ServiceActi
         </a>
       )}
       <Link
-        href={bookHref}
+        href={orderHref}
         className="flex-1 h-12 flex items-center justify-center gap-1.5 bg-taupe hover:bg-ink text-white text-xs min-[900px]:text-sm font-semibold transition-colors text-center whitespace-nowrap px-2"
       >
-        <CalendarDays size={16} className="shrink-0" /> Book an Appointment
+        <ShoppingCart size={16} className="shrink-0" /> Online Order
       </Link>
     </div>
   );
 }
 
-// Below 600px: the sticky bottom bar (Shop · Message | Book an Appointment).
-export function ServiceBottomBar({ bookHref, messageHref, storeHref }: ServiceActionButtonsProps) {
+// Below 600px: the sticky bottom bar (Shop · Message | Online Order).
+export function ServiceBottomBar({ orderHref, messageHref, storeHref }: ServiceActionButtonsProps) {
   return (
     <div
       className="min-[600px]:hidden sticky bottom-0 left-0 right-0 z-40 bg-white border-t border-line shrink-0"
@@ -61,8 +61,8 @@ export function ServiceBottomBar({ bookHref, messageHref, storeHref }: ServiceAc
             </a>
           )}
         </div>
-        <Link href={bookHref} className="flex-1 flex items-center justify-center text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors text-center">
-          Book an Appointment
+        <Link href={orderHref} className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors text-center">
+          <ShoppingCart size={18} className="shrink-0" /> Online Order
         </Link>
       </div>
     </div>

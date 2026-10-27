@@ -80,7 +80,7 @@ export default function DeckReceiptViewer({
       {(receipt.payment_status === 'paid' || receipt.payment_status === 'approved') && (
         <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800 font-semibold">
           <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-          <span>Payment verified and approved. Recorded in store accounting ledger.</span>
+          <span>Payment verified and approved. Recorded in shop accounting ledger.</span>
         </div>
       )}
 

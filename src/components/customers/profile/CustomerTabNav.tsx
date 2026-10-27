@@ -11,7 +11,7 @@ interface CustomerTabNavProps {
 export default function CustomerTabNav({ activeTab, setActiveTab }: CustomerTabNavProps) {
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: User },
-    { id: 'measurements' as const, label: 'Measurements & Specs', icon: Ruler },
+    { id: 'measurements' as const, label: 'Measurements', icon: Ruler },
     { id: 'orders' as const, label: 'Job Orders', icon: Scissors },
     { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
     { id: 'history' as const, label: 'Activity History', icon: History },

@@ -30,7 +30,7 @@ export default function BookingPaymentSection({
     <div className="pt-4 border-t border-line space-y-3">
       <h3 className="mobile-h3 font-semibold text-ink">Fitting Reservation Fee</h3>
       <p className="mobile-body-sm text-ink-muted font-normal">
-        This store charges a ₱{Number(storeSettings?.fitting_fee).toLocaleString()} fee to reserve this slot. Select how you&apos;d like to pay it.
+        This shop charges a ₱{Number(storeSettings?.fitting_fee).toLocaleString()} fee to reserve this slot. Select how you&apos;d like to pay it.
       </p>
 
       <div className="grid grid-cols-4 gap-2">

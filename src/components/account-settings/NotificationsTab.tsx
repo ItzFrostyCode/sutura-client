@@ -81,7 +81,7 @@ export default function NotificationsTab() {
     {
       key: 'new_order',
       label: 'New Order Notifications',
-      desc: 'Get notified whenever a new order is placed in your store.',
+      desc: 'Get notified whenever a new order is placed in your shop.',
       icon: Bell,
     },
     {
@@ -99,7 +99,7 @@ export default function NotificationsTab() {
     {
       key: 'weekly_summary',
       label: 'Weekly Sales Summary',
-      desc: "Get a weekly digest of your store's sales performance every Monday morning.",
+      desc: "Get a weekly digest of your shop's sales performance every Monday morning.",
       icon: BarChart2,
     },
   ];

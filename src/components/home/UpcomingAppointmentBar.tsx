@@ -86,7 +86,7 @@ export default function UpcomingAppointmentBar() {
             <span className="truncate">{dateLabel}, {timeLabel}</span>
           ) : (
             <span className="truncate">
-              Upcoming {purpose} appointment with {appt.store?.name ?? 'the store'} — {dateLabel}, {timeLabel}
+              Upcoming {purpose} appointment with {appt.store?.name ?? 'the shop'} — {dateLabel}, {timeLabel}
             </span>
           )}
         </span>

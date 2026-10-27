@@ -71,6 +71,11 @@ export function useStoreApplication() {
     form.append('latitude', String(shop.location.lat));
     form.append('longitude', String(shop.location.lng));
     shop.specializations.forEach((s) => form.append('specializations[]', s));
+    shop.custom_services.forEach((s) => form.append('custom_services[]', s));
+    shop.branches.forEach((b, i) => {
+      form.append(`branches[${i}][name]`, b.name.trim());
+      form.append(`branches[${i}][address]`, b.address.trim());
+    });
     Object.entries(files).forEach(([key, file]) => form.append(key, file));
     permits.forEach((file) => form.append('business_permits[]', file));
     form.append('government_id_type', governmentIdType);

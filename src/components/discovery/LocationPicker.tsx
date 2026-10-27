@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import '@/lib/leafletSafe';
@@ -75,7 +76,10 @@ export default function LocationPicker({
     };
   }, []);
 
-  return (
+  // Rendered on <body>, not where it's used: callers open it from inside their
+  // own <form> (shop registration, branch form), and a picker living in that
+  // form's DOM would let Enter or any stray button submit it.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-stretch justify-center">
       <button
         type="button"
@@ -164,6 +168,7 @@ export default function LocationPicker({
           onConfirm={state.handleConfirm}
         />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

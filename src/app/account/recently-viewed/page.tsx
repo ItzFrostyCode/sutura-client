@@ -36,7 +36,7 @@ type Tab = 'showroom' | 'services' | 'stores';
 const TABS: { key: Tab; label: string; shortLabel: string; type: RecentRow['type'] }[] = [
   { key: 'showroom', label: 'Catalog Designs', shortLabel: 'Catalog', type: 'catalog_item' },
   { key: 'services', label: 'Services', shortLabel: 'Services', type: 'service' },
-  { key: 'stores', label: 'Stores', shortLabel: 'Stores', type: 'store' },
+  { key: 'stores', label: 'Shops', shortLabel: 'Shops', type: 'store' },
 ];
 
 export default function RecentlyViewedPage() {

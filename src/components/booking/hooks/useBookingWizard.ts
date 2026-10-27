@@ -189,7 +189,7 @@ export function useBookingWizard(storeId: string) {
       label: 'Consultation',
       duration: 30,
       icon: React.createElement(MessageSquare, { size: 18 }),
-      hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
+      hint: 'Discuss your garment idea, materials, design, and pricing with the shop.',
     };
 
     const measurementBase: BookingTypeOption = {
@@ -213,7 +213,7 @@ export function useBookingWizard(storeId: string) {
       label: 'Fitting',
       duration: 45,
       icon: React.createElement(Shirt, { size: 18 }),
-      hint: 'Try on your garment in progress so the store can adjust the fit.',
+      hint: 'Try on your garment in progress so the shop can adjust the fit.',
     };
 
     const pickupBase: BookingTypeOption = {
@@ -221,7 +221,7 @@ export function useBookingWizard(storeId: string) {
       label: 'Pickup',
       duration: 15,
       icon: React.createElement(Package, { size: 18 }),
-      hint: 'Collect your finished garment or order at the store.',
+      hint: 'Collect your finished garment or order at the shop.',
     };
 
     const withExisting = (baseList: BookingTypeOption[]) => {
@@ -238,7 +238,7 @@ export function useBookingWizard(storeId: string) {
     // the same way a single service's type does.
     if (packageIdParam) {
       if (packageInfo?.service_category === 'alterations_repairs') {
-        return withExisting([{ ...alterationBase, label: 'Alteration / Repair', hint: 'Bring your garments for adjustment or repair with the store.' }]);
+        return withExisting([{ ...alterationBase, label: 'Alteration / Repair', hint: 'Bring your garments for adjustment or repair with the shop.' }]);
       }
       return withExisting([consultationBase, measurementBase]);
     }
@@ -277,7 +277,7 @@ export function useBookingWizard(storeId: string) {
           {
             ...alterationBase,
             label: 'Alteration / Repair',
-            hint: 'Bring your garment for adjustment or repair with the store.',
+            hint: 'Bring your garment for adjustment or repair with the shop.',
           },
         ]);
       }
@@ -296,7 +296,7 @@ export function useBookingWizard(storeId: string) {
           {
             ...consultationBase,
             label: 'Consultation / Order Discussion',
-            hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the store.',
+            hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the shop.',
           },
         ]);
       }
@@ -319,7 +319,7 @@ export function useBookingWizard(storeId: string) {
           {
             ...consultationBase,
             label: 'Consultation / Order Discussion',
-            hint: 'Discuss bulk garment requirements, fabric, sizing strategy, and quotation with the store.',
+            hint: 'Discuss bulk garment requirements, fabric, sizing strategy, and quotation with the shop.',
           },
           {
             ...measurementBase,
@@ -344,7 +344,7 @@ export function useBookingWizard(storeId: string) {
       label: 'Other',
       duration: 30,
       icon: React.createElement(MessageSquare, { size: 18 }),
-      hint: 'Something else — fabric selection, a question, a concern. Tell the store what it is for.',
+      hint: 'Something else — fabric selection, a question, a concern. Tell the shop what it is for.',
     };
     return withExisting([consultationBase, measurementBase, alterationBase, otherBase]);
   }, [refName, selectedService, serviceIdParam, serviceNameParam, hasExistingOrder, packageIdParam, packageInfo]);

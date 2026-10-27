@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight, BadgeCheck, Clock, GraduationCap, LocateFixed, MapPin, RotateCcw,
   Scissors, SendHorizontal, Shirt, Sparkles, Spool, Wallet, type LucideIcon,
 } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 import AskShopRow from './AskShopRow';
 import { useAskSutura, type AskAnswer } from './useAskSutura';
 
@@ -45,7 +45,7 @@ export default function AskSutura() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas selection:bg-taupe/25">
-      <PublicNav />
+      <PublicNav featureNav />
 
       <main className="mx-auto w-full max-w-3xl flex-1 mobile-screen-margins pb-10 pt-8 sm:pt-12">
         {messages.length === 0 ? (
@@ -83,7 +83,7 @@ export default function AskSutura() {
         )}
       </main>
 
-      <div className="sticky bottom-0 z-10 border-t border-line bg-canvas">
+      <div className="sticky bottom-(--fnav-h) z-10 border-t border-line bg-canvas">
         <form
           onSubmit={(e) => { e.preventDefault(); send(draft); }}
           className="mx-auto flex w-full max-w-3xl items-center gap-2 mobile-screen-margins pt-3"
@@ -120,7 +120,7 @@ function SuturaMark({ size }: { readonly size: 'sm' | 'lg' }) {
   const box = size === 'lg' ? 'h-20 w-20' : 'h-8 w-8';
   return (
     <span className={`relative flex shrink-0 items-center justify-center bg-[#EFE6DA] ${box}`} aria-hidden="true">
-      <Image src="/sutura_logo_no_text.png" alt="" width={size === 'lg' ? 52 : 22} height={size === 'lg' ? 52 : 22} className="object-contain" />
+      <SuturaLogo variant="mark" title="" className={size === 'lg' ? 'h-14' : 'h-6'} />
     </span>
   );
 }

@@ -10,7 +10,7 @@ import AccountHeader from '@/components/account/AccountHeader';
 export default function BecomeStoreOwnerPage() {
   return (
     <div>
-      <AccountHeader title="Become a Store Owner" backHref="/account" />
+      <AccountHeader title="Become a Shop Owner" backHref="/account" />
       <p className="mobile-body-md text-ink-body">
         Apply to open your tailoring shop on SUTURA. You&apos;ll upload your business documents and choose a plan, and
         our team will review your application before your shop goes live.

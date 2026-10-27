@@ -29,7 +29,7 @@ export default function SignOutConfirmModal({ isOpen, onClose, onConfirm }: Sign
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Sign out of the console?"
+      title="Sign out?"
       footer={(
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="min-h-11 border border-line-strong px-4 text-sm text-ink">

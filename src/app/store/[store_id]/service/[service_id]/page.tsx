@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { ArrowLeft, Share2, MoreHorizontal, Home, HelpCircle, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
+import { serviceOrderHref } from '@/lib/serviceOrderHref';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
@@ -256,7 +257,7 @@ export default function ServiceDetailPage({
   }
 
   const facebookUrl = getSocialUrl(store.social_links, 'facebook');
-  const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}`;
+  const orderHref = serviceOrderHref(storeId, service);
   const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
@@ -484,7 +485,7 @@ export default function ServiceDetailPage({
           buyZone={
             <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
               <ServiceProductInfo service={service} />
-              <ServiceInlineActions bookHref={bookHref} messageHref={messageHref} />
+              <ServiceInlineActions orderHref={orderHref} messageHref={messageHref} />
             </div>
           }
         />
@@ -516,7 +517,7 @@ export default function ServiceDetailPage({
         </div>
       </main>
 
-      <ServiceBottomBar bookHref={bookHref} messageHref={messageHref} storeHref={`/store/${storeId}`} />
+      <ServiceBottomBar orderHref={orderHref} messageHref={messageHref} storeHref={`/store/${storeId}`} />
     </div>
   );
 }

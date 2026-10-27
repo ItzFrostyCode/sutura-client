@@ -65,7 +65,7 @@ export default function RecentReviews() {
             <Star size={32} className="text-[#EBE6E0] mb-2" />
             <p className="text-sm font-medium text-ink-muted">No reviews yet.</p>
             <p className="text-xs text-ink-faint mt-1 max-w-[200px]">
-              When customers rate your store, their feedback will appear here.
+              When customers rate your shop, their feedback will appear here.
             </p>
           </div>
         ) : (

@@ -9,6 +9,7 @@ interface CustomerProfileHeaderProps {
   readonly onBack: () => void;
   readonly onEditProfile: () => void;
   readonly onViewMeasurements: () => void;
+  readonly onOpenNewMeasurementModal?: () => void;
 }
 
 export default function CustomerProfileHeader({
@@ -16,6 +17,7 @@ export default function CustomerProfileHeader({
   onBack,
   onEditProfile,
   onViewMeasurements,
+  onOpenNewMeasurementModal,
 }: CustomerProfileHeaderProps) {
   const sukiTagMap: Record<string, { label: string; badgeCls: string }> = {
     b2b_suki: { label: 'B2B Suki ⭐', badgeCls: 'bg-amber-50 text-amber-800 border-amber-200' },
@@ -33,7 +35,7 @@ export default function CustomerProfileHeader({
             type="button"
             onClick={onBack}
             className="h-10 w-10 rounded-xl bg-canvas border border-line text-ink-muted hover:text-ink hover:border-taupe flex items-center justify-center transition-all shadow-2xs shrink-0 cursor-pointer"
-            title="Back to Client Book"
+            title="Back to Customer Records"
           >
             <ArrowLeft size={18} />
           </button>
@@ -90,8 +92,9 @@ export default function CustomerProfileHeader({
           </Link>
           <button
             type="button"
-            onClick={onViewMeasurements}
+            onClick={onOpenNewMeasurementModal || onViewMeasurements}
             className="h-9 px-3.5 rounded-xl bg-surface hover:bg-canvas border border-line text-ink font-semibold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+            title="Add or view measurement profiles"
           >
             <span>Measurements</span>
           </button>

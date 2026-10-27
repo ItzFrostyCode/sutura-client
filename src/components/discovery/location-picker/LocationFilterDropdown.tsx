@@ -20,7 +20,7 @@ export default function LocationFilterDropdown({
   return (
     <div className="absolute left-2.5 right-2.5 top-15 z-30 bg-surface border border-line rounded-2xl p-4 shadow-2xl space-y-3.5 animate-in zoom-in-95 duration-150">
       <div className="flex items-center justify-between pb-2 border-b border-line">
-        <h3 className="mobile-h4 font-semibold text-ink">Filter Stores & Districts</h3>
+        <h3 className="mobile-h4 font-semibold text-ink">Filter Shops & Districts</h3>
         <button
           type="button"
           onClick={onClose}
@@ -49,7 +49,7 @@ export default function LocationFilterDropdown({
 
       <div>
         <label className="mobile-overline text-ink-faint block mb-1.5">
-          Store Status
+          Shop Status
         </label>
         <div className="grid grid-cols-3 gap-2">
           <button
@@ -61,7 +61,7 @@ export default function LocationFilterDropdown({
                 : 'bg-canvas text-ink-body border-line hover:border-taupe font-normal'
             }`}
           >
-            All Stores
+            All Shops
           </button>
           <button
             type="button"

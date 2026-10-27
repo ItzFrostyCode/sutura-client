@@ -55,7 +55,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
   }
 
   if (!s.store) {
-    return <div className="py-32 text-center text-ink-faint">Store not found.</div>;
+    return <div className="py-32 text-center text-ink-faint">Shop not found.</div>;
   }
 
   return (
@@ -276,7 +276,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
           </div>
         ) : (
           <div className="py-8 text-center text-sm text-ink-muted">
-            No branch locations available for this store.
+            No branch locations available for this shop.
           </div>
         )}
       </Modal>

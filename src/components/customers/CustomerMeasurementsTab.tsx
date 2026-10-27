@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { Plus, Loader2 } from 'lucide-react';
 import Modal from '@/components/Modal';
@@ -16,6 +16,8 @@ interface CustomerMeasurementsTabProps {
   readonly storeId: number;
   readonly measurements: MeasurementProfile[];
   readonly onReload: () => Promise<void>;
+  readonly triggerOpenModal?: boolean;
+  readonly onModalOpened?: () => void;
 }
 
 // This tab used to run its own separate "Custom Specs" form alongside the
@@ -29,6 +31,8 @@ export default function CustomerMeasurementsTab({
   storeId,
   measurements,
   onReload,
+  triggerOpenModal,
+  onModalOpened,
 }: CustomerMeasurementsTabProps) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [selectedVersionIds, setSelectedVersionIds] = useState<Record<string, number>>({});
@@ -57,6 +61,25 @@ export default function CustomerMeasurementsTab({
     setError('');
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    if (triggerOpenModal) {
+      openAdd();
+      onModalOpened?.();
+    }
+  }, [triggerOpenModal]);
+
+  useEffect(() => {
+    if (measurements.length > 0) {
+      setExpandedIds(prev => {
+        const next = new Set(prev);
+        for (const m of measurements) {
+          next.add(m.id);
+        }
+        return next;
+      });
+    }
+  }, [measurements]);
 
   const openEdit = (rec: MeasurementRecord) => {
     setEditingId(rec.id);
@@ -163,8 +186,15 @@ export default function CustomerMeasurementsTab({
       </div>
 
       {measurements.length === 0 ? (
-        <div className="bg-canvas/50 border border-line border-dashed rounded-xl p-12 text-center text-sm text-ink-faint">
-          No measurements recorded for this client yet.
+        <div className="bg-canvas/50 border border-line border-dashed rounded-xl p-12 text-center space-y-3">
+          <p className="text-sm text-ink-faint">No measurements recorded for this client yet.</p>
+          <button
+            type="button"
+            onClick={openAdd}
+            className="inline-flex items-center gap-1.5 text-xs font-bold bg-taupe text-white px-4 py-2 rounded-xl hover:bg-taupe-hover transition-colors cursor-pointer shadow-2xs"
+          >
+            <Plus size={14} /> Add First Profile
+          </button>
         </div>
       ) : (
         <MeasurementList

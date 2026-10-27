@@ -5,18 +5,22 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { usePublicNav } from './publicNav/usePublicNav';
 import NavMenuDrawer from './publicNav/NavMenuDrawer';
-import WebHoverNav from './publicNav/WebHoverNav';
 import NavActionButtons from './publicNav/NavActionButtons';
+import FeatureNav from './FeatureNav';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 import { getSavedLocation, requestCurrentLocation } from '@/lib/customerLocation';
 
 export default function PublicNav({
   hideMenu = false,
   isSticky = true,
   className = '',
+  featureNav = false,
 }: {
   readonly hideMenu?: boolean;
   readonly isSticky?: boolean;
   readonly className?: string;
+  /** Show the Map / Measurements / Tracking / Ask feature bar (fixed to the bottom of the screen). */
+  readonly featureNav?: boolean;
 } = {}) {
   const {
     menuOpen,
@@ -62,27 +66,27 @@ export default function PublicNav({
           <Link
             href="/"
             onClick={closeMenu}
+            aria-label="SUTURA home"
             className="flex items-center justify-center group"
           >
-            <span className="text-[20px] font-serif font-bold text-ink tracking-widest leading-none">
-              SUTURA
-            </span>
+            <SuturaLogo className="h-8" title="" />
           </Link>
         </div>
 
-        {/* DESKTOP/TABLET (>= md): All 5 Categories on the LEFT SIDE */}
-        <WebHoverNav />
+        {/* DESKTOP/TABLET (>= md): empty left slot — the category links moved
+            to Discover (the feature bar → /categories); this keeps the action
+            icons on the right with the logo centred. */}
+        <div className="hidden md:block w-[120px]" aria-hidden="true" />
 
         {/* DESKTOP/TABLET (>= md): SUTURA Logo Centered */}
         <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 pointer-events-auto">
           <Link
             href="/"
             onClick={closeMenu}
+            aria-label="SUTURA home"
             className="flex items-center justify-center group"
           >
-            <span className="text-[20px] sm:text-[24px] font-serif font-bold text-ink tracking-widest leading-none group-hover:opacity-80 transition-opacity whitespace-nowrap">
-              SUTURA
-            </span>
+            <SuturaLogo className="h-9 sm:h-10 group-hover:opacity-80 transition-opacity" title="" />
           </Link>
         </div>
 
@@ -100,6 +104,8 @@ export default function PublicNav({
           onActionClick={closeMenu}
         />
       </div>
+
+      {featureNav && <FeatureNav />}
 
       {/* Mobile Drawer (Clean White Background, Black Text, Zero Descriptions) */}
       <NavMenuDrawer

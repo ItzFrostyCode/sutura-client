@@ -33,7 +33,7 @@ export default function SubscriptionActivityReport({ report, period }: { readonl
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Live subscriptions" value={live} hint={`${status.paid} paid · ${status.trial} on trial${status.lapsed ? ` · ${status.lapsed} lapsed` : ''}`} />
-        <StatCard label="Monthly list value" value={formatPeso(report.estimated_mrr)} hint="Plan price × live stores (estimate)" />
+        <StatCard label="Monthly list value" value={formatPeso(report.estimated_mrr)} hint="Plan price × live shops (estimate)" />
         <StatCard label="Plan income" value={formatPeso(report.plan_income)} hint={`${report.plan_payments} approved ${report.plan_payments === 1 ? 'payment' : 'payments'} in this period`} />
         <Link href="/admin/upgrades" className="block hover:bg-canvas">
           <StatCard label="Plan payments to review" value={report.pending_plan_payments} hint={report.pending_plan_payments ? `${formatPeso(report.pending_plan_income)} waiting for approval` : 'All caught up'} />
@@ -73,17 +73,17 @@ export default function SubscriptionActivityReport({ report, period }: { readonl
         </ReportCard>
       </div>
 
-      <ReportCard title="Live stores by plan" aside={<>≈ {formatPeso(report.estimated_mrr)}/mo list price</>}>
+      <ReportCard title="Live shops by plan" aside={<>≈ {formatPeso(report.estimated_mrr)}/mo list price</>}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-line text-left text-eyebrow">
               <tr>
                 <th className="px-5 py-3 font-normal">Plan</th>
-                <th className="px-5 py-3 font-normal">Stores</th>
+                <th className="px-5 py-3 font-normal">Shops</th>
                 <th className="px-5 py-3 text-right font-normal">Monthly list value</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y-2 divide-line-strong">
               {report.by_plan.length === 0 && (
                 <tr><td colSpan={3} className="px-5 py-6 text-ink-muted">No live subscriptions yet.</td></tr>
               )}
@@ -102,7 +102,7 @@ export default function SubscriptionActivityReport({ report, period }: { readonl
             </tbody>
           </table>
         </div>
-        {report.by_plan.length > 0 && <p className="border-t border-line px-5 py-3 text-xs text-ink-muted">Click a plan to see its stores, by monthly or yearly billing.</p>}
+        {report.by_plan.length > 0 && <p className="border-t border-line px-5 py-3 text-xs text-ink-muted">Click a plan to see its shops, by monthly or yearly billing.</p>}
       </ReportCard>
 
       <PlanStoresModal plan={openPlan} onClose={() => setOpenPlan(null)} />

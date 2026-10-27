@@ -708,7 +708,7 @@ export function useStoreStorefront(storeId: string) {
       setPostCaption('');
       setPostServiceId('');
       setIsAddingPost(false);
-      toast.success('Posted! Customers can now see this on your store profile.');
+      toast.success('Posted! Customers can now see this on your shop profile.');
     } catch {
       toast.error('Failed to publish post.');
     } finally {
@@ -764,11 +764,11 @@ export function useStoreStorefront(storeId: string) {
   const submitRating = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     if (!user) {
-      toast.error('Please log in to rate this store.');
+      toast.error('Please log in to rate this shop.');
       return;
     }
     if (!store) {
-      toast.error('Store profile is still loading. Please try again.');
+      toast.error('Shop profile is still loading. Please try again.');
       return;
     }
     setIsSubmittingRating(true);

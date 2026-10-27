@@ -52,7 +52,7 @@ export default function StoreRatingSummaryCard({
                 size={16}
                 className={myReview?.rating ? 'fill-amber-300 text-amber-300' : 'fill-white text-white'}
               />
-              <span>{myReview?.rating ? `Your Rating: ${myReview.rating}★ (Edit)` : 'Rate this Store'}</span>
+              <span>{myReview?.rating ? `Your Rating: ${myReview.rating}★ (Edit)` : 'Rate this Shop'}</span>
             </button>
           )}
         </div>

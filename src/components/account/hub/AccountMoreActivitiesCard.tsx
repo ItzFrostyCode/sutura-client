@@ -28,8 +28,8 @@ export default function AccountMoreActivitiesCard() {
             <Store size={18} className="text-taupe" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="mobile-body-md font-normal text-ink">Start a Store Owner Account</p>
-            <p className="mobile-caption font-normal text-ink-muted">Be a Store Owner</p>
+            <p className="mobile-body-md font-normal text-ink">Start a Shop Owner Account</p>
+            <p className="mobile-caption font-normal text-ink-muted">Be a Shop Owner</p>
           </div>
           <ChevronRight size={18} className="text-ink-faint shrink-0" />
         </Link>

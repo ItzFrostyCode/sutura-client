@@ -21,6 +21,9 @@ export interface ApplicationDetail {
   latitude: string | null;
   longitude: string | null;
   specializations: string[] | null;
+  /** Services the shop typed in at registration ("Add Other Service"). */
+  custom_services?: string[] | null;
+  declared_branches?: { name: string; address: string }[] | null;
   rejection_reason: string | null;
   approved_at: string | null;
   created_at: string;
@@ -32,7 +35,20 @@ export interface ApplicationDetail {
     birthday: string; contact_number: string; billing_cycle: string; quoted_price: string;
     payment_method: string | null; government_id_type: string; reviewed_at: string | null;
     requested_plan: { name: string } | null; reviewer: { name: string } | null;
+    /** "Request Changes" round: waiting on the owner, or back for review. */
+    review_state: 'changes_requested' | 'resubmitted' | null;
+    change_request_items: string[] | null;
+    change_request_note: string | null;
+    change_requested_at: string | null;
+    resubmitted_at: string | null;
+    update_token_expires_at: string | null;
+    change_requester: { name: string } | null;
   } | null;
+}
+
+export interface ChangeItem {
+  key: string;
+  label: string;
 }
 
 export interface IssuedCredentials {
@@ -47,11 +63,13 @@ export function useApplicationDetail(id: string) {
   const [error, setError] = useState('');
   const [suggestedLogin, setSuggestedLogin] = useState('');
   const [loginDomain, setLoginDomain] = useState('');
+  const [changeItems, setChangeItems] = useState<ChangeItem[]>([]);
 
   const load = useCallback(async () => {
     try {
       const res = await adminApi.get(`/admin/store-applications/${id}`);
       setStore(res.data.data.store);
+      setChangeItems(res.data.data.change_items ?? []);
       setDocuments(res.data.data.documents);
       setSuggestedLogin(res.data.data.suggested_login);
       setLoginDomain(res.data.data.login_domain);
@@ -75,5 +93,12 @@ export function useApplicationDetail(id: string) {
     return res.data.message as string;
   };
 
-  return { store, documents, error, suggestedLogin, loginDomain, approve, reject };
+  /** update_url comes back only when the email could not be sent. */
+  const requestChanges = async (items: string[], note: string) => {
+    const res = await adminApi.put(`/admin/store-applications/${id}/request-changes`, { items, note });
+    await load();
+    return { message: res.data.message as string, updateUrl: (res.data.update_url as string | null) ?? null };
+  };
+
+  return { store, documents, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges };
 }

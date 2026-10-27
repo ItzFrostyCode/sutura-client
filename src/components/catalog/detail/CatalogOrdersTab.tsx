@@ -65,7 +65,7 @@ export default function CatalogOrdersTab({ allOrders }: Readonly<{ allOrders: Co
           <ShoppingBag size={38} className="mx-auto mb-2 text-ink-faint" />
           <p className="text-sm font-semibold">No orders recorded yet for this design.</p>
           <p className="text-xs text-ink-faint mt-1 px-4">
-            When customers order this design from your store profile or via walk-in, orders will appear here.
+            When customers order this design from your shop profile or via walk-in, orders will appear here.
           </p>
         </div>
       ) : (

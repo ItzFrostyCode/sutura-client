@@ -4,6 +4,7 @@ import OpeningHoursCard from './OpeningHoursCard';
 import SocialLinksCard from './SocialLinksCard';
 import DescriptionCard from './DescriptionCard';
 import SpecializationBadges from './SpecializationBadges';
+import DeclaredBranchesCard from './DeclaredBranchesCard';
 
 interface StoreAboutPublicViewProps {
   readonly store: StoreProfile;
@@ -29,6 +30,7 @@ export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: St
         </div>
         <DescriptionCard description={store.description} />
       </div>
+      <DeclaredBranchesCard branches={store.declared_branches} />
     </div>
   );
 }

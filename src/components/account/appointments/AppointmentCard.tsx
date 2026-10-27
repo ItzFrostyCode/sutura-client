@@ -69,7 +69,7 @@ export default function AppointmentCard({
               {appt.store.name}
             </Link>
           ) : (
-            <span className="mobile-caption font-semibold text-ink-muted truncate min-w-0">Store</span>
+            <span className="mobile-caption font-semibold text-ink-muted truncate min-w-0">Shop</span>
           )}
           <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0 ${meta.tone}`}>
             <StatusIcon size={12} /> {meta.label}
@@ -127,7 +127,7 @@ export default function AppointmentCard({
       {!isPastDue && appt.status === 'pending' && (
         <div className="flex items-start gap-2 mt-3 pt-3 border-t border-line mobile-caption text-ink-body leading-relaxed font-normal">
           <Info size={15} className="text-ink-muted shrink-0 mt-0.5" />
-          Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.
+          Waiting for the shop to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.
         </div>
       )}
 
@@ -143,7 +143,7 @@ export default function AppointmentCard({
         <div className="mt-3 pt-3 border-t border-line">
           {appt.cancellation_reason && (
             <p className="mobile-caption text-ink-muted leading-relaxed mb-2 font-normal">
-              <span className="font-semibold text-ink-body">Reason from store:</span> {appt.cancellation_reason}
+              <span className="font-semibold text-ink-body">Reason from shop:</span> {appt.cancellation_reason}
             </p>
           )}
           {appt.rebooking_blocked ? (

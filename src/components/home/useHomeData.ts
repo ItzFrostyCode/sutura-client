@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { BOOT_CLASS } from '@/lib/bootSplash';
 import {
   checkLocationPermission,
   getSavedLocation,
@@ -17,17 +18,11 @@ import type { StoreResult } from './homeTypes';
 
 export function useHomeData() {
   const router = useRouter();
-  const [items, setItems] = useState<CatalogItemResult[]>([]);
-  const [loading, setLoading] = useState(true);
   const [heroSearch, setHeroSearch] = useState('');
 
   const [stores, setStores] = useState<StoreResult[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
 
-  // Real "bestseller" signal (order count), not a fabricated ranking —
-  // same sort_by=top_sales /search already offers.
-  const [trendingItems, setTrendingItems] = useState<CatalogItemResult[]>([]);
-  const [trendingLoading, setTrendingLoading] = useState(true);
 
   // Detect the visitor's location on arrival (adviser request, after
   // tarakape.cc): the browser's own permission prompt appears on the first
@@ -37,8 +32,13 @@ export function useHomeData() {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('locating');
 
   useEffect(() => {
+    // The landing splash (LocationSplash) is detecting right now; it hands
+    // the result over via applyLocation, so don't prompt a second time.
+    const splashDetecting = document.documentElement.classList.contains(BOOT_CLASS);
     const saved = getSavedLocation();
-    if (saved) {
+    if (splashDetecting) {
+      // stay 'locating' until the splash resolves
+    } else if (saved) {
       setLocation(saved);
       setLocationStatus('ready');
     } else {
@@ -64,28 +64,19 @@ export function useHomeData() {
   }, []);
 
   useEffect(() => {
-    // Featured spotlight: the server's default order (featured first, then
-    // ratings) — deliberately not distance. "Stores near you" (HomeStoresGrid)
-    // runs its own location + filter query.
-    api.get('/public/stores', { params: { per_page: 8 } })
+    // Featured spotlight: Premium shops only (active, unexpired Premium
+    // subscription — Store::scopePremiumActive), in the server's default
+    // order (featured first, then ratings) — deliberately not distance.
+    // "Shops near you" (HomeStoresGrid) runs its own location + filter query.
+    api.get('/public/stores', { params: { per_page: 8, premium_only: 1 } })
       .then((res) => setStores(res.data.data ?? []))
       .catch(() => setStores([]))
       .finally(() => setStoresLoading(false));
   }, []);
 
-  useEffect(() => {
-    api.get('/public/catalog-items', { params: { per_page: 8, sort_by: 'top_sales' } })
-      .then((res) => setTrendingItems(res.data.data ?? []))
-      .catch(() => setTrendingItems([]))
-      .finally(() => setTrendingLoading(false));
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    api.get('/public/catalog-items', { params: { per_page: 48 } })
-      .then((res) => setItems(res.data.data ?? []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+  const applyLocation = useCallback((loc: SavedLocation) => {
+    setLocation(loc);
+    setLocationStatus('ready');
   }, []);
 
   const handleHeroSearch = (e: React.FormEvent) => {
@@ -100,12 +91,9 @@ export function useHomeData() {
   return {
     location,
     locationStatus,
-    items,
-    loading,
+    applyLocation,
     stores,
     storesLoading,
-    trendingItems,
-    trendingLoading,
     heroSearch,
     setHeroSearch,
     handleHeroSearch,

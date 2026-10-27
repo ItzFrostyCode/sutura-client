@@ -14,6 +14,7 @@ import MapLocationInfoCard from './MapLocationInfoCard';
 import BusinessTypeCard from './BusinessTypeCard';
 import SpecializationsCard from './SpecializationsCard';
 import StoreVisibilityCard from './StoreVisibilityCard';
+import DeclaredBranchesCard from './DeclaredBranchesCard';
 
 type SectionKey =
   | 'social_links' | 'description' | 'contact_info' | 'payment_details'
@@ -73,7 +74,7 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
     return (
       <div className="flex flex-col items-center justify-center py-16 bg-surface border border-line text-ink-muted">
         <Loader2 size={24} className="animate-spin text-taupe mb-2" />
-        <span className="text-xs font-medium">Loading your store settings...</span>
+        <span className="text-xs font-medium">Loading your shop settings...</span>
       </div>
     );
   }
@@ -112,6 +113,8 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
       <BookingFlowCard formData={formData} onChange={handleChange} setFormData={setFormDataWithDirty} {...sectionProps('booking_flow')} />
 
       <MapLocationInfoCard />
+
+      <DeclaredBranchesCard branches={store.declared_branches} isOwner />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
         <BusinessTypeCard businessType={formData.business_type} onChange={handleBusinessTypeChange} {...sectionProps('business_type')} />

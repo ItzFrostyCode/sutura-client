@@ -88,7 +88,7 @@ function MyOrdersPageContent() {
               href="/map"
               className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
             >
-              Browse Stores →
+              Browse Shops →
             </Link>
           )}
         </div>

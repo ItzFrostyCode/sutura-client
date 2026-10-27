@@ -49,7 +49,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
             <p className="text-base"><strong>Material:</strong> {job.material_source === 'customer_supplied' ? "Customer's Own" : 'Store Supplied'}</p>
           )}
           <p className="text-base"><strong>Intake Channel:</strong> {job.intake_channel.replace('_', ' ').toUpperCase()}</p>
-          <p className="text-base"><strong>Fulfillment:</strong> Store Pickup</p>
+          <p className="text-base"><strong>Fulfillment:</strong> Shop Pickup</p>
           <p className="text-base"><strong>Status:</strong> {job.status.replaceAll('_', ' ').toUpperCase()}</p>
           {job.due_date && <p className="text-base"><strong>Due Date:</strong> {new Date(job.due_date).toLocaleDateString()}</p>}
         </div>

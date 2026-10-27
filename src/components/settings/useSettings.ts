@@ -184,7 +184,7 @@ export function useSettings() {
         })
         .catch(err => {
           console.error(err);
-          toast.error('Failed to load store settings.');
+          toast.error('Failed to load shop settings.');
           setLoading(false);
         });
     } else if (user && !store) {
@@ -321,7 +321,7 @@ export function useSettings() {
       const res = await api.put(`/stores/${store.id}`, formData);
       savedDataRef.current = formData;
       setIsDirty(false);
-      toast.success('Store settings saved successfully.');
+      toast.success('Shop settings saved successfully.');
       if (user && token) {
         setAuth(user, token, res.data.data, staffProfile || undefined);
       }

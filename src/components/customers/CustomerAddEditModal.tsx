@@ -45,7 +45,7 @@ export default function CustomerAddEditModal({
             type="text"
             required
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
             className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink font-semibold focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             placeholder="e.g. Maria Clara"
           />
@@ -59,7 +59,7 @@ export default function CustomerAddEditModal({
             id="email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
             className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             placeholder="e.g. maria.clara@gmail.com"
           />
@@ -74,7 +74,7 @@ export default function CustomerAddEditModal({
             type="tel"
             required
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
             className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             placeholder="e.g. +63 917 123 4567"
           />

@@ -7,13 +7,13 @@ interface BusinessTypeSelectorProps {
 }
 
 const OPTIONS = [
-  { value: 'tailoring_store', label: 'Tailoring Store', desc: 'Custom measurements, job orders & production tracking', Icon: Scissors },
+  { value: 'tailoring_store', label: 'Tailoring Shop', desc: 'Custom measurements, job orders & production tracking', Icon: Scissors },
   { value: 'fashion_designer', label: 'Fashion Designer', desc: 'Portfolio showcase, catalog of original designs & commissions', Icon: Sparkles },
   { value: 'hybrid', label: 'Hybrid', desc: 'Both tailoring services and original fashion designs', Icon: Building2 },
 ];
 
 export const BUSINESS_TYPE_LABELS: Record<string, string> = {
-  tailoring_store: 'Tailoring Store',
+  tailoring_store: 'Tailoring Shop',
   fashion_designer: 'Fashion Designer',
   hybrid: 'Hybrid',
 };

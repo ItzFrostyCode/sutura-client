@@ -33,9 +33,14 @@ interface ModalProps {
 export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
+  const onCloseRef = useRef(onClose);
 
   const [mounted, setMounted] = useState(false);
   useScrollLock(isOpen);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -44,10 +49,12 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
   useEffect(() => {
     if (!isOpen) return;
     triggerRef.current = document.activeElement;
-    panelRef.current?.focus();
+    if (!panelRef.current?.contains(document.activeElement)) {
+      panelRef.current?.focus();
+    }
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
       // Minimal focus trap: keep Tab cycling inside the panel.
       if (e.key === 'Tab' && panelRef.current) {
         const focusables = panelRef.current.querySelectorAll<HTMLElement>(
@@ -70,7 +77,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       document.removeEventListener('keydown', onKey);
       (triggerRef.current as HTMLElement | null)?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !mounted || typeof document === 'undefined') return null;
 

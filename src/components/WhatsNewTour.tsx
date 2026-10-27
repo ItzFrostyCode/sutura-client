@@ -60,16 +60,16 @@ const STEPS: TourStep[] = [
   },
   {
     emoji: '⭐',
-    title: 'Featured Store Placement',
-    description: 'Premium stores can pin themselves at the top of customer search results. Find the toggle under Business Type in your store settings.',
-    ctaLabel: 'Go to Store Settings',
+    title: 'Featured Shop Placement',
+    description: 'Premium shops can pin themselves at the top of customer search results. Find the toggle under Business Type in your shop settings.',
+    ctaLabel: 'Go to Shop Settings',
     href: (slug) => (slug ? `/store/${slug}?tab=about` : '/dashboard/profile'),
   },
   {
     emoji: '🎯',
     title: 'Garment Specializations',
     description: "Tell customers what you actually specialize in — this is how they find you when searching the map. Same Business Type tab as Featured Placement, right below it.",
-    ctaLabel: 'Go to Store Settings',
+    ctaLabel: 'Go to Shop Settings',
     href: (slug) => (slug ? `/store/${slug}?tab=about` : '/dashboard/profile'),
   },
 ];

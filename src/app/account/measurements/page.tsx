@@ -36,7 +36,7 @@ export default function MyMeasurementsPage() {
       <AccountHeader title="My Measurements" backHref="/account" />
 
       <p className="mobile-body-sm text-ink-muted mb-4 font-normal space-headline-para">
-        Recorded by store staff during your fittings. Private to you — only shown to a store after you have an active order or appointment with them.
+        Recorded by shop staff during your fittings. Private to you — only shown to a shop after you have an active order or appointment with them.
       </p>
 
       {!loading && records.length > 0 && (
@@ -77,7 +77,7 @@ export default function MyMeasurementsPage() {
             href="/map"
             className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
           >
-            Browse Stores →
+            Browse Shops →
           </Link>
         </div>
       )}

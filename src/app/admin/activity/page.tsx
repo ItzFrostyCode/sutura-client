@@ -74,10 +74,10 @@ export default function AdminActivityPage() {
         </label>
       </div>
 
-      <div className="border border-line bg-surface">
+      <div className="border-2 border-line-strong bg-surface">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText="No activity matches." />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-2 divide-line-strong">
             {items.map((row) => (
               <li key={row.id} className="flex flex-wrap gap-x-4 gap-y-1 px-5 py-3">
                 <div className="min-w-0 flex-1 basis-72">

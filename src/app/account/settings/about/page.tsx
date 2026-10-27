@@ -1,7 +1,7 @@
 'use client';
 
-import { Scissors } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 
 export default function AboutPage() {
   return (
@@ -9,11 +9,8 @@ export default function AboutPage() {
       <AccountHeader title="About" backHref="/account/settings" />
 
       <div className="bg-surface border border-line p-6 flex flex-col items-center text-center mb-4">
-        <div className="w-14 h-14 rounded-full bg-sunken flex items-center justify-center mb-3">
-          <Scissors size={22} className="text-taupe" />
-        </div>
-        <p className="text-display text-lg font-bold text-ink">SUTURA</p>
-        <p className="text-xs text-ink-muted mt-1">Web-Based Tailoring Store Tracker System</p>
+        <SuturaLogo className="h-12" />
+        <p className="text-xs text-ink-muted mt-1">Web-Based Tailoring Shop Tracker System</p>
       </div>
 
       <div className="bg-surface border border-line p-5">

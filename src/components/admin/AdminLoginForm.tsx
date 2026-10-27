@@ -55,7 +55,7 @@ export default function AdminLoginForm() {
         </div>
       </div>
       <button type="submit" disabled={loading || !email || !password} className="btn-primary-mobile rounded-none! w-full bg-ink text-white uppercase tracking-widest text-sm disabled:opacity-50">
-        {loading ? 'Verifying…' : 'Sign in to Console'}
+        {loading ? 'Verifying…' : 'Sign in'}
       </button>
     </form>
   );

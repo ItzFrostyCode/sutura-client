@@ -25,13 +25,13 @@ export default function SubscriptionReportPanel() {
 
   return (
     <section className="grid gap-6 lg:grid-cols-2">
-      <div className="border border-line bg-surface">
+      <div className="border-2 border-line-strong bg-surface">
         <div className="flex items-baseline justify-between border-b border-line px-5 py-4">
           <h2 className="tablet-h3 text-ink">Active plans</h2>
           <p className="text-sm text-ink-muted">≈ {formatPeso(report.estimated_mrr)}/mo list price</p>
         </div>
         <table className="w-full text-sm">
-          <tbody className="divide-y divide-line">
+          <tbody className="divide-y-2 divide-line-strong">
             {report.by_plan.length === 0 && (
               <tr><td className="px-5 py-6 text-ink-muted">No active subscriptions yet.</td></tr>
             )}
@@ -46,12 +46,12 @@ export default function SubscriptionReportPanel() {
         </table>
       </div>
 
-      <div className="border border-line bg-surface">
+      <div className="border-2 border-line-strong bg-surface">
         <div className="flex items-baseline justify-between border-b border-line px-5 py-4">
           <h2 className="tablet-h3 text-ink">Last 6 months</h2>
           <p className="text-sm text-ink-muted">Approval rate {report.approval_rate ?? '—'}{report.approval_rate !== null && '%'}</p>
         </div>
-        <ul className="divide-y divide-line">
+        <ul className="divide-y-2 divide-line-strong">
           {report.months.map((m) => (
             <li key={m.label} className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-3 px-5 py-2.5 text-sm">
               <span className="text-ink-muted">{m.label}</span>

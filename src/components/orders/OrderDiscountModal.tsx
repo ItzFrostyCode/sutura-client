@@ -40,7 +40,7 @@ const QUICK_REASONS: PresetReason[] = [
   { id: 'pwd', label: 'PWD', emoji: '♿', defaultPercent: 20, reasonText: 'PWD Statutory Discount (20%)' },
   { id: 'student', label: 'Student', emoji: '🎓', defaultPercent: 10, reasonText: 'Student Privilege Discount' },
   { id: 'suki', label: 'Suki / VIP', emoji: '⭐', defaultPercent: 10, reasonText: 'Suki Loyalty Courtesy Discount' },
-  { id: 'promo', label: 'Store Promo', emoji: '🏷️', reasonText: 'Special In-Store Promotional Discount' },
+  { id: 'promo', label: 'Shop Promo', emoji: '🏷️', reasonText: 'Special In-Store Promotional Discount' },
   { id: 'family', label: 'Friend & Family', emoji: '🤝', defaultPercent: 15, reasonText: 'Friends & Family Courtesy' },
   { id: 'clearance', label: 'Minor Clearance', emoji: '✂️', reasonText: 'Display / Clearance Courtesy Discount' },
 ];

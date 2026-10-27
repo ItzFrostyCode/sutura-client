@@ -6,39 +6,38 @@
 //
 // A SHORTENED link (maps.app.goo.gl/..., goo.gl/maps/...) can't be handled
 // this way — resolving it requires following an HTTP redirect, which a
-// browser can't do cross-origin from client-side JS. Callers should ask the
-// customer to paste the full (expanded) link or a plain address instead.
+// browser can't do cross-origin. isGoogleMapsLink() spots those (and full
+// links with no coordinates) so the caller can ask the server to resolve it
+// (POST /public/resolve-map-url).
 export function parseCoordsFromMapsLink(input: string): { lat: number; lng: number } | null {
   const text = input.trim();
   if (!text) return null;
+  const valid = (lat: number, lng: number) => (Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null);
 
-  // Raw "lat, lng" typed or pasted directly (also matches Google's own
-  // "7.0731, 125.6128" copy-coordinates format).
-  const rawMatch = text.match(/^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
-  if (rawMatch) {
-    return { lat: parseFloat(rawMatch[1]), lng: parseFloat(rawMatch[2]) };
-  }
+  // Raw "lat, lng" or "lat lng" typed or pasted directly (also matches
+  // Google's own "7.0731, 125.6128" copy-coordinates format).
+  // Decimals required, so a street number pair like "50 12" isn't read as coordinates.
+  const rawMatch = text.match(/^(-?\d{1,3}\.\d+)\s*[,\s]\s*(-?\d{1,3}\.\d+)$/);
+  if (rawMatch) return valid(parseFloat(rawMatch[1]), parseFloat(rawMatch[2]));
 
-  // Google Maps' "@lat,lng,zoom" pattern — present in most share links and
-  // any "/place/.../@lat,lng,17z/..." URL.
-  const atMatch = text.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
-  if (atMatch) {
-    return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
-  }
-
-  // "?q=lat,lng" / "&q=lat,lng" — the classic maps.google.com/?q= form.
-  const qMatch = text.match(/[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
-  if (qMatch) {
-    return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
-  }
-
-  // "ll=lat,lng" — an older/alternate Google Maps query param.
-  const llMatch = text.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
-  if (llMatch) {
-    return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) };
+  // Most precise first: the "!3dlat!4dlng" pin data on a specific-place link,
+  // then "@lat,lng,zoom" (the map view), then "?q=lat,lng" / "ll=lat,lng".
+  for (const pattern of [
+    /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /[?&]q=(-?\d{1,3}\.\d+)(?:,|%2C)\s*(-?\d{1,3}\.\d+)/i,
+    /[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+  ]) {
+    const m = text.match(pattern);
+    if (m) return valid(parseFloat(m[1]), parseFloat(m[2]));
   }
 
   return null;
+}
+
+/** A Google Maps link of any shape: maps.app.goo.gl, goo.gl/maps, google.com/maps, maps.google.com. */
+export function isGoogleMapsLink(input: string): boolean {
+  return /^(https?:\/\/)?(maps\.app\.goo\.gl\/|goo\.gl\/maps\/|(www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+\/)/i.test(input.trim());
 }
 
 // Nominatim (the geocoder this app uses — see LocationPicker.tsx) has no

@@ -37,7 +37,7 @@ export const TOP_GROUPS: TopGroup[] = [
       { href: '/map', label: 'Browse Map' },
       { href: '/account', label: 'My Account' },
       { href: '/login?as=store', label: 'Shop Sign In' },
-      { href: '/register/store', label: 'Register a Store' },
+      { href: '/register/store', label: 'Register a Shop' },
       { href: '/#about', label: 'About Sutura' },
       { href: '/search?q=alteration', label: 'Alterations & Repairs' },
       { href: '/categories', label: 'All Categories Directory' },

@@ -81,8 +81,8 @@ export default function SearchStoresTab({
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-base font-bold text-ink">Nearby Stores</h2>
-        <span className="text-xs text-ink-muted">
+        <h2 className="text-base font-bold text-ink">Nearby Shops</h2>
+        <span className="text-sm font-semibold text-ink-body tabular-nums">
           {stores.length} {stores.length === 1 ? 'result' : 'results'}{userCoords ? ' · nearest first' : ''}
         </span>
       </div>
@@ -127,8 +127,8 @@ export default function SearchStoresTab({
       ) : stores.length === 0 ? (
         <div className="bg-transparent border-y border-line border-x-0 rounded-none px-4 py-10 text-center">
           <Store size={28} className="mx-auto mb-2 text-ink-faint" />
-          <p className="text-sm font-semibold text-ink">No Stores Found</p>
-          <p className="mt-1 text-xs text-ink-muted">No tailoring stores matched your search. Try another query or location.</p>
+          <p className="text-sm font-semibold text-ink">No Shops Found</p>
+          <p className="mt-1 text-xs text-ink-muted">No tailoring shops matched your search. Try another query or location.</p>
         </div>
       ) : (
         <div className="divide-y divide-line border-t border-line">
@@ -247,17 +247,22 @@ export default function SearchStoresTab({
                 </Link>
 
                 {/* Carousel Header */}
+                {/* Carousel header: shop name, then the muted count. */}
                 {showServicesCarousel && storeServices.length > 0 ? (
-                  <div className="px-0.5 pt-0.5">
-                    <span className="text-[11px] font-bold text-ink">
+                  <div className="px-0.5 pt-0.5 flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-ink truncate">{store.name}</span>
+                    <span aria-hidden="true" className="text-ink-faint shrink-0">•</span>
+                    <span className="text-sm text-ink-muted shrink-0 tabular-nums">
                       {effectiveQ.trim()
                         ? `${matchedServicesCount} matching tailoring service${matchedServicesCount === 1 ? '' : 's'}`
                         : `Tailoring services (${matchedServicesCount})`}
                     </span>
                   </div>
                 ) : storeCarouselItems.length > 0 ? (
-                  <div className="px-0.5 pt-0.5">
-                    <span className="text-[11px] font-bold text-ink">
+                  <div className="px-0.5 pt-0.5 flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-ink truncate">{store.name}</span>
+                    <span aria-hidden="true" className="text-ink-faint shrink-0">•</span>
+                    <span className="text-sm text-ink-muted shrink-0 tabular-nums">
                       {effectiveQ.trim()
                         ? `${matchedCount} matching catalog design${matchedCount === 1 ? '' : 's'}`
                         : `Catalog designs (${matchedCount})`}

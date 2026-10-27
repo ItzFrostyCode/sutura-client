@@ -36,19 +36,26 @@ export default function ConfirmDialog({
   busy = false,
 }: ConfirmDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
   useScrollLock(isOpen);
 
   useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  useEffect(() => {
     if (!isOpen) return;
-    panelRef.current?.focus();
+    if (!panelRef.current?.contains(document.activeElement)) {
+      panelRef.current?.focus();
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

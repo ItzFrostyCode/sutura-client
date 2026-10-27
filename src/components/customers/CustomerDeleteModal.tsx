@@ -19,7 +19,7 @@ export default function CustomerDeleteModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Remove Customer Record">
       <div className="space-y-4">
         <p className="text-ink text-xs leading-relaxed">
-          Are you sure you want to remove this customer from your active Client Book? Historical job orders and measurements will remain archived for accounting.
+          Are you sure you want to remove this customer from your active Customer Records? Historical job orders and measurements will remain archived for accounting.
         </p>
         <div className="pt-3 flex justify-end gap-2 border-t border-line">
           <button

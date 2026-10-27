@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Star, MapPin, Store as StoreIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Star, MapPin, Scissors, Crown, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
+import { formatAddress } from '@/lib/formatAddress';
 import type { StoreResult } from './homeTypes';
-import type { CatalogItemResult } from '@/types/publicCatalog';
 
 interface HomeFeaturedSpotlightProps {
   readonly stores: StoreResult[];
-  readonly trendingItems: CatalogItemResult[];
   readonly loading?: boolean;
 }
 
@@ -18,101 +17,39 @@ interface ThumbnailItem {
   id: number;
   name: string;
   price?: number | string | null;
-  imageUrl: string;
+  imageUrl: string | null;
 }
 
-/**
- * Extracts up to 4 preview thumbnails for the featured store.
- * Prioritizes the store's own catalog items, then store-matched trending items,
- * and falls back to general atelier items so all 4 slots are consistently filled.
- */
-function getStoreThumbnails(store: StoreResult | null, trendingItems: CatalogItemResult[]): ThumbnailItem[] {
-  if (!store) return [];
-  const results: ThumbnailItem[] = [];
-  const seenIds = new Set<number>();
-
-  // 1. From store.catalog_items (eager loaded from backend)
-  if (store.catalog_items && Array.isArray(store.catalog_items)) {
-    for (const item of store.catalog_items) {
-      const img = item.images?.[0]?.image_url;
-      if (img && !seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        results.push({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          imageUrl: img,
-        });
-      }
-      if (results.length >= 4) break;
-    }
-  }
-
-  // 2. From trendingItems matching this store
-  if (results.length < 4 && trendingItems && Array.isArray(trendingItems)) {
-    for (const item of trendingItems) {
-      if (item.store?.slug === store.slug || item.store?.id === store.id) {
-        const img = item.images?.find((i) => i.is_primary)?.image_url ?? item.images?.[0]?.image_url;
-        if (img && !seenIds.has(item.id)) {
-          seenIds.add(item.id);
-          results.push({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            imageUrl: img,
-          });
-        }
-      }
-      if (results.length >= 4) break;
-    }
-  }
-
-  // 3. Fallback to general atelier trending items if store has fewer than 4 items
-  if (results.length < 4 && trendingItems && Array.isArray(trendingItems)) {
-    for (const item of trendingItems) {
-      const img = item.images?.find((i) => i.is_primary)?.image_url ?? item.images?.[0]?.image_url;
-      if (img && !seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        results.push({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          imageUrl: img,
-        });
-      }
-      if (results.length >= 4) break;
-    }
-  }
-
-  return results.slice(0, 4);
+/** Up to 4 of the featured shop's own services (photo, name, starting price). */
+function getStoreServices(store: StoreResult | null): ThumbnailItem[] {
+  if (!store?.services) return [];
+  return store.services.slice(0, 4).map((svc) => ({
+    id: svc.id,
+    name: svc.name,
+    price: svc.base_price,
+    imageUrl: svc.image_url ?? null,
+  }));
 }
 
-export default function HomeFeaturedSpotlight({ stores, trendingItems, loading = false }: HomeFeaturedSpotlightProps) {
+/** The shop's full address: its main branch (or first), as street, barangay, district, city. */
+function shopAddress(store: StoreResult): string {
+  const branch = store.branches?.find((b) => Boolean(b.is_main)) ?? store.branches?.[0];
+  if (!branch) return '';
+  return formatAddress(branch) || branch.city || branch.name;
+}
+
+export default function HomeFeaturedSpotlight({ stores, loading = false }: HomeFeaturedSpotlightProps) {
   const gate = useGuestGatedHref();
   const [index, setIndex] = useState(0);
   const [hoveredPreview, setHoveredPreview] = useState<ThumbnailItem | null>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Store resolution with resilient fallback
-  const activeStore = stores[index] ?? null;
-  const fallbackStore = !activeStore && trendingItems.length > 0 && trendingItems[0]?.store
-    ? ({
-        id: trendingItems[0].store.id ?? 1,
-        name: trendingItems[0].store.name,
-        slug: trendingItems[0].store.slug,
-        logo_path: null,
-        banner_path: '/storage/banners/thread_needle_banner.jpg',
-        reviews_count: 0,
-        reviews_avg_rating: null,
-        branches: trendingItems[0].store.branches?.map((b) => ({ city: b.city ?? null, name: b.name })) ?? [],
-      } as StoreResult)
-    : null;
-  const store = activeStore ?? fallbackStore;
+  // Only Premium shops are passed in (premium_only). No stand-in from
+  // trending items — with no Premium shop the whole section hides.
+  const store = stores[index] ?? null;
 
-  // Derive 4 thumbnails for current store
-  const thumbnails = useMemo(() => {
-    return getStoreThumbnails(store, trendingItems);
-  }, [store, trendingItems]);
+  // Up to 4 of the shop's services for the right-hand grid
+  const thumbnails = useMemo(() => getStoreServices(store), [store]);
 
   // Auto-rotate every 7 seconds, pauses on hover
   useEffect(() => {
@@ -205,7 +142,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
           <button
             type="button"
             onClick={goPrev}
-            aria-label="Previous featured store"
+            aria-label="Previous featured shop"
             className="hidden sm:flex absolute -left-4 lg:-left-5 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center bg-surface border border-line shadow-md text-ink hover:text-taupe hover:border-line-hover transition-all z-20 cursor-pointer active:scale-95"
           >
             <ChevronLeft size={20} />
@@ -258,7 +195,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   {/* Mobile Quick Action Pill */}
                   <div className="lg:hidden pointer-events-auto">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white text-xs font-semibold rounded-none border border-white/30 transition-colors">
-                      Visit Store →
+                      Visit Shop →
                     </span>
                   </div>
                 </div>
@@ -270,7 +207,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   <button
                     type="button"
                     onClick={goPrev}
-                    aria-label="Previous store"
+                    aria-label="Previous shop"
                     className="w-8 h-8 flex items-center justify-center bg-ink/70 backdrop-blur-sm text-white border border-white/20 rounded-xs cursor-pointer active:scale-95"
                   >
                     <ChevronLeft size={16} />
@@ -278,7 +215,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   <button
                     type="button"
                     onClick={goNext}
-                    aria-label="Next store"
+                    aria-label="Next shop"
                     className="w-8 h-8 flex items-center justify-center bg-ink/70 backdrop-blur-sm text-white border border-white/20 rounded-xs cursor-pointer active:scale-95"
                   >
                     <ChevronRight size={16} />
@@ -287,10 +224,13 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
               )}
             </div>
 
-            {/* ─── RIGHT: Store Details + 2x2 Signature Works Grid (Steam Style) ─── */}
+            {/* ─── RIGHT: Shop details + 2x2 Services grid ─── */}
             <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 bg-surface border-t lg:border-t-0 lg:border-l border-line p-4 sm:p-5 flex flex-col justify-between">
-              {/* Header: Title + Rating + Davao Location */}
+              {/* Header: Title + Rating + full address */}
               <div>
+                <span className="mb-1.5 inline-flex items-center gap-1 bg-[#2E1C14] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#F3E3C8]">
+                  <Crown size={11} aria-hidden="true" /> Premium Shop
+                </span>
                 <Link href={gate(`/store/${store.slug}`)} className="group/title block">
                   <h3 className="text-lg sm:text-xl font-bold text-ink group-hover/title:text-taupe transition-colors truncate">
                     {store.name}
@@ -305,30 +245,35 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   <span className="text-xs text-ink-muted">
                     {store.reviews_count ? `(${store.reviews_count} Reviews)` : '(Verified Tailor)'}
                   </span>
-                  {store.branches?.[0] && (
-                    <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                      <MapPin size={12} className="text-taupe shrink-0" />
-                      <span className="truncate max-w-[140px]">
-                        {store.branches[0].city ?? store.branches[0].name}
-                      </span>
-                    </span>
-                  )}
                 </div>
+                {shopAddress(store) && (
+                  <p className="mt-1.5 flex items-start gap-1 text-xs text-ink-muted" title={shopAddress(store)}>
+                    <MapPin size={12} className="mt-0.5 text-taupe shrink-0" aria-hidden="true" />
+                    <span className="line-clamp-2">{shopAddress(store)}</span>
+                  </p>
+                )}
               </div>
 
               {/* 2x2 Thumbnail Grid (Steam screenshots style) */}
               <div className="my-2">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-                  Signature Works &amp; Catalog
+                  Services
                 </p>
+                {thumbnails.length === 0 && (
+                  <div className="flex aspect-[16/7] flex-col items-center justify-center gap-1 border border-dashed border-line bg-sunken/50 px-4 text-center">
+                    <Scissors size={18} className="text-taupe/60" aria-hidden="true" />
+                    <p className="text-xs font-medium text-ink-body">No services listed yet</p>
+                    <p className="text-[11px] text-ink-muted">Visit the shop to ask what they can make for you.</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-2">
                   {thumbnails.map((thumb) => {
                     const isHovered = hoveredPreview?.id === thumb.id;
                     return (
                       <Link
                         key={thumb.id}
-                        href={gate(`/store/${store.slug}/catalog/${thumb.id}`)}
-                        onMouseEnter={() => setHoveredPreview(thumb)}
+                        href={gate(`/store/${store.slug}/service/${thumb.id}`)}
+                        onMouseEnter={() => setHoveredPreview(thumb.imageUrl ? thumb : null)}
                         onMouseLeave={() => setHoveredPreview(null)}
                         className={`relative aspect-[16/10] bg-sunken border overflow-hidden transition-all duration-200 group/thumb ${
                           isHovered
@@ -336,20 +281,31 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                             : 'border-line hover:border-line-strong'
                         }`}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={getMediaUrl(thumb.imageUrl)}
-                          alt={thumb.name}
-                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = '/images/shop_storefront.jpg';
-                          }}
-                        />
+                        {thumb.imageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={getMediaUrl(thumb.imageUrl)}
+                            alt={thumb.name}
+                            className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/images/shop_storefront.jpg';
+                            }}
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center bg-[#EFE6DA]" aria-hidden="true">
+                            <Scissors size={20} className="text-taupe/60" />
+                          </span>
+                        )}
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-1 px-1.5 opacity-90 group-hover/thumb:opacity-100">
                           <p className="text-[10px] font-semibold text-white truncate leading-tight">
                             {thumb.name}
                           </p>
+                          {thumb.price != null && Number(thumb.price) > 0 && (
+                            <p className="text-[10px] text-white/80 tabular-nums leading-tight">
+                              from ₱{Number(thumb.price).toLocaleString()}
+                            </p>
+                          )}
                         </div>
                       </Link>
                     );
@@ -363,7 +319,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
                   href={gate(`/store/${store.slug}`)}
                   className="w-full min-h-[44px] px-5 bg-ink text-white hover:bg-taupe text-xs font-semibold uppercase tracking-wider transition-colors inline-flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                 >
-                  <span>Visit Store</span>
+                  <span>Visit Shop</span>
                   <span>→</span>
                 </Link>
               </div>
@@ -376,7 +332,7 @@ export default function HomeFeaturedSpotlight({ stores, trendingItems, loading =
           <button
             type="button"
             onClick={goNext}
-            aria-label="Next featured store"
+            aria-label="Next featured shop"
             className="hidden sm:flex absolute -right-4 lg:-right-5 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center bg-surface border border-line shadow-md text-ink hover:text-taupe hover:border-line-hover transition-all z-20 cursor-pointer active:scale-95"
           >
             <ChevronRight size={20} />

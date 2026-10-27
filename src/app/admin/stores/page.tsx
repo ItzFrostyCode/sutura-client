@@ -38,7 +38,7 @@ export default function AdminStoresPage() {
       setHiding(null);
       reload();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Could not hide this store.'));
+      toast.error(getErrorMessage(err, 'Could not hide this shop.'));
       throw err;
     }
   };
@@ -49,13 +49,13 @@ export default function AdminStoresPage() {
       toast.success(res.data.message);
       reload();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Could not restore this store.'));
+      toast.error(getErrorMessage(err, 'Could not restore this shop.'));
     }
   };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Stores" description="Every shop on SUTURA, with its plan and branches.">
+      <PageHeader title="Shops" description="Every shop on SUTURA, with its plan and branches.">
         <FilterTabs options={FILTERS} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} />
       </PageHeader>
 
@@ -63,10 +63,10 @@ export default function AdminStoresPage() {
         <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search shop, city, or owner" />
       </div>
 
-      <div className="border border-line bg-surface">
+      <div className="border-2 border-line-strong bg-surface">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText="No stores match." />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-2 divide-line-strong">
             {items.map((store) => <StoreRow key={store.id} store={store} onHide={setHiding} onRestore={restore} />)}
           </ul>
         )}
@@ -76,8 +76,8 @@ export default function AdminStoresPage() {
       <ReasonModal
         isOpen={hiding !== null}
         title={`Hide ${hiding?.name ?? 'store'}?`}
-        description="The store profile disappears from search, the map, and its public page until you restore it. The owner is notified with your reason."
-        confirmLabel="Hide Store"
+        description="The shop profile disappears from search, the map, and its public page until you restore it. The owner is notified with your reason."
+        confirmLabel="Hide Shop"
         onClose={() => setHiding(null)}
         onConfirm={hide}
       />

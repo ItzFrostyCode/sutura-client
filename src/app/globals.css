@@ -67,6 +67,159 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Map: "You are here" marker + recenter control ───────────────────────
+   userLocationIcon (DiscoveryMap.tsx) is a 48px box anchored at its centre:
+   a pulsing ring, a solid dot, and a label pinned above it. Pixel-sized, so
+   it sits the same at every zoom. */
+.you-marker {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+}
+.you-marker__ring {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: rgba(37, 99, 235, 0.35);
+  animation: you-pulse 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.you-marker__dot {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+}
+.you-marker__label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% + 16px);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 3px 9px 3px 7px;
+  border-radius: 9999px;
+  background: #2d2a26;
+  color: #fff;
+  font: 600 11px/1.3 var(--font-outfit), system-ui, sans-serif;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.28);
+}
+@keyframes you-pulse {
+  from { transform: scale(1); opacity: 0.9; }
+  to { transform: scale(2.4); opacity: 0; } /* 20px → 48px */
+}
+@media (prefers-reduced-motion: reduce) {
+  .you-marker__ring { animation: none; transform: scale(1.6); opacity: 0.35; }
+}
+.recenter-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line, #e5ddd5);
+  background: #fff;
+  color: #2563eb;
+  box-shadow: 0 3px 10px rgba(45, 42, 38, 0.16);
+  cursor: pointer;
+  transition: background-color 150ms ease-out, transform 150ms ease-out;
+}
+.recenter-control:hover { background: #f4f1ee; }
+.recenter-control:active { transform: scale(0.94); }
+.recenter-control:focus-visible { outline: 2px solid #9a8073; outline-offset: 2px; }
+
+/* Home "Shops near you" radius slider: track filled via inline gradient;
+   a solid ink thumb with a white ring, same on Chrome/Safari/Firefox. */
+.radius-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2d2a26;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(45, 42, 38, 0.4);
+  transition: transform 150ms ease-out;
+}
+.radius-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2d2a26;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(45, 42, 38, 0.4);
+}
+.radius-slider:not(:disabled):active::-webkit-slider-thumb { transform: scale(1.15); }
+.radius-slider:focus-visible { outline: 2px solid #9a8073; outline-offset: 4px; }
+
+/* Kanban: an order card that just moved gets one green flash where it lands
+   (JobKanbanBoard `kanban-arrive`), fading back to its normal border. Only
+   colour and shadow change — nothing moves — so it stays on for reduced motion. */
+.kanban-arrive {
+  animation: kanban-arrive 1500ms cubic-bezier(0.23, 1, 0.32, 1) 1;
+}
+@keyframes kanban-arrive {
+  0% { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.75), 0 0 18px rgba(16, 185, 129, 0.4); }
+  45% { border-color: #34d399; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.55), 0 0 12px rgba(16, 185, 129, 0.25); }
+  100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0), 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Shop pin hop when its card is hovered/selected (buildStorePinIcon bounce). */
+.pin-bounce {
+  transform-origin: 50% 100%;
+  animation: pin-bounce 650ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes pin-bounce {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-14px); }
+  55% { transform: translateY(0) scale(1.06, 0.94); }
+  72% { transform: translateY(-5px); }
+  100% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin-bounce { animation: none; }
+}
+
+/* ── Pre-landing location splash ─────────────────────────────────────────
+   Hidden unless the head script (BOOT_SPLASH_SCRIPT) put .sutura-boot on
+   <html> before first paint. */
+.boot-splash {
+  display: none;
+}
+html.sutura-boot .boot-splash {
+  display: flex;
+}
+html.sutura-boot body {
+  overflow: hidden;
+}
+
+/* ── Feature bottom bar ──────────────────────────────────────────────────
+   FeatureNav is fixed to the bottom on every screen size. While it is on
+   the page, the page gets matching bottom padding so the last content
+   (footer, buttons) is never hidden under it. Sticky/fixed bottom elements
+   offset themselves with var(--fnav-h). Height = h-16 row + its bottom
+   padding, max(0.75rem, safe area). */
+:root {
+  --fnav-h: 0px;
+}
+:root:has(.feature-nav-bottom) {
+  --fnav-h: calc(4rem + max(0.75rem, env(safe-area-inset-bottom)));
+}
+body:has(.feature-nav-bottom) {
+  padding-bottom: var(--fnav-h);
+}
+
 /* ── Hero search glow ────────────────────────────────────────────────────
    A slow, cycling brown glow ring around the landing hero's search bar —
    taupe → gold → cognac-brown → back — one full loop every 2s. Layered as

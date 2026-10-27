@@ -7,11 +7,11 @@ export default function HomeAboutSection() {
         <div className="text-center max-w-2xl mx-auto mb-10">
           <p className="mobile-overline text-taupe mb-2 uppercase">About Sutura</p>
           <h2 id="about-sutura-title" className="mobile-h2 text-ink mb-3 text-balance">
-            A Web-Based Tailoring Store Tracker for Davao City
+            A Web-Based Tailoring Shop Tracker for Davao City
           </h2>
           <p className="mobile-body-md text-ink-body font-normal leading-relaxed text-balance">
-            SUTURA centralizes and digitizes the discoverability and service tracking of tailoring stores within Davao City —
-            connecting customers to verified stores by garment specialization and location, while giving them real-time
+            SUTURA centralizes and digitizes the discoverability and service tracking of tailoring shops within Davao City —
+            connecting customers to verified shops by garment specialization and location, while giving them real-time
             visibility into their order from placement to pickup.
           </p>
         </div>

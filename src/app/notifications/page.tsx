@@ -204,9 +204,9 @@ export default function NotificationsPage() {
                     <Store size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-ink">Are you a store owner?</p>
+                    <p className="text-[13px] font-semibold text-ink">Are you a shop owner?</p>
                     <p className="text-xs text-ink-muted leading-snug mt-0.5">
-                      List your tailoring store on SUTURA and start managing orders online.
+                      List your tailoring shop on SUTURA and start managing orders online.
                     </p>
                   </div>
                   <ChevronRight size={16} className="text-ink-faint shrink-0 mt-1" />

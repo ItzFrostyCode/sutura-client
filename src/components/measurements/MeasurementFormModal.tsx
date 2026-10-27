@@ -152,7 +152,7 @@ export default function MeasurementFormModal({
                 onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
                 className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30"
               >
-                <option value="store_owner">Store Owner (tailor&apos;s own format)</option>
+                <option value="store_owner">Shop Owner (tailor&apos;s own format)</option>
                 <option value="customer">Customer-Side (encoded from the customer)</option>
               </select>
             </div>

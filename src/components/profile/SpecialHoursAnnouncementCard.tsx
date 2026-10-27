@@ -169,7 +169,7 @@ export default function SpecialHoursAnnouncementCard({ storeId, onSaved, branche
 
       <div className="p-5 space-y-4">
         <p className="text-xs text-ink-muted -mt-1">
-          Set a date range for a holiday closure, special hours, or a promo — whichever entry covers today shows as a banner at the top of your store profile, on every tab.
+          Set a date range for a holiday closure, special hours, or a promo — whichever entry covers today shows as a banner at the top of your shop profile, on every tab.
         </p>
 
         {showForm && (
@@ -236,7 +236,7 @@ export default function SpecialHoursAnnouncementCard({ storeId, onSaved, branche
                 onChange={e => setForm(prev => ({ ...prev, is_closed: e.target.checked }))}
                 className="rounded border-line text-taupe focus:ring-taupe"
               />
-              <span className="text-sm font-medium text-ink-body">Store is closed during this period</span>
+              <span className="text-sm font-medium text-ink-body">Shop is closed during this period</span>
             </label>
 
             {!form.is_closed && (
@@ -271,7 +271,7 @@ export default function SpecialHoursAnnouncementCard({ storeId, onSaved, branche
                 value={form.announcement_message}
                 onChange={e => setForm(prev => ({ ...prev, announcement_message: e.target.value }))}
                 rows={2}
-                placeholder="Shown as a banner at the top of your store profile during this date range."
+                placeholder="Shown as a banner at the top of your shop profile during this date range."
                 className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe resize-none"
               />
             </div>

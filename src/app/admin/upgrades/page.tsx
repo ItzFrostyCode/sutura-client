@@ -69,10 +69,10 @@ export default function AdminUpgradesPage() {
         <FilterTabs options={STATUSES.map((s) => ({ ...s, count: counts[s.value] ?? 0 }))} value={status} onChange={(v) => { setStatus(v); setPage(1); }} />
       </PageHeader>
 
-      <div className="border border-line bg-surface">
+      <div className="border-2 border-line-strong bg-surface">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText={status === 'pending' ? 'No payments are waiting for review.' : `No ${status} payments.`} />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-2 divide-line-strong">
             {items.map((row) => (
               <li key={row.id}>
                 <button type="button" onClick={() => setOpen(row)} className="grid w-full min-h-16 grid-cols-[1fr_auto] items-center gap-4 px-5 py-3 text-left hover:bg-canvas sm:grid-cols-[2fr_1.2fr_1fr_auto] cursor-pointer">

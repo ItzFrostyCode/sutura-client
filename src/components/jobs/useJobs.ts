@@ -5,7 +5,8 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
-import { Job, Tab, columnsForJobs, getDueStatus } from './jobHelpers';
+import { Job, Tab, columnsForJobs, getDueStatus, normalizeJobStatus } from './jobHelpers';
+import type { Staff } from '@/components/staff/staffHelpers';
 
 export function useJobs() {
   const { store, user } = useAuthStore();
@@ -42,10 +43,26 @@ export function useJobs() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingJobId, setRejectingJobId] = useState<number | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
 
-  const fetchJobs = () => {
+  useEffect(() => {
+    if (!store?.id) return;
+    api.get(`/stores/${store.id}/staff`)
+      .then((res) => {
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setStaffList(list.filter((s: Staff) => s.is_active !== false));
+      })
+      .catch((err) => {
+        console.warn('Could not load staff directory for jobs:', err);
+      });
+  }, [store?.id]);
+
+  // `silent` keeps the board on screen while it re-syncs: the skeleton swaps
+  // out the whole board (flicker, lost scroll), so it's only for a first load
+  // or a branch / "my jobs" switch where the old cards are wrong anyway.
+  const fetchJobs = ({ silent = false }: { silent?: boolean } = {}) => {
     if (store) {
-      const timer = setTimeout(() => setLoading(true), 0);
+      const timer = silent ? undefined : setTimeout(() => setLoading(true), 0);
       const params: Record<string, string | number> = { per_page: 200 };
       if (selectedBranchId !== null) {
         params.branch_id = selectedBranchId;
@@ -98,19 +115,32 @@ export function useJobs() {
   // immediately since those change far less often (a dropdown pick, not
   // continuous typing).
   useEffect(() => {
-    const timer = setTimeout(() => { fetchJobs(); }, 300);
+    const timer = setTimeout(() => { fetchJobs({ silent: true }); }, 300);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  // Optimistic card moves: the card changes column at once, the save runs in
+  // the background with a small spinner on that card only, and the server's
+  // copy of the job replaces it when it answers. No board-wide refetch; on
+  // failure only that card goes back.
+  const patchJob = (jobId: number, patch: Partial<Job>) =>
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...patch } : j)));
+  const restoreJob = (previous: Job) =>
+    setJobs((prev) => prev.map((j) => (j.id === previous.id ? previous : j)));
+  const applyServerJob = (jobId: number, data: unknown) => {
+    if (data && typeof data === 'object' && (data as Job).id === jobId) patchJob(jobId, data as Partial<Job>);
+  };
+
   const updateJobStatus = async (jobId: number, newStatus: string, reason?: string) => {
     if (!store) return;
-    const oldJobs = [...jobs];
-    setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
+    const jobToUpdate = jobs.find(j => j.id === jobId);
+    if (!jobToUpdate) return;
+    // updated_at now: the card lands at the top of its new column (columns sort newest first).
+    patchJob(jobId, { status: newStatus, updated_at: new Date().toISOString() });
+    setActionLoadingId(jobId);
     try {
-      const jobToUpdate = jobs.find(j => j.id === jobId);
-      if (!jobToUpdate) return;
-      await api.put(`/stores/${store.id}/jobs/${jobId}`, {
+      const res = await api.put(`/stores/${store.id}/jobs/${jobId}`, {
         status: newStatus,
         payment_status: jobToUpdate.payment_status,
         balance: jobToUpdate.balance,
@@ -129,41 +159,68 @@ export function useJobs() {
         // gap as cancellation.
         ...(newStatus === 'on_hold' && reason ? { hold_reason: reason } : {}),
       });
+      applyServerJob(jobId, res.data?.data);
       toast.success('Job status updated successfully.');
-      fetchJobs();
     } catch (err) {
       console.error('Failed to update status', err);
-      setJobs(oldJobs);
+      restoreJob(jobToUpdate);
       // Surfaces server-side gate messages (e.g. the DP gate, or the fitting
       // limit's 'block' policy) instead of a generic failure — those are
       // real, actionable reasons the update didn't go through, not just an
       // unexpected error.
       const message = axios.isAxiosError(err) ? err.response?.data?.message : null;
       toast.error(message || 'Failed to update status.');
+    } finally {
+      setActionLoadingId((id) => (id === jobId ? null : id));
+    }
+  };
+
+  const assignStaff = async (jobId: number, staffUserId: number | null) => {
+    if (!store) return;
+    try {
+      const res = await api.put(`/stores/${store.id}/jobs/${jobId}`, {
+        assigned_staff_id: staffUserId,
+        assigned_to: staffUserId,
+      });
+      applyServerJob(jobId, res.data?.data);
+      const staffMember = staffList.find(
+        (s) => (s.user_id ?? s.user?.id) === staffUserId
+      );
+      const name = staffMember?.user?.name;
+      toast.success(
+        staffUserId && name
+          ? `Order assigned to ${name}.`
+          : staffUserId
+          ? 'Tailor assigned to order.'
+          : 'Staff assignment removed.'
+      );
+    } catch (err: unknown) {
+      console.error('Failed to assign staff', err);
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to update staff assignment.');
     }
   };
 
   const handleApproveJob = async (jobId: number) => {
     if (!store) return;
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
     setActionLoadingId(jobId);
-    const old = [...jobs];
-    // Moves a pending job into 'design' — the first stage of the 3-Phase
-    // Tailoring Tracker pipeline, exempt from the DP gate (no fabric/material
-    // is committed yet). Approving no longer jumps straight to 'cutting',
-    // which used to skip Design/Pattern Making (or Mass Cutting & Printing
-    // for bulk orders) entirely.
-    setJobs(jobs.map(j => j.id === jobId ? { ...j, status: 'design' } : j));
+    // Moves a pending job straight into 'production'
+    patchJob(jobId, { status: 'production', updated_at: new Date().toISOString() });
     try {
-      const job = jobs.find(j => j.id === jobId);
-      if (!job) return;
-      await api.put(`/stores/${store.id}/jobs/${jobId}`, { status: 'design', payment_status: job.payment_status, balance: job.balance });
+      let res;
+      try {
+        res = await api.post(`/stores/${store.id}/jobs/${jobId}/approve`);
+      } catch {
+        // Fallback to PUT status update if needed
+        res = await api.put(`/stores/${store.id}/jobs/${jobId}`, { status: 'production', payment_status: job.payment_status, balance: job.balance });
+      }
+      applyServerJob(jobId, res.data?.data);
+      setPendingReviewCount((n) => Math.max(0, n - 1));
       toast.success('Job order approved into production.');
-      fetchJobs();
     } catch (err: unknown) {
-      setJobs(old);
-      // Surface the backend's actual message (e.g. a validation error) rather
-      // than a generic failure — 'design' itself is DP-gate-exempt, but the
-      // request can still fail for other reasons (branch access, etc.).
+      restoreJob(job);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to approve order.');
     } finally {
@@ -178,9 +235,10 @@ export function useJobs() {
 
   const handleConfirmReject = async (reason: string) => {
     if (!store || !rejectingJobId) return;
+    const job = jobs.find(j => j.id === rejectingJobId);
+    if (!job) return;
     setActionLoadingId(rejectingJobId);
-    const old = [...jobs];
-    setJobs(jobs.map(j => j.id === rejectingJobId ? { ...j, status: 'rejected' } : j));
+    patchJob(rejectingJobId, { status: 'rejected', updated_at: new Date().toISOString() });
     try {
       // Was calling the generic PUT /jobs/{id} with status:'cancelled' and a
       // 'rejection_reason' field — the backend's own update() deliberately
@@ -191,15 +249,16 @@ export function useJobs() {
       // 'rejection_reason' this was sending. Confirmed live: every click
       // 422'd, so Reject never actually worked. POST .../reject is the real
       // endpoint — pending-only, free-text reason, sets status:'rejected'.
-      await api.post(`/stores/${store.id}/jobs/${rejectingJobId}/reject`, {
+      const res = await api.post(`/stores/${store.id}/jobs/${rejectingJobId}/reject`, {
         reason: reason || 'No reason provided.',
       });
+      applyServerJob(rejectingJobId, res.data?.data);
+      setPendingReviewCount((n) => Math.max(0, n - 1));
       setRejectModalOpen(false);
       setRejectingJobId(null);
       toast.success('Job order rejected.');
-      fetchJobs();
     } catch (err: unknown) {
-      setJobs(old);
+      restoreJob(job);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to reject order.');
     } finally {
@@ -241,16 +300,15 @@ export function useJobs() {
   // rather than newest-completed, which two different columns don't agree on.
   const groupedJobs = activeColumns.reduce((acc, col) => {
     acc[col.id] = filteredJobs
-      .filter(j => j.status === col.id)
+      .filter(j => normalizeJobStatus(j.status) === col.id)
       .sort((a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime());
     return acc;
   }, {} as Record<string, Job[]>);
 
   // Kept separate from groupedJobs/activeColumns — on_hold is deliberately
-  // excluded from those (see ON_HOLD_COLUMN in jobHelpers.tsx) so it doesn't
-  // corrupt the sequential "A → B → C" production-flow banner text.
+  // excluded from those so it doesn't clutter active progression columns
   const onHoldJobs = filteredJobs
-    .filter(j => j.status === 'on_hold')
+    .filter(j => normalizeJobStatus(j.status) === 'on_hold')
     .sort((a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime());
 
   return {
@@ -286,5 +344,7 @@ export function useJobs() {
     catalogJobsCount,
     customBespokeCount,
     alterationJobsCount,
+    staffList,
+    assignStaff,
   };
 }

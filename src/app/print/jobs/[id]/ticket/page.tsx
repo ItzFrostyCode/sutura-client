@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePrintAuthGuard } from '@/hooks/usePrintAuthGuard';
+import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
 
 interface RosterItem { name?: string; print_name?: string; number?: string | number; size?: string; completed?: boolean; }
 
@@ -44,17 +45,6 @@ interface Job {
   quantity?: number;
 }
 
-const GARMENT_CATEGORY_LABELS: Record<string, string> = {
-  barong: 'Barong Tagalog',
-  gown: 'Gown',
-  suit: 'Suit',
-  filipiniana: 'Filipiniana',
-  uniform: 'School Uniform',
-  lab_gown: 'Lab Gown',
-  scrub_suit: 'Scrub Suit',
-  corporate_wear: 'Corporate Wear',
-  alteration_repair: 'Alterations & Repair',
-};
 
 export default function PrintWorkTicketPage() {
   usePrintAuthGuard();
@@ -119,7 +109,7 @@ export default function PrintWorkTicketPage() {
   const measEntries = Object.entries(meas?.metrics || {});
 
   const materialSourceLabel = job.material_source === 'customer_supplied'
-    ? 'Customer-Supplied — do not cut from store stock'
+    ? 'Customer-Supplied — do not cut from shop stock'
     : 'Store-Supplied';
 
   return (
@@ -361,7 +351,7 @@ export default function PrintWorkTicketPage() {
         </div>
 
         <p className="text-center text-[9px] text-gray-400 mt-6">
-          Printed by SUTURA Store Management System · {new Date().toLocaleString('en-PH')}
+          Printed by SUTURA Shop Management System · {new Date().toLocaleString('en-PH')}
         </p>
       </div>
     </>

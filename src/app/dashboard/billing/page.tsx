@@ -72,7 +72,7 @@ export default function BillingPage() {
     <div className="max-w-6xl mx-auto space-y-10">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-ink mb-1">Billing &amp; Plans</h1>
-        <p className="text-ink-muted">Manage your subscription, track usage, and scale your store.</p>
+        <p className="text-ink-muted">Manage your subscription, track usage, and scale your shop.</p>
       </div>
 
       {(isExpired || isExpiringSoon) && (
@@ -87,7 +87,7 @@ export default function BillingPage() {
           />
           <p className={`text-sm font-medium ${isExpired ? 'text-red-700' : 'text-amber-700'}`}>
             {isExpired
-              ? "Your subscription has expired. Renew now to restore your store's full visibility and features."
+              ? "Your subscription has expired. Renew now to restore your shop's full visibility and features."
               : `Your plan renews in ${daysUntilExpiry} day${
                   daysUntilExpiry === 1 ? '' : 's'
                 } — pick a plan below to renew and avoid losing access.`}

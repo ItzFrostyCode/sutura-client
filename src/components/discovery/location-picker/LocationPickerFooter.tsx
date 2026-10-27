@@ -63,7 +63,7 @@ export default function LocationPickerFooter({
             type="button"
             onClick={onDeselectStore}
             className="text-ink-faint hover:text-ink p-1.5 touch-target-44 w-8 h-8"
-            aria-label="Deselect store"
+            aria-label="Deselect shop"
           >
             <X size={16} />
           </button>
@@ -73,7 +73,7 @@ export default function LocationPickerFooter({
       <div>
         <p className="mobile-overline text-ink-faint mb-0.5">Address</p>
         <p className="mobile-body-sm text-ink font-normal leading-snug line-clamp-2">
-          {reverseLoading ? 'Locating address…' : (address || 'Move the map or tap a store to choose a spot')}
+          {reverseLoading ? 'Locating address…' : (address || 'Move the map or tap a shop to choose a spot')}
         </p>
       </div>
 

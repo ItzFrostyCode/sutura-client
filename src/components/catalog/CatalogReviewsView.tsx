@@ -125,7 +125,7 @@ export default function CatalogReviewsView() {
                 {review.reply && (
                   <div className="mt-2 bg-sunken/50 border-l-2 border-taupe p-4 rounded-r-lg">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Store Response</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Shop Response</span>
                     </div>
                     <p className="text-ink-body text-sm">{review.reply}</p>
                   </div>

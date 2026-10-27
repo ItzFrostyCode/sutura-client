@@ -329,7 +329,7 @@ export default function StaffFormModal({
               maxLength={1000}
               className="w-full px-3.5 py-2 bg-canvas border border-line rounded-xl text-ink font-semibold focus:outline-none focus:border-taupe text-xs shadow-2xs resize-none"
             />
-            <p className="text-[11px] text-ink-muted mt-1">Visible only to store owner and management.</p>
+            <p className="text-[11px] text-ink-muted mt-1">Visible only to shop owner and management.</p>
           </div>
 
           {branches.length > 0 && (

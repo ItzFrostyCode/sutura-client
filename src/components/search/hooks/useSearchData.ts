@@ -297,7 +297,7 @@ export function useSearchData() {
         setUserCoords({ lat: loc.lat, lng: loc.lng });
         setSortBy('distance');
         setLocating(false);
-        toast.success(`Showing stores nearest to ${loc.district || 'you'}.`);
+        toast.success(`Showing shops nearest to ${loc.district || 'you'}.`);
       },
       () => {
         setLocating(false);

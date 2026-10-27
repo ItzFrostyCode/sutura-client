@@ -26,7 +26,7 @@ export const tooltipStyle = {
 
 export function ReportCard({ title, aside, children }: { readonly title: string; readonly aside?: React.ReactNode; readonly children: React.ReactNode }) {
   return (
-    <div className="border border-line bg-surface">
+    <div className="border-2 border-line-strong bg-surface">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-4">
         <h3 className="tablet-h3 text-ink">{title}</h3>
         {aside && <div className="text-sm text-ink-muted">{aside}</div>}

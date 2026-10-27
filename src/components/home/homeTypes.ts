@@ -14,9 +14,20 @@ export interface StoreResult {
   reviews_avg_rating: number | null;
   /** Set by the API when the request carries lat/lng (nearest branch, km). */
   distance_km?: number | string | null;
-  branches: { city: string | null; name: string }[];
+  branches: {
+    city: string | null;
+    name: string;
+    address?: string | null;
+    barangay?: string | null;
+    district?: string | null;
+    latitude?: number | string | null;
+    longitude?: number | string | null;
+    is_main?: boolean | number | null;
+  }[];
   operating_hours?: OperatingHours | null;
   specializations?: string[] | null;
+  /** Active services (eager-loaded by /public/stores). */
+  services?: { id: number; name: string; base_price?: number | string | null; image_url?: string | null }[];
   catalog_items?: {
     id: number;
     name: string;
@@ -30,12 +41,12 @@ export const ABOUT_PILLARS = [
   {
     Icon: Radar,
     title: 'Discover by Garment & Location',
-    desc: 'Search verified tailoring stores across Davao City by the exact garment you need — Barong, Filipiniana, uniforms, and more — and see them pinned on the map.',
+    desc: 'Search verified tailoring shops across Davao City by the exact garment you need — Barong, Filipiniana, uniforms, and more — and see them pinned on the map.',
   },
   {
     Icon: ShieldCheck,
-    title: 'Verified Stores Only',
-    desc: 'Every store goes through admin review before it appears here — no unverified listings, no guessing which tailor is legitimate.',
+    title: 'Verified Shops Only',
+    desc: 'Every shop goes through admin review before it appears here — no unverified listings, no guessing which tailor is legitimate.',
   },
   {
     Icon: LineChart,
@@ -55,19 +66,19 @@ export const HOW_IT_WORKS = [
     step: '01',
     Icon: ScanSearch,
     title: 'Search & Discover',
-    desc: 'Filter by garment type, price, rating, or Davao district to find a verified store that does exactly what you need.',
+    desc: 'Filter by garment type, price, rating, or Davao district to find a verified shop that does exactly what you need.',
   },
   {
     step: '02',
     Icon: CalendarCheck2,
     title: 'Order & Pay Downpayment',
-    desc: 'Reserve a fitting or place a custom order, then settle the required downpayment to confirm it with the store.',
+    desc: 'Reserve a fitting or place a custom order, then settle the required downpayment to confirm it with the shop.',
   },
   {
     step: '03',
     Icon: ShieldCheck,
-    title: 'Store Reviews & Approves',
-    desc: 'The store checks feasibility and confirms your order before any cutting or fabrication begins.',
+    title: 'Shop Reviews & Approves',
+    desc: 'The shop checks feasibility and confirms your order before any cutting or fabrication begins.',
   },
   {
     step: '04',

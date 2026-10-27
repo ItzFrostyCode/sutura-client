@@ -124,7 +124,7 @@ export default function SearchServicesTab({
               const matchedStore = stores.find((s) => s.id === storeId);
               const rawStore = storeServices[0]?.store;
               const storeInfo = matchedStore || rawStore;
-              const storeName = storeInfo?.name || 'Tailoring Store';
+              const storeName = storeInfo?.name || 'Tailoring Shop';
               const storeSlug = storeInfo?.slug || (rawStore as { slug?: string })?.slug || String(storeId);
               const storeHref = gate(
                 `/store/${storeSlug}?tab=services${effectiveQ.trim() ? `&q=${encodeURIComponent(effectiveQ.trim())}` : ''}`

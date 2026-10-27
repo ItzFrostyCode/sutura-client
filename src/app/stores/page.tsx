@@ -49,11 +49,11 @@ function StoresDirectoryContent() {
           </p>
         )}
 
-        {loading && <div className="text-center py-16 mobile-body-sm text-ink-muted">Loading stores…</div>}
+        {loading && <div className="text-center py-16 mobile-body-sm text-ink-muted">Loading shops…</div>}
 
         {!loading && stores.length === 0 && (
           <div className="bg-surface border border-line rounded-2xl p-8 sm:p-10 text-center mobile-body-sm text-ink-muted">
-            No stores matched your search.
+            No shops matched your search.
           </div>
         )}
 

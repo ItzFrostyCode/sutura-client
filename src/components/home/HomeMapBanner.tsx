@@ -14,7 +14,7 @@ export default function HomeMapBanner() {
         <div className="relative h-[200px] sm:h-auto sm:order-last">
           <Image
             src="/images/davao_map_banner.jpg"
-            alt="Davao City Tailoring Stores Map"
+            alt="Davao City Tailoring Shops Map"
             fill
             className="object-cover object-center"
           />
@@ -24,7 +24,7 @@ export default function HomeMapBanner() {
             <MapPin size={11} className="text-taupe" />
             <span>Davao City Districts</span>
           </div>
-          <h2 className="mobile-h2 sm:tablet-h2 text-ink mb-2">Find a Store Near You</h2>
+          <h2 className="mobile-h2 sm:tablet-h2 text-ink mb-2">Find a Shop Near You</h2>
           <p className="mobile-body-sm sm:tablet-body-md text-ink-muted font-normal leading-relaxed mb-5 max-w-sm">
             Browse verified tailoring branches across Davao City&apos;s districts on an interactive map.
           </p>

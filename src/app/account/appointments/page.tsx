@@ -95,13 +95,13 @@ export default function MyAppointmentsPage() {
           <CalendarClock size={28} className="text-ink-faint mx-auto mb-3" />
           <h2 className="mobile-h3 font-semibold text-ink mb-1">No appointments yet</h2>
           <p className="mobile-body-sm text-ink-muted mb-6 font-normal space-headline-para">
-            Book a fitting or consultation with a store to see it here.
+            Book a fitting or consultation with a shop to see it here.
           </p>
           <Link
             href="/map"
             className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
           >
-            Browse Stores →
+            Browse Shops →
           </Link>
         </div>
       )}

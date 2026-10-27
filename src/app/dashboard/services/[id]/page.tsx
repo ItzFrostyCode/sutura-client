@@ -124,7 +124,7 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
       <div className="bg-white border border-line p-12 text-center max-w-lg mx-auto my-12">
         <AlertCircle size={44} className="text-ink-muted mx-auto mb-3" />
         <h2 className="text-lg font-bold text-ink">Service not found</h2>
-        <p className="text-xs text-ink-muted mt-1 mb-6">It may have been removed or does not belong to your store.</p>
+        <p className="text-xs text-ink-muted mt-1 mb-6">It may have been removed or does not belong to your shop.</p>
         <Link href="/dashboard/services" className="px-5 py-2.5 bg-taupe text-white text-xs font-bold hover:bg-[#8A7063] transition-colors inline-flex items-center gap-2">
           <ArrowLeft size={16} /> Back to Services
         </Link>

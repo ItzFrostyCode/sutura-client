@@ -311,7 +311,7 @@ export default function NavMenuDrawer({
           className="w-full h-[52px] bg-black hover:bg-black/90 text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center transition-colors active:scale-[0.99] cursor-pointer"
           style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
         >
-          Explore All Stores
+          Explore All Shops
         </Link>
       </div>
     </div>,

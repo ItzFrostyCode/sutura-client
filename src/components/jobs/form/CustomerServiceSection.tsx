@@ -6,6 +6,7 @@ import { User, ShoppingBag, Store, Sparkles } from 'lucide-react';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
+import SearchableCombobox, { ComboboxOption } from '@/components/shared/SearchableCombobox';
 import { CustomerData, CustomerMeasurement, JobCreateFormData, ServiceData } from './types';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
 
@@ -66,7 +67,7 @@ export default function CustomerServiceSection({
         <div className="text-xs text-danger bg-danger/5 border border-danger/10 rounded-lg p-2.5 flex items-center justify-between">
           <span>No measurement profiles found.</span>
           <Link
-            href={`/dashboard/measurements?customer_id=${formData.customer_id}`}
+            href={`/dashboard/customers/${formData.customer_id}?tab=measurements`}
             className="font-semibold underline text-danger hover:text-danger/80 ml-2"
           >
             Record Measurements
@@ -91,7 +92,7 @@ export default function CustomerServiceSection({
           }
           className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
         >
-          <option value="">No profile selected / Consultation Only</option>
+          <option value="">No measurements yet</option>
           {displayMeasurements.map((m) => (
             <option key={m.id} value={m.id}>
               V{m.version} - {m.profile_name}
@@ -121,7 +122,7 @@ export default function CustomerServiceSection({
             {selected.profile_name} — Saved Measurements
           </span>
           <Link
-            href={`/dashboard/measurements?customer_id=${formData.customer_id}`}
+            href={`/dashboard/customers/${formData.customer_id}?tab=measurements`}
             className="text-[11px] font-semibold text-taupe hover:underline shrink-0"
           >
             View / Edit
@@ -149,13 +150,13 @@ export default function CustomerServiceSection({
   return (
     <CollapsibleSection
       icon={<User size={16} className="text-taupe" />}
-      title="Customer & Service Details"
+      title="Customer & Service"
       defaultOpen
     >
       {/* Order source */}
       <div>
         <span className="block text-xs font-semibold text-ink-muted mb-2 uppercase tracking-wider">
-          Order Source <span className="text-[10px] font-normal normal-case text-ink-faint">(auto-detected)</span>
+          How they came in <span className="text-[10px] font-normal normal-case text-ink-faint">(auto-detected)</span>
         </span>
         <div
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-medium text-sm ${
@@ -169,7 +170,7 @@ export default function CustomerServiceSection({
           <span className="text-[10px] font-normal opacity-70 ml-1">
             {appointmentId
               ? `From linked Appointment #${appointmentId}`
-              : 'Created directly at the store counter'}
+              : 'Created directly at the shop counter'}
           </span>
         </div>
       </div>
@@ -211,23 +212,24 @@ export default function CustomerServiceSection({
               );
             })()
           ) : (
-            <select
-              id="customer_id"
-              required
+            <SearchableCombobox<CustomerData>
+              items={customers.map((c): ComboboxOption<CustomerData> => ({
+                id: c.id.toString(),
+                label: c.name,
+                sublabel: c.phone ?? c.email,
+                raw: c,
+              }))}
               value={formData.customer_id}
-              onChange={(e) => setFormData((prev) => ({ ...prev, customer_id: e.target.value }))}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
-            >
-              <option value="" disabled>
-                Select a customer
-              </option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                  {c.phone ? ` — ${c.phone}` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, customer_id: String(val || '') }))
+              }
+              placeholder="Type customer name..."
+              searchPlaceholder="Search by name or phone..."
+              emptyMessage="No matching customer found"
+              required
+              allowClear={false}
+              autoHighlightFirst={false}
+            />
           )}
         </div>
 
@@ -236,7 +238,7 @@ export default function CustomerServiceSection({
             htmlFor="measurement_id"
             className="block text-xs font-semibold text-ink-muted mb-1 uppercase tracking-wider"
           >
-            Measurement Profile
+            Body Measurements
           </label>
           {renderMeasurementSelector()}
         </div>
@@ -256,7 +258,7 @@ export default function CustomerServiceSection({
           return currentService ? (
             <div className="flex items-center gap-2 text-xs text-taupe font-semibold bg-taupe/10 border border-taupe/20 px-3 py-2 rounded-lg mb-2">
               <Sparkles size={14} className="shrink-0 text-taupe" />
-              <span>Tailoring Service auto-selected from lookbook design <strong>{selectedCatalogItem.name}</strong></span>
+              <span>Service auto-filled from catalog design <strong>{selectedCatalogItem.name}</strong></span>
             </div>
           ) : null;
         })()}

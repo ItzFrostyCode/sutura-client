@@ -66,7 +66,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
       segments.push({ label: 'Custom Jobs' });
     }
   } else if (pathname.startsWith('/dashboard/customers')) {
-    segments.push({ label: 'Client Book', href: '/dashboard/customers', icon: Users });
+    segments.push({ label: 'Customer Records', href: '/dashboard/customers', icon: Users });
     if (pathname.match(/\/dashboard\/customers\/\d+/)) {
       segments.push({ label: 'Customer Profile' });
     }
@@ -98,7 +98,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
   } else if (pathname.startsWith('/dashboard/reports')) {
     segments.push({ label: 'Reports & Insights', href: '/dashboard/reports', icon: LayoutDashboard });
   } else if (pathname.startsWith('/dashboard/branches')) {
-    segments.push({ label: 'Store Branches', href: '/dashboard/branches', icon: Building2 });
+    segments.push({ label: 'Shop Branches', href: '/dashboard/branches', icon: Building2 });
   } else if (pathname.startsWith('/dashboard/audit-log')) {
     segments.push({ label: 'Audit Log', href: '/dashboard/audit-log', icon: ScrollText });
   } else if (pathname.startsWith('/dashboard/account-settings') || pathname.startsWith('/dashboard/profile')) {
@@ -110,7 +110,7 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
   } else if (pathname.startsWith('/dashboard/reviews')) {
     segments.push({ label: 'Reviews', href: '/dashboard/reviews', icon: Star });
   } else if (pathname.startsWith('/dashboard/measurements')) {
-    segments.push({ label: 'Client Book', href: '/dashboard/customers', icon: Users });
+    segments.push({ label: 'Customer Records', href: '/dashboard/customers', icon: Users });
     segments.push({ label: 'Measurements', icon: Ruler });
   } else {
     // Fallback for custom dashboard routes

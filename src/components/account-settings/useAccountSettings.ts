@@ -193,7 +193,7 @@ export function useAccountSettings() {
     { id: 'security', label: 'Security', icon: ShieldCheck },
   ];
 
-  const roleName = user?.roles?.[0]?.name?.replaceAll('_', ' ') || 'Store Owner';
+  const roleName = user?.roles?.[0]?.name?.replaceAll('_', ' ').replace(/^store\b/, 'shop') || 'Shop Owner';
 
   return {
     user,

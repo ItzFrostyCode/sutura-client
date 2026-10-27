@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import RouteLayer from '@/components/map/RouteLayer';
 // Same logo pins + "you are here" dot as the Tailor Locator (/map).
-import { buildStorePinIcon, userLocationIcon } from '@/components/discovery/DiscoveryMap';
+import { buildStorePinIcon, RecenterControl, USER_MARKER_Z, userLocationIcon } from '@/components/discovery/DiscoveryMap';
 
 const FOCUSED_ZOOM = 17;
 const OVERVIEW_ZOOM = 14;
@@ -120,7 +120,10 @@ export default function FindLocationMap({ branches, selectedBranchId, onSelectBr
           />
         ))}
         {userPosition && (
-          <Marker position={[userPosition.lat, userPosition.lng]} icon={userLocationIcon} title="You are here" />
+          <>
+            <Marker position={[userPosition.lat, userPosition.lng]} icon={userLocationIcon} zIndexOffset={USER_MARKER_Z} keyboard={false} />
+            {!routePath && <RecenterControl position={userPosition} />}
+          </>
         )}
       </MapContainer>
     </div>

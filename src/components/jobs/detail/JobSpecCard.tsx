@@ -18,8 +18,17 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
 
   const customSpecEntries = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(
-        ([label]) => !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config'].includes(label)
+        ([label, value]) =>
+          !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config', 'individual_measurements', 'measurement_sheets'].includes(label) &&
+          value !== null && value !== ''
       )
+    : [];
+
+  // Body measurements typed on the walk-in form or by the customer on an online order.
+  const individual = job.custom_order_data?.individual_measurements as Record<string, string> | null | undefined;
+  const unit = individual?.unit === 'cm' ? 'cm' : 'in';
+  const measurementEntries = individual
+    ? Object.entries(individual).filter(([k, v]) => k !== 'unit' && v !== null && String(v).trim() !== '')
     : [];
 
   return (
@@ -78,8 +87,8 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
             {job.material_source === 'customer_supplied'
               ? "Customer's Own Fabric"
               : (job.custom_order_data?.fabric_preference
-                  ? `${String(job.custom_order_data.fabric_preference)} (Store Supplied)`
-                  : 'Store Supplied Material')}
+                  ? `${String(job.custom_order_data.fabric_preference)} (Shop Supplied)`
+                  : 'Shop Supplied Material')}
           </p>
           <p className="text-xs text-ink-muted">
             {job.material_source === 'customer_supplied'
@@ -98,6 +107,22 @@ export default function JobSpecCard({ job }: JobSpecCardProps) {
           </p>
         </div>
       </div>
+
+      {measurementEntries.length > 0 && (
+        <div className="pt-3 border-t border-line">
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wider mb-2">
+            Body Measurements ({unit}){job.intake_channel === 'online' && ' · given by customer'}
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
+            {measurementEntries.map(([label, value]) => (
+              <div key={label} className="text-xs">
+                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{label}</span>
+                <span className="font-semibold text-ink block tabular-nums">{String(value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {customSpecEntries.length > 0 && (
         <div className="pt-3 border-t border-line">

@@ -72,7 +72,7 @@ interface BookingStep3ReviewProps {
 const PURPOSE_MAP: Record<string, { label: string; hint: string }> = {
   consultation: {
     label: 'Consultation',
-    hint: 'Discuss your garment idea, materials, design, and pricing with the store.',
+    hint: 'Discuss your garment idea, materials, design, and pricing with the shop.',
   },
   measurement: {
     label: 'Measurement',
@@ -84,11 +84,11 @@ const PURPOSE_MAP: Record<string, { label: string; hint: string }> = {
   },
   fitting: {
     label: 'Fitting',
-    hint: 'Try on your garment in progress so the store can adjust the fit.',
+    hint: 'Try on your garment in progress so the shop can adjust the fit.',
   },
   pickup: {
     label: 'Pickup',
-    hint: 'Collect your finished garment or order at the store.',
+    hint: 'Collect your finished garment or order at the shop.',
   },
 };
 
@@ -136,17 +136,17 @@ export default function BookingStep3Review({
 
   const basePurpose = PURPOSE_MAP[appointmentType] ?? {
     label: appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1),
-    hint: 'Visit the store for your tailoring appointment.',
+    hint: 'Visit the shop for your tailoring appointment.',
   };
 
   const withLabel = appointmentType === 'other' && purposeLabel?.trim()
-    ? { label: `Other — ${purposeLabel.trim()}`, hint: 'The store will go over this with you at your visit.' }
+    ? { label: `Other — ${purposeLabel.trim()}`, hint: 'The shop will go over this with you at your visit.' }
     : basePurpose;
 
   const purposeInfo = isDiscussion
     ? {
         label: 'Consultation / Order Discussion',
-        hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the store.',
+        hint: 'Discuss your artwork, print placement, fabrics, quantities, and pricing with the shop.',
       }
     : withLabel;
 

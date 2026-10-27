@@ -99,7 +99,7 @@ export default function BranchQuickBar() {
         <button
           type="button"
           onClick={() => setSelectedBranchId(null)}
-          title="Consolidated view across all store locations"
+          title="Consolidated view across all shop locations"
           className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all font-medium whitespace-nowrap min-h-[28px] cursor-pointer ${
             selectedBranchId === null
               ? 'bg-taupe text-white shadow-xs font-semibold'

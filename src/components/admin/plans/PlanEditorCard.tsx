@@ -51,7 +51,7 @@ export default function PlanEditorCard({ plan, onSaved }: { readonly plan: Admin
   };
 
   return (
-    <form onSubmit={save} className="border border-line bg-surface p-5">
+    <form onSubmit={save} className="border-2 border-line-strong bg-surface p-5">
       <div className="flex items-center justify-between gap-3">
         <input aria-label="Plan name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="tablet-h3 min-w-0 flex-1 border-b border-transparent bg-transparent text-ink focus:border-ink focus:outline-none" />
         <Badge variant={draft.is_active ? 'success' : 'neutral'}>{draft.is_active ? 'On sale' : 'Retired'}</Badge>

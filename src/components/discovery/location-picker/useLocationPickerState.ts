@@ -2,33 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { SavedLocation, RecentLocation } from '@/lib/customerLocation';
 import { getRecentLocations, addRecentLocation } from '@/lib/customerLocation';
-import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
+import { parseCoordsFromMapsLink, cleanLocationQuery, isGoogleMapsLink } from '@/lib/parseLocationInput';
 import api from '@/lib/axios';
 import { isStoreOpen } from '@/lib/storeStatus';
 import { type StoreMapPin, DAVAO_CENTER } from './locationPickerTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
+import { rankAddressHits } from './addressMatch';
 
-/** "A. Pichon St" vs "A. Pichon Street": same place once abbreviations and punctuation are evened out. */
-function normalizePlaceName(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[.,'’]/g, ' ')
-    .replace(/\bst\b/g, 'street')
-    .replace(/\bave?\b/g, 'avenue')
-    .replace(/\bblvd\b/g, 'boulevard')
-    .replace(/\brd\b/g, 'road')
-    .replace(/\bext\b/g, 'extension')
-    .replace(/\bbrgy\b/g, 'barangay')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function samePlaceName(resultName: string, typed: string): boolean {
-  // Spaces dropped too, so initials match however they're written ("J.P." / "JP").
-  const a = normalizePlaceName(resultName).replace(/ /g, '');
-  const b = normalizePlaceName(typed).replace(/ /g, '');
-  return a.length > 0 && b.length > 0 && a === b;
-}
 
 export function useLocationPickerState(
   initial: SavedLocation | null,
@@ -199,6 +179,7 @@ export function useLocationPickerState(
     setError('');
     setSearchResults([]);
 
+    // 1–2. Raw "lat, lng" or a full Google Maps link with coordinates in it.
     const parsed = parseCoordsFromMapsLink(text);
     if (parsed) {
       jumpTo(parsed.lat, parsed.lng);
@@ -207,36 +188,59 @@ export function useLocationPickerState(
       return;
     }
 
+    // 3. A short link (maps.app.goo.gl) or a Google link without coordinates:
+    // the server follows the redirect (the browser can't, cross-origin).
+    if (isGoogleMapsLink(text)) {
+      setSearching(true);
+      setShowSuggestions(false);
+      try {
+        const url = /^https?:\/\//i.test(text) ? text : `https://${text}`;
+        const res = await api.post('/public/resolve-map-url', { url });
+        if (res.data?.success) {
+          const { lat, lng } = res.data as { lat: number; lng: number };
+          jumpTo(lat, lng);
+          reverseGeocode(lat, lng);
+        } else {
+          setError("Couldn't read a location from that link. Open it in Google Maps, tap Share, and paste the link again, or type the address.");
+        }
+      } catch {
+        setError("Couldn't open that link right now. Please try again, or type the address.");
+      } finally {
+        setSearching(false);
+      }
+      return;
+    }
+
+    // 4. Plain text: geocode the address.
+
     const cleaned = cleanLocationQuery(text);
 
     setSearching(true);
     try {
-      // Search the street / place part first. With the whole address
-      // ("A. Pichon St, Poblacion District, Davao City, Davao del Sur") the
-      // geocoder latches onto "Davao City" and returns City Hall offices
-      // instead of the street; the barangay/city parts add nothing anyway,
-      // since every search is already biased to Davao City.
+      // Two searches, side by side. The street / place part alone: with the
+      // whole address ("A. Pichon St, Poblacion District, Davao City") the
+      // geocoder can latch onto "Davao City" and return City Hall offices.
+      // And the whole address: a long street ("San Pedro Street") is split
+      // by barangay in the map data, and only the full text finds the right
+      // piece. rankAddressHits then prefers hits in the barangay/district
+      // that was typed, so the pin lands where the address says.
       const firstSegment = cleaned.split(',')[0].trim();
-      let data = firstSegment && firstSegment !== cleaned ? await searchPlacesAroundDavao(firstSegment) : [];
-      if (data.length === 0) {
-        data = await searchPlacesAroundDavao(cleaned);
-      }
-
-      // Exactly what was typed is the top hit → go straight there instead of
-      // making the user pick it from a list.
-      const best = data[0];
-      const exact = best && firstSegment && samePlaceName(best.display_name.split(',')[0], firstSegment);
+      const [streetHits, fullHits] = await Promise.all([
+        firstSegment && firstSegment !== cleaned ? searchPlacesAroundDavao(firstSegment) : Promise.resolve([]),
+        searchPlacesAroundDavao(cleaned),
+      ]);
+      const { ranked: data, confident } = rankAddressHits([...streetHits, ...fullHits], cleaned);
 
       if (data.length === 0) {
         setError("Couldn't find that place. Try pasting the full Google Maps link, or a more specific address.");
         setShowSuggestions(false);
-      } else if (data.length === 1 || exact) {
+      } else if (data.length === 1 || confident) {
         const { lat, lng, display_name } = data[0];
         jumpTo(lat, lng, true);
         setAddress(display_name ?? cleaned);
         setShowSuggestions(false);
       } else {
-        setSearchResults(data);
+        setSearchResults(data.slice(0, 8));
         setShowSuggestions(true);
       }
     } catch {

@@ -19,8 +19,8 @@ interface OnboardingStep {
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     step: 'Step 1',
-    title: 'Set Up Your Store Profile',
-    desc: 'Open your Store Profile to add your logo, banner, description, and social links, set your map location and operating hours, and configure your GCash/bank details so they print on receipts. This is what customers see when they find you.',
+    title: 'Set Up Your Shop Profile',
+    desc: 'Open your Shop Profile to add your logo, banner, description, and social links, set your map location and operating hours, and configure your GCash/bank details so they print on receipts. This is what customers see when they find you.',
     icon: Store,
     href: '/dashboard/profile',
   },
@@ -83,7 +83,7 @@ export default function WelcomeView() {
           <BookOpen size={28} />
         </div>
         <h2 className="text-2xl font-heading font-semibold text-ink">Welcome to SUTURA Tailoring Tracker</h2>
-        <p className="text-ink-muted text-sm max-w-lg mx-auto">A complete guide to setting up and running your store on SUTURA, from your first store profile edit to tracking a finished order.</p>
+        <p className="text-ink-muted text-sm max-w-lg mx-auto">A complete guide to setting up and running your shop on SUTURA, from your first shop profile edit to tracking a finished order.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -354,7 +354,7 @@ function PaymentReceiptContent() {
         )}
 
         <p className="text-center text-[9px] text-gray-400 mt-8">
-          Printed by SUTURA Store Management System · {new Date().toLocaleString('en-PH')}
+          Printed by SUTURA Shop Management System · {new Date().toLocaleString('en-PH')}
         </p>
       </div>
     </>

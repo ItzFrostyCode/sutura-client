@@ -3,9 +3,9 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Ruler } from 'lucide-react';
+import { Users } from 'lucide-react';
 
-export type CustomerTabId = 'customers' | 'measurements';
+export type CustomerTabId = 'customers';
 
 export interface CustomerTabItem {
   id: CustomerTabId;
@@ -15,8 +15,7 @@ export interface CustomerTabItem {
 }
 
 export const CUSTOMER_TABS: readonly CustomerTabItem[] = [
-  { id: 'customers', label: 'Client Book', href: '/dashboard/customers', icon: Users },
-  { id: 'measurements', label: 'Measurements', href: '/dashboard/measurements', icon: Ruler },
+  { id: 'customers', label: 'Customer Records', href: '/dashboard/customers', icon: Users },
 ] as const;
 
 interface CustomersModuleTabsProps {
@@ -28,11 +27,7 @@ export default function CustomersModuleTabs({
   activeTab: controlledTab,
   className = '',
 }: CustomersModuleTabsProps) {
-  const pathname = usePathname();
-
-  const activeId: CustomerTabId = controlledTab ?? (
-    pathname.startsWith('/dashboard/measurements') ? 'measurements' : 'customers'
-  );
+  const activeId: CustomerTabId = controlledTab ?? 'customers';
 
   return (
     <nav

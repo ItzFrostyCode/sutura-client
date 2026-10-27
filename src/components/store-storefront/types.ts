@@ -33,6 +33,14 @@ export interface PublicService {
   sale_ends_at?: string | null;
   estimated_days: number | null;
   estimated_days_max?: number | null;
+  min_order_qty?: number | null;
+  /** What an online order asks of the customer: service setting, else the shop default. */
+  order_requirements?: {
+    measurement_requirement: 'none' | 'existing' | 'shop';
+    fitting_requirement: 'none' | 'optional' | 'required';
+    payment_policy: 'none' | 'full' | 'deposit' | 'custom';
+    payment_policy_percent: number;
+  };
   is_active: boolean;
   image_url?: string | null;
   reviews_count?: number | null;
@@ -136,6 +144,8 @@ export interface StoreProfile {
   my_review?: { id?: number; rating: number; comment?: string | null } | null;
   district?: string;
   specializations?: string[];
+  /** Other locations listed at registration — display only, not bookable branches. */
+  declared_branches?: { name: string; address: string }[] | null;
   business_type?: string | null;
   branches?: StoreBranch[];
   owner?: {

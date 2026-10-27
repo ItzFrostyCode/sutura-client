@@ -54,7 +54,7 @@ export default function RescheduleAppointmentModal({
         setSettings(s.data.data);
         setSlots(a.data.data ?? []);
       })
-      .catch(() => toast.error('Could not load the store’s available times.'));
+      .catch(() => toast.error('Could not load the shop’s available times.'));
   }, [isOpen, storeSlug, toast]);
 
   const operatingHours = useMemo(() => {
@@ -75,7 +75,7 @@ export default function RescheduleAppointmentModal({
     setSaving(true);
     try {
       await api.put(`/my-appointments/${appointmentId}/reschedule`, { scheduled_at: `${date}T${time}:00` });
-      toast.success('Moved. The store will confirm the new time.');
+      toast.success('Moved. The shop will confirm the new time.');
       onClose();
       await onMoved();
     } catch (err) {
@@ -103,7 +103,7 @@ export default function RescheduleAppointmentModal({
       }
     >
       <p className="text-sm text-ink-muted mb-4">
-        Choose another date and time. Your request stays with the store and is still waiting for their confirmation.
+        Choose another date and time. Your request stays with the shop and is still waiting for their confirmation.
       </p>
       <InteractiveCalendar
         selectedDate={date}

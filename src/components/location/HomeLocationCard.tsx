@@ -76,7 +76,7 @@ export default function HomeLocationCard({
           </div>
           <div>
             <p className="text-sm font-semibold text-ink">Set a home address</p>
-            <p className="text-xs text-ink-muted mt-0.5">Find nearby stores even when you&apos;re far away</p>
+            <p className="text-xs text-ink-muted mt-0.5">Find nearby shops even when you&apos;re far away</p>
           </div>
         </button>
       )}

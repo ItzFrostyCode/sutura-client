@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 
 export default function HomeFooter() {
   return (
     <footer className="bg-ink border-t border-ink">
       <div className="max-w-7xl mx-auto mobile-screen-margins py-8">
         <div className="mb-6">
-          <span className="font-serif font-bold text-xl text-white">SUTURA</span>
+          <SuturaLogo tone="dark" className="h-10" />
           <p className="mobile-body-sm text-white/60 mt-1.5 leading-relaxed mb-6 font-normal">
-            A Web-Based Tailoring Store Tracker System for Davao City.
+            A Web-Based Tailoring Shop Tracker System for Davao City.
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
@@ -19,7 +20,7 @@ export default function HomeFooter() {
               <ul className="space-y-1">
                 <li>
                   <Link href="/search" className="mobile-body-sm text-white/60 hover:text-white min-h-[36px] flex items-center font-normal">
-                    Search Stores
+                    Search Shops
                   </Link>
                 </li>
                 <li>
@@ -47,7 +48,7 @@ export default function HomeFooter() {
                 </li>
                 <li>
                   <Link href="/register" className="mobile-body-sm text-white/60 hover:text-white min-h-[36px] flex items-center font-normal">
-                    Register a Store
+                    Register a Shop
                   </Link>
                 </li>
               </ul>

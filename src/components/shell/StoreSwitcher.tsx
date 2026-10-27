@@ -101,7 +101,7 @@ export default function StoreSwitcher() {
           <div className="px-3.5 py-2.5 bg-canvas/70 border-b border-line flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-ink truncate">{store.name}</p>
-              <p className="text-[10px] text-ink-muted">Store Locations & Branch Network</p>
+              <p className="text-[10px] text-ink-muted">Shop Locations & Branch Network</p>
             </div>
             {!tierLoading && (
               <span className="text-[10px] font-bold uppercase tracking-wider text-taupe bg-taupe/10 border border-taupe/20 rounded-md px-2 py-0.5 shrink-0">

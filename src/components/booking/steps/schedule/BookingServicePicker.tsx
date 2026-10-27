@@ -73,7 +73,7 @@ export default function BookingServicePicker({
           />
           <p className="mobile-caption text-ink-faint">
             {appointmentType === 'pickup'
-              ? 'Tell the store which finished order you’re coming to collect.'
+              ? 'Tell the shop which finished order you’re coming to collect.'
               : 'Tell the designer which ongoing order you are coming in to fit.'}
           </p>
         </div>

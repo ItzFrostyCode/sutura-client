@@ -73,7 +73,7 @@ export default function ShopRevenueReport({ report, period }: { readonly report:
                 <th className="px-5 py-3 text-right font-normal">Completion</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y-2 divide-line-strong">
               {report.stores.length === 0 && (
                 <tr><td colSpan={7} className="px-5 py-6 text-ink-muted">No live shops yet.</td></tr>
               )}

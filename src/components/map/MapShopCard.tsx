@@ -9,10 +9,12 @@ import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 const fmtKm = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`);
 
 /** One shop in the Tailor Locator list: photo, name, open pill, rating, address, distance, specialties. */
-export default function MapShopCard({ branch, active, onSelect }: {
+export default function MapShopCard({ branch, active, onSelect, onHover }: {
   readonly branch: DiscoveryMapBranch;
   readonly active: boolean;
   readonly onSelect: (b: DiscoveryMapBranch) => void;
+  /** Hover/focus in → this branch; out → null. Bounces its pin on the map. */
+  readonly onHover?: (b: DiscoveryMapBranch | null) => void;
 }) {
   const photo = branch.storeBannerPath || branch.storeLogoPath;
   const place = branch.address || [branch.district, branch.city].filter(Boolean).join(', ') || 'Davao City';
@@ -22,6 +24,10 @@ export default function MapShopCard({ branch, active, onSelect }: {
     <button
       type="button"
       onClick={() => onSelect(branch)}
+      onMouseEnter={() => onHover?.(branch)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(branch)}
+      onBlur={() => onHover?.(null)}
       aria-pressed={active}
       className={`group flex w-full items-start gap-3 rounded-xl border p-2.5 text-left transition-[border-color,box-shadow,background-color] duration-200 ease-out cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taupe ${
         active ? 'border-ink bg-surface shadow-[0_4px_14px_rgba(45,42,38,0.12)]' : 'border-line bg-surface hover:border-line-strong hover:shadow-[0_3px_10px_rgba(45,42,38,0.08)]'
@@ -37,7 +43,17 @@ export default function MapShopCard({ branch, active, onSelect }: {
 
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <span className="min-w-0 truncate text-[15px] font-semibold leading-snug text-ink">{branch.storeName}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="min-w-0 truncate text-[15px] font-semibold leading-snug text-ink">{branch.storeName}</span>
+            {/* Same colours as the map pins: deep brown = main store, taupe = branch. */}
+            <span
+              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                branch.isMain ? 'bg-[#2E1C14] text-white' : 'border border-[#8D7B68] bg-[#F3EEE8] text-[#5E4E40]'
+              }`}
+            >
+              {branch.isMain ? 'Main Shop' : 'Branch'}
+            </span>
+          </span>
           <span className="flex shrink-0 items-center gap-1.5">
             <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${branch.isOpen ? 'bg-sage/15 text-sage' : 'bg-danger/10 text-danger'}`}>
               {branch.isOpen ? 'Open' : 'Closed'}

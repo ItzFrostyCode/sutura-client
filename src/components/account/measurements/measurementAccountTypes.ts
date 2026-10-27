@@ -15,7 +15,7 @@ export interface ProfileGroup {
 }
 
 export const SOURCE_LABELS: Record<string, string> = {
-  store_owner: "Store's own record",
+  store_owner: "Shop's own record",
   customer: 'Self-reported by you',
 };
 

@@ -1,15 +1,11 @@
-import React from 'react';
+import SuturaLogo from '@/components/brand/SuturaLogo';
 
-export default function BrandLogo({ className = "", iconOnly = false }: { readonly className?: string, readonly iconOnly?: boolean }) {
-  const size = iconOnly ? 32 : 40;
+// Dashboard / auth-page brand mark: the Tailor Pin icon alone, or the full
+// lockup with the SUTURA wordmark.
+export default function BrandLogo({ className = '', iconOnly = false }: { readonly className?: string; readonly iconOnly?: boolean }) {
   return (
-    <div className={`flex items-center justify-center ${className}`} aria-label="SUTURA">
-      <div
-        style={{ width: size, height: size }}
-        className="flex items-center justify-center rounded-full bg-linear-to-br from-[#B99A6B] to-[#8A7063] text-white font-serif italic font-bold shrink-0"
-      >
-        <span style={{ fontSize: size * 0.55 }}>S</span>
-      </div>
+    <div className={`flex items-center justify-center ${className}`}>
+      <SuturaLogo variant={iconOnly ? 'mark' : 'lockup'} className={iconOnly ? 'h-9' : 'h-10'} />
     </div>
   );
 }

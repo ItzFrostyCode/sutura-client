@@ -151,7 +151,7 @@ export function getDiscoverColumns(): NavColumn[] {
       title: 'FOR SHOPS',
       items: [
         { label: 'Shop Sign In', href: '/login?as=store' },
-        { label: 'Register a Tailor Store', href: '/register/store' },
+        { label: 'Register a Tailor Shop', href: '/register/store' },
       ],
     },
   ];

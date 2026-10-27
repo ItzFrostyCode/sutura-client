@@ -417,7 +417,7 @@ export default function AppointmentCalendarView({
                     {isPending && apt.intake_channel === 'online' && (
                       <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/90 text-amber-900 text-xs px-2.5 py-1 rounded-md font-medium">
                         <AlertCircle size={13} className="text-amber-600 shrink-0" />
-                        <span>Online customer booking request — awaiting store confirmation</span>
+                        <span>Online customer booking request — awaiting shop confirmation</span>
                       </div>
                     )}
 

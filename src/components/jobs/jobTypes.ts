@@ -88,7 +88,7 @@ export interface Job {
   customer_job_count?: number;
   adjustment_count?: number;
   first_adjustment_at?: string | null;
-  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
+  garment_category?: 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
   progress_photos?: { url: string; stage: string; uploaded_at: string }[] | null;
   measurement?: {
     id: number;

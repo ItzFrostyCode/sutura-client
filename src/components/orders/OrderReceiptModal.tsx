@@ -29,7 +29,7 @@ export default function OrderReceiptModal({
       <div className="bg-surface rounded-2xl border border-line w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div id="receipt-print-area" className="p-6 text-black">
           <div className="text-center border-b border-dashed border-gray-400 pb-4 mb-4">
-            <h2 className="text-xl font-bold tracking-tight">{store?.name ?? 'Sutura Store'}</h2>
+            <h2 className="text-xl font-bold tracking-tight">{store?.name ?? 'Sutura Shop'}</h2>
             {store?.address && (
               <p className="text-xs text-gray-600 mt-0.5">
                 {store.address}{store.city ? `, ${store.city}` : ''}
@@ -61,7 +61,7 @@ export default function OrderReceiptModal({
           <div className="text-sm space-y-1.5">
             <div className="flex justify-between"><span className="text-gray-600">Total</span><span className="font-bold">{peso(total)}</span></div>
             <div className="flex justify-between"><span className="text-gray-600">Payment Status</span><span className="capitalize font-medium">{order.payment_status}</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Fulfillment</span><span>Store Pickup</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Fulfillment</span><span>Shop Pickup</span></div>
           </div>
 
           <p className="text-center text-xs text-gray-600 mt-6 border-t border-dashed border-gray-400 pt-4">

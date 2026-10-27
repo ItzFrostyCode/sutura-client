@@ -43,7 +43,7 @@ export default function AccountHistoryPage() {
             Your orders, appointments, and measurements will show up here once you have some.
           </p>
           <Link href="/map" className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto">
-            Browse Stores →
+            Browse Shops →
           </Link>
         </div>
       )}

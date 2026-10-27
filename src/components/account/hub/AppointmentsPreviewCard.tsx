@@ -62,7 +62,7 @@ export default function AppointmentsPreviewCard({
         <div className="flex items-start gap-2 bg-sunken border border-line px-3 py-2.5 mb-3">
           <Info size={16} className="text-ink-muted shrink-0 mt-0.5" />
           <p className="mobile-caption text-ink-body leading-relaxed font-normal">
-            One active appointment per store at a time — cancel it first to book a different date.
+            One active appointment per shop at a time — cancel it first to book a different date.
           </p>
         </div>
       )}

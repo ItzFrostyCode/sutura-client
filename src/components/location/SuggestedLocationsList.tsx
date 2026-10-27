@@ -41,7 +41,7 @@ export default function SuggestedLocationsList({
         {(
           [
             { id: 'all', label: 'All Davao' },
-            { id: 'stores', label: 'Tailor Stores' },
+            { id: 'stores', label: 'Tailor Shops' },
             { id: 'malls', label: 'Malls & Hubs' },
             { id: 'districts', label: 'Districts' },
           ] as const
@@ -84,7 +84,7 @@ export default function SuggestedLocationsList({
                 <p className="text-sm font-bold text-ink line-clamp-1">{hub.name}</p>
                 {hub.type === 'tailor_store' && (
                   <span className="text-[10px] font-bold px-1.5 py-0.5 bg-taupe/15 text-taupe shrink-0">
-                    Store
+                    Shop
                   </span>
                 )}
               </div>

@@ -1,67 +1,93 @@
 import React from 'react';
 import { depositFraction, type PaymentPolicy } from './requirements';
-import { Store, ShoppingBag, Scissors, Pause, Hourglass, Wrench, ShieldCheck } from 'lucide-react';
-
-// Unified with the Multi-Stage Staff Assignment stages (design/pattern_making/
-// cutting/sewing/qc_ironing) so the customer-facing timeline and the internal
-// "who's assigned to what" tracking describe the same production process
-// instead of two different vocabularies. Store pickup is the only
-// fulfillment path — the approved thesis excludes logistics/courier/delivery
-// management from the system's scope.
-//
-// 'mass_cutting_printing' is the Bulk Order Override: a job with a Team
-// Roster / Size Sheet skips 'pattern_making' and goes straight here instead
-// — see columnsForJobs(), which only shows whichever of the two columns is
-// actually relevant to the jobs on the board.
-export const ALL_COLUMNS = [
-  { id: 'pending',                title: 'Pending',                color: 'bg-line/50',   border: 'border-line-strong' },
-  // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the
-  // backend; a job whose garment_category/service is alteration_repair runs
-  // through these three instead of Design..QC & Ironing below. Hidden by
-  // columnsForJobs() unless a repair job is actually on the board.
-  { id: 'queued',                 title: 'Queued for Repair',      color: 'bg-slate-50/50',     border: 'border-slate-200/50' },
-  { id: 'in_repair',              title: 'In Repair',              color: 'bg-yellow-50/50',    border: 'border-yellow-200/50' },
-  { id: 'qc_check',               title: 'QC Check',               color: 'bg-lime-50/50',      border: 'border-lime-200/50' },
-  { id: 'design',                 title: 'Design',                 color: 'bg-pink-50/50',      border: 'border-pink-200/50' },
-  { id: 'pattern_making',         title: 'Pattern Making',         color: 'bg-sky-50/50',       border: 'border-sky-200/50' },
-  { id: 'mass_cutting_printing',  title: 'Mass Cutting & Printing', color: 'bg-cyan-50/50',     border: 'border-cyan-200/50' },
-  { id: 'cutting',                title: 'Cutting',                color: 'bg-amber-50/50',     border: 'border-amber-200/50' },
-  { id: 'sewing',                 title: 'Sewing / Assembly',      color: 'bg-orange-50/50',    border: 'border-orange-200/50' },
-  { id: 'ready_for_fitting',      title: 'Ready for Fitting',      color: 'bg-violet-50/50',    border: 'border-violet-200/50' },
-  { id: 'final_adjustments',      title: 'Final Adjustments',      color: 'bg-rose-50/50',      border: 'border-rose-200/50' },
-  { id: 'qc_ironing',             title: 'QC & Ironing',           color: 'bg-fuchsia-50/50',   border: 'border-fuchsia-200/50' },
-  { id: 'ready_for_pickup',       title: 'Ready for Pickup',       color: 'bg-emerald-50/50',   border: 'border-emerald-200/50' },
-  { id: 'completed',              title: 'Completed',              color: 'bg-taupe/10',    border: 'border-taupe/30' },
-];
+import { Store, ShoppingBag, Scissors, Pause, Clock, Wrench, ShieldCheck, Sparkles, Check } from 'lucide-react';
 
 /**
- * Deliberately NOT part of ALL_COLUMNS/columnsForJobs — those two drive the
- * "Online/Walk-in production flow: A → B → C" banner on the jobs page, and
- * on_hold is an orthogonal pause state reachable from any stage, not a step
- * in that sequence. Rendered as a separate, conditionally-shown column
- * instead so a held job doesn't just disappear off the board (previously
- * this behaved like 'cancelled'/'rejected' — no column, no board visibility
- * at all — which is fine for a terminal state but not for a paused one the
- * owner still needs to remember to resume).
+ * The 7 Streamlined Production Order Stages requested for SUTURA:
+ * 1. pending
+ * 2. production
+ * 3. quality_check
+ * 4. ready_for_fitting
+ * 5. adjustments
+ * 6. ready_for_pickup
+ * 7. completed
  */
+export const PRODUCTION_COLUMNS = [
+  { id: 'pending',           title: 'Pending',            color: 'bg-amber-50/50',   border: 'border-amber-200/70' },
+  { id: 'production',        title: 'Production',         color: 'bg-blue-50/50',    border: 'border-blue-200/70' },
+  { id: 'quality_check',     title: 'Quality Check',      color: 'bg-purple-50/50',  border: 'border-purple-200/70' },
+  { id: 'ready_for_fitting', title: 'Ready for Fitting',  color: 'bg-violet-50/50',  border: 'border-violet-200/70' },
+  { id: 'adjustments',       title: 'Adjustments',        color: 'bg-rose-50/50',    border: 'border-rose-200/70' },
+  { id: 'ready_for_pickup',  title: 'Ready for Pickup',   color: 'bg-emerald-50/50', border: 'border-emerald-200/70' },
+  { id: 'completed',         title: 'Completed',          color: 'bg-taupe/10',      border: 'border-taupe/30' },
+] as const;
+
+export const ALL_COLUMNS = [...PRODUCTION_COLUMNS];
+
+/**
+ * Where a card can go next from each stage (the board's one-click actions).
+ * Used to preview the destination column while hovering an action button.
+ */
+export const NEXT_STAGES: Record<string, readonly string[]> = {
+  pending: ['production'],
+  production: ['quality_check'],
+  quality_check: ['ready_for_fitting'],
+  ready_for_fitting: ['adjustments', 'ready_for_pickup'],
+  adjustments: ['quality_check'],
+  ready_for_pickup: ['completed'],
+};
+
+export const nextStagesFor = (status: string): readonly string[] => NEXT_STAGES[normalizeJobStatus(status)] ?? [];
+
+/**
+ * Normalizes any legacy or sub-stage status into one of the 7 primary production stages.
+ * This guarantees backwards compatibility with existing database rows while presenting
+ * a clean, frictionless 7-column workflow to staff and shop owners.
+ */
+export function normalizeJobStatus(status: string): string {
+  switch (status) {
+    case 'pending':
+      return 'pending';
+    case 'production':
+    case 'design':
+    case 'pattern_making':
+    case 'mass_cutting_printing':
+    case 'cutting':
+    case 'sewing':
+    case 'queued':
+    case 'in_repair':
+      return 'production';
+    case 'quality_check':
+    case 'qc_ironing':
+    case 'qc_check':
+      return 'quality_check';
+    case 'ready_for_fitting':
+      return 'ready_for_fitting';
+    case 'adjustments':
+    case 'final_adjustments':
+      return 'adjustments';
+    case 'ready_for_pickup':
+      return 'ready_for_pickup';
+    case 'completed':
+      return 'completed';
+    case 'on_hold':
+      return 'on_hold';
+    default:
+      return status;
+  }
+}
+
 export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-amber-50/60', border: 'border-amber-300/60' };
 
 /**
  * "No DP, No Layout, No Cut": a job cannot enter any of these production
- * stages until a 50% downpayment has been logged — mirrors
- * JobOrder::STAGES_REQUIRING_DOWNPAYMENT on the backend exactly so the
- * Kanban board's drag-and-drop guard never drifts out of sync with what the
- * API actually enforces. Includes 'ready_for_pickup' because the status
- * dropdown allows jumping straight there from 'pending'/'design', not just
- * a step-by-step advance — without it, an unpaid job could skip the entire
- * gated middle of the pipeline in one selection.
+ * stages until downpayment has been logged.
  */
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
+  'production', 'quality_check', 'ready_for_fitting', 'adjustments', 'ready_for_pickup',
+  // legacy/sub-stage keys preserved
   'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
-  'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup',
-  // Repair Override pipeline — same rule, once repair work actually starts
-  // (not at 'pending'/'queued'). Mirrors JobOrder::STAGES_REQUIRING_DOWNPAYMENT.
-  'in_repair', 'qc_check',
+  'final_adjustments', 'qc_ironing', 'in_repair', 'qc_check',
 ]);
 
 /**
@@ -136,21 +162,8 @@ export function requiresDownpayment(
  * actually on the board — same reasoning, applied to a second alternate
  * pipeline instead of a single swapped column.
  */
-export function columnsForJobs(jobs: Job[] = []) {
-  const hasBulkOrders = jobs.some(isBulkOrder);
-  const hasStandardOrders = jobs.some(j => !isBulkOrder(j));
-  const hasRepairOrders = jobs.some(isRepairOnly);
-  const hasNonRepairOrders = jobs.some(j => !isRepairOnly(j));
-
-  return ALL_COLUMNS.filter(c => {
-    if (c.id === 'mass_cutting_printing') return hasBulkOrders;
-    if (c.id === 'pattern_making') return hasStandardOrders || !hasBulkOrders;
-    if (['queued', 'in_repair', 'qc_check'].includes(c.id)) return hasRepairOrders;
-    if (['design', 'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing'].includes(c.id)) {
-      return hasNonRepairOrders || !hasRepairOrders;
-    }
-    return true;
-  });
+export function columnsForJobs(_jobs: Job[] = []) {
+  return [...PRODUCTION_COLUMNS];
 }
 
 export interface Job {
@@ -167,12 +180,17 @@ export interface Job {
   discount_amount?: number | string | null;
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
-  customer?: { name: string; suki_tag?: string | null } | null;
+  customer?: { id?: number; name: string; suki_tag?: string | null; phone?: string | null; email?: string | null } | null;
   service?: { name: string; service_type?: string | null; service_types?: string[] | null } | null;
   service_package?: { id: number; name: string } | null;
-  assigned_staff?: { name: string } | null;
+  assigned_staff_id?: number | null;
+  assigned_to?: number | null;
+  assigned_staff?: { id?: number; name: string; email?: string } | null;
+  assignedStaff?: { id?: number; name: string; email?: string } | null;
+  assignedTo?: { id?: number; name: string; email?: string } | null;
   due_date?: string | null;
   updated_at?: string;
+  design_origin?: string | null;
   custom_order_data?: Record<string, unknown> | null;
   hold_reason?: string | null;
   garment_category?: string | null;
@@ -187,18 +205,43 @@ export interface Job {
     images?: Array<{ id?: number; image_url: string; is_primary?: boolean | number }>;
   } | null;
   reference_images?: string[] | null;
+  reference_link?: string | null;
+  is_rush?: boolean;
+  rush_fee?: number | string;
+  notes?: string;
+  material_source?: 'store_supplied' | 'customer_supplied' | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';
 
 export const CANCELLATION_REASON_LABELS: Record<string, string> = {
   customer_request: 'Customer requested cancellation',
-  store_unable_to_fulfill: 'Store unable to fulfill',
+  store_unable_to_fulfill: 'Shop unable to fulfill',
   forfeited_deposit_abandoned: 'Forfeited deposit — customer went uncontactable',
   other: 'Other',
 };
 
+/**
+ * Garment Type on the New Job Order form: broad structural classes rather
+ * than garment-by-name. Server: App\Support\GarmentCategory::STANDARD.
+ */
+export const GARMENT_TYPE_OPTIONS = [
+  { value: 'top', label: 'Top', examples: 'Barong Tagalog, polo, blouse, shirt, blazer' },
+  { value: 'bottom', label: 'Bottom', examples: 'Pants, trousers, slacks, skirt, shorts' },
+  { value: 'full_set', label: 'Full Set / Suit', examples: '2- or 3-piece suit, school or company uniform set, scrub suit set' },
+  { value: 'gown_dress', label: 'Gown / Dress', examples: 'Evening gown, wedding gown, Filipiniana, modern terno' },
+  { value: 'outerwear', label: 'Outerwear / Specialty', examples: 'Academic toga, lab gown, vest, robe' },
+  { value: 'others', label: 'Others / Custom Item', examples: 'Anything that doesn’t fit the groups above' },
+] as const;
+
+export type GarmentTypeValue = (typeof GARMENT_TYPE_OPTIONS)[number]['value'];
+
+// Labels for every garment_category value an order can hold: the standard
+// classes, the automatic alteration marker, and the older garment-by-name
+// values still on existing orders.
 export const GARMENT_CATEGORY_LABELS: Record<string, string> = {
+  ...Object.fromEntries(GARMENT_TYPE_OPTIONS.map((o) => [o.value, o.label])),
+  alteration_repair: 'Alterations & Repair',
   barong: 'Barong Tagalog',
   gown: 'Gown',
   suit: 'Suit',
@@ -207,7 +250,6 @@ export const GARMENT_CATEGORY_LABELS: Record<string, string> = {
   lab_gown: 'Lab Gown',
   scrub_suit: 'Scrub Suit',
   corporate_wear: 'Corporate Wear',
-  alteration_repair: 'Alterations & Repair',
 };
 
 export const getDueStatus = (dueDateStr: string | null | undefined, status: string) => {
@@ -254,18 +296,22 @@ export function TypeBadge({ type }: { readonly type: string }) {
 
 export function ColumnIcon({ id }: { readonly id: string }) {
   switch (id) {
+    case 'pending':
+      return <Clock size={14} className="text-amber-600" />;
+    case 'production':
+      return <Scissors size={14} className="text-blue-600" />;
+    case 'quality_check':
+      return <ShieldCheck size={14} className="text-purple-600" />;
+    case 'ready_for_fitting':
+      return <Sparkles size={14} className="text-violet-600" />;
+    case 'adjustments':
+      return <Wrench size={14} className="text-rose-600" />;
     case 'ready_for_pickup':
       return <Store size={14} className="text-emerald-600" />;
     case 'completed':
-      return <Scissors size={14} className="text-taupe" />;
+      return <Check size={14} className="text-taupe" />;
     case 'on_hold':
       return <Pause size={14} className="text-amber-600" />;
-    case 'queued':
-      return <Hourglass size={14} className="text-slate-500" />;
-    case 'in_repair':
-      return <Wrench size={14} className="text-yellow-600" />;
-    case 'qc_check':
-      return <ShieldCheck size={14} className="text-lime-600" />;
     default:
       return null;
   }

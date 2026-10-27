@@ -21,6 +21,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A request the app cancelled on purpose (e.g. the search box dropping
+    // the previous suggestions request as you keep typing) isn't a failure:
+    // pass it on to the caller without logging.
+    if (axios.isCancel(error)) return Promise.reject(error);
     const status = error.response?.status ?? error.code ?? 'NETWORK_ERROR';
     // 4xx is an answer the calling form already shows (wrong password,
     // validation) — a warning, not console.error, which Next's dev overlay

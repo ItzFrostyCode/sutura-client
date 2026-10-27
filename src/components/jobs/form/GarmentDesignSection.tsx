@@ -21,6 +21,7 @@ import { CatalogItem } from '@/components/catalog/catalogHelpers';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
 import SearchableCombobox, { ComboboxOption } from '@/components/shared/SearchableCombobox';
 import { JobCreateFormData } from './types';
+import { GARMENT_CATEGORY_LABELS, GARMENT_TYPE_OPTIONS } from '../jobHelpers';
 
 const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] as const;
 
@@ -173,15 +174,14 @@ export default function GarmentDesignSection({
   return (
     <CollapsibleSection
       icon={<Shirt size={16} className="text-taupe" />}
-      title="Garment Type & Design Origin"
-      description="Select whether this is from your Showroom lookbook, bespoke from scratch, or an alteration."
+      title="Job Type"
+      description="Pick how the customer is ordering — from our catalog, from scratch, or a repair/alteration."
       defaultOpen={true}
     >
       {/* ── Design Origin Selector (Option A Unified Pipeline) ── */}
       <div className="mb-6 space-y-2">
         <label className="text-sm font-semibold text-ink flex items-center justify-between">
-          <span>Design Source / Order Nature</span>
-          <span className="text-[11px] font-normal text-ink-faint">All flow through tailoring production</span>
+          <span>Order Type</span>
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -198,8 +198,8 @@ export default function GarmentDesignSection({
               <Sparkles size={14} />
             </div>
             <div>
-              <div className="text-xs font-bold text-ink">Showroom Lookbook</div>
-              <div className="text-[10px] text-ink-muted leading-tight mt-0.5">Pick from curated catalog designs</div>
+              <div className="text-xs font-bold text-ink">From Our Catalog</div>
+              <div className="text-[10px] text-ink-muted leading-tight mt-0.5">Pick from our saved designs</div>
             </div>
           </button>
 
@@ -216,8 +216,8 @@ export default function GarmentDesignSection({
               <Scissors size={14} />
             </div>
             <div>
-              <div className="text-xs font-bold text-ink">Custom / Bespoke</div>
-              <div className="text-[10px] text-ink-muted leading-tight mt-0.5">From scratch with client specs</div>
+              <div className="text-xs font-bold text-ink">Custom</div>
+              <div className="text-[10px] text-ink-muted leading-tight mt-0.5">Client describes what they want</div>
             </div>
           </button>
 
@@ -235,7 +235,7 @@ export default function GarmentDesignSection({
             </div>
             <div>
               <div className="text-xs font-bold text-ink">Alterations & Repair</div>
-              <div className="text-[10px] text-ink-muted leading-tight mt-0.5">Adjustment on existing piece</div>
+              <div className="text-[10px] text-ink-muted leading-tight mt-0.5">Fix or resize an existing garment</div>
             </div>
           </button>
         </div>
@@ -247,10 +247,10 @@ export default function GarmentDesignSection({
           <div className="space-y-1">
             <span className="text-xs font-bold text-ink flex items-center gap-1.5">
               <Sparkles size={13} className="text-taupe" />
-              Select Showroom Design Reference
+              Select Catalog Design
             </span>
             <p className="text-[11px] text-ink-faint">
-              Auto-populates base price, garment category, turnaround time, and reference photo for cutting and sewing.
+              Auto-fills price, garment type, and turnaround time.
             </p>
           </div>
 
@@ -277,10 +277,10 @@ export default function GarmentDesignSection({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">
-                    Showroom Collection ({displayedCatalogItems.length} of {catalogItems.length})
+                    Catalog Designs ({displayedCatalogItems.length} of {catalogItems.length})
                   </span>
                 </div>
-                <span className="text-[10px] text-ink-faint">Click any design to auto-select</span>
+                <span className="text-[10px] text-ink-faint">Tap a design to select it</span>
               </div>
 
               {/* Category Filter Chips */}
@@ -410,7 +410,7 @@ export default function GarmentDesignSection({
                   className="px-2.5 py-1.5 rounded-lg border border-line bg-canvas hover:bg-sunken text-ink text-[11px] font-semibold flex items-center gap-1 transition-colors"
                 >
                   <ExternalLink size={11} />
-                  <span>Showroom Specs</span>
+                  <span>View Design</span>
                 </Link>
                 <button
                   type="button"
@@ -483,11 +483,9 @@ export default function GarmentDesignSection({
       {/* ── Garment Category ── */}
       <div className="mb-6 space-y-1.5">
         <label htmlFor="garment_category" className="text-sm font-medium text-ink-body">
-          Garment Category <span className="text-xs font-normal text-ink-faint">(optional)</span>
+          Garment Type <span className="text-xs font-normal text-ink-faint">(optional)</span>
         </label>
-        <p className="text-[11px] text-ink-faint">
-          Matches this job to your store&apos;s garment specializations — helps staff assign the right cutters and tailors.
-        </p>
+        <p className="text-[11px] text-ink-faint">Helps assign the right tailor.</p>
         <select
           id="garment_category"
           value={formData.garment_category}
@@ -500,24 +498,15 @@ export default function GarmentDesignSection({
           className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe"
         >
           <option value="">Not specified</option>
-          <option value="barong">Barong Tagalog</option>
-          <option value="gown">Gown</option>
-          <option value="suit">Suit</option>
-          <option value="filipiniana">Filipiniana</option>
-          <option value="uniform">School Uniform</option>
-          <option value="lab_gown">Lab Gown</option>
-          <option value="scrub_suit">Scrub Suit</option>
-          <option value="corporate_wear">Corporate Wear</option>
-          <option value="alteration_repair">Alterations & Repair</option>
+          {GARMENT_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="alteration_repair">{GARMENT_CATEGORY_LABELS.alteration_repair}</option>
         </select>
       </div>
 
       {/* ── Fabric / Material Source ── */}
       <div className="mb-6 space-y-1.5">
-        <span className="text-sm font-medium text-ink-body">Fabric / Material Source</span>
-        <p className="text-[11px] text-ink-faint">
-          Some walk-ins bring their own fabric or an existing garment instead of using store stock — flagging it here keeps it from getting mixed up with other jobs during cutting.
-        </p>
+        <span className="text-sm font-medium text-ink-body">Fabric Source</span>
+        <p className="text-[11px] text-ink-faint">Who is bringing the fabric?</p>
         <div className="flex gap-2 mt-1">
           <button
             type="button"
@@ -539,14 +528,14 @@ export default function GarmentDesignSection({
                 : 'border-line text-ink-muted hover:bg-canvas'
             }`}
           >
-            Customer&apos;s Own Fabric/Garment
+            Customer Brings Own Fabric
           </button>
         </div>
         {formData.material_source === 'customer_supplied' && (
           <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1.5 flex items-start gap-2">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             <span>
-              Add a photo of the fabric/garment they brought in the <strong>Design Reference / Notes Photo</strong> section below — it will print on the Work Ticket so whoever cuts and sews this doesn&apos;t reach for store stock.
+              Add a photo of the fabric below — prints on the Work Ticket so cutters don&apos;t grab store stock by mistake.
             </span>
           </p>
         )}
@@ -555,18 +544,18 @@ export default function GarmentDesignSection({
       {/* ── Reference Photos & Links ── */}
       <div className="mb-6 space-y-1.5">
         <span className="text-sm font-medium text-ink-body flex items-center gap-1.5">
-          {isSelectedAlterationRepair ? 'Damage / Condition Photo' : 'Design Reference / Notes Photo'}{' '}
+          {isSelectedAlterationRepair ? 'Condition Photo' : 'Style Photo / Notes'}{' '}
           <span className="text-xs font-normal text-ink-faint">(optional)</span>
         </span>
         <p className="text-[11px] text-ink-faint">
           {(() => {
             if (isSelectedAlterationRepair) {
-              return 'A photo of the garment as received — pairs with the Pre-Existing Damage notes as evidence if the customer disputes when a stain/tear happened.';
+              return 'Photo of the garment as received — evidence if a stain or tear is disputed later.';
             }
             if (appointmentId) {
-              return 'Photos/link the customer attached when booking — carries over automatically to this job.';
+              return 'Photos or link the customer attached when booking — carried over automatically.';
             }
-            return 'A photo the customer showed you, a link to what they want made (e.g. a jersey design or gown reference) — or snap a photo of paper notes so it stays attached to the job.';
+            return 'Photo the customer showed you, or snap your handwritten notes so they stay with the job.';
           })()}
         </p>
         {referenceImages.length > 0 && (

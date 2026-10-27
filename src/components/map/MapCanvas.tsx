@@ -23,6 +23,7 @@ interface MapCanvasProps {
   onMoveEnd: (lat: number, lng: number) => void;
   mapRef: React.MutableRefObject<LeafletMap | null>;
   selectedBranch: DiscoveryMapBranch | null;
+  highlightedBranch?: DiscoveryMapBranch | null;
   locationError: string;
   onDismissLocationError: () => void;
   route: ActiveRoute | null;
@@ -39,6 +40,7 @@ export default function MapCanvas({
   onMoveEnd,
   mapRef,
   selectedBranch,
+  highlightedBranch = null,
   locationError,
   onDismissLocationError,
   route,
@@ -49,7 +51,7 @@ export default function MapCanvas({
     <div className="absolute inset-0 overflow-hidden z-0">
       {loading ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-ink-muted">
-          Loading stores…
+          Loading shops…
         </div>
       ) : (
         <DiscoveryMap
@@ -60,6 +62,7 @@ export default function MapCanvas({
           routePath={route?.path ?? null}
           cluster={!isSelectMode}
           selectedBranch={selectedBranch}
+          highlightedBranch={highlightedBranch}
           selectable={isSelectMode}
           onMoveEnd={isSelectMode ? onMoveEnd : undefined}
           mapRef={mapRef}

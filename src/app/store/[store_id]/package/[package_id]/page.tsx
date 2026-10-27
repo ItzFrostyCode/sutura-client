@@ -99,7 +99,7 @@ export default function StorePackageDetailPage({
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-8">
           <Link
             href={`/store/${storeId}?tab=services`}
-            aria-label="Back to store services"
+            aria-label="Back to shop services"
             className="flex h-10 w-10 items-center justify-center text-ink hover:bg-canvas"
           >
             <ArrowLeft size={20} />

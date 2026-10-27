@@ -15,9 +15,9 @@ function Row({ label, children }: { readonly label: string; readonly children: R
 
 function Card({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
   return (
-    <section className="border border-line bg-surface px-5 py-4">
+    <section className="border-2 border-line-strong bg-surface px-5 py-4">
       <h2 className="tablet-h4 text-ink mb-1">{title}</h2>
-      <dl className="divide-y divide-line">{children}</dl>
+      <dl className="divide-y-2 divide-line-strong">{children}</dl>
     </section>
   );
 }
@@ -48,6 +48,18 @@ export default function ApplicationSummary({ store }: { readonly store: Applicat
           ) : null}
         </Row>
         <Row label="Specializes in">{store.specializations?.map(specializationLabel).join(', ')}</Row>
+        {(store.custom_services?.length ?? 0) > 0 && (
+          <Row label="Other services">{store.custom_services!.join(', ')}</Row>
+        )}
+        {(store.declared_branches?.length ?? 0) > 0 && (
+          <Row label="Other branches">
+            <ul className="space-y-1">
+              {store.declared_branches!.map((b) => (
+                <li key={b.name}><span className="font-medium">{b.name}</span> <span className="text-ink-muted">— {b.address}</span></li>
+              ))}
+            </ul>
+          </Row>
+        )}
         <Row label="Applied">{formatDate(store.created_at, true)}</Row>
       </Card>
 

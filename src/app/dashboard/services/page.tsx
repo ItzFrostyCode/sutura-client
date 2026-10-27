@@ -14,6 +14,7 @@ import PackageGridView from '@/components/services/packages/PackageGridView';
 import PageHeader from '@/components/shared/PageHeader';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
+import NewServiceModal from '@/components/services/create/NewServiceModal';
 
 export default function ServicesPage() {
   const { store, user } = useAuthStore();
@@ -97,15 +98,31 @@ export default function ServicesPage() {
     fetchPackages();
   }, [fetchPackages]);
 
+  // "New service" modal. Opened by Create New, or by ?add=1 links (the old
+  // /dashboard/services/new page, a catalog design's "create a service").
+  // With ?return=, a created service goes back there to be linked.
+  const [newOpen, setNewOpen] = useState(false);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
   useEffect(() => {
     if (!isOwnerOrManager) return;
     const params = new URLSearchParams(window.location.search);
-    const back = params.get('return');
     if (params.get('add') !== '1') return;
+    const back = params.get('return');
     // Only ever return to a dashboard page — never an arbitrary URL.
-    const safe = back?.startsWith('/dashboard/') && !back.startsWith('//') ? `?return=${encodeURIComponent(back)}` : '';
-    router.replace(`/dashboard/services/new${safe}`);
+    setReturnTo(back?.startsWith('/dashboard/') && !back.startsWith('//') ? back : null);
+    setNewOpen(true);
+    router.replace('/dashboard/services');
   }, [isOwnerOrManager]);
+
+  const handleServiceCreated = (id: number) => {
+    setNewOpen(false);
+    if (returnTo) {
+      router.push(`${returnTo}?linked_service=${id}`);
+      return;
+    }
+    setActiveTab('services');
+    fetchServices();
+  };
 
   const confirmDelete = async () => {
     if (!store || !deletingId) return;
@@ -155,7 +172,7 @@ export default function ServicesPage() {
           !isOwnerOrManager ? null : activeTab === 'services' ? (
             <>
               <button
-                onClick={() => router.push('/dashboard/services/new')}
+                onClick={() => { setReturnTo(null); setNewOpen(true); }}
                 className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
               >
                 <Plus size={17} />
@@ -191,6 +208,15 @@ export default function ServicesPage() {
       ) : isOwnerOrManager ? (
         <ServiceAnalyticsView />
       ) : null}
+
+      {store?.id && (
+        <NewServiceModal
+          isOpen={newOpen}
+          storeId={store.id}
+          onClose={() => { setNewOpen(false); setReturnTo(null); }}
+          onCreated={handleServiceCreated}
+        />
+      )}
 
       <ServiceDeleteModal
         isOpen={isDeleteModalOpen}

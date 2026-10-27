@@ -476,7 +476,7 @@ export default function AppointmentActionModals({
               className="mt-0.5"
             />
             <span>
-              Block this customer from booking again at this store
+              Block this customer from booking again at this shop
               <span className="block text-xs text-ink-muted">Default is off — the customer can still book a new appointment.</span>
             </span>
           </label>

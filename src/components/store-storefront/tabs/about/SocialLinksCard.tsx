@@ -64,7 +64,7 @@ function SocialLinksEditForm({ links, onLinksChange }: { readonly links: SocialL
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-ink-muted">Shown on your public store profile.</p>
+        <p className="text-xs text-ink-muted">Shown on your public shop profile.</p>
         <button
           type="button"
           onClick={() => onLinksChange([...(links || []), { label: '', url: '' }])}
