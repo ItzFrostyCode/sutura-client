@@ -19,7 +19,6 @@ function Figure({ label, value, alert }: Readonly<{ label: string; value: React.
 interface BoardSummaryProps {
   readonly jobs: Job[];
   readonly canSeeMoney: boolean;
-  readonly waitingAppointmentsCount?: number;
 }
 
 /** The numbers an owner wants first, in one strip: how many orders are open, what needs the shop, what is late, what is owed. */

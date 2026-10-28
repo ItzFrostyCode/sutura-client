@@ -27,6 +27,7 @@ import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -690,7 +691,8 @@ export default function StoreHeroHeader({
         </div>
 
         {/* 📑 6. Streamlined Navigation Tabs Bar */}
-        <div ref={tabBarRef} className="flex justify-center border-b border-line mt-4 mb-4 overflow-x-auto no-scrollbar">
+        <div ref={tabBarRef} className="border-b border-line mt-4 mb-4">
+          <ScrollNav className="flex justify-center">
           <div className="flex items-center justify-center gap-1 sm:gap-6 px-2 min-w-full sm:min-w-0">
             {tabList.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -718,6 +720,7 @@ export default function StoreHeroHeader({
               );
             })}
           </div>
+          </ScrollNav>
         </div>
       </div>
     </>

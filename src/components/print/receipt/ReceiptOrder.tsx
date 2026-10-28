@@ -1,8 +1,9 @@
 import React from 'react';
+import { jobPieces } from '@/lib/orderSize';
 import { SHOP_STAGES, shopStageOf } from '@/components/jobs/jobStage';
 import type { Job as BoardJob } from '@/components/jobs/jobHelpers';
 import type { Job } from '@/components/jobs/jobTypes';
-import { FULFILLMENT_LABELS, fmtDate, money, num } from './receiptFormat';
+import { FULFILLMENT_LABELS, fmtDate, money } from './receiptFormat';
 import type { ReceiptFigures } from './receiptMath';
 import { paymentTerms, quotationLines, type PriceLine, type ReceiptJob } from './receiptTerms';
 import { Row } from './ReceiptParts';
@@ -13,7 +14,7 @@ const signed = (n: number) => (n < 0 ? `-${money(-n)}` : money(n));
 export function OrderDetails({ job }: Readonly<{ job: ReceiptJob }>) {
   const service = job.service?.name ?? job.catalog_item?.name;
   const design = job.service?.name ? job.catalog_item?.name : null;
-  const qty = num(job.quantity);
+  const qty = jobPieces(job);
   return (
     <>
       {service && <Row text label="Service" value={service} />}
@@ -35,7 +36,7 @@ export function PriceLines({ job, total }: Readonly<{ job: ReceiptJob; total: nu
     return <>{lines.map((l, i) => <Row key={`${i}-${l.label}`} label={l.label} value={signed(l.amount)} />)}</>;
   }
   const name = [job.service?.name, job.catalog_item?.name].filter(Boolean).join(' - ') || 'Tailoring order';
-  const qty = num(job.quantity);
+  const qty = jobPieces(job);
   return <Row label={qty > 1 ? `${qty} x ${name}` : name} value={money(total)} />;
 }
 

@@ -15,6 +15,15 @@ export interface ServiceField {
   options?: string[];
 }
 
+/** A pricing option of a service: what it covers and what one ordered unit is are set by the shop (null = not configured, as before). */
+export interface ServiceOption {
+  id: number;
+  label: string;
+  amount: string | number | null;
+  covers?: 'top' | 'bottom' | 'both' | null;
+  sold_as?: 'garment' | 'set' | null;
+}
+
 export interface ServiceData {
   id: number;
   name: string;
@@ -39,6 +48,7 @@ export interface ServiceData {
   orders_count?: number | null;
   saves_count?: number | null;
   min_order_qty?: number;
+  pricing?: ServiceOption[];
   measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   custom_fields?: ServiceField[] | null;
   /** Asked per person on a team order, next to name and size (e.g. a position). */
@@ -84,7 +94,8 @@ export type MeasurementSourceMode = 'existing' | 'record_now' | 'standard_size' 
 export interface InlineMeasurementData {
   id?: string;
   profile_name: string;
-  measurement_area: 'top' | 'bottom' | 'both';
+  /** What the person gets: top, bottom or both. '' until chosen; it is asked first, before any size. */
+  measurement_area: 'top' | 'bottom' | 'both' | '';
   metrics: Record<string, string>;
   top_columns: string[];
   bottom_columns: string[];
@@ -118,6 +129,8 @@ export interface JobCreateFormData {
   quantity: string;
   /** Price before rush fee and discount. null until the owner types one; then the suggestion from the service / design is used. */
   price: string | null;
+  /** Price of ONE piece, typed by the owner (e.g. a top only). null = the design's or service's own price. The total is this × pieces. */
+  unit_price: string | null;
   downpayment: string;
   /** null until the owner picks one; then the service's turnaround is used. */
   due_date: string | null;

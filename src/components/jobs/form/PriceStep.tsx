@@ -15,17 +15,10 @@ export default function PriceStep({ form, canCollectMoney }: Readonly<{ form: Jo
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {isBulk ? (
-          <div>
-            <span className={LABEL}>Total pieces to make</span>
-            <p className="flex h-11 items-center text-sm text-espresso">{p.quantity} {p.quantity === 1 ? 'piece' : 'pieces'} <span className="ml-2 text-espresso/60">from the team list</span></p>
-          </div>
-        ) : (
-          <div>
-            <label htmlFor="quantity" className={LABEL}>Total pieces to make</label>
-            <input id="quantity" type="number" inputMode="numeric" min="1" step="1" value={formData.quantity} onChange={(e) => set({ quantity: e.target.value })} className={FIELD} />
-          </div>
-        )}
+        <div>
+          <span className={LABEL}>Total pieces to make</span>
+          <p className="flex h-11 items-center text-sm text-espresso">{p.quantity} {p.quantity === 1 ? 'piece' : 'pieces'} <span className="ml-2 text-espresso/60">{isBulk ? 'from the team list' : 'set under Order details'}</span></p>
+        </div>
         <div>
           <label htmlFor="price" className={LABEL}>Price (₱)</label>
           <input id="price" type="number" inputMode="decimal" min="0" step="0.01" value={p.price} onChange={(e) => set({ price: e.target.value })} placeholder="0.00" className={FIELD} />
@@ -36,7 +29,7 @@ export default function PriceStep({ form, canCollectMoney }: Readonly<{ form: Jo
         </div>
       </div>
       {service && p.needsQuote && <p className="text-sm text-espresso/60">No fixed price for this one. Leave the price empty to quote it later in Order Steps, or type what you agreed.</p>}
-      {p.tooQuick && <p className="text-sm text-espresso">{service?.name} usually takes {service?.estimated_days} days. This date is sooner. Mark it as a rush order if it really is.</p>}
+      {p.tooQuick && <p className="text-sm text-espresso">This usually takes {p.turnaround.days} days or more. This date is sooner. Mark it as a rush order if it really is.</p>}
 
       {canCollectMoney && (
         <>

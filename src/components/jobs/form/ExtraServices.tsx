@@ -1,6 +1,5 @@
 import { BTN_SM } from '@/components/shared/plainForm';
 import { FIELD, LABEL } from './FormStep';
-import ServiceCards from './ServiceCards';
 import DesignStrip from './DesignStrip';
 import { peso } from './jobFormHelpers';
 import type { JobCreateForm } from './useJobCreateForm';
@@ -34,10 +33,16 @@ export default function ExtraServices({ form }: Readonly<{ form: JobCreateForm }
         return (
           <div key={x.key} className="space-y-4 border-b border-espresso/15 pb-5">
             <div className="flex items-center justify-between gap-3">
-              <span className={`${LABEL} mb-0`}>Service {i + 2} <span className="font-normal text-ink-faint">· its own order</span></span>
-              <button type="button" onClick={() => setExtras((cur) => cur.filter((y) => y.key !== x.key))} className={BTN_SM}>Remove service</button>
+              <span className={`${LABEL} mb-0`}>Extra order {i + 1} <span className="font-normal text-ink-faint">· its own price, deposit, due date and tracking code</span></span>
+              <button type="button" onClick={() => setExtras((cur) => cur.filter((y) => y.key !== x.key))} className={BTN_SM}>Remove</button>
             </div>
-            <ServiceCards services={services} selectedId={x.service_id} onPick={(id) => edit(x.key, { service_id: id, catalog_item_id: '' })} />
+            <div className="sm:max-w-md">
+              <label htmlFor={`xs-${x.key}`} className={LABEL}>Service</label>
+              <select id={`xs-${x.key}`} value={x.service_id} onChange={(e) => edit(x.key, { service_id: e.target.value, catalog_item_id: '' })} className={FIELD}>
+                <option value="">Choose a service</option>
+                {services.filter((s) => String(s.id) !== form.formData.service_id || String(s.id) === x.service_id).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
             {svc && (
               <>
                 <DesignStrip designs={designs} selected={design} serviceName={svc.name} onPick={(id) => edit(x.key, { catalog_item_id: id })} onClear={() => edit(x.key, { catalog_item_id: '' })} />

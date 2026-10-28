@@ -9,9 +9,7 @@ import SimpleBoard from '@/components/jobs/board/SimpleBoard';
 import JobsTableView from '@/components/jobs/board/JobsTableView';
 import BoardToolbar from '@/components/jobs/board/BoardToolbar';
 import BoardSummary from '@/components/jobs/board/BoardSummary';
-import AppointmentIntakeBanner from '@/components/jobs/board/AppointmentIntakeBanner';
 import { useJobsBoard } from '@/components/jobs/board/useJobsBoard';
-import { useWaitingAppointments } from '@/components/jobs/board/useWaitingAppointments';
 import { useAuthStore } from '@/store/useAuthStore';
 import { KanbanSkeleton } from '@/components/ui/Skeleton';
 import ApplePage from '@/components/jobs/ui/ApplePage';
@@ -34,7 +32,6 @@ function JobOrdersPageContent() {
   );
 
   const board = useJobsBoard();
-  const { waiting, remove: removeWaiting } = useWaitingAppointments();
   const [declining, setDeclining] = useState<number | null>(null);
 
   const isDeepFiltered = Boolean(board.statusFilter || board.overdueOnly || board.garment);
@@ -49,9 +46,6 @@ function JobOrdersPageContent() {
       />
 
       <div className="space-y-4 p-4 sm:p-6">
-
-        {/* Consultations Ready for Job Order Conversion */}
-        {board.viewMode === 'table' && <AppointmentIntakeBanner appointments={waiting} onRemove={removeWaiting} />}
 
         {/* Alert Banner for Deep Links from Home Dashboard */}
         {isDeepFiltered && (
@@ -77,7 +71,6 @@ function JobOrdersPageContent() {
           <BoardSummary
             jobs={board.jobs}
             canSeeMoney={isOwnerOrManager}
-            waitingAppointmentsCount={waiting.length}
           />
         )}
 
@@ -109,7 +102,10 @@ function JobOrdersPageContent() {
           onResetFilters={board.resetFilters}
         />
 
-        {/* Content: Operational Table View OR Kanban Workflow Board */}
+        {/* Content: Operational Table View OR Kanban Workflow Board.
+            At least one screen tall, so choosing a stage with few orders never shrinks the page under the scroll position:
+            the tabs stay where they are instead of jumping up. */}
+        <div className="min-h-[calc(100dvh-4rem)]">
         {board.loading ? (
           <KanbanSkeleton columns={4} />
         ) : board.loadError ? (
@@ -132,8 +128,6 @@ function JobOrdersPageContent() {
             <SimpleBoard
               byStage={board.byStage}
               closed={board.closed}
-              consultations={waiting}
-              onConsultationRemove={removeWaiting}
               showClosed={board.showClosed}
               canSeeMoney={isOwnerOrManager}
               canDecline={isOwnerOrManager}
@@ -144,6 +138,7 @@ function JobOrdersPageContent() {
             />
           </div>
         )}
+        </div>
       </div>
 
       {/* Modals */}

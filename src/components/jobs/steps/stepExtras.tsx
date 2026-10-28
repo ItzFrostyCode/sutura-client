@@ -30,6 +30,14 @@ export function stepExtras({ step, data, api, pieces }: Ctx): { body: React.Reac
   const pending = data.status === 'pending';
 
   if (step.key === 'details' && pieces) {
+    // A team order is edited in its team list (Details tab), so this step is only a summary and a link: no editor, nothing to close.
+    const team = Array.isArray(pieces.job.custom_order_data?.team_roster) && pieces.job.custom_order_data.team_roster.length > 0;
+    if (team) {
+      return {
+        body: <p className={NOTE}>{piecesSummary(pieces.job)}</p>,
+        actions: perm.can_prepare && pending && pieces.onGoToDetails ? <button type="button" onClick={pieces.onGoToDetails} className={BTN_SM}>Edit the team list</button> : null,
+      };
+    }
     return {
       body: pieces.open && perm.can_prepare
         ? <PiecesEditor job={pieces.job} api={api} onClose={() => pieces.setOpen(false)} onGoToDetails={pieces.onGoToDetails} />

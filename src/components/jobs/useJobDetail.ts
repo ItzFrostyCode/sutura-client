@@ -383,21 +383,22 @@ export function useJobDetail(jobId: string) {
     if (!store || !job) return;
     setSaving(true);
     try {
-      // Sync with team_roster if applicable for backward compatibility
-      const teamRoster = specTable.rows.map((row) => ({
-        name: String(row.player_name || row.name || row.customer_name || ''),
-        print_name: String(row.print_name || ''),
-        number: String(row.number || row.jersey_number || ''),
-        position: String(row.position || ''),
-        size: String(row.size || ''),
-        remarks: String(row.remarks || row.notes || ''),
-        completed: Boolean(row.completed),
-      }));
+      // A group order's table IS its team list: every person's row is written back whole, so their pieces, profile link
+      // and extra columns are kept. A one-person order has no team list, and saving its table never makes one.
+      const isTeam = Array.isArray(job.custom_order_data?.team_roster) && job.custom_order_data.team_roster.length > 0;
+      const teamRoster = isTeam
+        ? specTable.rows.map((row) => {
+          const rest: Record<string, unknown> = { ...row };
+          delete rest.id;
+          delete rest.player_name;
+          return { ...rest, name: String(row.player_name ?? row.name ?? ''), completed: Boolean(row.completed) };
+        })
+        : undefined;
 
       const res = await api.put(`/stores/${store.id}/jobs/${job.id}`, {
         custom_order_data: {
           spec_table: specTable,
-          team_roster: teamRoster.length > 0 ? teamRoster : undefined,
+          ...(teamRoster && teamRoster.length > 0 ? { team_roster: teamRoster } : {}),
         },
       });
 

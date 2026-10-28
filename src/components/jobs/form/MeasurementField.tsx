@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, FileText, Plus, Ruler, Shirt, Clock } from 'lucide-react';
+import { Sparkles, Ruler, Shirt } from 'lucide-react';
 import SavedProfileList from './SavedProfileList';
 import { FIELD, LABEL, Chip } from './FormStep';
 import type { CustomerMeasurement, MeasurementSourceMode, InlineMeasurementData } from './types';
@@ -16,6 +16,7 @@ import AreaSelector, {
 import AreaGrid from '@/components/measurements/recorder/AreaGrid';
 import PaperSheets from '@/components/measurements/recorder/PaperSheets';
 import { confirmDialog } from '@/store/useConfirmStore';
+import { COVERS_LABEL } from '@/lib/orderUnits';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
@@ -34,6 +35,11 @@ interface Props {
   readonly onSelect: (id: string) => void;
   readonly standardSize: string;
   readonly onStandardSize: (size: string) => void;
+  /** The option of the order covers something: the person gets it and it cannot be changed here. */
+  readonly areaLocked?: boolean;
+  /** The bottom's size when this person gets top & bottom (standardSize is then the top's). */
+  readonly standardSizeBottom?: string;
+  readonly onStandardSizeBottom?: (size: string) => void;
   readonly measurementMode: MeasurementSourceMode;
   readonly onMeasurementModeChange: (mode: MeasurementSourceMode) => void;
   readonly inlineMeasurement: InlineMeasurementData;
@@ -58,6 +64,7 @@ interface Props {
 export default function MeasurementField({
   customerId,
   customerName = 'Customer',
+  targetTitle,
   styleOptions,
   defaultUnit = 'in',
   storeId,
@@ -67,6 +74,9 @@ export default function MeasurementField({
   onSelect,
   standardSize,
   onStandardSize,
+  standardSizeBottom = '',
+  onStandardSizeBottom,
+  areaLocked = false,
   measurementMode,
   onMeasurementModeChange,
   inlineMeasurement,
@@ -94,13 +104,8 @@ export default function MeasurementField({
     }
   };
 
+  // Kept with the record; each field can still be set to the other unit.
   const unit: MeasureUnit = currentPerson.metrics?._unit ? unitOfMetrics(currentPerson.metrics) : defaultUnit;
-  const setUnit = (u: MeasureUnit) => {
-    // One unit for everyone measured here, so a group is never half inches and half centimeters.
-    const apply = (prev: InlineMeasurementData): InlineMeasurementData => ({ ...prev, metrics: { ...prev.metrics, _unit: u } });
-    if (onUpdatePerson && persons) persons.forEach((_, i) => onUpdatePerson(i, apply));
-    else onInlineMeasurementChange(apply);
-  };
   const copyFromPrevious = async () => {
     const before = effectivePersons[activeIdx - 1];
     if (!before) return;
@@ -176,6 +181,13 @@ export default function MeasurementField({
   const showTop = currentPerson.measurement_area === 'top' || currentPerson.measurement_area === 'both';
   const showBottom = currentPerson.measurement_area === 'bottom' || currentPerson.measurement_area === 'both';
 
+  // A saved profile that does not cover what this person gets is said plainly, not blocked.
+  const savedArea = measurements.find((m) => String(m.id) === selectedId)?.metrics?._area;
+  const wanted = currentPerson.measurement_area;
+  const coverageNote = measurementMode === 'existing' && wanted && (savedArea === 'top' || savedArea === 'bottom') && savedArea !== wanted
+    ? `This profile has ${savedArea === 'top' ? 'Top' : 'Bottom'} only, but this order is for ${wanted === 'both' ? 'Top & Bottom' : wanted === 'top' ? 'Top' : 'Bottom'}.`
+    : '';
+
   const profileBarData = effectivePersons.map((p, idx) => ({
     profile_name: p.profile_name,
     version: 1,
@@ -184,6 +196,13 @@ export default function MeasurementField({
 
   return (
     <div className="space-y-4">
+      {/* First of all: what this person gets. It decides the size(s) and the measuring points below, standard size or custom. */}
+      {areaLocked
+        ? <p className="text-sm text-espresso/70">Covers <strong>{currentPerson.measurement_area ? COVERS_LABEL[currentPerson.measurement_area] : '…'}</strong>, set by the option you chose.</p>
+        : <AreaSelector personName={activeProfileName} selectedArea={currentPerson.measurement_area} onSelectArea={(area: MeasurementAreaChoice) => updateCurrentPerson((prev) => ({ ...prev, measurement_area: area }))} />}
+      {!currentPerson.measurement_area && <p className="text-sm text-espresso/60">Choose Top, Bottom or Top &amp; Bottom to go on.</p>}
+
+      {currentPerson.measurement_area && (<>
       {/* How the measurements come in: four clear choices, not a small switch */}
       <RadioRows
         label="How to get the measurements" value={measurementMode} onChange={onMeasurementModeChange}
@@ -191,35 +210,20 @@ export default function MeasurementField({
           { value: 'record_now', icon: <Ruler size={18} />, title: 'Take measurements now', hint: 'Measure the customer here' },
           ...(measurements.length > 0 ? [{ value: 'existing' as const, icon: <Sparkles size={18} />, title: 'Use saved measurements', hint: `${measurements.length} on file` }] : []),
           { value: 'standard_size', icon: <Shirt size={18} />, title: 'Standard size', hint: 'S, M, L, XL…' },
-          { value: 'none', icon: <Clock size={18} />, title: 'Measure later', hint: 'Before the price is final' },
         ]}
       />
-
-      {measurementMode === 'none' && (
-        <div className="space-y-3 border-y border-espresso/15 py-3">
-          <p className="text-sm text-espresso">The order is saved without measurements. It cannot be priced or started until they are recorded under Details and checked.</p>
-          <button type="button" onClick={() => onMeasurementModeChange('record_now')} className={BTN_SM}>Measure now instead</button>
-        </div>
-      )}
 
       {/* MODE A: RECORD MEASUREMENTS INLINE RIGHT NOW */}
       {measurementMode === 'record_now' && (
         <div className="space-y-4">
-          <div>
-            <span className={LABEL}>Measured in</span>
-            <div className="flex gap-2">
-              <Chip active={unit === 'in'} onClick={() => setUnit('in')}>Inches</Chip>
-              <Chip active={unit === 'cm'} onClick={() => setUnit('cm')}>Centimeters</Chip>
-            </div>
-          </div>
-
           {/* People Profile Bar (Person 1, Person 2, ... + Add Person) */}
           <SubjectProfileBar
             persons={profileBarData}
             activeIndex={activeIdx}
-            onSelectIndex={(idx) => onSelectPerson && onSelectPerson(idx)}
-            onAddPerson={() => onAddPerson && onAddPerson()}
-            onRemovePerson={(idx) => onRemovePerson && onRemovePerson(idx)}
+            onSelectIndex={(idx) => onSelectPerson?.(idx)}
+            onAddPerson={onAddPerson}
+            onRemovePerson={onRemovePerson}
+            namePlaceholder={`${targetTitle || 'Garment'} Profile`}
             onProfileNameChange={(newName) =>
               updateCurrentPerson((prev) => ({ ...prev, profile_name: newName }))
             }
@@ -230,21 +234,9 @@ export default function MeasurementField({
             styleOptions={styleOptions}
           />
 
-          {/* Area Selector (Top / Bottom / Top & Bottom) */}
-          <AreaSelector
-            personName={activeProfileName}
-            selectedArea={currentPerson.measurement_area}
-            onSelectArea={(area: MeasurementAreaChoice) =>
-              updateCurrentPerson((prev) => ({
-                ...prev,
-                measurement_area: area,
-              }))
-            }
-          />
-
-          {/* Separate Top and Bottom Grids */}
-          <div className="@container">
-            <div className={`grid grid-cols-1 gap-8 ${showTop && showBottom ? '@[760px]:grid-cols-2 @[760px]:items-start' : ''}`}>
+          {/* Top and Bottom, stacked: one column of fields, never side by side. */}
+          <div>
+            <div className="grid grid-cols-1 gap-8">
             {showTop && (
               <AreaGrid
                 title="Top Measurements"
@@ -298,7 +290,7 @@ export default function MeasurementField({
             />
           </div>
 
-          <p className="text-sm text-espresso/60">{effectivePersons.length} {effectivePersons.length === 1 ? 'person' : 'people'} being measured.</p>
+          {effectivePersons.length > 1 && <p className="text-sm text-espresso/60">{effectivePersons.length} people being measured.</p>}
         </div>
       )}
 
@@ -310,31 +302,28 @@ export default function MeasurementField({
             <Link href={`/dashboard/customers/${customerId}?tab=measurements`} className={BTN_SM}>Manage all</Link>
           </div>
           <SavedProfileList profiles={measurements} selectedId={selectedId} onSelect={onSelect} appointmentId={appointmentId} />
+          {coverageNote && <p className="text-sm font-medium text-amber-800">{coverageNote}</p>}
         </div>
       )}
 
-      {/* MODE C: STANDARD OFF-THE-RACK SIZE */}
+      {/* MODE C: STANDARD OFF-THE-RACK SIZE: one size for each part this person gets */}
       {measurementMode === 'standard_size' && (
-        <div className="space-y-2">
-          <span className={LABEL}>Select Garment Size</span>
-          <div className="flex flex-wrap gap-2">
-            {SIZES.map((s) => (
-              <Chip
-                key={s}
-                active={standardSize === s}
-                onClick={() => onStandardSize(s)}
-              >
-                {s}
-              </Chip>
-            ))}
-          </div>
-          <p className="text-xs text-ink-muted mt-1">
-            Using standard commercial sizing instead of bespoke body measurements.
-          </p>
+        <div className="space-y-4">
+          {(currentPerson.measurement_area === 'both' ? [['Top size', standardSize, onStandardSize], ['Bottom size', standardSizeBottom, onStandardSizeBottom ?? onStandardSize]] as const
+            : [[currentPerson.measurement_area === 'top' ? 'Top size' : 'Bottom size', standardSize, onStandardSize]] as const).map(([label, value, setValue]) => (
+            <div key={label} className="space-y-2">
+              <span className={LABEL}>{label}</span>
+              <div className="flex flex-wrap gap-2">
+                {SIZES.map((sz) => <Chip key={sz} active={value === sz} onClick={() => setValue(sz)}>{sz}</Chip>)}
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-ink-muted">Using standard commercial sizing instead of bespoke body measurements.</p>
         </div>
       )}
 
       {/* MODE D: MEASURE LATER (the note above explains it) */}
+      </>)}
     </div>
   );
 }

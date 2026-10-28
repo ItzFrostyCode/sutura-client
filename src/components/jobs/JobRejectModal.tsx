@@ -19,20 +19,25 @@ export default function JobRejectModal({
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
-    onConfirm(rejectReason);
+    if (!rejectReason.trim()) return;
+    onConfirm(rejectReason.trim());
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Reject Job Order">
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-sm text-ink-body">
-          Are you sure you want to reject this order? It will be moved to <strong>Cancelled</strong>.
+          Reject is for a request the shop will <strong>not</strong> take. The customer is told, and it moves to Cancelled.
+        </p>
+        <p className="rounded-lg bg-sunken px-3 py-2 text-sm text-ink-body">
+          Made this order by mistake? Do not reject it. Close this, open the order, then <strong>⋯ → Cancel this order → Made by mistake</strong>. The customer is not told.
         </p>
         <div>
-          <label htmlFor="reject-reason" className="block text-sm font-medium text-ink-body mb-1.5">Reason for Rejection <span className="text-ink-faint font-normal">(optional)</span></label>
+          <label htmlFor="reject-reason" className="block text-sm font-medium text-ink-body mb-1.5">Reason <span className="text-ink-faint font-normal">(kept on the order)</span></label>
           <textarea
             id="reject-reason"
             rows={3}
+            required
             value={rejectReason}
             onChange={e => setRejectReason(e.target.value)}
             placeholder="e.g. Materials not available, fully booked this week..."
@@ -45,11 +50,11 @@ export default function JobRejectModal({
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors"
           >
-            Cancel
+            Go back
           </button>
           <button
             type="submit"
-            disabled={actionLoading}
+            disabled={actionLoading || !rejectReason.trim()}
             className="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
           >
             {actionLoading && <Loader2 size={14} className="animate-spin" />}

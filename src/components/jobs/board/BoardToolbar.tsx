@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
-import { LayoutList, Kanban, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutList, Kanban, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import { SHOP_STAGES, type ShopStageKey } from '../jobStage';
 import type { UrgencyFilter, PaymentFilter, SortOption, ViewMode } from './useJobsBoard';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface BoardToolbarProps {
   readonly search: string;
@@ -44,12 +45,37 @@ export default function BoardToolbar({
   search, onSearch, viewMode, onViewMode, stageFilter, onStageFilter, urgencyFilter, onUrgencyFilter, paymentFilter, onPaymentFilter,
   sortBy, onSortBy, stageCounts, urgencyCounts, showMine, mine, onMine, closedCount, showClosed, onShowClosed, canSeeMoney, lateBalanceCount = 0, hasActiveFilters, onResetFilters,
 }: BoardToolbarProps) {
+  // Only search and the view switch stay on the row; the rest is one tap away. It opens by itself when filters are already on.
+  const [open, setOpen] = useState(hasActiveFilters);
+  const activeCount = [urgencyFilter !== 'all', paymentFilter !== 'all', mine, showClosed, sortBy !== 'due_date'].filter(Boolean).length;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="min-w-0 basis-full sm:min-w-[240px] sm:max-w-sm sm:flex-1 sm:basis-auto">
           <SearchInput value={search} onChange={onSearch} placeholder="Search order #, customer, garment" className="w-full" onCanvasBackground />
         </div>
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className={chip(open || activeCount > 0)}>
+          <SlidersHorizontal size={15} />Filters{activeCount > 0 ? ` ${activeCount}` : ''}
+        </button>
+        <div role="group" aria-label="View" className="ml-auto flex rounded-xl border border-espresso/[0.08] bg-espresso/[0.05] p-1">
+          {([['table', LayoutList, 'Table'], ['board', Kanban, 'Board']] as const).map(([mode, Icon, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onViewMode(mode)}
+              aria-pressed={viewMode === mode}
+              aria-label={`${label} view`}
+              title={`${label} view`}
+              className={`flex h-9 w-11 cursor-pointer items-center justify-center rounded-lg transition-colors ${viewMode === mode ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+            >
+              <Icon size={17} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {open && (
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <select
           value={sortBy}
           onChange={(e) => onSortBy(e.target.value as SortOption)}
@@ -74,25 +100,11 @@ export default function BoardToolbar({
             <RotateCcw size={13} />Reset
           </button>
         )}
-        <div role="group" aria-label="View" className="ml-auto flex rounded-xl border border-espresso/[0.08] bg-espresso/[0.05] p-1">
-          {([['table', LayoutList, 'Table'], ['board', Kanban, 'Board']] as const).map(([mode, Icon, label]) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => onViewMode(mode)}
-              aria-pressed={viewMode === mode}
-              aria-label={`${label} view`}
-              title={`${label} view`}
-              className={`flex h-9 w-11 cursor-pointer items-center justify-center rounded-lg transition-colors ${viewMode === mode ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
-            >
-              <Icon size={17} />
-            </button>
-          ))}
-        </div>
       </div>
+      )}
 
       {viewMode === 'table' && (
-        <div role="tablist" aria-label="Order stages" className="flex gap-1 overflow-x-auto border-b border-espresso/[0.08] hide-scrollbar">
+        <ScrollNav role="tablist" aria-label="Order stages" fade="canvas" activeSelector='[aria-selected="true"]' wrapperClassName="border-b border-espresso/[0.08]" className="flex gap-1">
           {STAGES.map((s) => {
             const selected = stageFilter === s.key && !showClosed;
             return (
@@ -109,7 +121,7 @@ export default function BoardToolbar({
               </button>
             );
           })}
-        </div>
+        </ScrollNav>
       )}
     </div>
   );

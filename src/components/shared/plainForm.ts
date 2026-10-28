@@ -11,5 +11,7 @@ export const BTN = `${BTN_BASE} h-11 border border-espresso/10 bg-espresso/[0.05
 export const BTN_PRIMARY = `${BTN_BASE} h-11 border border-espresso bg-espresso text-white hover:bg-espresso/90`;
 /** A smaller secondary button, for actions inside a row. */
 export const BTN_SM = `${BTN_BASE} h-9 border border-espresso/10 bg-espresso/[0.05] px-3 text-espresso hover:bg-espresso/[0.09]`;
+/** An icon-only square button (no side padding, so the icon is never squeezed out). */
+export const BTN_ICON = `${BTN_BASE} h-9 w-9 border border-espresso/10 bg-espresso/[0.05] px-0! text-espresso hover:bg-espresso/[0.09]`;
 /** A quiet button with no outline, for optional extras such as "Not listed? Type it". */
 export const BTN_GREY = `${BTN_BASE} h-11 bg-espresso/[0.06] text-espresso hover:bg-espresso/10`;

@@ -11,7 +11,6 @@ import {
   Save,
   RotateCcw,
   Loader2,
-  CheckCircle2,
   AlertCircle,
   Sparkles,
 } from 'lucide-react';
@@ -20,11 +19,17 @@ import SectionHeader from '../../ui/SectionHeader';
 import JobGarmentSpecRowDesktop from './JobGarmentSpecRowDesktop';
 import JobGarmentSpecRowMobile from './JobGarmentSpecRowMobile';
 import JobGarmentSpecColumnModal from './JobGarmentSpecColumnModal';
+import { jobPieces } from '@/lib/orderSize';
+import { detailsLocked } from '../../jobHelpers';
 
 interface JobGarmentSpecTableCardProps {
   job: Job;
   onSaveSpecTable: (table: GarmentSpecTable) => Promise<void>;
   saving?: boolean;
+  /** Used as the team list editor ("Edit team list"): its own title, and a Close back to the team list. */
+  title?: string;
+  subtitle?: string;
+  onClose?: () => void;
 }
 
 // Service / Catalog-Aware Initial Columns Generator
@@ -80,25 +85,19 @@ function getInitialColumns(job: Job): GarmentSpecColumn[] {
 
 // Service / Catalog-Aware Initial Rows Generator
 function getInitialRows(job: Job, columns: GarmentSpecColumn[]): GarmentSpecRow[] {
-  // 1. Saved Spec Table rows
+  // 1. A group order: its team list is the truth (done marks, pieces and profile links are kept there), every key carried along.
+  const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
+  if (teamRoster && Array.isArray(teamRoster) && teamRoster.length > 0) {
+    return teamRoster.map((r, idx) => {
+      const { name, ...rest } = r as unknown as Record<string, unknown>;
+      return { ...rest, id: `row_${idx}`, player_name: String(name ?? ''), completed: Boolean(r.completed) } as GarmentSpecRow;
+    });
+  }
+
+  // 2. Saved Spec Table rows
   const savedSpec = job.custom_order_data?.spec_table as GarmentSpecTable | undefined;
   if (savedSpec?.rows && Array.isArray(savedSpec.rows) && savedSpec.rows.length > 0) {
     return savedSpec.rows;
-  }
-
-  // 2. Existing Team Roster rows
-  const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
-  if (teamRoster && Array.isArray(teamRoster) && teamRoster.length > 0) {
-    return teamRoster.map((r, idx) => ({
-      id: `row_${Date.now()}_${idx}`,
-      player_name: r.name || '',
-      print_name: r.print_name || '',
-      number: String(r.number ?? ''),
-      size: r.size || '',
-      position: (r as unknown as Record<string, unknown>).position as string || '',
-      remarks: (r as unknown as Record<string, unknown>).remarks as string || '',
-      completed: Boolean(r.completed),
-    }));
   }
 
   // 3. Generate rows up to job quantity or 1
@@ -116,6 +115,13 @@ function getInitialRows(job: Job, columns: GarmentSpecColumn[]): GarmentSpecRow[
     if (columns.some((c) => c.key === 'player_name')) {
       row.player_name = i === 0 ? defaultPerson : '';
     }
+    // What was entered when the order was made: the garment and its size, so this table is not blank.
+    const cod = job.custom_order_data ?? {};
+    const garment = typeof cod.garment_type === 'string' ? cod.garment_type : '';
+    const standard = typeof cod.standard_size === 'string' ? cod.standard_size : '';
+    const profile = job.measurement?.profile_name ?? '';
+    if (garment && columns.some((c) => c.key === 'garment_piece')) row.garment_piece = garment;
+    if (columns.some((c) => c.key === 'size')) row.size = standard || (profile ? `Measured: ${profile}` : '');
     rows.push(row);
   }
   return rows;
@@ -125,6 +131,9 @@ export default function JobGarmentSpecTableCard({
   job,
   onSaveSpecTable,
   saving = false,
+  title = 'Per-Garment / Per-Person Specifications',
+  subtitle = "Individualized size, cut, and personalization details per piece. Add or adjust columns to match this job's requirements.",
+  onClose,
 }: JobGarmentSpecTableCardProps) {
   const [columns, setColumns] = useState<GarmentSpecColumn[]>(() => getInitialColumns(job));
   const [rows, setRows] = useState<GarmentSpecRow[]>(() => getInitialRows(job, getInitialColumns(job)));
@@ -149,6 +158,8 @@ export default function JobGarmentSpecTableCard({
 
   // Quantities
   const orderQty = job.quantity || 1;
+  // Editable until production starts; from then on (and when closed) it is only shown.
+  const locked = detailsLocked(job);
   const specRowsCount = rows.length;
   const completedCount = rows.filter((r) => r.completed).length;
 
@@ -233,6 +244,7 @@ export default function JobGarmentSpecTableCard({
       rows,
     });
     setIsDirty(false);
+    onClose?.();
   };
 
   // Discard changes
@@ -248,8 +260,8 @@ export default function JobGarmentSpecTableCard({
       {/* 1. Header with Decoupled Quantity Badges */}
       <SectionHeader
         icon={Table2}
-        title="Per-Garment / Per-Person Specifications"
-        subtitle="Individualized size, cut, and personalization details per piece. Add or adjust columns to match this job's requirements."
+        title={title}
+        subtitle={subtitle}
         badge={(
           <span className="text-[11px] font-semibold uppercase tracking-wider text-taupe bg-taupe/10 px-2 py-0.5 rounded-md">
             {contextLabel}
@@ -258,7 +270,7 @@ export default function JobGarmentSpecTableCard({
         actions={(
       <div className="flex items-center gap-2 text-xs flex-wrap">
         <span className="px-2.5 py-1 bg-sunken rounded-lg font-medium text-ink">
-          Order Qty: <strong className="text-ink font-semibold font-mono">{orderQty} pcs</strong>
+          Pieces: <strong className="text-ink font-semibold font-mono">{jobPieces(job)}</strong>
         </span>
         <span className="px-2.5 py-1 bg-sunken rounded-lg font-medium text-ink">
           Specs Defined: <strong className="text-ink font-semibold font-mono">{specRowsCount}</strong>
@@ -270,12 +282,15 @@ export default function JobGarmentSpecTableCard({
         }`}>
           Completed: <strong className="font-semibold font-mono">{completedCount}/{specRowsCount}</strong>
         </span>
+        {onClose && <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-sunken">Close</button>}
       </div>
         )}
       />
 
+      {locked && <p className="text-[13px] text-ink-muted">This order is being made (or is closed), so the specifications are now only shown.</p>}
+
       {/* 2. Action Toolbar */}
-      <div className="flex items-center justify-between gap-2.5 flex-wrap pt-1">
+      {!locked && <div className="flex items-center justify-between gap-2.5 flex-wrap pt-1">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
@@ -343,7 +358,7 @@ export default function JobGarmentSpecTableCard({
             )}
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* 3. Desktop Table (>=640px) */}
       <div className="hidden sm:block overflow-x-auto">
@@ -356,7 +371,7 @@ export default function JobGarmentSpecTableCard({
                 <th key={col.id} className="py-2.5 px-2.5 font-semibold text-[10px] text-ink-muted uppercase tracking-wider min-w-[120px]">
                   <div className="flex items-center justify-between gap-1 group">
                     <span className="truncate">{col.label}</span>
-                    <div className="flex items-center opacity-40 group-hover:opacity-100 transition-opacity">
+                    {!locked && <div className="flex items-center opacity-40 group-hover:opacity-100 transition-opacity">
                       {idx > 0 && (
                         <button
                           type="button"
@@ -398,7 +413,7 @@ export default function JobGarmentSpecTableCard({
                           <Trash2 size={10} />
                         </button>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 </th>
               ))}
@@ -415,6 +430,7 @@ export default function JobGarmentSpecTableCard({
                 onCellChange={handleCellChange}
                 onToggleComplete={handleToggleComplete}
                 onDeleteRow={handleDeleteRow}
+                locked={locked}
               />
             ))}
           </tbody>
@@ -432,12 +448,13 @@ export default function JobGarmentSpecTableCard({
             onCellChange={handleCellChange}
             onToggleComplete={handleToggleComplete}
             onDeleteRow={handleDeleteRow}
+            locked={locked}
           />
         ))}
       </div>
 
       {/* Empty State */}
-      {rows.length === 0 && (
+      {rows.length === 0 && !locked && (
         <div className="text-center py-8 rounded-xl bg-sunken/70 space-y-2">
           <p className="text-xs text-ink-muted font-medium">No garment specification rows recorded yet.</p>
           <button

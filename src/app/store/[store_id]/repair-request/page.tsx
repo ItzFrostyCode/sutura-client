@@ -39,6 +39,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store
   const [garmentDescription, setGarmentDescription] = useState('');
   const [selectedPricingIds, setSelectedPricingIds] = useState<number[]>([]);
   const [damageNotes, setDamageNotes] = useState('');
+  const [localAdjustment, setLocalAdjustment] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -100,6 +101,7 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store
         service_id: service.id,
         garment_description: garmentDescription.trim(),
         pre_existing_damage_notes: damageNotes.trim(),
+        local_adjustment: localAdjustment.trim() || undefined,
         pricing_ids: selectedPricingIds,
         reference_images: images,
       });
@@ -227,6 +229,24 @@ function RepairRequestPageContent({ params }: Readonly<{ params: Promise<{ store
               onChange={(e) => setDamageNotes(e.target.value)}
               rows={3}
               placeholder="e.g. Small fray on the left back pocket seam"
+              className="w-full resize-none px-3.5 py-3 rounded-xl bg-surface border border-line text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors placeholder:text-ink-faint"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="local-adjustment" className="text-sm font-semibold text-ink mb-2 block">
+              Where and how much to change <span className="text-ink-faint font-normal">(optional)</span>
+            </label>
+            <p className="text-[11px] text-ink-muted mb-2">
+              For a fit change, only the part being changed: no full body measurements needed.
+            </p>
+            <textarea
+              id="local-adjustment"
+              value={localAdjustment}
+              onChange={(e) => setLocalAdjustment(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder="e.g. Hem the pants to 38 in, shorten both sleeves by 1 in"
               className="w-full resize-none px-3.5 py-3 rounded-xl bg-surface border border-line text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors placeholder:text-ink-faint"
             />
           </div>

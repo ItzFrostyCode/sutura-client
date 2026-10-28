@@ -2,7 +2,7 @@ import api from '@/lib/axios';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { canonicalGarment, categoryOfGarment, garmentLabel } from '@/lib/garmentTaxonomy';
 import { legacyJobCategory } from './jobFormHelpers';
-import { compileRoster, toTeamRoster } from './rosterHelpers';
+import { compileRoster, customParts, FIT_PREFIX, toTeamRoster } from './rosterHelpers';
 import type { GarmentSpecColumn } from '@/components/jobs/jobTypes';
 import type { JobPricing } from './useJobPricing';
 import type { JobCreateFormData, RosterMember, ServiceData } from './types';
@@ -16,7 +16,11 @@ export interface JobSubmission {
   intakeChannel: 'walk_in' | 'online';
   appointmentId: string | null;
   catalogItemId: string;
+  /** The option chosen: only its id is sent, the server reads what it covers and what a unit is from it. */
+  pricingId?: number;
   standardSize: string;
+  /** The bottom's size when one person gets top & bottom. */
+  standardSizeBottom?: string;
   customFieldValues: Record<string, string>;
   isBulk: boolean;
   teamName: string;
@@ -35,15 +39,35 @@ export interface JobSubmission {
   defaultUnit?: 'in' | 'cm';
   /** Other services asked for at the same visit; each becomes its own linked order. */
   extras?: import('./types').ExtraService[];
+  /** The customer's current measurement profiles: recording under one of these names makes its next version instead of a duplicate. */
+  knownProfiles?: { id: number; profile_name: string }[];
   /** The completed order this one follows up (from "New follow-up order"); sent as follow_up_of_id. */
   followUpOfId?: string | null;
+}
+
+const NO_SIZE = 'Custom Measurements';
+const soloArea = (s: JobSubmission) => (s.inlineMeasurement?.measurement_area ?? '');
+function soloSize(s: JobSubmission): string | null {
+  const top = s.standardSize && s.standardSize !== NO_SIZE ? s.standardSize : '';
+  const bottom = s.standardSizeBottom && s.standardSizeBottom !== NO_SIZE ? s.standardSizeBottom : '';
+  if (soloArea(s) === 'both') return [top, bottom].filter(Boolean).join(' / ') || null;
+  return top || null;
 }
 
 /** A team order's list in both shapes: the job's own Spec Table (with the owner's column names) and the roster the tracker and ticket read. */
 function teamFields(s: JobSubmission) {
   const { rows, columns } = compileRoster(s.roster, s.rosterColumns);
+  // A Custom Fit person with typed measurements and no saved profile: the server makes that person's own profile from these points.
+  const pointsOf = (row: JobSubmission['roster'][number]): Record<string, string> => {
+    if (customParts(row).length === 0 || row.measurement_id) return {};
+    return Object.fromEntries(Object.entries(row).filter(([k, v]) => k.startsWith(FIT_PREFIX) && String(v).trim()).map(([k, v]) => [k.slice(FIT_PREFIX.length), String(v).trim()]));
+  };
   return {
-    team_roster: toTeamRoster(rows),
+    team_roster: toTeamRoster(rows).map((person, i) => {
+      const points = pointsOf(s.roster[i]);
+      return Object.keys(points).length > 0 ? { ...person, fit_metrics: points } : person;
+    }),
+    roster_unit: s.defaultUnit ?? 'in',
     spec_table: { columns, rows: rows.map((r) => ({ ...r, completed: false })) },
   };
 }
@@ -82,23 +106,27 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
         try {
           const metricsPayload: Record<string, string> = {
             ...person.metrics,
-            _area: person.measurement_area,
+            _area: person.measurement_area || 'both',
             _unit: String(person.metrics._unit ?? s.defaultUnit ?? 'in'),
           };
 
-          const defaultName = i === 0 ? 'Primary Profile' : `Person ${i + 1}`;
-          const res = await api.post(`/stores/${s.storeId}/measurements`, {
-            customer_id: Number(f.customer_id),
-            appointment_id: s.appointmentId ? Number(s.appointmentId) : null,
-            service_id: f.service_id ? Number(f.service_id) : null,
-            catalog_item_id: s.catalogItemId ? Number(s.catalogItemId) : null,
-            profile_name: person.profile_name || defaultName,
-            metrics: metricsPayload,
-            photo_urls: person.photo_urls || [],
-            notes: person.notes || null,
-            source: 'store_owner',
-            status: 'finalized',
-          });
+          // Named for the garment ("Polo Shirt Profile"), so a customer's polo, trousers and suit profiles stay apart.
+          const garmentName = s.service?.name || garmentLabel(f.garment_type) || '';
+          const defaultName = i === 0 ? (garmentName ? `${garmentName} Profile` : 'Primary Profile') : `Person ${i + 1}`;
+          const profileName = (person.profile_name || defaultName).trim();
+          // A profile this customer already has under the same name gets its next version (history is kept); any other name is its own profile.
+          const sameName = (s.knownProfiles ?? []).find((m) => m.profile_name.trim().toLowerCase() === profileName.toLowerCase());
+          const body = { metrics: metricsPayload, photo_urls: person.photo_urls || [], notes: person.notes || null, source: 'store_owner', status: 'finalized' };
+          const res = sameName
+            ? await api.put(`/stores/${s.storeId}/measurements/${sameName.id}`, body)
+            : await api.post(`/stores/${s.storeId}/measurements`, {
+              ...body,
+              customer_id: Number(f.customer_id),
+              appointment_id: s.appointmentId ? Number(s.appointmentId) : null,
+              service_id: f.service_id ? Number(f.service_id) : null,
+              catalog_item_id: s.catalogItemId ? Number(s.catalogItemId) : null,
+              profile_name: profileName,
+            });
 
           if (res.data?.data?.id) {
             const newId = Number(res.data.data.id);
@@ -107,8 +135,8 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
             }
             savedMeasurementsMeta.push({
               id: newId,
-              name: person.profile_name || defaultName,
-              area: person.measurement_area,
+              name: profileName,
+              area: person.measurement_area || 'both',
               metrics: person.metrics,
             });
           }
@@ -128,6 +156,7 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
     service_id: f.service_id,
     store_branch_id: s.branchId ?? undefined,
     measurement_id: finalMeasurementId,
+    pricing_id: s.pricingId ?? undefined,
     // A bulk order's roster already has one row per person, so quantity is always 1 there.
     quantity: s.isBulk ? 1 : p.quantity,
     total_amount: p.total.toFixed(2),
@@ -150,7 +179,9 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
       garment_type: garmentLabel(f.garment_type) ?? (f.garment_type || null),
       garment: canonicalGarment(f.garment_type),
       garment_group: categoryOfGarment(f.garment_type),
-      standard_size: s.standardSize && s.standardSize !== 'Custom Measurements' ? s.standardSize : null,
+      // One person: the chart size ("M"), or "M / L" when the top and the bottom differ; plus what they get (top, bottom or both).
+      standard_size: !s.isBulk && s.measurementMode === 'standard_size' ? soloSize(s) : null,
+      measure_area: !s.isBulk ? (soloArea(s) || null) : null,
       discount_reason: f.discount_reason || null,
       team_name: s.teamName || null,
       ...(s.isBulk ? teamFields(s) : { team_roster: null }),

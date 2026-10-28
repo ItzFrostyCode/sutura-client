@@ -7,6 +7,7 @@ import { TableSkeleton } from '@/components/ui/Skeleton';
 import SearchInput from '@/components/shared/SearchInput';
 import { JobBalanceItem } from '../usePayments';
 import { getPaymentStatusBadge } from '../paymentHelpers';
+import { peso } from '@/components/customers/customerMoney';
 
 interface JobBalancesTabProps {
   balanceSearch: string;
@@ -68,8 +69,8 @@ export default function JobBalancesTab({
         </div>
       ) : (
         <div>
-          {/* Mobile View */}
-          <div className="block md:hidden divide-y divide-line">
+          {/* Phone and tablet: one card per order, so every amount is shown whole. */}
+          <div className="block lg:hidden divide-y divide-line">
             {displayedBalances.map(job => {
               const amountPaid = job.total_amount - job.balance - (job.discount_amount || 0);
               return (
@@ -82,7 +83,7 @@ export default function JobBalancesTab({
                       <p className="text-xs text-ink font-medium mt-0.5">{job.customer?.name || 'Walk-in Client'}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-base font-bold text-rose-600 tabular-nums">₱{job.balance.toFixed(2)}</p>
+                      <p className="text-base font-bold text-rose-600 tabular-nums">{peso(job.balance)}</p>
                       <span className="text-[10px] text-ink-faint">due</span>
                     </div>
                   </div>
@@ -92,8 +93,8 @@ export default function JobBalancesTab({
                       OutstandingBalancesList bug fixed earlier this pass,
                       large peso amounts can exceed a real 320-375px phone. */}
                   <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted">
-                    <span>Total: ₱{job.total_amount.toFixed(2)}</span>
-                    <span className="text-emerald-700 font-semibold">Paid: ₱{amountPaid.toFixed(2)}</span>
+                    <span>Total: {peso(job.total_amount)}</span>
+                    <span className="text-emerald-700 font-semibold">Paid: {peso(amountPaid)}</span>
                     {getPaymentStatusBadge(job.payment_status)}
                   </div>
 
@@ -109,8 +110,8 @@ export default function JobBalancesTab({
             })}
           </div>
 
-          {/* Desktop View */}
-          <div className="hidden md:block overflow-x-auto">
+          {/* Desktop: the table. */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-sm text-ink-body">
               <thead className="bg-canvas/50 text-[10px] font-bold uppercase tracking-wider text-ink-faint border-b border-line">
                 <tr>

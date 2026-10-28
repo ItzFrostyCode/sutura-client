@@ -1,9 +1,10 @@
 'use client';
 
 import JobRequirementsCard from './JobRequirementsCard';
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Job, GarmentSpecTable, CustomizationInstruction } from '../jobTypes';
+import { detailsLocked } from '../jobHelpers';
 import CancelledNotice from './CancelledNotice';
 import JobSpecCard from './JobSpecCard';
 import JobConsultationCard from './JobConsultationCard';
@@ -51,6 +52,10 @@ export default function JobOverviewTab({
   canEditDetails = true,
 }: JobOverviewTabProps) {
   const locked = readOnly || !canEditDetails;
+  // A group order shows its people once (Team list); "Edit team list" opens the editor in its place until the order is being made.
+  const isTeam = Array.isArray(job.custom_order_data?.team_roster) && job.custom_order_data.team_roster.length > 0;
+  const canEditTeam = isTeam && !locked && !detailsLocked(job) && Boolean(onSaveSpecTable);
+  const [editingTeam, setEditingTeam] = useState(false);
   return (
     <div className="space-y-4">
       <CancelledNotice job={job} />
@@ -76,14 +81,33 @@ export default function JobOverviewTab({
 
       <div className="space-y-4">
         <GroupLabel>Sizes and measurements</GroupLabel>
-        {locked ? <SpecTableReadOnly job={job} /> : onSaveSpecTable && <JobGarmentSpecTableCard job={job} onSaveSpecTable={onSaveSpecTable} />}
-        <JobMeasurementCard
-          job={job}
-          onUseCurrentMeasurement={onUseCurrentMeasurement}
-          storeId={storeId}
-          onRefreshJob={onRefreshJob}
-        />
-        <JobRosterCard job={job} onToggleRosterItem={onToggleRosterItem} readOnly={readOnly} />
+        {isTeam ? (
+          editingTeam && canEditTeam && onSaveSpecTable ? (
+            <JobGarmentSpecTableCard
+              job={job} onSaveSpecTable={onSaveSpecTable} onClose={() => setEditingTeam(false)}
+              title="Edit team list" subtitle="Change names, sizes and pieces, then save. People and pieces can change until the order is confirmed."
+            />
+          ) : (
+            <JobRosterCard
+              job={job} onToggleRosterItem={onToggleRosterItem} readOnly={readOnly}
+              action={canEditTeam ? <button type="button" onClick={() => setEditingTeam(true)} className="h-10 rounded-xl border border-line bg-surface px-4 text-[13px] font-semibold text-ink hover:bg-sunken">Edit team list</button> : undefined}
+            />
+          )
+        ) : (
+          <>
+            {locked ? <SpecTableReadOnly job={job} /> : onSaveSpecTable && <JobGarmentSpecTableCard job={job} onSaveSpecTable={onSaveSpecTable} />}
+            <JobRosterCard job={job} onToggleRosterItem={onToggleRosterItem} readOnly={readOnly} />
+          </>
+        )}
+        {/* A group order is sized per person in its team list; the one-wearer measurement card would only say "needed". */}
+        {(!isTeam || job.measurement) && (
+          <JobMeasurementCard
+            job={job}
+            onUseCurrentMeasurement={onUseCurrentMeasurement}
+            storeId={storeId}
+            onRefreshJob={onRefreshJob}
+          />
+        )}
       </div>
 
       <div className="space-y-4">

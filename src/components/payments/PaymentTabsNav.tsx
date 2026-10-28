@@ -3,6 +3,7 @@
 import React from 'react';
 import { Receipt, CreditCard, ShoppingBag, Wallet, FileDown } from 'lucide-react';
 import { Tab } from './usePayments';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface PaymentTabsNavProps {
   activeTab: Tab;
@@ -33,7 +34,7 @@ export default function PaymentTabsNav({
     // Receipts" + "Job Balances" + "Catalog Orders" together are wider than
     // a phone screen, and this bar had no wrap or scroll fallback at all,
     // so the third tab was pushed off-screen with no way to reach it.
-    <div className="flex items-center gap-2 border-b border-line px-1 overflow-x-auto hide-scrollbar">
+    <ScrollNav wrapperClassName="border-b border-line" className="flex items-center gap-2 px-1">
       {TAB_DEFS.filter(t => t.id !== 'catalog_orders' || showCatalogOrders || activeTab === 'catalog_orders').map(t => {
         const Icon = t.icon;
         const active = activeTab === t.id;
@@ -56,6 +57,6 @@ export default function PaymentTabsNav({
           </button>
         );
       })}
-    </div>
+    </ScrollNav>
   );
 }

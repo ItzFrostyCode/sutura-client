@@ -1,6 +1,7 @@
 import React from 'react';
 import { TABS } from './dashboardHelpers';
 import StoreVisibilityPill from './StoreVisibilityPill';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface DashboardHeaderProps {
   readonly userName: string;
@@ -49,10 +50,8 @@ export default function DashboardHeader({
 
       {/* Underline tabs — scrolls cleanly on narrow screens, active rule
           sits flush with the header's bottom border. */}
-      <nav
-        className="flex items-center gap-1 -mb-4 overflow-x-auto hide-scrollbar shrink-0"
-        aria-label="Dashboard views"
-      >
+      <nav className="-mb-4 min-w-0 shrink-0" aria-label="Dashboard views">
+        <ScrollNav className="flex items-center gap-1">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -73,6 +72,7 @@ export default function DashboardHeader({
             </button>
           );
         })}
+      </ScrollNav>
       </nav>
     </header>
   );

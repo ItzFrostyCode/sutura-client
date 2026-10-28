@@ -71,6 +71,8 @@ export interface Job {
   status: string;
   payment_status: string;
   balance: number | string;
+  /** Sent to plain staff instead of the amounts: only whether something is still owed. */
+  has_balance?: boolean;
   quantity?: number;
   total_amount: number | string;
   notes?: string;

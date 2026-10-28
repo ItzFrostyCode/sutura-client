@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, X } from 'lucide-react';
+import SearchInput from '@/components/shared/SearchInput';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface CustomerFilterBarProps {
   readonly filterType: 'all' | 'online' | 'walkin';
@@ -15,6 +16,10 @@ interface CustomerFilterBarProps {
   readonly setMineOnly?: (val: boolean) => void;
 }
 
+const CHIP = 'flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-4 text-[13px] font-medium transition-colors';
+const chip = (on: boolean) => `${CHIP} ${on ? 'border-ink bg-ink text-white' : 'border-espresso/[0.12] bg-white text-ink-body hover:bg-espresso/[0.03]'}`;
+
+/** The channel tabs and the search sit on the canvas above the table card — the same place Appointments and Job Orders keep their toolbars, not inside the card. */
 export default function CustomerFilterBar({
   filterType,
   setFilterType,
@@ -34,30 +39,21 @@ export default function CustomerFilterBar({
   ];
 
   return (
-    <div className="p-4 sm:p-5 border-b border-line flex flex-col md:flex-row md:items-center justify-between gap-4 bg-canvas/30">
-      {/* Channel Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1 md:pb-0">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      {/* Channel tabs */}
+      <ScrollNav role="group" aria-label="Client channel" fade="canvas" className="flex items-center gap-2">
         {tabs.map((tab) => {
           const isActive = filterType === tab.id;
           return (
             <button
               key={tab.id}
               type="button"
+              aria-pressed={isActive}
               onClick={() => setFilterType(tab.id)}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
-                isActive
-                  ? 'bg-espresso text-white shadow-2xs'
-                  : 'bg-surface border border-line text-ink-muted hover:text-ink hover:bg-canvas'
-              }`}
+              className={chip(isActive)}
             >
-              <span>{tab.label}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-canvas text-ink-faint'
-                }`}
-              >
-                {tab.count}
-              </span>
+              {tab.label}
+              <span className={`text-xs ${isActive ? 'text-white/60' : 'text-ink-faint'}`}>{tab.count}</span>
             </button>
           );
         })}
@@ -66,32 +62,16 @@ export default function CustomerFilterBar({
             type="button"
             aria-pressed={mineOnly}
             onClick={() => setMineOnly(!mineOnly)}
-            className={`px-3 min-h-11 md:min-h-0 md:py-1.5 rounded-xl font-bold text-xs shrink-0 cursor-pointer border ${mineOnly ? 'bg-ink text-white border-ink' : 'bg-surface border-line text-ink-muted hover:text-ink hover:bg-canvas'}`}
+            className={chip(mineOnly)}
           >
             My customers
           </button>
         )}
-      </div>
+      </ScrollNav>
 
-      {/* Search Box */}
-      <div className="relative w-full md:w-80 shrink-0">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" size={16} />
-        <input
-          type="text"
-          placeholder="Search by name, email, or phone..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-8 py-2 bg-surface border border-line rounded-xl text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink p-0.5 cursor-pointer"
-          >
-            <X size={13} />
-          </button>
-        )}
+      {/* Search */}
+      <div className="min-w-0 basis-full sm:basis-auto sm:min-w-[240px] sm:max-w-sm sm:flex-1 lg:flex-none lg:w-80">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email, or phone…" className="w-full" onCanvasBackground />
       </div>
     </div>
   );

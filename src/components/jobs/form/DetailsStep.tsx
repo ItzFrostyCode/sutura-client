@@ -1,5 +1,4 @@
 import { AlertTriangle } from 'lucide-react';
-import { serviceHasType } from '@/components/jobs/jobHelpers';
 import { FIELD, LABEL, Chip } from './FormStep';
 import ServiceQuestions from './ServiceQuestions';
 import type { JobCreateForm } from './useJobCreateForm';
@@ -27,6 +26,13 @@ export default function DetailsStep({ form }: Readonly<{ form: JobCreateForm }>)
             placeholder="Stains, tears, missing buttons — or “no visible damage”. Protects the shop if the customer disputes it later."
             className={`${FIELD} h-auto min-h-20 resize-y py-2`}
           />
+          <label htmlFor="local_adjustment" className={`${LABEL} mt-4`}>Where and how much to change <span className="font-normal text-espresso/60">(optional)</span></label>
+          <textarea
+            id="local_adjustment" rows={2} maxLength={500} value={form.customFieldValues.local_adjustment ?? ''}
+            onChange={(e) => form.setCustomFieldValues((prev) => ({ ...prev, local_adjustment: e.target.value }))}
+            placeholder="A fit change needs only the part being changed, not full measurements: e.g. hem the pants to 38 in, shorten the sleeves 1 in."
+            className={`${FIELD} h-auto resize-y py-2`}
+          />
         </div>
       )}
 
@@ -44,13 +50,13 @@ export default function DetailsStep({ form }: Readonly<{ form: JobCreateForm }>)
         )}
       </div>
 
-      {!isRepair && !serviceHasType(service, 'bulk_sublimation') && (
-        <div>
-          <span className={LABEL}>People to measure</span>
-          <div className="flex flex-wrap gap-2">
-            <Chip active={!form.bulkChosen} onClick={() => { form.setBulkChosen(false); set({ quantity: String(Math.max(1, form.pricing.quantity)) }); }}>One person</Chip>
-            <Chip active={form.bulkChosen} onClick={() => { form.setBulkChosen(true); const n = Math.max(2, Number(formData.quantity) || 1); form.setRoster((cur) => (cur.length >= n ? cur : [...cur, ...Array.from({ length: n - cur.length }, form.blankRow)])); }}>2 or more — list each person</Chip>
-          </div>
+      {form.isBulk ? (
+        <p className="text-sm text-espresso/70">This is a team order: the people and how many pieces each needs are listed in the next step, Sizing.</p>
+      ) : (
+        <div className="sm:max-w-56">
+          <label htmlFor="quantity" className={LABEL}>How many pieces?</label>
+          <input id="quantity" type="number" inputMode="numeric" min="1" step="1" value={formData.quantity} onChange={(e) => set({ quantity: e.target.value })} className={FIELD} />
+          <p className="mt-1 text-sm text-espresso/60">The garments to make in all. Who wears them is the next step.</p>
         </div>
       )}
     </div>

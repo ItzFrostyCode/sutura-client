@@ -1,28 +1,28 @@
 'use client';
 
 import React from 'react';
-import RadioRows from '@/components/shared/RadioRows';
+import Segmented from '@/components/shared/Segmented';
+import { COVERS_FIELD, COVERS_HINT, COVERS_LABEL } from '@/lib/orderUnits';
 
 export type MeasurementAreaChoice = 'top' | 'bottom' | 'both';
 
 interface AreaSelectorProps {
   readonly personName: string;
-  readonly selectedArea: MeasurementAreaChoice;
+  /** '' = nothing chosen yet: no button is selected. */
+  readonly selectedArea: MeasurementAreaChoice | '';
   readonly onSelectArea: (area: MeasurementAreaChoice) => void;
+  /** Customer-facing look: square, taupe, and a plainer question. */
+  readonly square?: boolean;
 }
 
-const CHOICES = [
-  { value: 'top' as const, title: 'Top', hint: 'Shirts, barongs, jackets, polos' },
-  { value: 'bottom' as const, title: 'Bottom', hint: 'Pants, trousers, skirts, shorts' },
-  { value: 'both' as const, title: 'Top and bottom', hint: 'Suits, matching sets, uniforms, full body' },
-];
+const CHOICES = (['top', 'bottom', 'both'] as const).map((value) => ({ value, label: COVERS_LABEL[value], hint: COVERS_HINT[value] }));
 
-/** What needs to be measured on this person. Changing it never wipes values already typed. */
-export default function AreaSelector({ personName, selectedArea, onSelectArea }: AreaSelectorProps) {
+/** What this person gets / needs measured, in one row. Asked first, before any size. */
+export default function AreaSelector({ personName, selectedArea, onSelectArea, square = false }: AreaSelectorProps) {
   return (
     <fieldset>
-      <legend className="mb-1.5 text-sm font-medium text-espresso">What needs to be measured for {personName || 'this person'}?</legend>
-      <RadioRows label="Body area" value={selectedArea} onChange={onSelectArea} options={CHOICES} />
+      <legend className="mb-1.5 text-sm font-medium text-espresso">{COVERS_FIELD}</legend>
+      <Segmented label="Body area" value={selectedArea as MeasurementAreaChoice} onChange={onSelectArea} options={CHOICES} hint={CHOICES.find((c) => c.value === selectedArea)?.hint} square={square} />
     </fieldset>
   );
 }

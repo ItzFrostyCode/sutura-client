@@ -107,10 +107,12 @@ export function usePayments() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [receiptsLoading, setReceiptsLoading] = useState(true);
 
-  // Job Balances tab
+  // Job Balances tab. The search box can be prefilled from the URL (?q=) —
+  // the customer detail page's "All balances" deep-links with that customer's
+  // name, so the list lands on their balances instead of the whole store's.
   const [jobBalances, setJobBalances] = useState<JobBalanceItem[]>([]);
   const [balancesLoading, setBalancesLoading] = useState(true);
-  const [balanceSearch, setBalanceSearch] = useState('');
+  const [balanceSearch, setBalanceSearch] = useState(() => searchParams.get('q') ?? '');
   const [logPaymentJob, setLogPaymentJob] = useState<JobBalanceItem | null>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');

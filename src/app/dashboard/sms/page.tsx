@@ -8,6 +8,7 @@ import SmsMessageCard from '@/components/sms/SmsMessageCard';
 import SmsSettingsPanel from '@/components/sms/SmsSettingsPanel';
 import { useSmsOutbox } from '@/components/sms/useSmsOutbox';
 import type { SmsTab } from '@/components/sms/smsHelpers';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 const TABS: { id: SmsTab; label: string }[] = [{ id: 'draft', label: 'To check' }, { id: 'sent', label: 'Sent' }, { id: 'problems', label: 'Needs fixing' }];
 
@@ -43,7 +44,7 @@ export default function SmsOutboxPage() {
 
       {d && showSettings && <SmsSettingsPanel data={d} isOwner={isOwner} busy={s.busyId === 'all'} onMode={s.setMode} onEvents={s.setEvents} />}
 
-      <div className="flex items-center gap-2 border-b border-line overflow-x-auto hide-scrollbar">
+      <ScrollNav wrapperClassName="border-b border-line" fade="canvas" className="flex items-center gap-2">
         {TABS.map((t) => (
           <button key={t.id} type="button" onClick={() => s.setTab(t.id)} className={`min-h-11 px-3 text-sm font-semibold border-b-2 -mb-px shrink-0 cursor-pointer ${s.tab === t.id ? 'border-taupe text-ink' : 'border-transparent text-ink-muted hover:text-ink'}`}>
             {t.label}{d ? ` (${d.counts[t.id]})` : ''}
@@ -52,7 +53,7 @@ export default function SmsOutboxPage() {
         {s.tab === 'draft' && d && d.counts.draft > 0 && (
           <button type="button" disabled={s.busyId !== null} onClick={s.approveAll} className="ml-auto h-11 px-3 text-sm font-semibold text-taupe hover:underline cursor-pointer shrink-0 disabled:opacity-50">Send all that look valid</button>
         )}
-      </div>
+      </ScrollNav>
 
       <div className="border border-line bg-surface">
         {s.loading ? (

@@ -1,5 +1,6 @@
 import { Trash2, List as ListIcon, Settings } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface NotificationsHeaderProps {
   activeTab: 'list' | 'configure';
@@ -32,7 +33,7 @@ export default function NotificationsHeader({
         ) : null
       }
     >
-      <div className="flex items-center gap-2 pt-4 overflow-x-auto hide-scrollbar">
+      <ScrollNav wrapperClassName="mt-4" className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => onSwitchTab('list')}
@@ -65,7 +66,7 @@ export default function NotificationsHeader({
           <Settings size={14} />
           <span>Configure</span>
         </button>
-      </div>
+      </ScrollNav>
     </PageHeader>
   );
 }

@@ -31,7 +31,7 @@ export default function NotificationsPopover({ unreadCount, title }: { readonly 
         aria-label={title}
         aria-expanded={open}
         title={title}
-        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors before:absolute before:-inset-2 ${open || onPage ? 'bg-taupe/15 text-taupe-dark' : 'text-ink-muted hover:bg-sunken hover:text-ink'}`}
+        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors before:absolute before:-inset-2 ${open || onPage ? 'bg-taupe/15 text-taupe-dark' : 'text-espresso hover:bg-sunken'}`}
       >
         <Bell size={22} />
         {unreadCount > 0 && (
