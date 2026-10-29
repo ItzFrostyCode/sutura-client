@@ -147,6 +147,15 @@ Each board column has one job and ends with one button; the order page's Steps t
 - **Migrations to run (`php artisan migrate`):** `2026_10_22_100000_add_status_before_hold_to_job_orders` (Hold remembers the step; already run by the owner) and **`2026_10_22_110000_add_follow_up_of_id_to_job_orders`** (new, not run yet).
 - **Not done / decided:** "New follow-up order" now shows only on completed orders (it used to show at any status). The reminder for unclaimed pick-ups still goes to the owner only. Rejecting a payment on a completed order is still possible on the server. The inline panels replace pop-ups in the order page only; the consultation card's "Book another visit" still opens `FollowUpAppointmentModal`.
 
+## Support tickets — customer filing + demo data (2026-10-29, Joshua)
+
+One table (`support_tickets`) already fed four surfaces: shop dashboard (`/dashboard/support`, owner sees all, branch manager / staff see only their own), customer My Support Tickets (`/account/settings/support`, previously view + reply only, rows arrived via "Report This Product" alone), and admin (`/admin/tickets` queue + `TicketModal`, shows the filer's role). Closed the last gap and the demo-data gaps:
+
+- **Customer "New Ticket"** — `/account/settings/support/new` (Subject / What's it about / Message, no attachments) → `POST /my-tickets` (`SupportTicketController::storeMine`, no store context, priority `medium`, types `problem`/`general`/`billing`). New rows carry no store: **migration `2026_10_29_000001_make_support_tickets_store_id_nullable`** (leader must run `php artisan migrate`). They land in the same `/admin/tickets` queue with a Customer label; activity log gains `POST my-tickets` (`ticket_opened`).
+- **Seeder demo rows** (`LocalTestSeeder`, section 19): a staff-filed ticket (open, assigned to the admin — proves the non-owner scoping and the "Staff" label) and a customer product report on `$item1` with an admin reply (customer's list no longer empty on a fresh seed).
+- Copy fixes: `/admin/tickets` page description now says "shop and customer accounts", and two stale comments in `SupportTicketAdminController` / `SupportTicketController`.
+- tsc + `php -l` clean; no browser check yet. UI polish is flat-card (account module style) — customer list card and detail thread untouched.
+
 ## Open work, ranked
 
 1. **Deployment proof** — Vercel + Railway + Supabase + R2 never run end-to-end. `DEPLOYMENT-RAILWAY-SUPABASE.md` (10-01): code reviewed for Postgres, **not yet run against a real Postgres**. Dry run on a throwaway Supabase project is step 0. *(unverified today — ask the leader whether any of it was done)*
