@@ -42,9 +42,11 @@ export interface MoreFilters {
   area: string;
   /** price_asc | price_desc | '' */
   sortBy: string;
+  /** A garment category key (garmentTaxonomy), '' = all shops. Shown as the chips on the landing page. */
+  category?: string;
 }
 
-export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: 'price_asc' };
+export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: 'price_asc', category: '' };
 
 export type AllFilters = NearFilters & MoreFilters;
 

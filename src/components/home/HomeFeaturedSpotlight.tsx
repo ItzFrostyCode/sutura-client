@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Star, MapPin, Scissors, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getMediaUrl } from '@/lib/media';
 import { GARMENT_CATEGORIES, GARMENT_CATEGORY_KEYS, categoryOfGarment } from '@/lib/garmentTaxonomy';
@@ -11,6 +11,8 @@ import type { StoreResult } from './homeTypes';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { isStoreOpen } from '@/lib/storeStatus';
 import HomeSectionHeader from './HomeSectionHeader';
+import FeaturedServiceCard, { orderedServices } from './FeaturedServiceCard';
+import { useHoverPreview } from './useHoverPreview';
 
 interface HomeFeaturedSpotlightProps {
   readonly stores: StoreResult[];
@@ -32,11 +34,6 @@ function garmentCategoriesOf(store: StoreResult): string[] {
   return GARMENT_CATEGORY_KEYS.filter((c) => c !== 'other' && cats.has(c)).map((c) => GARMENT_CATEGORIES[c].label);
 }
 
-function formatCategory(cat?: string | null): string {
-  if (!cat) return 'Tailoring Service';
-  return cat.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
-
 function formatServicePrice(price?: number | string | null): string | null {
   if (price === null || price === undefined || price === '') return null;
   const num = Number(price);
@@ -47,7 +44,7 @@ function formatServicePrice(price?: number | string | null): string | null {
 // Featured cards lead with the shop's first service photo (not its banner) — the
 // banner is only a last resort when no service or design has a picture.
 function getStoreCoverImage(s: StoreResult): string | null {
-  const svcImg = s.services?.[0]?.image_url ?? s.services?.find((svc) => svc.image_url)?.image_url;
+  const svcImg = orderedServices(s)[0]?.image_url;
   if (svcImg) return getMediaUrl(svcImg);
   const firstCatImg = s.catalog_items?.[0]?.images?.[0]?.image_url;
   if (firstCatImg) return getMediaUrl(firstCatImg);
@@ -60,6 +57,8 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
   const [index, setIndex] = useState(0);
   const [hoveredServiceId, setHoveredServiceId] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
+  const canPreview = useHoverPreview();
+  useEffect(() => { if (!canPreview) setHoveredServiceId(null); }, [canPreview]);
 
   const isMulti = stores.length > 1;
   const store = stores[index] ?? stores[0] ?? null;
@@ -98,7 +97,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
   const storeSlug = store?.slug ?? '';
   const branch = store?.branches?.[0];
   const district = branch?.district ?? branch?.city ?? 'Davao City';
-  const rating = store?.reviews_avg_rating ? Number(store.reviews_avg_rating).toFixed(1) : '5.0';
+  const rating = store?.reviews_avg_rating ? Number(store.reviews_avg_rating).toFixed(1) : null;
   const reviewsCount = store?.reviews_count ? Number(store.reviews_count) : 0;
 
   const subtitle = useMemo(() => {
@@ -113,14 +112,13 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
 
   // Real store services — strictly NO mock data! Up to 4 services.
   const services = useMemo(() => {
-    if (!store?.services) return [];
-    return store.services.slice(0, 4);
+    return store ? orderedServices(store).slice(0, 4) : [];
   }, [store]);
 
   const hoveredService = useMemo(() => {
-    if (!hoveredServiceId) return null;
+    if (!canPreview || !hoveredServiceId) return null;
     return services.find((s) => s.id === hoveredServiceId) ?? null;
-  }, [hoveredServiceId, services]);
+  }, [canPreview, hoveredServiceId, services]);
 
   const defaultPhoto = useMemo(() => (store ? getStoreCoverImage(store) : null), [store]);
 
@@ -129,7 +127,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
     : defaultPhoto;
 
   const heroHref = hoveredService
-    ? gate(`/store/${storeSlug}/services/${hoveredService.id}`)
+    ? gate(`/store/${storeSlug}/service/${hoveredService.id}`)
     : gate(`/store/${storeSlug}`);
 
   if (!store) return null;
@@ -152,7 +150,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
       }}
       className="my-3 select-none"
     >
-      <div className="w-full max-w-[960px] mx-auto px-4 sm:px-5">
+      <div className="w-full max-w-[960px] mx-auto">
         <HomeSectionHeader
           id="featured-title"
           title={isMulti ? 'Featured Shops' : 'Featured Shop'}
@@ -161,15 +159,15 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
         />
       </div>
 
-      {/* Breakout Carousel Container: 20px (sm:px-5) margin on tablet and desktop */}
-      <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen max-w-[100vw] overflow-x-clip py-2">
-        <div className="relative flex items-center justify-center gap-4 sm:gap-6 md:gap-7 w-full px-4 sm:px-5">
+      {/* Below xl the card simply fills the page column (same side margins as the sections around it). From xl the row breaks out to the full screen so the neighbouring shops can peek in. */}
+      <div className="relative py-2 xl:left-1/2 xl:right-1/2 xl:-ml-[50vw] xl:-mr-[50vw] xl:w-screen xl:max-w-[100vw] xl:overflow-x-clip">
+        <div className="relative flex w-full items-center justify-center gap-4 sm:gap-6 md:gap-7 xl:px-5">
           {/* Left Peeking Card (Shown only on xl+ screens where there is room outside the 960px center card) */}
           {isMulti && prevStore && (
             <div
               onClick={() => move(-1)}
               aria-label={`Previous: ${prevStore.name}`}
-              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 h-[380px] lg:h-[440px] xl:h-[480px] rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/prev select-none"
+              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:h-[570px] rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/prev select-none"
             >
               {prevCover ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -193,10 +191,10 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             </div>
           )}
 
-          {/* Center Main Card: STRICT FIXED HEIGHT on tablet and desktop (md:h-[550px]) so arrows never jump */}
-          <div className="w-[calc(100vw-32px)] sm:w-[calc(100vw-40px)] lg:w-full max-w-[960px] shrink-0 h-auto md:h-[550px] rounded-2xl overflow-hidden shadow-xs border border-line flex flex-col md:flex-row items-stretch bg-white text-ink">
-            {/* Left: Large Hero Image Area */}
-            <div className="relative flex-1 min-h-[260px] md:min-h-0 md:h-full overflow-hidden bg-surface-sunken">
+          {/* Center card. Desktop (lg+): the photo (with the hover preview) on the left, the details on the right, at a fixed height so the arrows never jump and the whole card fits one screen. Tablet and phone: the details only, no photo. */}
+          <div className="w-full max-w-[960px] min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-xs lg:flex lg:h-[650px]">
+            {/* Left: Large Hero Image Area (desktop only) */}
+            <div className="relative hidden min-w-0 flex-1 overflow-hidden bg-surface-sunken lg:block">
               <Link href={heroHref} className="absolute inset-0 block group">
                 {heroPhoto ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -234,8 +232,8 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
               )}
             </div>
 
-            {/* Right: Clean White Details Box with fixed height on tablet & desktop */}
-            <div className="w-full md:w-[390px] lg:w-[420px] p-4 sm:p-5 flex flex-col justify-between bg-white border-t md:border-t-0 md:border-l border-line shrink-0 md:h-full overflow-hidden">
+            {/* Details: shop, services, Visit Shop */}
+            <div className="flex w-full flex-col gap-3 bg-white p-4 sm:p-5 lg:w-[420px] lg:shrink-0 lg:border-l lg:border-line">
               {/* Header Info */}
               <div>
                 {/* Location row */}
@@ -274,7 +272,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
                     <div className="flex items-center gap-1.5 mt-1 text-xs">
                       <div className="flex items-center gap-1 font-semibold text-[#D97706]">
                         <Star size={12} className="fill-[#D97706] text-[#D97706]" />
-                        <span className="text-ink font-bold">{rating}</span>
+                        <span className="text-ink font-bold">{rating ?? 'New'}</span>
                       </div>
                       <span className="text-ink-muted">({reviewsCount} {reviewsCount === 1 ? 'review' : 'reviews'})</span>
                     </div>
@@ -282,144 +280,32 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
                 </div>
               </div>
 
-              {/* 2x2 Services Grid (Strictly 2 columns, exactly 4 slots for fixed unmoving layout) */}
-              <div className="my-2 flex-1 flex flex-col justify-center">
-                <div className="flex items-center justify-between mb-1.5">
+              {/* Services: a phone (under 600px) shows the first 2 so the card stays short, a tablet 4 in a row, desktop 2 x 2. Only real services are shown; an empty cell stays empty, so the card keeps its size. */}
+              <div className="flex flex-col lg:min-h-0 lg:flex-1">
+                <div className="mb-1.5 flex items-center justify-between">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
                     Services ({services.length})
                   </p>
-                  <span className="text-[10px] text-ink-faint">Hover to preview</span>
+                  <span className="hidden text-[10px] text-ink-faint lg:inline">Hover to preview</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {[0, 1, 2, 3].map((slotIndex) => {
-                    const svc = services[slotIndex];
-
-                    if (svc) {
-                      const isHovered = hoveredServiceId === svc.id;
-                      const isSaved = savedServiceIds.has(svc.id);
-                      const price = formatServicePrice(svc.base_price);
-                      const itemRating = svc.reviews_avg_rating && Number(svc.reviews_avg_rating) > 0
-                        ? Number(svc.reviews_avg_rating).toFixed(1)
-                        : (store.reviews_avg_rating && Number(store.reviews_avg_rating) > 0 ? Number(store.reviews_avg_rating).toFixed(1) : '5.0');
-                      const soldCount = svc.reviews_count && svc.reviews_count > 0
-                        ? svc.reviews_count
-                        : (store.reviews_count > 0 ? store.reviews_count : ((svc.id * 13) % 40 + 8));
-                      const savesCount = ((svc.id * 7) % 25 + 4) + (isSaved ? 1 : 0);
-
-                      return (
-                        <Link
-                          key={svc.id}
-                          href={gate(`/store/${storeSlug}/services/${svc.id}`)}
-                          onMouseEnter={() => setHoveredServiceId(svc.id)}
-                          onMouseLeave={() => setHoveredServiceId(null)}
-                          className={`group/svc relative flex flex-col justify-between rounded-xl overflow-hidden border p-1.5 sm:p-2 bg-[#FAF7F4] transition-all duration-200 cursor-pointer h-[148px] sm:h-[154px] ${
-                            isHovered
-                              ? 'border-taupe ring-2 ring-taupe/20 bg-sunken scale-[1.01] shadow-xs'
-                              : 'border-line hover:border-line-strong'
-                          }`}
-                        >
-                          {/* Image Thumbnail with Heart Button */}
-                          <div className="relative aspect-[16/10] w-full rounded-lg overflow-hidden bg-white shrink-0 border border-line/40">
-                            {svc.image_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={getMediaUrl(svc.image_url)}
-                                alt={svc.name}
-                                className="w-full h-full object-cover object-top group-hover/svc:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-ink-faint text-[10px] bg-sunken">
-                                <Scissors size={18} className="text-taupe/40" />
-                              </div>
-                            )}
-
-                            {/* Heart / Save Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                toggleSaveService(svc.id);
-                              }}
-                              aria-label={isSaved ? 'Remove from saved' : 'Save service'}
-                              className="absolute top-1 right-1 p-1 rounded-full bg-white/90 hover:bg-white text-ink-muted hover:text-rose-500 shadow-2xs backdrop-blur-xs transition-transform active:scale-90 cursor-pointer z-10"
-                            >
-                              <Heart
-                                size={11}
-                                className={isSaved ? 'fill-rose-500 text-rose-500' : 'text-ink-muted hover:text-rose-500'}
-                              />
-                            </button>
-                          </div>
-
-                          {/* Card Content */}
-                          <div className="mt-1 flex-1 flex flex-col justify-between min-w-0">
-                            <h4 className="text-xs font-semibold text-ink line-clamp-1 group-hover/svc:text-taupe transition-colors leading-tight">
-                              {svc.name}
-                            </h4>
-
-                            <div className="flex items-baseline justify-between mt-0.5">
-                              <span className="text-[11px] font-bold text-taupe-dark">
-                                {price ?? 'Inquire'}
-                              </span>
-                            </div>
-
-                            {/* Stat Row: ⭐ Rating · Sold · Heart count */}
-                            <div className="flex items-center gap-1 text-[10px] text-ink-muted mt-0.5 pt-0.5 border-t border-line/40">
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <Star size={9} className="fill-amber-400 text-amber-500 shrink-0" />
-                                <span className="font-semibold text-ink text-[10px]">
-                                  {itemRating}
-                                </span>
-                              </div>
-                              <span className="text-ink-faint text-[9px]">·</span>
-                              <span className="truncate text-[10px] text-ink-muted">
-                                {soldCount} sold
-                              </span>
-                              <span className="text-ink-faint text-[9px]">·</span>
-                              <span className="flex items-center gap-0.5 text-rose-600 shrink-0 text-[10px]" title={`${savesCount} saved`}>
-                                <Heart size={9} className="fill-rose-500 text-rose-500 shrink-0" />
-                                <span>{savesCount}</span>
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    }
-
-                    // Placeholder slot to guarantee strict 2x2 grid (4 slots total)
-                    return (
-                      <Link
-                        key={`placeholder-${slotIndex}`}
-                        href={gate(`/store/${storeSlug}`)}
-                        className="flex flex-col justify-between rounded-xl overflow-hidden border border-dashed border-line/80 bg-[#FAF7F4]/50 p-1.5 sm:p-2 text-center h-[148px] sm:h-[154px] transition-all hover:bg-sunken/40 hover:border-taupe/40 group/placeholder cursor-pointer"
-                      >
-                        <div className="relative aspect-[16/10] w-full rounded-lg overflow-hidden bg-surface-sunken/40 flex flex-col items-center justify-center border border-dashed border-line/60">
-                          <Scissors size={18} className="text-taupe/35 mb-1 group-hover/placeholder:scale-110 transition-transform" />
-                          <span className="text-[9px] font-semibold text-ink-muted uppercase tracking-wider">
-                            Custom Service
-                          </span>
-                        </div>
-                        <div className="mt-1 flex-1 flex flex-col justify-between py-0.5 min-w-0">
-                          <p className="text-[11px] font-medium text-ink-muted line-clamp-1 group-hover/placeholder:text-taupe transition-colors">
-                            Available on Request
-                          </p>
-                          <div className="flex items-center justify-between pt-0.5 border-t border-line/40 text-[10px] text-taupe font-semibold">
-                            <span>Inquire</span>
-                            <span className="group-hover/placeholder:translate-x-0.5 transition-transform">&rarr;</span>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                <div className="grid grid-cols-2 content-start gap-2 max-sm:[&>*:nth-child(n+3)]:hidden sm:grid-cols-4 lg:grid-cols-2">
+                  {services.map((svc) => (
+                    <FeaturedServiceCard
+                      key={svc.id}
+                      service={svc}
+                      href={gate(`/store/${storeSlug}/service/${svc.id}`)}
+                      hovered={hoveredServiceId === svc.id}
+                      saved={savedServiceIds.has(svc.id)}
+                      onHoverChange={(on) => { if (canPreview) setHoveredServiceId(on ? svc.id : null); }}
+                      onToggleSave={() => toggleSaveService(svc.id)}
+                    />
+                  ))}
                 </div>
               </div>
 
               {/* Bottom Bar: Visit Shop CTA Button */}
-              <div className="pt-2.5 border-t border-line shrink-0">
+              <div className="shrink-0 border-t border-line pt-3">
                 <Link
                   href={gate(`/store/${storeSlug}`)}
                   className="w-full py-2.5 rounded-lg bg-ink hover:bg-taupe active:scale-95 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5 group/btn"
@@ -436,7 +322,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             <div
               onClick={() => move(1)}
               aria-label={`Next: ${nextStore.name}`}
-              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 h-[380px] lg:h-[440px] xl:h-[490px] rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/next select-none"
+              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:h-[570px] rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/next select-none"
             >
               {nextCover ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -468,7 +354,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
               type="button"
               onClick={() => move(-1)}
               aria-label="Previous featured shop"
-              className="absolute left-2 sm:left-4 md:left-6 lg:left-8 xl:left-12 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-white/95 hover:bg-white text-ink shadow-lg border border-line active:scale-95 transition-all cursor-pointer z-30"
+              className="absolute left-0 -translate-x-1/2 lg:-left-5 lg:translate-x-0 xl:left-12 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-white/95 hover:bg-white text-ink shadow-lg border border-line active:scale-95 transition-all cursor-pointer z-30"
             >
               <ChevronLeft size={22} />
             </button>
@@ -477,7 +363,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
               type="button"
               onClick={() => move(1)}
               aria-label="Next featured shop"
-              className="absolute right-2 sm:right-4 md:right-6 lg:right-8 xl:right-12 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-white/95 hover:bg-white text-ink shadow-lg border border-line active:scale-95 transition-all cursor-pointer z-30"
+              className="absolute right-0 translate-x-1/2 lg:-right-5 lg:translate-x-0 xl:right-12 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-white/95 hover:bg-white text-ink shadow-lg border border-line active:scale-95 transition-all cursor-pointer z-30"
             >
               <ChevronRight size={22} />
             </button>

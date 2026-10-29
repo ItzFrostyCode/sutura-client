@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 import SearchMapView from '@/components/search/map/SearchMapView';
+import SearchLocationBar from '@/components/search/SearchLocationBar';
 
 // One full-screen page that never scrolls: the map fills everything and the bottom navigation floats over it.
 export default function SearchPage() {
@@ -16,6 +17,7 @@ export default function SearchPage() {
       }
     >
       <div className="flex h-dvh flex-col overflow-hidden bg-canvas">
+        <SearchLocationBar />
         <PublicNav isSticky={false} />
         <SearchMapView />
       </div>
