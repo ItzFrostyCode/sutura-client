@@ -122,10 +122,14 @@ An older database may also hold extra hand-made accounts that are not part of th
 
 ## 6. Reset / refresh
 
+> **Both commands below wipe your work.** Since 2026-10-21 `db:seed` loads the saved snapshot, which deletes every row first and brings back the data as of the last `app:snapshot-export`. The older "safe to re-run, adds missing demo data" behaviour only applies with `SEED_FROM=demo`. Take `php artisan app:snapshot-export` (or a `mysqldump`) first.
+
 ```bash
 cd sutura-server
-MAIL_MAILER=log php artisan db:seed --force      # safe to re-run; adds missing demo data
-MAIL_MAILER=log php artisan migrate:fresh --seed # wipes the local DB and rebuilds all of the above
+php artisan app:snapshot-export                              # 1. save what you have now
+MAIL_MAILER=log php artisan db:seed --force                  # 2. REPLACES all data with the snapshot
+MAIL_MAILER=log SEED_FROM=demo php artisan db:seed --force   # older generated demo shop (adds/updates demo rows)
+MAIL_MAILER=log php artisan migrate:fresh --seed             # wipes the local DB and rebuilds it
 ```
 
 Seeded by `LocalTestSeeder` (shop, branch, people, customers, orders) and `StaffAndPaymentsDemoSeeder` (payment methods, requirements, the staff ticket, rejected / Other appointments, Pending-fitting measurement, staff notifications).

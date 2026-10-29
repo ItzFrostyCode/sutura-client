@@ -94,7 +94,7 @@ export function ServiceGarmentsEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
               {slugs.map(slug => (
-                <label key={slug} className="flex items-center gap-3 min-h-11 cursor-pointer">
+                <label key={slug} className="flex w-fit max-w-full items-center gap-3 min-h-11 cursor-pointer">
                   <input type="checkbox" checked={chosen.has(slug)} onChange={() => toggle(slug)} className="sr-only" />
                   <Box checked={chosen.has(slug)} />
                   <span className="text-sm text-ink-body">{GARMENTS[slug].label}</span>
@@ -165,7 +165,7 @@ export function ServiceCapabilitiesEditor({ edit }: Readonly<{ edit: DraftEdit }
         <legend className={LABEL}>What you do — select only what you offer</legend>
         <div className="grid grid-cols-1 gap-1">
           {Object.entries(group.capabilities).map(([slug, cap]) => (
-            <label key={slug} className="flex items-center gap-3 min-h-11 cursor-pointer">
+            <label key={slug} className="flex w-fit max-w-full items-center gap-3 min-h-11 cursor-pointer">
               <input type="checkbox" checked={chosen.has(slug)} onChange={() => toggle(slug)} className="sr-only" />
               <Box checked={chosen.has(slug)} />
               <span className="text-sm text-ink-body">{cap.label}</span>
