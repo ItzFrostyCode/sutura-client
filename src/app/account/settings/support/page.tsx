@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LifeBuoy, ChevronRight, Loader2 } from 'lucide-react';
+import { LifeBuoy, ChevronRight, Loader2, Plus } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
 import EmptyState from '@/components/account/EmptyState';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
@@ -38,11 +38,9 @@ function relativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// Real listing now, not a "Coming soon" placeholder — but only a view(+reply)
-// surface. The only way a ticket lands here today is via "Report This
-// Product" on a catalog item's detail page (CatalogInteractionController::
-// report()); there's no general "file a new ticket" form yet, so no
-// "+ New Ticket" affordance is shown.
+// Real listing and a real filing surface: "+ New Ticket" posts to /my-tickets
+// (SupportTicketController::storeMine, no store context), product_report rows
+// arrive via "Report This Product" on a catalog item's detail page.
 export default function SupportTicketListPage() {
   const [tickets, setTickets] = useState<MyTicket[] | null>(null);
 
@@ -55,6 +53,15 @@ export default function SupportTicketListPage() {
   return (
     <div>
       <AccountHeader title="Support Ticket" backHref="/account/settings" />
+
+      <div className="mb-3 flex justify-end">
+        <Link
+          href="/account/settings/support/new"
+          className="flex h-11 items-center gap-1.5 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold text-ink transition-opacity active:opacity-70"
+        >
+          <Plus size={15} /> New Ticket
+        </Link>
+      </div>
 
       {tickets === null && <div className="flex min-h-[50vh] items-center justify-center"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}
 

@@ -36,7 +36,7 @@ export default function AdminTicketsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Support" description="Tickets and product reports from shop owners.">
+      <PageHeader title="Support" description="Tickets from shop and customer accounts, including product reports.">
         <FilterTabs options={FILTERS} value={status} onChange={setStatus} />
       </PageHeader>
 
