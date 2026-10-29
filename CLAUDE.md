@@ -4,6 +4,8 @@
 
 Capstone project, BSIT, STI College Davao. Team: Joshua Wayman A. Arabejo, Jossua A. Bongo (Leader), Renalyn C. Bulotano, Clareynz June A. Masudog. Adviser: Jessiel Chris D. Hilot. **Defense/deployment deadline: first week of October 2026.**
 
+> **Superseded (2026-10-29) — the code and `docs/STATUS.md` ("Corrections to the build log") win over these older sections:** (1) staff do **not** create job orders (owner + branch manager only, 2026-10-22); (2) a branch manager can **view** services and designs, only the owner edits them (`useCanManageOfferings`); (3) combo packages / the Packages tab were **dropped 2026-10-16**; (4) plain staff never see or receive money fields; (5) defense dates: mock defense 2nd week of November, final defense 2026-11-20. Scope, roles and architecture are kept current in `docs/{PRD,ARCHITECTURE,STATUS}.md`.
+
 This is the Next.js frontend. The backend lives in the sibling `sutura-server` repo (Laravel) — same thesis, separate git history.
 
 ## Git workflow — branch per module, not direct commits to `main` (as of 2026-08-12)

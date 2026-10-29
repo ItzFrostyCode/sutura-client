@@ -1,8 +1,30 @@
 # SUTURA — Status (keep this short)
 
-> **Last checked: 2026-10-14** (merge section below); the rest **2026-10-10**. Items marked ✔ were re-verified against code that day (routes, pages, models, scheduler). Items marked *(10-02)* are carried over from [`THESIS-CROSS-CHECK.md`](THESIS-CROSS-CHECK.md) and **not** re-verified — confirm in code before relying on them. Update this file when something ships or a claim turns out wrong; don't let it grow into a changelog.
+> **Last checked: 2026-10-29** — the "Current state" and "Corrections" blocks below were re-read from the code that day (routes, models, migrations, scheduler, `git status`). The dated sections after them are a build log of what shipped when; where a log line disagrees with the Corrections block, **the Corrections block and the code win**. Older ✔ marks were re-verified on 2026-10-10 / 10-14. Items marked *(10-02)* are carried over from [`THESIS-CROSS-CHECK.md`](THESIS-CROSS-CHECK.md) and **not** re-verified — confirm in code before relying on them. Update this file when something ships or a claim turns out wrong; don't let it grow into a changelog.
 
-**Dates (confirmed by Joshua 2026-10-20):** the adviser checks the **ordering flow** for deployment on **Fri 2026-10-23**; mock defense 2nd week of November; exam Mon 2026-11-16; **final defense Fri 2026-11-20**. (`CLAUDE.md` / `DEADLINE.md` still say "first week of October 2026"; that is out of date.) Work plan: [`PLAN-design-styles-batches.md`](PLAN-design-styles-batches.md).
+**Dates (confirmed by Joshua 2026-10-20):** the adviser's ordering-flow check for deployment was **Fri 2026-10-23** (already past; its outcome is not recorded here); mock defense 2nd week of November; exam Mon 2026-11-16; **final defense Fri 2026-11-20**. (`CLAUDE.md` / `DEADLINE.md` still say "first week of October 2026"; that is out of date.) Work plan: [`PLAN-design-styles-batches.md`](PLAN-design-styles-batches.md).
+
+## Current state (2026-10-29)
+
+- **Branch / git:** both repos are on `feat/ordering-discover-support-combined`, working tree clean. Server is 2 commits ahead of and 1 behind `origin/main`; client is 0 ahead and 2 behind (`git rev-list --left-right --count origin/main...HEAD`), so the client branch's work is already in `main` and only needs a fast-forward. Entries below that say "uncommitted" were written before the combined-release merges and no longer apply. `main` is PR-only.
+- **Size:** server has 231 migrations and 42 models; client pages are `/dashboard/*` (shop), `/admin/*` (system admin), `/account/*` (customer) and the public site.
+- **Pending migration:** `2026_10_29_120000_add_covers_and_sold_as_to_service_pricing` is the only one `migrate:status` reports as not run on the dev DB. Its code is merged, so the service editor / New Job Order Option step will error until it is run.
+- **Tests:** `php artisan test` (in-memory SQLite) is 20 failed / 215 passed; the same 20 fail on the previous commit (named below under "Server suite baseline").
+- **Scheduler:** nine commands in `routes/console.php`, including the hourly `app:expire-unanswered-appointments` and `app:close-stale-visits` (see `ARCHITECTURE.md`).
+
+## Corrections to the build log below (code wins)
+
+| Log says | Code today |
+| --- | --- |
+| Staff can create a walk-in job order directly / from an approved appointment (10-01 note, 10-20 "Appointments, made practical") | **Removed 2026-10-22** (`PLAN-roles-branches.md` R1). `POST /jobs` is `role:store_owner,branch_manager` only; staff `PUT /jobs/{id}` is limited to notes, completion photo and production moves (`StaffJobUpdateGuard`). Staff can still **start a consultation**. |
+| Branch managers write services, designs and packages (2026-09-28 note in the `CLAUDE.md` files) | **View only.** Services/catalog writes are `role:store_owner` again, `StoreServiceRequest::authorize()` is owner-only, and the client's `useCanManageOfferings` is owner-only. |
+| Combo packages: `service_package_id`, `/public/service-packages`, package reviews, "one job order for the whole set" | **Dropped 2026-10-16** (`2026_10_16_300000_drop_combo_packages`). No `ServicePackage` model or routes. A visit with several services makes linked orders (`group_kind = set`). |
+| Only the owner/manager should see money | Now enforced in the API too: plain staff never receive totals, balance, discount, payments, quotation or refunds (`JobOrder::hideMoney()`; `StaffMoneyVisibilityTest`). |
+| Branch isolation was partly in the UI | Audited 2026-10-22: a branch manager/staff is pinned to their branch in jobs, customers' jobs/totals, branches list, walk-in catalog orders, SMS and special hours (`BranchPin`; table in `PLAN-roles-branches.md`). Still shop-wide by design: customer list, measurements, posts, `PUT /stores/{store}`; accounts with no branch are unpinned. |
+| Account creation | `POST /register` always creates a `customer`. Owner/manager create staff with a temporary password (forced change on first login); an email that already has an account is refused (422), never converted; a branch manager counts toward the plan's staff limit. Add Branch can create the branch manager account in one transaction (`/dashboard/branches/new`, `/dashboard/staff/new`). |
+| Role menus | Owner: everything. Branch manager: Home, Appointments, Orders, Customers, Payments, SMS, Services (read), Staffs, Branches (own), Reports. Staff: Home (staff overview), Appointments, Orders, Customers, Services (read), Staffs, Account settings. (`dashboard/layout.tsx` is the source; `PLAN-roles-branches.md` described a narrower staff menu that was not applied.) |
+| Customers can book a *Measurement* | They cannot; public bookings accept `consultation`, `alteration`, `other` only. |
+| Support tickets | Customers can now file their own (`POST /my-tickets`, `store_id` nullable); see the 2026-10-29 section. |
 
 ## Thesis coverage
 
@@ -158,6 +180,7 @@ One table (`support_tickets`) already fed four surfaces: shop dashboard (`/dashb
 
 ## Open work, ranked
 
+0. **Before the next demo / defense rehearsal (2026-10-29):** run the pending migration; do the browser pass nobody has done yet (list at the end of "Measurement display, team-list cards…" below, plus the phone and tablet checks marked "Not browser-checked" in the log); decide whether to fix the 20 known server-test failures or delete the obsolete ones; make the client branch (already in `main`) and the server branch (2 ahead) land in `main` by PR.
 1. **Deployment proof** — Vercel + Railway + Supabase + R2 never run end-to-end. `DEPLOYMENT-RAILWAY-SUPABASE.md` (10-01): code reviewed for Postgres, **not yet run against a real Postgres**. Dry run on a throwaway Supabase project is step 0. *(unverified today — ask the leader whether any of it was done)*
 2. **Durable backups** — `app:backup-database` ✔ exists and is scheduled daily; it only survives redeploys if `BACKUP_DISK` points at R2 and the scheduler is running.
 3. **Admin: system-health panel** — ✅ Built: `GET /api/v1/admin/system-health` (DB latency ping, storage check, backup snapshot, queue errors) + `SystemHealthPanel.tsx` on `/admin`.
@@ -183,7 +206,9 @@ All items below have been corrected across the repository:
 
 **Size warning:** the two `CLAUDE.md` files are ~60 KB (client) and ~46 KB (server) and load into every session. Much of that is dated "mobile re-check" and bug-fix logs that no longer guide future work. Suggested (not done): move those logs into `docs/` and keep `CLAUDE.md` to rules + pointers.
 
-## Job Orders, 2026-10-28 (Joshua + Claude, uncommitted)
+**Still stale in both `CLAUDE.md` files (2026-10-29):** the Branch-Manager-writes-services/catalog/packages paragraphs, the Service Packages / combo sections and the "staff create job orders" bullet (see Corrections above); the pointer to `GroupTasks.md`, `DEADLINE.md`, `TASK_DIVISION.md`; and "deadline: first week of October 2026". A short "superseded" note was added at the top of each; the full cleanup is the size-warning task above.
+
+## Job Orders, 2026-10-28 (Joshua + Claude; now committed on the combined branch)
 
 - **New Job Order is four steps** (Customer → Order details → Sizing → Review & pay); details in [`ORDER-FLOW.md`](ORDER-FLOW.md) (last section). The board's secondary filters sit behind one **Filters** button. The job page keeps Steps · Details · Payments.
 - **Server:** a team list's per-person `qty` now counts everywhere (handover, minimum, split share); `custom_order_data.team_roster.*.qty` is validated; `GET /stores/{store}/service-order/payment-policy` gives the customer's effective payment policy (trusted-customer waiver, no flag exposed); online orders accept `wearer_name`.
@@ -214,7 +239,7 @@ Written up in [`ORDER-FLOW.md`](ORDER-FLOW.md) ("Three decisions on measurements
 
 ### Order unit — decided and coded, migration pending (2026-10-29)
 
-Decision: use the existing `service_pricing` options, each with two separate settings, `covers` and `sold_as` (details and the five separate counts in ORDER-FLOW.md, "Pricing options say what they cover and what one unit is"). **Code is written; the migration `2026_10_29_120000_add_covers_and_sold_as_to_service_pricing` was NOT run on any database and nothing is committed: the leader must run it and review before it is used.** The server suite (which migrates its own in-memory database) is 20 failed / 215 passed, the same 20 by name; `PricingOptionUnitTest` 9. **Not browser-checked:** the service editor rows, the Option step in New Job Order, the customer's option-first Sizing, sets and garments in the chips and the review, and the handover count.
+Decision: use the existing `service_pricing` options, each with two separate settings, `covers` and `sold_as` (details and the five separate counts in ORDER-FLOW.md, "Pricing options say what they cover and what one unit is"). **Code is written and committed on the combined branch (2026-10-29: `git status` clean); the migration `2026_10_29_120000_add_covers_and_sold_as_to_service_pricing` is still reported Pending by `migrate:status` on the dev DB: run it (leader: also on his machine and production) before the pricing screens are used.** The server suite (which migrates its own in-memory database) is 20 failed / 215 passed, the same 20 by name; `PricingOptionUnitTest` 9. **Not browser-checked:** the service editor rows, the Option step in New Job Order, the customer's option-first Sizing, sets and garments in the chips and the review, and the handover count.
 
 ### Full simulation of ordering (2026-10-29)
 
