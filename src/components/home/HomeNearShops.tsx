@@ -21,11 +21,13 @@ interface HomeNearShopsProps {
   readonly onResetDistance: () => void;
   /** Turns Open / Closed back to all shops (the empty "open now" list offers it). */
   readonly onResetStatus?: () => void;
+  /** The filter panel, placed above the list so a change is seen right where it happens. */
+  readonly filterBar?: React.ReactNode;
 }
 
 const box = 'card-soft flex flex-col items-center gap-3 px-6 py-8 text-center';
 
-export default function HomeNearShops({ location, denied, locating, stores, loading, filters, onRequestLocation, onResetDistance, onResetStatus }: HomeNearShopsProps) {
+export default function HomeNearShops({ location, denied, locating, stores, loading, filters, onRequestLocation, onResetDistance, onResetStatus, filterBar }: HomeNearShopsProps) {
   let body: React.ReactNode;
   if (loading) {
     body = (
@@ -84,7 +86,8 @@ export default function HomeNearShops({ location, denied, locating, stores, load
 
   return (
     <section aria-labelledby="home-near-title">
-      <HomeSectionHeader id="home-near-title" title="Near Shops" href="/shops" linkLabel="See All Shops" />
+      <HomeSectionHeader id="home-near-title" title="Shops near you" href="/shops" linkLabel="See all" />
+      {filterBar}
       {body}
     </section>
   );

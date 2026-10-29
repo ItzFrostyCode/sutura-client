@@ -59,6 +59,7 @@ export function useDiscoverData(coords: { lat: number; lng: number } | null, fil
     // The server can only ask "open now"; closed shops are picked out of a longer, nearest-first list.
     if (filters.status === 'open') params.open_now = 1;
     if (filters.minRating) params.min_rating = filters.minRating;
+    if (filters.category) params.garment_category = filters.category;
     if (filters.minPrice) params.min_price = filters.minPrice;
     if (filters.maxPrice) params.max_price = filters.maxPrice;
     // Near Shops are nearest first; only a sort the person picked (not the default) replaces that.
@@ -74,7 +75,7 @@ export function useDiscoverData(coords: { lat: number; lng: number } | null, fil
       .catch(() => { if (!cancelled) setNear([]); })
       .finally(() => { if (!cancelled) setNearLoading(false); });
     return () => { cancelled = true; };
-  }, [lat, lng, filters.radiusKm, filters.status, filters.minRating, filters.minPrice, filters.maxPrice, filters.sortBy]);
+  }, [lat, lng, filters.radiusKm, filters.status, filters.minRating, filters.category, filters.minPrice, filters.maxPrice, filters.sortBy]);
 
   return { featured, featuredLoading, trending, services, servicesLoading, near, nearLoading };
 }
