@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Check, Shirt, ImageOff, Search } from 'lucide-react';
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
 import { getMediaUrl } from '@/lib/media';
-import { designPriceLabel } from '@/lib/designPricing';
 import { BTN_SM, PLAIN_FIELD } from '@/components/shared/plainForm';
 import { LABEL } from './FormStep';
 
@@ -41,7 +40,7 @@ function DesignImage({ item, className }: Readonly<{ item: CatalogItem; classNam
 
 /**
  * The chosen service's own designs. Nothing is chosen until a "Choose" button is pressed: the pictures alone are only
- * a catalog. Optional: no design means the shop makes it to order.
+ * a catalog, with no prices: the price is the service's (see Price). Optional: no design means the shop makes it to order.
  */
 export default function DesignStrip({ designs, selected, serviceName, onPick, onClear, fromBooking, customerPhotos = [] }: Props) {
   const [all, setAll] = useState(false);
@@ -59,7 +58,6 @@ export default function DesignStrip({ designs, selected, serviceName, onPick, on
           <DesignImage item={selected} className="h-20 w-20 rounded-md" />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 text-sm font-semibold text-espresso"><Check size={15} className="shrink-0" /><span className="truncate">{selected.name}</span></span>
-            <span className="block truncate text-sm text-espresso/60">{designPriceLabel(selected.pricing, selected.price)}</span>
           </span>
           <button type="button" onClick={onClear} className={BTN_SM}>Choose another</button>
         </div>
@@ -102,7 +100,6 @@ export default function DesignStrip({ designs, selected, serviceName, onPick, on
             <DesignImage item={d} className="aspect-square w-full rounded-md" />
             <span className="block min-w-0">
               <span className="block truncate text-sm font-semibold text-espresso">{d.name}</span>
-              <span className="block truncate text-xs text-espresso/60">{designPriceLabel(d.pricing, d.price)}</span>
             </span>
             <button type="button" onClick={() => onPick(String(d.id))} className={`${BTN_SM} w-full`}>Choose</button>
           </li>

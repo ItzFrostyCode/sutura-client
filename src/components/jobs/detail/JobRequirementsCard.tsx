@@ -3,11 +3,40 @@
 import React from 'react';
 import { CheckCircle2, Circle, ListChecks, MinusCircle } from 'lucide-react';
 import { Job } from '../jobTypes';
+import type { RosterMember } from '../form/types';
+import { customParts, hasAllSizes } from '../form/rosterHelpers';
+import { jobGarments, jobSoldAsSet, orderedLabel } from '@/lib/orderSize';
+import { garmentsLabel, optionLine, type Covers, type SoldAs } from '@/lib/orderUnits';
 import { measurementLabel, paymentPolicyLabel } from '../requirements';
 import OrderRulesButton from './OrderRulesButton';
 import SectionHeader from '../ui/SectionHeader';
 
 interface Row { label: string; value: string; state: 'done' | 'todo' | 'na'; }
+
+/**
+ * What was actually recorded, so a standard size is never mistaken for body measurements (or for "not required"):
+ * a team counts its people with a size, a one-wearer order says standard size or measured profile.
+ */
+function sizing(job: Job, rule: string): { value: string; state: Row['state'] } {
+  const cod = job.custom_order_data ?? {};
+  const roster = Array.isArray(cod.team_roster) ? (cod.team_roster as Record<string, unknown>[]) : [];
+  if (roster.length > 0) {
+    const asPerson = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'string' ? v : ''])) as RosterMember;
+    const custom = roster.filter((r) => customParts(asPerson(r as Record<string, unknown>)).length > 0);
+    const unmeasured = custom.filter((r) => !String(r.measurement_id ?? '').trim() && !String(r.fit ?? '').trim()).length;
+    const unsized = roster.filter((r) => !hasAllSizes(asPerson(r as Record<string, unknown>))).length;
+    const open = unsized + unmeasured;
+    const parts = [`${roster.length - unsized} of ${roster.length} people sized`];
+    if (custom.length > 0) parts.push(`${custom.length - unmeasured} of ${custom.length} Custom Fit measured`);
+    return { value: parts.join(' · '), state: open > 0 ? 'todo' : 'done' };
+  }
+  if (job.measurement) return { value: `Body measurements · ${job.measurement.profile_name}`, state: 'done' };
+  if (typeof cod.standard_size === 'string' && cod.standard_size) return { value: `Standard size ${cod.standard_size} · no body measurements`, state: 'done' };
+  if (cod.size_breakdown && typeof cod.size_breakdown === 'object') return { value: 'Standard sizes per piece · no body measurements', state: 'done' };
+  return rule === 'none'
+    ? { value: 'Nothing recorded · the service does not ask for it', state: 'na' }
+    : { value: `${measurementLabel(rule as Parameters<typeof measurementLabel>[0])} · not recorded yet`, state: 'todo' };
+}
 
 // What this order needs, from the requirements snapshotted when it was created.
 export default function JobRequirementsCard({ job, paymentMet, onChanged }: Readonly<{ job: Job; paymentMet: boolean; onChanged?: () => Promise<void> | void }>) {
@@ -15,12 +44,20 @@ export default function JobRequirementsCard({ job, paymentMet, onChanged }: Read
   const fitting = job.fitting_requirement ?? 'optional';
   const policy = job.payment_policy ?? 'deposit';
 
+  // The option the order was made from, in the same words as where it is set (service editor) and chosen (the order forms).
+  const cod = job.custom_order_data ?? {};
+  const optionName = typeof cod.option === 'string' ? cod.option : '';
+  const optionFacts = optionLine({ covers: (cod.option_covers as Covers | undefined) ?? null, sold_as: (cod.option_sold_as as SoldAs | undefined) ?? null });
+  const optionRows: Row[] = optionName || optionFacts
+    ? [
+      { label: 'Option', value: [optionName, optionFacts].filter(Boolean).join(' · '), state: 'done' },
+      { label: 'Ordered', value: `${orderedLabel(job)}${jobSoldAsSet(job) ? ` · ${garmentsLabel(jobGarments(job))}` : ''}`, state: 'done' },
+    ]
+    : [];
+
   const rows: Row[] = [
-    {
-      label: 'Measurements',
-      value: measurement === 'none' ? 'Not required' : job.measurement ? `${measurementLabel(measurement)} · on file` : `${measurementLabel(measurement)} · not recorded yet`,
-      state: measurement === 'none' ? 'na' : job.measurement ? 'done' : 'todo',
-    },
+    ...optionRows,
+    { label: 'Sizing', ...sizing(job, measurement) },
     {
       label: 'Final fitting',
       value: fitting === 'none' ? 'No fitting' : fitting === 'required' ? 'Required before pick-up' : 'Optional',

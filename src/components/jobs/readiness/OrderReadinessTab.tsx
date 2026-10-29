@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import TailorsCard from './TailorsCard';
 import ClientCard from './ClientCard';
+import AboutOrder from './AboutOrder';
 import PreStepsSection from './PreStepsSection';
 import WorkSection from './WorkSection';
 import QuotationCard from './QuotationCard';
@@ -83,6 +84,7 @@ export default function OrderReadinessTab({ storeId, jobId, job, currentTotal, o
   const closeModal = () => { setOpen(null); rd.clearBlockers(); };
   const pieces = { job, open: piecesOpen, setOpen: setPiecesOpen, onGoToDetails };
   const making = makingProgress(job, column);
+  const tailorNames = (data.assignees ?? []).map((a) => a.name).filter(Boolean).join(', ');
   // The column the order is in is open; every earlier column folds to its header and "x of y done". All folding is decided here.
   const preSteps = <PreStepsSection data={data} api={rd} folded={column !== 'request'} readOnly={column === 'done'} onOpen={setOpen} onGoToFinancials={onGoToFinancials} pieces={pieces} />;
   const earlier = column === 'being_made' || column === 'hand_over' || column === 'done';
@@ -112,11 +114,13 @@ export default function OrderReadinessTab({ storeId, jobId, job, currentTotal, o
         {column !== 'request' && column !== 'closed' && preSteps}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {started && <TailorsCard data={data} closed={closed} onOpen={setOpen} />}
-        {started && aside}
-        <ClientCard job={job} />
-      </div>
+      <AboutOrder summary={[started ? (tailorNames ? `Tailors: ${tailorNames}` : 'No tailor yet') : '', `Client: ${job.customer?.name || 'Walk-in Customer'}`].filter(Boolean).join(' · ')}>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {started && <TailorsCard data={data} closed={closed} onOpen={setOpen} />}
+          {started && aside}
+          <ClientCard job={job} />
+        </div>
+      </AboutOrder>
 
       {data.permissions.can_manage_refund && <RefundCard storeId={storeId} jobId={jobId} data={data} onRecorded={() => { void rd.reload(); onChanged(); }} />}
 

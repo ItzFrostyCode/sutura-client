@@ -45,6 +45,8 @@ export interface Store {
   store_code?: string;
   /** The unit the shop measures in (inches or centimeters). */
   default_measurement_unit?: 'in' | 'cm';
+  /** Whether orders need body measurements when neither the design nor its service says. */
+  default_measurement_requirement?: 'none' | 'existing' | 'shop';
   status: string;
   rejection_reason?: string | null;
   business_type?: string;

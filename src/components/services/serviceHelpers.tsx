@@ -5,11 +5,17 @@ import { categoryOfGarment } from '@/lib/garmentTaxonomy';
 
 export type { SizeChartRow };
 
+/** What an option covers, and what one ordered unit of it is. Both are separate settings; null = not configured (as before: no coverage implied, one unit = one garment). */
+export type OptionCovers = 'top' | 'bottom' | 'both';
+export type OptionSoldAs = 'garment' | 'set';
+
 export interface ServicePricing {
   id: number;
   service_id: number;
   label: string;
   amount: string;
+  covers?: OptionCovers | null;
+  sold_as?: OptionSoldAs | null;
 }
 
 export interface ServiceField {
@@ -126,6 +132,9 @@ export interface Service extends RequirementFields {
 export interface PricingTierInput {
   label: string;
   amount: string;
+  /** '' = not configured. */
+  covers: OptionCovers | '';
+  sold_as: OptionSoldAs | '';
 }
 
 /**
@@ -138,9 +147,11 @@ export function deriveTiersFromService(service: Service): PricingTierInput[] {
     return service.pricing.map(p => ({
       label: p.label,
       amount: p.amount && Number(p.amount) > 0 ? String(Number(p.amount)) : '',
+      covers: p.covers ?? '',
+      sold_as: p.sold_as ?? '',
     }));
   }
-  return (service.tags || []).map(tag => ({ label: tag, amount: '' }));
+  return (service.tags || []).map(tag => ({ label: tag, amount: '', covers: '' as const, sold_as: '' as const }));
 }
 
 export const SERVICE_CATEGORIES = [

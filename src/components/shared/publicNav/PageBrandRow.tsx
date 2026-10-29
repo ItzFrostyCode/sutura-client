@@ -37,7 +37,7 @@ export default function PageBrandRow({ standalone = false, className = '' }: Pag
       {notificationsHref === '/notifications' ? (
         <NotificationsPopover unreadCount={unreadCount} title={notificationsTitle} />
       ) : (
-        <Link href={notificationsHref} aria-label={notificationsTitle} title={notificationsTitle} className="relative flex h-8 w-8 items-center justify-center rounded-full text-ink-muted before:absolute before:-inset-2 hover:bg-sunken hover:text-ink">
+        <Link href={notificationsHref} aria-label={notificationsTitle} title={notificationsTitle} className="relative flex h-8 w-8 items-center justify-center rounded-full text-espresso before:absolute before:-inset-2 hover:bg-sunken">
           <Bell size={22} />
         </Link>
       )}
@@ -45,7 +45,7 @@ export default function PageBrandRow({ standalone = false, className = '' }: Pag
         href={track.href}
         aria-label={track.title}
         title={track.title}
-        className="relative -mr-1 flex h-8 w-8 items-center justify-center rounded-full text-ink-muted transition-colors before:absolute before:-inset-2 hover:bg-sunken hover:text-ink"
+        className="relative -mr-1 flex h-8 w-8 items-center justify-center rounded-full text-espresso transition-colors before:absolute before:-inset-2 hover:bg-sunken"
       >
         <Package size={22} />
       </Link>

@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { PageMeta } from '../useAdminList';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 export function StatCard({ label, value, hint }: { readonly label: string; readonly value: React.ReactNode; readonly hint?: string }) {
   return (
@@ -42,13 +43,13 @@ interface TabOption { value: string; label: string; count?: number }
 
 export function FilterTabs({ options, value, onChange }: { readonly options: TabOption[]; readonly value: string; readonly onChange: (v: string) => void }) {
   return (
-    <div className="flex overflow-x-auto hide-scrollbar" role="tablist">
+    <ScrollNav role="tablist" className="flex" activeSelector='[aria-selected="true"]'>
       {options.map((o) => (
         <button key={o.value} type="button" role="tab" aria-selected={value === o.value} onClick={() => onChange(o.value)}
           className={`min-h-12 shrink-0 whitespace-nowrap border-b-2 px-4 text-sm transition-colors ${value === o.value ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-muted hover:text-ink'}`}>
           {o.label}{o.count !== undefined && <span className="ml-1.5 text-ink-faint">{o.count}</span>}
         </button>
       ))}
-    </div>
+    </ScrollNav>
   );
 }

@@ -33,12 +33,12 @@ export default function TrustedCustomerRow({ customerId, trusted, canChange, onC
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 border-t border-line pt-4">
+    <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-start gap-3">
         <ShieldCheck size={18} className={`mt-0.5 shrink-0 ${trusted ? 'text-sage' : 'text-ink-faint'}`} />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink">Trusted customer</p>
-          <p className="text-xs text-ink-muted">New orders start with no deposit. The full balance is still paid before the garments are handed over.</p>
+          <p className="text-xs font-bold text-ink">Trusted customer</p>
+          <p className="text-[11px] text-ink-muted leading-snug mt-0.5">New orders start with no deposit. The full balance is still paid before the garments are handed over.</p>
         </div>
       </div>
       {canChange ? (

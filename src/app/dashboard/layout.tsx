@@ -196,8 +196,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     pathname === path ||
     (path !== '/dashboard' && pathname.startsWith(path)) ||
     // Designs live inside Services now: their pages keep Services lit in the menu.
-    (path === '/dashboard/services' && pathname.startsWith('/dashboard/catalog')) ||
-    (path === '/dashboard/customers' && pathname.startsWith('/dashboard/measurements'));
+    (path === '/dashboard/services' && pathname.startsWith('/dashboard/catalog'));
 
   /** One nav item, used by both the desktop rail and the mobile drawer.
    *  Collapsed mode drops the label and shows a tooltip instead — the

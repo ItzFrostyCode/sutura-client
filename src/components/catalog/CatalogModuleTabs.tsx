@@ -3,6 +3,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 // Unified module tabs: Services, Designs, and Analytics
 export type CatalogTabId = 'services' | 'catalog' | 'analytics';
@@ -40,10 +41,8 @@ export default function CatalogModuleTabs({
   );
 
   return (
-    <nav
-      className={`flex items-center gap-3 sm:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap -mb-px ${className}`}
-      aria-label="Catalog Showcase Navigation"
-    >
+    <nav className={`-mb-px min-w-0 ${className}`} aria-label="Catalog Showcase Navigation">
+      <ScrollNav className="flex items-center gap-3 sm:gap-6 whitespace-nowrap">
       {CATALOG_TABS.map(tab => {
         const active = tab.id === activeId;
         const Icon = tab.icon;
@@ -74,6 +73,7 @@ export default function CatalogModuleTabs({
           </a>
         );
       })}
+    </ScrollNav>
     </nav>
   );
 }

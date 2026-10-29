@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Plus, Edit3, Check, Trash2 } from 'lucide-react';
-import { BTN_PRIMARY, BTN_SM, PLAIN_FIELD } from '@/components/shared/plainForm';
+import { BTN_ICON, BTN_PRIMARY, BTN_SM, PLAIN_FIELD } from '@/components/shared/plainForm';
+import MeasureInput from './MeasureInput';
 import { confirmDialog } from '@/store/useConfirmStore';
 
 interface AreaGridProps {
@@ -15,7 +16,7 @@ interface AreaGridProps {
   readonly onAddColumn: (columnName: string) => void;
   readonly onRemoveColumn: (columnName: string) => void;
   readonly onRenameColumn?: (oldName: string, newName: string) => void;
-  /** Inches (default) or centimeters: only the label beside the box. */
+  /** The unit the record is kept in; each field can still be set to the other one. */
   readonly unit?: 'in' | 'cm';
 }
 
@@ -86,7 +87,7 @@ export default function AreaGrid({
             </form>
           )}
           <button type="button" onClick={() => setIsEditing(!isEditing)} className={BTN_SM}>
-            {isEditing ? <><Check size={14} />Done editing</> : <><Edit3 size={14} />Edit fields</>}
+            {isEditing ? <><Check size={14} />Done editing</> : <><Edit3 size={14} />Rename or remove fields</>}
           </button>
         </div>
       </div>
@@ -102,23 +103,20 @@ export default function AreaGrid({
                 {renaming ? (
                   <div className="mb-1.5 flex items-center gap-1">
                     <input type="text" value={renamedValue} onChange={(e) => setRenamedValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSaveRename(col); if (e.key === 'Escape') setEditingColName(null); }} className={`${PLAIN_FIELD} h-9`} autoFocus />
-                    <button type="button" onClick={() => handleSaveRename(col)} aria-label="Save the new name" className={BTN_SM + ' w-9 px-0'}><Check size={14} /></button>
+                    <button type="button" onClick={() => handleSaveRename(col)} aria-label="Save the new name" className={BTN_ICON}><Check size={14} /></button>
                   </div>
                 ) : (
                   <div className="mb-1.5 flex items-center justify-between gap-1">
                     <label htmlFor={`m-${area}-${col}`} className="truncate text-sm font-medium text-espresso" title={col}>{col}</label>
                     {isEditing && (
                       <span className="flex shrink-0 gap-1">
-                        {onRenameColumn && <button type="button" onClick={() => handleStartRename(col)} aria-label={`Rename ${col}`} className={BTN_SM + ' w-9 px-0'}><Edit3 size={13} /></button>}
-                        <button type="button" onClick={() => handleConfirmRemove(col)} aria-label={`Remove ${col}`} className={BTN_SM + ' w-9 px-0'}><Trash2 size={13} /></button>
+                        {onRenameColumn && <button type="button" onClick={() => handleStartRename(col)} aria-label={`Rename ${col}`} title="Rename" className={BTN_ICON}><Edit3 size={14} /></button>}
+                        <button type="button" onClick={() => handleConfirmRemove(col)} aria-label={`Remove ${col}`} title="Remove" className={BTN_ICON}><Trash2 size={14} /></button>
                       </span>
                     )}
                   </div>
                 )}
-                <div className="relative">
-                  <input id={`m-${area}-${col}`} type="text" inputMode="decimal" value={metrics[col] ?? ''} onChange={(e) => onMetricChange(col, e.target.value)} placeholder="0.0" className={`${PLAIN_FIELD} pr-9 text-right font-mono`} />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-espresso/60">{unit}</span>
-                </div>
+                <MeasureInput id={`m-${area}-${col}`} label={col} value={metrics[col] ?? ''} recordUnit={unit} onChange={(v) => onMetricChange(col, v)} />
               </div>
             );
           })}

@@ -1,5 +1,6 @@
 'use client';
 
+import { jobPieces } from '@/lib/orderSize';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import api from '@/lib/axios';
@@ -198,8 +199,8 @@ export default function PrintWorkTicketPage() {
                 {job.garment_category && (
                   <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Garment</td><td className="pb-1">{GARMENT_CATEGORY_LABELS[job.garment_category] ?? job.garment_category}</td></tr>
                 )}
-                {(job.quantity ?? 1) > 1 && (
-                  <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Quantity</td><td className="pb-1 font-black">{job.quantity} pcs</td></tr>
+                {jobPieces(job) > 1 && (
+                  <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Quantity</td><td className="pb-1 font-black">{jobPieces(job)} pcs</td></tr>
                 )}
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Channel</td><td className="pb-1 capitalize">{job.intake_channel?.replace('_', '-') ?? '—'}</td></tr>
                 <tr><td className="text-gray-600 pr-3 pb-1 font-medium">Date In</td><td className="pb-1">{createdFmt}</td></tr>

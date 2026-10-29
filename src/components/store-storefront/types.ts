@@ -50,8 +50,16 @@ export interface PublicService {
   // Per-item/per-job-type pricing (e.g. Alteration -> Pants Hemming ₱150,
   // Dress Alteration ₱300) — always present alongside base_price, never a
   // replacement for it; base_price stays the "starting at" headline figure.
-  pricing?: { id: number; label: string; amount: string | number }[];
+  /** Options of the service. `covers` and `sold_as` are what the option covers and what one ordered unit is (null = not configured). */
+  pricing?: { id: number; label: string; amount: string | number; covers?: 'top' | 'bottom' | 'both' | null; sold_as?: 'garment' | 'set' | null }[];
   min_order_qty?: number | null;
+  /** What an online order asks of the customer: service setting, else the shop default. */
+  order_requirements?: {
+    measurement_requirement: 'none' | 'existing' | 'shop';
+    fitting_requirement: 'none' | 'optional' | 'required';
+    payment_policy: 'none' | 'full' | 'deposit' | 'custom';
+    payment_policy_percent: number;
+  };
   /** Garments it works on (garmentTaxonomy slugs); empty on alterations / customization = any garment. */
   garment_types?: string[] | null;
   /** Tasks it offers (capability slugs of its service group). */

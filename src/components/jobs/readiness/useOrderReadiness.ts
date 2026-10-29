@@ -70,6 +70,8 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
     // Flow 2 -- set-up
     acceptRequest: () => post('accept', 'accept-request'),
     approveSpecs: () => post('specs', 'specs/approve'),
+    /** Takes back a mis-clicked approval / verification of Details & sizes. */
+    reopenDetails: () => run('specs', () => api.delete(`${base}/details-approval`), { message: 'Details & sizes reopened.' }),
     verifyMeasurements: () => post('measurements', 'measurements/verify'),
     assessCustomerItems: (assessment: 'suitable' | 'not_suitable') => post('customer_items', 'customer-items', { assessment }),
     setMaterials: (state: 'ready' | 'waiting', note?: string) => post('materials', 'materials', { state, note: note || null }),

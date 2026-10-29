@@ -16,6 +16,8 @@ import SplitBatchFields from './SplitBatchFields';
 const peopleOf = (job: Job): Person[] =>
   ((job.custom_order_data?.team_roster as Record<string, unknown>[] | undefined) ?? []).map((r, index) => ({
     index, name: String(r.name ?? r.player_name ?? ''), detail: [r.style, r.size].filter(Boolean).join(' · '),
+    // One wearer can need several garments: the price follows the pieces, not the heads.
+    pieces: Math.max(1, Number.parseInt(String(r.qty ?? '1'), 10) || 1),
   }));
 
 /** Split a group order into batches, one per payer. The same design; each batch has its own deposit, due date and tracking code. */

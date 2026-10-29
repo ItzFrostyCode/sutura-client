@@ -15,6 +15,8 @@ export interface CatalogItem {
   pricing?: DesignPricing;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
+  /** This design's own measuring rule; null = follow its service. */
+  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   material: string;
   color?: string;
   fabric_image_url?: string;

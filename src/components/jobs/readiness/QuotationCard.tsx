@@ -56,19 +56,18 @@ export default function QuotationCard({ data, pieces = 1, onEdit }: QuotationCar
         {data.decision?.value === 'changes_requested' && <p className="rounded-xl bg-amber-500/[0.08] px-3.5 py-3 text-[13px] text-amber-800">The customer asked for changes: {data.decision.note || '—'}</p>}
         {data.decision?.valid_until && <p className="text-[13px] text-ink-muted">Price valid until {new Date(data.decision.valid_until).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}.</p>}
 
-        <dl className="space-y-1.5 border-t border-line pt-4">
-          <div className={ROW}><dt className="text-ink-muted">Customer approval</dt><dd className={q?.approved_at ? 'font-medium text-sage' : 'text-ink-muted'}>{q?.approved_at ? (q.approval_channel === 'online' ? 'Approved online' : 'Approved in person') : 'Waiting'}</dd></div>
-          <div className={ROW}>
-            <dt className="text-ink-muted">Deposit</dt>
-            {dep?.met ? <dd className="inline-flex items-center gap-1 font-medium text-sage"><Check size={14} /> Verified</dd> : <dd className="text-danger">Not verified yet</dd>}
-          </div>
-          {money && dep?.required !== undefined && (
-            <>
-              <div className={ROW}><dt className="text-ink-muted">Required / paid</dt><dd>{peso(dep.required)} / {peso(dep.paid)}</dd></div>
-              {(dep.pending_verification ?? 0) > 0 && <div className={ROW}><dt className="text-ink-muted">Waiting for verification</dt><dd className="text-amber-700">{peso(dep.pending_verification)}</dd></div>}
-            </>
-          )}
-        </dl>
+        {/* Whether the customer answered and the deposit came in is told once, by the steps beside this card. Only facts they do not show are here. */}
+        {(q?.approved_at || (money && (dep?.required ?? 0) > 0)) && (
+          <dl className="space-y-1.5 border-t border-line pt-4">
+            {q?.approved_at && <div className={ROW}><dt className="text-ink-muted">Customer approval</dt><dd className="font-medium text-sage">{q.approval_channel === 'online' ? 'Approved online' : 'Approved in person'}</dd></div>}
+            {money && (dep?.required ?? 0) > 0 && (
+              <div className={ROW}>
+                <dt className="text-ink-muted">Deposit</dt>
+                {dep?.met ? <dd className="inline-flex items-center gap-1 font-medium text-sage"><Check size={14} /> {peso(dep.paid)} verified</dd> : <dd>{peso(dep?.paid)} of {peso(dep?.required)}</dd>}
+              </div>
+            )}
+          </dl>
+        )}
         {money && (q?.versions?.length ?? 0) > 1 && (
           <details className="border-t border-line pt-3 text-[13px]">
             <summary className="cursor-pointer font-medium text-ink-body">Earlier prices ({(q?.versions?.length ?? 1) - 1})</summary>

@@ -9,6 +9,7 @@ import { STAGES_REQUIRING_DOWNPAYMENT } from '../jobHelpers';
 import { useShopRole } from '@/hooks/useShopRole';
 import SectionHeader from '../ui/SectionHeader';
 import JobEditMeasurementModal from './JobEditMeasurementModal';
+import { COVERS_LABEL } from '@/lib/orderUnits';
 
 interface JobMeasurementCardProps {
   job: Job;
@@ -119,7 +120,7 @@ export default function JobMeasurementCard({
               <div>
                 <p className="text-xs font-semibold text-amber-900">No measurement profile linked to this order yet</p>
                 <p className="text-xs text-amber-800/80 mt-0.5">
-                  Tailors require body measurements or sizing before pattern making and cutting can begin.
+                  Needed before pattern making and cutting can begin. It can be added or changed here until production starts.
                 </p>
               </div>
             </div>
@@ -135,7 +136,7 @@ export default function JobMeasurementCard({
               </button>
             ) : isSnapshotLocked ? (
               <span className="text-xs font-semibold text-ink-muted flex items-center gap-1">
-                <Lock size={12} /> Production Locked
+                <Lock size={12} /> Shown only: the order is being made
               </span>
             ) : null}
           </div>
@@ -185,7 +186,7 @@ export default function JobMeasurementCard({
                 </span>
               )}
               <span className="text-[10px] font-semibold text-ink-muted bg-sunken px-2 py-0.5 rounded-full capitalize">
-                {areaChoice === 'both' ? 'Top & Bottom' : `${areaChoice} Only`}
+                {COVERS_LABEL[areaChoice as keyof typeof COVERS_LABEL] ?? COVERS_LABEL.both}
               </span>
             </>
           )}

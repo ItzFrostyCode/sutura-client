@@ -24,3 +24,18 @@ export function convertValue(value: unknown, from: MeasureUnit, to: MeasureUnit)
   const out = from === 'in' ? n * 2.54 : n / 2.54;
   return String(Math.round(out * 10) / 10);
 }
+
+/**
+ * One field can be in its own unit: a value in the record's unit is plain ("38"), a value in the other unit carries it ("96.5 cm"),
+ * so nothing is converted or rounded and every screen that shows a measurement still reads it right.
+ */
+export function splitMeasure(value: unknown, recordUnit: MeasureUnit): { number: string; unit: MeasureUnit; explicit: boolean } {
+  const m = /^\s*(.*?)\s*(in|cm)?\s*$/i.exec(String(value ?? ''));
+  const unit = m?.[2]?.toLowerCase() as MeasureUnit | undefined;
+  return { number: m?.[1] ?? '', unit: unit ?? recordUnit, explicit: Boolean(unit) };
+}
+
+export function joinMeasure(number: string, unit: MeasureUnit, recordUnit: MeasureUnit): string {
+  const n = number.trim();
+  return n === '' || unit === recordUnit ? n : `${n} ${unit}`;
+}

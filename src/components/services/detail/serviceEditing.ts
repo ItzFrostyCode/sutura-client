@@ -3,6 +3,7 @@ import { canonicalGarment } from '@/lib/garmentTaxonomy';
 import { emptySizeChart, type SizeChartValue } from '@/components/shared/SizeChartEditor';
 import { emptyRequirementsDraft, requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 import type { PublicService } from '@/components/store-storefront/types';
+import { SET_NEEDS_BOTH } from '@/lib/orderUnits';
 
 // 'type' / 'garments' / 'capabilities' are the create steps for "what you do"; the detail page edits all three
 // together as 'work'. 'spec' is the prices & add-ons box (and where it shows on the shop page).
@@ -97,7 +98,7 @@ const ANY_GARMENT_GROUPS = ['alterations_repairs', 'garment_customization'];
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
   service_category: '', service_types: [], garment_types: [], capabilities: [],
-  tiers: [{ label: '', amount: '' }],
+  tiers: [{ label: '', amount: '', covers: '', sold_as: '' }],
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
 
@@ -125,6 +126,7 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
     const hasTiers = d.tiers.some((t) => t.label.trim() !== '');
     const halfFilled = d.tiers.some((t) => t.amount.trim() !== '' && t.label.trim() === '');
     if (halfFilled) return 'Enter a label for every price or add-on you entered.';
+    if (d.tiers.some((t) => t.sold_as === 'set' && t.covers !== 'both')) return SET_NEEDS_BOTH;
     if (!d.base_price.trim() && !hasTiers) {
       return 'Add at least one price or add-on, or enter a starting price under Basics.';
     }
@@ -149,6 +151,8 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     .map((t) => ({
       label: t.label.trim(),
       amount: t.amount.trim() === '' || isNaN(Number(t.amount)) ? null : Number.parseFloat(t.amount),
+      covers: t.covers || null,
+      sold_as: t.sold_as || null,
     }));
 
   const validRows = (draft.sizeChart?.rows ?? []).filter((r) => r.size && r.size.trim() !== '');
