@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Shirt, ShoppingBag, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import React from 'react';
+import { Shirt, ShoppingBag, Star } from 'lucide-react';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 export type CatalogDetailTab = 'overview' | 'orders' | 'reviews';
 
@@ -27,49 +28,9 @@ export default function CatalogDetailTabsNav({
     { id: 'reviews' as const, label: `Ratings (${reviewsCount})`, icon: Star },
   ];
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  // Arrows only exist while there is more strip to reveal in that direction:
-  // ">" disappears once the last tab is in view, "<" appears after scrolling.
-  const updateArrows = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    updateArrows();
-    const ro = new ResizeObserver(updateArrows);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [updateArrows, ordersCount, reviewsCount]);
-
-  const scrollByDir = (dir: 1 | -1) => {
-    const el = scrollRef.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.7, behavior: 'smooth' });
-  };
-
-  const arrowClass =
-    'absolute top-0 z-10 w-9 h-10 bg-white border border-line text-ink flex items-center justify-center shadow-sm hover:bg-sunken cursor-pointer';
-
   return (
-    <div className="relative border-b border-line pb-2">
-      {canScrollLeft && (
-        <button type="button" onClick={() => scrollByDir(-1)} aria-label="Scroll tabs left" className={`${arrowClass} left-0.5`}>
-          <ChevronLeft size={18} />
-        </button>
-      )}
-      {canScrollRight && (
-        <button type="button" onClick={() => scrollByDir(1)} aria-label="Scroll tabs right" className={`${arrowClass} right-0.5`}>
-          <ChevronRight size={18} />
-        </button>
-      )}
-      <div ref={scrollRef} onScroll={updateArrows} className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+    <div className="border-b border-line pb-2">
+      <ScrollNav className="flex items-center gap-2">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -89,7 +50,7 @@ export default function CatalogDetailTabsNav({
           </button>
         );
       })}
-      </div>
+      </ScrollNav>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
 import Link from 'next/link';
 import { Package, TrendingUp } from 'lucide-react';
 import { AnalyticsData } from './dashboardHelpers';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface DashboardChartsProps {
   readonly data: AnalyticsData | null;
@@ -209,7 +210,7 @@ export default function DashboardCharts({
               wider than a real phone screen, so without a scroll wrapper
               "All Time" was getting clipped off the edge instead of just
               wrapping or scrolling into view. */}
-          <div className="flex gap-1 bg-sunken p-1 rounded-xl self-start max-w-full overflow-x-auto hide-scrollbar">
+          <ScrollNav wrapperClassName="self-start max-w-full" className="flex gap-1 bg-sunken p-1 rounded-xl">
             {PERIODS.map(p => (
               <button
                 key={p.id}
@@ -224,7 +225,7 @@ export default function DashboardCharts({
                 {p.label}
               </button>
             ))}
-          </div>
+          </ScrollNav>
         </div>
 
         {/* Chart */}

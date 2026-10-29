@@ -5,6 +5,7 @@ import { getErrorMessage } from '@/lib/apiError';
 import { useToast } from '@/context/ToastContext';
 import { isWalkInEmail } from '@/components/customers/customerHelpers';
 import type { Appointment } from '@/components/appointments/appointmentHelpers';
+import { clearJobDraft } from './wizard/jobDraft';
 import { jobProblem, submitJobOrder, type JobSubmission } from './submitJobOrder';
 
 /** The shop's usual minimum was not reached: say so, and let the owner or a branch manager go on if they agreed it. */
@@ -32,6 +33,7 @@ export function useJobSubmit({ storeId, submission, appointment }: Readonly<{ st
         await api.put(`/stores/${storeId}/appointments/${appointmentId}/customer`, { customer_id: formData.customer_id });
       }
       const id = await submitJobOrder({ ...submission, confirmBelowMinimum }, () => toast.error('The order was created, but its staff could not be saved. Assign them from Order Steps.'));
+      clearJobDraft(storeId);
       // Land on the new order (its Order Steps tab) so the next step is right there.
       router.push(id ? `/dashboard/jobs/${id}` : '/dashboard/jobs');
     } catch (err) {

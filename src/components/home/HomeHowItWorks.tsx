@@ -6,9 +6,9 @@ import { HOW_IT_WORKS } from './homeTypes';
 // pickup), not a generic icon list. Mirrors the "5 Easy Steps" editorial
 // rhythm without inventing or compressing away any step the approved
 // diagrams call out.
-export default function HomeHowItWorks() {
+export default function HomeHowItWorks({ embedded = false }: { readonly embedded?: boolean }) {
   return (
-    <section aria-labelledby="how-it-works-title" className="max-w-7xl mx-auto mobile-screen-margins mt-10 sm:mt-14">
+    <section aria-labelledby="how-it-works-title" className={embedded ? '' : 'max-w-7xl mx-auto mobile-screen-margins mt-10 sm:mt-14'}>
       <div className="text-center mb-6 sm:mb-8">
         <p className="mobile-overline sm:tablet-overline text-taupe mb-1">How SUTURA Works</p>
         <h2 id="how-it-works-title" className="mobile-h2 sm:tablet-h2 text-ink">

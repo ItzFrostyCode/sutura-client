@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Loader2, MessageSquareText } from 'lucide-react';
 import Modal from '@/components/Modal';
 import DesignSourceField from '@/components/shared/DesignSourceField';
+import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
 import type { DesignSource } from '@/lib/designSource';
-import { BTN, BTN_PRIMARY } from '@/components/shared/plainForm';
 import CustomerPicker from './CustomerPicker';
 import type { CustomerData, ServiceData } from './appointmentHelpers';
 
@@ -34,6 +34,7 @@ export default function ConsultationStartModal({ isOpen, onClose, customers, ser
   const [existing, setExisting] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<Gender | ''>('male');
   const [serviceId, setServiceId] = useState('');
   const [people, setPeople] = useState('');
   const [pieces, setPieces] = useState('');
@@ -46,6 +47,7 @@ export default function ConsultationStartModal({ isOpen, onClose, customers, ser
       customer_id: existing ? customerId || undefined : undefined,
       walk_in_name: existing ? undefined : name.trim(),
       walk_in_phone: existing ? undefined : phone.trim(),
+      walk_in_gender: existing ? undefined : gender || undefined,
       kind: serviceId ? 'service' : 'shop',
       service_id: serviceId || undefined,
       appointment_type: 'consultation',
@@ -72,11 +74,22 @@ export default function ConsultationStartModal({ isOpen, onClose, customers, ser
       <form id="consult-form" onSubmit={submit} className="space-y-5">
         {error && <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
         <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-[15px] font-semibold text-ink">Who is the customer?</h3>
-            <div role="group" aria-label="New or existing customer" className="inline-flex gap-2">
-              <button type="button" aria-pressed={!existing} onClick={() => setExisting(false)} className={!existing ? BTN_PRIMARY : BTN}>New</button>
-              <button type="button" aria-pressed={existing} onClick={() => setExisting(true)} className={existing ? BTN_PRIMARY : BTN}>Already a customer</button>
+            {/* One connected toggle (not two separate buttons): which customer this consultation is for. */}
+            <div role="group" aria-label="New or existing customer" className="inline-flex shrink-0 items-center gap-0.5 rounded-xl border border-espresso/[0.08] bg-espresso/[0.05] p-1">
+              <button
+                type="button"
+                aria-pressed={!existing}
+                onClick={() => setExisting(false)}
+                className={`flex h-9 cursor-pointer items-center justify-center rounded-lg px-3.5 text-[13px] font-medium transition-colors ${!existing ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+              >New</button>
+              <button
+                type="button"
+                aria-pressed={existing}
+                onClick={() => setExisting(true)}
+                className={`flex h-9 cursor-pointer items-center justify-center rounded-lg px-3.5 text-[13px] font-medium transition-colors ${existing ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+              >Already a Customer</button>
             </div>
           </div>
           {existing ? (
@@ -91,30 +104,31 @@ export default function ConsultationStartModal({ isOpen, onClose, customers, ser
                 <label htmlFor="walk_in_phone" className={LABEL}>Mobile number <span className="text-danger">*</span></label>
                 <input id="walk_in_phone" required type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0917 123 4567" maxLength={20} autoComplete="off" className={FIELD} />
               </div>
-              {Number(people) > 0 && Number(pieces) > 0 && Number(pieces) < Number(people) && (
-            <p role="status" className="rounded-lg bg-amber-50 p-3 text-[13px] text-amber-900 sm:col-span-2">Each person gets at least one piece, so this will count as <strong>{people} pieces</strong>, not {pieces}.</p>
-          )}
-          <p className="text-[13px] text-ink-muted sm:col-span-2">If this number is already the shop’s customer, that customer is used and nothing is duplicated.</p>
+              <div className="sm:col-span-2"><GenderPicker value={gender} onChange={setGender} /></div>
+              <p className="text-[13px] text-ink-muted sm:col-span-2">If this number is already the shop’s customer, that customer is used and nothing is duplicated.</p>
             </div>
           )}
         </section>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="consult_service" className={LABEL}>What is it about?</label>
+            <label htmlFor="consult_service" className={LABEL}>What service?</label>
             <select id="consult_service" value={serviceId} onChange={(e) => setServiceId(e.target.value)} className={FIELD}>
-              <option value="">Not sure yet</option>
+              <option value="">No specific service yet</option>
               {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="consult_people" className={LABEL}>People to measure</label>
+            <label htmlFor="consult_people" className={LABEL}>How many people are we measuring?</label>
             <input id="consult_people" type="number" inputMode="numeric" min={1} max={500} value={people} onChange={(e) => setPeople(e.target.value)} placeholder="1" className={FIELD} />
           </div>
           <div>
-            <label htmlFor="consult_pieces" className={LABEL}>Total pieces to make</label>
+            <label htmlFor="consult_pieces" className={LABEL}>How many pieces in total?</label>
             <input id="consult_pieces" type="number" inputMode="numeric" min={1} max={5000} value={pieces} onChange={(e) => setPieces(e.target.value)} placeholder={people || '1'} className={FIELD} />
           </div>
-          <p className="text-[13px] text-ink-muted sm:col-span-2">{'Each person gets their own measurements. Total pieces counts all garments together, and the price follows it.'}</p>
+          <p className="text-[13px] text-ink-muted sm:col-span-2">Each person gets their own measurements. A piece is one garment (a shirt, a pair of pants, a barong). Count every garment across all people into the total pieces — the price follows the total.</p>
+          {Number(people) > 0 && Number(pieces) > 0 && Number(pieces) < Number(people) && (
+            <p role="status" className="rounded-lg bg-amber-50 p-3 text-[13px] text-amber-900 sm:col-span-2">You have {people} people but only {pieces} piece{Number(pieces) > 1 ? 's' : ''}. Each person needs at least one garment, so we’ll count <strong>{people} pieces</strong>.</p>
+          )}
         </div>
         <DesignSourceField source={design.design_source} link={design.design_link} onChange={setDesign} />
         <div>

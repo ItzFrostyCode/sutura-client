@@ -41,7 +41,7 @@ export default function DeliveryPanel({ storeId, data, api, onGoToFinancials }: 
         <SectionHeader
           icon={PackageCheck}
           title={ready ? 'Hand over' : 'From production to handover'}
-          subtitle={ready ? handOverProgress(data) : 'One status for the shop and the customer. Internal tasks and notes stay with the shop.'}
+          subtitle={ready ? handOverProgress(data) : 'Where the order is, until it is handed over.'}
           actions={canQuote ? <button type="button" onClick={() => setChangeOpen(true)} className={BTN_SM}>Customer wants a change</button> : undefined}
         />
       </header>

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 
-export interface Person { index: number; name: string; detail: string }
+export interface Person { index: number; name: string; detail: string; pieces?: number }
 
-/** Where each person goes: 1 = stays in this order, 2+ = a new batch. Amounts start as an equal share and can be typed over. */
+/** Where each person goes: 1 = stays in this order, 2+ = a new batch. Amounts start as an equal share per piece and can be typed over. */
 export function useSplitPlan(people: Person[], total: number, discount: number) {
   const [batchOf, setBatchOf] = useState<Record<number, number>>({});
   const [paidBy, setPaidBy] = useState<Record<number, string>>({});
@@ -15,7 +15,8 @@ export function useSplitPlan(people: Person[], total: number, discount: number) 
     [people, batchOf],
   );
   const members = (b: number) => people.filter((p) => placeOf(p.index) === b);
-  const share = (b: number) => (people.length > 0 ? (total * members(b).length) / people.length : 0);
+  const piecesOf = (list: Person[]) => list.reduce((sum, p) => sum + (p.pieces ?? 1), 0);
+  const share = (b: number) => (people.length > 0 ? (total * piecesOf(members(b))) / piecesOf(people) : 0);
   const priceOf = (b: number) => (price[b] !== undefined ? Number(price[b]) || 0 : Math.round(share(b) * 100) / 100);
   const discountOf = (b: number) => (off[b] !== undefined ? Number(off[b]) || 0 : total > 0 ? Math.round(discount * (priceOf(b) / total) * 100) / 100 : 0);
   const movedTotal = batches.reduce((s, b) => s + priceOf(b), 0);

@@ -10,9 +10,7 @@ export default function DesignAndConsultation({ form }: Readonly<{ form: JobCrea
   const { formData, set } = form;
   return (
     <div className="space-y-4">
-      {form.design ? (
-        <p className="text-sm text-espresso">Design: <strong className="font-semibold">the shop’s design</strong>, {form.design.name}.</p>
-      ) : (
+      {!form.design && (
         <DesignSourceField
           source={formData.design_source === 'shop_design' ? null : formData.design_source} link={formData.design_link} exclude={['shop_design']}
           legend="No shop design is chosen. Whose design is it?"

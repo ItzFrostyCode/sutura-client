@@ -27,6 +27,7 @@ import ServiceDetailBreadcrumb from '@/components/store-service-detail/ServiceDe
 import type { SearchServiceResult } from '@/components/search/types';
 import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
 import { confirmDialog } from '@/store/useConfirmStore';
+import { serviceOrderHref } from '@/lib/serviceOrderHref';
 
 // Dedicated page for a single service — was an in-place swap inside the
 // Store Profile's Service tab (the old ServiceDetailView.tsx component,
@@ -289,6 +290,7 @@ export default function ServiceDetailPage({
   const facebookUrl = getSocialUrl(store.social_links, 'facebook');
   const minQuantity = Math.max(1, Number(service.min_order_qty) || 1);
   const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}&ref_qty=${Math.max(minQuantity, quantity)}&ref_min_qty=${minQuantity}${service.base_price != null ? `&ref_price=${encodeURIComponent(String(service.base_price))}` : ''}${service.image_url ? `&ref_image=${encodeURIComponent(service.image_url)}` : ''}`;
+  const orderHref = serviceOrderHref(storeId, service);
   const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
@@ -521,6 +523,7 @@ export default function ServiceDetailPage({
                 onChange={setQuantity}
               />
               <ServiceInlineActions
+                orderHref={orderHref}
                 bookHref={bookHref}
                 messageHref={messageHref}
               />
@@ -566,6 +569,7 @@ export default function ServiceDetailPage({
       </main>
 
       <ServiceBottomBar
+        orderHref={orderHref}
         bookHref={bookHref}
         messageHref={messageHref}
       />

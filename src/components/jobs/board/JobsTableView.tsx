@@ -1,5 +1,6 @@
 'use client';
 
+import { jobPieces } from '@/lib/orderSize';
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Flame, Store, ShoppingBag, Clock, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react';
@@ -161,7 +162,7 @@ export default function JobsTableView({
                   {/* Quantity */}
                   <td className="px-3 py-3.5 align-middle text-center">
                     <span className="inline-flex items-center justify-center rounded-md bg-sunken px-2 py-0.5 text-xs font-bold text-ink">
-                      {job.quantity ?? 1}
+                      {jobPieces(job)}
                     </span>
                   </td>
 
@@ -306,8 +307,8 @@ export default function JobsTableView({
               <div className="flex items-center justify-between text-xs text-ink-body bg-sunken/40 rounded-lg p-2.5">
                 <div>
                   <span className="font-medium text-ink">{itemName}</span>
-                  {(job.quantity ?? 1) > 1 && (
-                    <span className="ml-1.5 font-bold text-ink-muted">× {job.quantity}</span>
+                  {jobPieces(job) > 1 && (
+                    <span className="ml-1.5 font-bold text-ink-muted">× {jobPieces(job)}</span>
                   )}
                   <p className="text-[11px] text-ink-muted mt-0.5">{note}</p>
                 </div>

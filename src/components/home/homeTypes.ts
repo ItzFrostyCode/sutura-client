@@ -27,6 +27,9 @@ export interface StoreResult {
     service_category?: string | null;
     garment_types?: string[] | null;
     base_price?: number | string | null;
+    sale_price?: number | string | null;
+    estimated_days?: number | null;
+    estimated_days_max?: number | null;
     image_url?: string | null;
     description?: string | null;
     reviews_count?: number;

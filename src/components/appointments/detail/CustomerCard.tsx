@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Link from 'next/link';
 import { Loader2, Pencil } from 'lucide-react';
 import type { Appointment } from '../appointmentHelpers';
 import { appointmentNo, customerLabel, getCustomerInitials, hasName, realEmail } from '../appointmentHelpers';
@@ -58,11 +59,27 @@ export default function CustomerCard({ apt, onSaved }: Readonly<{ apt: Appointme
   return (
     <section className={`${CARD} p-5`}>
       <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sunken text-base font-semibold text-taupe">{getCustomerInitials(customer?.name)}</span>
-        <div className="min-w-0 flex-1">
-          <p className={`truncate text-base font-semibold ${named ? 'text-ink' : 'text-ink-muted'}`}>{customerLabel(customer?.name)}</p>
-          <p className="text-[13px] text-ink-muted">{apt.intake_channel === 'walk_in' ? 'Came to the shop' : 'Booked online'}</p>
-        </div>
+        {customer?.id ? (
+          <Link
+            href={`/dashboard/customers/${customer.id}`}
+            title="View customer profile"
+            className="group flex min-w-0 flex-1 items-center gap-3"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sunken text-base font-semibold text-taupe">{getCustomerInitials(customer?.name)}</span>
+            <div className="min-w-0 flex-1">
+              <p className={`truncate text-base font-semibold ${named ? 'text-ink group-hover:text-taupe' : 'text-ink-muted group-hover:text-ink'} transition-colors`}>{customerLabel(customer?.name)}</p>
+              <p className="text-[13px] text-ink-muted">{apt.intake_channel === 'walk_in' ? 'Came to the shop' : 'Booked online'}</p>
+            </div>
+          </Link>
+        ) : (
+          <>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sunken text-base font-semibold text-taupe">{getCustomerInitials(customer?.name)}</span>
+            <div className="min-w-0 flex-1">
+              <p className={`truncate text-base font-semibold ${named ? 'text-ink' : 'text-ink-muted'}`}>{customerLabel(customer?.name)}</p>
+              <p className="text-[13px] text-ink-muted">{apt.intake_channel === 'walk_in' ? 'Came to the shop' : 'Booked online'}</p>
+            </div>
+          </>
+        )}
         {editable && !editing && (
           <button type="button" onClick={startEdit} aria-label="Edit customer" title="Edit name and number" className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-muted hover:bg-sunken hover:text-ink"><Pencil size={16} /></button>
         )}

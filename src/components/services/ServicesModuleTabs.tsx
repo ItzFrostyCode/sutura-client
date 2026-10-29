@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 export type ServiceTabId = 'services' | 'analytics';
 
@@ -38,10 +39,8 @@ export default function ServicesModuleTabs({
 }: ServicesModuleTabsProps) {
   const visibleTabs = SERVICE_TABS.filter(tab => tab.id !== 'analytics' || isOwnerOrManager);
   return (
-    <nav
-      className={`flex items-center gap-3 sm:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap -mb-px ${className}`}
-      aria-label="Services Catalog Navigation"
-    >
+    <nav className={`-mb-px min-w-0 ${className}`} aria-label="Services Catalog Navigation">
+      <ScrollNav className="flex items-center gap-3 sm:gap-6 whitespace-nowrap">
       {visibleTabs.map(tab => {
         const active = tab.id === activeTab;
         const Icon = tab.icon;
@@ -81,6 +80,7 @@ export default function ServicesModuleTabs({
           </button>
         );
       })}
+    </ScrollNav>
     </nav>
   );
 }

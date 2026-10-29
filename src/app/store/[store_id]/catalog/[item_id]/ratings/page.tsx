@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { ArrowLeft, Star, CheckCircle2, AlertCircle, User as UserIcon } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 interface CatalogItemReview {
   id: number;
@@ -148,7 +149,7 @@ export default function ProductRatingsPage({ params }: Readonly<{ params: Promis
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar mb-4">
+          <ScrollNav wrapperClassName="mb-4" className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setStarFilter(null)}
@@ -170,7 +171,7 @@ export default function ProductRatingsPage({ params }: Readonly<{ params: Promis
                 {n} <Star size={10} fill="currentColor" />
               </button>
             ))}
-          </div>
+          </ScrollNav>
 
           <form onSubmit={handleSubmitReview} className="bg-surface border border-line rounded-none p-3 mb-4">
             <h3 className="text-xs font-semibold text-ink-muted mb-2">Rate this Item</h3>

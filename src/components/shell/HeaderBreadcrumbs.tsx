@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Home, Calendar, CreditCard, Scissors, Users,
-  ShoppingBag, Package, UserCog, LayoutDashboard,
+  Package, UserCog, LayoutDashboard,
   Building2, ScrollText, Settings, ChevronRight,
-  HelpCircle, Star, Ruler, Sparkles, type LucideIcon
+  HelpCircle, Star, type LucideIcon
 } from 'lucide-react';
 
 interface BreadcrumbSegment {
@@ -56,14 +56,14 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     segments.push({ label: 'Payments', href: '/dashboard/payments', icon: CreditCard });
   } else if (pathname.startsWith('/dashboard/jobs') || pathname.startsWith('/dashboard/orders')) {
     segments.push({ label: 'Orders', href: '/dashboard/jobs', icon: Scissors });
-    if (pathname === '/dashboard/jobs/new') {
-      segments.push({ label: 'New Job Order' });
-    } else if (pathname.match(/\/dashboard\/jobs\/\d+/)) {
-      segments.push({ label: 'Job Details' });
-    } else if (pathname.startsWith('/dashboard/orders') || (typeof window !== 'undefined' && window.location.search.includes('tab=showroom_sales'))) {
+    if (pathname.startsWith('/dashboard/orders') || (typeof window !== 'undefined' && window.location.search.includes('tab=showroom_sales'))) {
       segments.push({ label: 'Design Orders' });
     } else {
-      segments.push({ label: 'Custom Jobs' });
+      // Same name as the page's own heading, with the screen you are on after it: Orders > Job Orders > New Job Order.
+      segments.push({ label: 'Job Orders', href: '/dashboard/jobs' });
+      if (pathname === '/dashboard/jobs/new') segments.push({ label: 'New Job Order' });
+      else if (pathname.startsWith('/dashboard/jobs/archived')) segments.push({ label: 'Archived' });
+      else if (pathname.match(/\/dashboard\/jobs\/\d+/)) segments.push({ label: 'Job Details' });
     }
   } else if (pathname.startsWith('/dashboard/customers')) {
     segments.push({ label: 'Client Book', href: '/dashboard/customers', icon: Users });
@@ -106,9 +106,6 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     segments.push({ label: 'Support Desk', href: '/dashboard/support', icon: HelpCircle });
   } else if (pathname.startsWith('/dashboard/reviews')) {
     segments.push({ label: 'Reviews', href: '/dashboard/reviews', icon: Star });
-  } else if (pathname.startsWith('/dashboard/measurements')) {
-    segments.push({ label: 'Client Book', href: '/dashboard/customers', icon: Users });
-    segments.push({ label: 'Measurements', icon: Ruler });
   } else {
     // Fallback for custom dashboard routes
     const slug = pathname.replace('/dashboard/', '').replaceAll('-', ' ');

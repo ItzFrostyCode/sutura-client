@@ -66,7 +66,7 @@ export default function JobDetailHeader({
             <JobHeaderChips job={job} />
           </div>
           <p className="mt-1 text-sm text-ink-muted">
-            Manage lifecycle, specifications, and financials
+            {[job.customer?.name, job.catalog_item?.name ?? job.service?.name].filter(Boolean).join(' · ') || 'Job order'}
             {job.appointment_id && (
               <span className="ml-2">
                 • From consultation{' '}

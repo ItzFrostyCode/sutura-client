@@ -2,26 +2,25 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { BTN, BTN_PRIMARY } from '@/components/shared/plainForm';
 import { useAuthStore } from '@/store/useAuthStore';
-import { garmentLabel, categoryOfGarment, GARMENT_CATEGORIES } from '@/lib/garmentTaxonomy';
 import ApplePage, { AppleBar } from './ui/ApplePage';
 import { useJobCreateForm } from './form/useJobCreateForm';
-import FormStep from './form/FormStep';
-import CustomerStep from './form/CustomerStep';
-import { isWalkInEmail } from '@/components/customers/customerHelpers';
-import WhatStep from './form/WhatStep';
-import { newExtraLine } from './form/ExtraServices';
-import MeasurementSection from './form/MeasurementSection';
-import RosterEditor from './form/RosterEditor';
-import ReferenceNotes from './form/ReferenceNotes';
-import DesignAndConsultation from './form/DesignAndConsultation';
-import ConsultationRecap from './form/ConsultationRecap';
-import AssignStaffSection from './form/AssignStaffSection';
-import PriceStep from './form/PriceStep';
-import { chartFor, peso } from './form/jobFormHelpers';
+import { useJobWizard } from './form/wizard/useJobWizard';
+import WizardProgress from './form/wizard/WizardProgress';
+import WizardFooter from './form/wizard/WizardFooter';
+import StepCustomer from './form/wizard/StepCustomer';
+import StepOrder from './form/wizard/StepOrder';
+import StepSizing from './form/wizard/StepSizing';
+import StepReview from './form/wizard/StepReview';
+import { useJobDraft } from './form/wizard/jobDraft';
+import { extrasTotal } from './form/ExtraServices';
 
+/**
+ * New Job Order in four steps (Bongo's approved flow): Customer → Order details → Sizing → Review & pay.
+ * One step is on screen at a time with a single main button; every step is built from the same sections as before.
+ */
 export default function JobCreateForm() {
   const searchParams = useSearchParams();
   // Arrived from a specific page (e.g. a design's "Tailor this Design")? Back and Cancel return there. Dashboard paths only.
@@ -31,7 +30,8 @@ export default function JobCreateForm() {
   const roles = useAuthStore((s) => s.user?.roles);
   const canCollectMoney = !!roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name));
   const form = useJobCreateForm();
-  const { store, formData, set, service, isBulk, isRepair } = form;
+  const wizard = useJobWizard(form);
+  const draft = useJobDraft(form, wizard);
 
   if (form.loading) {
     return (
@@ -44,96 +44,61 @@ export default function JobCreateForm() {
     );
   }
 
-  const category = categoryOfGarment(formData.garment_type);
-  const jobTerms = [garmentLabel(formData.garment_type) ?? formData.garment_type, category ? GARMENT_CATEGORIES[category].label : '', service?.name ?? ''].filter(Boolean);
-  const placeholderVisit = !!form.appointment && isWalkInEmail(form.appointment.customer?.email);
-  const customerName = form.customers.find((c) => c.id.toString() === formData.customer_id)?.name;
+  const customerName = form.customers.find((c) => c.id.toString() === form.formData.customer_id)?.name;
+  // Enter inside a field goes to the next step; only the last step creates the order.
+  const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+    if (wizard.isLast) return form.handleSubmit(e);
+    e.preventDefault();
+    wizard.next();
+  };
+  const alert = 'mx-auto mt-4 w-full max-w-3xl px-4 sm:px-6';
 
   return (
     <ApplePage plain>
-      <form onSubmit={form.handleSubmit}>
+      <form onSubmit={onSubmit} className="flex min-h-[calc(100dvh-4rem)] flex-col">
         <AppleBar stuck>
-          <Link href={backHref} aria-label="Back" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-espresso/[0.05] hover:text-ink">
+          <Link href={backHref} aria-label="Back to orders" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-espresso/[0.05] hover:text-ink">
             <ArrowLeft size={20} />
           </Link>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-[17px] font-semibold text-ink">New Job Order</h1>
-            {customerName && <p className="truncate text-[13px] text-ink-muted">{customerName}{service ? ` · ${service.name}` : ''}</p>}
+            {customerName && <p className="truncate text-[13px] text-ink-muted">{customerName}{form.service ? ` · ${form.service.name}` : ''}</p>}
           </div>
-          {form.pricing.total > 0 && <p className="hidden text-sm text-ink-muted sm:block">Total <strong className="text-base text-espresso">{peso(form.pricing.total)}</strong></p>}
-          <Link href={backHref} className={BTN}>Cancel</Link>
-          <button type="submit" disabled={form.submitting} className={BTN_PRIMARY}>
-            {form.submitting && <Loader2 size={16} className="animate-spin" />}
-            Create Job Order
-          </button>
         </AppleBar>
 
-        <p className="mx-4 mt-3 text-xs text-ink-muted sm:mx-6">Fields marked <span className="font-semibold text-danger">*</span> are required.</p>
+        <WizardProgress id={wizard.topId} step={wizard.step} reached={wizard.reached} onGo={wizard.go} />
 
-        {form.below && (
-          <div role="alert" className="mx-4 mt-4 flex flex-col gap-3 rounded-lg border border-espresso/30 bg-white px-4 py-3 text-sm text-espresso sm:mx-6 sm:flex-row sm:items-center sm:justify-between">
-            <p>{form.below.message}</p>
-            {form.below.canContinue && (
-              <button type="button" onClick={form.continueAnyway} disabled={form.submitting} className={BTN_PRIMARY}>Continue anyway</button>
-            )}
+        {draft.offer && (
+          <div className={alert}>
+            <div role="status" className="flex flex-col gap-3 rounded-lg border border-espresso/30 bg-white px-4 py-3 text-sm text-espresso sm:flex-row sm:items-center sm:justify-between">
+              <p>You have an unfinished order{draft.customerName ? <> for <strong>{draft.customerName}</strong></> : ''}. Continue where you stopped, or start a new one.</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={draft.startOver} className={BTN}>Start over</button>
+                <button type="button" onClick={draft.resume} className={BTN_PRIMARY}>Continue</button>
+              </div>
+            </div>
           </div>
         )}
-        {(form.error || form.formError) && <div role="alert" className="mx-4 mt-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger sm:mx-6">{form.error || form.formError}</div>}
-
-        <div className="@container">
-        <div className="grid items-start gap-6 p-4 sm:p-6 @[880px]:grid-cols-[minmax(0,1fr)_400px] @[1240px]:grid-cols-[minmax(0,1fr)_440px]">
-          <div className="space-y-6">
-            <FormStep title="Customer">
-              <CustomerStep
-                customers={form.customers} customerId={formData.customer_id} onChange={(id) => set({ customer_id: id })} onAdd={form.addCustomer}
-                locked={form.customerLocked && !placeholderVisit} unnamedVisit={placeholderVisit} appointment={form.appointment} fixed={!!form.appointment && !placeholderVisit} onUnlock={() => form.setCustomerLocked(false)} channel={form.intakeChannel} appointmentId={form.appointmentId}
-              />
-            </FormStep>
-            <FormStep
-              title="What is being made" hint="The service from the booking is already chosen. Pick a design, or add more services: each one becomes its own order."
-              action={<button type="button" onClick={() => form.setExtras((cur) => [...cur, newExtraLine()])} className={BTN}><Plus size={16} />Add service</button>}
-            >
-              <WhatStep form={form} />
-            </FormStep>
-            <MeasurementSection form={form} />
-            {isBulk && service && (
-              <FormStep title="Team" hint="One row per person. Rename, add or remove columns to fit this order.">
-                <RosterEditor
-                  teamName={form.teamName} onTeamName={form.setTeamName} roster={form.roster} onRoster={form.setRoster} newRow={form.blankRow}
-                  minQty={service.min_order_qty} columns={form.rosterColumns} onColumns={form.setRosterColumns} chart={chartFor(form.design, service)}
-                />
-              </FormStep>
-            )}
-            <FormStep title="Design and style" hint="Where the design comes from, and how it should look.">
-              <DesignAndConsultation form={form} />
-            </FormStep>
-            <FormStep title="Photos and notes">
-              <ReferenceNotes
-                storeId={store?.id} images={form.referenceImages} onImages={form.setReferenceImages} link={form.referenceLink}
-                onLink={form.setReferenceLink} notes={formData.notes} onNotes={(v) => set({ notes: v })}
-                photoLabel={isRepair ? 'Photo of the garment as received' : 'Photo of what they want'}
-                sources={{
-                  ...Object.fromEntries((form.design?.images ?? []).map((i) => [i.image_url, 'From the design'])),
-                  ...Object.fromEntries((form.appointment?.reference_images ?? []).map((u) => [u, 'Sent with the booking'])),
-                }}
-              />
-            </FormStep>
+        {form.below && (
+          <div className={alert}>
+            <div role="alert" className="flex flex-col gap-3 rounded-lg border border-espresso/30 bg-white px-4 py-3 text-sm text-espresso sm:flex-row sm:items-center sm:justify-between">
+              <p>{form.below.message}</p>
+              {form.below.canContinue && <button type="button" onClick={form.continueAnyway} disabled={form.submitting} className={BTN_PRIMARY}>Continue anyway</button>}
+            </div>
           </div>
-
-          <aside className="space-y-6">
-            <FormStep title="Price and date">
-              <PriceStep form={form} canCollectMoney={canCollectMoney} />
-            </FormStep>
-            {form.appointment && <ConsultationRecap appointment={form.appointment} />}
-            {canCollectMoney && store && (
-              <FormStep title="Who works on it" hint="They are told right away. Staff with a matching skill are listed first.">
-                <AssignStaffSection storeId={store.id} branchId={form.branchId} assignees={form.assignees} setAssignees={form.setAssignees} jobTerms={jobTerms} />
-              </FormStep>
-            )}
-
-          </aside>
+        )}
+        <div className={`w-full flex-1 px-4 py-4 sm:px-6 sm:py-6 ${wizard.step === 3 ? '' : 'mx-auto max-w-3xl'}`}>
+          {wizard.step === 1 && <StepCustomer form={form} />}
+          {wizard.step === 2 && <StepOrder form={form} canCollectMoney={canCollectMoney} />}
+          {wizard.step === 3 && <StepSizing form={form} />}
+          {wizard.step === 4 && <StepReview form={form} canCollectMoney={canCollectMoney} />}
         </div>
-        </div>
+
+        <WizardFooter
+          step={wizard.step} isLast={wizard.isLast} submitting={form.submitting} total={form.pricing.total} extras={extrasTotal(form)}
+          cancelHref={backHref} onBack={wizard.back} onNext={wizard.next}
+          message={form.error || form.formError || wizard.notice} isError={Boolean(form.error || form.formError)}
+        />
       </form>
     </ApplePage>
   );

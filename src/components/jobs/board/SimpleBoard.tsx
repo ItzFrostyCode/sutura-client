@@ -5,16 +5,10 @@ import type { Job } from '../jobHelpers';
 import { SHOP_STAGES, type ShopStageKey } from '../jobStage';
 import BoardCard from './BoardCard';
 import BoardLane from './BoardLane';
-import ConsultationCard from './ConsultationCard';
-import type { Appointment } from '@/components/appointments/appointmentHelpers';
 
 interface SimpleBoardProps {
   readonly byStage: Record<ShopStageKey, Job[]>;
   readonly closed: Job[];
-  /** Finished consultations with no job order yet: the first lane. */
-  readonly consultations: Appointment[];
-  /** Takes a consultation out of its lane once it is marked "No order". */
-  readonly onConsultationRemove: (id: number) => void;
   readonly showClosed: boolean;
   readonly canSeeMoney: boolean;
   readonly canDecline: boolean;
@@ -33,8 +27,6 @@ const DONE_LIMIT = 12;
 export default function SimpleBoard({
   byStage,
   closed,
-  consultations,
-  onConsultationRemove,
   showClosed,
   canSeeMoney,
   canDecline,
@@ -43,12 +35,8 @@ export default function SimpleBoard({
   onMove,
   onDecline,
 }: SimpleBoardProps) {
-  // Consultation is always the first lane and tab, even at 0.
-  const [active, setActive] = useState<ShopStageKey | 'consultation'>(consultations.length > 0 ? 'consultation' : (SHOP_STAGES.find((s) => byStage[s.key].length > 0)?.key ?? 'request'));
-  const tabs: { key: ShopStageKey | 'consultation'; label: string; count: number }[] = [
-    { key: 'consultation', label: 'Consultation', count: consultations.length },
-    ...SHOP_STAGES.map((s) => ({ key: s.key, label: s.label, count: byStage[s.key].length })),
-  ];
+  const [active, setActive] = useState<ShopStageKey>(SHOP_STAGES.find((s) => byStage[s.key].length > 0)?.key ?? 'request');
+  const tabs = SHOP_STAGES.map((s) => ({ key: s.key, label: s.label, count: byStage[s.key].length }));
   const [allDone, setAllDone] = useState(false);
 
   const renderCard = (job: Job, rank: number | null) => (
@@ -93,11 +81,8 @@ export default function SimpleBoard({
         })}
       </div>
 
-      {/* Lanes: Consultation (phones always; wide screens once it has cards) and the 5 stages */}
+      {/* The 5 stages */}
       <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-flow-col lg:auto-cols-[minmax(13.5rem,1fr)] lg:overflow-x-auto">
-        <BoardLane stage={{ key: 'consultation', label: 'Consultation' }} count={consultations.length} visible={active === 'consultation'} attention hideWhenEmptyOnWide>
-          {consultations.map((a) => <ConsultationCard key={a.id} appointment={a} onRemove={onConsultationRemove} />)}
-        </BoardLane>
         {SHOP_STAGES.map((s) => {
           const list = s.key === 'done' && !allDone ? byStage.done.slice(0, DONE_LIMIT) : byStage[s.key];
           return (

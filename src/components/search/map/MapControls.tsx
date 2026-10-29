@@ -30,7 +30,7 @@ const toggleBtnCls =
 /**
  * Four map-control buttons stacked in a vertical column at the right edge of the map.
  *
- * – Desktop (lg+): fixed at bottom-right above the nav bar; toggle button hidden.
+ * – Desktop (lg+): bottom-right, its bottom edge level with the bottom of the search card on the left; toggle button hidden.
  * – Mobile / tablet: sticky at bottom-right; rises above the bottom sheet via
  *   an inline `bottom` style that matches `sheetHeight + 16px` (plus the nav bar).
  */
@@ -51,18 +51,19 @@ export default function MapControls({
     ? sheetHeight + NAV_PX + 16   // above sheet + nav
     : NAV_PX + 16;                 // above nav only
 
-  const style: CSSProperties = {
-    // The Tailwind lg: class will win on desktop via specificity; on mobile we use this.
-    bottom: mobileBottomPx,
+  // A variable, not `bottom` itself: an inline `bottom` would beat the lg: class, and on desktop the sheet height
+  // (which only exists on a phone/tablet) pushed the buttons up to the top of the screen.
+  const style = {
+    '--controls-bottom': `${mobileBottomPx}px`,
     right: 16,
     transition: 'bottom 300ms ease-in-out',
-  };
+  } as CSSProperties;
 
   return (
     <div
       role="group"
       aria-label="Map controls"
-      className="absolute z-30 flex flex-col gap-2 lg:bottom-[calc(var(--bottom-nav-space)+8px)] lg:right-4"
+      className="absolute bottom-[var(--controls-bottom)] z-30 flex flex-col gap-2 lg:bottom-[var(--bottom-nav-space)] lg:right-4"
       style={style}
     >
       <button type="button" onClick={onLocate} disabled={locating} aria-label="Go to my location" className={circleBtn}>

@@ -46,6 +46,7 @@ export default function AppointmentListView({
 
   // Ten at a time, so the list stays easy to read.
   const [page, setPage] = useState(1);
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   useEffect(() => { setPage(1); }, [resetKey]); // eslint-disable-line react-hooks/set-state-in-effect
   const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages);
@@ -54,6 +55,8 @@ export default function AppointmentListView({
 
   const renderTableActions = (apt: Appointment) => {
     const isLoading = actionLoadingId === apt.id;
+    const canManageBooking = isOwnerOrManager && ['pending', 'confirmed'].includes(apt.status);
+    const isMenuOpen = activeMenuId === apt.id;
 
     if (isLoading) {
       return (
@@ -94,6 +97,48 @@ export default function AppointmentListView({
         >
           <span>View</span>
         </button>
+        {canManageBooking && (
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveMenuId(isMenuOpen ? null : apt.id)}
+              title="More appointment actions"
+              aria-label={`More actions for appointment ${appointmentNo(apt.id)}`}
+              aria-expanded={isMenuOpen}
+              className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-line-strong bg-white text-ink-muted shadow-2xs transition-colors hover:border-ink/50 hover:bg-canvas hover:text-ink cursor-pointer"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {isMenuOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close appointment actions"
+                  className="fixed inset-0 z-40 cursor-default"
+                  onClick={() => setActiveMenuId(null)}
+                />
+                <div className="absolute right-0 z-50 mt-1 w-44 rounded-xl border border-line bg-white py-1 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveMenuId(null); onEditClick(apt); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-ink hover:bg-canvas"
+                  >
+                    <Pencil size={14} className="text-ink-faint" />
+                    <span>Edit Booking</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveMenuId(null); onRescheduleClick(apt); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-ink hover:bg-canvas"
+                  >
+                    <RefreshCw size={14} className="text-ink-faint" />
+                    <span>Reschedule</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     );
   };

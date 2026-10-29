@@ -50,7 +50,7 @@ export default function AppointmentDetailActions({
 
   const others = [
     apt.status === 'pending' && canAssign && onRejectClick && { key: 'decline', label: 'Decline request', run: onRejectClick, danger: true },
-    open && onRescheduleClick && { key: 'reschedule', label: 'Reschedule', run: onRescheduleClick },
+    open && canAssign && onRescheduleClick && { key: 'reschedule', label: 'Reschedule', run: onRescheduleClick },
     ['confirmed', 'in_progress', 'completed'].includes(apt.status) && onFollowUp && canFollowUp && { key: 'follow', label: 'Schedule a follow-up visit', run: () => onFollowUp(apt) },
     apt.status === 'confirmed' && onDidntComeClick && { key: 'noshow', label: 'Customer didn’t come', run: () => onDidntComeClick(apt), danger: true },
     open && canAssign && onCancelClick && { key: 'cancel', label: 'Cancel this booking', run: onCancelClick, danger: true },

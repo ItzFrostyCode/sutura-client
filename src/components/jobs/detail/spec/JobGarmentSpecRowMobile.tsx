@@ -11,6 +11,8 @@ interface JobGarmentSpecRowMobileProps {
   onCellChange: (rowId: string, columnKey: string, value: string) => void;
   onToggleComplete: (rowId: string) => void;
   onDeleteRow: (rowId: string) => void;
+  /** Production has started (or the order is closed): the row is only shown. */
+  locked?: boolean;
 }
 
 export default function JobGarmentSpecRowMobile({
@@ -20,6 +22,7 @@ export default function JobGarmentSpecRowMobile({
   onCellChange,
   onToggleComplete,
   onDeleteRow,
+  locked = false,
 }: JobGarmentSpecRowMobileProps) {
   const isDone = Boolean(row.completed);
 
@@ -33,7 +36,8 @@ export default function JobGarmentSpecRowMobile({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onToggleComplete(row.id)}
+            disabled={locked}
+          onClick={() => onToggleComplete(row.id)}
             className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
           >
             {isDone ? (
@@ -52,14 +56,16 @@ export default function JobGarmentSpecRowMobile({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => onDeleteRow(row.id)}
-          aria-label={`Remove garment row ${index + 1}`}
-          className="text-ink-muted hover:text-rose-600 p-1 rounded-lg transition-colors cursor-pointer"
-        >
-          <Trash2 size={14} />
-        </button>
+        {!locked && (
+          <button
+            type="button"
+            onClick={() => onDeleteRow(row.id)}
+            aria-label={`Remove garment row ${index + 1}`}
+            className="text-ink-muted hover:text-rose-600 p-1 rounded-lg transition-colors cursor-pointer"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -73,17 +79,30 @@ export default function JobGarmentSpecRowMobile({
               >
                 {col.label}
               </label>
+              {col.key === 'measure_area' ? (
+                <select
+                aria-label={col.label} value={val} disabled={locked} onChange={(e) => onCellChange(row.id, col.key, e.target.value)}
+                className="w-full bg-surface border border-line focus:border-taupe rounded-lg px-2.5 py-1.5 text-xs text-ink focus:outline-none"
+              >
+                <option value="">—</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="both">Top &amp; Bottom</option>
+              </select>
+              ) : (
               <input
                 id={`mob-${row.id}-${col.key}`}
                 type={col.type === 'number' ? 'text' : 'text'}
                 inputMode={col.type === 'number' ? 'numeric' : 'text'}
                 value={val}
                 onChange={(e) => onCellChange(row.id, col.key, e.target.value)}
-                placeholder={`Enter ${col.label.toLowerCase()}...`}
+              readOnly={locked}
+                placeholder={locked ? '' : `Enter ${col.label.toLowerCase()}...`}
                 className={`w-full bg-surface border border-line focus:border-taupe rounded-lg px-2.5 py-1.5 text-xs text-ink placeholder:text-ink-faint focus:outline-none transition-colors ${
                   isDone ? 'line-through text-ink-muted' : ''
                 }`}
               />
+              )}
             </div>
           );
         })}

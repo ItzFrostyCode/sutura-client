@@ -65,6 +65,9 @@ export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-ambe
  * a step-by-step advance — without it, an unpaid job could skip the entire
  * gated middle of the pipeline in one selection.
  */
+/** The order is being made, or is closed: its sizes and specifications are only shown from then on. */
+export const detailsLocked = (job: { status: string }) => STAGES_REQUIRING_DOWNPAYMENT.has(job.status) || ['completed', 'cancelled', 'rejected'].includes(job.status);
+
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
   'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
   'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup', 'balance_handover',
@@ -166,6 +169,8 @@ export function columnsForJobs(jobs: Job[] = []) {
 }
 
 export interface Job {
+  /** This order's own copy of the measuring rule (design → service → shop default at creation). */
+  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   id: number;
   order_number?: string;
   intake_channel: 'walk_in' | 'online';
@@ -173,6 +178,8 @@ export interface Job {
   status: string;
   payment_status: string;
   balance: number | string;
+  /** Sent to plain staff instead of the amounts: only whether something is still owed. */
+  has_balance?: boolean;
   downpayment?: number | string;
   total_amount?: number | string;
   quantity?: number;
@@ -247,6 +254,7 @@ export const CANCELLATION_REASON_LABELS: Record<string, string> = {
   store_unable_to_fulfill: 'Store unable to fulfill',
   forfeited_deposit_abandoned: 'Forfeited deposit — customer went uncontactable',
   quotation_declined: 'Customer declined the quotation',
+  entered_by_mistake: 'Made by mistake (the customer is not told)',
   other: 'Other',
 };
 

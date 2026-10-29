@@ -14,6 +14,7 @@ import {
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { PublicService } from '@/components/store-storefront/types';
 import GuideImage from '@/components/shared/GuideImage';
+import { optionLine } from '@/lib/orderUnits';
 
 // The content of each numbered card on a service page, kept apart from the
 // accordion chrome so the owner's editable page can wrap the very same blocks
@@ -87,7 +88,10 @@ export function ServicePricesBlock({ service }: Readonly<{ service: PublicServic
           const amount = Number.parseFloat(String(tier.amount));
           return (
             <div key={tier.id} className="flex items-start justify-between gap-3 px-3 py-2.5 text-sm">
-              <span className="text-ink-body min-w-0">{tier.label}</span>
+              <span className="text-ink-body min-w-0">
+                {tier.label}
+                {optionLine(tier) && <span className="block text-xs text-ink-muted">{optionLine(tier)}</span>}
+              </span>
               {amount > 0 ? (
                 <span className="font-semibold text-ink shrink-0">{peso(amount)}</span>
               ) : (

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ListChecks, FileText, Wallet } from 'lucide-react';
+import ScrollNav from '@/components/shared/ScrollNav';
 
 export type JobDetailTabKey = 'steps' | 'details' | 'payments';
 
@@ -34,7 +35,7 @@ export default function JobDetailTabsNav({
   paymentsCount = 0,
 }: JobDetailTabsNavProps) {
   return (
-    <div className="flex overflow-x-auto border-b border-line hide-scrollbar">
+    <ScrollNav wrapperClassName="border-b border-line" className="flex">
       {TABS.filter(tab => tab.key !== 'payments' || showFinancials).map(tab => {
         const TabIcon = tab.icon;
         const active = activeTab === tab.key;
@@ -62,6 +63,6 @@ export default function JobDetailTabsNav({
           </button>
         );
       })}
-    </div>
+    </ScrollNav>
   );
 }

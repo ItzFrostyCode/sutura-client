@@ -1,11 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import { Ruler, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import { useCustomers } from '@/components/customers/useCustomers';
 import { TableSkeleton } from '@/components/ui/Skeleton';
-import CustomersModuleTabs from '@/components/customers/CustomersModuleTabs';
 import CustomerStatsCards from '@/components/customers/CustomerStatsCards';
 import CustomerFilterBar from '@/components/customers/CustomerFilterBar';
 import CustomerTable from '@/components/customers/CustomerTable';
@@ -52,17 +50,9 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Client Book"
-        description="Manage your customer directory, loyalty suki tiers, and lifetime value."
+        description="Manage your customer directory, loyalty suki tiers, and lifetime value. Measurement profiles live on each client's own page."
         actions={
           <>
-            <Link
-              href="/dashboard/measurements"
-              title="Look up measurement profiles across all customers"
-              className="flex items-center gap-2 bg-surface hover:bg-sunken border border-line text-ink px-4 py-2.5 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors min-h-10.5 shadow-2xs"
-            >
-              <Ruler size={15} />
-              <span className="hidden sm:inline">All </span>Measurements
-            </Link>
             <button
               onClick={() => {
                 setEditingId(null);
@@ -77,28 +67,27 @@ export default function CustomersPage() {
             </button>
           </>
         }
-      >
-        <CustomersModuleTabs activeTab="customers" />
-      </PageHeader>
+      />
 
       {/* Top CRM KPI Metric Cards */}
       <CustomerStatsCards customers={customers} />
 
+      {/* Channel tabs + search sit on the canvas above the table card, like Appointments and Job Orders */}
+      <CustomerFilterBar
+        filterType={filterType as 'all' | 'online' | 'walkin'}
+        setFilterType={(val) => setFilterType(val)}
+        search={search}
+        setSearch={setSearch}
+        totalCount={customers.length}
+        onlineCount={onlineCount}
+        walkinCount={walkinCount}
+        showMineToggle={isPlainStaff}
+        mineOnly={mineOnly}
+        setMineOnly={setMineOnly}
+      />
+
       {/* Main Client Book Container */}
       <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden">
-        <CustomerFilterBar
-          filterType={filterType as 'all' | 'online' | 'walkin'}
-          setFilterType={(val) => setFilterType(val)}
-          search={search}
-          setSearch={setSearch}
-          totalCount={customers.length}
-          onlineCount={onlineCount}
-          walkinCount={walkinCount}
-          showMineToggle={isPlainStaff}
-          mineOnly={mineOnly}
-          setMineOnly={setMineOnly}
-        />
-
         {loading ? (
           <div className="p-4">
             <TableSkeleton rows={8} cols={5} />

@@ -13,15 +13,13 @@ export function getMediaUrl(path?: string | null): string {
     return encodeURI(trimmed);
   }
 
-  // Pre-bundled static seed store logos, banners and store uploads stored under /storage/
-  // Next.js client can serve these directly from public/storage/ without depending on backend symlinks!
+  // Pre-bundled static seed store logos and banners: the client's own public/storage/ has these files.
+  // Uploads (/storage/stores/...: designs, services, shop logos made in the dashboard) are NOT in the client; they come from the server below.
   if (
     trimmed.startsWith('/storage/logos/') ||
     trimmed.startsWith('storage/logos/') ||
     trimmed.startsWith('/storage/banners/') ||
-    trimmed.startsWith('storage/banners/') ||
-    trimmed.startsWith('/storage/stores/') ||
-    trimmed.startsWith('storage/stores/')
+    trimmed.startsWith('storage/banners/')
   ) {
     const cleanClientPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
     return encodeURI(cleanClientPath);
@@ -48,9 +46,9 @@ export function getMediaUrl(path?: string | null): string {
 
   // If already a full URL:
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    // If it's a local storage URL referencing seeded logos, banners, or stores, serve them directly from client public/storage
-    if (trimmed.includes('/storage/logos/') || trimmed.includes('/storage/banners/') || trimmed.includes('/storage/stores/')) {
-      const match = trimmed.match(/\/storage\/(logos|banners|stores)\/.+$/);
+    // If it's a local storage URL referencing the bundled seed logos or banners, serve them directly from client public/storage
+    if (trimmed.includes('/storage/logos/') || trimmed.includes('/storage/banners/')) {
+      const match = trimmed.match(/\/storage\/(logos|banners)\/.+$/);
       if (match) {
         return encodeURI(match[0]);
       }
