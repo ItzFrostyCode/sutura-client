@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { FileCheck2, Upload } from 'lucide-react';
+import { FIELD, LABEL } from '@/components/auth/authStyles';
 
 // Same flat input as the Sign In / Create Account forms: 48px+ tall, 16px
 // text (no iOS zoom), sharp corners, ink focus border.
-export const INPUT_CLASS =
-  'w-full min-h-12 px-3.5 py-3 border border-line-strong bg-surface text-ink text-base focus:outline-none focus:border-ink transition-colors';
+export const INPUT_CLASS = FIELD;
 
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   readonly label: string;
@@ -16,7 +16,7 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export function TextField({ label, id, required, ...inputProps }: TextFieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm text-ink mb-2">
+      <label htmlFor={id} className={LABEL}>
         {label}
         {required && <span className="text-danger">*</span>}
       </label>
@@ -48,7 +48,7 @@ export function FileField({ id, label, hint, accept, file, onChange, required = 
       <p className="mobile-caption text-ink-muted mb-2">{hint}</p>
       <label
         htmlFor={id}
-        className={`flex min-h-14 cursor-pointer items-center gap-3 border border-dashed px-4 py-3 transition-colors hover:bg-sunken ${
+        className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition-colors hover:bg-sunken ${
           file ? 'border-sage bg-sage/5' : 'border-line-strong bg-surface'
         }`}
       >
@@ -61,7 +61,7 @@ export function FileField({ id, label, hint, accept, file, onChange, required = 
       {preview && (
         // The attached screenshot/photo, shown back so the owner can check it is the right one.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt={`${label} preview`} className="mt-3 max-h-72 w-full border border-line bg-sunken object-contain" />
+        <img src={preview} alt={`${label} preview`} className="mt-3 max-h-72 w-full rounded-xl border border-line bg-sunken object-contain" />
       )}
       <input
         id={id}
@@ -79,14 +79,14 @@ export function StepActions({ onBack, nextLabel, busy = false }: { readonly onBa
   return (
     <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-between">
       {onBack ? (
-        <button type="button" onClick={onBack} className="btn-secondary-mobile rounded-none! border border-ink text-ink uppercase tracking-widest text-sm">
+        <button type="button" onClick={onBack} className="flex min-h-[52px] items-center justify-center rounded-xl border border-ink px-6 text-base font-semibold text-ink transition-colors hover:bg-sunken">
           Back
         </button>
       ) : <span />}
       <button
         type="submit"
         disabled={busy}
-        className="btn-primary-mobile rounded-none! bg-ink text-white uppercase tracking-widest text-sm disabled:opacity-50"
+        className="flex min-h-[52px] items-center justify-center rounded-xl bg-ink px-6 text-base font-semibold text-white transition-colors hover:bg-espresso disabled:opacity-50"
       >
         {nextLabel}
       </button>

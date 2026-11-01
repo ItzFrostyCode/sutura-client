@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
+import { useAuthStore } from '@/store/useAuthStore';
+import { clearShopIntent, readShopIntent } from '@/lib/shopIntent';
 import {
   EMPTY_OWNER, EMPTY_SHOP,
   type ApplicationStep, type BillingCycle, type DocumentKey, type OwnerFields,
@@ -14,7 +16,8 @@ import {
  * <form>, so the browser's `required` checks gate "Continue"; this hook only
  * holds values across steps and builds the one multipart submit at the end.
  */
-export function useStoreApplication() {
+export function useStoreApplication({ signedInOwner = false }: { readonly signedInOwner?: boolean } = {}) {
+  const setAuth = useAuthStore((st) => st.setAuth);
   const [step, setStep] = useState<ApplicationStep>(1);
   const [owner, setOwner] = useState<OwnerFields>(EMPTY_OWNER);
   const [shop, setShop] = useState<ShopFields>(EMPTY_SHOP);
@@ -24,6 +27,8 @@ export function useStoreApplication() {
   const [plans, setPlans] = useState<PublicPlan[]>([]);
   const [planId, setPlanId] = useState<number | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  // The free 14 days on Basic: no payment method or receipt. Chosen here or from the landing page (?trial=1).
+  const [trial, setTrial] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +43,12 @@ export function useStoreApplication() {
       .then((res) => {
         const list: PublicPlan[] = res.data.data ?? [];
         setPlans(list);
-        setPlanId((current) => current ?? list[0]?.id ?? null);
+        // What was clicked on /for-shops (the free trial, or a plan), remembered through the email sign-up.
+        const intent = readShopIntent();
+        const wanted = list.find((p) => p.slug === intent?.plan);
+        if (intent?.trial) setTrial(true);
+        if (intent?.cycle === 'yearly') setBillingCycle('yearly');
+        setPlanId((current) => current ?? wanted?.id ?? list[0]?.id ?? null);
       })
       .catch(() => setError('Could not load subscription plans. Please refresh the page.'));
   }, []);
@@ -58,7 +68,9 @@ export function useStoreApplication() {
     });
 
   const submit = async () => {
-    if (!shop.location || !planId) return;
+    const basic = plans.find((p) => p.slug === 'basic');
+    const chosenPlanId = trial ? basic?.id ?? null : planId;
+    if (!shop.location || !chosenPlanId) return;
     setSubmitting(true);
     setError('');
 
@@ -94,17 +106,25 @@ export function useStoreApplication() {
     form.append('latitude', String(shop.location.lat));
     form.append('longitude', String(shop.location.lng));
     shop.specializations.forEach((s) => form.append('specializations[]', s));
-    Object.entries(files).forEach(([key, file]) => form.append(key, file));
+    Object.entries(files).forEach(([key, file]) => { if (!(trial && key === 'payment_receipt')) form.append(key, file); });
     permits.forEach((file) => form.append('business_permits[]', file));
     form.append('government_id_type', governmentIdType);
-    form.append('plan_id', String(planId));
-    form.append('billing_cycle', billingCycle);
-    form.append('payment_method', paymentMethod);
+    form.append('plan_id', String(chosenPlanId));
+    form.append('billing_cycle', trial ? 'trial' : billingCycle);
+    if (!trial) form.append('payment_method', paymentMethod);
 
     try {
-      const res = await api.post('/store-applications', form, {
+      // A signed-in owner (account made by email sign-up) sends the shop to their own account; the older public
+      // form (still supported for admin-issued logins) creates the owner too.
+      const res = await api.post(signedInOwner ? '/owner/store-application' : '/store-applications', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      if (signedInOwner) {
+        clearShopIntent();
+        const me = await api.get('/auth/me');
+        const token = sessionStorage.getItem('sutura_token');
+        if (me.data?.success && token) setAuth(me.data.data.user, token, me.data.data.store ?? undefined, me.data.data.staff_profile ?? undefined);
+      }
       setSubmittedTo(res.data.data.contact_email);
       if (res.data.data.store_id) setSubmittedStoreId(res.data.data.store_id);
       if (res.data.data.store_name) setSubmittedStoreName(res.data.data.store_name);
@@ -119,7 +139,7 @@ export function useStoreApplication() {
   return {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
-    paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
+    trial, setTrial, paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
     submittedStoreId, submittedStoreName,
   };
 }

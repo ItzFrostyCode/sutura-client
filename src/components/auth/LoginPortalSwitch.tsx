@@ -18,7 +18,7 @@ interface LoginPortalSwitchProps {
 // third tab — it has its own unlinked portal at /admin/login.
 export default function LoginPortalSwitch({ value, onChange }: LoginPortalSwitchProps) {
   return (
-    <div role="tablist" aria-label="Account type" className="grid grid-cols-2 border border-line-strong mb-6">
+    <div role="tablist" aria-label="Account type" className="mb-6 grid grid-cols-2 overflow-hidden rounded-xl border border-line-strong">
       {OPTIONS.map((option) => {
         const active = option.value === value;
         return (
@@ -28,7 +28,7 @@ export default function LoginPortalSwitch({ value, onChange }: LoginPortalSwitch
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.value)}
-            className={`min-h-12 text-sm font-semibold uppercase tracking-widest transition-colors ${
+            className={`min-h-12 text-sm font-semibold transition-colors ${
               active ? 'bg-ink text-white' : 'bg-surface text-ink-muted hover:text-ink'
             }`}
           >

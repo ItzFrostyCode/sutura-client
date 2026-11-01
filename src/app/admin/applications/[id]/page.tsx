@@ -19,7 +19,7 @@ const STATUS_BADGE: Record<string, BadgeVariant> = { pending: 'warning', approve
 
 export default function ApplicationDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { store, documents, error, suggestedLogin, loginDomain, approve, reject, reissueCredentials } = useApplicationDetail(id);
+  const { store, documents, error, suggestedLogin, loginDomain, issuesLogin, approve, reject, reissueCredentials } = useApplicationDetail(id);
   const toast = useToast();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [approveOpen, setApproveOpen] = useState(false);
@@ -132,6 +132,7 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
         isOpen={approveOpen}
         storeName={store.name}
         suggestedLogin={suggestedLogin}
+        issuesLogin={issuesLogin}
         loginDomain={loginDomain}
         contactEmail={store.owner?.contact_email ?? store.email ?? ''}
         onClose={() => setApproveOpen(false)}

@@ -127,8 +127,8 @@ export default function ApplicationSummary({
 
       <Card title="Plan & payment">
         <Row label="Requested plan">{app?.requested_plan?.name}</Row>
-        <Row label="Billing">{app ? `${app.billing_cycle} · ${formatPeso(app.quoted_price)}` : null}</Row>
-        <Row label="Paid via">{app?.payment_method?.replace('_', ' ')}</Row>
+        <Row label="Billing">{app ? (app.billing_cycle === 'trial' ? 'Free trial · 14 days' : `${app.billing_cycle} · ${formatPeso(app.quoted_price)}`) : null}</Row>
+        {app?.billing_cycle !== 'trial' && <Row label="Paid via">{app?.payment_method?.replace('_', ' ')}</Row>}
         <Row label="Current plan">
           {store.subscription?.plan ? `${store.subscription.plan.name} (${store.subscription.status}, until ${formatDate(store.subscription.ends_at)})` : 'Starts on approval'}
         </Row>

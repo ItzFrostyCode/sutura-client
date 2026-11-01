@@ -66,7 +66,7 @@ export default function ApplicationSubmitted({
         </span>
         <h2 className="mobile-h1 text-ink mt-2">Congratulations! Your shop is live.</h2>
         <p className="mobile-body-md text-ink-body mt-3">
-          The SUTURA Admin has verified your payment receipt and approved{' '}
+          The SUTURA Admin has verified your documents and approved{' '}
           <strong className="font-semibold text-ink">{storeName || 'your shop'}</strong>.
         </p>
 
@@ -147,7 +147,7 @@ export default function ApplicationSubmitted({
       </div>
 
       <p className="mobile-body-md text-ink-body mt-4">
-        Your shop registration and payment receipt for{' '}
+        Your shop registration for{' '}
         <strong className="font-semibold text-ink">{storeName || 'your shop'}</strong> have been received.
         An admin is currently reviewing your application in the SUTURA Console.
       </p>

@@ -73,6 +73,7 @@ function LoginFormContent() {
             registerHref={withRedirect('/register', redirectPath)}
             onClose={() => router.push('/')}
             initialPortal={initialPortal}
+            onPortalChange={(next) => router.replace(withRedirect('/login', redirectPath, next === 'store' ? 'as=store' : undefined))}
           />
         </div>
       </div>
