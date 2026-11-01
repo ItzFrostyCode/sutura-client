@@ -11,8 +11,8 @@ export default function LegalShell({ children }: { readonly children: ReactNode 
     <div className="flex min-h-dvh flex-col bg-canvas">
       <header className="sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur-xl">
         <div className={`${WIDTH} flex h-[52px] items-center justify-between sm:h-[60px]`}>
-          <Link href="/for-shops" aria-label="SUTURA for shops" className="flex min-h-11 items-center"><SuturaLogo className="h-7 w-auto text-espresso sm:h-8" /></Link>
-          <Link href="/for-shops" className="flex min-h-11 items-center gap-1.5 text-sm text-ink-muted hover:text-ink"><ArrowLeft size={16} /> Back to site</Link>
+          <Link href="/" aria-label="SUTURA home" className="flex min-h-11 items-center"><SuturaLogo className="h-7 w-auto text-espresso sm:h-8" /></Link>
+          <Link href="/for-shops" className="flex min-h-11 items-center gap-1.5 text-sm text-ink-muted hover:text-ink"><ArrowLeft size={16} /> For shops</Link>
         </div>
       </header>
       <main className={`${WIDTH} flex-1 py-10 sm:py-14`}>{children}</main>

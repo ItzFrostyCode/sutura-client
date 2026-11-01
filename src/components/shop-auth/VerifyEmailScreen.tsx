@@ -23,7 +23,7 @@ export default function VerifyEmailScreen() {
   }, []);
 
   return (
-    <AuthShell>
+    <AuthShell backLabel="For shops">
       {state.kind === 'ok' && <VerifiedView />}
       {state.kind === 'checking' && <p className="py-6 text-center text-sm text-ink-muted">Confirming your email…</p>}
       {state.kind === 'failed' && (

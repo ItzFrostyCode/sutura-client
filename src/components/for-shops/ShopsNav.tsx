@@ -3,12 +3,12 @@ import SuturaLogo from '@/components/brand/SuturaLogo';
 import ShopsContainer from './ShopsContainer';
 import { SECTION_LINKS, SIGN_IN_HREF, TRIAL_HREF } from './shopsLinks';
 
-/** Frosted sticky header: logo, section links from tablet up, and the two actions. Same container as every section. */
+/** Frosted sticky header: logo (back to the main site), section links from tablet up, and the two actions. Same container as every section. */
 export default function ShopsNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-canvas/85 backdrop-blur-xl">
       <ShopsContainer className="flex h-[52px] items-center justify-between gap-3 sm:h-[60px]">
-        <Link href="/for-shops" aria-label="SUTURA for shops" className="flex min-h-11 shrink-0 items-center">
+        <Link href="/" aria-label="SUTURA home" className="flex min-h-11 shrink-0 items-center">
           <SuturaLogo className="h-7 w-auto text-espresso sm:h-8" />
         </Link>
 

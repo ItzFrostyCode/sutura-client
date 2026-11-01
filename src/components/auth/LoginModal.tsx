@@ -52,7 +52,7 @@ export default function LoginModal() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="login-modal-title"
-            className="relative w-full px-4 py-6 sm:max-w-md bg-white sm:border sm:border-line sm:shadow-xl sm:p-8 sm:animate-scale-up"
+            className="relative w-full px-4 py-6 sm:max-w-md bg-white sm:rounded-2xl sm:border sm:border-line sm:shadow-xl sm:p-8 sm:animate-scale-up"
           >
             <button
               type="button"
