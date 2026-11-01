@@ -8,8 +8,7 @@ import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import LocationBar from '@/components/home/LocationBar';
 import HomeHero from '@/components/home/HomeHero';
 import HomeFilterBar from '@/components/home/HomeFilterBar';
-import HomeHowItWorks from '@/components/home/HomeHowItWorks';
-import HomeMapCta from '@/components/home/HomeMapCta';
+import HomeStepsStrip from '@/components/home/HomeStepsStrip';
 import HomeShopOwnerCta from '@/components/home/HomeShopOwnerCta';
 import HomeFilterSheet from '@/components/home/HomeFilterSheet';
 import HomeFeaturedSpotlight from '@/components/home/HomeFeaturedSpotlight';
@@ -90,8 +89,7 @@ export default function HomePage() {
               onResetStatus={() => setFilters({ ...filters, status: 'all' })}
               filterBar={<HomeFilterBar value={filters} onChange={setFilters} />}
             />
-            <HomeHowItWorks embedded />
-            <HomeMapCta />
+            <HomeStepsStrip />
             <HomeShopOwnerCta />
           </main>
 

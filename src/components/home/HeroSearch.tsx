@@ -8,18 +8,24 @@ interface HeroSearchProps {
   readonly activeFilterCount: number;
 }
 
-/** Search box with the filter icon and its own Search button (the pill on the search screen has no button). */
+/** The one placeholder line, used here and in the search bar of the map, at every screen size. */
+export const SEARCH_PLACEHOLDER = 'What do you need?';
+
+/**
+ * Search box with the filter icon and its own Search button (the pill on the search screen has no button).
+ * Built the same at every size so a phone and a laptop show one design: [what you type] [filters] [magnifier].
+ * The magnifier appears once, as the button (no word, no second icon), which also leaves the line you type its room.
+ */
 export default function HeroSearch({ value, onChange, onSubmit, onOpenFilter, activeFilterCount }: HeroSearchProps) {
   return (
-    <form onSubmit={onSubmit} role="search" className="flex h-14 overflow-hidden rounded-xl bg-surface shadow-lg">
-      <Search size={22} className="my-auto ml-4 shrink-0 text-ink-faint" />
+    <form onSubmit={onSubmit} role="search" className="flex h-14 overflow-hidden rounded-xl bg-surface shadow-lg focus-within:ring-2 focus-within:ring-amber-300">
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="What are you looking for?"
+        placeholder={SEARCH_PLACEHOLDER}
         aria-label="Search garments, services or shops"
-        className="h-full min-w-0 flex-1 bg-transparent px-3 text-base text-ink placeholder:text-ink-faint focus:outline-none"
+        className="h-full w-full min-w-0 flex-1 bg-transparent pl-5 pr-2 text-lg text-ink placeholder:text-ink-muted focus:outline-none"
       />
       <button
         type="button"
@@ -30,7 +36,9 @@ export default function HeroSearch({ value, onChange, onSubmit, onOpenFilter, ac
         <SlidersHorizontal size={20} />
         {activeFilterCount > 0 && <span className="absolute right-2.5 top-3 h-2.5 w-2.5 rounded-full bg-taupe" />}
       </button>
-      <button type="submit" className="shrink-0 bg-ink px-5 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-taupe sm:px-8">Search</button>
+      <button type="submit" aria-label="Search" className="flex w-14 shrink-0 items-center justify-center bg-ink text-white transition-colors hover:bg-taupe sm:w-16">
+        <Search size={22} aria-hidden />
+      </button>
     </form>
   );
 }

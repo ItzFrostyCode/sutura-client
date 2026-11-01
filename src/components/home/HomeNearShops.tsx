@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Loader2, MapPin } from 'lucide-react';
 import HomeSectionHeader from './HomeSectionHeader';
+import ListMapToggle from './ListMapToggle';
 import { ShopCardSkeleton, SkeletonRow } from './HomeSkeletons';
 import type { SavedLocation } from '@/lib/customerLocation';
 import HomeCarouselRow from './HomeCarouselRow';
@@ -8,6 +9,7 @@ import HomeShopCard from './HomeShopCard';
 import type { StoreResult } from './homeTypes';
 import type { MoreFilters, NearFilters } from './homeFilters';
 
+const MAP_VIEW = '/search?tab=store';
 const CHOOSE_ON_MAP = '/map?select=1&returnTo=/&continueTo=/';
 
 interface HomeNearShopsProps {
@@ -86,7 +88,7 @@ export default function HomeNearShops({ location, denied, locating, stores, load
 
   return (
     <section aria-labelledby="home-near-title">
-      <HomeSectionHeader id="home-near-title" title="Shops near you" href="/shops" linkLabel="See all" />
+      <HomeSectionHeader id="home-near-title" title="Shops near you" href="/shops" linkLabel="See all" action={<ListMapToggle mapHref={MAP_VIEW} />} />
       {filterBar}
       {body}
     </section>

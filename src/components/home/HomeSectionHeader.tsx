@@ -13,7 +13,7 @@ interface HomeSectionHeaderProps {
 /** Section title with a quiet link on the right. */
 export default function HomeSectionHeader({ id, title, href, linkLabel = 'See All', action }: HomeSectionHeaderProps) {
   return (
-    <div className="mb-4 flex items-center justify-between">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <h2 id={id} className="mobile-h2 sm:tablet-h2 text-ink">{title}</h2>
       <div className="flex items-center gap-4">
         {action}
