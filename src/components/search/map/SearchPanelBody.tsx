@@ -24,6 +24,9 @@ interface SearchPanelBodyProps {
   /** Toggle the sheet between half and full snap. */
   readonly onToggleExpand?: () => void;
   readonly onSelectBranch?: (branch: DiscoveryMapBranch) => void;
+  /** Draws the route to the open branch. */
+  readonly onDirections?: (branch: DiscoveryMapBranch, storeName: string) => void;
+  readonly directionsLoading?: boolean;
 }
 
 /**
@@ -42,6 +45,8 @@ export default function SearchPanelBody({
   isExpanded,
   onToggleExpand,
   onSelectBranch,
+  onDirections,
+  directionsLoading,
 }: SearchPanelBodyProps) {
   const store = selected ? s.stores.find((st) => st.slug === selected.storeSlug) : undefined;
   const detail = Boolean(selected && store);
@@ -61,8 +66,6 @@ export default function SearchPanelBody({
             onOpenFilter={onOpenFilter}
             inputRef={inputRef}
             compact={compact}
-            isExpanded={isExpanded}
-            onToggleExpand={onToggleExpand}
           />
         </div>
         <SearchResults s={s} onShowOnMap={onShowOnMap} className="flex-1" />
@@ -78,6 +81,8 @@ export default function SearchPanelBody({
           onToggleExpand={onToggleExpand}
           searchQuery={s.effectiveQ}
           onSelectBranch={onSelectBranch}
+          onDirections={onDirections && selected ? () => onDirections(selected, store.name) : undefined}
+          directionsLoading={directionsLoading}
         />
       )}
     </>

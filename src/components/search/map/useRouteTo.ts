@@ -5,6 +5,7 @@ import { useToast } from '@/context/ToastContext';
 import { thinLine, type LatLng } from './routeProgress';
 
 export interface RouteMode { readonly km: number; readonly minutes: number }
+export type TravelMode = 'car' | 'bike' | 'foot';
 export interface Point { readonly lat: number; readonly lng: number }
 
 export interface ActiveRoute {
@@ -13,8 +14,8 @@ export interface ActiveRoute {
   readonly slug: string;
   readonly name: string;
   readonly to: Point;
-  /** The road line to draw, as [lat, lng] pairs. */
-  readonly line: LatLng[];
+  /** The road line to draw for each way of travelling, as [lat, lng] pairs. */
+  readonly lines: Record<TravelMode, LatLng[]>;
   readonly car: RouteMode;
   readonly bike: RouteMode;
   readonly foot: RouteMode;
@@ -63,14 +64,17 @@ export function useRouteTo(origin: Point | null) {
       if (controller.signal.aborted) return;
       if (car.status !== 'fulfilled') throw new Error('no road route');
       // A mode the server could not answer falls back to an estimate from the road distance.
-      const mode = (r: PromiseSettledResult<RouteMode>, kmh: number): RouteMode =>
+      const mode = (r: PromiseSettledResult<RouteMode & { line: LatLng[] }>, kmh: number): RouteMode =>
         r.status === 'fulfilled' ? { km: r.value.km, minutes: r.value.minutes } : { km: car.value.km, minutes: (car.value.km / kmh) * 60 };
+      // Each way of travelling draws its own road line (walking can cut through where a car cannot); the car line backs up a failed one.
+      const carLine = thinLine(car.value.line);
+      const lineOf = (r: PromiseSettledResult<RouteMode & { line: LatLng[] }>) => (r.status === 'fulfilled' ? thinLine(r.value.line) : carLine);
       setRoute({
         session,
         slug,
         name,
         to,
-        line: thinLine(car.value.line),
+        lines: { car: carLine, bike: lineOf(bike), foot: lineOf(foot) },
         car: { km: car.value.km, minutes: car.value.minutes },
         bike: mode(bike, KMH.bike),
         foot: mode(foot, KMH.foot),

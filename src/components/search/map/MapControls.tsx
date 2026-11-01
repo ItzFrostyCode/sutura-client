@@ -69,10 +69,11 @@ export default function MapControls({
       <button type="button" onClick={onLocate} disabled={locating} aria-label="Go to my location" className={circleBtn}>
         <LocateFixed size={22} className={locating ? 'animate-pulse' : ''} />
       </button>
-      <button type="button" onClick={onZoomIn} aria-label="Zoom in" className={circleBtn}>
+      {/* Zoom buttons are for the desktop card; a phone or tablet pinches, which keeps the map clear. */}
+      <button type="button" onClick={onZoomIn} aria-label="Zoom in" className={`${circleBtn} max-lg:hidden`}>
         <Plus size={22} />
       </button>
-      <button type="button" onClick={onZoomOut} aria-label="Zoom out" className={circleBtn}>
+      <button type="button" onClick={onZoomOut} aria-label="Zoom out" className={`${circleBtn} max-lg:hidden`}>
         <Minus size={22} />
       </button>
       {onTogglePanel && (

@@ -11,7 +11,9 @@ import { useSearchData } from '../hooks/useSearchData';
 import { useSearchMap } from './useSearchMap';
 import { useBottomSheet } from './useBottomSheet';
 import MapControls from './MapControls';
-import MapTopCard from './MapTopCard';
+import RouteTopCard from './RouteTopCard';
+import RouteSummary from './RouteSummary';
+import SheetHandle from './SheetHandle';
 import SearchPanelBody from './SearchPanelBody';
 import { useNavigation } from './useNavigation';
 
@@ -23,6 +25,10 @@ const DiscoveryMap = dynamic(() => import('@/components/discovery/DiscoveryMap')
 /** Side card on desktop: 16px gap + 420px + 24px of air before the first pin. */
 const DESKTOP_PANEL_PX = 460;
 const NAV_PX = 76;
+/** Height of the summary bar under the map in Directions mode (phone and tablet). */
+const SUMMARY_PX = 140;
+/** Room the Directions card needs at the top of the map. */
+const ROUTE_TOP_PX = 150;
 // Top right on mobile/tablet, bottom right on desktop.
 // controlsPlacement removed — MapControls positions itself with inline style + lg: class
 
@@ -39,7 +45,6 @@ export default function SearchMapView() {
   const areaRef = useRef<HTMLDivElement>(null);
   const desktop = useMediaQuery('(min-width: 1024px)');
   const [filterOpen, setFilterOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(true);
   const [shopPath, setShopPath] = useState<string | null>(null);
   const sheet = useBottomSheet(areaRef, Boolean(map.selected));
 
@@ -51,11 +56,10 @@ export default function SearchMapView() {
     [s.radiusKm, s.openStatus, s.minPrice, s.maxPrice, s.minRating, s.district, s.barangay, s.area, s.sortBy],
   );
   const openFilter = () => setFilterOpen(true);
-  const sheetPx = panelOpen ? sheet.height : 0;
+  const sheetPx = nav.route ? SUMMARY_PX : sheet.height;
 
-  const grow = () => {
-    setPanelOpen(true);
-  };
+  // A shop chosen on the map, or from the list, opens at the half height.
+  const grow = () => { if (sheet.snap === 'peek') sheet.setSnap('half'); };
   const choose = (branch: Parameters<typeof map.selectPin>[0]) => {
     if (branch && map.selected?.storeSlug !== branch.storeSlug) {
       setShopPath(null);
@@ -82,7 +86,7 @@ export default function SearchMapView() {
 
   const getDirections = (branch: { latitude: number; longitude: number; storeSlug: string }, name: string) => {
     void nav.start({ lat: branch.latitude, lng: branch.longitude }, branch.storeSlug, name);
-    sheet.setExpanded(false);
+    // Directions mode: the sheet gives way to the route card and the summary.
   };
   const locate = () => {
     enableCompass();
@@ -94,6 +98,9 @@ export default function SearchMapView() {
     });
   };
 
+  // Back out of Directions: the route goes and the shop's sheet is back where it was.
+  const leaveRoute = () => { nav.cancel(); sheet.setSnap('half'); };
+
   const handleBack = () => {
     setShopPath(null);
     map.selectPin(null);
@@ -102,7 +109,7 @@ export default function SearchMapView() {
 
   const fitPadding = desktop
     ? { left: DESKTOP_PANEL_PX, bottom: NAV_PX }
-    : { top: 16, bottom: (panelOpen ? sheet.collapsedHeight : 0) + NAV_PX };
+    : { top: nav.route ? ROUTE_TOP_PX : 16, bottom: (nav.route ? SUMMARY_PX : sheet.collapsedHeight) + NAV_PX };
 
   return (
     <div ref={areaRef} className="relative min-h-0 flex-1 overflow-hidden" style={{ '--sheet-h': `${sheetPx}px` } as CSSProperties}>
@@ -144,35 +151,42 @@ export default function SearchMapView() {
           isExpanded={sheet.expanded}
           onToggleExpand={sheet.toggle}
           onSelectBranch={choose}
+          onDirections={getDirections}
+          directionsLoading={nav.loading}
         />
       </aside>
 
-      {/* Tablet and phone: bottom sheet without drag line, 2-click expand/collapse */}
-      {panelOpen && (
-        <section
-          aria-label="Search and shops"
-          className="absolute inset-x-4 bottom-[var(--bottom-nav-space)] z-20 mx-auto flex max-w-[var(--col-w)] flex-col overflow-hidden rounded-[28px] bg-surface shadow-[0_8px_40px_rgba(45,42,38,0.16)] transition-[height] duration-300 ease-in-out lg:hidden"
-          style={{ height: sheet.height }}
-        >
-          {/* X button removed from inside the panel — toggle lives in MapControls */}
-          <SearchPanelBody
-            s={s}
-            onOpenFilter={openFilter}
-            onShowOnMap={showOnMap}
-            selected={map.selected}
-            onBack={handleBack}
-            shopPath={shopPath}
-            compact
-            isExpanded={sheet.expanded}
-            onToggleExpand={sheet.toggle}
-            onSelectBranch={choose}
-          />
-        </section>
-      )}
+      {/* Tablet and phone: one bottom sheet. Its handle drags between peek, half and full. */}
+      <section
+        aria-label="Search and shops"
+        className={`absolute inset-x-4 bottom-[var(--bottom-nav-space)] z-20 mx-auto max-w-[var(--col-w)] flex-col overflow-hidden rounded-[28px] bg-surface shadow-[0_8px_40px_rgba(45,42,38,0.16)] ${nav.route ? 'hidden' : 'flex lg:hidden'} ${sheet.dragging ? '' : 'transition-[height] duration-300 ease-in-out'}`}
+        style={{ height: sheet.height }}
+      >
+        <SheetHandle sheet={sheet} />
+        <SearchPanelBody
+          s={s}
+          onOpenFilter={openFilter}
+          onShowOnMap={showOnMap}
+          selected={map.selected}
+          onBack={handleBack}
+          shopPath={shopPath}
+          compact
+          isExpanded={sheet.expanded}
+          onToggleExpand={sheet.toggle}
+          onSelectBranch={choose}
+          onDirections={getDirections}
+          directionsLoading={nav.loading}
+        />
+      </section>
 
-      {/* Map top card: directions or active navigation — hidden when sheet is fully expanded */}
-      {!sheet.expanded && (
-        <MapTopCard nav={nav} selected={map.selected} userCoords={s.userCoords} onGetDirections={getDirections} />
+      {/* Directions mode: From → To with a tab per way of travelling, and (phone/tablet) the answer under the map */}
+      {nav.route && (
+        <>
+          <RouteTopCard route={nav.route} mode={nav.mode} onMode={nav.setMode} onBack={leaveRoute} />
+          <div className="absolute inset-x-4 bottom-[var(--bottom-nav-space)] z-20 mx-auto max-w-[var(--col-w)] rounded-[28px] bg-surface p-4 shadow-[0_8px_40px_rgba(45,42,38,0.16)] lg:hidden">
+            <RouteSummary route={nav.route} mode={nav.mode} />
+          </div>
+        </>
       )}
 
       {/* Map controls: always visible, float above bottom sheet on mobile */}
@@ -181,15 +195,6 @@ export default function SearchMapView() {
         onZoomIn={map.zoomIn}
         onZoomOut={map.zoomOut}
         locating={map.locating}
-        onTogglePanel={() => {
-          if (panelOpen) {
-            setPanelOpen(false);
-            sheet.setExpanded(false);
-          } else {
-            setPanelOpen(true);
-          }
-        }}
-        panelOpen={panelOpen}
         sheetHeight={sheetPx}
       />
 
