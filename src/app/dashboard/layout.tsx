@@ -106,6 +106,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             const { user: freshUser, store: freshStore, staff_profile } = res.data.data;
             const activeStore = freshStore || staff_profile?.store;
             setAuth(freshUser, token, activeStore, staff_profile);
+            // A new owner (signed up with their own email) has no shop until the onboarding application is sent.
+            if (!activeStore && freshUser?.roles?.some((r: { name: string }) => r.name === 'store_owner')) router.replace('/onboarding');
           }
         })
         .catch(err => {
@@ -148,6 +150,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       />
     );
   }
+
+  if (isStoreOwner && !store) return null; // on their way to /onboarding
 
   // A new shop stays pending until a System Admin approves its application
   // (/admin/applications). Its owner waits here instead of the workspace.

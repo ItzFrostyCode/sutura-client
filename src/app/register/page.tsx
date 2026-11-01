@@ -9,7 +9,11 @@ import { ArrowLeft, Check, MailCheck, X } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import PublicNav from '@/components/shared/PublicNav';
 import AuthBrand from '@/components/auth/AuthBrand';
+import AccountTypeTabs from '@/components/shop-auth/AccountTypeTabs';
 import { PASSWORD_RULES } from '@/lib/passwordRules';
+import { ERROR_BOX, FIELD, LABEL, PRIMARY_BTN, SHOW_BTN } from '@/components/auth/authStyles';
+import TermsConsent from '@/components/shop-auth/TermsConsent';
+import DisabledHint from '@/components/shop-auth/DisabledHint';
 import { destinationFor, safeRedirect, withRedirect } from '@/lib/authRedirect';
 
 export default function RegisterPage() {
@@ -37,12 +41,13 @@ function RegisterPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const router = useRouter();
 
   useEffect(() => {
-    if (wantsStore) router.replace('/register/store');
+    if (wantsStore) router.replace('/signup/shop');
   }, [wantsStore, router]);
 
   // Already signed in (Back, or an old link): go on, and take this page out of the history.
@@ -94,7 +99,7 @@ function RegisterPageContent() {
 
       {/* Main Container: mobile full edge-to-edge, tablet/desktop centered card */}
       <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
-        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:border sm:border-line sm:shadow-sm">
+        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:rounded-2xl sm:border sm:border-line sm:shadow-sm">
           <Link
             href={withRedirect('/login', redirect)}
             aria-label="Back to sign in"
@@ -104,7 +109,7 @@ function RegisterPageContent() {
             <span>Back</span>
           </Link>
 
-          <AuthBrand className="mb-8" />
+          <AuthBrand className="mb-5 sm:mb-8" />
 
           {registeredEmail ? (
             <div className="text-center py-4">
@@ -126,33 +131,35 @@ function RegisterPageContent() {
               <button
                 type="button"
                 onClick={() => router.replace(useAuthStore.getState().user ? '/' : withRedirect('/login', redirect, 'as=customer'))}
-                className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors flex items-center justify-center"
+                className={PRIMARY_BTN}
               >
                 {useAuthStore.getState().user ? 'Start exploring' : 'Proceed to Customer Sign In'}
               </button>
             </div>
           ) : (
             <>
+              <AccountTypeTabs active="customer" />
               <h1 className="text-display text-2xl text-ink mb-6">Create Account</h1>
 
               {error && (
-                <div className="mb-5 p-3.5 border border-danger/30 bg-danger/5 text-danger text-sm text-center">
+                <div role="alert" className={ERROR_BOX}>
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="register-full-name" className="block text-sm text-ink mb-2">
+                  <label htmlFor="register-full-name" className={LABEL}>
                     Full Name<span className="text-danger">*</span>
                   </label>
                   <input
                     id="register-full-name"
                     type="text"
+                    autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Maria Santos"
-                    className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+                    className={FIELD}
                     required
                   />
                 </div>
@@ -160,37 +167,39 @@ function RegisterPageContent() {
                 <GenderPicker value={gender} onChange={setGender} />
 
                 <div>
-                  <label htmlFor="register-email" className="block text-sm text-ink mb-2">
+                  <label htmlFor="register-email" className={LABEL}>
                     Email<span className="text-danger">*</span>
                   </label>
                   <input
                     id="register-email"
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="e.g. maria@gmail.com"
-                    className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+                    className={FIELD}
                     required
                   />
                 </div>
 
                 <div>
                   <div className="relative">
-                    <label htmlFor="register-password" className="block text-sm text-ink mb-2">
+                    <label htmlFor="register-password" className={LABEL}>
                       Password<span className="text-danger">*</span>
                     </label>
                     <input
                       id="register-password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3.5 py-3 pr-16 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+                      className={`${FIELD} pr-20`}
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 bottom-3 text-sm text-ink underline underline-offset-2"
+                      className={SHOW_BTN}
                     >
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
@@ -206,7 +215,7 @@ function RegisterPageContent() {
                           }`}>
                             <Check size={10} strokeWidth={3} />
                           </span>
-                          <span className={met ? 'text-ink' : 'text-ink-faint'}>{rule.label}</span>
+                          <span className={met ? 'text-ink' : 'text-ink-muted'}>{rule.label}</span>
                         </li>
                       );
                     })}
@@ -214,26 +223,31 @@ function RegisterPageContent() {
                 </div>
 
                 <div>
-                  <label htmlFor="register-password-confirm" className="block text-sm text-ink mb-2">
+                  <label htmlFor="register-password-confirm" className={LABEL}>
                     Confirm Password<span className="text-danger">*</span>
                   </label>
                   <input
                     id="register-password-confirm"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     value={passwordConfirmation}
                     onChange={(e) => setPasswordConfirmation(e.target.value)}
-                    className="w-full px-3.5 py-3 border border-line-strong text-ink text-[15px] focus:outline-none focus:border-ink transition-colors"
+                    className={FIELD}
                     required
                   />
                 </div>
 
+                <TermsConsent agreed={agreed} onChange={setAgreed} audience="customers" />
                 <button
                   type="submit"
-                  disabled={loading || !PASSWORD_RULES.every((r) => r.test(password))}
-                  className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-40"
+                  disabled={loading || !agreed || !PASSWORD_RULES.every((r) => r.test(password))}
+                  className={PRIMARY_BTN}
                 >
                   {loading ? 'Creating account...' : 'Create an Account'}
                 </button>
+                {!loading && (!agreed || !PASSWORD_RULES.every((r) => r.test(password))) && (
+                  <DisabledHint id="register-hint">{PASSWORD_RULES.every((r) => r.test(password)) ? 'Agree to the Terms to continue.' : 'Meet every password rule to continue.'}</DisabledHint>
+                )}
               </form>
 
               <p className="mt-6 text-center text-sm text-ink">

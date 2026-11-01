@@ -4,7 +4,7 @@ import SuturaLogo from '@/components/brand/SuturaLogo';
 
 const COLUMNS = [
   { title: 'Discover', links: [{ href: '/search', label: 'Search stores' }, { href: '/search', label: 'Browse map' }, { href: '/track', label: 'Track an order' }] },
-  { title: 'Account', links: [{ href: '/login', label: 'Log in' }, { href: '/register', label: 'Register a store' }] },
+  { title: 'Account', links: [{ href: '/login', label: 'Log in' }, { href: '/for-shops', label: 'Open a shop' }] },
   { title: 'About', links: [{ href: '/about', label: 'About SUTURA' }] },
 ];
 

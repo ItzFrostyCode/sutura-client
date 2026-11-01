@@ -49,6 +49,8 @@ export function useApplicationDetail(id: string) {
   const [error, setError] = useState('');
   const [suggestedLogin, setSuggestedLogin] = useState('');
   const [loginDomain, setLoginDomain] = useState('');
+  // False when the owner signed up with their own confirmed email: approving then issues no shop login.
+  const [issuesLogin, setIssuesLogin] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +59,7 @@ export function useApplicationDetail(id: string) {
       setDocuments(res.data.data.documents);
       setSuggestedLogin(res.data.data.suggested_login);
       setLoginDomain(res.data.data.login_domain);
+      setIssuesLogin(res.data.data.issues_login !== false);
     } catch (err) {
       setError(getErrorMessage(err, 'Could not load this application.'));
     }
@@ -83,6 +86,6 @@ export function useApplicationDetail(id: string) {
     return { message: res.data.message as string, credentials: res.data.credentials as IssuedCredentials };
   };
 
-  return { store, documents, error, suggestedLogin, loginDomain, approve, reject, reissueCredentials };
+  return { store, documents, error, suggestedLogin, loginDomain, issuesLogin, approve, reject, reissueCredentials };
 }
 

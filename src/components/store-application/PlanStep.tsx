@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react';
 import { FileField, StepActions } from './ApplicationFields';
+import TrialChoice from './TrialChoice';
 import PlatformPaymentBox from '@/components/shared/PlatformPaymentBox';
 import { formatPeso, type BillingCycle, type PaymentMethod } from './applicationTypes';
 import type { StoreApplicationState } from './useStoreApplication';
@@ -16,16 +17,23 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
-  const { plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting } = app;
+  const { trial, setTrial, plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting } = app;
   const selected = plans.find((p) => p.id === planId);
   const price = selected ? (billingCycle === 'yearly' ? selected.price_yearly : selected.price_monthly) : 0;
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="space-y-6">
-      <div className="grid grid-cols-2 border border-line-strong" role="radiogroup" aria-label="Billing cycle">
+      <TrialChoice trial={trial} onChange={setTrial} />
+      {trial ? (
+        <div className="rounded-xl border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
+          Your free 14 days start once the SUTURA team approves your shop. Nothing to pay and no receipt to upload; you can choose a plan at any time.
+        </div>
+      ) : (
+      <>
+      <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-line-strong" role="radiogroup" aria-label="Billing cycle">
         {CYCLES.map((c) => (
           <button key={c.value} type="button" role="radio" aria-checked={billingCycle === c.value} onClick={() => setBillingCycle(c.value)}
-            className={`min-h-12 text-sm font-semibold uppercase tracking-widest ${billingCycle === c.value ? 'bg-ink text-white' : 'bg-surface text-ink-muted'}`}>
+            className={`min-h-12 text-sm font-semibold ${billingCycle === c.value ? 'bg-ink text-white' : 'bg-surface text-ink-muted'}`}>
             {c.label}
           </button>
         ))}
@@ -36,7 +44,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
           const on = plan.id === planId;
           return (
             <button key={plan.id} type="button" role="radio" aria-checked={on} onClick={() => setPlanId(plan.id)}
-              className={`flex flex-col border p-4 text-left transition-colors ${on ? 'border-ink bg-sunken' : 'border-line-strong bg-surface hover:border-ink'}`}>
+              className={`flex flex-col rounded-xl border p-4 text-left transition-colors ${on ? 'border-ink bg-sunken' : 'border-line-strong bg-surface hover:border-ink'}`}>
               <span className="mobile-h3 text-ink">{plan.name}</span>
               <span className="mt-1 text-2xl font-bold text-ink">
                 {formatPeso(billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly)}
@@ -59,7 +67,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
           <div className="flex gap-3">
             {METHODS.map((m) => (
               <button key={m.value} type="button" aria-pressed={paymentMethod === m.value} onClick={() => setPaymentMethod(m.value)}
-                className={`min-h-12 flex-1 border text-sm ${paymentMethod === m.value ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'}`}>
+                className={`min-h-12 flex-1 rounded-xl border text-sm ${paymentMethod === m.value ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'}`}>
                 {m.label}
               </button>
             ))}
@@ -68,7 +76,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
         {paymentMethod === 'gcash' ? (
           <PlatformPaymentBox amount={Number(price)} note="Your plan starts once your shop is approved. After you pay, upload a screenshot of the GCash receipt below." />
         ) : (
-          <div className="border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
+          <div className="rounded-xl border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
             Send <strong className="font-semibold text-ink">{formatPeso(price)}</strong> to SUTURA using the account details the SUTURA team gives you, then upload your receipt. Your plan starts once your shop is approved.
           </div>
         )}
@@ -76,7 +84,10 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
           file={files.payment_receipt} onChange={(file) => setFile('payment_receipt', file)} />
       </div>
 
-      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : 'Submit Application'} busy={submitting || !selected} />
+      </>
+      )}
+
+      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : 'Submit Application'} busy={submitting || (!trial && !selected)} />
     </form>
   );
 }

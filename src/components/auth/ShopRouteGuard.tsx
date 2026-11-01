@@ -11,6 +11,8 @@ const OWN_STORE_SUBPATHS = ['', '/catalog', '/service', '/portfolio'];
 
 function isAllowed(pathname: string, ownStoreKeys: string[]): boolean {
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/print') || pathname.startsWith('/admin')) return true;
+  // A new owner finishes the shop application here, and may read the legal pages from it.
+  if (pathname.startsWith('/onboarding') || pathname === '/terms' || pathname === '/privacy') return true;
   return ownStoreKeys.some((key) =>
     OWN_STORE_SUBPATHS.some((sub) => {
       const base = `/store/${key}${sub}`;

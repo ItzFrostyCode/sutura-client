@@ -10,6 +10,7 @@ import HomeHero from '@/components/home/HomeHero';
 import HomeFilterBar from '@/components/home/HomeFilterBar';
 import HomeHowItWorks from '@/components/home/HomeHowItWorks';
 import HomeMapCta from '@/components/home/HomeMapCta';
+import HomeShopOwnerCta from '@/components/home/HomeShopOwnerCta';
 import HomeFilterSheet from '@/components/home/HomeFilterSheet';
 import HomeFeaturedSpotlight from '@/components/home/HomeFeaturedSpotlight';
 import { FeaturedSkeleton } from '@/components/home/HomeSkeletons';
@@ -91,6 +92,7 @@ export default function HomePage() {
             />
             <HomeHowItWorks embedded />
             <HomeMapCta />
+            <HomeShopOwnerCta />
           </main>
 
           <HomeFooter narrow />

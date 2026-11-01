@@ -2,12 +2,12 @@
 
 Source: the "Final Workflow Specification" (3 flows), 2026-10-10. Scope rules: [`PRD.md`](PRD.md). Code wins over this file.
 
-| Flow | State |
-| --- | --- |
-| 1. Appointment & consultation | **Not changed.** Appointments already have an `outcome` and "Create Job"; Bongo's appointment flow replaces this part, so only the hand-off (an approved appointment → an order) is used. |
-| 2. Customer decision → production started | **Built.** |
-| 3. Production → QC → fitting → handover → completed | **Built** (sequence, corrections, partial handover, completion rules). |
-| Scenarios B (change request) and D (follow-up order), due-date log, workload view | **Built** (Scenario B change requests, Scenario D linked follow-up orders via `newFollowUpOrderHref`, due-date log, and staff workload views). |
+| Flow                                                                              | State                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Appointment & consultation                                                     | **Not changed.** Appointments already have an `outcome` and "Create Job"; Bongo's appointment flow replaces this part, so only the hand-off (an approved appointment → an order) is used. |
+| 2. Customer decision → production started                                        | **Built.**                                                                                                                                                                                   |
+| 3. Production → QC → fitting → handover → completed                           | **Built** (sequence, corrections, partial handover, completion rules).                                                                                                                       |
+| Scenarios B (change request) and D (follow-up order), due-date log, workload view | **Built** (Scenario B change requests, Scenario D linked follow-up orders via `newFollowUpOrderHref`, due-date log, and staff workload views).                                             |
 
 ## Update 2026-10-21 — consultation first, order rules, people, release, batches
 
@@ -54,41 +54,41 @@ Spec: `SUTURA/chatgpt Reply to  your executive summary.md`. Code beats this note
 
 ## The sequence (Kanban columns, left to right)
 
-| Band | Status key | Label |
-| --- | --- | --- |
-| Set up | `pending` · `confirmed` · `awaiting_materials` | Pending · Confirmed · Awaiting Materials |
-| In production | `design` · `pattern_making` / `mass_cutting_printing` · `cutting` · `sewing` | the shop's internal tasks (the customer just sees "In Production") |
-| Quality check | `qc_ironing` | Quality Check |
-| Fitting & collection | `ready_for_pickup` · `ready_for_fitting` · `final_adjustments` | Ready for Final Fitting / Collection · Customer Fitting / Inspection · Adjustment / Correction |
-| Handover | `balance_handover` · `completed` | Balance Payment & Handover · Completed |
+| Band                 | Status key                                                                                | Label                                                                                            |
+| -------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Set up               | `pending` · `confirmed` · `awaiting_materials`                                    | Pending · Confirmed · Awaiting Materials                                                       |
+| In production        | `design` · `pattern_making` / `mass_cutting_printing` · `cutting` · `sewing` | the shop's internal tasks (the customer just sees "In Production")                               |
+| Quality check        | `qc_ironing`                                                                            | Quality Check                                                                                    |
+| Fitting & collection | `ready_for_pickup` · `ready_for_fitting` · `final_adjustments`                    | Ready for Final Fitting / Collection · Customer Fitting / Inspection · Adjustment / Correction |
+| Handover             | `balance_handover` · `completed`                                                     | Balance Payment & Handover · Completed                                                          |
 
 Paths: A) production → QC → ready → handover → completed. B) …→ ready → **fitting** → handover. C) QC or fitting fails → **correction** → back to QC → ready → fitting again if needed → handover. Fitting is skipped when the order's fitting requirement is `none`.
 
 ## Gates (single source: `app/Support/OrderReadiness.php`)
 
-| To do this | The server requires |
-| --- | --- |
-| Make the quotation **final** | price, completion date, specs approved, measurements verified (unless not needed), the customer's own fabric assessed *suitable* (when they bring it) |
-| **Confirm** | final quotation, specs approved, customer approval, deposit **verified** |
+| To do this                                                                                         | The server requires                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Make the quotation **final**                                                                 | price, completion date, specs approved, measurements verified (unless not needed), the customer's own fabric assessed *suitable* (when they bring it)                      |
+| **Confirm**                                                                                  | final quotation, specs approved, customer approval, deposit **verified**                                                                                               |
 | **Start production** (`confirmed` → first task only: `JobOrder::firstProductionTask()`) | materials marked ready, measurements verified, a tailor planned, production authorized, **deposit still met** (a change approved after confirming can raise the total) |
-| → **Ready for Final Fitting / Collection** | quality check recorded as passed, no open correction |
-| → **Customer Fitting / Inspection** | QC passed, fitting needed (not `none`), coming from Ready |
-| → **Adjustment / Correction** | at least one open correction (a QC defect, a fitting issue, or a customer change) |
-| Adjustment → **Quality Check** | every correction done |
-| → **Balance Payment & Handover** | QC passed, no open correction, and if a fitting is *required* it was passed |
-| Record a **handover** | status is Balance Payment & Handover **and the balance is paid** |
-| → **Completed** | every garment handed over, no open correction, balance 0 |
+| → **Ready for Final Fitting / Collection**                                                  | quality check recorded as passed, no open correction                                                                                                                         |
+| → **Customer Fitting / Inspection**                                                         | QC passed, fitting needed (not `none`), coming from Ready                                                                                                                  |
+| → **Adjustment / Correction**                                                               | at least one open correction (a QC defect, a fitting issue, or a customer change)                                                                                            |
+| Adjustment → **Quality Check**                                                              | every correction done                                                                                                                                                        |
+| → **Balance Payment & Handover**                                                            | QC passed, no open correction, and if a fitting is *required* it was passed                                                                                                |
+| Record a **handover**                                                                        | status is Balance Payment & Handover **and the balance is paid**                                                                                                       |
+| → **Completed**                                                                             | every garment handed over, no open correction, balance 0                                                                                                                     |
 
 Moving back to production, QC or correction starts a new round, so QC and the fitting have to be passed again. A saved quotation that changes the total or date clears an earlier approval. A customer **change request** is quoted and approved first; approving adds its price to the total and balance, and a new completion date is written to the audit log with the reason. After production has started, a higher total does not re-lock the deposit gate.
 
 ## Who can do what
 
-| Action | Owner / branch manager | Staff | Customer |
-| --- | --- | --- | --- |
-| Approve specs, verify measurements, materials ready/waiting, assess the customer's fabric, record approval at the counter | ✔ | ✔ | — |
-| Quality check, record corrections, resolve them, record handover, move stages | ✔ | ✔ (no prices) | — |
-| Quotation, plan tailors, confirm, quote/approve/cancel a change, refund | ✔ | — | — |
-| Approve quotation + policy online | — | — | ✔ (`My Orders`) |
+| Action                                                                                                                    | Owner / branch manager | Staff          | Customer           |
+| ------------------------------------------------------------------------------------------------------------------------- | ---------------------- | -------------- | ------------------ |
+| Approve specs, verify measurements, materials ready/waiting, assess the customer's fabric, record approval at the counter | ✔                     | ✔             | —                 |
+| Quality check, record corrections, resolve them, record handover, move stages                                             | ✔                     | ✔ (no prices) | —                 |
+| Quotation, plan tailors, confirm, quote/approve/cancel a change, refund                                                   | ✔                     | —             | —                 |
+| Approve quotation + policy online                                                                                         | —                     | —             | ✔ (`My Orders`) |
 
 ## API (all under `/api/v1/stores/{store}/jobs/{job}/…`)
 
@@ -154,8 +154,8 @@ Server: `JobOrderController` (several small hunks in `update()`), `JobOrder`, `S
   3. **Otherwise sizing applies, and what the person gets comes first:** Top / Bottom / Top & Bottom. The customer's online order form (step 2, now called **Sizing**) asks it before anything else, for one person and for a batch; the server refuses an order that needs sizing without it (422).
   4. **Then how the sizes are known** — one person: **saved profile** (with a plain note when its `_area` does not cover the choice) · **standard size** (a size per covered part, moved here from step 3; the shop's chart numbers for that part under the chips) · **own measurements** (only the covered part's fields, one per row; the server keeps only those points) · **the shop measures** (Measure later: the order can be accepted and paid, but is not "sized"). A batch: a count per size, and for Top & Bottom a second count per bottom size that must add up to the same number of sets (422 otherwise; quantity = sets).
   5. **Stored:** `measure_area`, `standard_size` ("M" or "M / L"), `size_breakdown` (+ `size_breakdown_bottom`), and a typed profile now carries `_area` **and `_unit`** (a centimetre profile used to be saved without its unit and read as inches). Shown on the order: standard size, bottom size counts ("sets"), and the Top/Bottom badge.
-  **`none` is not "no information":** the service's own questions (required ones still enforced), the fabric, photos and notes are still taken, and the order still needs its design/details approved (`specs` blocker) before it can be confirmed; only the body measurements (and their `measurements` blocker) are skipped.
-  Tests: `CustomerServiceOrderTest` (24): area first, none → no sizing but details kept, both sizes, only the covered points, bulk sets, repair note.
+     **`none` is not "no information":** the service's own questions (required ones still enforced), the fabric, photos and notes are still taken, and the order still needs its design/details approved (`specs` blocker) before it can be confirmed; only the body measurements (and their `measurements` blocker) are skipped.
+     Tests: `CustomerServiceOrderTest` (24): area first, none → no sizing but details kept, both sizes, only the covered points, bulk sets, repair note.
 - **Pricing options say what they cover and what one unit is (2026-10-29, code ready, migration NOT run).** Each `service_pricing` option has two separate, optional settings: **`covers`** (`top` | `bottom` | `both`: decides the sizing asked) and **`sold_as`** (`garment` | `set`: what ONE ordered unit is; a set is one top and one bottom, so two physical garments). Null = not configured: every existing option and order behaves exactly as before (no coverage implied, one unit = one garment). The API refuses only one combination: a set that does not cover top & bottom. A garment may cover both (one garment that is a top and a bottom).
   - **Five numbers, kept apart:** wearers (`peopleCount()`, rows) · per-wearer `qty` (units that person asked for) · **ordered quantity** (`orderedQuantity()`: the units, in the option's unit) · **price** (the option's amount × ordered quantity, never multiplied by garments) · **physical garments** (`garmentCount()` = ordered quantity × garments per unit, 2 for a set). The minimum (`min_order_qty`), the price share of a split and the tracker's "quantity" use the ordered quantity; only handover, its completion gate and the "people / garments" wording use the garments. Example: 2 people × 2 sets each = 2 wearers · 4 ordered sets · 8 garments to hand over.
   - **Snapshot on the server:** when an order is made (customer `service-orders`, shop `jobs` with `pricing_id`) the server copies the option's label, coverage and unit into `custom_order_data` (`option`, `option_covers`, `option_sold_as`); anything the client sends under those keys is discarded, and an edit of the order cannot change them. Editing or deleting the option later never changes an old order. An option that covers something also fixes the coverage of the one wearer and of every person on a team list.
@@ -167,7 +167,6 @@ Server: `JobOrderController` (several small hunks in `update()`), `JobOrder`, `S
 - **One vocabulary, form and detail alike (2026-10-29).** `src/lib/orderUnits.ts` holds every word for what an option covers and what one unit is; the service editor (CRUD), both option lists, the Sizing step, the order's Details, chips, review and the service page all read it. **Covers**: Top · Bottom · Top & Bottom. **Sold as**: Garment · Set (top + bottom). Not configured: **Not set**. The service's line is an **Option**; sizing is **Sizing**. Ordered quantity is in **pieces** or **sets**; **garments** is only what is handed over. The order carries its own counts from the server (`ordered_quantity`, `garment_count`, `sold_as`), and screens read them instead of recomputing; only an order not saved yet (the review in New Job Order) is worked out on the client. The browser check, scenario by scenario, is in `QA-ORDERING.md`.
 - **Nav strips show there is more (2026-10-29).** Every sideways-scrolling tab/filter strip uses `shared/ScrollNav`: a "‹" / "›" arrow with a soft fade appears on the side where tabs are hidden and goes away at the end; tapping it scrolls the strip (Home, Customer profile, Payments, Catalog, Services, Order tabs, Orders stage tabs, Notifications, Text Messages, Admin filters, storefront tabs, rating filters, chart periods). It only ever scrolls the strip sideways, never the page.
 - **Orders board keeps its place (2026-10-29):** choosing a stage tab (Request / Confirmed / Being made …) no longer jumps the page up when that stage has few orders; the list area is at least one screen tall so the page cannot shrink under the scroll position.
-
 
 ### New Job Order, second pass (2026-10-28)
 

@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import LoginPortalSwitch, { type LoginPortal } from './LoginPortalSwitch';
+import { ERROR_BOX, FIELD, LABEL, OUTLINE_BTN, PRIMARY_BTN, SHOW_BTN } from './authStyles';
 
 interface LoginFormProps {
   // Where a customer lands after signing in. null = stay on the current page
@@ -19,6 +20,8 @@ interface LoginFormProps {
   readonly onDone?: () => void;
   readonly titleId?: string;
   readonly initialPortal?: LoginPortal;
+  // The /login page uses this to keep the address in step with the tab (/login vs /login?as=store).
+  readonly onPortalChange?: (portal: LoginPortal) => void;
 }
 
 // The one Sign In card — rendered full-page by /login on mobile and inside
@@ -31,6 +34,7 @@ export default function LoginForm({
   onDone,
   titleId,
   initialPortal = 'customer',
+  onPortalChange,
 }: LoginFormProps) {
   const [portal, setPortal] = useState<LoginPortal>(initialPortal);
   const [email, setEmail] = useState('');
@@ -62,7 +66,9 @@ export default function LoginForm({
         setAuth(user, token, activeStore, staff_profile);
         onDone?.();
         // replace, not push: Back from where they land must not show the sign-in page again.
-        if (isAuthorized) router.replace(staffRedirect);
+        // A new owner (signed up with their own email) has no shop yet: the application wizard comes first.
+        if (roleNames.includes('store_owner') && !activeStore) router.replace('/onboarding');
+        else if (isAuthorized) router.replace(staffRedirect);
         else if (customerRedirect) router.replace(customerRedirect);
       }
     } catch (err: unknown) {
@@ -83,20 +89,20 @@ export default function LoginForm({
     <>
       <h1 id={titleId} className="text-display text-2xl text-ink mb-6">Sign In</h1>
 
-      <LoginPortalSwitch value={portal} onChange={(next) => { setPortal(next); setError(''); }} />
+      <LoginPortalSwitch value={portal} onChange={(next) => { setPortal(next); setError(''); onPortalChange?.(next); }} />
       {portal === 'store' && (
         <p className="-mt-3 mb-5 text-sm text-ink-muted">Shop owners, branch managers, and staff sign in here.</p>
       )}
 
       {error && (
-        <div className="mb-5 p-3.5 border border-danger/30 bg-danger/5 text-danger text-sm text-center">
+        <div role="alert" className={ERROR_BOX}>
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="login-email" className="block text-sm text-ink mb-2">
+          <label htmlFor="login-email" className={LABEL}>
             Email<span className="text-danger">*</span>
           </label>
           <input
@@ -105,13 +111,13 @@ export default function LoginForm({
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3.5 py-3 border border-line-strong text-ink text-base focus:outline-none focus:border-ink transition-colors"
+            className={FIELD}
             required
           />
         </div>
 
         <div className="relative">
-          <label htmlFor="login-password" className="block text-sm text-ink mb-2">
+          <label htmlFor="login-password" className={LABEL}>
             Password<span className="text-danger">*</span>
           </label>
           <input
@@ -120,42 +126,47 @@ export default function LoginForm({
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3.5 py-3 pr-16 border border-line-strong text-ink text-base focus:outline-none focus:border-ink transition-colors"
+            className={`${FIELD} pr-20`}
             required
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 bottom-3 text-sm text-ink underline underline-offset-2"
+            className={SHOW_BTN}
           >
             {showPassword ? 'Hide' : 'Show'}
           </button>
         </div>
 
-        <Link href="/forgot-password" onClick={onDone} className="block text-sm text-ink underline underline-offset-2">
+        <Link href="/forgot-password" onClick={onDone} className="inline-flex min-h-11 items-center text-sm text-ink underline underline-offset-2">
           Forgot Password?
         </Link>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
+          className={PRIMARY_BTN}
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-ink">
-        {portal === 'store' ? 'Want to sell on SUTURA?' : <>Don&apos;t have an Account?</>}
+        {portal === 'store' ? 'New to SUTURA for shops?' : <>Don&apos;t have an Account?</>}
       </p>
 
       <Link
-        href={portal === 'store' ? '/register/store' : registerHref}
+        href={portal === 'store' ? '/signup/shop' : registerHref}
         onClick={onDone}
-        className="block w-full mt-4 py-3.5 border border-ink text-ink text-sm font-bold uppercase tracking-widest text-center hover:bg-sunken transition-colors"
+        className={`${OUTLINE_BTN} mt-4`}
       >
-        {portal === 'store' ? 'Apply to Open a Shop' : 'Create an Account'}
+        {portal === 'store' ? 'Create a Shop Account' : 'Create an Account'}
       </Link>
+      {portal === 'store' && (
+        <Link href="/for-shops" onClick={onDone} className="mt-2 flex min-h-11 items-center justify-center text-sm text-ink-muted underline underline-offset-2 hover:text-ink">
+          See how SUTURA works for shops
+        </Link>
+      )}
     </>
   );
 }
