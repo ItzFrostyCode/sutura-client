@@ -574,13 +574,13 @@ export default function StoreHeroHeader({
             )}
           </div>
 
-          {/* Main Store Name */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
+          {/* Main Store Name (in the map sheet the sheet's own header carries it) */}
+          {!embedded && <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
             {store.name}
-          </h1>
+          </h1>}
 
           {/* Subtitle Metadata (Branch, Ratings, Services) */}
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
+          {!embedded && <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
             {activeBranch && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
                 {/* The main branch is marked once, by " · Main HQ": a name that already says "(Main)" would show it twice. */}
@@ -599,10 +599,10 @@ export default function StoreHeroHeader({
               </>
             )}
 
-          </div>
+          </div>}
 
-          {/* ⚡ 3. Centered Action Buttons Row */}
-          <div className="flex items-center justify-center gap-2 mt-4 max-w-md w-full">
+          {/* ⚡ 3. Centered Action Buttons Row (in the map sheet: Book Appointment and Directions are in the sheet's header) */}
+          {!embedded && <div className="flex items-center justify-center gap-2 mt-4 max-w-md w-full">
             {isOwnerViewingOwnStore ? (
               <button
                 type="button"
@@ -653,7 +653,7 @@ export default function StoreHeroHeader({
                 </button>
               </>
             )}
-          </div>
+          </div>}
 
           {/* 📝 4. Centered Bio / Description */}
           {store.description && (
@@ -663,6 +663,7 @@ export default function StoreHeroHeader({
           )}
 
           {/* 📌 5. Centered Key Details Row (with icons like Facebook profile info) */}
+          {!embedded && (
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-ink-muted text-center mt-3 pt-2.5 border-t border-line/60 w-full max-w-2xl px-2">
             {/* Location (Clean, deduplicated) */}
             {!embedded && (
@@ -673,12 +674,12 @@ export default function StoreHeroHeader({
             )}
 
             {/* Open / Closed Status */}
-            <div className="flex items-center gap-1.5">
+            {!embedded && <div className="flex items-center gap-1.5">
               <Clock size={14} className={isStoreCurrentlyOpen ? 'text-emerald-500 shrink-0' : 'text-rose-500 shrink-0'} />
               <span className={isStoreCurrentlyOpen ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-medium'}>
                 {isStoreCurrentlyOpen ? 'Open Now' : 'Closed'}
               </span>
-            </div>
+            </div>}
 
             {/* Phone */}
             {store.phone && (
@@ -688,6 +689,7 @@ export default function StoreHeroHeader({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* 📑 6. Streamlined Navigation Tabs Bar */}

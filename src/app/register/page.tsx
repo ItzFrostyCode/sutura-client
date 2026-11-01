@@ -14,6 +14,7 @@ import { PASSWORD_RULES } from '@/lib/passwordRules';
 import { ERROR_BOX, FIELD, LABEL, PRIMARY_BTN, SHOW_BTN } from '@/components/auth/authStyles';
 import TermsConsent from '@/components/shop-auth/TermsConsent';
 import DisabledHint from '@/components/shop-auth/DisabledHint';
+import { EMAIL_TAKEN_MESSAGE, isEmailTaken } from '@/lib/checkEmail';
 import { destinationFor, safeRedirect, withRedirect } from '@/lib/authRedirect';
 
 export default function RegisterPage() {
@@ -42,6 +43,7 @@ function RegisterPageContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [emailTaken, setEmailTaken] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const router = useRouter();
@@ -85,8 +87,9 @@ function RegisterPageContent() {
         setRegisteredEmail(email);
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Registration failed. Please try again.');
+      const error = err as { response?: { data?: { message?: string; errors?: { email?: string[] } } } };
+      if (error.response?.data?.errors?.email) setEmailTaken(true);
+      else setError(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -175,11 +178,20 @@ function RegisterPageContent() {
                     type="email"
                     autoComplete="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); if (emailTaken) setEmailTaken(false); }}
+                    onBlur={async () => { if (email.trim()) setEmailTaken(await isEmailTaken(email)); }}
+                    aria-invalid={emailTaken}
+                    aria-describedby={emailTaken ? 'register-email-error' : undefined}
                     placeholder="e.g. maria@gmail.com"
-                    className={FIELD}
+                    className={`${FIELD} ${emailTaken ? 'border-danger' : ''}`}
                     required
                   />
+                  {emailTaken && (
+                    <p id="register-email-error" role="alert" className="mt-1.5 text-sm text-danger">
+                      {EMAIL_TAKEN_MESSAGE}{' '}
+                      <a href={withRedirect('/login', redirect)} className="font-bold underline underline-offset-2">Sign in instead</a>, or use a different email.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -189,6 +201,7 @@ function RegisterPageContent() {
                     </label>
                     <input
                       id="register-password"
+                      disabled={emailTaken}
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
                       value={password}
@@ -228,6 +241,7 @@ function RegisterPageContent() {
                   </label>
                   <input
                     id="register-password-confirm"
+                    disabled={emailTaken}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     value={passwordConfirmation}
@@ -240,12 +254,12 @@ function RegisterPageContent() {
                 <TermsConsent agreed={agreed} onChange={setAgreed} audience="customers" />
                 <button
                   type="submit"
-                  disabled={loading || !agreed || !PASSWORD_RULES.every((r) => r.test(password))}
+                  disabled={loading || emailTaken || !agreed || !PASSWORD_RULES.every((r) => r.test(password))}
                   className={PRIMARY_BTN}
                 >
                   {loading ? 'Creating account...' : 'Create an Account'}
                 </button>
-                {!loading && (!agreed || !PASSWORD_RULES.every((r) => r.test(password))) && (
+                {!loading && !emailTaken && (!agreed || !PASSWORD_RULES.every((r) => r.test(password))) && (
                   <DisabledHint id="register-hint">{PASSWORD_RULES.every((r) => r.test(password)) ? 'Agree to the Terms to continue.' : 'Meet every password rule to continue.'}</DisabledHint>
                 )}
               </form>

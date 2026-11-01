@@ -2,6 +2,7 @@
 
 import type { Ref } from 'react';
 import { Search, Settings2, X } from 'lucide-react';
+import { SEARCH_PLACEHOLDER } from './HeroSearch';
 
 interface SearchPillProps {
   readonly value: string;
@@ -27,9 +28,9 @@ export default function SearchPill({ value, onChange, onSubmit, onOpenFilter, ac
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="what are you looking for?"
+        placeholder={SEARCH_PLACEHOLDER}
         aria-label="Search garments, services or shops"
-        className="h-full min-w-0 flex-1 bg-transparent px-3 text-base text-ink placeholder:text-ink-faint focus:outline-none"
+        className="h-full min-w-0 flex-1 bg-transparent px-3 text-lg text-ink placeholder:text-ink-muted focus:outline-none"
       />
       {onClear && value && (
         <button type="button" onClick={onClear} aria-label="Clear search" className="touch-target-44 flex shrink-0 items-center justify-center text-ink-faint hover:text-ink">

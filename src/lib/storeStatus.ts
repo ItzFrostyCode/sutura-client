@@ -49,3 +49,44 @@ export function getStoreStatus(operating_hours?: OperatingHours | string | null)
       : 'bg-rose-50 text-rose-700 border-rose-200',
   };
 }
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+/** "09:00" → "9:00 AM". */
+export function formatClock(hhmm: string): string {
+  const [h, m = 0] = hhmm.split(':').map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+}
+
+/**
+ * The line a person wants about the hours: "Closes 6:00 PM" while open, otherwise when it opens next
+ * ("Opens 9:00 AM" later today, "Opens Tuesday 9:00 AM" on a later day). null when no hours are on file.
+ */
+export function hoursLine(operating_hours?: OperatingHours | string | null): { open: boolean; text: string } | null {
+  if (!operating_hours) return null;
+  let parsed: OperatingHours;
+  try {
+    parsed = typeof operating_hours === 'string' ? JSON.parse(operating_hours) : operating_hours;
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const minutes = (hhmm: string) => { const [h, m = 0] = hhmm.split(':').map(Number); return h * 60 + m; };
+
+  for (let ahead = 0; ahead < 7; ahead++) {
+    const day = (now.getDay() + ahead) % 7;
+    const d = parsed[DAY_KEYS[day]];
+    if (!d?.is_open || !d.open || !d.close) continue;
+    if (ahead === 0) {
+      if (nowMin >= minutes(d.open) && nowMin <= minutes(d.close)) return { open: true, text: `Closes ${formatClock(d.close)}` };
+      if (nowMin < minutes(d.open)) return { open: false, text: `Opens ${formatClock(d.open)}` };
+      continue; // already closed for today: look at the next open day
+    }
+    return { open: false, text: `Opens ${ahead === 1 ? 'tomorrow' : DAY_NAMES[day]} ${formatClock(d.open)}` };
+  }
+  return null;
+}

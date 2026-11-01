@@ -9,3 +9,15 @@ export function formatTravel(minutes: number): string {
 
 /** Rough city speeds, only used for an estimate before a real route is drawn: walking 5, bike 15, car 30 km/h. */
 export const ESTIMATE_KMH = { foot: 5, bike: 15, car: 30 };
+
+/** "8 min", "1 hr 5 min": the short form used on the route tabs and the summary. */
+export function formatMinutesShort(minutes: number): string {
+  const m = Math.max(1, Math.round(minutes));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  return `${h} hr${rest ? ` ${rest} min` : ''}`;
+}
+
+/** Google Maps travel modes for the hand-off link. */
+export const GOOGLE_MODE = { car: 'driving', bike: 'bicycling', foot: 'walking' } as const;

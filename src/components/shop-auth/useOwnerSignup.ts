@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { clearShopIntent, parseShopIntent, saveShopIntentFromUrl } from '@/lib/shopIntent';
+import { EMAIL_TAKEN_MESSAGE, isEmailTaken } from '@/lib/checkEmail';
 export type SignupStep = 'email' | 'password' | 'inbox';
 
 const KEY = 'sutura.ownerSignup';
@@ -26,6 +27,8 @@ export function useOwnerSignup() {
   const [resendIn, setResendIn] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [checking, setChecking] = useState(false);
   const restored = useRef(false);
 
   // Remember what the owner clicked on the landing page, and pick up a sign-up that was already waiting.
@@ -77,6 +80,19 @@ export function useOwnerSignup() {
 
   const goTo = (next: SignupStep) => { setError(''); setStep(next); };
 
+  // Editing the email clears an old "already registered" message.
+  const updateEmail = (value: string) => { setEmail(value); if (emailError) setEmailError(''); };
+
+  /** Email step → password step, but only if the email can still sign up. */
+  const continueFromEmail = async () => {
+    setChecking(true);
+    setEmailError('');
+    const taken = await isEmailTaken(email);
+    setChecking(false);
+    if (taken) { setEmailError(EMAIL_TAKEN_MESSAGE); return; }
+    goTo('password');
+  };
+
   const submit = async () => {
     setBusy(true);
     setError('');
@@ -90,6 +106,9 @@ export function useOwnerSignup() {
       try { sessionStorage.setItem(KEY, JSON.stringify({ email: email.trim(), pollToken: token })); } catch { /* optional */ }
       setStep('inbox');
     } catch (err) {
+      // Taken between the email step and now (or the check could not run): back to the email step, with the reason.
+      const taken = (err as { response?: { status?: number; data?: { errors?: { email?: string[] } } } }).response?.data?.errors?.email;
+      if (taken) { setEmailError(EMAIL_TAKEN_MESSAGE); setStep('email'); return; }
       setError(getErrorMessage(err, 'Could not create your sign-up. Please try again.'));
     } finally {
       setBusy(false);
@@ -117,7 +136,7 @@ export function useOwnerSignup() {
   };
 
   return {
-    step, goTo, email, setEmail, agreed, setAgreed, password, setPassword, confirm, setConfirm,
+    step, goTo, email, setEmail: updateEmail, emailError, checking, continueFromEmail, agreed, setAgreed, password, setPassword, confirm, setConfirm,
     verified, expired, resendIn, busy, error, submit, resend, changeEmail,
   };
 }

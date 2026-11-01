@@ -10,6 +10,7 @@ export interface RelatedStore {
   reviews_count: number;
   reviews_avg_rating: number | null;
   distance_km?: number | null;
+  phone?: string | null;
   subscription_plan?: string | null;
   is_featured?: boolean;
   specializations?: string[];
@@ -24,6 +25,8 @@ export interface RelatedStore {
     longitude: string | null;
     address?: string;
     is_main?: boolean;
+    contact_number?: string | null;
+    operating_hours?: OperatingHours | null;
   }[];
   catalog_items?: {
     id: number;

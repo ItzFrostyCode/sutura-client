@@ -56,7 +56,7 @@ function LoginFormContent() {
 
       {/* Mobile: full edge-to-edge without margins. Tablet/desktop: centered card on canvas. */}
       <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
-        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:border sm:border-line sm:shadow-sm">
+        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:rounded-2xl sm:border sm:border-line sm:shadow-sm">
           <Link
             href="/"
             aria-label="Back to home"
