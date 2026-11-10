@@ -144,21 +144,21 @@ export default function StoreLocationsTab({
                   {/* Badges on Image */}
                   <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
                     {isCurrentlyActive ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-none bg-ink text-white shadow-xs">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-none bg-ink text-white shadow-xs">
                         <CheckCircle2 size={12} className="text-emerald-400" /> Active Profile
                       </span>
                     ) : null}
                     {branch.is_main ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-none bg-amber-100 text-amber-900 border border-amber-300">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-none bg-amber-100 text-amber-900 border border-amber-300">
                         Main Branch (HQ)
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-none bg-white/90 text-ink shadow-xs">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-none bg-white/90 text-ink shadow-xs">
                         Satellite Branch
                       </span>
                     )}
                     {isOwnerViewingOwnStore && branch.status === 'inactive' && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-none bg-rose-100 text-rose-800 border border-rose-300">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-none bg-rose-100 text-rose-800 border border-rose-300">
                         Inactive — Not Shown to Customers
                       </span>
                     )}

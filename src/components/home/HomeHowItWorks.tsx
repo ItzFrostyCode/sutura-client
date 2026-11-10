@@ -22,7 +22,7 @@ export default function HomeHowItWorks({ embedded = false }: { readonly embedded
             <div className="w-14 h-14 sm:w-16 sm:h-16 bg-sunken border border-line flex items-center justify-center text-taupe mb-3">
               <Icon size={24} />
             </div>
-            <p className="text-[11px] font-semibold text-ink-faint tracking-wider mb-1">STEP {step}</p>
+            <p className="text-xs font-semibold text-ink-faint tracking-wider mb-1">STEP {step}</p>
             <h3 className="mobile-h4 sm:tablet-h4 text-ink mb-1.5">{title}</h3>
             <p className="mobile-body-sm sm:tablet-body-sm text-ink-body font-normal leading-relaxed max-w-[220px]">
               {desc}

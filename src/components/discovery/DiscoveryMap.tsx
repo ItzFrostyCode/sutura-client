@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import YouMarker from './YouMarker';
+import DistrictHighlight from './DistrictHighlight';
 import { focusOn } from '@/lib/mapFocus';
 
 // Generic fallback pin — same inline store SVG used when a store has no
@@ -44,7 +45,7 @@ export function buildStorePinIcon(
 
   const isMainBadge = badge === 'MAIN';
   const badgeHtml = badge
-    ? `<span style="position:absolute;top:-4px;right:-7px;background:${isMainBadge ? '#2D2A26' : '#8A7063'};color:#fff;font-size:8.5px;font-weight:700;line-height:1;letter-spacing:0.02em;${isMainBadge ? 'padding:2px 4.5px;border-radius:6px;' : 'width:17px;height:17px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;'}border:1.5px solid #fff;z-index:11;box-shadow:0 1px 4px rgba(0,0,0,0.35);">${badge}</span>`
+    ? `<span style="position:absolute;top:-4px;right:-7px;background:${isMainBadge ? '#2D2A26' : '#8A7063'};color:#fff;font-size:11px;font-weight:700;line-height:1;letter-spacing:0.02em;${isMainBadge ? 'padding:2px 5px;border-radius:6px;' : 'width:19px;height:19px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;'}border:1.5px solid #fff;z-index:11;box-shadow:0 1px 4px rgba(0,0,0,0.35);">${badge}</span>`
     : '';
 
   const html = `
@@ -283,6 +284,12 @@ interface DiscoveryMapProps {
   readonly onUserPan?: () => void;
   /** When false, all map dragging, zooming, and pointer interactions are disabled. */
   readonly interactive?: boolean;
+  /** A Davao district to outline (with the whole city) and fit; the pin fit pauses while one is shown. */
+  readonly highlightDistrict?: string | null;
+  /** Always outline Davao City ("All Davao" on the map screen). */
+  readonly showCity?: boolean;
+  /** Frame the whole city now (the person picked "All Davao"); the pin fit pauses meanwhile. */
+  readonly fitCity?: boolean;
 }
 
 export default function DiscoveryMap({
@@ -303,6 +310,9 @@ export default function DiscoveryMap({
   followPosition,
   onUserPan,
   interactive = true,
+  highlightDistrict = null,
+  showCity = false,
+  fitCity = false,
 }: DiscoveryMapProps) {
   const gate = useGuestGatedHref();
   const hasNoResults = branches.length === 0 && !userLocation && !selectable;
@@ -351,7 +361,10 @@ export default function DiscoveryMap({
           maxNativeZoom={19}
         />
         <MapEventsHandler onMoveEnd={onMoveEnd} mapRef={mapRef} enabled={selectable} />
-        <FitBounds points={boundsPoints} disable={disableFitBounds} pad={fitPadding} />
+        {/* A chosen district, or "All Davao" just picked, frames the map itself (DistrictHighlight), so the pin fit steps
+            aside — unless a route is drawn. */}
+        <FitBounds points={boundsPoints} disable={disableFitBounds || ((Boolean(highlightDistrict) || fitCity) && !routeBounds)} pad={fitPadding} />
+        <DistrictHighlight district={routeBounds ? null : highlightDistrict} showCity={showCity} fitCity={fitCity && !routeBounds} pad={fitPadding} />
         <FocusOnUser position={userLocation ?? null} pad={fitPadding} active={Boolean(focusUser)} />
         <FollowUser position={followPosition ?? null} pad={fitPadding} onUserPan={onUserPan} />
         {route && route.length > 1 && <Polyline positions={route} pathOptions={{ color: '#6B4E3E', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} />}
@@ -370,10 +383,10 @@ export default function DiscoveryMap({
                 <Popup>
                   <strong>{b.storeName}</strong>
                   {' '}
-                  <span style={{ fontSize: '11px', color: '#2D2A26', fontWeight: 700 }}>
+                  <span style={{ fontSize: '12px', color: '#2D2A26', fontWeight: 700 }}>
                     {b.isMain ? '(Main Branch)' : `(${b.branchName})`}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '11px', fontWeight: 600, color: b.isOpen ? '#16a34a' : '#dc2626' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '12px', fontWeight: 600, color: b.isOpen ? '#16a34a' : '#dc2626' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.isOpen ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
                     {b.isOpen ? 'Open' : 'Closed'}
                   </div>

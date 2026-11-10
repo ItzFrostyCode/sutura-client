@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
+import { getBestPosition } from '@/lib/customerLocation';
 import { type StoreResult } from './storesTypes';
 
 export function useStoreDirectory() {
@@ -32,7 +33,8 @@ export function useStoreDirectory() {
     }
     setLocating(true);
     setLocationError('');
-    navigator.geolocation.getCurrentPosition(
+    // The sharpest reading in a few seconds, not the first (often cached or Wi-Fi) one — see getBestPosition.
+    getBestPosition(
       (pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLocating(false);
@@ -41,7 +43,6 @@ export function useStoreDirectory() {
         setLocationError('Could not get your location. Check your browser’s location permission and try again.');
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 

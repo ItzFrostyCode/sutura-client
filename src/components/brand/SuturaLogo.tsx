@@ -1,31 +1,21 @@
-import type { CSSProperties } from 'react';
-import { LOCKUP, MARK_FULL, MARK_SMALL, WORDMARK } from './suturaMarkup';
-import type { MarkDetail } from './SuturaMark';
+import { BRAND_LOCKUP_WIDTH, BRAND_WORDMARK } from './brandPaths';
+import SuturaMark, { type MarkDetail, type MarkTone } from './SuturaMark';
 
 interface SuturaLogoProps {
-  /** Set the height (e.g. `h-7`); the width follows. The wordmark takes `currentColor`. */
+  /** Set the height (e.g. `h-7`); the width follows. The needle, thread and wordmark take `currentColor`. */
   readonly className?: string;
   /** 'small' under 48px tall (headers, footer), 'full' from 48px. */
   readonly detail?: MarkDetail;
-  /** The colour behind the logo, for the gap round the needle (defaults to the page cream). */
-  readonly halo?: string;
+  /** 'dark' lightens the pin for a dark background (pair it with `text-white`). */
+  readonly tone?: MarkTone;
 }
 
-const MARKUP: Record<MarkDetail, string> = { full: MARK_FULL, small: MARK_SMALL };
-const { box } = LOCKUP;
-
-/** The full SUTURA logo: the tape-and-needle S beside the wordmark (same drawing as public/brand/logo.svg). Label the link. */
-export default function SuturaLogo({ className = '', detail = 'small', halo }: SuturaLogoProps) {
+/** The full SUTURA logo: the Tailor Pin beside the wordmark (same drawing as public/brand/logo.svg). Label the link. */
+export default function SuturaLogo({ className = '', detail = 'small', tone = 'light' }: SuturaLogoProps) {
   return (
-    <svg
-      viewBox={`0 0 ${LOCKUP.width} ${LOCKUP.height}`}
-      className={className}
-      style={halo ? ({ '--sutura-halo': halo } as CSSProperties) : undefined}
-      aria-hidden
-      focusable="false"
-    >
-      <svg width={LOCKUP.symbolWidth} height={LOCKUP.height} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} dangerouslySetInnerHTML={{ __html: MARKUP[detail] }} />
-      <path fill="currentColor" transform={`translate(${LOCKUP.wordX} ${LOCKUP.baseline})`} d={WORDMARK} />
+    <svg viewBox={`0 0 ${BRAND_LOCKUP_WIDTH} 100`} className={className} aria-hidden focusable="false">
+      <SuturaMark x="0" y="0" width="100" height="100" detail={detail} tone={tone} />
+      <path fill="currentColor" transform="translate(112 0)" d={BRAND_WORDMARK} />
     </svg>
   );
 }

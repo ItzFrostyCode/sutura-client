@@ -53,7 +53,7 @@ export default function PaymentChannelEdit({
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
           <span className="text-xs sm:text-sm font-bold text-ink">{title}</span>
         </div>
-        <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
+        <span className={`text-xs sm:text-xs font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
           {badgeLabel}
         </span>
       </div>
@@ -81,7 +81,7 @@ export default function PaymentChannelEdit({
             ) : (
               <div className="flex flex-col items-center justify-center text-ink-faint p-2 text-center select-none">
                 <QrCode size={30} strokeWidth={1.5} />
-                <span className="text-[10px] mt-1 font-medium text-ink-muted">No QR image</span>
+                <span className="text-xs mt-1 font-medium text-ink-muted">No QR image</span>
               </div>
             )}
           </div>
@@ -125,7 +125,7 @@ export default function PaymentChannelEdit({
 
           <div className="space-y-1">
             <label htmlFor={nameId} className="block text-xs font-medium text-ink-body">
-              Account Name <span className="text-ink-faint text-[11px]">(Optional)</span>
+              Account Name <span className="text-ink-faint text-xs">(Optional)</span>
             </label>
             <input
               id={nameId}

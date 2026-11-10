@@ -3,6 +3,7 @@
 import { Check } from 'lucide-react';
 import { FileField, StepActions } from './ApplicationFields';
 import TrialChoice from './TrialChoice';
+import TrialSummary from './TrialSummary';
 import PlatformPaymentBox from '@/components/shared/PlatformPaymentBox';
 import { formatPeso, type BillingCycle, type PaymentMethod } from './applicationTypes';
 import type { StoreApplicationState } from './useStoreApplication';
@@ -17,17 +18,16 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
-  const { trial, setTrial, plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting } = app;
+  const { trial, setTrial, path, setPath, plans, planId, setPlanId, billingCycle, setBillingCycle, paymentMethod, setPaymentMethod, files, setFile, goTo, submit, submitting } = app;
   const selected = plans.find((p) => p.id === planId);
   const price = selected ? (billingCycle === 'yearly' ? selected.price_yearly : selected.price_monthly) : 0;
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="space-y-6">
-      <TrialChoice trial={trial} onChange={setTrial} />
+      {/* Free trial and paid plan are separate paths: the switch only shows when the owner hasn't picked one yet. */}
+      {path === 'choose' && <TrialChoice trial={trial} onChange={setTrial} />}
       {trial ? (
-        <div className="rounded-xl border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
-          Your free 14 days start once the SUTURA team approves your shop. Nothing to pay and no receipt to upload; you can choose a plan at any time.
-        </div>
+        <TrialSummary />
       ) : (
       <>
       <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-line-strong" role="radiogroup" aria-label="Billing cycle">
@@ -87,7 +87,12 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
       </>
       )}
 
-      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : 'Submit Application'} busy={submitting || (!trial && !selected)} />
+      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : trial ? 'Start Free Trial' : 'Submit Application'} busy={submitting || (!trial && !selected)} />
+      {path !== 'choose' && (
+        <button type="button" onClick={() => setPath(trial ? 'plan' : 'trial')} className="flex min-h-11 w-full items-center justify-center text-sm text-ink-muted underline underline-offset-2 hover:text-ink">
+          {trial ? 'Pay for a plan instead' : 'Try SUTURA free for 14 days instead'}
+        </button>
+      )}
     </form>
   );
 }

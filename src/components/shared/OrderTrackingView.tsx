@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
 import OrderSummaryCard from '@/components/shared/orderTracking/OrderSummaryCard';
 import OrderAppointmentsCard from '@/components/shared/orderTracking/OrderAppointmentsCard';
-import OrderProgressView from '@/components/shared/orderTracking/OrderProgressView';
-import { type OrderProgress, progressLabel } from '@/components/shared/orderTracking/orderProgress';
+import OrderStageTracker from '@/components/shared/orderTracking/OrderStageTracker';
+import type { OrderProgress } from '@/components/shared/orderTracking/orderProgress';
+import { TERMINAL_STATUSES, getCustomerPhase } from '@/components/shared/orderTracking/orderPhases';
 import OrderBatchesCard from '@/components/shared/orderTracking/OrderBatchesCard';
 import type { BatchSummary } from '@/components/jobs/batches/batchTypes';
 
@@ -98,23 +100,29 @@ export interface TrackedOrder {
 
 interface OrderTrackingViewProps {
   readonly order: TrackedOrder;
+  /** 'vertical' on the signed-in order page (every step readable on a phone); 'horizontal' for the compact guest tracker. */
+  readonly stepperLayout?: 'horizontal' | 'vertical';
+  /** Cards that belong to this order's column, so their edges line up with it: the quotation above, payment below. */
+  readonly before?: ReactNode;
+  readonly after?: ReactNode;
 }
 
-export default function OrderTrackingView({ order }: OrderTrackingViewProps) {
+export default function OrderTrackingView({ order, stepperLayout = 'vertical', before, after }: OrderTrackingViewProps) {
+  const phase = order.status in TERMINAL_STATUSES ? null : getCustomerPhase(order.status);
+  const hasAppointments = !!order.appointments && order.appointments.length > 0;
   return (
-    // From md (768px) it is two columns: the order and its progress on the left, the related appointments on the right.
-    <div className="md:mx-auto md:grid md:max-w-3xl md:grid-cols-5 md:items-start md:gap-4">
-      <div className="space-y-3 md:col-span-3">
-        <OrderSummaryCard order={order} phase={progressLabel(order.progress)} />
-        {order.progress && (
-          <div className="card-soft p-4">
-            <OrderProgressView progress={order.progress} />
-          </div>
-        )}
+    // One column, centred, every card the same width. From md (768px), when the order has appointments, they take a
+    // right-hand column (2/5) beside the order (3/5); without appointments the order keeps the full width.
+    <div className={`md:mx-auto md:max-w-3xl ${hasAppointments ? 'md:grid md:grid-cols-5 md:items-start md:gap-4' : ''}`}>
+      <div className={`space-y-3 ${hasAppointments ? 'md:col-span-3' : ''}`}>
+        {before}
+        <OrderSummaryCard order={order} phase={phase} />
+        <OrderStageTracker order={order} layout={stepperLayout} />
         {order.batch && <OrderBatchesCard batch={order.batch} signedIn={!!order.id} />}
+        {after}
       </div>
 
-      {order.appointments && order.appointments.length > 0 && <OrderAppointmentsCard appointments={order.appointments} />}
+      {hasAppointments && <OrderAppointmentsCard appointments={order.appointments!} />}
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import { BadgeCheck, Clock, Loader2, MapPin, RotateCcw, type LucideIcon } from 'lucide-react';
-import PublicNav from '@/components/shared/PublicNav';
 import { useAuthStore } from '@/store/useAuthStore';
 import AskBadge from './AskBadge';
 import AskAnswer from './AskAnswer';
@@ -21,8 +20,7 @@ export default function AskSutura() {
   const signedIn = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas selection:bg-taupe/25">
-      <PublicNav />
+    <div className="flex flex-1 flex-col bg-canvas selection:bg-taupe/25">
       <main className="mx-auto w-full max-w-3xl flex-1 mobile-screen-margins pb-10 pt-8 sm:pt-12">
         {!hydrated ? (
           <div className="flex justify-center py-24"><Loader2 size={28} className="animate-spin text-ink-faint" aria-label="Loading" /></div>

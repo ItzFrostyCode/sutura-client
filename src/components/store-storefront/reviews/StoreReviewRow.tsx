@@ -39,7 +39,7 @@ export default function StoreReviewRow({
             <p className="font-semibold text-ink text-sm truncate leading-tight flex items-center gap-1.5">
               {review.user?.name || 'Customer'}
               {review.is_featured && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 shrink-0">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100 shrink-0">
                   <Pin size={9} /> Featured
                 </span>
               )}
@@ -136,7 +136,7 @@ export default function StoreReviewRow({
         </div>
       ) : review.reply ? (
         <div className="mt-2 ml-[52px] pl-3 border-l-2 border-taupe/40 bg-canvas p-2.5">
-          <p className="text-[11px] font-bold text-taupe uppercase tracking-wide mb-0.5">Shop&apos;s Reply</p>
+          <p className="text-xs font-bold text-taupe uppercase tracking-wide mb-0.5">Shop&apos;s Reply</p>
           <p className="text-sm text-ink-body leading-relaxed whitespace-pre-line">{review.reply}</p>
         </div>
       ) : null}

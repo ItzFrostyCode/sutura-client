@@ -7,6 +7,8 @@ import { Bell, Package, User as UserIcon } from 'lucide-react';
 import type { User } from '@/store/useAuthStore';
 import { getMediaUrl } from '@/lib/media';
 import { useLoginModalStore } from '@/store/useLoginModalStore';
+import LoginButton from './LoginButton';
+import NotificationsPopover from '@/components/notifications/inbox/NotificationsPopover';
 
 // Matches MobileFrame's mobile/tablet cutover (Tailwind `sm`).
 const TABLET_UP = '(min-width: 640px)';
@@ -51,24 +53,28 @@ export default function NavActionButtons({
 
   return (
     <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 justify-end">
-      {/* 1. Track Order: routes to /account/orders for Customers, /track for Guests */}
+      {/* 1. Track Order (phones only — from 640px it is a named link in PublicTopLinks): /account/orders for customers, /track for guests */}
       <Link
         href={trackOrderHref}
         aria-label={trackOrderTitle}
         title={trackOrderTitle}
         onClick={onActionClick}
-        className="shrink-0 w-11 h-11 sm:w-10 sm:h-10 flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
+        className="shrink-0 w-11 h-11 flex sm:hidden items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
       >
         <Package size={20} />
       </Link>
 
-      {/* 2. Notifications: red badge only shown when unreadCount > 0 (strictly 0 for guests) */}
+      {/* 2. Notifications: a customer's / guest's bell drops the latest down first (Facebook), "See all" opens the page.
+          Shop accounts keep the link to their dashboard inbox. Red badge only when unreadCount > 0 (always 0 for guests). */}
+      {notificationsHref === '/notifications' ? (
+        <span className="hidden sm:flex"><NotificationsPopover unreadCount={unreadCount} title={notificationsTitle} size="md" /></span>
+      ) : (
       <Link
         href={notificationsHref}
         aria-label={notificationsTitle}
         title={notificationsTitle}
         onClick={onActionClick}
-        className="relative shrink-0 w-10 h-10 hidden sm:flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
+        className="relative shrink-0 w-11 h-11 hidden sm:flex items-center justify-center text-ink hover:bg-sunken rounded-full transition-colors"
       >
         <Bell size={19} />
         {unreadCount > 0 && (
@@ -77,14 +83,18 @@ export default function NavActionButtons({
           </span>
         )}
       </Link>
+      )}
 
-      {/* 3. User / Account: Customer avatar/initial when logged in, outline User icon for guests */}
+      {/* 3. Guests: the same "Log in" pill as on a phone (LoginButton). Signed in: avatar / initial. */}
+      {isGuest ? (
+        <span className="hidden sm:flex"><LoginButton href={accountHref} onClick={handleAccountClick} /></span>
+      ) : (
       <Link
         href={accountHref}
         aria-label={isGuest ? 'Login / Register' : userTitle}
         title={isGuest ? 'Login / Register' : userTitle}
         onClick={handleAccountClick}
-        className={`shrink-0 h-10 hidden sm:flex items-center justify-center gap-2 text-ink hover:bg-sunken rounded-full transition-colors ${isGuest ? 'min-w-10 lg:px-3' : 'w-10'}`}
+        className={`shrink-0 h-11 hidden sm:flex items-center justify-center gap-2 text-ink hover:bg-sunken rounded-full transition-colors ${isGuest ? 'min-w-11 lg:px-3' : 'w-11'}`}
       >
         {isAuthenticated && user ? (
           user.profile_picture ? (
@@ -107,10 +117,11 @@ export default function NavActionButtons({
           <>
             <UserIcon size={19} />
             {/* lg+ only: at md the centered logo leaves no room for a label. */}
-            <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">Login / Register</span>
+            <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">Sign in</span>
           </>
         )}
       </Link>
+      )}
     </div>
   );
 }

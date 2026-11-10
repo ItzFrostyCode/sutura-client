@@ -1,38 +1,39 @@
 import type { MoreFilters } from '../homeFilters';
-import { chip } from './filterUi';
+import DistrictChips from './DistrictChips';
 
 interface FilterMoreProps {
   readonly value: MoreFilters;
   readonly onChange: (value: MoreFilters) => void;
 }
 
-
-
-
 const field = 'h-12 w-full min-w-0 rounded-2xl bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong';
-const label = 'mobile-caption mb-1.5 block text-ink-muted';
+const label = 'mb-1.5 block text-xs text-ink-muted';
 const title = 'mobile-h4 mb-3 text-ink';
 
-/** Price (range and sort order) and rating. */
+/** District, price (range and sort order) and rating. */
 export default function FilterMore({ value, onChange }: FilterMoreProps) {
   const set = (patch: Partial<MoreFilters>) => onChange({ ...value, ...patch });
 
   return (
     <>
       <section className="mt-6">
+        <h3 className={title}>District</h3>
+        {/* A new district drops the barangay / street picked inside the old one. */}
+        <DistrictChips value={value.district} onChange={(district) => set({ district, barangay: '', area: '' })} />
+      </section>
+
+      <section className="mt-6">
         <h3 className={title}>Price</h3>
 
-        {/* Sort order — always active, click to swap direction */}
+        {/* Sort order: a setting you flip, so it is outlined and says "Sort", not a black button that looks like an action. */}
         <button
           type="button"
           onClick={() => set({ sortBy: value.sortBy === 'price_asc' ? 'price_desc' : 'price_asc' })}
-          className={`${chip(true)} w-full gap-2`}
+          aria-label={`Sort by price: ${value.sortBy === 'price_desc' ? 'high to low' : 'low to high'}. Tap to switch.`}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-line-strong bg-surface text-sm text-ink transition-colors hover:border-ink"
         >
-          {value.sortBy === 'price_desc' ? (
-            <>↓ <span>High to Low</span></>
-          ) : (
-            <>↑ <span>Low to High</span></>
-          )}
+          <span className="text-ink-muted">Sort:</span>
+          <span className="font-semibold">{value.sortBy === 'price_desc' ? 'High to Low ↓' : 'Low to High ↑'}</span>
         </button>
 
         {/* Price range */}
@@ -92,7 +93,7 @@ export default function FilterMore({ value, onChange }: FilterMoreProps) {
           )}
         </div>
         {!value.minRating && (
-          <p className="mobile-caption mt-1 text-ink-muted">Tap a star to filter minimum rating</p>
+          <p className="mt-1 text-xs text-ink-muted">Tap a star to show shops rated that or higher</p>
         )}
       </section>
     </>

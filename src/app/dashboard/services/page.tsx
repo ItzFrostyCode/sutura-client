@@ -64,7 +64,8 @@ export default function ServicesPage() {
       if (user?.id) setTimeout(() => setLoading(false), 0);
       return;
     }
-    api.get(`/stores/${store.id}/services`)
+    // The owner also gets archived services (Services › Archived filter) so they can be restored.
+    api.get(`/stores/${store.id}/services${canManage ? '?include_archived=1' : ''}`)
       .then(res => {
         setServices(res.data.data);
         setLoading(false);
@@ -73,7 +74,7 @@ export default function ServicesPage() {
         console.error(err);
         setLoading(false);
       });
-  }, [store, user]);
+  }, [store, user, canManage]);
 
   useEffect(() => {
     fetchServices();
@@ -89,18 +90,31 @@ export default function ServicesPage() {
     router.replace(`/dashboard/services/new${safe}`);
   }, [isOwnerOrManager]);
 
+  // Restoring brings an archived service back as Unpublished (S2); the owner publishes it when ready.
+  const restoreService = async (id: number) => {
+    if (!store?.id) return;
+    try {
+      await api.post(`/stores/${store.id}/services/${id}/restore`);
+      toast.success('Service restored as unpublished. Open it and publish when ready.');
+      fetchServices();
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Could not restore this service.');
+    }
+  };
+
   const confirmDelete = async () => {
     if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
       await api.delete(`/stores/${store.id}/services/${deletingId}`);
-      setServices(prev => prev.filter(s => s.id !== deletingId));
+      setServices(prev => prev.map(s => (s.id === deletingId ? { ...s, status: 'archived', is_active: false } : s)));
       setIsDeleteModalOpen(false);
       setDeletingId(null);
-      toast.success('Service deleted.');
+      toast.success('Service archived. Find it under Filter › Archived to restore it.');
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to delete service.');
+      toast.error(error.response?.data?.message || 'Failed to archive service.');
     } finally {
       setIsSubmitting(false);
     }
@@ -150,12 +164,14 @@ export default function ServicesPage() {
             setIsDeleteModalOpen(true);
           }}
           onDeleteDesign={handleDeleteDesign}
+          onRestore={canManage ? restoreService : undefined}
         />
       ) : isOwnerOrManager ? (
         <ServiceAnalyticsView />
       ) : null}
 
       <ServiceDeleteModal
+        archive
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);

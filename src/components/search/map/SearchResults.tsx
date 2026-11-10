@@ -56,6 +56,9 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           department={s.department}
           onShowOnMap={onShowOnMap}
           inPanel
+          district={s.district}
+          onSuggest={(term) => s.setQ(term)}
+          onShowEverything={() => { s.setQ(''); s.setCategoryLabel(''); s.applyAllFilters({ radiusKm: null, status: 'all', minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: s.sortBy }); }}
         />
       )}
       {s.activeTab === 'showroom' && (
@@ -70,6 +73,9 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           setPage={s.setPage}
           lastPage={s.lastPage}
           userCoords={s.userCoords}
+          query={s.effectiveQ}
+          district={s.district}
+          onSearch={(term) => s.setQ(term)}
         />
       )}
       {s.activeTab === 'services' && (
@@ -81,6 +87,9 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           activeTab={s.activeTab}
           effectiveQ={s.effectiveQ}
           gate={s.gate}
+          district={s.district}
+          userCoords={s.userCoords}
+          onSearch={(term) => s.setQ(term)}
         />
       )}
     </div>

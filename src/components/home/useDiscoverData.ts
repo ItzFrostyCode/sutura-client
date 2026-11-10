@@ -22,13 +22,13 @@ export function useDiscoverData(coords: { lat: number; lng: number } | null, fil
   const [nearLoading, setNearLoading] = useState(false);
 
   useEffect(() => {
-    // No lat/lng on purpose: without a location the server lists plan-featured shops first, so the
-    // featured ones are at the front and the flag tells us which they are.
+    // No lat/lng on purpose: without a location the server lists Premium shops first, and is_featured says which
+    // they are (the live plan: StoreController / Store::scopeWithPremiumNow). Only those are "Featured" — no filling
+    // the section with ordinary shops when there is no Premium one; the section is simply left out then.
     api.get('/public/stores', { params: { per_page: 20 } })
       .then((res) => {
         const rows = (res.data.data ?? []) as StoreResult[];
-        const featuredRows = rows.filter((s) => s.is_featured);
-        setFeatured(featuredRows.length > 0 ? featuredRows.slice(0, 8) : rows.slice(0, 8));
+        setFeatured(rows.filter((s) => s.is_featured).slice(0, 8));
       })
       .catch(() => setFeatured([]))
       .finally(() => setFeaturedLoading(false));

@@ -22,8 +22,8 @@ export default function LocationRow({ icon, title, subtitle, onClick, disabled, 
     >
       <span className="shrink-0 text-taupe">{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className="mobile-body-md block truncate font-medium text-ink">{title}</span>
-        {subtitle && <span className="mobile-body-sm mt-0.5 block truncate text-ink-muted">{subtitle}</span>}
+        <span className="mobile-body-md block line-clamp-2 break-words font-medium text-ink">{title}</span>
+        {subtitle && <span className="mobile-body-sm mt-0.5 block line-clamp-2 break-words text-ink-muted">{subtitle}</span>}
       </span>
       {chevron && <ChevronRight size={18} className="shrink-0 text-ink-faint" />}
     </button>

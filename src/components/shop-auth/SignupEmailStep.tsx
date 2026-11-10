@@ -6,7 +6,7 @@ import ForShopsLink from './ForShopsLink';
 import TermsConsent from './TermsConsent';
 import DisabledHint from './DisabledHint';
 import IntentChip, { useShopIntentLabel } from './IntentChip';
-import { FIELD, LABEL, PRIMARY_BTN } from './AuthShell';
+import { EMAIL_INPUT_PROPS, FIELD, LABEL, PRIMARY_BTN, TITLE } from './AuthShell';
 import type { OwnerSignupState } from './useOwnerSignup';
 
 export default function SignupEmailStep({ s }: { readonly s: OwnerSignupState }) {
@@ -16,21 +16,21 @@ export default function SignupEmailStep({ s }: { readonly s: OwnerSignupState })
   return (
     <>
       <IntentChip label={intent.chip} />
-      <h1 className="text-display text-2xl text-ink mb-2">Open a Shop</h1>
-      <p className="mb-6 text-sm text-ink-muted">{intent.lede}</p>
+      <h1 className={`${TITLE} mb-2`}>{intent.title}</h1>
+      <p className="mb-6 text-base text-ink-muted">{intent.lede}</p>
 
       <form onSubmit={(e) => { e.preventDefault(); if (ok) s.continueFromEmail(); }} className="space-y-5">
         <div>
           <label htmlFor="su-email" className={LABEL}>Email<span className="text-danger">*</span></label>
-          <input id="su-email" type="email" autoComplete="email" inputMode="email" placeholder="e.g. owner@gmail.com" required
+          <input id="su-email" {...EMAIL_INPUT_PROPS} autoComplete="email" placeholder="e.g. owner@gmail.com" required
             aria-invalid={!!s.emailError} aria-describedby={s.emailError ? 'su-email-error' : undefined}
             value={s.email} onChange={(e) => s.setEmail(e.target.value)} className={`${FIELD} ${s.emailError ? 'border-danger' : ''}`} />
           {s.emailError ? (
             <p id="su-email-error" role="alert" className="mt-1.5 text-sm text-danger">
-              {s.emailError} <Link href="/login?as=store" className="font-bold underline underline-offset-2">Sign in instead</Link>, or use a different email.
+              {s.emailError} Already your shop&apos;s account? <Link href="/login?as=store" className="font-bold underline underline-offset-2">Sign in</Link>.
             </p>
           ) : (
-            <p className="mt-1.5 text-xs text-ink-muted">We&apos;ll send a link to confirm it. Your account is created when you open it.</p>
+            <p className="mt-1.5 text-xs text-ink-muted">Use your shop&apos;s own email, not one you use as a customer. We&apos;ll send a link to confirm it.</p>
           )}
         </div>
         <TermsConsent agreed={s.agreed} onChange={s.setAgreed} audience="owners" />

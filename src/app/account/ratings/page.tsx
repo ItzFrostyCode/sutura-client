@@ -17,14 +17,14 @@ type RatedStore = StoreResult & { rating: number };
 // permanently-empty tab would be dead weight here. Recently Viewed's Services tab is real (backed by click-tracking).
 type Tab = 'showroom' | 'stores';
 const TABS: { key: Tab; label: string; shortLabel: string }[] = [
+  { key: 'stores', label: 'Shops', shortLabel: 'Shops' },
   { key: 'showroom', label: 'Designs', shortLabel: 'Designs' },
-  { key: 'stores', label: 'Stores', shortLabel: 'Stores' },
 ];
 
-const nothingRated = <EmptyState Icon={Star} title="Nothing rated yet" message="Designs and stores you rate will be listed here." action={{ href: '/search', label: 'Go to Search' }} />;
+const nothingRated = <EmptyState Icon={Star} title="Nothing rated yet" message="Designs and shops you rate will be listed here." action={{ href: '/search', label: 'Find a Shop' }} />;
 
 export default function MyRatingsPage() {
-  const [tab, setTab] = useState<Tab>('showroom');
+  const [tab, setTab] = useState<Tab>('stores');
   const [items, setItems] = useState<CatalogItemResult[] | null>(null);
   const [stores, setStores] = useState<RatedStore[] | null>(null);
 
@@ -52,7 +52,7 @@ export default function MyRatingsPage() {
 
       {tab === 'stores' && stores !== null && (
         stores.length === 0 ? nothingRated : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {stores.map((store) => <StoreCard key={store.id} store={store} />)}
           </div>
         )

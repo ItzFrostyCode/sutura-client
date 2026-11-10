@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 const NON_CUSTOMER_ROLES = new Set(['store_owner', 'staff', 'branch_manager', 'admin']);
 
-/** Where the Order Tracking icon leads: the code page for guests, My Orders for customers, the jobs list for shop roles. */
+/** Where Order Tracking leads: the code page for guests, My Orders for customers, the jobs list for shop roles. */
 export function useTrackOrderLink() {
   const { isAuthenticated, user, hydrated } = useAuthStore();
   const isAuth = hydrated && isAuthenticated && !!user;
@@ -15,5 +15,8 @@ export function useTrackOrderLink() {
     href: isAuth ? (isCustomer ? '/account/orders' : '/dashboard/jobs') : '/track',
     title: isAuth ? (isCustomer ? 'My Orders & Tracking' : 'Track Job Orders') : 'Track Order with Code',
     label: isAuth ? (isCustomer ? 'My Orders' : 'Track Jobs') : 'Track Order',
+    /** One word, for the bottom bar. */
+    short: isAuth && isCustomer ? 'Orders' : 'Track',
+    isCustomer,
   };
 }

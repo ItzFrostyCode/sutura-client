@@ -1,74 +1,83 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Package } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ChevronRight, Package } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import PublicNav from '@/components/shared/PublicNav';
-import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
+import { HOME_COLUMN } from '@/components/home/homeLayout';
+import TrackCodeForm from '@/components/track/TrackCodeForm';
+import TrackResultCard from '@/components/track/TrackResultCard';
+import { normalizeTrackingCode, useTrackLookup, type TrackFound } from '@/components/track/useTrackLookup';
 
-export default function TrackLandingPage() {
+/**
+ * Track Order. `/track?code=…` (what Discover's "Track your order" opens after the code checks out) shows the code in
+ * the box and the order under it; the box works the same way here (useTrackLookup): empty or wrong code → message
+ * under the box, the previous result is cleared; right code → the result, and the address bar updates so the page
+ * can be shared or reloaded.
+ */
+function TrackPageInner() {
   const router = useRouter();
+  const param = normalizeTrackingCode(useSearchParams().get('code') ?? '');
   const { user, isAuthenticated, hydrated } = useAuthStore();
-  const [code, setCode] = useState('');
+  const lookup = useTrackLookup(param);
+  const [result, setResult] = useState<TrackFound | null>(null);
+  const shown = useRef('');
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const trimmed = code.trim();
-    if (!trimmed) return;
-    router.push(`/track/${encodeURIComponent(trimmed)}`);
-  }
+  // A code in the address (from Discover, a reload, or a shared link): check it once and show the answer.
+  const { check, setCode } = lookup;
+  useEffect(() => {
+    if (!param || param === shown.current) return;
+    shown.current = param;
+    setCode(param);
+    void check(param).then(setResult);
+  }, [param, check, setCode]);
+
+  const submit = async () => {
+    setResult(null);
+    const found = await lookup.check();
+    if (!found) return;
+    shown.current = found.code;
+    setResult(found);
+    router.replace(`/track?code=${encodeURIComponent(found.code)}`, { scroll: false });
+  };
 
   const isCustomer = user?.roles?.some((r) => r.name === 'customer') ?? false;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
-      <PageBrandRow standalone />
-      <main className="flex-1 flex items-center justify-center mobile-screen-margins py-10 sm:py-16">
-        <div className="w-full max-w-sm sm:max-w-md text-center">
-          <div className="w-14 h-14 border border-line flex items-center justify-center mx-auto mb-4">
-            <Package size={24} className="text-taupe" />
+    <main className={`${HOME_COLUMN} flex-1 space-y-6 py-6 sm:py-10`}>
+      <section aria-labelledby="track-title" className="card-soft p-4 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sunken text-taupe-dark" aria-hidden>
+            <Package size={22} />
+          </span>
+          <div className="min-w-0">
+            <h1 id="track-title" className="mobile-h1 sm:tablet-h1 text-ink">Track your order</h1>
+            <p className="mobile-body-md mt-1 text-ink-muted">Enter the tracking code from your shop to see your garment&rsquo;s stage, from cutting to pickup.</p>
           </div>
-          <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">Track Your Order</h1>
-          <p className="mobile-body-md sm:tablet-body-md text-ink-muted mb-8 space-headline-para">
-            Enter the tracking code given to you at the store counter to check your garment&apos;s progress.
-          </p>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="text"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="e.g. TNED8K2P"
-              className="w-full form-input-mobile bg-surface border border-line text-base text-ink placeholder:text-ink-faint placeholder:text-base placeholder:font-normal text-center tracking-widest font-normal uppercase focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors shadow-none"
-              maxLength={12}
-            />
-            <button
-              type="submit"
-              disabled={!code.trim()}
-              className="btn-primary-mobile w-full bg-taupe hover:bg-taupe-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-base font-semibold shadow-none"
-            >
-              Track Order
-            </button>
-          </form>
-
-          {hydrated && isAuthenticated && user && (
-            <div className="mt-8 pt-6 border-t border-line text-center">
-              <p className="mobile-caption text-ink-muted mb-2 font-normal">
-                Logged in as <span className="font-semibold text-ink">{user.name}</span>?
-              </p>
-              <Link
-                href={isCustomer ? '/account/orders' : '/dashboard/jobs'}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:text-taupe-hover transition-colors"
-              >
-                {isCustomer ? 'View all your Job Orders in My Orders →' : 'View Store Job Orders →'}
-              </Link>
-            </div>
-          )}
         </div>
-      </main>
-    </div>
+        <div className="mt-5">
+          <TrackCodeForm id="track-code" code={lookup.code} onCodeChange={lookup.onCodeChange} error={lookup.error} checking={lookup.checking} onSubmit={submit} />
+        </div>
+        {hydrated && isAuthenticated && user && (
+          <Link href={isCustomer ? '/account/orders' : '/dashboard/jobs'} className="mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-taupe-dark hover:underline">
+            {isCustomer ? 'See all my orders' : 'Open the job orders'} <ChevronRight size={16} aria-hidden />
+          </Link>
+        )}
+      </section>
+
+      {result && <TrackResultCard code={result.code} order={result.order} />}
+    </main>
   );
 }
 
+export default function TrackLandingPage() {
+  return (
+    <div className="flex flex-1 flex-col bg-canvas">
+      {/* useSearchParams needs a Suspense boundary (Next 16 build rule). */}
+      <Suspense fallback={<main className="flex-1" />}>
+        <TrackPageInner />
+      </Suspense>
+    </div>
+  );
+}

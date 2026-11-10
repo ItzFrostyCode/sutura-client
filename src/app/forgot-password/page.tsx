@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, SubmitEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { MailCheck } from 'lucide-react';
 import api from '@/lib/axios';
-import PublicNav from '@/components/shared/PublicNav';
-import AuthBrand from '@/components/auth/AuthBrand';
+import AuthPage from '@/components/auth/AuthPage';
+import { signInError } from '@/components/auth/signInError';
+import { EMAIL_INPUT_PROPS, ERROR_BOX, FIELD, LABEL, OUTLINE_BTN, PRIMARY_BTN, TITLE } from '@/components/auth/authStyles';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -13,117 +14,61 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
-      const res = await api.post('/auth/forgot-password', { email });
-      if (res.data.success) {
-        setSent(true);
-      }
-    } catch (err: unknown) {
-      const error = err as { response?: { status?: number; data?: { message?: string } } };
-      if (!error.response) {
-        setError('Unable to connect to the server. Please check your internet connection and try again.');
-      } else if (error.response.status === 429) {
-        setError(error.response.data?.message || 'Please wait a moment before requesting another reset link.');
-      } else if (error.response.status === 503) {
-        setError(error.response.data?.message || 'Email delivery failed. Please check your internet connection or mail configuration and try again.');
-      } else if (error.response.status && error.response.status >= 500) {
-        setError('Our service is temporarily unavailable. Please try again in a few moments.');
-      } else {
-        setError(error.response.data?.message || 'Something went wrong. Please try again.');
-      }
+      const res = await api.post('/auth/forgot-password', { email: email.trim() });
+      if (res.data.success) setSent(true);
+    } catch (err) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } }).response;
+      setError(status?.status === 503
+        ? (status.data?.message || 'We couldn’t send the email right now. Please try again in a few minutes.')
+        : signInError(err, 'Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
-
-      {/* Mobile: full edge-to-edge without margins. Tablet/desktop: centered card on canvas. */}
-      <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
-        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:rounded-2xl sm:border sm:border-line sm:shadow-sm">
-          <Link
-            href="/login"
-            aria-label="Back to sign in"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink-muted transition-colors py-1.5 -ml-1 mb-4"
-          >
-            <ArrowLeft size={18} />
-            <span>Back</span>
-          </Link>
-
-          <AuthBrand className="mb-8" />
-
-          <h1 className="text-display text-2xl text-ink mb-3">Forgot Password</h1>
-          <p className="text-sm text-ink-muted mb-6">
-            Enter the email on your account and we&apos;ll send you instructions to reset your password.
+    <AuthPage back={{ href: '/login', label: 'Sign In' }}>
+      {sent ? (
+        <div className="py-2 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-line-strong bg-sunken text-espresso">
+            <MailCheck size={30} aria-hidden />
+          </div>
+          <h1 className={`${TITLE} mb-2`}>Check Your Inbox</h1>
+          <p className="mb-6 text-base text-ink-muted">
+            If an account uses
+            <span className="my-1.5 block break-words font-semibold text-ink">{email.trim()}</span>
+            you’ll get a link to set a new password in a few minutes. Check your spam folder too.
           </p>
-
-          {sent ? (
-            <div className="mb-6 p-4 border border-emerald-300 bg-emerald-50 text-emerald-800 text-sm space-y-1">
-              <p className="font-semibold">Check your inbox</p>
-              <p>
-                If an account exists for <strong className="font-semibold text-ink break-words">{email}</strong>, you’ll receive password-reset instructions shortly.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="p-3.5 border border-danger/30 bg-danger/5 text-danger text-sm text-center">
-                  {error}
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="forgot-email" className="block text-sm text-ink mb-2">
-                  Email<span className="text-danger">*</span>
-                </label>
-                <input
-                  id="forgot-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-3 border border-line-strong text-ink text-base focus:outline-none focus:border-ink transition-colors"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-            </form>
-          )}
-
-          <p className="mt-6 text-center text-sm text-ink">
-            Don&apos;t have an Account?
-          </p>
-
-          <Link
-            href="/register"
-            className="block w-full mt-4 py-3.5 border border-ink text-ink text-sm font-bold uppercase tracking-widest text-center hover:bg-sunken transition-colors"
-          >
-            Create an Account
-          </Link>
-
-          <p className="mt-5 text-center text-sm text-ink-muted">
-            Remember your password?{' '}
-            <Link href="/login" className="text-ink underline underline-offset-2 hover:text-ink/80">
-              Sign In
-            </Link>
-          </p>
+          <Link href="/login" className={PRIMARY_BTN}>Back to Sign In</Link>
+          <button type="button" onClick={() => setSent(false)} className="mt-3 flex min-h-11 w-full items-center justify-center text-sm text-ink underline underline-offset-2">
+            Use a different email
+          </button>
         </div>
-      </div>
-    </div>
+      ) : (
+        <>
+          <h1 className={`${TITLE} mb-2`}>Forgot Password</h1>
+          <p className="mb-6 text-base text-ink-muted">Enter the email on your account and we’ll send you a link to set a new password.</p>
+
+          {error && <div role="alert" className={ERROR_BOX}>{error}</div>}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="forgot-email" className={LABEL}>Email<span className="text-danger">*</span></label>
+              <input id="forgot-email" {...EMAIL_INPUT_PROPS} autoComplete="email" placeholder="e.g. maria@gmail.com"
+                value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} required />
+            </div>
+            <button type="submit" disabled={loading} className={PRIMARY_BTN}>{loading ? 'Sending link…' : 'Send Reset Link'}</button>
+          </form>
+
+          <p className="mt-8 text-center text-sm text-ink-muted">Don&apos;t have an account yet?</p>
+          <Link href="/register" className={`${OUTLINE_BTN} mt-3`}>Create an Account</Link>
+        </>
+      )}
+    </AuthPage>
   );
 }

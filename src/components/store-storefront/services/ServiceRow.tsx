@@ -8,8 +8,10 @@ import { getActiveSale } from '@/lib/salePricing';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import type { CatalogListItem, PublicService } from '../types';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
+import HomeCarouselRow from '@/components/home/HomeCarouselRow';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { embedSuffix } from '@/hooks/useEmbedded';
+import { QUOTATION_LABEL, priceLead } from '@/lib/servicePricing';
 
 interface ServiceRowProps {
   readonly service: PublicService;
@@ -54,17 +56,19 @@ export default function ServiceRow({ service, storeId, designs, designsLoading, 
           <span className="min-w-0 flex-1 space-y-1">
             <span className="mobile-h4 line-clamp-2 text-ink">{service.name}</span>
             <span className="mobile-body-sm block text-ink-body">
-              {Number.isFinite(base) && base > 0 ? (
+              {service.price_display === 'quotation' ? (
+                <span className="text-ink-muted">{QUOTATION_LABEL}</span>
+              ) : Number.isFinite(base) && base > 0 ? (
                 sale ? (
-                  <>From <span className="font-semibold text-danger">{peso(sale.sale)}</span> <span className="text-ink-faint line-through">{peso(base)}</span></>
+                  <>{priceLead(service.price_display)}<span className="font-semibold text-danger">{peso(sale.sale)}</span> <span className="text-ink-faint line-through">{peso(base)}</span></>
                 ) : (
-                  <>From <span className="font-semibold text-ink">{peso(base)}</span></>
+                  <>{priceLead(service.price_display)}<span className="font-semibold text-ink">{peso(base)}</span></>
                 )
               ) : (
-                <span className="text-ink-muted">Price on consultation</span>
+                <span className="text-ink-muted">{QUOTATION_LABEL}</span>
               )}
             </span>
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-muted">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
               <div className="flex items-center gap-1 shrink-0">
                 <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
                 <span className="font-semibold text-ink">
@@ -100,7 +104,7 @@ export default function ServiceRow({ service, storeId, designs, designsLoading, 
         <div className="mb-2.5 flex items-center justify-between gap-3">
           <p className="mobile-overline text-ink-faint">Designs{designs.length ? ` · ${designs.length}` : ''}</p>
           {designs.length > 0 && (
-            <Link href={href} onClick={onOpen} className="-mr-1 flex min-h-9 items-center gap-0.5 px-1 text-xs font-semibold text-taupe hover:underline">See all <ChevronRight size={14} /></Link>
+            <Link href={href} onClick={onOpen} className="-mr-1 flex min-h-11 items-center gap-0.5 px-1 text-sm font-semibold text-taupe-dark hover:underline">See all <ChevronRight size={14} /></Link>
           )}
         </div>
         {designsLoading ? (
@@ -108,7 +112,8 @@ export default function ServiceRow({ service, storeId, designs, designsLoading, 
         ) : designs.length === 0 ? (
           <p className="mobile-caption text-ink-muted">No designs yet — book it and the shop will design it with you.</p>
         ) : (
-          <div className="hide-scrollbar flex snap-x gap-3 overflow-x-auto pb-2">
+          // ‹ › arrows when there are more designs: a mouse cannot swipe a row whose scrollbar is hidden.
+          <HomeCarouselRow className="pb-2">
             {designs.map((d) => {
               const itemResult: CatalogItemResult = {
                 id: d.id,
@@ -149,7 +154,7 @@ export default function ServiceRow({ service, storeId, designs, designsLoading, 
                 </div>
               );
             })}
-          </div>
+          </HomeCarouselRow>
         )}
       </div>
     </article>

@@ -10,8 +10,6 @@
 | `sutura-client/` | Next.js app (+ all shared docs in `docs/`) | own repo |
 | `SUTURA/` (parent) | Workspace folder, `AGENTS.md`, loose thesis files | **not a repo** |
 
-Branch-per-module workflow and "real vs. formal" ownership: see `CLAUDE.md` in each repo. On 2026-10-29 both repos were on `feat/ordering-discover-support-combined` (the combined ordering + discover + support-ticket release branch, in step with its `origin`, working tree clean). `main` is PR-only.
-
 ## Stack (installed versions, not the thesis paper's)
 
 | Layer | Actual |

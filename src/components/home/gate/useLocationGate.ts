@@ -9,8 +9,11 @@ import { MAX_RADIUS_KM } from '../homeFilters';
 export const NEARBY_KM = MAX_RADIUS_KM;
 /** How long "Pinpointing your location…" waits for the browser prompt before asking for permission on the page. */
 const ASK_TIMEOUT_MS = 8000;
-/** "Finding tailoring shops…" stays at least this long, so the screens follow one another instead of flashing. */
-const MIN_FINDING_MS = 1000;
+/**
+ * "Finding tailoring shops…" stays at least this long, so the screens follow one another instead of flashing — and the
+ * opening logo (SuturaMarkAnimated, ~1.2s) finishes putting itself together even when the location comes back at once.
+ */
+const MIN_FINDING_MS = 1300;
 
 // Once cleared, going back to the landing page inside the app shows the page straight away
 let clearedThisLoad = false;

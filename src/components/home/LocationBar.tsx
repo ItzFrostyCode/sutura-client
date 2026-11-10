@@ -1,25 +1,36 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
-import type { SavedLocation } from '@/lib/customerLocation';
-import LiveClock from './LiveClock';
+import { isApproximate, type SavedLocation } from '@/lib/customerLocation';
+import { HOME_COLUMN } from './homeLayout';
 
 interface LocationBarProps {
   readonly location: SavedLocation | null;
-  /** Tapping the address opens the place picker. */
+  /** Where "Change" (and the address itself) leads: the place picker. */
   readonly changeHref: string;
+  /** false until the saved place has been read: the line stays blank (same height) rather than showing a placeholder. */
+  readonly ready?: boolean;
 }
 
-/** The very top strip of the page: where I am and the live date and time, with a line under it. One row when it fits; a long address goes to the next line (never cut with "…"). */
-export default function LocationBar({ location, changeHref }: LocationBarProps) {
+/**
+ * The very top strip of the page: where the shops are measured from, with "Change". ALWAYS one row, at every width
+ * down to 320px: the address takes the room and is cut with "…"; the words around it shrink instead of wrapping —
+ * "Shops near" / "Near (approximate)" appear only from 400px (a rough fix shows "≈" before the address below that), and
+ * the link says "Set exact spot" only from 640px ("Change" below).
+ */
+export default function LocationBar({ location, changeHref, ready = true }: LocationBarProps) {
+  const rough = isApproximate(location);
   return (
     <div className="border-b border-line bg-canvas">
-      <div className="mx-auto flex min-h-9 w-full max-w-[960px] flex-wrap items-center gap-x-3 gap-y-0.5 px-6 py-1.5 sm:px-12 lg:px-0">
-        <Link href={changeHref} title="Change location" className="mobile-caption flex min-w-0 items-start gap-1.5 font-medium text-ink transition-colors hover:text-taupe">
-          <MapPin size={14} className="mt-px shrink-0 text-taupe" />
-          <span suppressHydrationWarning className="min-w-0 break-words">{location?.address || 'Set your location'}</span>
+      <div className={`${HOME_COLUMN} flex h-11 items-center gap-2 sm:gap-3`}>
+        <MapPin size={16} className="shrink-0 text-taupe-dark" aria-hidden />
+        <p className={`mobile-body-sm min-w-0 flex-1 truncate whitespace-nowrap text-ink transition-opacity duration-150 ${ready ? 'opacity-100' : 'opacity-0'}`}>
+          <span className="text-ink-muted max-[399px]:hidden">{rough ? 'Near (approximate) ' : 'Shops near '}</span>
+          {rough && <span className="text-ink-muted min-[400px]:hidden" title="Approximate location">≈ </span>}
+          <span className="font-medium">{location?.address || 'Davao City'}</span>
+        </p>
+        <Link href={changeHref} className="flex h-11 shrink-0 items-center whitespace-nowrap text-sm font-semibold text-taupe-dark underline-offset-4 hover:underline">
+          {rough ? <><span className="max-sm:hidden">Set exact spot</span><span className="sm:hidden">Change</span></> : 'Change'}
         </Link>
-        <span aria-hidden className="hidden h-3.5 w-px shrink-0 bg-line-strong sm:block" />
-        <LiveClock className="mobile-caption shrink-0 text-taupe" />
       </div>
     </div>
   );

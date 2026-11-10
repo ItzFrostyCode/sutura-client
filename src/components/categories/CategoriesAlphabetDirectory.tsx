@@ -64,9 +64,11 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
       {/* A–Z index bar */}
       <nav
         aria-label="A to Z Alphabet Index Bar"
-        className="sticky top-[56px] sm:top-[68px] z-30 bg-surface/95 backdrop-blur-md py-3.5 px-4 border border-line shadow-2xs mb-8"
+        // Not sticky: only the SUTURA header stays pinned while scrolling.
+        className="bg-surface py-3.5 px-4 border border-line shadow-2xs mb-8"
       >
-        <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2 max-w-full overflow-x-auto hide-scrollbar">
+        {/* Phone / tablet: letters wrap. Desktop (1024px+): one row — 26 equal columns that share the width. */}
+        <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2 max-w-full lg:grid lg:grid-cols-[repeat(26,minmax(0,1fr))] lg:gap-1">
           {ALPHABET.map((letter) => {
             const isActive = activeLettersSet.has(letter);
             return isActive ? (
@@ -74,7 +76,7 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
                 key={letter}
                 href={`#letter-${letter}`}
                 onClick={(e) => handleLetterClick(e, letter)}
-                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-bold text-taupe-dark hover:text-white hover:bg-taupe transition-all rounded-xs cursor-pointer"
+                className="w-9 h-9 sm:w-10 sm:h-10 lg:w-full flex items-center justify-center text-sm font-bold text-taupe-dark hover:text-white hover:bg-taupe transition-all rounded-xs cursor-pointer"
                 title={`Jump to letter ${letter}`}
               >
                 {letter}
@@ -82,7 +84,7 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
             ) : (
               <span
                 key={letter}
-                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-ink-faint/30 select-none cursor-default"
+                className="w-7 h-7 sm:w-8 sm:h-8 lg:w-full lg:h-10 flex items-center justify-center text-xs sm:text-sm font-medium text-ink-faint/30 select-none cursor-default"
               >
                 {letter}
               </span>
@@ -138,7 +140,7 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
                       <Link
                         key={sub.label}
                         href={sub.href}
-                        className="text-xs sm:text-[13px] text-ink-muted hover:text-taupe transition-colors truncate py-0.5 hover:underline"
+                        className="block break-words py-1 text-sm text-ink-muted transition-colors hover:text-taupe-dark hover:underline"
                         title={sub.label}
                       >
                         {sub.label}

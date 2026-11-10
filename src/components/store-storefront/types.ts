@@ -18,6 +18,8 @@ export interface StoreBranch {
 export interface PublicService {
   id: number;
   name: string;
+    /** Fixed price, Starting price or Quotation required (B6-O11). */
+    price_display?: 'fixed' | 'starting' | 'quotation' | null;
   description?: string;
   category?: string;
   service_type?: string;
@@ -130,6 +132,8 @@ export interface StoreProfile {
   banner_path?: string | null;
   social_links: { label: string; url: string }[];
   reviews_avg_rating: number | null;
+  /** On Premium right now (server: PlanGate, ended subscriptions excluded) — the Premium mark on the page. */
+  is_premium?: boolean;
   reviews_count: number;
   my_review?: { id?: number; rating: number; comment?: string | null } | null;
   district?: string;

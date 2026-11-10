@@ -46,7 +46,7 @@ export default function LegalDocument({ title, meta, intro, sections, keyPoints,
             <AudiencePicker value={r.audience} onChange={r.setAudience} sections={sections} />
           </>
         )}
-        <div className="pt-2"><LegalToolbar query={r.query} onQuery={r.setQuery} count={r.visible.length} onExpand={r.expandAll} onCollapse={r.collapseAll} /></div>
+        <div className="pt-2"><LegalToolbar label={`Search the ${title}`} query={r.query} onQuery={r.setQuery} count={r.visible.length} onExpand={r.expandAll} onCollapse={r.collapseAll} /></div>
       </div>
 
       <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)] lg:gap-14">

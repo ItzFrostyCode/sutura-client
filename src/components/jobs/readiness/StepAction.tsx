@@ -40,8 +40,9 @@ export default function StepAction({ item, api, onOpen, onGoToFinancials }: Step
     case 'quotation':
       return perm.can_edit_quotation ? <button type="button" onClick={() => onOpen('quotation')} className={item.done ? ghost : primary}>{item.done ? 'Edit' : <><Receipt size={15} /> Prepare quotation</>}</button> : null;
     case 'approval':
-      return prepare && !item.done && pending && d.quotation?.status === 'final'
-        ? <button type="button" disabled={busy} onClick={() => onOpen('approval')} className={ghost}>Record approval</button> : null;
+      // B6-O03 / DSD-02 WD-03: only the customer accepts, in their own account; the shop cannot record it for them.
+      return !item.done && pending && d.quotation?.status === 'final'
+        ? <span className="text-xs text-ink-muted">Waiting for the customer to accept in their account</span> : null;
     case 'deposit':
       return !item.done && perm.can_see_money && onGoToFinancials ? <button type="button" onClick={onGoToFinancials} className={ghost}>Collect deposit</button> : null;
     default:

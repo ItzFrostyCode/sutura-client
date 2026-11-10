@@ -43,9 +43,10 @@ export default function NewSupportTicketPage() {
     }
   };
 
-  // House style of the account settings module (Notification Settings page):
-  // overline labels, borderless sunken inputs, 48px fields / 52px actions.
-  const fieldClasses = 'h-12 w-full rounded-xl bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong';
+  // Same fields as every SUTURA form: sentence-case labels, white 48px fields with a border, 16px text.
+  const fieldClasses = 'h-12 w-full rounded-xl border border-line-strong bg-white px-4 text-base text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none focus:ring-2 focus:ring-espresso/10';
+  const labelClasses = 'mb-2 block text-sm font-medium text-ink';
+  const hint = !subject.trim() ? 'Add a subject to send your ticket.' : !message.trim() ? 'Write a message to send your ticket.' : '';
 
   return (
     <div>
@@ -53,7 +54,7 @@ export default function NewSupportTicketPage() {
 
       <div className="card-soft space-y-5 p-4">
         <div>
-          <label htmlFor="ticket-subject" className="mobile-overline mb-2 block text-ink-faint">Subject</label>
+          <label htmlFor="ticket-subject" className={labelClasses}>Subject<span className="text-danger">*</span></label>
           <input
             id="ticket-subject"
             type="text"
@@ -66,7 +67,7 @@ export default function NewSupportTicketPage() {
         </div>
 
         <div>
-          <label htmlFor="ticket-type" className="mobile-overline mb-2 block text-ink-faint">What&apos;s it about?</label>
+          <label htmlFor="ticket-type" className={labelClasses}>What&apos;s it about?</label>
           <select
             id="ticket-type"
             value={type}
@@ -78,19 +79,19 @@ export default function NewSupportTicketPage() {
         </div>
 
         <div>
-          <label htmlFor="ticket-message" className="mobile-overline mb-2 block text-ink-faint">Message</label>
+          <label htmlFor="ticket-message" className={labelClasses}>Message<span className="text-danger">*</span></label>
           <textarea
             id="ticket-message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Describe the issue — more detail gets it resolved faster"
             rows={5}
-            className="w-full resize-none rounded-xl bg-sunken px-4 py-3 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong"
+            className="w-full resize-none rounded-xl border border-line-strong bg-white px-4 py-3 text-base text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none focus:ring-2 focus:ring-espresso/10"
           />
         </div>
       </div>
 
-      {error && <p className="mt-3 px-1 text-xs text-danger">{error}</p>}
+      {error && <p role="alert" className="mt-3 rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</p>}
 
       <div className="mt-4 space-y-3">
         <button
@@ -101,6 +102,7 @@ export default function NewSupportTicketPage() {
         >
           {submitting ? 'Sending…' : 'Send Ticket'}
         </button>
+        {hint && !submitting && <p className="-mt-1 text-center text-xs text-ink-muted">{hint}</p>}
         <button
           type="button"
           onClick={() => router.push('/account/settings/support')}

@@ -25,7 +25,6 @@ import ServiceStoreProfileCard from '@/components/store-service-detail/ServiceSt
 import ServiceRecommendationsSection from '@/components/store-service-detail/ServiceRecommendationsSection';
 import ServiceDetailBreadcrumb from '@/components/store-service-detail/ServiceDetailBreadcrumb';
 import type { SearchServiceResult } from '@/components/search/types';
-import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
 import { confirmDialog } from '@/store/useConfirmStore';
 import { serviceOrderHref } from '@/lib/serviceOrderHref';
 
@@ -517,11 +516,7 @@ export default function ServiceDetailPage({
           buyZone={
             <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
               <ServiceProductInfo service={service} />
-              <ItemQuantitySelector
-                quantity={quantity}
-                minQuantity={minQuantity}
-                onChange={setQuantity}
-              />
+              {/* No quantity here: quantities are agreed in the quotation after the appointment (S5, S17). */}
               <ServiceInlineActions
                 orderHref={orderHref}
                 bookHref={bookHref}

@@ -28,18 +28,18 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
 
   if (!active || pay.loading || balance <= 0) return null;
   if (outstanding <= 0) {
-    return <p className="mobile-caption mt-4 text-ink-muted md:mx-auto md:max-w-3xl">Your payment was sent and is waiting for the shop to verify it.</p>;
+    return <p className="mobile-caption px-1 text-ink-muted">Your payment was sent and is waiting for the shop to verify it.</p>;
   }
   if (pay.methods.length === 0) return null;
 
   return (
-    <section className="card-soft mt-4 p-4 md:mx-auto md:max-w-3xl" aria-label="Pay for this order">
+    <section className="card-soft p-4" aria-label="Pay for this order">
       <h2 className="mobile-h4 text-ink">Pay for this order</h2>
       <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
       {requiredDeposit > 0 && totalAmount - balance + 0.005 < requiredDeposit && (
         <p className="mobile-body-sm mt-1 text-ink">The shop needs {depositLabel.toLowerCase()} (₱{requiredDeposit.toLocaleString()}) before it starts making your order.</p>
       )}
-      <ul className="grid grid-cols-1 min-[600px]:grid-cols-2 gap-3 mt-3">
+      <ul className="mt-3 grid grid-cols-1 gap-3">
         {pay.methods.map((m) => {
           const Icon = ICON[m.kind] ?? Wallet;
           return (

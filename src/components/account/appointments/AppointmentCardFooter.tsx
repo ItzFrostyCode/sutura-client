@@ -31,7 +31,7 @@ export default function AppointmentCardFooter({ appt, isPastDue, canSelfCancel, 
             ? 'The shop chose this time for your fitting and will confirm it with you. If it does not suit you, open it and pick another time.'
             : appt.previous_scheduled_at
             ? 'You asked to move this appointment. The shop needs to approve the new time.'
-            : 'Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.'}
+            : 'Waiting for the shop to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.'}
         </p>
       )}
 
@@ -43,7 +43,7 @@ export default function AppointmentCardFooter({ appt, isPastDue, canSelfCancel, 
             {appt.rejection_note ? <>. {appt.rejection_note}</> : null}
           </p>
           {appt.rebooking_blocked ? (
-            <div className={`${action} bg-sunken font-normal text-ink-faint`}><Lock size={14} /> Rebooking unavailable — contact the store</div>
+            <div className={`${action} bg-sunken font-normal text-ink-faint`}><Lock size={14} /> Rebooking unavailable — contact the shop</div>
           ) : appt.store?.slug ? (
             <Link href={`/store/${appt.store.slug}/book`} onClick={(e) => e.stopPropagation()} className={`${action} bg-sunken text-taupe`}>
               Book a new appointment
@@ -58,7 +58,7 @@ export default function AppointmentCardFooter({ appt, isPastDue, canSelfCancel, 
             <p className="mobile-caption mt-3 text-ink-muted"><span className="font-semibold text-ink-body">Reason from store:</span> {appt.cancellation_reason}</p>
           )}
           {appt.rebooking_blocked ? (
-            <div className={`${action} bg-sunken font-normal text-ink-faint`}><Lock size={14} /> Rebooking unavailable — contact the store</div>
+            <div className={`${action} bg-sunken font-normal text-ink-faint`}><Lock size={14} /> Rebooking unavailable — contact the shop</div>
           ) : appt.store?.slug ? (
             <Link href={`/store/${appt.store.slug}/book`} onClick={(e) => e.stopPropagation()} className={`${action} bg-sunken text-taupe`}>
               Book a new appointment

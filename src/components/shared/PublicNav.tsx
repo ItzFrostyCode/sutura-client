@@ -10,17 +10,21 @@ import PublicTopLinks from './publicNav/PublicTopLinks';
 import { isAuthPath, usesBottomNav } from './publicNav/bottomNavPaths';
 
 /**
- * The main pages (bottomNavPaths) have no header bar at any screen size: the name and Order Tracking icon sit in
- * the page (PageBrandRow) and the main destinations are in the bottom bar. Other pages keep this header.
+ * The main pages (bottomNavPaths) have no header bar on phones and tablets: the name sits in the page (PageBrandRow)
+ * and the main destinations are in the bottom bar. From 1024px the bottom bar is hidden and this header takes over.
+ * Other pages keep this header at every size.
  *
- * Tablet and desktop: logo left, Discover / Map / About centered, Order Tracking / Notifications / Profile right.
+ * Tablet and desktop: logo left, Discover / Map / Track centered, Notifications / Log in or Profile right.
  */
 export default function PublicNav({
   isSticky = true,
   className = '',
+  innerClassName = 'max-w-7xl px-4 sm:px-6 lg:px-8',
 }: {
   readonly isSticky?: boolean;
   readonly className?: string;
+  /** Width and side padding of the header's content; the landing page passes its 960px column so the logo lines up with the sections. */
+  readonly innerClassName?: string;
 } = {}) {
   const {
     unreadCount,
@@ -34,14 +38,15 @@ export default function PublicNav({
     isAuthenticated,
   } = usePublicNav();
   const pathname = usePathname() ?? '/';
-  const hideHeader = usesBottomNav(pathname) || isAuthPath(pathname);
+  // Bottom-nav pages show this header only from 1024px, where the bottom bar is hidden; sign-in screens never show it.
+  const visibility = isAuthPath(pathname) ? 'hidden' : usesBottomNav(pathname) ? 'hidden lg:block' : '';
 
   return (
     <>
-      <header className={`${isSticky ? 'sticky top-0' : 'relative'} z-50 w-full shrink-0 border-b border-line bg-surface text-ink ${hideHeader ? 'hidden' : ''} ${className}`}>
-        <div className="relative mx-auto flex h-[52px] max-w-7xl items-center justify-between px-4 sm:h-[60px] sm:px-6 lg:px-8">
+      <header className={`${isSticky ? 'sticky top-0' : 'relative'} z-50 w-full shrink-0 border-b border-line bg-surface text-ink ${visibility} ${className}`}>
+        <div className={`relative mx-auto flex h-[52px] items-center justify-between sm:h-[60px] ${innerClassName}`}>
           <Link href="/" aria-label="SUTURA home" className="flex min-h-11 shrink-0 items-center">
-            <SuturaLogo halo="var(--card-bg)" className="h-7 w-auto text-espresso sm:h-8" />
+            <SuturaLogo className="h-7 w-auto text-espresso sm:h-8" />
           </Link>
 
           <PublicTopLinks />

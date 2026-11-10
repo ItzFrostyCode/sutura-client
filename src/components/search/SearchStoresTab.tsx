@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Store, Star, ChevronRight, ChevronDown, ChevronUp, MapPin, Wrench } from 'lucide-react';
-import { getMediaUrl } from '@/lib/media';
-import { isStoreOpen } from '@/lib/storeStatus';
+import { Store, ChevronRight, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
-import StoreLogoAvatar from '@/components/StoreLogoAvatar';
+import StoreRowInfo from './StoreRowInfo';
+import SearchNoResults from './SearchNoResults';
+import HomeCarouselRow from '@/components/home/HomeCarouselRow';
 import SearchServiceCard from './SearchServiceCard';
 import { RelatedStore, SearchActiveTab } from './types';
 import type { CatalogItemResult } from '@/types/publicCatalog';
+import { addRecentItem } from '@/lib/recentSearches';
 
 // A store's carousel can source items from three shapes: the full search
 // results list (already a complete CatalogItemResult with `store`/rating
@@ -68,6 +68,14 @@ interface SearchStoresTabProps {
   /** Opens the shop inside the map panel; `path` (e.g. "/service/3") opens one of its pages there. False when it has no pin. */
   readonly onShowOnMap?: (slug: string, path?: string) => boolean;
   readonly inPanel?: boolean;
+  /** The district the list is narrowed to ('' = none): names the heading and the empty state. */
+  readonly district?: string;
+  /** Clears the district (the empty state's "Show all Davao"). */
+  readonly onShowAllDavao?: () => void;
+  /** Search for another word (the empty state's correction / suggestions). */
+  readonly onSuggest?: (term: string) => void;
+  /** Clear the words and the district (the empty state's "See every shop"). */
+  readonly onShowEverything?: () => void;
 }
 
 export default function SearchStoresTab({
@@ -83,62 +91,78 @@ export default function SearchStoresTab({
   department = '',
   onShowOnMap,
   inPanel = false,
+  district = '',
+  onSuggest,
+  onShowEverything,
 }: SearchStoresTabProps) {
+  const searchWord = effectiveQ.trim();
+  const sw = searchWord.toLowerCase();
+
+  /** Why a shop is in the results of a search: the services or designs that match (nothing extra when its name does). */
+  function whyMatched(st: RelatedStore, ids: number[], designMatch: boolean): string | null {
+    if (!searchWord) return null;
+    const offered = (st.services ?? []).filter((svc) => ids.includes(svc.id));
+    if (offered.length > 0) return `Offers: ${offered.slice(0, 2).map((x) => x.name).join( )}${offered.length > 2 ? ` +${offered.length - 2} more` : ''}`;
+    if (st.name.toLowerCase().includes(sw)) return null;
+    if (designMatch) return `Has designs matching “${searchWord}”`;
+    return null;
+  }
+
   // Shops whose designs / services are dropped down (only used in the map panel; elsewhere they are always shown).
   const [openIds, setOpenIds] = useState<number[]>([]);
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-base font-bold text-ink">Nearby Stores</h2>
-        <span className="text-xs text-ink-muted">
-          {stores.length} {stores.length === 1 ? 'result' : 'results'}{userCoords ? ' · nearest first' : ''}
+      {/* Says what the list is: the district chosen, or the shops near the person. */}
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1">
+        <h2 className="mobile-h3 text-ink">
+          {/* After a search the heading says what was searched; "Shops near you" is only for browsing. */}
+          {searchWord ? `Results for “${searchWord}”${district ? ` in ${district}` : ''}` : district ? `Shops in ${district}` : 'Shops near you'}
+        </h2>
+        <span className="mobile-body-sm text-ink-muted">
+          {stores.length} {stores.length === 1 ? 'shop' : 'shops'}{userCoords ? ' · nearest first' : ''}
         </span>
       </div>
 
       {storesLoading ? (
-        // Mirrors the real store row exactly: avatar + name block, then the
-        // "Catalog designs" label and its mini-card carousel, so nothing
-        // shifts size once the real rows swap in.
-        <div className="divide-y divide-line border-t border-line">
+        // Mirrors the real row (StoreRowInfo): 56px logo, then distance, a two-line name, open / rating and the
+        // address, and the ⌄ button on the right. In the map panel the rows start collapsed (no carousel), so the
+        // placeholder has none either; elsewhere the carousel shows, so its placeholder does too.
+        <div className="divide-y divide-line border-t border-line" role="status" aria-label="Loading shops">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-2.5 animate-pulse">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div className="w-14 h-14 rounded-full bg-sunken shrink-0" />
+            <div key={i} className="space-y-2.5 py-3.5 motion-safe:animate-pulse" aria-hidden>
+              <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-3.5">
+                  <div className="h-14 w-14 shrink-0 rounded-full bg-sunken" />
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="h-2.5 w-20 bg-sunken rounded" />
-                    <div className="h-3.5 w-2/3 bg-sunken rounded" />
-                    <div className="h-2.5 w-1/3 bg-sunken rounded" />
-                    <div className="h-2.5 w-2/5 bg-sunken rounded" />
+                    <div className="h-3 w-24 rounded bg-sunken" />
+                    <div className="h-4 w-3/4 rounded bg-sunken" />
+                    <div className="h-3 w-1/3 rounded bg-sunken" />
+                    <div className="h-3 w-2/3 rounded bg-sunken" />
                   </div>
                 </div>
+                {inPanel && <div className="h-11 w-11 shrink-0 rounded-full bg-sunken" />}
               </div>
-              <div className="h-3 w-32 bg-sunken rounded" />
-              <div className="flex gap-2.5 py-1">
-                {Array.from({ length: 3 }).map((__, j) => (
-                  <div
-                    key={j}
-                    className="w-[160px] shrink-0 border border-line"
-                  >
-                    <div className="aspect-3/4 bg-sunken" />
-                    <div className="px-2 pt-2 pb-2.5 space-y-1.5">
-                      <div className="h-3 w-full bg-sunken rounded" />
-                      <div className="h-2.5 w-1/2 bg-sunken rounded" />
-                      <div className="h-2 w-2/3 bg-sunken rounded" />
+              {!inPanel && (
+                <div className="flex gap-3 overflow-hidden py-1">
+                  {Array.from({ length: 3 }).map((__, j) => (
+                    <div key={j} className="w-[160px] shrink-0 border border-line">
+                      <div className="aspect-3/4 bg-sunken" />
+                      <div className="space-y-1.5 px-2 pb-2.5 pt-2">
+                        <div className="h-3 w-full rounded bg-sunken" />
+                        <div className="h-3 w-1/2 rounded bg-sunken" />
+                        <div className="h-3 w-2/3 rounded bg-sunken" />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
       ) : stores.length === 0 ? (
-        <div className="bg-transparent border-y border-line border-x-0 rounded-none px-4 py-10 text-center">
-          <Store size={28} className="mx-auto mb-2 text-ink-faint" />
-          <p className="text-sm font-semibold text-ink">No Stores Found</p>
-          <p className="mt-1 text-xs text-ink-muted">No tailoring stores matched your search. Try another query or location.</p>
-        </div>
+        // Never a dead end: what was not found, the garment tiles to browse, and (under a line) the nearby shops.
+        <SearchNoResults query={effectiveQ} what="shops" district={district} onSearch={(term) => onSuggest?.(term)} userCoords={userCoords} />
       ) : (
         <div className="divide-y divide-line border-t border-line">
           {(activeTab === 'all' ? stores.slice(0, 4) : stores).map((store, index) => {
@@ -181,8 +205,11 @@ export default function SearchStoresTab({
             // With a search, only the services it is about (the server says which); a shop that matched on its name
             // or place has none, so all of its services show.
             const matchIds = qLower ? store.matching_service_ids ?? [] : [];
+            const matchNote = whyMatched(store, matchIds, matchingCatalogItems.length > 0);
+            // Matching services FIRST, the rest after — never hidden (shop owners: a "barong" search must not make the
+            // shop look like it only does barong).
             const storeServices = matchIds.length > 0
-              ? (store.services ?? []).filter((svc) => matchIds.includes(svc.id))
+              ? [...(store.services ?? []).filter((svc) => matchIds.includes(svc.id)), ...(store.services ?? []).filter((svc) => !matchIds.includes(svc.id))]
               : store.services ?? [];
             // Unlike catalog_items, the services relation isn't capped
             // server-side, so storeServices.length is only wrong when a
@@ -218,91 +245,11 @@ export default function SearchStoresTab({
                       }}
                       className="group min-w-0 flex-1 text-left active:opacity-80 cursor-pointer"
                     >
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        <StoreLogoAvatar
-                          src={imageSrc}
-                          name={store.name}
-                          isOpen={isStoreOpen(store.operating_hours)}
-                          className="w-14 h-14 rounded-full border border-line bg-sunken"
-                          textClassName="text-base font-bold text-taupe"
-                        />
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {distKm != null ? (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                                {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
-                              </span>
-                            ) : store.subscription_plan === 'premium' || store.is_featured ? (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                                ★ FEATURED STORE
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                                DAVAO CITY
-                              </span>
-                            )}
-                            {store.reviews_avg_rating ? (
-                              <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
-                                <Star size={10} className="fill-current text-taupe" />
-                                {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
-                              </span>
-                            ) : null}
-                          </div>
-                          <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
-                            {store.name}
-                          </h3>
-                          <p className="text-[11px] text-ink-muted truncate">
-                            {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
-                          </p>
-                          <p className="text-[11px] text-ink-faint truncate">
-                            {addressText}
-                          </p>
-                        </div>
-                      </div>
+                      <StoreRowInfo store={store} index={index} distKm={distKm} addressText={addressText} imageSrc={imageSrc} matchNote={matchNote} />
                     </button>
                   ) : (
                     <Link href={storeHref} className="group min-w-0 flex-1 active:opacity-80">
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        <StoreLogoAvatar
-                          src={imageSrc}
-                          name={store.name}
-                          isOpen={isStoreOpen(store.operating_hours)}
-                          className="w-14 h-14 rounded-full border border-line bg-sunken"
-                          textClassName="text-base font-bold text-taupe"
-                        />
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {distKm != null ? (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                                {index === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
-                              </span>
-                            ) : store.subscription_plan === 'premium' || store.is_featured ? (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                                ★ FEATURED STORE
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
-                                DAVAO CITY
-                              </span>
-                            )}
-                            {store.reviews_avg_rating ? (
-                              <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
-                                <Star size={10} className="fill-current text-taupe" />
-                                {Number(store.reviews_avg_rating).toFixed(1)} ({store.reviews_count ?? 0})
-                              </span>
-                            ) : null}
-                          </div>
-                          <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
-                            {store.name}
-                          </h3>
-                          <p className="text-[11px] text-ink-muted truncate">
-                            {store.owner?.name ? `by ${store.owner.name}` : `by Tailoring Master`}
-                          </p>
-                          <p className="text-[11px] text-ink-faint truncate">
-                            {addressText}
-                          </p>
-                        </div>
-                      </div>
+                      <StoreRowInfo store={store} index={index} distKm={distKm} addressText={addressText} imageSrc={imageSrc} matchNote={matchNote} />
                     </Link>
                   )}
                   {inPanel ? (
@@ -327,7 +274,7 @@ export default function SearchStoresTab({
                 {/* Carousel Header */}
                 {showServicesCarousel && storeServices.length > 0 ? (
                   <div className="px-0.5 pt-0.5">
-                    <span className="text-[11px] font-bold text-ink">
+                    <span className="text-xs font-bold text-ink">
                       {effectiveQ.trim()
                         ? `${matchedServicesCount} matching tailoring service${matchedServicesCount === 1 ? '' : 's'}`
                         : `Tailoring services (${matchedServicesCount})`}
@@ -335,7 +282,7 @@ export default function SearchStoresTab({
                   </div>
                 ) : storeCarouselItems.length > 0 ? (
                   <div className="px-0.5 pt-0.5">
-                    <span className="text-[11px] font-bold text-ink">
+                    <span className="text-xs font-bold text-ink">
                       {effectiveQ.trim()
                         ? `${matchedCount} matching catalog design${matchedCount === 1 ? '' : 's'}`
                         : `Catalog designs (${matchedCount})`}
@@ -345,13 +292,16 @@ export default function SearchStoresTab({
 
                 {/* Carousel */}
                 {showServicesCarousel && storeServices.length > 0 ? (
-                  <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory">
+                  <HomeCarouselRow>
                     {storeServices.map((svc) => (
                       // In the map panel a service opens inside the panel (its page in the shop's frame) instead of leaving the map.
                       <div
                         key={svc.id}
                         className="contents"
-                        onClickCapture={inPanel && onShowOnMap && hasPin ? (e) => { if (onShowOnMap(store.slug, `/service/${svc.id}`)) e.preventDefault(); } : undefined}
+                        onClickCapture={(e) => {
+                          addRecentItem({ kind: 'service', term: svc.name, href: `/store/${store.slug}/service/${svc.id}` });
+                          if (inPanel && onShowOnMap && hasPin && onShowOnMap(store.slug, `/service/${svc.id}`)) e.preventDefault();
+                        }}
                       >
                       <SearchServiceCard
                         service={{
@@ -380,19 +330,22 @@ export default function SearchStoresTab({
                       />
                       </div>
                     ))}
-                  </div>
+                  </HomeCarouselRow>
                 ) : storeCarouselItems.length > 0 ? (
-                  <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth snap-x snap-mandatory">
+                  <HomeCarouselRow>
                     {storeCarouselItems.map((item) => (
                       <div
                         key={item.id}
                         className="snap-start w-[160px] shrink-0"
-                        onClickCapture={inPanel && onShowOnMap && hasPin ? (e) => { if (onShowOnMap(store.slug, `/catalog/${item.id}`)) e.preventDefault(); } : undefined}
+                        onClickCapture={(e) => {
+                          addRecentItem({ kind: 'design', term: item.name, href: `/store/${store.slug}/catalog/${item.id}` });
+                          if (inPanel && onShowOnMap && hasPin && onShowOnMap(store.slug, `/catalog/${item.id}`)) e.preventDefault();
+                        }}
                       >
                         <CatalogItemCard item={toCatalogItemResult(item, store)} />
                       </div>
                     ))}
-                  </div>
+                  </HomeCarouselRow>
                 ) : null}
                   </>
                 )}

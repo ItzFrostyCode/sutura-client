@@ -27,14 +27,14 @@ interface SavedService {
 // lands here.
 type Tab = 'catalog' | 'services';
 const TABS: { key: Tab; label: string; shortLabel: string }[] = [
-  { key: 'catalog', label: 'Designs', shortLabel: 'Designs' },
   { key: 'services', label: 'Services', shortLabel: 'Services' },
+  { key: 'catalog', label: 'Designs', shortLabel: 'Designs' },
 ];
 
-const nothingSaved = <EmptyState Icon={Heart} title="Nothing saved yet" message="Tap the heart on a design or a service and it will be kept here." action={{ href: '/search', label: 'Go to Search' }} />;
+const nothingSaved = <EmptyState Icon={Heart} title="Nothing saved yet" message="Tap the heart on a design or a service and it will be kept here." action={{ href: '/search', label: 'Find a Shop' }} />;
 
 export default function MySavedItemsPage() {
-  const [tab, setTab] = useState<Tab>('catalog');
+  const [tab, setTab] = useState<Tab>('services');
   const [items, setItems] = useState<CatalogItemResult[] | null>(null);
   const [services, setServices] = useState<SavedService[] | null>(null);
 
@@ -62,7 +62,7 @@ export default function MySavedItemsPage() {
 
       {tab === 'services' && services !== null && (
         services.length === 0 ? nothingSaved : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {services.filter((s) => s.store).map((s) => (
               <ServiceMiniCard
                 key={s.id}

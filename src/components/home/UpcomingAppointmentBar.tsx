@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { HOME_COLUMN } from './homeLayout';
 
 const COLLAPSE_KEY = 'sutura_appt_bar_collapsed';
 
@@ -71,14 +72,13 @@ export default function UpcomingAppointmentBar() {
   const timeLabel = scheduled.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   const purpose = appt.appointment_type.replace('_', ' ');
 
-  // Not sticky on its own — the page stacks this directly above PublicNav
-  // inside one shared sticky wrapper, so the two scroll/pin as a single
-  // unit instead of fighting over their own independent `top: 0`s.
+  // Not sticky on its own — PublicTopBar stacks it with the location strip and the header in one wrapper, so they
+  // scroll/pin as a single unit. Same column as the rest of that bar (HOME_COLUMN).
   return (
     <div className="w-full bg-ink text-white">
       <Link
         href={`/account/appointments/${appt.id}`}
-        className={`flex items-center justify-between gap-2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-[height] ${collapsed ? 'h-7' : 'h-10'}`}
+        className={`${HOME_COLUMN} flex items-center justify-between gap-2 transition-[height] ${collapsed ? 'h-7' : 'h-10'}`}
       >
         <span className="flex items-center gap-2 min-w-0 text-xs sm:text-sm truncate">
           <Calendar size={collapsed ? 12 : 14} className="shrink-0 text-white/80" />

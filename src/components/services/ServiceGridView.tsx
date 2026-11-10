@@ -52,6 +52,8 @@ interface ServiceGridViewProps {
   readonly onEdit?: (id: number) => void;
   readonly onDelete?: (id: number) => void;
   readonly onDeleteDesign?: (id: number) => void;
+  /** Archived services offer Restore instead of Edit / Archive. */
+  readonly onRestore?: (id: number) => void;
 }
 
 export default function ServiceGridView({
@@ -61,6 +63,7 @@ export default function ServiceGridView({
   onEdit,
   onDelete,
   onDeleteDesign,
+  onRestore,
 }: Readonly<ServiceGridViewProps>) {
   const f = useServiceFilters(services);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -113,6 +116,7 @@ export default function ServiceGridView({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onDeleteDesign={onDeleteDesign}
+                onRestore={onRestore}
               />
             ))}
           </div>

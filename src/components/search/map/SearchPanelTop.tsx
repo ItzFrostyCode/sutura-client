@@ -1,8 +1,11 @@
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
+import Link from 'next/link';
+import SuturaMark from '@/components/brand/SuturaMark';
 import SearchPill from '@/components/home/SearchPill';
 import { countAllFilters, type AllFilters } from '@/components/home/homeFilters';
 import type { useSearchData } from '../hooks/useSearchData';
 import SearchContextChips from './SearchContextChips';
+import SearchScopeTabs from './SearchScopeTabs';
 
 type SearchData = ReturnType<typeof useSearchData>;
 
@@ -12,26 +15,51 @@ interface SearchPanelTopProps {
   readonly inputRef?: Ref<HTMLInputElement>;
   /** Kept for the callers that pass it; the address now lives in the top strip. */
   readonly compact?: boolean;
+  /** Shops / Services / Designs tabs (phone and tablet hide them in Map view: the pins are shops). */
+  readonly showTabs?: boolean;
+  /** Sits right of the search bar (the List / Map switch on a phone or tablet). */
+  readonly trailing?: ReactNode;
+  /** Enter / the keyboard's Search key: on a phone or tablet this opens the list of results straight away. */
+  readonly onSearch?: () => void;
+  /** The search bar was tapped. */
+  readonly onFocus?: () => void;
 }
 
 /** One full-width search bar with the filter icon inside it (Open / Closed is in the filter pop-up), and the category the person arrived with. */
-export default function SearchPanelTop({ s, onOpenFilter, inputRef }: SearchPanelTopProps) {
+export default function SearchPanelTop({ s, onOpenFilter, inputRef, showTabs = true, trailing, onSearch, onFocus }: SearchPanelTopProps) {
   const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy };
 
   return (
     <div>
-      <div>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
         <SearchPill
           slim
           value={s.q || s.categoryLabel}
           onChange={s.setQ}
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={(e) => { e.preventDefault(); onSearch?.(); }}
           onOpenFilter={onOpenFilter}
           activeFilterCount={countAllFilters(all)}
           onClear={() => { s.setQ(''); s.setCategoryLabel(''); }}
           inputRef={inputRef}
+          onFocus={onFocus}
+          leading={(
+            // The SUTURA logo instead of a magnifier, at every size (the way home on a phone / tablet, which has no header here).
+            <Link href="/" aria-label="SUTURA home" className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-espresso hover:bg-sunken">
+              <SuturaMark detail="small" className="h-7 w-7" />
+            </Link>
+          )}
         />
+        </div>
+        {trailing}
       </div>
+      {/* Shops (default) / Designs / Services — what the search looks through. */}
+      {showTabs && (
+        <div className="mt-2">
+          <SearchScopeTabs active={s.activeTab} onChange={s.handleTabChange} />
+        </div>
+      )}
+      {/* Districts (All Davao … Tugbok) live in the Filter pop-up only — one place, and the space goes to the list and map. */}
       <div className="mt-2 empty:hidden">
         <SearchContextChips
           department={s.department}

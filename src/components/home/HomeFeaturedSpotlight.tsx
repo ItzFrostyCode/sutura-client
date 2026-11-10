@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, MapPin, Scissors } from 'lucide-react';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getMediaUrl } from '@/lib/media';
 import { GARMENT_CATEGORIES, GARMENT_CATEGORY_KEYS, categoryOfGarment } from '@/lib/garmentTaxonomy';
@@ -155,7 +155,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
           id="featured-title"
           title={isMulti ? 'Featured Shops' : 'Featured Shop'}
           href="/shops"
-          linkLabel="Explore all tailors"
+          linkLabel="All shops"
         />
       </div>
 
@@ -163,11 +163,11 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
       <div className="relative py-2 xl:left-1/2 xl:right-1/2 xl:-ml-[50vw] xl:-mr-[50vw] xl:w-screen xl:max-w-[100vw] xl:overflow-x-clip">
         <div className="relative flex w-full items-center justify-center gap-4 sm:gap-6 md:gap-7 xl:px-5">
           {/* Left Peeking Card (Shown only on xl+ screens where there is room outside the 960px center card) */}
-          {isMulti && prevStore && (
+          {stores.length > 2 && prevStore && (
             <div
               onClick={() => move(-1)}
               aria-label={`Previous: ${prevStore.name}`}
-              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:h-[570px] rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/prev select-none"
+              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:self-stretch xl:my-8 rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/prev select-none"
             >
               {prevCover ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -191,8 +191,8 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             </div>
           )}
 
-          {/* Center card. Desktop (lg+): the photo (with the hover preview) on the left, the details on the right, at a fixed height so the arrows never jump and the whole card fits one screen. Tablet and phone: the details only, no photo. */}
-          <div className="w-full max-w-[960px] min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-xs lg:flex lg:h-[650px]">
+          {/* Center card. Desktop (lg+): the photo (with the hover preview) on the left, the details on the right, at least 650px tall so the arrows rarely move — but a MINIMUM, not a fixed height: when the services need more room the card grows, instead of the last row sliding under "Visit Shop". Tablet and phone: the details only, no photo. */}
+          <div className="w-full max-w-[960px] min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-xs lg:flex lg:min-h-[650px]">
             {/* Left: Large Hero Image Area (desktop only) */}
             <div className="relative hidden min-w-0 flex-1 overflow-hidden bg-surface-sunken lg:block">
               <Link href={heroHref} className="absolute inset-0 block group">
@@ -259,12 +259,12 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
 
                   <div className="min-w-0 flex-1">
                     <Link href={gate(`/store/${storeSlug}`)} className="group/name block">
-                      <h3 className="text-base sm:text-lg font-bold text-ink leading-tight truncate group-hover/name:text-taupe transition-colors">
+                      <h3 className="text-base sm:text-lg font-semibold text-ink leading-tight line-clamp-2 group-hover/name:text-taupe transition-colors">
                         {storeName}
                       </h3>
                     </Link>
                     {subtitle && (
-                      <p className="text-xs text-ink-muted font-medium truncate mt-0.5">
+                      <p className="text-xs text-ink-muted line-clamp-2 mt-0.5">
                         {subtitle}
                       </p>
                     )}
@@ -283,12 +283,20 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
               {/* Services: a phone (under 600px) shows the first 2 so the card stays short, a tablet 4 in a row, desktop 2 x 2. Only real services are shown; an empty cell stays empty, so the card keeps its size. */}
               <div className="flex flex-col lg:min-h-0 lg:flex-1">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                    Services ({services.length})
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                    Services{services.length > 0 ? ` (${services.length})` : ''}
                   </p>
-                  <span className="hidden text-[10px] text-ink-faint lg:inline">Hover to preview</span>
+                  {services.length > 0 && <span className="hidden text-xs text-ink-faint lg:inline">Hover to preview</span>}
                 </div>
 
+                {/* No services yet: one box in the same space, so the card keeps the size of the others (no jump on Next). */}
+                {services.length === 0 && (
+                  <div className="flex min-h-[233px] flex-1 flex-col sm:min-h-[228px] lg:min-h-[248px] items-center justify-center rounded-xl border border-dashed border-line-strong bg-sunken/40 px-4 text-center">
+                    <Scissors size={24} className="text-taupe-dark" aria-hidden />
+                    <p className="mobile-h4 mt-2 text-ink">No services listed yet</p>
+                    <p className="mobile-body-sm mt-1 text-ink-muted">Visit the shop to ask about custom work.</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 content-start gap-2 max-sm:[&>*:nth-child(n+3)]:hidden sm:grid-cols-4 lg:grid-cols-2">
                   {services.map((svc) => (
                     <FeaturedServiceCard
@@ -318,11 +326,11 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
           </div>
 
           {/* Right Peeking Card (Pure visual preview, no text overlay) */}
-          {isMulti && nextStore && (
+          {stores.length > 2 && nextStore && (
             <div
               onClick={() => move(1)}
               aria-label={`Next: ${nextStore.name}`}
-              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:h-[570px] rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/next select-none"
+              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:self-stretch xl:my-8 rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/next select-none"
             >
               {nextCover ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -347,52 +355,21 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
           )}
         </div>
 
-        {/* Carousel Arrow Buttons */}
-        {isMulti && (
-          <>
-            <button
-              type="button"
-              onClick={() => move(-1)}
-              aria-label="Previous featured shop"
-              className="absolute left-0 -translate-x-1/2 lg:-left-5 lg:translate-x-0 xl:left-12 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-white/95 hover:bg-white text-ink shadow-lg border border-line active:scale-95 transition-all cursor-pointer z-30"
-            >
-              <ChevronLeft size={22} />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => move(1)}
-              aria-label="Next featured shop"
-              className="absolute right-0 translate-x-1/2 lg:-right-5 lg:translate-x-0 xl:right-12 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-white/95 hover:bg-white text-ink shadow-lg border border-line active:scale-95 transition-all cursor-pointer z-30"
-            >
-              <ChevronRight size={22} />
-            </button>
-          </>
-        )}
       </div>
 
-      {/* Indicator Dots (Only if multiple stores) */}
+      {/* Back / Next under the card, with the count ("1 of 2") in place of the dots. All shops stays alone on the
+          right of the title, so the header lines up the same on a phone, a tablet and desktop. */}
       {isMulti && (
-        <div className="mt-3.5 flex items-center justify-center gap-1.5">
-          {stores.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => {
-                setHoveredServiceId(null);
-                setIndex(i);
-              }}
-              aria-label={`Show ${s.name}`}
-              aria-current={i === index}
-              className="flex h-5 items-center px-0.5 cursor-pointer"
-            >
-              <span
-                className={`block h-1.5 rounded-full transition-all duration-300 ${
-                  i === index ? 'w-6 bg-taupe' : 'w-1.5 bg-line-strong hover:bg-taupe/60'
-                }`}
-              />
-            </button>
-          ))}
+        <div className="mt-4 flex items-center justify-center gap-3" role="group" aria-label="Featured shops">
+          <button type="button" onClick={() => move(-1)} aria-label="Previous featured shop" className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:border-ink">
+            <ChevronLeft size={20} aria-hidden />
+          </button>
+          <span className="min-w-[4rem] text-center text-sm font-medium tabular-nums text-ink" aria-live="polite">
+            {index + 1} of {stores.length}
+          </span>
+          <button type="button" onClick={() => move(1)} aria-label="Next featured shop" className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:border-ink">
+            <ChevronRight size={20} aria-hidden />
+          </button>
         </div>
       )}
     </section>

@@ -51,7 +51,9 @@ export function useCatalogWizard() {
         form.colorItems.map((c, i) => (i === 0 ? { ...c, image_url: '' } : c))
       );
       const res = await api.post(`/stores/${store.id}/catalog`, { ...payload, ...requirementsPayload(requirements) });
-      toast.success('Design published.');
+      // A design without a photo is saved but kept off the shop page (server rule); say so instead of "published".
+      if (res.data?.notice) toast.success(res.data.notice);
+      else toast.success('Design published.');
       const id = res.data?.data?.id;
       router.push(id ? `/dashboard/catalog/${id}` : fromService ? `/dashboard/services/${fromService}` : '/dashboard/services');
     } catch (err) {

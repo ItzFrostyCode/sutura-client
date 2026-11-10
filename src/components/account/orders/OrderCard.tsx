@@ -5,7 +5,7 @@ import { type MyOrder, getPhaseMeta } from './ordersTypes';
 
 /** One job order as a soft card: shop, what it is and where it stands, due date, and what is still to pay. */
 export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
-  const meta = getPhaseMeta(order.status, order.progress);
+  const meta = getPhaseMeta(order.status);
   const StatusIcon = meta.Icon;
   const itemName = order.catalog_item_name ?? order.service_name ?? order.garment_category ?? 'Garment';
 

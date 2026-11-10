@@ -22,7 +22,7 @@ export default function ShopsFooter() {
 
         <div className="mt-12 grid gap-8 border-t border-white/15 pt-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="sm:col-span-2 lg:col-span-1">
-            <SuturaLogo halo="#2B1E1A" className="h-8 w-auto text-white" />
+            <SuturaLogo tone="dark" className="h-8 w-auto text-white" />
             <p className="mobile-body-sm mt-3 max-w-xs text-white/70">A web-based tailoring store tracker for Davao City.</p>
           </div>
           <div>

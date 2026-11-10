@@ -10,14 +10,14 @@ interface HubRowProps {
   readonly danger?: boolean;
 }
 
-/** One tappable row of a grouped list: a plain icon (no background), the title and optional value, and the › that says it opens something. */
+/** One tappable row of a grouped list: a plain icon (no background), the title and optional value, and the › that says it opens something.  Long text wraps to two lines (never cut off mid-word on a 320px phone). */
 export default function HubRow({ href, Icon, title, subtitle, danger = false }: HubRowProps) {
   return (
     <Link href={href} className="flex min-h-14 items-center gap-3 px-4 py-2.5 transition-colors active:bg-sunken">
       <Icon size={22} className={`w-8 shrink-0 ${danger ? 'text-danger' : 'text-taupe'}`} />
       <span className="min-w-0 flex-1">
-        <span className={`mobile-body-md block truncate ${danger ? 'text-danger' : 'text-ink'}`}>{title}</span>
-        {subtitle && <span className="mobile-caption block truncate text-ink-muted">{subtitle}</span>}
+        <span className={`mobile-body-md block line-clamp-2 break-words ${danger ? 'text-danger' : 'text-ink'}`}>{title}</span>
+        {subtitle && <span className="mobile-caption mt-0.5 block line-clamp-2 break-words text-ink-muted">{subtitle}</span>}
       </span>
       <ChevronRight size={18} className="shrink-0 text-ink-faint" />
     </Link>

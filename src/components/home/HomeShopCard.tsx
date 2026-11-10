@@ -1,11 +1,22 @@
 import Link from 'next/link';
-import { MapPin, Star, Store } from 'lucide-react';
+import { BadgeCheck, MapPin, Star, Store } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { getStoreStatus } from '@/lib/storeStatus';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
+import PremiumBadge from '@/components/shared/PremiumBadge';
 import type { StoreResult } from './homeTypes';
 
-/** One shop in a Discover row. Distance and open/closed show only when the data really has them. */
+/**
+ * One shop in "Shops near you". Every card has the same layout, photo or not:
+ *   [cover photo, or a plain placeholder]            [Open now / Closed]
+ *   [logo]  Shop name (2 lines kept, so cards line up)
+ *           ✓ Verified shop
+ *   ─────────────────────────────────────────────
+ *   📍 District · km                         ★ rating
+ * The logo is ALWAYS on the left of the name; a shop without a cover never gets its logo blown up into the photo
+ * area (that made those cards look different from the rest). Every shop listed by /public/stores is admin-approved,
+ * hence "Verified shop" — the thesis's admin verification, made visible.
+ */
 export default function HomeShopCard({ store }: { readonly store: StoreResult }) {
   const branch = store.branches[0];
   const place = branch?.district ?? branch?.city ?? branch?.name;
@@ -13,71 +24,56 @@ export default function HomeShopCard({ store }: { readonly store: StoreResult })
   const status = store.operating_hours ? getStoreStatus(store.operating_hours) : null;
 
   return (
-    <Link
-      href={`/store/${store.slug}`}
-      className="card-soft group w-[260px] shrink-0 snap-start overflow-hidden transition-all hover:shadow-md active:scale-[0.98] flex flex-col"
-    >
-      <div className="relative h-28 bg-sunken overflow-hidden">
-        {store.banner_path ? (
+    <Link href={`/store/${store.slug}`} className="card-soft group flex w-[260px] shrink-0 snap-start flex-col overflow-hidden transition-shadow hover:shadow-md">
+      <div className="relative h-28 shrink-0 overflow-hidden bg-sunken">
+        {/* The placeholder sits under the photo, so a photo that fails to load falls back to it too. */}
+        <div className="absolute inset-0 flex items-center justify-center text-ink-faint" aria-hidden>
+          <Store size={28} strokeWidth={1.5} />
+        </div>
+        {store.banner_path && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={getMediaUrl(store.banner_path)}
             alt=""
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="relative h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }}
           />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#FAF7F4] to-[#ECE7E1]">
-            <Store size={24} className="text-taupe/40" />
-          </div>
         )}
+        {store.is_featured && <PremiumBadge className="absolute left-2 top-2" />}
         {status && (
-          <div className="absolute top-2 right-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold backdrop-blur-md shadow-2xs border ${
-              status.isOpen ? 'bg-white/90 text-emerald-700 border-emerald-200' : 'bg-white/90 text-ink-muted border-line'
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${status.dotClass}`} />
-              {status.isOpen ? 'Open' : 'Closed'}
-            </span>
-          </div>
+          <span className={`absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border bg-white/95 px-2 py-0.5 text-xs font-semibold ${status.isOpen ? 'border-emerald-200 text-emerald-800' : 'border-line text-ink-muted'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${status.dotClass}`} aria-hidden />
+            {status.isOpen ? 'Open now' : 'Closed'}
+          </span>
         )}
       </div>
 
-      <div className="p-3.5 flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-start gap-2.5">
-            <StoreLogoAvatar
-              src={store.logo_path}
-              name={store.name}
-              className="h-10 w-10 rounded-full border border-line bg-surface shadow-2xs shrink-0 transition-transform group-hover:scale-105"
-              textClassName="text-sm font-bold text-taupe"
-            />
-            <div className="min-w-0 flex-1">
-              <h3 className="mobile-h4 truncate text-ink font-bold transition-colors group-hover:text-taupe leading-tight">
-                {store.name}
-              </h3>
-              {place && (
-                <p className="mobile-caption mt-0.5 flex items-center gap-1 truncate text-ink-muted">
-                  <MapPin size={11} className="shrink-0 text-taupe" />
-                  <span className="truncate">{place}{km !== null && Number.isFinite(km) ? ` · ${km.toFixed(1)} km` : ''}</span>
-                </p>
-              )}
-            </div>
+      <div className="flex flex-1 flex-col gap-3 p-3.5">
+        <div className="flex items-start gap-3">
+          <StoreLogoAvatar src={store.logo_path} name={store.name} className="h-11 w-11 shrink-0 rounded-full border border-line bg-surface" textClassName="text-base font-semibold text-taupe-dark" />
+          <div className="min-w-0 flex-1">
+            {/* Room for two lines on every card, so the rows below line up across the row of cards. */}
+            <h3 className="mobile-h4 line-clamp-2 min-h-[2.8em] text-ink group-hover:text-taupe-dark">{store.name}</h3>
+            <p className="mobile-caption mt-0.5 flex items-center gap-1 font-semibold text-emerald-800">
+              <BadgeCheck size={14} aria-hidden /> Verified shop
+            </p>
           </div>
         </div>
 
-        <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1 text-xs text-ink">
-            <Star size={12} className="fill-[#D97706] text-[#D97706]" />
-            <span className="font-bold">{store.reviews_avg_rating ? Number(store.reviews_avg_rating).toFixed(1) : 'New'}</span>
-            <span className="text-ink-faint">({store.reviews_count})</span>
-          </span>
-          <span className="text-xs font-semibold text-taupe group-hover:translate-x-0.5 transition-transform">
-            Visit &rarr;
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2.5 text-xs">
+          {place ? (
+            <span className="flex min-w-0 items-center gap-1 text-ink-muted">
+              <MapPin size={13} className="shrink-0 text-taupe-dark" aria-hidden />
+              <span className="truncate">{place}{km !== null && Number.isFinite(km) ? ` · ${km.toFixed(1)} km` : ''}</span>
+            </span>
+          ) : <span />}
+          <span className="flex shrink-0 items-center gap-1 text-ink">
+            <Star size={13} className="fill-[#B45309] text-[#B45309]" aria-hidden />
+            <span className="font-semibold">{store.reviews_avg_rating ? Number(store.reviews_avg_rating).toFixed(1) : 'New'}</span>
+            {store.reviews_count > 0 && <span className="text-ink-muted">({store.reviews_count})</span>}
           </span>
         </div>
       </div>
     </Link>
   );
 }
-

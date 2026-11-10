@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Loader2, MapPin } from 'lucide-react';
 import HomeSectionHeader from './HomeSectionHeader';
-import ListMapToggle from './ListMapToggle';
 import { ShopCardSkeleton, SkeletonRow } from './HomeSkeletons';
 import type { SavedLocation } from '@/lib/customerLocation';
 import HomeCarouselRow from './HomeCarouselRow';
@@ -9,7 +8,6 @@ import HomeShopCard from './HomeShopCard';
 import type { StoreResult } from './homeTypes';
 import type { MoreFilters, NearFilters } from './homeFilters';
 
-const MAP_VIEW = '/search?tab=store';
 const CHOOSE_ON_MAP = '/map?select=1&returnTo=/&continueTo=/';
 
 interface HomeNearShopsProps {
@@ -39,9 +37,9 @@ export default function HomeNearShops({ location, denied, locating, stores, load
     body = (
       <div className="space-y-2">
         {!location && (
-          <div className="flex items-center justify-between px-1 text-xs text-ink-muted">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 px-1 text-sm text-ink-muted">
             <span>Tailoring shops in Davao City</span>
-            <Link href={CHOOSE_ON_MAP} className="font-medium text-taupe transition-colors hover:text-ink hover:underline">
+            <Link href={CHOOSE_ON_MAP} className="flex min-h-11 items-center font-semibold text-taupe-dark transition-colors hover:text-ink hover:underline">
               Choose on map for distance &rarr;
             </Link>
           </div>
@@ -88,7 +86,7 @@ export default function HomeNearShops({ location, denied, locating, stores, load
 
   return (
     <section aria-labelledby="home-near-title">
-      <HomeSectionHeader id="home-near-title" title="Shops near you" href="/shops" linkLabel="See all" action={<ListMapToggle mapHref={MAP_VIEW} />} />
+      <HomeSectionHeader id="home-near-title" title="Shops near you" href="/shops" linkLabel="All shops" />
       {filterBar}
       {body}
     </section>

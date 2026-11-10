@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { SearchActiveTab } from './types';
+import SearchNoResults from './SearchNoResults';
+import { addRecentItem } from '@/lib/recentSearches';
 
 interface SearchShowroomTabProps {
   readonly activeTab: SearchActiveTab;
@@ -17,6 +19,11 @@ interface SearchShowroomTabProps {
   readonly setPage: React.Dispatch<React.SetStateAction<number>>;
   readonly lastPage: number;
   readonly userCoords: { lat: number; lng: number } | null;
+  /** What was searched, for the "nothing found" screen. */
+  readonly query?: string;
+  readonly district?: string;
+  /** Search for a garment (a tile on the "nothing found" screen). */
+  readonly onSearch?: (term: string) => void;
 }
 
 export default function SearchShowroomTab({
@@ -30,6 +37,9 @@ export default function SearchShowroomTab({
   setPage,
   lastPage,
   userCoords,
+  query,
+  district,
+  onSearch,
 }: SearchShowroomTabProps) {
   if (activeTab !== 'showroom' && activeTab !== 'all') {
     return null;
@@ -45,11 +55,11 @@ export default function SearchShowroomTab({
       )}
 
       {/* Quick Sort Bar */}
-      <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar py-0.5 min-w-0 mb-2.5">
+      <div className="flex flex-wrap items-center gap-2 py-0.5 min-w-0 mb-2.5" role="group" aria-label="Sort designs">
         <button
           type="button"
           onClick={() => setSortBy('')}
-          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex h-11 shrink-0 items-center px-4 text-sm rounded-full border transition-colors whitespace-nowrap cursor-pointer ${
             !sortBy
               ? 'bg-ink text-white border-ink font-semibold'
               : 'bg-surface border-line text-ink-muted hover:border-line-strong'
@@ -60,7 +70,7 @@ export default function SearchShowroomTab({
         <button
           type="button"
           onClick={() => setSortBy(sortBy === 'top_sales' ? '' : 'top_sales')}
-          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex h-11 shrink-0 items-center px-4 text-sm rounded-full border transition-colors whitespace-nowrap cursor-pointer ${
             sortBy === 'top_sales'
               ? 'bg-ink text-white border-ink font-semibold'
               : 'bg-surface border-line text-ink-muted hover:border-line-strong'
@@ -71,20 +81,20 @@ export default function SearchShowroomTab({
         <button
           type="button"
           onClick={() => setSortBy(sortBy === 'price_asc' ? 'price_desc' : 'price_asc')}
-          className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap flex items-center gap-0.5 cursor-pointer ${
+          className={`flex h-11 shrink-0 items-center gap-1 px-4 text-sm rounded-full border transition-colors whitespace-nowrap cursor-pointer ${
             sortBy.startsWith('price')
               ? 'bg-ink text-white border-ink font-semibold'
               : 'bg-surface border-line text-ink-muted hover:border-line-strong'
           }`}
         >
           <span>Price</span>
-          {sortBy === 'price_asc' && <TrendingUp size={11} className="text-white" />}
-          {sortBy === 'price_desc' && <TrendingDown size={11} className="text-white" />}
+          {sortBy === 'price_asc' && <TrendingUp size={14} className="text-white" aria-label="low to high" />}
+          {sortBy === 'price_desc' && <TrendingDown size={14} className="text-white" aria-label="high to low" />}
         </button>
       </div>
 
       <div className="flex items-center justify-between mb-3 px-0.5">
-        <p className="text-xs text-ink-muted">{loading ? 'Searching designs…' : `${total} design${total === 1 ? '' : 's'} found`}</p>
+        <p className="mobile-body-sm text-ink-muted">{loading ? 'Searching designs…' : `${total} design${total === 1 ? '' : 's'} found`}</p>
       </div>
 
       {/* Skeleton loading state — mirrors CatalogItemCard's exact structure
@@ -108,19 +118,19 @@ export default function SearchShowroomTab({
         </div>
       )}
 
-      {!loading && items.length === 0 && (
-        <div className="px-4 py-10 text-center">
-          <PackageSearch size={28} className="mx-auto mb-2 text-ink-faint" />
-          <p className="text-sm font-semibold text-ink">No Catalog Designs Found</p>
-          <p className="mt-1 text-xs text-ink-muted">No items matched your search. Try a broader term or clear a filter.</p>
-        </div>
+      {/* Nothing found: the same screen as Shops — garment tiles, then the nearby shops under a line. */}
+      {!loading && items.length === 0 && onSearch && (
+        <SearchNoResults query={query ?? ''} what="designs" district={district} onSearch={onSearch} userCoords={userCoords} />
       )}
 
       {!loading && items.length > 0 && (
         <>
           <div className="grid grid-cols-2 gap-2.5">
             {items.map((item) => (
-              <CatalogItemCard key={item.id} item={item} userCoords={userCoords} />
+              // Tapping a design puts it in the recent searches.
+              <div key={item.id} className="contents" onClickCapture={() => addRecentItem({ kind: 'design', term: item.name, href: item.store ? `/store/${item.store.slug}/catalog/${item.id}` : undefined })}>
+                <CatalogItemCard item={item} userCoords={userCoords} />
+              </div>
             ))}
           </div>
 
@@ -130,18 +140,18 @@ export default function SearchShowroomTab({
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="p-2 rounded-lg border border-line text-ink-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-line text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="text-xs text-ink-muted px-2">
+              <span className="mobile-body-sm text-ink-muted px-2">
                 Page {page} of {lastPage}
               </span>
               <button
                 type="button"
                 disabled={page >= lastPage}
                 onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-                className="p-2 rounded-lg border border-line text-ink-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-line text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ChevronRight size={14} />
               </button>

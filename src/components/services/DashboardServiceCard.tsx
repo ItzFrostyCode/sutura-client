@@ -1,5 +1,6 @@
 'use client';
 
+import { QUOTATION_LABEL, priceLead } from '@/lib/servicePricing';
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,7 +10,7 @@ import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import type { CatalogItemResult } from '@/types/publicCatalog';
-import type { Service } from './serviceHelpers';
+import { STATUS_LABEL, type Service } from './serviceHelpers';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 
@@ -19,6 +20,7 @@ interface DashboardServiceCardProps {
   readonly onEdit?: (id: number) => void;
   readonly onDelete?: (id: number) => void;
   readonly onDeleteDesign?: (id: number) => void;
+  readonly onRestore?: (id: number) => void;
 }
 
 export default function DashboardServiceCard({
@@ -27,7 +29,9 @@ export default function DashboardServiceCard({
   onEdit,
   onDelete,
   onDeleteDesign,
+  onRestore,
 }: DashboardServiceCardProps) {
+  const archived = service.status === 'archived';
   const router = useRouter();
   const designs = service.catalog_items ?? (service as any).catalogItems ?? [];
   const base = service.base_price ? Number(service.base_price) : 0;
@@ -42,7 +46,10 @@ export default function DashboardServiceCard({
       <div className="flex items-start gap-3">
         <Link
           href={href}
-          className="flex min-w-0 flex-1 items-center gap-3 transition-opacity active:opacity-80"
+          // An archived service has no editable page until it is restored.
+          onClick={(e) => { if (archived) e.preventDefault(); }}
+          aria-disabled={archived || undefined}
+          className={`flex min-w-0 flex-1 items-center gap-3 transition-opacity active:opacity-80 ${archived ? 'opacity-60 cursor-default' : ''}`}
         >
           <span className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sunken text-ink-faint border border-line">
             {service.image_url ? (
@@ -55,11 +62,16 @@ export default function DashboardServiceCard({
             <span className="mobile-h4 line-clamp-2 text-ink font-bold hover:text-taupe transition-colors">
               {service.name}
             </span>
+            {service.status && service.status !== 'published' && (
+              <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-semibold ${service.status === 'draft' ? 'bg-amber-50 text-amber-800' : 'bg-zinc-100 text-zinc-600'}`}>{STATUS_LABEL[service.status]}</span>
+            )}
             <span className="mobile-body-sm block text-ink-body font-normal">
-              {Number.isFinite(base) && base > 0 ? (
-                <>From <span className="font-semibold text-ink">{peso(base)}</span></>
+              {service.price_display === 'quotation' ? (
+                <span className="text-ink-muted">{QUOTATION_LABEL}</span>
+              ) : Number.isFinite(base) && base > 0 ? (
+                <>{priceLead(service.price_display)}<span className="font-semibold text-ink">{peso(base)}</span></>
               ) : (
-                <span className="text-ink-muted">Price on consultation</span>
+                <span className="text-ink-muted">{QUOTATION_LABEL}</span>
               )}
             </span>
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-muted">
@@ -88,7 +100,12 @@ export default function DashboardServiceCard({
           </span>
         </Link>
 
-        {canManage && (
+        {canManage && archived && onRestore && (
+          <button type="button" onClick={() => onRestore(service.id)} className="min-h-11 shrink-0 rounded-full bg-espresso px-4 text-sm font-semibold text-white hover:bg-espresso/90 cursor-pointer">
+            Restore
+          </button>
+        )}
+        {canManage && !archived && (
           <span className="flex shrink-0 gap-1.5">
             <button
               type="button"
@@ -101,7 +118,7 @@ export default function DashboardServiceCard({
             <button
               type="button"
               onClick={() => onDelete?.(service.id)}
-              aria-label={`Delete ${service.name}`}
+              aria-label={`Archive ${service.name}`}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-sunken hover:bg-rose-50 text-danger transition-colors cursor-pointer"
             >
               <Trash2 size={15} />

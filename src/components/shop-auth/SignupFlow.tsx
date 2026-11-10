@@ -15,10 +15,13 @@ const AT: Record<SignupStep, number> = { email: 1, password: 2, inbox: 3 };
 /** /signup/shop: email + agreement → password → "check your inbox" → verified. The shop's details come after sign-in, in the onboarding wizard. */
 export default function SignupFlow() {
   const s = useOwnerSignup();
-  if (s.verified) return <AuthShell backLabel="For shops"><VerifiedView /></AuthShell>;
+  if (s.verified) return <AuthShell><VerifiedView /></AuthShell>;
+
+  // ← Back only between steps: from Password back to Email. The email step's way out is the X.
+  const back = s.step === 'password' ? { onClick: () => s.goTo('email'), label: 'Email' } : undefined;
 
   return (
-    <AuthShell backLabel="For shops">
+    <AuthShell back={back}>
       {s.step === 'email' && <AccountTypeTabs active="store" />}
       <StitchSteps steps={STEPS} current={AT[s.step]} label="Sign-up progress" />
       {s.step === 'email' && <SignupEmailStep s={s} />}

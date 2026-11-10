@@ -41,7 +41,7 @@ export default function MyMeasurementsPage() {
       <AccountHeader title="My Measurements" backHref="/account" />
 
       <p className="mobile-body-sm mb-4 text-ink-muted">
-        Your body measurements, recorded by a shop&apos;s staff. Each one shows what it was measured for. Private to you — only shown to a store after you have an active order or appointment with them.
+        Your body measurements, recorded by a shop&apos;s staff. Each one shows what it was measured for. Private to you — only shown to a shop after you have an active order or appointment with them.
       </p>
 
       {!loading && records.length > 0 && (
@@ -82,7 +82,7 @@ export default function MyMeasurementsPage() {
       )}
 
       {!loading && records.length === 0 && (
-        <EmptyState Icon={Ruler} title="No measurements on file yet" message="A store's staff records this during a fitting appointment." action={{ href: '/search', label: 'Browse Stores' }} />
+        <EmptyState Icon={Ruler} title="No measurements on file yet" message="A shop's staff records this during a fitting appointment." action={{ href: '/search', label: 'Find a Shop' }} />
       )}
 
       {!loading && records.length > 0 && filteredOrders.length === 0 && filteredGroups.length === 0 && (

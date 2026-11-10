@@ -34,7 +34,7 @@ export default function AppointmentsPreviewCard({
       {hasActiveAppointment && (
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-sunken px-3 py-2.5">
           <Info size={16} className="mt-0.5 shrink-0 text-ink-muted" />
-          <p className="mobile-caption text-ink-body">One active appointment per store at a time — cancel it first to book a different date.</p>
+          <p className="mobile-caption text-ink-body">One active appointment per shop at a time — cancel it first to book a different date.</p>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { PublicService } from '@/components/store-storefront/types';
 import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart, type AlsoAlters } from './ServiceDetailBlocks';
+import { cardNumbers } from '@/components/services/detail/serviceSteps';
 
 interface ServiceAccordionSectionsProps {
   service: PublicService;
@@ -33,20 +34,22 @@ export default function ServiceAccordionSections({ service, alsoAlters }: Servic
   const [showChart, setShowChart] = useState(true);
   const [showDesc, setShowDesc] = useState(true);
   const chart = hasServiceChart(service);
+  // The same numbers the shop sees on its own service page (one rule: serviceSteps.cardNumbers).
+  const num = cardNumbers(chart);
 
   return (
     <div className="mt-4 space-y-3">
-      <SectionCard number={1} title="What they do & prices" open={showSpecs} onToggle={() => setShowSpecs((v) => !v)}>
+      <SectionCard number={num.workprices ?? 1} title="What they do & prices" open={showSpecs} onToggle={() => setShowSpecs((v) => !v)}>
         <ServiceSpecBlock service={service} alsoAlters={alsoAlters} />
       </SectionCard>
 
       {chart && (
-        <SectionCard number={2} title="Reference Chart" open={showChart} onToggle={() => setShowChart((v) => !v)}>
+        <SectionCard number={num.chart ?? 2} title="Reference Chart" open={showChart} onToggle={() => setShowChart((v) => !v)}>
           <ServiceChartBlock service={service} />
         </SectionCard>
       )}
 
-      <SectionCard number={chart ? 3 : 2} title="Description" open={showDesc} onToggle={() => setShowDesc((v) => !v)}>
+      <SectionCard number={num.description ?? 2} title="Description" open={showDesc} onToggle={() => setShowDesc((v) => !v)}>
         <ServiceDescriptionBlock service={service} />
       </SectionCard>
     </div>

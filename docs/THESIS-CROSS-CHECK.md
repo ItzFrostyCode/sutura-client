@@ -34,10 +34,10 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 |---|---|---|
 | Manage shop registration approvals | ✅ | `/admin/applications`: review documents, approve / reject with reason; approval issues the shop login and emails the temporary credentials |
 | Verify business credentials | ✅ | uploaded documents are viewable only by the admin |
-| Validate apparel categories | 🟡 | Categories are a fixed list in code (`CanonicalTaxonomy`), so they are "pre-validated". There is an `others` free-text safety valve and **no admin screen to approve a custom category** |
+| Validate apparel categories | ✅ | Fixed categories are pre-validated in code (`CanonicalTaxonomy`); apparel names a shop types in itself go to the **Apparel categories** queue (`/admin/apparel-types`, `CustomApparelType` pending → approved/rejected) — a design using an unapproved custom name waits there before going public |
 | Verify branch map locations | ✅ | Every branch needs a map pin and barangay. A new or moved branch is `pending` and hidden from the public map, search and booking until the admin verifies it in **Admin → Branch locations** (or rejects it with a reason the owner sees). Approving a shop verifies its main branch |
 | Oversee platform-wide activity | ✅ | Activity (audit log), accounts (suspend / reactivate), support tickets, moderation (hide a shop or a design) |
-| System performance | ❌ | The admin dashboard shows counts and estimated MRR, **no uptime / latency / error indicators** |
+| System performance | ✅ | `GET /admin/system-health` (on **Overview**) reports live DB status + latency, a storage check, the last backup, and the failed-queue-job count — a real-time platform-health snapshot (not full APM, which is out of scope) |
 | Monitor subscriptions, manage plans | ✅ | Upgrade requests with receipts, subscription report, create / edit plans |
 
 ### Objective 2 — Subscription and Account Management

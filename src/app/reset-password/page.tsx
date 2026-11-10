@@ -1,176 +1,99 @@
 'use client';
 
-import { Suspense, useState, SubmitEvent } from 'react';
+import { Suspense, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
-import PublicNav from '@/components/shared/PublicNav';
-import AuthBrand from '@/components/auth/AuthBrand';
+import AuthPage from '@/components/auth/AuthPage';
+import PasswordField from '@/components/auth/PasswordField';
+import DisabledHint from '@/components/shop-auth/DisabledHint';
+import { signInError } from '@/components/auth/signInError';
+import { meetsPasswordRules } from '@/lib/passwordRules';
+import { ERROR_BOX, PRIMARY_BTN, TITLE } from '@/components/auth/authStyles';
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-dvh flex items-center justify-center bg-white">
-          <Loader2 size={28} className="animate-spin text-ink-faint" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex min-h-dvh items-center justify-center bg-canvas"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}>
       <ResetPasswordContent />
     </Suspense>
   );
 }
 
 function ResetPasswordContent() {
-  const [password, setPassword] = useState('');
-  const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
   const email = searchParams.get('email') || '';
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [shown, setShown] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
 
-  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+  // The same rules as Create Account, so a reset can never set a password sign-up would refuse.
+  const rulesOk = meetsPasswordRules(password);
+  const matches = confirm.length > 0 && confirm === password;
+  const hint = !rulesOk ? 'Meet every password rule to continue.' : !matches ? 'Type the same password again to continue.' : '';
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-
-    if (password !== passwordConfirmation) {
-      setError('Passwords do not match.');
-      return;
-    }
-
+    if (!rulesOk || !matches) return;
     setLoading(true);
-
+    setError('');
     try {
-      await api.post('/auth/reset-password', {
-        token,
-        email,
-        password,
-        password_confirmation: passwordConfirmation,
-      });
+      await api.post('/auth/reset-password', { token, email, password, password_confirmation: confirm });
       setDone(true);
-      setTimeout(() => router.replace('/login'), 2000);
-    } catch (err: unknown) {
-      const error = err as { response?: { status?: number; data?: { message?: string } } };
-      if (!error.response) {
-        setError('Unable to connect to the server. Please check your internet connection and try again.');
-      } else {
-        setError(error.response.data?.message || 'Something went wrong. Please request a new reset link.');
-      }
+    } catch (err) {
+      setError(signInError(err, 'This link no longer works. Please request a new one.'));
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
+  if (!token || !email) {
+    return (
+      <AuthPage back={{ href: '/login', label: 'Sign In' }}>
+        <h1 className={`${TITLE} mb-2`}>Link Not Valid</h1>
+        <p className="mb-6 text-base text-ink-muted">This reset link is incomplete or has already been used. Ask for a new one — it only takes a moment.</p>
+        <Link href="/forgot-password" className={PRIMARY_BTN}>Get a New Link</Link>
+      </AuthPage>
+    );
+  }
 
-      {/* Mobile: full edge-to-edge without margins. Tablet/desktop: centered card on canvas. */}
-      <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
-        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:rounded-2xl sm:border sm:border-line sm:shadow-sm">
-          <Link
-            href="/login"
-            aria-label="Back to sign in"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink-muted transition-colors py-1.5 -ml-1 mb-4"
-          >
-            <ArrowLeft size={18} />
-            <span>Back</span>
-          </Link>
-
-          <AuthBrand className="mb-8" />
-
-          <h1 className="text-display text-2xl text-ink mb-3">Set New Password</h1>
-          <p className="text-sm text-ink-muted mb-6">
-            Choose a new password for <span className="text-ink font-medium">{email || 'your account'}</span>.
-          </p>
-
-          {!token || !email ? (
-            <div className="mb-6 p-4 border border-danger/30 bg-danger/5 text-danger text-sm">
-              This reset link is missing or invalid. Please request a new link from the{' '}
-              <Link href="/forgot-password" className="underline font-semibold">
-                Forgot Password
-              </Link>{' '}
-              page.
-            </div>
-          ) : done ? (
-            <div className="mb-6 p-4 border border-emerald-300 bg-emerald-50 text-emerald-800 text-sm text-center">
-              Password reset successfully. Redirecting you to sign in...
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="p-3.5 border border-danger/30 bg-danger/5 text-danger text-sm text-center">
-                  {error}
-                </div>
-              )}
-
-              <div className="relative">
-                <label htmlFor="reset-password" className="block text-sm text-ink mb-2">
-                  New Password<span className="text-danger">*</span>
-                </label>
-                <input
-                  id="reset-password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-3 pr-16 border border-line-strong text-ink text-base focus:outline-none focus:border-ink transition-colors"
-                  placeholder="At least 8 characters"
-                  minLength={8}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 bottom-3 text-sm text-ink underline underline-offset-2"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-
-              <div>
-                <label htmlFor="reset-confirm" className="block text-sm text-ink mb-2">
-                  Confirm New Password<span className="text-danger">*</span>
-                </label>
-                <input
-                  id="reset-confirm"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  value={passwordConfirmation}
-                  onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  className="w-full px-3.5 py-3 border border-line-strong text-ink text-base focus:outline-none focus:border-ink transition-colors"
-                  placeholder="Re-enter new password"
-                  minLength={8}
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-ink hover:bg-ink/90 text-white text-sm font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Resetting...' : 'Reset Password'}
-              </button>
-            </form>
-          )}
-
-          <div className="mt-8 text-center">
-            <Link
-              href="/login"
-              className="inline-block text-sm text-ink underline underline-offset-2"
-            >
-              Back to Sign In
-            </Link>
-          </div>
+  if (done) {
+    return (
+      <AuthPage>
+        <div className="py-2 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600"><Check size={30} aria-hidden /></div>
+          <h1 className={`${TITLE} mb-2`}>Password Changed</h1>
+          <p className="mb-6 text-base text-ink-muted">Sign in with your new password. Other devices that were signed in have been signed out.</p>
+          <button type="button" onClick={() => router.replace('/login')} className={PRIMARY_BTN}>Sign In</button>
         </div>
-      </div>
-    </div>
+      </AuthPage>
+    );
+  }
+
+  return (
+    <AuthPage back={{ href: '/login', label: 'Sign In' }}>
+      <h1 className={`${TITLE} mb-2`}>Set a New Password</h1>
+      <p className="mb-6 text-base text-ink-muted">For <span className="break-words font-medium text-ink">{email}</span></p>
+
+      {error && <div role="alert" className={ERROR_BOX}>{error}</div>}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Hidden username so password managers save the new password against the right account. */}
+        <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
+        <PasswordField id="reset-password" label="New password" value={password} onChange={setPassword}
+          shown={shown} onToggle={() => setShown((s) => !s)} autoComplete="new-password" withRules />
+        <PasswordField id="reset-confirm" label="Confirm new password" value={confirm} onChange={setConfirm}
+          shown={shown} autoComplete="new-password" matchWith={password} />
+        <button type="submit" disabled={loading || !!hint} aria-describedby={hint ? 'reset-hint' : undefined} className={PRIMARY_BTN}>
+          {loading ? 'Saving…' : 'Save New Password'}
+        </button>
+        {hint && !loading && <DisabledHint id="reset-hint">{hint}</DisabledHint>}
+      </form>
+    </AuthPage>
   );
 }

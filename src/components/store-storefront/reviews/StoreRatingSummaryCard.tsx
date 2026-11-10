@@ -5,87 +5,77 @@ import { StorefrontReview, StoreProfile } from '../types';
 interface StoreRatingSummaryCardProps {
   readonly store: StoreProfile;
   readonly reviews: StorefrontReview[];
+  /** True when `reviews` is every review of the shop (one page, no star filter), so the bars can be drawn from it. */
+  readonly reviewsComplete: boolean;
   readonly isOwnerViewingOwnStore: boolean;
   readonly myReview: { id?: number; rating: number; comment?: string | null } | null;
   readonly onOpenRatingModal: () => void;
 }
 
-export default function StoreRatingSummaryCard({
-  store,
-  reviews,
-  isOwnerViewingOwnStore,
-  myReview,
-  onOpenRatingModal,
-}: StoreRatingSummaryCardProps) {
-  const avg = Number(store.reviews_avg_rating || 4.9);
-  const totalCount = reviews.length || 1;
+/**
+ * The shop's real rating, or an honest "No ratings yet". Never a placeholder score: it used to show 4.9★ and an
+ * 85% / 15% split for a shop nobody had rated, which is fabricated data in front of customers.
+ * The star bars are drawn only when every review is on screen; from one page (or one star filter) they would lie too.
+ * Rating is allowed after a completed order or appointment (StoreReviewController), and the card says so.
+ */
+export default function StoreRatingSummaryCard({ store, reviews, reviewsComplete, isOwnerViewingOwnStore, myReview, onOpenRatingModal }: StoreRatingSummaryCardProps) {
+  const count = Number(store.reviews_count ?? 0) || (reviewsComplete ? reviews.length : 0);
+  const avg = count > 0 && store.reviews_avg_rating != null ? Number(store.reviews_avg_rating) : null;
+  const showBars = reviewsComplete && reviews.length > 0;
 
   return (
-    <div className="bg-surface border border-line p-3.5 sm:p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-center">
-        {/* Big score summary */}
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left justify-center border-b sm:border-b-0 sm:border-r border-line pb-3.5 sm:pb-0 sm:pr-3.5">
-          <span className="text-4xl font-black text-ink font-serif tracking-tight">
-            {store.reviews_avg_rating ? Number(store.reviews_avg_rating).toFixed(1) : '4.9'}
-          </span>
-          <div className="flex items-center gap-1 my-1.5">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                size={18}
-                className={star <= Math.round(avg) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}
-              />
-            ))}
-          </div>
-          <span className="mobile-caption text-ink-muted">
-            Based on {store.reviews_count || reviews.length || 0} customer rating
-            {(store.reviews_count || reviews.length) === 1 ? '' : 's'}
-          </span>
+    <div className="border border-line bg-surface p-4 sm:p-5">
+      <div className={`grid grid-cols-1 items-center gap-4 ${showBars ? 'sm:grid-cols-2' : ''}`}>
+        <div className={`flex flex-col items-center text-center ${showBars ? 'border-b border-line pb-4 sm:items-start sm:border-b-0 sm:border-r sm:pb-0 sm:pr-4 sm:text-left' : ''}`}>
+          {avg !== null ? (
+            <>
+              <span className="font-serif text-4xl font-black tracking-tight text-ink">{avg.toFixed(1)}</span>
+              <div className="my-1.5 flex items-center gap-1" aria-label={`${avg.toFixed(1)} out of 5 stars`}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star key={s} size={18} aria-hidden className={s <= Math.round(avg) ? 'fill-amber-400 text-amber-400' : 'text-line-strong'} />
+                ))}
+              </div>
+              <span className="mobile-body-sm text-ink-muted">Based on {count} customer rating{count === 1 ? '' : 's'}</span>
+            </>
+          ) : (
+            <>
+              <Star size={32} className="text-line-strong" aria-hidden />
+              <p className="mobile-h4 mt-2 text-ink">No ratings yet</p>
+              <p className="mobile-body-sm mt-1 text-ink-muted">Customers can rate {store.name} after a completed order or appointment.</p>
+            </>
+          )}
 
           {!isOwnerViewingOwnStore && (
             <button
               type="button"
               onClick={onOpenRatingModal}
-              className="mt-3 w-full sm:w-auto min-h-[44px] h-[48px] inline-flex items-center justify-center gap-2 px-5 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+              className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 bg-taupe-dark px-5 text-base font-semibold text-white transition-colors hover:bg-nav-bar sm:w-auto"
             >
-              <Star
-                size={16}
-                className={myReview?.rating ? 'fill-amber-300 text-amber-300' : 'fill-white text-white'}
-              />
-              <span>{myReview?.rating ? `Your Rating: ${myReview.rating}★ (Edit)` : 'Rate this Store'}</span>
+              <Star size={16} aria-hidden className={myReview?.rating ? 'fill-amber-300 text-amber-300' : 'fill-white text-white'} />
+              <span>{myReview?.rating ? `Your rating: ${myReview.rating}★ · Edit` : 'Rate this shop'}</span>
             </button>
           )}
         </div>
 
-        {/* Star Distribution Bars */}
-        <div className="space-y-2 text-xs">
-          {[5, 4, 3, 2, 1].map((starNum) => {
-            const starMatches = reviews.filter((r) => Math.round(r.rating) === starNum).length;
-            const percentage =
-              reviews.length > 0
-                ? Math.round((starMatches / totalCount) * 100)
-                : starNum === 5
-                ? 85
-                : starNum === 4
-                ? 15
-                : 0;
-
-            return (
-              <div key={starNum} className="flex items-center gap-2">
-                <span className="w-9 font-medium text-ink text-right flex items-center justify-end gap-0.5 text-xs">
-                  {starNum} <Star size={11} className="fill-amber-400 text-amber-400" />
-                </span>
-                <div className="flex-1 h-2 bg-sunken overflow-hidden">
-                  <div
-                    className="h-full bg-amber-400 transition-all duration-300"
-                    style={{ width: `${percentage}%` }}
-                  />
+        {showBars && (
+          <div className="space-y-2">
+            {[5, 4, 3, 2, 1].map((starNum) => {
+              const matches = reviews.filter((r) => Math.round(r.rating) === starNum).length;
+              const pct = Math.round((matches / reviews.length) * 100);
+              return (
+                <div key={starNum} className="flex items-center gap-2 text-xs">
+                  <span className="flex w-9 items-center justify-end gap-0.5 font-medium text-ink">
+                    {starNum} <Star size={12} className="fill-amber-400 text-amber-400" aria-hidden />
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden bg-sunken">
+                    <div className="h-full bg-amber-400" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="w-9 text-right text-ink-muted">{pct}%</span>
                 </div>
-                <span className="w-8 text-[11px] text-ink-faint text-right">{percentage}%</span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

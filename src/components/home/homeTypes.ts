@@ -24,6 +24,8 @@ export interface StoreResult {
   services?: {
     id: number;
     name: string;
+    /** Fixed price, Starting price or Quotation required (B6-O11). */
+    price_display?: 'fixed' | 'starting' | 'quotation' | null;
     service_category?: string | null;
     garment_types?: string[] | null;
     base_price?: number | string | null;

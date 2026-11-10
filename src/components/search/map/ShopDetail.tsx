@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useMouseScroll } from '@/hooks/useMouseScroll';
 import Link from 'next/link';
-import { CalendarCheck, ChevronLeft, Loader2, Maximize2, Minimize2, Navigation, Star } from 'lucide-react';
+import { CalendarCheck, ChevronLeft, Loader2, Navigation, Star } from 'lucide-react';
 import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
 import type { RelatedStore } from '../types';
-import ShopQuickInfo from './ShopQuickInfo';
 
 interface ShopDetailProps {
   readonly store: RelatedStore;
@@ -65,6 +65,9 @@ export default function ShopDetail({
   const sep = targetPath.includes('?') ? '&' : '?';
   const src = `/store/${store.slug}${targetPath}${sep}embed=1`;
   const [loaded, setLoaded] = useState(false);
+  // The branch switcher scrolls sideways; with a mouse too (wheel and drag), not only by swiping.
+  const branchRow = useRef<HTMLDivElement>(null);
+  useMouseScroll(branchRow);
 
   useEffect(() => {
     setLoaded(false);
@@ -100,7 +103,7 @@ export default function ShopDetail({
             <ChevronLeft size={22} />
           </button>
           <div className="min-w-0 flex-1 pt-1.5">
-            <h2 className="truncate text-lg font-semibold leading-tight text-ink">{store.name}</h2>
+            <h2 className="line-clamp-2 text-lg font-semibold leading-tight text-ink">{store.name}</h2>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
               {rated && (
                 <span className="inline-flex items-center gap-1 font-medium text-ink-body">
@@ -108,35 +111,27 @@ export default function ShopDetail({
                   <span className="font-normal text-ink-muted">({store.reviews_count})</span>
                 </span>
               )}
-              <span className={branch.isOpen ? 'font-medium text-sage' : 'font-medium text-danger'}>{branch.isOpen ? 'Open now' : 'Closed'}</span>
+              <span className={branch.isOpen ? 'font-semibold text-emerald-800' : 'font-semibold text-[#9C4F40]'}>{branch.isOpen ? 'Open now' : 'Closed'}</span>
               {distanceLabel && <span>{distanceLabel}</span>}
             </p>
           </div>
           <Link href={`/store/${store.slug}`} className="flex min-h-11 shrink-0 items-center px-2 text-sm font-semibold text-taupe-dark hover:text-ink">
             View store
           </Link>
-          {onToggleExpand && (
-            <button
-              type="button"
-              onClick={onToggleExpand}
-              aria-label={isExpanded ? 'Minimise panel' : 'Expand panel'}
-              className="-mr-2 hidden h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-sunken active:opacity-70 lg:flex"
-            >
-              {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-            </button>
-          )}
         </div>
 
         <div className="mt-3 flex gap-2">
-          <Link href={bookHref} className="flex min-h-12 flex-[3] items-center justify-center gap-2 rounded-xl bg-ink px-3 text-sm font-semibold text-white transition-transform hover:bg-espresso active:scale-[0.98]">
-            <CalendarCheck size={17} /> Book Appointment
+          <Link href={bookHref} className="flex min-h-12 flex-[3] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-ink px-3 text-sm font-semibold text-white transition-transform hover:bg-espresso active:scale-[0.98]">
+            <CalendarCheck size={17} aria-hidden />
+            {/* "Book" alone under 360px, so the label never wraps onto a second line. */}
+            <span className="max-[359px]:hidden">Book Appointment</span><span className="min-[360px]:hidden">Book</span>
           </Link>
           {onDirections && (
             <button
               type="button"
               onClick={onDirections}
               disabled={directionsLoading}
-              className="flex min-h-12 flex-[2] items-center justify-center gap-2 rounded-xl border border-ink px-3 text-sm font-semibold text-ink transition-colors hover:bg-sunken disabled:opacity-60"
+              className="flex min-h-12 flex-[2] items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-ink px-3 text-sm font-semibold text-ink transition-colors hover:bg-sunken disabled:opacity-60"
             >
               {directionsLoading ? <Loader2 size={17} className="animate-spin" /> : <Navigation size={17} />} Directions
             </button>
@@ -144,17 +139,12 @@ export default function ShopDetail({
         </div>
       </div>
 
-      {/* ── Where, when, and how to call (the branch that is open) ─────────── */}
-      <ShopQuickInfo
-        address={[branch.address, branch.district, branch.city].filter(Boolean).filter((v, i, a) => a.findIndex((x) => x?.toLowerCase() === v?.toLowerCase()) === i).join(', ') || null}
-        hours={validBranches.find((b) => b.id === branch.branchId)?.operating_hours ?? store.operating_hours}
-        phone={validBranches.find((b) => b.id === branch.branchId)?.contact_number || store.phone}
-      />
+      {/* Where / when / how to call are inside the shop page below (StoreHeroHeader, embedded), so they scroll with it. */}
 
       {/* ── Companion Branches Switcher (when 2+ branches exist) ─────────── */}
       {orderedBranches.length > 1 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 border-t border-line bg-surface/50 no-scrollbar shrink-0">
-          <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider shrink-0 mr-0.5">
+        <div ref={branchRow} className="flex select-none items-center gap-1.5 overflow-x-auto px-3 py-1.5 border-t border-line bg-surface/50 no-scrollbar shrink-0">
+          <span className="text-xs font-semibold text-ink-muted uppercase tracking-wider shrink-0 mr-0.5">
             Branches:
           </span>
           {orderedBranches.map((b, idx) => {
@@ -184,14 +174,14 @@ export default function ShopDetail({
                     isSelected: true,
                   });
                 }}
-                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                className={`shrink-0 flex min-h-11 items-center gap-1.5 px-3 rounded-full text-sm font-medium transition-all ${
                   isCurrent
                     ? 'bg-ink text-white shadow-sm'
                     : 'bg-surface border border-line text-ink hover:bg-sunken'
                 }`}
               >
                 <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  className={`text-xs font-bold px-1.5 py-0.5 rounded ${
                     isCurrent
                       ? 'bg-white/20 text-white'
                       : isMain

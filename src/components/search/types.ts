@@ -67,6 +67,8 @@ export interface RelatedStore {
 }
 
 export interface SearchServiceResult {
+    /** Fixed price, Starting price or Quotation required (B6-O11). */
+    price_display?: 'fixed' | 'starting' | 'quotation' | null;
   id: number;
   name: string;
   category?: string | null;

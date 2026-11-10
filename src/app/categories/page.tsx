@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import PublicNav from '@/components/shared/PublicNav';
-import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import DirectorySearchBar from '@/components/shared/DirectorySearchBar';
 import HomeFooter from '@/components/home/HomeFooter';
 import CategoriesVisualGrid from '@/components/categories/CategoriesVisualGrid';
@@ -20,13 +18,13 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
+    <div className="flex flex-1 flex-col bg-canvas">
       <div className="sticky top-0 z-50">
-        <PublicNav isSticky={false} />
+        
       </div>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-6 sm:py-8">
-        <PageBrandRow className="mb-2" />
+      <main className="flex-1 mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-6 sm:py-8">
+        
         
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mobile-caption text-ink-muted flex items-center gap-1.5 mb-4">

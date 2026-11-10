@@ -10,75 +10,65 @@ export interface PlaceSearchResult {
   display_name: string;
 }
 
+const cleanDistrict = (d?: string) => (d ?? '').replace(/\s+district$/i, '').trim();
+
+/** "Street, Barangay, District, City" with blanks and repeats left out. */
+function joinAddress(...parts: (string | undefined)[]): string {
+  const out: string[] = [];
+  for (const p of parts) {
+    const v = p?.trim();
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out.join(', ');
+}
+
 /**
- * Reverse geocodes coordinates to a human-readable address with road/street name.
- * Uses Photon (OpenStreetMap/Komoot) as primary for fast, rate-limit-free resolution,
- * with Nominatim as secondary fallback.
+ * Reverse geocodes coordinates to "Street, Barangay, District, Davao City".
+ *
+ * Asks for the nearest STREET, never the nearest object. The old lookup took OpenStreetMap's nearest thing of any
+ * kind, which near a home is usually a hotel, school or shop — so a person on Jasmin Street was told they were at
+ * "Citistyle Inn, Rafael Castillo" (the inn's own street and barangay, a block away). Photon (OSM / Komoot) first,
+ * restricted to the street layer; Nominatim at street zoom (17) as fallback; raw coordinates last.
  */
 export async function reverseGeocodeCoords(lat: number, lng: number): Promise<GeocodeResult> {
-  // Strategy 1: Photon (OSM / Komoot) — reliably returns street/road names without 429 rate-limiting
+  // Strategy 1: Photon, nearest street only.
   try {
-    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`, {
+    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&layer=street&limit=1`, {
       headers: { Accept: 'application/json' },
     });
     if (res.ok) {
       const data = await res.json();
-      const feature = data?.features?.[0]?.properties;
-      if (feature) {
-        const parts: string[] = [];
-
-        // Primary road or place name
-        const primary = feature.name || feature.street;
-        if (primary) parts.push(primary);
-
-        // Locality / Barangay / Suburb
-        if (feature.locality && !parts.includes(feature.locality)) parts.push(feature.locality);
-
-        // Sub-area (clean without 'District' suffix)
-        if (feature.district) {
-          const clean = feature.district.replace(/\s+district$/i, '').trim();
-          if (clean && !parts.includes(clean)) parts.push(clean);
-        }
-
-        // City
-        if (feature.city && !parts.includes(feature.city)) parts.push(feature.city);
-
-        const district = (feature.district ? feature.district.replace(/\s+district$/i, '').trim() : '') || feature.locality || feature.city || 'Davao City';
-        const address = parts.length > 0 ? parts.join(', ') : '';
-
-        if (address) {
-          return {
-            address,
-            district,
-            street: feature.street || feature.name,
-          };
-        }
+      const p = data?.features?.[0]?.properties;
+      if (p?.name) {
+        const district = cleanDistrict(p.district);
+        return {
+          address: joinAddress(p.name, p.locality, district, p.city || 'Davao City'),
+          district: district || p.locality || p.city || 'Davao City',
+          street: p.name,
+        };
       }
     }
   } catch {
     // Continue to fallback
   }
 
-  // Strategy 2: Nominatim (OpenStreetMap) fallback
+  // Strategy 2: Nominatim at zoom 17 ("major and minor streets"), built from the address parts, not display_name
+  // (which starts with whatever building or shop is nearest).
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1`,
       { headers: { Accept: 'application/json' } }
     );
     if (res.ok) {
       const data = await res.json();
-      if (data?.display_name) {
-        const d =
-          data?.address?.suburb ||
-          data?.address?.neighbourhood ||
-          data?.address?.city_district ||
-          data?.address?.city ||
-          'Davao City';
-        return {
-          address: data.display_name,
-          district: d,
-          street: data?.address?.road,
-        };
+      const a = data?.address;
+      if (a) {
+        const barangay = a.quarter || a.neighbourhood || a.village;
+        const district = cleanDistrict(a.suburb || a.city_district);
+        const address = joinAddress(a.road, barangay, district, a.city || 'Davao City');
+        if (address) {
+          return { address, district: district || barangay || a.city || 'Davao City', street: a.road };
+        }
       }
     }
   } catch {

@@ -10,7 +10,7 @@ import type { RelatedStore } from '../types';
 import { storesToPins } from './storePins';
 
 /** The map half of Search + Map: pins from the shops found, the selected pin, and the three map buttons. */
-export function useSearchMap(stores: RelatedStore[]) {
+export function useSearchMap(stores: RelatedStore[], coverRef?: { readonly current: FocusPad | undefined }) {
   const mapRef = useRef<LeafletMap | null>(null);
   const toast = useToast();
   const [picked, setPicked] = useState<DiscoveryMapBranch | null>(null);
@@ -28,8 +28,9 @@ export function useSearchMap(stores: RelatedStore[]) {
   const selectPin = useCallback((branch: DiscoveryMapBranch | null) => {
     setPicked(branch);
     const map = mapRef.current;
-    if (branch && map) map.setView([branch.latitude, branch.longitude], Math.max(map.getZoom(), 15), { animate: true });
-  }, []);
+    // Centred in the part of the map NOT covered by the panel / the shop card (coverRef), so the pin is never hidden under it.
+    if (branch && map) focusOn(map, branch.latitude, branch.longitude, coverRef?.current);
+  }, [coverRef]);
 
   // From the results list: show this shop's pin. False when it has none.
   const selectStore = useCallback((slug: string) => {

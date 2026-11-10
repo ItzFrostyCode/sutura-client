@@ -56,5 +56,5 @@ export const DEFAULT_ALL_FILTERS: AllFilters = { ...DEFAULT_NEAR_FILTERS, ...DEF
 export function countAllFilters(f: NearFilters & Partial<MoreFilters>): number {
   // The default sort (price, low to high) is not a filter the person turned on: it does not light the dot.
   const sorted = !!f.sortBy && f.sortBy !== DEFAULT_MORE_FILTERS.sortBy;
-  return activeFilterCount(f) + (f.minPrice || f.maxPrice || sorted ? 1 : 0) + (f.minRating ? 1 : 0);
+  return activeFilterCount(f) + (f.minPrice || f.maxPrice || sorted ? 1 : 0) + (f.minRating ? 1 : 0) + (f.district ? 1 : 0);
 }

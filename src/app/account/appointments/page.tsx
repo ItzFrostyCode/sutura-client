@@ -32,30 +32,25 @@ export default function MyAppointmentsPage() {
 
   return (
     <div className="w-full">
-      <AccountHeader title="My Appointments" backHref="/account" />
+      <AccountHeader title="My Appointments" backHref="/account" action={<ApptViewToggle view={view} onChange={setView} />} />
 
       {hasActiveAppointment && (
         <div className="mb-3 flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
           <Info size={18} className="mt-0.5 shrink-0 text-ink-muted" />
           <p className="mobile-caption text-ink-body">
-            You can only hold one active appointment per store at a time. Cancel your current one if you&apos;d like to book a different date.
+            You can only hold one active appointment per shop at a time. Cancel your current one if you&apos;d like to book a different date.
           </p>
         </div>
       )}
 
-      {/* Status chips and the List / Calendar switch */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <FilterChips label="Appointment status" active={statusFilter} onChange={setStatusFilter} options={STATUS_FILTERS} />
-        </div>
-        <ApptViewToggle view={view} onChange={setView} />
-      </div>
+      {/* Status chips get the full width (the List / Calendar switch is in the title row), so more of them fit on a phone. */}
+      <FilterChips label="Appointment status" active={statusFilter} onChange={setStatusFilter} options={STATUS_FILTERS} />
 
       {loading && <div className="py-16 text-center mobile-body-sm text-ink-muted">Loading your appointments…</div>}
 
       {!loading && appointments.length === 0 && (
         <div className="mt-3">
-          <EmptyState Icon={CalendarClock} title="No appointments yet" message="Book a fitting or consultation with a store to see it here." action={{ href: '/search', label: 'Browse Stores' }} />
+          <EmptyState Icon={CalendarClock} title="No appointments yet" message="Book a fitting or consultation with a shop to see it here." action={{ href: '/search', label: 'Find a Shop' }} />
         </div>
       )}
 

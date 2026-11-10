@@ -15,7 +15,7 @@ export default function AccountActivityGroups({ measurementCount }: { readonly m
         <HubRow href="/account/recently-viewed" Icon={History} title="Recently Viewed" />
       </HubGroup>
       <HubGroup>
-        <HubRow href="/account/settings/become-store-owner" Icon={Store} title="Start a Store Owner Account" subtitle="Be a Store Owner" />
+        <HubRow href="/account/settings/become-store-owner" Icon={Store} title="Start a Shop Owner Account" subtitle="Open your tailoring shop on SUTURA" />
         <HubRow href="/account/settings/support" Icon={LifeBuoy} title="Support" subtitle="Open a ticket or follow one" />
       </HubGroup>
     </>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MapPin, Map as MapIcon, Scissors } from 'lucide-react';
-import SpinningPin from './SpinningPin';
+import SuturaMark from '@/components/brand/SuturaMark';
+import SuturaMarkAnimated from '@/components/brand/SuturaMarkAnimated';
 import { NEARBY_KM, type GatePhase } from './useLocationGate';
 
 const CHOOSE_ON_MAP = '/map?select=1&returnTo=/&continueTo=/';
@@ -15,26 +16,30 @@ interface LocationGateProps {
   readonly onEnter: () => void;
 }
 
-/** The landing page's main panel while it finds the visitor: the spinning pin, a permission ask, or "too far". */
+/**
+ * The landing page's opening screen while it finds the visitor: the Tailor Pin assembling itself and pinging, then a
+ * permission ask, or "too far". The animated mark stays mounted from pinpointing to finding, so it plays only once.
+ */
 export default function LocationGate({ phase, denied, farKm, onRetry, onEnter }: LocationGateProps) {
   return (
     <main className="mobile-screen-margins flex flex-1 flex-col items-center justify-center py-12 text-center">
       {phase === 'pinpointing' || phase === 'finding' ? (
         <>
           <h1 className="sr-only">Find a tailor in Davao City</h1>
-          <SpinningPin />
-          <p role="status" aria-live="polite" className="mt-6 text-xl font-semibold text-ink sm:text-2xl">
-            {phase === 'pinpointing' ? 'Pinpointing your location…' : 'Finding tailoring shops…'}
+          <SuturaMarkAnimated locating />
+          <p role="status" aria-live="polite" className="mobile-body-lg mt-8 text-ink-muted">
+            {phase === 'pinpointing' ? 'Pinpointing your location…' : 'Finding tailoring shops near you…'}
           </p>
         </>
       ) : phase === 'permission' ? (
         <>
-          <MapPin size={64} strokeWidth={1.75} className="text-taupe-dark" aria-hidden />
-          <h1 className="mobile-h1 mt-6 text-ink">{denied ? 'Location Is Blocked' : 'Location Permission Required'}</h1>
+          {/* The brand mark is itself a location pin: the ask keeps the opening screen's face, still. */}
+          <SuturaMark className="h-20 w-20 text-espresso" />
+          <h1 className="mobile-h1 mt-6 text-ink">{denied ? 'Location Is Blocked' : 'Allow Your Location'}</h1>
           <p className="mobile-body-md mt-3 max-w-md text-ink-muted">
             {denied
               ? 'Location is turned off for SUTURA in your browser settings. Turn it on there, or choose your area on the map to see tailoring shops near you.'
-              : 'SUTURA needs your location to show tailoring shops near you and how far each one is.'}
+              : 'SUTURA uses your location to show the tailoring shops near you and how far each one is.'}
           </p>
           <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
             {denied ? (
@@ -44,7 +49,7 @@ export default function LocationGate({ phase, denied, farKm, onRetry, onEnter }:
               </>
             ) : (
               <>
-                <button type="button" onClick={onRetry} className={primary}>Retry</button>
+                <button type="button" onClick={onRetry} className={primary}><MapPin size={18} aria-hidden />Use my location</button>
                 <Link href={CHOOSE_ON_MAP} className={secondary}><MapIcon size={18} aria-hidden />Choose on map</Link>
               </>
             )}

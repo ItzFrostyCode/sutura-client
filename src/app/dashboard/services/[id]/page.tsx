@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
@@ -14,6 +14,9 @@ import ServiceDetailHeader from '@/components/services/detail/ServiceDetailHeade
 import ServiceEditableOverview from '@/components/services/detail/ServiceEditableOverview';
 import ServiceDesignsSection from '@/components/services/detail/ServiceDesignsSection';
 import { useServiceSectionEdit } from '@/components/services/detail/useServiceSectionEdit';
+import { useServiceGuide } from '@/components/services/detail/useServiceGuide';
+import ServiceGuideBar from '@/components/services/detail/ServiceGuideBar';
+import type { ServiceSection } from '@/components/services/detail/serviceEditing';
 import { buildServicePayload, toDraft, toPublicService } from '@/components/services/detail/serviceEditing';
 import CatalogDetailTabsNav, { type CatalogDetailTab } from '@/components/catalog/detail/CatalogDetailTabsNav';
 import PauseDesignModal from '@/components/catalog/detail/PauseDesignModal';
@@ -77,7 +80,16 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
   }, [reload]);
 
   const canManage = useCanManageOfferings();
-  const edit = useServiceSectionEdit(service, onSavedSection, canManage);
+  // The guided setup (?guide=1, right after Create New) walks the sections in the customer's order.
+  const sectionSavedRef = useRef<((s: ServiceSection) => void) | null>(null);
+  const edit = useServiceSectionEdit(service, onSavedSection, canManage, (s) => sectionSavedRef.current?.(s));
+  const guide = useServiceGuide(edit.open, edit.discard, Boolean(service) && canManage);
+  sectionSavedRef.current = guide.onSaved;
+  const finishGuide = (linked?: boolean) => {
+    guide.exit();
+    const back = new URLSearchParams(window.location.search).get('return');
+    if (linked && back?.startsWith('/dashboard/') && !back.startsWith('//') && service) router.push(`${back}?linked_service=${service.id}`);
+  };
   const { guard, pending, clearPending } = useUnsavedChangesGuard(edit.isDirty);
 
   // Ratings come from the service's own loaded reviews or public list fallback
@@ -91,18 +103,22 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     };
   }, [service, publicView]);
 
-  const saveWithActive = async (isActive: boolean) => {
-    if (!store?.id || !service) return;
+  // Lifecycle move (S2). Publishing runs the server's publish check (S3); its reasons are shown as they are.
+  const saveWithActive = async (isActive: boolean): Promise<boolean> => {
+    if (!store?.id || !service) return false;
     setToggling(true);
     try {
-      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
-      toast.success(isActive ? 'Service is live again.' : 'Service paused.');
+      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive, isActive ? 'published' : 'unpublished'));
+      toast.success(isActive ? 'Service published. Customers can see it and book.' : 'Service unpublished. Existing bookings and orders are not affected.');
       if (res.data?.data) {
         setService(res.data.data);
       }
       await reload();
+      return true;
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Could not change the service status.'));
+      const reasons = (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
+      toast.error(reasons ? `To publish: ${Object.values(reasons).flat().join(' ')}` : getErrorMessage(err, 'Could not change the service status.'));
+      return false;
     } finally {
       setToggling(false);
     }
@@ -113,10 +129,10 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     setModalBusy(true);
     try {
       await api.delete(`/stores/${store.id}/services/${service.id}`);
-      toast.success('Service deleted.');
+      toast.success('Service archived. Restore it any time from Services › Archived.');
       router.push('/dashboard/services');
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to delete service.'));
+      toast.error(getErrorMessage(err, 'Failed to archive service.'));
       setModalBusy(false);
       setDeleteOpen(false);
     }
@@ -148,17 +164,33 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     // -m-4 cancels the dashboard shell's p-4; then the page takes the exact
     // container the customer's Service Detail uses at each width.
     <div className="-m-4 animate-in fade-in duration-300 text-ink">
-      <div className="w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10 space-y-4">
+      <div className={`w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 space-y-4 ${guide.active ? 'pb-56' : 'pb-24 min-[600px]:pb-10'}`}>
         <div className={`${PAD} pt-3 min-[600px]:pt-0`}>
           <ServiceDetailHeader
             isActive={service.is_active}
+            status={service.status ?? (service.is_active ? 'published' : 'unpublished')}
             toggling={toggling}
             showActions={activeTab === 'overview' && canManage}
             onBack={() => guard(() => router.push('/dashboard/services'))}
-            onToggle={() => (service.is_active ? setPauseOpen(true) : saveWithActive(true))}
+            onToggle={() => (service.status === 'published' || (!service.status && service.is_active)
+              ? setPauseOpen(true)
+              // Publishing from the header during the guided setup also ends the setup.
+              : void saveWithActive(true).then((ok) => { if (ok && guide.active) finishGuide(true); }))}
             onDelete={() => setDeleteOpen(true)}
           />
         </div>
+
+        {guide.active && (
+          <div className={PAD}>
+            <ServiceGuideBar
+              guide={guide}
+              editingCurrent={guide.current !== null && edit.editing === guide.current.section}
+              publishing={toggling}
+              onPublish={async () => { if (await saveWithActive(true)) finishGuide(true); }}
+              onFinishDraft={() => { toast.success('Kept as a draft. Publish it from this page when you are ready.'); finishGuide(true); }}
+            />
+          </div>
+        )}
 
         <div className={PAD}>
           <CatalogDetailTabsNav
@@ -188,6 +220,7 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         open={pauseOpen}
         designName={service.name}
         noun="service"
+        verb="Unpublish"
         pausing={toggling}
         onCancel={() => setPauseOpen(false)}
         onConfirm={async () => {
@@ -196,7 +229,7 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         }}
       />
 
-      <ServiceDeleteModal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} onConfirm={confirmDelete} isSubmitting={modalBusy} />
+      <ServiceDeleteModal archive isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} onConfirm={confirmDelete} isSubmitting={modalBusy} />
 
 
       <UnsavedChangesModal

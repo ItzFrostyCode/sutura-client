@@ -32,7 +32,7 @@ City, filter shops by area, and access directions to selected tailoring shop
 branches.
 
 • Tailoring Shop Dashboard for storefront management, the tailoring shop will
-configure their digital profile, manage s	ervice catalogs and apparel
+configure their digital profile, manage s ervice catalogs and apparel
 specializations, set itemized pricing, handle appointment schedules, and control
 their public platform visibility.
 

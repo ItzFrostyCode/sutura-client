@@ -79,7 +79,7 @@ function LocationPageContent() {
 
         <p className="mobile-body-sm flex items-start gap-3 px-1 text-ink-muted">
           <HelpCircle size={18} className="mt-0.5 shrink-0" />
-          Places are saved on this device only. You can find stores near your home address even when you’re far from it — just tap Use.
+          Places are saved on this device only. You can find shops near your home address even when you’re far from it — just tap Use.
         </p>
       </main>
 

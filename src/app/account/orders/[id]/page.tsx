@@ -44,22 +44,26 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
 
       {!loading && !notFound && order && (
         <>
-          {order.quotation_flow && (
-            <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
-          )}
-          <OrderTrackingView order={order} />
-          <PayForOrder
-            orderId={Number(id)}
-            storeSlug={order.store?.slug}
-            branchId={order.store_branch_id}
-            totalAmount={order.total_amount}
-            balance={order.balance}
-            pending={order.pending_payment_amount ?? 0}
-            requiredDeposit={order.required_deposit ?? 0}
-            depositLabel={paymentPolicyLabel(order.payment_policy, order.payment_policy_percent)}
-            // On the ordering flow the deposit comes after the customer approves the quotation.
-            active={!['cancelled', 'rejected', 'completed'].includes(order.status) && !(order.quotation_flow && order.status === 'pending' && !order.quotation_flow.approved_at)}
-            onSubmitted={load}
+          <OrderTrackingView
+            order={order}
+            before={order.quotation_flow ? (
+              <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
+            ) : null}
+            after={(
+              <PayForOrder
+                orderId={Number(id)}
+                storeSlug={order.store?.slug}
+                branchId={order.store_branch_id}
+                totalAmount={order.total_amount}
+                balance={order.balance}
+                pending={order.pending_payment_amount ?? 0}
+                requiredDeposit={order.required_deposit ?? 0}
+                depositLabel={paymentPolicyLabel(order.payment_policy, order.payment_policy_percent)}
+                // On the ordering flow the deposit comes after the customer approves the quotation.
+                active={!['cancelled', 'rejected', 'completed'].includes(order.status) && !(order.quotation_flow && order.status === 'pending' && !order.quotation_flow.approved_at)}
+                onSubmitted={load}
+              />
+            )}
           />
         </>
       )}

@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
-import { ERROR_BOX, OUTLINE_BTN } from './AuthShell';
+import { ERROR_BOX, OUTLINE_BTN, TITLE } from './AuthShell';
 import type { OwnerSignupState } from './useOwnerSignup';
 
 export default function SignupInboxStep({ s }: { readonly s: OwnerSignupState }) {
   return (
     <div className="text-center py-2">
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-line-strong bg-sunken text-espresso"><MailCheck size={30} /></div>
-      <h1 className="text-display text-2xl text-ink mb-2">Check Your Inbox</h1>
+      <h1 className={`${TITLE} mb-2`}>Check Your Inbox</h1>
       <p className="text-sm text-ink-muted leading-relaxed">
         We sent a link to
         <span className="my-1.5 block break-words text-[15px] font-semibold text-ink">{s.email}</span>

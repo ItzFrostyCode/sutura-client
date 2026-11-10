@@ -1,6 +1,5 @@
 import SuturaMark from '@/components/brand/SuturaMark';
 import { ABOUT_PILLARS } from '@/components/home/homeTypes';
-import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import AboutObjectives from './AboutObjectives';
 import AboutTeam from './AboutTeam';
 
@@ -8,10 +7,10 @@ import AboutTeam from './AboutTeam';
 export default function AboutContent() {
   return (
     <section aria-labelledby="about-sutura-title" className="border-b border-line bg-surface">
-      <div className="mx-auto max-w-7xl mobile-screen-margins py-6 sm:py-14">
-        <PageBrandRow className="mb-6" />
+      <div className="mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-6 sm:py-14">
+        
         <div className="mx-auto mb-10 max-w-2xl text-center">
-          <SuturaMark halo="var(--card-bg)" className="mx-auto mb-4 h-20 w-20" />
+          <SuturaMark className="mx-auto mb-4 h-20 w-20 text-espresso" />
           <p className="mobile-overline mb-2 uppercase text-taupe">About SUTURA</p>
           <h1 id="about-sutura-title" className="mobile-h1 sm:tablet-h1 mb-3 text-balance text-ink">
             A Web-Based Tailoring Shop Tracker System

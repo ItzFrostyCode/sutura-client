@@ -3,8 +3,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import PublicNav from '@/components/shared/PublicNav';
-import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import HomeFooter from '@/components/home/HomeFooter';
 import DirectorySearchBar from '@/components/shared/DirectorySearchBar';
 import StoreCard from '@/components/stores/StoreCard';
@@ -39,14 +37,14 @@ function ShopsDirectoryContent() {
   } = useStoreDirectory();
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
+    <div className="flex flex-1 flex-col bg-canvas">
       {/* Sticky Top Navigation Bar */}
       <div className="sticky top-0 z-50">
-        <PublicNav isSticky={false} />
+        
       </div>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-6 sm:py-8">
-        <PageBrandRow className="mb-2" />
+      <main className="flex-1 mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-6 sm:py-8">
+        
 
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mobile-caption text-ink-muted flex items-center gap-1.5 mb-4">
@@ -117,7 +115,7 @@ function ShopsDirectoryContent() {
             </div>
 
             {/* Responsive Store Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:gap-6 lg:grid-cols-3">
               {stores.map((store) => (
                 <StoreCard key={store.id} store={store} />
               ))}

@@ -9,7 +9,13 @@ import { buildServicePayload, sectionChanged, toDraft, validateSection, type Ser
 
 // One box at a time: open a section, edit the draft, Save (or Cancel to
 // discard). Mirrors the catalog design page's editor, for services.
-export function useServiceSectionEdit(service: Service | null, onSaved: (updated?: Service) => Promise<void> | void, canManage = true) {
+export function useServiceSectionEdit(
+  service: Service | null,
+  onSaved: (updated?: Service) => Promise<void> | void,
+  canManage = true,
+  /** Told which section was just saved (the guided setup moves to the next step). */
+  onSectionSaved?: (section: ServiceSection) => void,
+) {
   const { store } = useAuthStore();
   const toast = useToast();
   const [editing, setEditing] = useState<ServiceSection | null>(null);
@@ -43,6 +49,7 @@ export function useServiceSectionEdit(service: Service | null, onSaved: (updated
         setDraft(toDraft(updated));
       }
       await onSaved(updated);
+      onSectionSaved?.(section);
       return true;
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to save this section.'));
@@ -71,6 +78,9 @@ export function useServiceSectionEdit(service: Service | null, onSaved: (updated
     saving,
     saveCurrent: async () => (editing ? save(editing) : true),
     discard: cancel,
+    /** Opens one section's editor (used by the guided setup). */
+    open: (section: ServiceSection) => setEditing(section),
+    editing,
     reload: onSaved,
   };
 }

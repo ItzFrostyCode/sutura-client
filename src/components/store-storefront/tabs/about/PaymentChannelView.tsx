@@ -53,7 +53,7 @@ export default function PaymentChannelView({
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
           <span className="text-xs sm:text-sm font-bold text-ink">{title}</span>
         </div>
-        <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
+        <span className={`text-xs sm:text-xs font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
           {badgeLabel}
         </span>
       </div>
@@ -75,12 +75,12 @@ export default function PaymentChannelView({
                 <span>View</span>
               </div>
             </button>
-            <span className="text-[10px] text-ink-muted mt-1.5 text-center">Tap QR to zoom</span>
+            <span className="text-xs text-ink-muted mt-1.5 text-center">Tap QR to zoom</span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center shrink-0 w-full min-[420px]:w-28 sm:w-32 h-28 sm:h-32 rounded-xl border border-dashed border-line bg-canvas text-ink-faint text-center p-2">
             <QrCode size={26} strokeWidth={1.5} />
-            <span className="text-[10px] mt-1 text-ink-muted font-medium">Manual Transfer</span>
+            <span className="text-xs mt-1 text-ink-muted font-medium">Manual Transfer</span>
           </div>
         )}
 
@@ -88,7 +88,7 @@ export default function PaymentChannelView({
         <div className="flex-1 min-w-0 space-y-2.5 w-full">
           {numberValue && (
             <div className="space-y-1">
-              <span className="text-[11px] font-medium text-ink-muted block uppercase tracking-wider">
+              <span className="text-xs font-medium text-ink-muted block uppercase tracking-wider">
                 {numberLabel}
               </span>
               <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export default function PaymentChannelView({
 
           {nameValue && (
             <div className="space-y-0.5 pt-1 border-t border-line/40">
-              <span className="text-[11px] font-medium text-ink-muted block uppercase tracking-wider">
+              <span className="text-xs font-medium text-ink-muted block uppercase tracking-wider">
                 Account Name
               </span>
               <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-ink-body">

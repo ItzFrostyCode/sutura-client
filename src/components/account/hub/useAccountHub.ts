@@ -6,6 +6,7 @@ import {
   type CalendarCell,
   dayKey,
 } from './accountTypes';
+import { IN_PRODUCTION, READY_FOR_PICKUP } from '@/components/shared/orderTracking/orderPhases';
 
 export function useAccountHub(isAuthenticated: boolean) {
   const [orders, setOrders] = useState<MyOrder[]>([]);
@@ -69,8 +70,9 @@ export function useAccountHub(isAuthenticated: boolean) {
     return cells;
   }, [countsByDay]);
 
-  const inProduction = useMemo(() => orders.filter((o) => o.progress && !o.progress.closed && ['request', 'confirmed', 'making'].includes(o.progress.current ?? '')).length, [orders]);
-  const readyForPickup = useMemo(() => orders.filter((o) => o.progress?.current === 'ready').length, [orders]);
+  // Same rules as the Job Orders tabs the tiles open, so a tile's number always matches its tab.
+  const inProduction = useMemo(() => orders.filter((o) => IN_PRODUCTION.has(o.status)).length, [orders]);
+  const readyForPickup = useMemo(() => orders.filter((o) => READY_FOR_PICKUP.has(o.status)).length, [orders]);
   const completed = useMemo(() => orders.filter((o) => o.status === 'completed').length, [orders]);
 
   return {
