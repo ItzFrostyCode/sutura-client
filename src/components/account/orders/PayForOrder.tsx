@@ -48,7 +48,7 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
                 <Icon size={20} className="text-taupe shrink-0" />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-ink truncate">{m.name}</span>
-                  <span className="block text-xs text-ink-muted truncate">{m.account_name} · {m.account_number}</span>
+                  <span className="block text-xs text-ink-muted truncate">{m.account_name}{m.account_number ? ` · ${m.account_number}` : ' · Scan the QR code'}</span>
                 </span>
               </button>
             </li>

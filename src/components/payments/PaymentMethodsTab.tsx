@@ -60,7 +60,7 @@ export default function PaymentMethodsTab() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-ink truncate">{m.name} <span className="text-[11px] font-medium text-ink-muted">· {KIND_LABELS[m.kind] ?? m.kind}</span></p>
                 <p className="text-sm text-ink-body truncate">{m.account_name}</p>
-                <p className="text-sm font-mono text-ink truncate">{m.account_number}</p>
+                <p className="text-sm font-mono text-ink truncate">{m.account_number || 'QR code only'}</p>
                 <p className="text-[11px] text-ink-faint mt-1">{m.branch ? `${m.branch.name} only` : 'Entire shop'}{m.is_active ? '' : ' · Inactive'}</p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button type="button" onClick={() => open(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink flex items-center gap-1.5 cursor-pointer hover:bg-sunken"><Pencil size={13} /> Edit</button>
