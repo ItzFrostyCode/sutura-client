@@ -8,6 +8,7 @@ import { MeasurementRecord } from './measurementTypes';
 import { getMediaUrl } from '@/lib/media';
 import { MetricPill, CustomerInitial, humanizeMetricKey } from './measurementHelpers';
 import MeasurementPurpose from './MeasurementPurpose';
+import { isInternalMetricKey } from '@/components/measurements/measurementAreas';
 
 interface MeasurementListProps {
   readonly grouped: Record<string, MeasurementRecord[]>;
@@ -69,7 +70,7 @@ export default function MeasurementList({
                 const activeIndex = versions.indexOf(activeRec);
 
                 const isExpanded = expandedIds.has(activeRec.id);
-                const filledCount = Object.entries(activeRec.metrics || {}).filter(([k, v]) => Boolean(v) && !k.startsWith('_')).length;
+                const filledCount = Object.entries(activeRec.metrics || {}).filter(([k, v]) => Boolean(v) && !isInternalMetricKey(k)).length;
 
                 return (
                   <div key={groupKey}>
@@ -131,11 +132,11 @@ export default function MeasurementList({
                           <p className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider mb-2">Measurements</p>
                           <div className="flex flex-wrap gap-1.5">
                             {Object.entries(activeRec.metrics || {})
-                              .filter(([k, v]) => Boolean(v) && !k.startsWith('_'))
+                              .filter(([k, v]) => Boolean(v) && !isInternalMetricKey(k))
                               .map(([key, value]) => (
                                 <MetricPill key={key} label={humanizeMetricKey(key)} value={value} unit={unitOfMetrics(activeRec.metrics)} />
                               ))}
-                            {Object.entries(activeRec.metrics || {}).filter(([k, v]) => Boolean(v) && !k.startsWith('_')).length === 0 && (
+                            {Object.entries(activeRec.metrics || {}).filter(([k, v]) => Boolean(v) && !isInternalMetricKey(k)).length === 0 && (
                               <p className="text-xs text-ink-faint italic">No measurements recorded.</p>
                             )}
                           </div>

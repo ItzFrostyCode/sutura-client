@@ -167,9 +167,9 @@ export default function StoreServicesTab({
 
       {services.length > 0 && (
         <section id="shop-services" aria-labelledby="service-list-title" className="scroll-mt-2">
-          {/* Search (left to middle) + the round filter button (right). Sticky inside the services list: it stays at the
-              top of the screen all the way down, so the customer can search or change the category from anywhere. */}
-          <div className="sticky top-0 z-30 -mx-4 flex items-center gap-2 border-b border-line bg-surface px-4 py-2 sm:-mx-8 sm:px-8">
+          {/* Search (left to middle) + the round filter button (right). The only thing pinned while scrolling the services
+              (just under the site's top bar), so the customer can search or change the category from anywhere. */}
+          <div className="sticky top-[var(--topbar-h,0px)] z-20 -mx-4 flex items-center gap-2 border-b border-line bg-surface px-4 py-2 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0">
             <form role="search" onSubmit={(e) => { e.preventDefault(); scrollToList(); }} className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-line bg-surface pl-4 focus-within:border-ink">
               <Search size={18} className="shrink-0 text-ink-muted" aria-hidden />
               <label htmlFor="shop-service-search" className="sr-only">Search this shop&apos;s services</label>
@@ -178,7 +178,7 @@ export default function StoreServicesTab({
                 type="search"
                 value={serviceSearch}
                 onChange={(e) => setServiceSearch(e.target.value)}
-                placeholder="Search this shop's services"
+                placeholder="Search services"
                 className="h-full min-w-0 flex-1 bg-transparent px-2 text-base text-ink placeholder:text-ink-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
               />
               {serviceSearch && (

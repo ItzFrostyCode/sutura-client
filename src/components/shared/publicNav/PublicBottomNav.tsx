@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Compass, Map as MapIcon, Package, User } from 'lucide-react';
 
-import { AUTH_PATHS, usesBottomNav } from './bottomNavPaths';
+import { AUTH_PATHS, usesCustomerNavOn } from './bottomNavPaths';
+import { useShopAccount } from '@/hooks/useShopAccount';
 import { usePublicNav } from './usePublicNav';
 import { useTrackOrderLink } from './useTrackOrderLink';
 import { lastSearchHref } from '@/lib/lastSearch';
@@ -27,6 +28,7 @@ export default function PublicBottomNav({ accountHref: propAccountHref }: Public
   const [isEmbed, setIsEmbed] = useState(false);
   const { accountHref, unreadCount } = usePublicNav();
   const track = useTrackOrderLink();
+  const { isShopAccount } = useShopAccount();
 
   useEffect(() => {
     setMounted(true);
@@ -35,7 +37,7 @@ export default function PublicBottomNav({ accountHref: propAccountHref }: Public
     }
   }, [pathname]);
 
-  const visible = usesBottomNav(pathname) && !isEmbed;
+  const visible = usesCustomerNavOn(pathname, isShopAccount) && !isEmbed;
 
   // /search is a fixed-height screen that already leaves room for the bar, so it must not get extra padding.
   const padsPage = visible && pathname !== '/search';
@@ -55,7 +57,7 @@ export default function PublicBottomNav({ accountHref: propAccountHref }: Public
       label: 'Discover',
       href: '/',
       Icon: Compass,
-      active: pathname === '/' || pathname.startsWith('/categories') || pathname.startsWith('/shops') || pathname.startsWith('/stores'),
+      active: pathname === '/' || pathname.startsWith('/categories') || pathname.startsWith('/shops') || pathname.startsWith('/stores') || pathname.startsWith('/store/'),
     },
     {
       label: 'Map',

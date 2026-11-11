@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, Clock, MapPin, Pencil, Trash2, Heart } from 'lucide-react';
+import { Store, Clock, MapPin, Pencil, Trash2 } from 'lucide-react';
+import ItemStats from '@/components/shared/ItemStats';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemDistanceInfo } from '@/lib/customerLocation';
@@ -26,6 +27,7 @@ export default function CatalogItemCard({
   canManage,
   onDelete,
   hideLocation,
+  hideServiceName = false,
   hrefOverride,
   isPaused,
   reviewBadge,
@@ -37,6 +39,8 @@ export default function CatalogItemCard({
   readonly onDelete?: (id: number) => void;
   /** Dashboard grids: every item is this store's own, so location is a given. */
   readonly hideLocation?: boolean;
+  /** Inside a service's own section the service name above every design is repeated noise. */
+  readonly hideServiceName?: boolean;
   /** Dashboard grids link to the item's own management page, not its public storefront page. */
   readonly hrefOverride?: string;
   /** Owner-only: this item is currently paused (is_active === false). */
@@ -103,8 +107,9 @@ export default function CatalogItemCard({
             src={getMediaUrl(displayImage)}
             alt={item.name}
             fill
+            sizes="(min-width: 1024px) 220px, (min-width: 640px) 30vw, 50vw"
             onError={() => setImgError(true)}
-            className={`object-cover object-top transition-transform duration-700 group-hover:scale-105 ${isPaused ? 'grayscale opacity-60' : ''}`}
+            className={`object-contain object-center transition-transform duration-700 group-hover:scale-105 ${isPaused ? 'grayscale opacity-60' : ''}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -124,7 +129,7 @@ export default function CatalogItemCard({
       <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between gap-1.5">
         <div className="space-y-1">
           {/* Service Link / Label */}
-          {(item.service_name || item.service?.name) && (
+          {!hideServiceName && (item.service_name || item.service?.name) && (
             <span
               title={item.service_name || item.service?.name}
               className="text-xs font-semibold text-taupe-dark line-clamp-2 break-words"
@@ -143,24 +148,8 @@ export default function CatalogItemCard({
             {designPriceLabel(item.pricing, item.price)}
           </p>
 
-          {/* 4. Star (Average Rating) | (count) sold | (count) favorites */}
-          <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-            <div className="flex items-center gap-1 shrink-0">
-              <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
-              <span className="font-semibold text-ink">
-                {item.reviews_avg_rating && Number(item.reviews_avg_rating) > 0
-                  ? Number(item.reviews_avg_rating).toFixed(1)
-                  : '0.0'}
-              </span>
-            </div>
-            <span className="text-ink-faint">|</span>
-            <span className="truncate">{item.order_count ?? 0} sold</span>
-            <span className="text-ink-faint">|</span>
-            <span className="flex items-center gap-0.5 text-rose-600 shrink-0" title={`${item.saves_count ?? (item as any).favorites_count ?? 0} favorites`}>
-              <Heart size={10} className="fill-rose-500 text-rose-500 shrink-0" />
-              <span>{item.saves_count ?? (item as any).favorites_count ?? 0}</span>
-            </span>
-          </div>
+          {/* 4. Rating, sold and saves — only what is real ("New" until the first rating). */}
+          <ItemStats rating={item.reviews_avg_rating} reviewsCount={item.reviews_count} sold={item.order_count} saves={item.saves_count ?? (item as any).favorites_count} />
 
           {/* 5. Clock {estimated exact count days day-day/monthday - day} */}
           <div

@@ -25,6 +25,8 @@ interface SearchServicesTabProps {
   readonly userCoords?: { lat: number; lng: number } | null;
   /** Search for a garment (a tile on the "nothing found" screen). */
   readonly onSearch?: (term: string) => void;
+  /** Opens the shop (or one of its pages) in the map's side panel, like the Shops list. Returns false when it cannot. */
+  readonly onShowOnMap?: (slug: string, path?: string) => boolean;
 }
 
 export default function SearchServicesTab({
@@ -38,6 +40,7 @@ export default function SearchServicesTab({
   district,
   userCoords,
   onSearch,
+  onShowOnMap,
 }: SearchServicesTabProps) {
   if (activeTab !== 'services' && (activeTab !== 'all' || (!servicesLoading && services.length === 0))) {
     return null;
@@ -134,11 +137,17 @@ export default function SearchServicesTab({
                 (storeInfo as { is_featured?: boolean })?.is_featured;
               const rating = matchedStore?.reviews_avg_rating;
               const reviewsCount = matchedStore?.reviews_count;
+              const hasPin = (storeInfo?.branches ?? []).some((b) => (b as { latitude?: unknown }).latitude && (b as { longitude?: unknown }).longitude);
 
               return (
                 <div key={storeId} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-3">
                   {/* Store row */}
-                  <Link href={storeHref} className="flex items-center justify-between gap-3 group active:opacity-80">
+                  <Link
+                    href={storeHref}
+                    // Same as the Shops list: the shop opens in the map's side panel (the page stays on the map), not as its own page.
+                    onClick={(e) => { if (hasPin && onShowOnMap?.(storeSlug, effectiveQ.trim() ? `?tab=services&q=${encodeURIComponent(effectiveQ.trim())}` : '')) e.preventDefault(); }}
+                    className="flex items-center justify-between gap-3 group active:opacity-80"
+                  >
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <StoreLogoAvatar
                         src={logoSrc}
@@ -198,7 +207,11 @@ export default function SearchServicesTab({
                   <ServiceCarouselRow>
                     {storeServices.map((service) => (
                       // Tapping a service puts it in the recent searches.
-                      <div key={service.id} className="contents" onClickCapture={() => addRecentItem({ kind: 'service', term: service.name, href: `/store/${storeSlug}/service/${service.id}` })}>
+                      // Like the Shops list, the service opens in the map's side panel when it can (the page stays on the map).
+                      <div key={service.id} className="contents" onClickCapture={(e) => {
+                        addRecentItem({ kind: 'service', term: service.name, href: `/store/${storeSlug}/service/${service.id}` });
+                        if (hasPin && onShowOnMap?.(storeSlug, `/service/${service.id}`)) e.preventDefault();
+                      }}>
                         <SearchServiceCard service={service} storeSlug={storeSlug} gate={gate} />
                       </div>
                     ))}

@@ -5,7 +5,8 @@
  */
 export type MeasureUnit = 'in' | 'cm';
 
-export const unitOfMetrics = (metrics?: Record<string, unknown> | null): MeasureUnit => (metrics?._unit === 'cm' ? 'cm' : 'in');
+/** `_unit`, or the plain `unit` older records used; inches when neither says cm. */
+export const unitOfMetrics = (metrics?: Record<string, unknown> | null): MeasureUnit => ((metrics?._unit ?? metrics?.unit) === 'cm' ? 'cm' : 'in');
 
 export const unitMark = (unit: MeasureUnit): string => (unit === 'cm' ? ' cm' : '″');
 

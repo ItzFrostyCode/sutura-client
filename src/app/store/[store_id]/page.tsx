@@ -71,7 +71,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         onEditProfile={() => s.setActiveTab('about')}
         myReview={s.myReview}
         isBookmarked={s.isBookmarked}
-        setIsBookmarked={s.setIsBookmarked}
+        onToggleBookmark={s.toggleBookmark}
         onOpenRatingModal={() => {
           s.setRatingValue(s.myReview?.rating || 0);
           s.setIsRatingModalOpen(true);
@@ -84,7 +84,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
       />
 
       {/* Main Tab Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
+      <main className="flex-1 max-w-[960px] w-full mx-auto px-4 sm:px-8 lg:px-0 py-6">
         {s.activeTab === 'services' && (
           <StoreServicesTab
             services={s.services}

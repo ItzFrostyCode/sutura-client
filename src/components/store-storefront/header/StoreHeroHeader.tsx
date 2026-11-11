@@ -17,7 +17,6 @@ import {
   Camera,
   Calendar,
   Clock,
-  Phone,
   LayoutDashboard,
   Upload,
   Trash2,
@@ -31,6 +30,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import ScrollNav from '@/components/shared/ScrollNav';
+import StoreSocialLinks from './StoreSocialLinks';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -52,7 +52,8 @@ interface StoreHeroHeaderProps {
   readonly myReview: { id?: number; rating: number; comment?: string | null } | null;
   readonly onOpenRatingModal: () => void;
   readonly isBookmarked: boolean;
-  readonly setIsBookmarked: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Saves or unsaves the shop on the server (My Saved > Shops). */
+  readonly onToggleBookmark: () => void;
   /** Refreshes the storefront's own `store` state after the logo/banner is replaced. */
   readonly onImagesSaved?: () => void;
 }
@@ -104,7 +105,7 @@ export default function StoreHeroHeader({
   myReview,
   onOpenRatingModal,
   isBookmarked,
-  setIsBookmarked,
+  onToggleBookmark,
   onImagesSaved,
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
@@ -296,26 +297,11 @@ export default function StoreHeroHeader({
 
   return (
     <>
-      {/* Desktop & Tablet Back button (width >= 600px) — Cleanly placed above the banner, NOT on the background image */}
-      {!isShopViewingOwnStore && !embedded && canGoBack && (
-        <div className="hidden min-[600px]:block w-full max-w-7xl mx-auto px-4 sm:px-8 pt-3 pb-2">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="Back"
-            className="inline-flex min-h-11 items-center gap-2 pr-2 text-sm font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer group"
-          >
-            <div className="w-8 h-8 rounded-full bg-sunken border border-line/60 flex items-center justify-center text-ink group-hover:bg-sunken-hover transition-colors">
-              <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" />
-            </div>
-            <span>Back</span>
-          </button>
-        </div>
-      )}
+      {/* No Back button from 600px up: the browser's own Back does it (and the site header is there to move around). */}
 
       {/* 📸 1. Cover Banner Image — Facebook precise responsive heights: mobile 220-240px (16:9), tablet 312px, desktop 360px */}
-      <div className="h-[220px] min-[420px]:h-[240px] sm:h-[312px] lg:h-[360px] w-full max-w-7xl mx-auto bg-surface px-0 sm:px-8">
-        <div className="relative w-full h-full overflow-hidden sm:rounded-2xl border border-line/60">
+      <div className="h-[220px] min-[420px]:h-[240px] sm:h-[312px] lg:h-[360px] w-full max-w-[960px] mx-auto bg-surface px-0 sm:px-8 lg:px-0">
+        <div className="relative w-full h-full overflow-hidden sm:rounded-b-2xl border border-t-0 border-line/60">
           {/* Mobile Back button (width <= 599px, i.e. 320px - 599px) — Overlaid on banner for compact mobile screens */}
           {!isShopViewingOwnStore && !embedded && canGoBack && (
             <button
@@ -459,7 +445,7 @@ export default function StoreHeroHeader({
       {/* Special Hours Alert Banner (if active) */}
       {(store.active_special_hours?.announcement_message ||
         store.active_special_hours?.announcement_image_url) && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3 px-4 max-w-7xl mx-auto w-full">
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 py-3 px-4 max-w-[960px] mx-auto w-full">
           <div className="flex items-center gap-3">
             {store.active_special_hours.announcement_image_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
@@ -480,7 +466,7 @@ export default function StoreHeroHeader({
       )}
 
       {/* 👤 2. Profile Details Container (Centered Social Profile Layout) */}
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-8">
+      <div className="max-w-[960px] mx-auto w-full px-4 sm:px-8 lg:px-0">
         <div className="relative flex flex-col items-center text-center pb-2">
           {/* Hidden File Input for Logo */}
           <input
@@ -584,6 +570,7 @@ export default function StoreHeroHeader({
 
           {/* Subtitle Metadata (Branch, Ratings, Services) */}
           {!embedded && <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
+            {/* Trust first: only shops the SUTURA team approved (documents checked) have a public page. */}
             {store.is_premium && <PremiumBadge />}
             {activeBranch && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
@@ -651,7 +638,7 @@ export default function StoreHeroHeader({
 
                 <button
                   type="button"
-                  onClick={() => setIsBookmarked(!isBookmarked)}
+                  onClick={onToggleBookmark}
                   aria-pressed={isBookmarked}
                   aria-label={isBookmarked ? 'Saved shop' : 'Save shop'}
                   title={isBookmarked ? 'Saved' : 'Save shop'}
@@ -693,40 +680,28 @@ export default function StoreHeroHeader({
             </div>
           )}
 
-          {/* 📌 5. Centered Key Details Row (with icons like Facebook profile info) */}
+          {/* 📌 5. Where, when, how to call — the same list as the shop panel in Search / Map, so the shop reads the same
+              wherever it is opened: address, open/closed with the next opening on its own line, then the phone. */}
           {!embedded && (
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs sm:text-sm text-ink-muted text-center mt-3 pt-2.5 border-t border-line/60 w-full max-w-2xl px-2">
-            {/* Location (Clean, deduplicated) */}
-            {!embedded && (
-              <div className="flex items-center gap-1.5 text-ink-body">
-                <MapPin size={14} className="text-taupe shrink-0" />
-                <span>{cleanAddress}</span>
-              </div>
-            )}
-
-            {/* Open / Closed Status */}
-            {!embedded && <div className="flex items-center gap-1.5">
-              <Clock size={14} className={!store.operating_hours ? 'text-ink-muted shrink-0' : isStoreCurrentlyOpen ? 'text-emerald-500 shrink-0' : 'text-rose-500 shrink-0'} />
-              {/* Same words as the Map (ShopHoursStatus): a shop with no hours says so instead of a guessed "Closed". */}
-              <span className={!store.operating_hours ? 'text-ink-muted font-semibold' : isStoreCurrentlyOpen ? 'text-emerald-800 font-semibold' : 'text-rose-700 font-semibold'}>
-                {!store.operating_hours ? 'Hours not set' : isStoreCurrentlyOpen ? 'Open now' : 'Closed'}
-              </span>
-            </div>}
-
-            {/* Phone */}
-            {store.phone && (
-              <a href={`tel:${store.phone.replace(/[^\d+]/g, '')}`} className="flex min-h-11 items-center gap-1.5 text-ink-muted hover:text-ink hover:underline">
-                <Phone size={14} className="text-ink-muted shrink-0" aria-hidden />
-                <span>{store.phone}</span>
-              </a>
-            )}
-          </div>
+            <div className="mt-3 w-full max-w-md text-left">
+              <ShopQuickInfo
+                address={cleanAddress || null}
+                hours={(activeBranch as { operating_hours?: OperatingHours | null } | null)?.operating_hours ?? store.operating_hours}
+                phone={(activeBranch as { contact_number?: string | null } | null)?.contact_number || store.phone}
+              />
+            </div>
           )}
+
+          {/* Social pages on their own line under the details, each clickable (the owner adds them in About). */}
+          {!embedded && <StoreSocialLinks links={store.social_links} />}
         </div>
 
-        {/* 📑 6. Streamlined Navigation Tabs Bar */}
+      </div>
+
+      {/* 📑 6. Navigation tabs (not pinned: only the Services search stays at the top while scrolling). */}
         {/* Pinned while scrolling a long Services list, so About and Ratings are always one tap away. */}
-        <div ref={tabBarRef} className="sticky top-0 z-20 border-b border-line mt-4 mb-4 bg-surface">
+        <div ref={tabBarRef} className="mt-4 mb-4 border-b border-line bg-surface">
+          <div className="max-w-[960px] mx-auto w-full px-4 sm:px-8 lg:px-0">
           <ScrollNav className="flex justify-center">
           <div className="flex items-center justify-center gap-1 sm:gap-6 px-2 min-w-full sm:min-w-0">
             {tabList.map((tab) => {
@@ -756,8 +731,8 @@ export default function StoreHeroHeader({
             })}
           </div>
           </ScrollNav>
+          </div>
         </div>
-      </div>
     </>
   );
 }

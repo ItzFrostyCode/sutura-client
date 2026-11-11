@@ -122,6 +122,8 @@ export interface StoreProfile {
   id: number;
   name: string;
   slug: string;
+  /** pending | approved | rejected | suspended: only an approved shop shows "Verified shop". */
+  status?: string;
   description: string;
   address: string;
   city: string;

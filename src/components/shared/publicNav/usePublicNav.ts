@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTrackOrderLink } from './useTrackOrderLink';
@@ -38,30 +39,23 @@ export function usePublicNav() {
     ? (user?.name ? `${user.name} (${isCustomer ? 'Customer Profile' : 'Dashboard'})` : 'My Account')
     : 'Account / Sign In';
 
+  const fetchUnread = useCallback(() => {
+    api.get('/notifications')
+      .then((res) => setUnreadCount(typeof res.data.unread_count === 'number' ? res.data.unread_count : 0))
+      .catch(() => { /* keep the last count on a network blip */ });
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) {
       setUnreadCount(0);
       return;
     }
-    let isMounted = true;
+    fetchUnread();
+  }, [isAuthenticated, fetchUnread]);
 
-    api
-      .get('/notifications')
-      .then((res) => {
-        if (isMounted) {
-          setUnreadCount(typeof res.data.unread_count === 'number' ? res.data.unread_count : 0);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setUnreadCount(0);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isAuthenticated]);
+  // New notifications (a payment approved, an order ready) reach the bell without a reload: every 30 seconds while the
+  // tab is open, and at once when the person comes back to it.
+  useLiveRefresh(fetchUnread, 30_000, isAuthenticated);
 
   useEffect(() => {
     const onChange = (e: Event) => setUnreadCount(Number((e as CustomEvent<number>).detail) || 0);

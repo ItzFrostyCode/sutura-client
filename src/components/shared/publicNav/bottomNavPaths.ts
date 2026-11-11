@@ -22,6 +22,18 @@ export function isAuthPath(pathname: string): boolean {
   );
 }
 
+/**
+ * A shop's own page (/store/<slug>), not its booking or design pages. It gets the same way around as the rest of the
+ * site (bottom bar on a phone, the header from tablet up): opened from a shared link it would otherwise have no Back and
+ * no way out at all. A shop account previewing its own page keeps its owner bar instead (see usesCustomerNavOn).
+ */
+export const isShopProfilePath = (pathname: string): boolean => /^\/store\/[^/]+\/?$/.test(pathname);
+
+/** The customer's site navigation is for customers and guests; on its own shop page a shop account has its owner bar. */
+export function usesCustomerNavOn(pathname: string, isShopAccount: boolean): boolean {
+  return usesBottomNav(pathname) && !(isShopAccount && isShopProfilePath(pathname));
+}
+
 export function usesBottomNav(pathname: string): boolean {
   // Authentication screens never show the bottom navigation bar
   if (isAuthPath(pathname)) {
@@ -30,7 +42,8 @@ export function usesBottomNav(pathname: string): boolean {
 
   return (
     BOTTOM_NAV_PATHS.includes(pathname) ||
-    pathname.startsWith('/account/')
+    pathname.startsWith('/account/') ||
+    isShopProfilePath(pathname)
   );
 }
 

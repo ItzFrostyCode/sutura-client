@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Clock, MapPin, Phone } from 'lucide-react';
 import type { OperatingHours } from '@/lib/storeStatus';
 import ShopHoursStatus from '@/components/shared/ShopHoursStatus';
+import { formatPhone } from '@/lib/formatPhone';
 
 function Row({ icon, children }: { readonly icon: ReactNode; readonly children: ReactNode }) {
   return (
@@ -24,7 +25,7 @@ export default function ShopQuickInfo({ address, hours, phone }: { readonly addr
       </Row>
       {phone && (
         <Row icon={<Phone size={18} />}>
-          <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className="-my-2 flex min-h-11 items-center font-medium underline-offset-2 hover:underline">{phone}</a>
+          <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className="-my-2 flex min-h-11 items-center font-medium underline-offset-2 hover:underline tabular-nums">{formatPhone(phone)}</a>
         </Row>
       )}
     </ul>

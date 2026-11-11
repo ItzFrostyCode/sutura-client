@@ -49,7 +49,7 @@ const MID_LINKS = [
   { href: '/account/appointments', label: 'Appointments & Fittings', icon: Calendar },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/account/measurements', label: 'My Measurements', icon: Ruler },
-  { href: '/account/saved', label: 'My Saved Items', icon: Heart },
+  { href: '/account/saved', label: 'My Saved', icon: Heart },
   { href: '/account/ratings', label: 'My Ratings', icon: Star },
   { href: '/account/recently-viewed', label: 'Recently Viewed', icon: Clock },
 ];

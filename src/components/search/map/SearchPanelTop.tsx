@@ -1,5 +1,4 @@
 import type { ReactNode, Ref } from 'react';
-import Link from 'next/link';
 import SuturaMark from '@/components/brand/SuturaMark';
 import SearchPill from '@/components/home/SearchPill';
 import { countAllFilters, type AllFilters } from '@/components/home/homeFilters';
@@ -44,10 +43,10 @@ export default function SearchPanelTop({ s, onOpenFilter, inputRef, showTabs = t
           inputRef={inputRef}
           onFocus={onFocus}
           leading={(
-            // The SUTURA logo instead of a magnifier, at every size (the way home on a phone / tablet, which has no header here).
-            <Link href="/" aria-label="SUTURA home" className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-espresso hover:bg-sunken">
+            // The SUTURA logo in place of a magnifier: a mark only, not a button (home is the Discover tab / the header).
+            <span aria-hidden className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center text-espresso">
               <SuturaMark detail="small" className="h-7 w-7" />
-            </Link>
+            </span>
           )}
         />
         </div>

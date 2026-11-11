@@ -87,7 +87,7 @@ export default function AccountLayout({ children }: { readonly children: React.R
         <main className="flex-1 mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-4 md:py-6">
           
           {showSidebar ? (
-            <div className="flex flex-col lg:flex-row lg:items-start lg:gap-8">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:gap-4">
               <div className="hidden lg:block">
                 <AccountWebSidebar user={user} />
               </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CalendarClock, CalendarDays, Shirt, Wallet, Wrench } from 'lucide-react';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
+import CopyTrackingCode from './CopyTrackingCode';
 import type { TrackedOrder } from '@/components/shared/OrderTrackingView';
 
 interface OrderSummaryCardProps {
@@ -86,11 +87,7 @@ export default function OrderSummaryCard({ order, phase }: OrderSummaryCardProps
         </p>
       )}
 
-      {order.tracking_code && (
-        <p className="mobile-caption mt-3 text-ink-faint">
-          Tracking code: <span className="font-mono text-ink-muted">{order.tracking_code}</span>
-        </p>
-      )}
+      {order.tracking_code && <CopyTrackingCode code={order.tracking_code} />}
     </div>
   );
 }

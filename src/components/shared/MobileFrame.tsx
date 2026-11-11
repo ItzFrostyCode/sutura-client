@@ -2,7 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isAuthPath, usesBottomNav } from './publicNav/bottomNavPaths';
+import { isAuthPath, usesCustomerNavOn } from './publicNav/bottomNavPaths';
+import { useShopAccount } from '@/hooks/useShopAccount';
 import PublicTopBar from './topbar/PublicTopBar';
 
 /**
@@ -28,6 +29,7 @@ import PublicTopBar from './topbar/PublicTopBar';
 export default function MobileFrame({ children }: { readonly children: React.ReactNode }) {
   const pathname = usePathname();
   const [isEmbed, setIsEmbed] = useState(false);
+  const { isShopAccount } = useShopAccount();
   useEffect(() => {
     setIsEmbed(new URLSearchParams(window.location.search).get('embed') === '1');
   }, [pathname]);
@@ -40,7 +42,7 @@ export default function MobileFrame({ children }: { readonly children: React.Rea
   // mounted while only the page under it changes, so moving between Discover, Map, Track Order… never redraws it
   // (no address flashing back to "Davao City", no appointment strip popping in, no header jump). Same idea as
   // PublicBottomNav in RootLayout. Pages just fill the rest (`flex-1`).
-  const topBar = pathname && usesBottomNav(pathname) && !isEmbed ? <PublicTopBar /> : null;
+  const topBar = pathname && usesCustomerNavOn(pathname, isShopAccount) && !isEmbed ? <PublicTopBar /> : null;
 
   if (pathname === '/map' || pathname?.startsWith('/search')) {
     return (

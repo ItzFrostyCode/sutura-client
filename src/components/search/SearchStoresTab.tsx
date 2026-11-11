@@ -6,7 +6,7 @@ import { Store, ChevronRight, ChevronDown, ChevronUp, MapPin } from 'lucide-reac
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import StoreRowInfo from './StoreRowInfo';
 import SearchNoResults from './SearchNoResults';
-import HomeCarouselRow from '@/components/home/HomeCarouselRow';
+import DragScrollRow from '@/components/shared/DragScrollRow';
 import SearchServiceCard from './SearchServiceCard';
 import { RelatedStore, SearchActiveTab } from './types';
 import type { CatalogItemResult } from '@/types/publicCatalog';
@@ -292,7 +292,7 @@ export default function SearchStoresTab({
 
                 {/* Carousel */}
                 {showServicesCarousel && storeServices.length > 0 ? (
-                  <HomeCarouselRow>
+                  <DragScrollRow label="Services">
                     {storeServices.map((svc) => (
                       // In the map panel a service opens inside the panel (its page in the shop's frame) instead of leaving the map.
                       <div
@@ -330,9 +330,9 @@ export default function SearchStoresTab({
                       />
                       </div>
                     ))}
-                  </HomeCarouselRow>
+                  </DragScrollRow>
                 ) : storeCarouselItems.length > 0 ? (
-                  <HomeCarouselRow>
+                  <DragScrollRow label="Designs">
                     {storeCarouselItems.map((item) => (
                       <div
                         key={item.id}
@@ -345,7 +345,7 @@ export default function SearchStoresTab({
                         <CatalogItemCard item={toCatalogItemResult(item, store)} />
                       </div>
                     ))}
-                  </HomeCarouselRow>
+                  </DragScrollRow>
                 ) : null}
                   </>
                 )}

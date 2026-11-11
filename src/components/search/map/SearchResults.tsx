@@ -90,6 +90,7 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           district={s.district}
           userCoords={s.userCoords}
           onSearch={(term) => s.setQ(term)}
+          onShowOnMap={onShowOnMap}
         />
       )}
     </div>

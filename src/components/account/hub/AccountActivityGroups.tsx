@@ -10,7 +10,7 @@ export default function AccountActivityGroups({ measurementCount }: { readonly m
       <HubGroup>
         <HubRow href="/account/measurements" Icon={Ruler} title="My Measurements" subtitle={records} />
         <HubRow href="/account/history" Icon={Layers} title="My History" subtitle="Orders, appointments & measurements" />
-        <HubRow href="/account/saved" Icon={Heart} title="My Saved Items" />
+        <HubRow href="/account/saved" Icon={Heart} title="My Saved" />
         <HubRow href="/account/ratings" Icon={Star} title="My Ratings" />
         <HubRow href="/account/recently-viewed" Icon={History} title="Recently Viewed" />
       </HubGroup>

@@ -8,77 +8,53 @@ import type { CatalogItemResult } from '@/types/publicCatalog';
 import AccountHeader from '@/components/account/AccountHeader';
 import EmptyState from '@/components/account/EmptyState';
 import SegmentedTabs from '@/components/account/SegmentedTabs';
-import ServiceMiniCard from '@/components/account/ServiceMiniCard';
+import AccountServiceGrid, { type AccountService } from '@/components/account/AccountServiceGrid';
+import StoreCard from '@/components/stores/StoreCard';
+import type { StoreResult } from '@/components/stores/storesTypes';
 
-interface SavedService {
-  id: number;
-  name: string;
-  description: string | null;
-  base_price: string | number | null;
-  estimated_days: number | null;
-  estimated_days_max?: number | null;
-  image_url: string | null;
-  reviews_count: number;
-  reviews_avg_rating: number | null;
-  store: { id: number; name: string; slug: string } | null;
-}
-
-// Mirrors MyRatingsPage (same customer-scoped endpoints, same tab pattern): the heart on a Catalog item or Service page
-// lands here.
-type Tab = 'catalog' | 'services';
+// Same three tabs, in the same order, as My Ratings and Recently Viewed: Shops · Services · Designs.
+// The heart on a shop, a service or a design page lands here.
+type Tab = 'stores' | 'services' | 'catalog';
 const TABS: { key: Tab; label: string; shortLabel: string }[] = [
+  { key: 'stores', label: 'Shops', shortLabel: 'Shops' },
   { key: 'services', label: 'Services', shortLabel: 'Services' },
   { key: 'catalog', label: 'Designs', shortLabel: 'Designs' },
 ];
 
-const nothingSaved = <EmptyState Icon={Heart} title="Nothing saved yet" message="Tap the heart on a design or a service and it will be kept here." action={{ href: '/search', label: 'Find a Shop' }} />;
+const nothingSaved = <EmptyState Icon={Heart} title="Nothing saved yet" message="Tap the heart on a shop, a service or a design and it will be kept here." action={{ href: '/search', label: 'Find a Shop' }} />;
 
-export default function MySavedItemsPage() {
-  const [tab, setTab] = useState<Tab>('services');
+export default function MySavedPage() {
+  const [tab, setTab] = useState<Tab>('stores');
+  const [stores, setStores] = useState<StoreResult[] | null>(null);
+  const [services, setServices] = useState<AccountService[] | null>(null);
   const [items, setItems] = useState<CatalogItemResult[] | null>(null);
-  const [services, setServices] = useState<SavedService[] | null>(null);
 
   useEffect(() => {
-    api.get('/my-saved-catalog-items').then((res) => setItems(res.data.data ?? [])).catch(() => setItems([]));
+    api.get('/my-saved-stores').then((res) => setStores(res.data.data ?? [])).catch(() => setStores([]));
     api.get('/my-saved-services').then((res) => setServices(res.data.data ?? [])).catch(() => setServices([]));
+    api.get('/my-saved-catalog-items').then((res) => setItems(res.data.data ?? [])).catch(() => setItems([]));
   }, []);
 
-  const loading = (tab === 'catalog' && items === null) || (tab === 'services' && services === null);
+  const current = { stores, services, catalog: items }[tab];
 
   return (
     <div>
-      <AccountHeader title="My Saved Items" backHref="/account" />
-      <SegmentedTabs label="Saved items" options={TABS} active={tab} onChange={setTab} />
+      <AccountHeader title="My Saved" backHref="/account" />
+      <SegmentedTabs label="Saved" options={TABS} active={tab} onChange={setTab} />
 
-      {loading && <div className="flex min-h-[50vh] items-center justify-center"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}
+      {current === null && <div className="flex min-h-[50vh] items-center justify-center"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}
+      {current !== null && current.length === 0 && nothingSaved}
 
-      {tab === 'catalog' && items !== null && (
-        items.length === 0 ? nothingSaved : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(118px,142px))] gap-[5px] sm:gap-3">
-            {items.map((item) => <CatalogItemCard key={item.id} item={item} />)}
-          </div>
-        )
+      {tab === 'stores' && stores && stores.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {stores.map((store) => <StoreCard key={store.id} store={store} />)}
+        </div>
       )}
-
-      {tab === 'services' && services !== null && (
-        services.length === 0 ? nothingSaved : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {services.filter((s) => s.store).map((s) => (
-              <ServiceMiniCard
-                key={s.id}
-                href={`/store/${s.store!.slug}/service/${s.id}`}
-                name={s.name}
-                imageUrl={s.image_url}
-                eyebrow={s.store!.name}
-                basePrice={s.base_price}
-                estimatedDays={s.estimated_days}
-                estimatedDaysMax={s.estimated_days_max}
-                rating={s.reviews_avg_rating}
-                reviewsCount={s.reviews_count ?? 0}
-              />
-            ))}
-          </div>
-        )
+      {tab === 'services' && services && services.length > 0 && <AccountServiceGrid services={services} />}
+      {tab === 'catalog' && items && items.length > 0 && (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(118px,142px))] gap-[5px] sm:gap-3">
+          {items.map((item) => <CatalogItemCard key={item.id} item={item} />)}
+        </div>
       )}
     </div>
   );

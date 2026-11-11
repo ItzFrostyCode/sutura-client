@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Scissors, Star, Clock, MapPin, Shirt, Heart } from 'lucide-react';
+import { Scissors, Clock, MapPin, Shirt } from 'lucide-react';
+import ItemStats from '@/components/shared/ItemStats';
 import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
@@ -128,24 +129,8 @@ export default function SearchServiceCard({
             )}
           </div>
 
-          {/* 5. Star (Average Rating) | (count) sold | (count) favorites */}
-          <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Star size={10} className="fill-amber-400 text-amber-500 shrink-0" />
-              <span className="font-semibold text-ink">
-                {service.reviews_avg_rating && Number(service.reviews_avg_rating) > 0
-                  ? Number(service.reviews_avg_rating).toFixed(1)
-                  : '0.0'}
-              </span>
-            </div>
-            <span className="text-ink-faint">|</span>
-            <span className="truncate">{soldCount} sold</span>
-            <span className="text-ink-faint">|</span>
-            <span className="flex items-center gap-0.5 text-rose-600 shrink-0" title={`${service.saves_count ?? 0} favorites`}>
-              <Heart size={10} className="fill-rose-500 text-rose-500 shrink-0" />
-              <span>{service.saves_count ?? 0}</span>
-            </span>
-          </div>
+          {/* 5. Rating | sold | saved — the shared line every service and design card uses. */}
+          <ItemStats rating={service.reviews_avg_rating} sold={soldCount} saves={service.saves_count} />
 
           {/* 6. Clock {estimated exact count days day-day/monthday - day} */}
           <div

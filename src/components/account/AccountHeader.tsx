@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 
@@ -23,6 +23,16 @@ export default function AccountHeader({ title, backHref, action }: AccountHeader
   // Back always goes to the parent screen.
   const parentOnly = usePathname().startsWith('/account/settings');
 
+  // At the top of the page the bar blends into it; once the page scrolls under it, it gets an edge (hairline + soft
+  // shadow, slightly see-through) so it reads as a bar, not a stray cream band cutting across the cards.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // A real back (to wherever the person came from); `backHref` only when there is no app history (opened by URL / new tab).
   const handleBack = () => {
     if (!parentOnly && typeof window !== 'undefined' && window.history.length > 1) router.back();
@@ -30,7 +40,7 @@ export default function AccountHeader({ title, backHref, action }: AccountHeader
   };
 
   return (
-    <div className="sticky top-0 z-40 -mt-4 bg-canvas pb-2 pt-4 lg:static lg:mt-0 lg:pb-5 lg:pt-0">
+    <div className={`sticky top-[var(--topbar-h,0px)] z-40 -mx-4 -mt-4 px-4 pb-2 pt-4 transition-[box-shadow,background-color,border-color] duration-200 min-[481px]:-mx-6 min-[481px]:px-6 min-[600px]:-mx-8 min-[600px]:px-8 md:-mx-12 md:px-12 lg:static lg:mx-0 lg:mt-0 lg:border-0 lg:bg-transparent lg:px-0 lg:pb-5 lg:pt-0 lg:shadow-none ${scrolled ? 'border-b border-line bg-canvas/90 shadow-[0_6px_16px_-10px_rgba(45,42,38,0.25)] backdrop-blur-md' : 'border-b border-transparent bg-canvas'}`}>
       <div className="flex min-h-8 items-center gap-1 lg:min-h-11">
         <button
           type="button"
