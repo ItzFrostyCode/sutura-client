@@ -27,7 +27,7 @@ export default function AppointmentDetailNotices({ appt, isPastDue }: { readonly
       {appt.needs_new_time && appt.status === 'pending' && (
         <div className="mt-3 rounded-xl bg-amber-50 p-3 text-amber-900">
           <p className="text-sm font-semibold">Your time was taken by a walk-in client</p>
-          <p className="mobile-caption mt-1">The shop can&apos;t use the time you asked for. Pick another one — your request stays with the store, so you don&apos;t need to start over.</p>
+          <p className="mobile-caption mt-1">The shop can&apos;t use the time you asked for. Pick another one — your request stays with the shop, so you don&apos;t need to start over.</p>
         </div>
       )}
 
@@ -38,7 +38,7 @@ export default function AppointmentDetailNotices({ appt, isPastDue }: { readonly
             ? 'The shop chose this time for your fitting and will confirm it with you. If it does not suit you, pick another time.'
             : appt.previous_scheduled_at
             ? 'You asked to move this appointment. The shop needs to approve the new time. Until they do, the time you had before is released.'
-            : 'Waiting for the store to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.'}
+            : 'Waiting for the shop to confirm. Walk-ins are seen first come, first served — arriving early improves your spot in line.'}
         </p>
       )}
 

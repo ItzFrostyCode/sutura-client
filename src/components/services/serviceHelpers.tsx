@@ -58,6 +58,11 @@ export const SERVICE_TYPE_META: Record<ServiceType, { icon: LucideIcon; text: st
   alteration_repair: { icon: Wrench,   text: 'text-amber-700', bg: 'bg-amber-50',     border: 'border-amber-200' },
 };
 
+export type ServiceStatus = 'draft' | 'published' | 'unpublished' | 'archived';
+export type PriceDisplay = 'fixed' | 'starting' | 'quotation';
+
+export const STATUS_LABEL: Record<ServiceStatus, string> = { draft: 'Draft', published: 'Published', unpublished: 'Unpublished', archived: 'Archived' };
+
 export interface Service extends RequirementFields {
   id: number;
   name: string;
@@ -80,6 +85,10 @@ export interface Service extends RequirementFields {
   estimated_days_max?: number | null;
   min_order_qty?: number;
   is_active: boolean;
+  /** Lifecycle (Services decision S2). `is_active` mirrors "status is published". */
+  status?: ServiceStatus;
+  /** How customers see the price (B6-O11): no range option. */
+  price_display?: PriceDisplay;
   image_url?: string | null;
   size_chart_image_url?: string | null;
   size_chart_columns?: string[] | null;

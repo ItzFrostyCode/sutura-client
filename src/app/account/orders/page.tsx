@@ -78,19 +78,17 @@ function MyOrdersPageContent() {
             Icon={Package}
             title={orders.length === 0 ? 'No orders yet' : 'Nothing in this tab yet'}
             message={orders.length === 0 ? 'Once you book a fitting or place an order, it’ll show up here.' : 'Try a different tab.'}
-            action={orders.length === 0 ? { href: '/search', label: 'Browse Stores' } : undefined}
+            action={orders.length === 0 ? { href: '/search', label: 'Find a Shop' } : undefined}
           />
         </div>
       )}
 
       {!loading && filteredOrders.length > 0 && (
-        // Single column on mobile; a 2-3 col grid from md: up so a wide
-        // AccountLayout content area doesn't stretch each card into a thin,
-        // mostly-empty full-width row — OrderCard's own layout (avatar left,
-        // info right) already works fine inside a grid cell as-is.
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        // One column on a phone; two from 640px (tablet, and the 672px content beside the desktop menu). Never three:
+        // beside the menu each card would be too narrow for the shop, order number and badge.
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {entries.map((e) => (e.orders.length > 1
-            ? <div key={e.key} className="md:col-span-2 xl:col-span-3"><OrderGroup orders={e.orders} /></div>
+            ? <div key={e.key} className="sm:col-span-2"><OrderGroup orders={e.orders} /></div>
             : <OrderCard key={e.key} order={e.orders[0]} />))}
         </div>
       )}

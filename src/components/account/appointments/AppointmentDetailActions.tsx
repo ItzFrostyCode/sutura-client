@@ -28,7 +28,7 @@ export default function AppointmentDetailActions({ appt, canSelfCancel, cancelli
             <p className="mobile-caption mt-3 text-ink-muted"><span className="font-semibold text-ink-body">Reason from store:</span> {appt.cancellation_reason}</p>
           )}
           {appt.rebooking_blocked ? (
-            <div className={`${button} cursor-not-allowed bg-sunken font-normal text-ink-faint`}><Lock size={16} /> Rebooking unavailable — contact the store</div>
+            <div className={`${button} cursor-not-allowed bg-sunken font-normal text-ink-faint`}><Lock size={16} /> Rebooking unavailable — contact the shop</div>
           ) : appt.store?.slug ? (
             <Link href={`/store/${appt.store.slug}/book`} className={`${button} bg-sunken text-taupe`}>Book a new appointment</Link>
           ) : null}

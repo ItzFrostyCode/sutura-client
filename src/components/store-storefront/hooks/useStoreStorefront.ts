@@ -172,7 +172,9 @@ export function useStoreStorefront(storeId: string) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTabState(resolved);
   }, [searchParams, resolveTabFromParam]);
+  // Save (heart) this shop: stored on the server (/stores/{slug}/save), listed in My Saved > Shops.
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [savingBookmark, setSavingBookmark] = useState(false);
 
   // Catalog State
   const [catalogItems, setCatalogItems] = useState<CatalogListItem[]>([]);
@@ -418,6 +420,32 @@ export function useStoreStorefront(storeId: string) {
         .catch(() => {});
     }
   }, [user, store?.slug]);
+
+  useEffect(() => {
+    if (!user || !store?.slug) return;
+    api.get(`/stores/${store.slug}/my-save`)
+      .then((res) => { if (res.data?.success) setIsBookmarked(!!res.data.is_saved); })
+      .catch(() => {});
+  }, [user, store?.slug]);
+
+  const toggleBookmark = async () => {
+    if (!user) { toast.error('Sign in to save this shop.'); return; }
+    if (!store?.slug || savingBookmark) return;
+    const was = isBookmarked;
+    setSavingBookmark(true);
+    setIsBookmarked(!was); // show it at once; corrected below if the server disagrees
+    try {
+      const res = await api.post(`/stores/${store.slug}/save`);
+      const saved = res.data?.status === 'saved';
+      setIsBookmarked(saved);
+      toast.success(saved ? 'Shop saved. Find it in My Saved.' : 'Removed from My Saved.');
+    } catch {
+      setIsBookmarked(was);
+      toast.error('Could not save this shop. Please try again.');
+    } finally {
+      setSavingBookmark(false);
+    }
+  };
 
   useEffect(() => {
     if (!user || !store?.id) return;
@@ -847,7 +875,7 @@ export function useStoreStorefront(storeId: string) {
   };
 
   const tabList: { id: StorefrontTab; label: string }[] = [
-    { id: 'services', label: 'Service' },
+    { id: 'services', label: 'Services' },
     { id: 'about', label: 'About' },
   ];
   // One branch (or none) leaves nothing to choose between — its address, phone and hours are already in the header and About.
@@ -874,7 +902,7 @@ export function useStoreStorefront(storeId: string) {
     selectedBranchSlug,
     activeBranch,
     isBookmarked,
-    setIsBookmarked,
+    toggleBookmark,
     isStoreCurrentlyOpen,
     fetchStore,
 

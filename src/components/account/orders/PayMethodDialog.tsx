@@ -47,13 +47,16 @@ export default function PayMethodDialog({ method, outstanding, depositDue, depos
               <p className="mobile-overline text-ink-faint">Account name</p>
               <p className="text-base text-ink">{method.account_name}</p>
             </div>
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <p className="mobile-overline text-ink-faint">{method.kind === 'bank_transfer' ? 'Account number' : 'Number'}</p>
-                <p className="text-lg font-mono font-semibold text-ink break-all">{method.account_number}</p>
+            {/* A QR-only method has no number to show or copy. */}
+            {method.account_number && (
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="mobile-overline text-ink-faint">{method.kind === 'bank_transfer' ? 'Account number' : 'Number'}</p>
+                  <p className="text-lg font-mono font-semibold text-ink break-all">{method.account_number}</p>
+                </div>
+                <button type="button" onClick={copy} className="flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-surface px-4 text-xs font-semibold shadow-[0_1px_3px_rgba(45,42,38,0.12)] active:opacity-70"><Copy size={14} /> {copied ? 'Copied' : 'Copy'}</button>
               </div>
-              <button type="button" onClick={copy} className="flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-surface px-4 text-xs font-semibold shadow-[0_1px_3px_rgba(45,42,38,0.12)] active:opacity-70"><Copy size={14} /> {copied ? 'Copied' : 'Copy'}</button>
-            </div>
+            )}
             {method.instructions && <p className="text-sm text-ink-body whitespace-pre-wrap">{method.instructions}</p>}
           </div>
 

@@ -62,7 +62,7 @@ export default function OpeningHoursCard({
               }`}
             >
               <span className={`capitalize ${isToday ? 'font-semibold text-ink' : 'text-ink-body'}`}>
-                {label} {isToday && <span className="text-[11px] text-taupe font-semibold ml-1">(Today)</span>}
+                {label} {isToday && <span className="text-xs text-taupe font-semibold ml-1">(Today)</span>}
               </span>
               {isOpen ? (
                 <span className={`font-medium ${isToday ? 'text-ink font-semibold' : 'text-ink-body'}`}>

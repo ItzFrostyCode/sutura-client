@@ -8,8 +8,9 @@ interface HeroSearchProps {
   readonly activeFilterCount: number;
 }
 
-/** The one placeholder line, used here and in the search bar of the map, at every screen size. */
-export const SEARCH_PLACEHOLDER = 'What do you need?';
+/** The one placeholder line, used here and in the search bar of the map, at every screen size. It names garments, not
+ * "what do you need?", because the thesis's discovery objective is search by garment type. Kept short for a 320px phone. */
+export const SEARCH_PLACEHOLDER = 'Barong, uniform, gown…';
 
 /**
  * Search box with the filter icon and its own Search button (the pill on the search screen has no button).

@@ -28,27 +28,37 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
 
   if (!active || pay.loading || balance <= 0) return null;
   if (outstanding <= 0) {
-    return <p className="mobile-caption mt-4 text-ink-muted md:mx-auto md:max-w-3xl">Your payment was sent and is waiting for the shop to verify it.</p>;
+    return <p className="mobile-caption px-1 text-ink-muted">Your payment was sent and is waiting for the shop to verify it.</p>;
   }
-  if (pay.methods.length === 0) return null;
+  // Never an empty side column: a shop without online payment methods still tells the customer how to pay.
+  if (pay.methods.length === 0) {
+    return (
+      <section className="card-soft p-4" aria-label="Pay for this order">
+        <h2 className="mobile-h4 text-ink">Pay for this order</h2>
+        <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. This shop takes payment in person — pay at the shop on your next visit.</p>
+      </section>
+    );
+  }
 
   return (
-    <section className="card-soft mt-4 p-4 md:mx-auto md:max-w-3xl" aria-label="Pay for this order">
+    <section className="card-soft p-4" aria-label="Pay for this order">
       <h2 className="mobile-h4 text-ink">Pay for this order</h2>
       <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
       {requiredDeposit > 0 && totalAmount - balance + 0.005 < requiredDeposit && (
         <p className="mobile-body-sm mt-1 text-ink">The shop needs {depositLabel.toLowerCase()} (₱{requiredDeposit.toLocaleString()}) before it starts making your order.</p>
       )}
-      <ul className="grid grid-cols-1 min-[600px]:grid-cols-2 gap-3 mt-3">
+      <ul className="mt-3 grid grid-cols-1 gap-3">
         {pay.methods.map((m) => {
           const Icon = ICON[m.kind] ?? Wallet;
           return (
             <li key={m.id}>
               <button type="button" onClick={() => setChosen(m)} className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-2xl bg-sunken p-3 text-left transition-opacity active:opacity-70">
                 <Icon size={20} className="text-taupe shrink-0" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-ink truncate">{m.name}</span>
-                  <span className="block text-xs text-ink-muted truncate">{m.account_name} · {m.account_number}</span>
+                {/* Name, account name, and the number on its own line — never cut off, so it can be read and typed in full. */}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-ink">{m.name}</span>
+                  <span className="block break-words text-xs text-ink-muted">{m.account_name}</span>
+                  <span className="mt-0.5 block break-all font-mono text-sm text-ink">{m.account_number || 'Scan the QR code'}</span>
                 </span>
               </button>
             </li>

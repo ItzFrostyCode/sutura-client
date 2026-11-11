@@ -6,7 +6,8 @@ import { DEFAULT_SERVICE_SORT, SERVICE_PRICE_SORTS, isServicePriceSort } from '.
 import type { CountedOption } from './serviceTaxonomyFilters';
 import type { ServiceFilters } from './useServiceFilters';
 
-export type ServiceStatusFilter = '' | 'active' | 'paused';
+/** '' = everything except archived; archived services are listed only when asked for (Services decision S2). */
+export type ServiceStatusFilter = '' | 'draft' | 'published' | 'unpublished' | 'archived';
 
 function Choice({ title, options, value, onChange, all }: Readonly<{ title: string; options: CountedOption[]; value: string; onChange: (v: string) => void; all: string }>) {
   if (options.length === 0) return null;
@@ -36,7 +37,7 @@ export default function ServiceFilterBody({ f }: Readonly<{ f: ServiceFilters }>
       </FilterSection>
 
       <FilterSection title="Status">
-        {([['', 'All services'], ['active', 'Active'], ['paused', 'Paused']] as const).map(([value, label]) => (
+        {([['', 'All services'], ['published', 'Published'], ['draft', 'Draft'], ['unpublished', 'Unpublished'], ['archived', 'Archived']] as const).map(([value, label]) => (
           <FilterOption key={value || 'all'} selected={f.statusFilter === value} onClick={() => f.setStatusFilter(value)}>{label}</FilterOption>
         ))}
       </FilterSection>

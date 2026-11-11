@@ -38,7 +38,7 @@ export default function HomeLocationCard({ homeLocation, onOpenSetHome, onSelect
         </div>
       ) : (
         <div className="card-soft p-2">
-          <LocationRow icon={<Plus size={22} />} title="Set a home address" subtitle="Find nearby stores even when you’re far away" onClick={onOpenSetHome} />
+          <LocationRow icon={<Plus size={22} />} title="Set a home address" subtitle="Find nearby shops even when you’re far away" onClick={onOpenSetHome} />
         </div>
       )}
     </section>

@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Scissors, Star, Clock, MapPin, Shirt, Heart } from 'lucide-react';
+import { Scissors, Clock, MapPin, Shirt } from 'lucide-react';
+import ItemStats from '@/components/shared/ItemStats';
 import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
 import { SearchServiceResult } from './types';
+import { QUOTATION_LABEL, priceLead } from '@/lib/servicePricing';
 
 interface SearchServiceCardProps {
   readonly service: SearchServiceResult;
@@ -67,7 +69,7 @@ export default function SearchServiceCard({
       {/* 1. Image Thumbnail */}
       <div className="aspect-4/3 w-full bg-sunken relative overflow-hidden shrink-0 border-b border-line">
         {isPaused && (
-          <div className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 bg-ink/85 text-white text-[9px] font-bold uppercase tracking-wider">Paused</div>
+          <div className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 bg-ink/85 text-white text-xs font-bold uppercase tracking-wider">Paused</div>
         )}
         {service.image_url ? (
           <Image
@@ -92,7 +94,7 @@ export default function SearchServiceCard({
           </h3>
 
           {/* 3. Service Type & Designs count */}
-          <div className="flex items-center justify-between gap-1 text-[10px]">
+          <div className="flex items-center justify-between gap-1 text-xs">
             <span className="font-medium uppercase tracking-wide text-taupe truncate">
               {serviceTypeDisplay}
             </span>
@@ -108,45 +110,31 @@ export default function SearchServiceCard({
           <div>
             {service.sale_price !== null && service.sale_price !== undefined && service.base_price !== null && service.sale_price < service.base_price ? (
               <div className="flex items-center gap-1.5">
-                <span className="line-through text-ink-faint text-[10px] font-normal">
+                <span className="line-through text-ink-faint text-xs font-normal">
                   ₱{Number(service.base_price).toLocaleString()}
                 </span>
                 <span className="text-xs font-bold text-rose-600">
                   ₱{Number(service.sale_price).toLocaleString()}
                 </span>
               </div>
+            ) : service.price_display === 'quotation' ? (
+              <p className="text-xs font-bold text-ink">{QUOTATION_LABEL}</p>
             ) : service.base_price !== null && service.base_price !== undefined ? (
               // A service price is a starting price — the shop confirms the final one (same wording as the service page).
               <p className="text-xs font-bold text-ink">
-                <span className="font-normal text-ink-muted">From </span>₱{Number(service.base_price).toLocaleString()}
+                <span className="font-normal text-ink-muted">{priceLead(service.price_display)}</span>₱{Number(service.base_price).toLocaleString()}
               </p>
             ) : (
               <p className="text-xs font-bold text-ink">Depends on the item</p>
             )}
           </div>
 
-          {/* 5. Star (Average Rating) | (count) sold | (count) favorites */}
-          <div className="flex items-center gap-1.5 text-[10px] text-ink-muted">
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Star size={10} className="fill-amber-400 text-amber-500 shrink-0" />
-              <span className="font-semibold text-ink">
-                {service.reviews_avg_rating && Number(service.reviews_avg_rating) > 0
-                  ? Number(service.reviews_avg_rating).toFixed(1)
-                  : '0.0'}
-              </span>
-            </div>
-            <span className="text-ink-faint">|</span>
-            <span className="truncate">{soldCount} sold</span>
-            <span className="text-ink-faint">|</span>
-            <span className="flex items-center gap-0.5 text-rose-600 shrink-0" title={`${service.saves_count ?? 0} favorites`}>
-              <Heart size={10} className="fill-rose-500 text-rose-500 shrink-0" />
-              <span>{service.saves_count ?? 0}</span>
-            </span>
-          </div>
+          {/* 5. Rating | sold | saved — the shared line every service and design card uses. */}
+          <ItemStats rating={service.reviews_avg_rating} sold={soldCount} saves={service.saves_count} />
 
           {/* 6. Clock {estimated exact count days day-day/monthday - day} */}
           <div
-            className="flex items-center gap-1 text-[10px] text-ink-muted truncate"
+            className="flex items-center gap-1 text-xs text-ink-muted truncate"
             title={turnaroundText}
           >
             <Clock size={10} className="text-taupe shrink-0" />
@@ -155,13 +143,13 @@ export default function SearchServiceCard({
         </div>
 
         {/* 7. Location on left, KM on right */}
-        {!hideLocation && <div className="flex items-center justify-between gap-1 text-[10px] text-ink-faint pt-1 border-t border-line/50">
+        {!hideLocation && <div className="flex items-center justify-between gap-1 text-xs text-ink-faint pt-1 border-t border-line/50">
           <div className="flex items-center gap-1 min-w-0 truncate">
             <MapPin size={10} className="text-taupe/70 shrink-0" />
             <span className="truncate">{locationText}</span>
           </div>
           {service.store?.distance_km != null ? (
-            <span className="shrink-0 text-ink-muted font-medium text-[10px] pl-1">
+            <span className="shrink-0 text-ink-muted font-medium text-xs pl-1">
               {Number(service.store.distance_km).toFixed(1)} km
             </span>
           ) : null}

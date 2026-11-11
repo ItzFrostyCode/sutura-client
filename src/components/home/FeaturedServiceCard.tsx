@@ -4,6 +4,7 @@ import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { SERVICE_GROUPS, type ServiceGroupKey } from '@/lib/garmentTaxonomy';
 import type { StoreResult } from './homeTypes';
+import { QUOTATION_LABEL, priceLead } from '@/lib/servicePricing';
 
 export type FeaturedService = NonNullable<StoreResult['services']>[number];
 
@@ -58,34 +59,36 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
           type="button"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSave(); }}
           aria-label={saved ? 'Remove from saved' : 'Save service'}
-          className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 p-1.5 text-ink-muted shadow-2xs transition-transform active:scale-90 hover:bg-white hover:text-rose-500"
+          className="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink-muted shadow-2xs transition-transform before:absolute before:-inset-1.5 active:scale-90 hover:bg-white hover:text-rose-500"
         >
-          <Heart size={12} className={saved ? 'fill-rose-500 text-rose-500' : ''} />
+          <Heart size={14} className={saved ? 'fill-rose-500 text-rose-500' : ''} />
         </button>
       </div>
 
       {/* The details have the margin. */}
       <div className="flex min-w-0 flex-col gap-1 p-2.5">
-        <h4 className="line-clamp-1 text-xs font-semibold leading-snug text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
-        <p className="truncate text-[10px] font-medium uppercase tracking-wide text-taupe">{kind}</p>
+        <h4 className="line-clamp-3 break-words text-xs font-semibold leading-snug text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
+        <p className="line-clamp-1 break-words text-xs font-medium text-taupe-dark" title={kind}>{kind}</p>
         {onSale ? (
           <p className="flex items-center gap-1.5">
-            <span className="text-[10px] text-ink-faint line-through">{peso(service.base_price!)}</span>
+            <span className="text-xs text-ink-faint line-through">{peso(service.base_price!)}</span>
             <span className="text-xs font-bold text-rose-600">{peso(service.sale_price!)}</span>
           </p>
+        ) : service.price_display === 'quotation' ? (
+          <p className="text-xs font-bold text-ink">{QUOTATION_LABEL}</p>
         ) : hasPrice ? (
-          <p className="text-xs font-bold text-ink"><span className="font-normal text-ink-muted">From </span>{peso(service.base_price!)}</p>
+          <p className="text-xs font-bold text-ink"><span className="font-normal text-ink-muted">{priceLead(service.price_display)}</span>{peso(service.base_price!)}</p>
         ) : (
           <p className="text-xs font-bold text-ink">Depends on the item</p>
         )}
-        <div className="flex items-center gap-1.5 text-[10px] text-ink-muted">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-muted">
           <span className="flex shrink-0 items-center gap-0.5 font-semibold text-ink"><Star size={10} className="shrink-0 fill-amber-400 text-amber-500" />{rating}</span>
           <span aria-hidden className="text-ink-faint">|</span>
-          <span className="truncate">{service.orders_count ?? 0} sold</span>
+          <span className="whitespace-nowrap">{service.orders_count ?? 0} sold</span>
           <span aria-hidden className="text-ink-faint">|</span>
           <span className="flex shrink-0 items-center gap-0.5 text-rose-600" title={`${saves} favorites`}><Heart size={10} className="shrink-0 fill-rose-500 text-rose-500" />{saves}</span>
         </div>
-        <p className="flex items-center gap-1 text-[10px] text-ink-muted" title={turnaround}>
+        <p className="flex items-center gap-1 text-xs text-ink-muted" title={turnaround}>
           <Clock size={10} className="shrink-0 text-taupe" /><span className="truncate">{turnaround}</span>
         </p>
       </div>

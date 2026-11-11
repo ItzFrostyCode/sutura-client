@@ -24,7 +24,9 @@ export default function PaymentMethodForm({ value, onChange, onSave, onCancel, s
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
   const set = (p: Partial<MethodForm>) => onChange({ ...value, ...p });
-  const valid = value.name.trim() && value.account_name.trim() && value.account_number.trim();
+  // A number, a QR code, or both (a shop with only a QR — any QR Ph code — can still be paid).
+  const hasWayToPay = !!value.account_number.trim() || !!value.qr_path;
+  const valid = value.name.trim() && value.account_name.trim() && hasWayToPay;
 
   const upload = async (file?: File) => {
     if (!file) return;
@@ -61,7 +63,7 @@ export default function PaymentMethodForm({ value, onChange, onSave, onCancel, s
           <input id="pm-acct" value={value.account_name} onChange={(e) => set({ account_name: e.target.value })} className={FIELD} />
         </div>
         <div>
-          <label htmlFor="pm-num" className={LABEL}>Account / mobile number <span className="text-red-600">*</span></label>
+          <label htmlFor="pm-num" className={LABEL}>Account / mobile number <span className="normal-case font-normal text-ink-faint">(or upload a QR code)</span></label>
           <input id="pm-num" value={value.account_number} onChange={(e) => set({ account_number: e.target.value })} inputMode="numeric" className={FIELD} />
         </div>
         {canPickScope && branches.length > 1 && (
@@ -78,7 +80,7 @@ export default function PaymentMethodForm({ value, onChange, onSave, onCancel, s
           <textarea id="pm-ins" rows={2} value={value.instructions} onChange={(e) => set({ instructions: e.target.value })} placeholder="e.g. Send the exact amount and use the order number as the message." className={FIELD} />
         </div>
         <div className="sm:col-span-2">
-          <span className={LABEL}>QR code <span className="normal-case font-normal text-ink-faint">(optional)</span></span>
+          <span className={LABEL}>QR code <span className="normal-case font-normal text-ink-faint">(or enter a number above)</span></span>
           <div className="flex items-center gap-3">
             {value.qr_path ? (
               // eslint-disable-next-line @next/next/no-img-element

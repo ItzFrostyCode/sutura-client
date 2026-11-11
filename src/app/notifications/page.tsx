@@ -1,8 +1,6 @@
 'use client';
 
 import { useAuthStore } from '@/store/useAuthStore';
-import PublicNav from '@/components/shared/PublicNav';
-import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import AccountWebSidebar from '@/components/account/hub/AccountWebSidebar';
 import InboxPanel from '@/components/notifications/inbox/InboxPanel';
 
@@ -12,10 +10,9 @@ export default function NotificationsPage() {
   const signedIn = hydrated && isAuthenticated && !!user;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
-      <PublicNav />
-      <main className="mobile-screen-margins mx-auto w-full max-w-7xl flex-1 py-4 md:py-6">
-        <PageBrandRow className="mb-2" />
+    <div className="flex flex-1 flex-col bg-canvas">
+      <main className="mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 flex-1 py-6">
+        
         <div className={signedIn ? 'flex flex-col md:flex-row md:items-start md:gap-8' : ''}>
           {signedIn && <div className="hidden md:block"><AccountWebSidebar user={user} /></div>}
           <div className="min-w-0 max-w-2xl flex-1">

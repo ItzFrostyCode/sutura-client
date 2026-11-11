@@ -23,9 +23,11 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
   const rawBase = service.base_price !== null && service.base_price !== undefined && service.base_price !== '' && Number(service.base_price) > 0
     ? Number(service.base_price)
     : derivedPrice;
-  const hasPrice = rawBase !== null && rawBase !== undefined;
+  // B6-O11: Quotation required never shows an amount; Fixed shows the amount alone; Starting shows "From".
+  const quotation = service.price_display === 'quotation';
+  const hasPrice = !quotation && rawBase !== null && rawBase !== undefined;
 
-  const sale = rawBase
+  const sale = hasPrice && rawBase
     ? getActiveSale({
         price: rawBase,
         sale_price: service.sale_price,
@@ -68,13 +70,13 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
           </p>
         ) : hasPrice ? (
           <p className="flex items-baseline gap-2 leading-none">
-            <span className="text-sm text-ink-muted">From</span>
+            {service.price_display !== 'fixed' && <span className="text-sm text-ink-muted">From</span>}
             <span className="text-3xl font-bold text-taupe">₱{Number(rawBase).toLocaleString()}</span>
           </p>
         ) : (
           <>
-            <p className="text-2xl font-bold text-taupe leading-none">Depends on the item</p>
-            <p className="text-xs text-ink-muted mt-2 leading-snug">Get a quotation, or walk in with the item. The shop confirms the price before any work starts.</p>
+            <p className="text-2xl font-bold text-taupe leading-none">Price after quotation</p>
+            <p className="text-xs text-ink-muted mt-2 leading-snug">Book an appointment. The shop assesses what you need and sends a quotation, and nothing starts until you accept it in your account.</p>
           </>
         )}
         {minOrder && <p className="text-sm text-ink-body mt-3">Usual minimum: <span className="font-semibold">{minOrder} pieces</span></p>}

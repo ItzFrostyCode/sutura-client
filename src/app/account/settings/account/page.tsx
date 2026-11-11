@@ -40,7 +40,7 @@ export default function AccountDetailPage() {
 
   return (
     <div className="w-full">
-      <AccountHeader title="Account Settings" backHref="/account/settings" />
+      <AccountHeader title="Profile" backHref="/account/settings" />
 
       <AccountAvatarCard
         user={user}

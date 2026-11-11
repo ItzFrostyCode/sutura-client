@@ -12,7 +12,13 @@
 
 ## Current status: read this first
 
-**The admin backend (API) is built. The admin frontend has no pages yet.** Everything below exists as server endpoints, but there is no admin screen to click through. For the demo, the admin screens have to be built (Bongo's module), or these can only be shown through API calls.
+**The admin portal is built** — all 11 sections (`Overview, Reports, Applications, Stores, Branch
+locations, Apparel categories, Accounts, Plans, Plan Payments, Support, Activity Log`) live under
+`sutura-client/src/app/admin` and are wired to the `/admin` routes. The authoritative, defense-ready
+reference is **`docs/ADMIN-MODULE.md`** (capability → objective → in/out-of-scope traceability +
+panel Q&A); read this review alongside it. The "gaps" section at the bottom has been corrected against
+the current code — the older list predates the admin-frontend build and the branch/apparel/report/plan/
+audit endpoints, so treat only the corrected list as open.
 
 ## What the backend already does
 
@@ -28,6 +34,13 @@
 | **Hide / unhide** a whole shop | `PUT /admin/stores/{id}/hide`, `/unhide` | Reason required to hide. |
 
 Only registration decisions and moderation notices send **email**. Everything else is in-app only, to avoid inbox spam.
+
+> **The table above is not exhaustive.** Since this review was first written the admin backend grew:
+> branch map-verification (`/admin/branches`), apparel-category validation (`/admin/apparel-types`,
+> `CustomApparelType`), platform reports (`/admin/reports/*`), plan update
+> (`PUT /admin/subscription-plans/{plan}`), upgrade-requests + receipts (`/admin/upgrade-requests`),
+> account suspend/reactivate (`/admin/accounts`), the platform audit log (`/admin/audit-logs`), and
+> system health (`/admin/system-health`). The full 11-section route map is in `docs/ADMIN-MODULE.md` §2.
 
 ## Post-moderation (how reports are handled)
 
@@ -66,17 +79,26 @@ A: No. That would need AI or content scanning, which is outside our scope. Moder
 A: No. An admin takedown uses a separate lock that the owner's visibility toggle and subscription renewal can't clear.
 
 **Q: How does the admin monitor subscriptions?**
-A: Plans are defined by the admin. Expiry automatically hides a store, and reminders are sent before it. (The admin-wide subscription report screen is still to be built; see gaps.)
+A: Plans are defined by the admin (*Plans* section; create/update). Expiry reminders go out before a plan lapses, and the cross-shop view lives in *Reports* (`/admin/reports/subscriptions`, stores-per-plan, and `/admin/reports/revenue`).
 
-## Known gaps (these are the biggest risks for the defense)
+## Gaps & open items (corrected 2026-11-07 against the current code)
 
-1. **No admin frontend pages at all.** Every feature above needs a screen.
-2. **Pending shops can still open their dashboard.** The paper says owners must be approved *"before gaining any access to the system or its internal dashboard features."* Right now, approval only controls **public visibility**: search, map, and the shop profile page (a direct-link gap on the profile page was fixed on 2026-09-27). An unapproved owner can still log in and use the dashboard. Either add an approval gate, or reword the paper to "before appearing on the public marketplace."
-3. **No platform-wide analytics endpoint** (total users, total shops, active subscriptions, platform revenue). The Analytics objective promises this for the admin.
-4. **Validate apparel categories** and **verify branch map locations** (both named in the objective) have no admin action.
-5. **Subscription plans** can be listed and created but not edited or deleted.
-6. **No admin-wide audit trail screen.** Audit logs exist per shop.
-7. **No Community Guidelines page.** If the terms say "violates the platform rules," the panel may ask where the rules are.
+Most of the earlier gap list was closed by the admin-frontend build and the branch / apparel / report /
+plan / audit endpoints. What genuinely remains:
+
+1. **Per-design moderation has no admin UI button.** `POST /admin/catalog-items/{id}/warn` and
+   `PUT /admin/catalog-items/{id}/hide | /unhide` exist on the backend (`ModerationController`) but no
+   screen calls them yet; only the **shop-level** hide/unhide is wired into the Stores UI. (Don't
+   claim a per-design screen in the defense — present the shop-level takedown as the built path.)
+2. **Pending shops can still open their dashboard.** Approval gates **public visibility** (search,
+   map, public profile), not the owner's own dashboard login. If the paper says owners are blocked
+   "before gaining any access to the system," reword it to "before appearing on the public
+   marketplace," or add an approval gate. State it honestly either way.
+3. **No Community Guidelines page.** If the terms say "violates the platform rules," the panel may ask
+   where the rules live; have a one-line answer ready.
+4. **Visual admin pass not yet browser-verified.** The portal builds, type-checks, and the admin routes
+   return 200 in the API click-through, but the 11 screens haven't been opened in a browser against
+   seeded data yet — see `docs/BROWSER-PASS-CHECKLIST.md`.
 
 ## Thesis paper vs system
 

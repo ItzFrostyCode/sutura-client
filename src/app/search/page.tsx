@@ -2,11 +2,10 @@
 
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
-import PublicNav from '@/components/shared/PublicNav';
 import SearchMapView from '@/components/search/map/SearchMapView';
-import SearchLocationBar from '@/components/search/SearchLocationBar';
 
-// One full-screen page that never scrolls: the map fills everything and the bottom navigation floats over it.
+// One full-screen page that never scrolls: the shared top bar (same as Discover and Track Order), then the map filling
+// the rest, with the bottom navigation floating over it on phones and tablets.
 export default function SearchPage() {
   return (
     <Suspense
@@ -16,9 +15,9 @@ export default function SearchPage() {
         </div>
       }
     >
-      <div className="flex h-dvh flex-col overflow-hidden bg-canvas">
-        <SearchLocationBar />
-        <PublicNav isSticky={false} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-canvas">
+        {/* The page's one H1 (the map has no visible title; screen readers and the outline still need one). */}
+        <h1 className="sr-only">Find a tailoring shop on the map of Davao City</h1>
         <SearchMapView />
       </div>
     </Suspense>

@@ -1,5 +1,13 @@
 # SUTURA logo — asset manifest (2026-10-15)
 
+> **Superseded 2026-11-10 (Joshua):** the app now uses the leader's **"Tailor Pin"** — a location pin threaded with a
+> needle, wordmark in Outfit Bold — taken from `Sutura_Client`. Source of truth: `src/components/brand/brandPaths.ts`;
+> files: `public/brand/*.svg`, `src/app/icon.svg`, `apple-icon.png`, `favicon.ico`. `SuturaMark` / `SuturaLogo` keep their
+> names and props (`detail`, plus `tone="dark"` on dark backgrounds; `halo` is gone). The opening screen uses
+> `SuturaMarkAnimated` (motion in `globals.css`, `.sutura-intro-*`). `scripts/brand/*` and the generated
+> `suturaMarkup.ts` belong to the S-Tape mark below — don't re-run them; the old files are in
+> `.system_backups/2026-11-10_pre-landing-redesign/`. The rest of this file describes the retired S-Tape mark.
+
 ## The mark: "S-Tape & Needle"
 
 An S-shaped measuring tape (ticks along the inside of each curve, a twist in the spine, metal tips with a rivet hole)

@@ -13,8 +13,8 @@ interface AccountProfileHeaderProps {
   };
 }
 
-// A soft profile card: the avatar and name open the profile (name, email, photo); the gear opens the account settings
-// (My Location, notifications, support…). No back arrow — this is the Me hub's root, not a drill-down.
+// A soft profile card: the avatar and name open the Profile page (name, photo, phone, password); the gear opens Account Settings.
+// No bell here: the SUTURA bar at the top of this page already has the notifications bell (one bell per screen).
 export default function AccountProfileHeader({ user }: Readonly<AccountProfileHeaderProps>) {
   return (
     <div className="card-soft flex items-center gap-1 p-3 pr-2">

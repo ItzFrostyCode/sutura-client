@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { MeasurementAreaChoice } from '@/components/measurements/recorder/AreaSelector';
 import type { Job } from '../jobTypes';
+import { isBottomField, isInternalMetricKey } from '@/components/measurements/measurementAreas';
 
 export const DEFAULT_TOP_METRICS = ['Chest', 'Shoulder', 'Sleeve', 'Neck', 'Shirt Length'];
 export const DEFAULT_BOTTOM_METRICS = ['Waist', 'Hips', 'Inseam', 'Outseam', 'Thigh'];
-const KNOWN_BOTTOM_KEYS = new Set(['waist', 'hips', 'high hips', 'full hips', 'inseam', 'outseam', 'thigh', 'knee', 'bottom hem', 'crotch / rise', 'crotch', 'rise', 'skirt length', 'leg opening', 'ankle']);
 
 export interface AreaColumns {
   readonly columns: string[];
@@ -24,12 +24,12 @@ export function useMeasurementColumns(measurement: Job['measurement'] | null | u
     if (!measurement) return;
     const raw = measurement.metrics || {};
     const clean: Record<string, string> = {};
-    for (const [k, v] of Object.entries(raw)) if (!k.startsWith('_')) clean[k] = String(v ?? '');
+    for (const [k, v] of Object.entries(raw)) if (!isInternalMetricKey(k)) clean[k] = String(v ?? '');
     setMetrics(clean);
     setArea((raw._area as MeasurementAreaChoice) || 'both');
     const topSet = new Set(DEFAULT_TOP_METRICS);
     const bottomSet = new Set(DEFAULT_BOTTOM_METRICS);
-    for (const k of Object.keys(clean)) (KNOWN_BOTTOM_KEYS.has(k.toLowerCase()) ? bottomSet : topSet).add(k);
+    for (const k of Object.keys(clean)) (isBottomField(k) ? bottomSet : topSet).add(k);
     setTop(Array.from(topSet));
     setBottom(Array.from(bottomSet));
   }, [measurement]);

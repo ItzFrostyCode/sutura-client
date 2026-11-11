@@ -10,6 +10,7 @@ import { useShopRole } from '@/hooks/useShopRole';
 import SectionHeader from '../ui/SectionHeader';
 import JobEditMeasurementModal from './JobEditMeasurementModal';
 import { COVERS_LABEL } from '@/lib/orderUnits';
+import { isBottomField, isInternalMetricKey } from '@/components/measurements/measurementAreas';
 
 interface JobMeasurementCardProps {
   job: Job;
@@ -18,23 +19,6 @@ interface JobMeasurementCardProps {
   onRefreshJob?: () => Promise<void>;
 }
 
-const KNOWN_BOTTOM_KEYS = new Set([
-  'waist',
-  'hips',
-  'high hips',
-  'full hips',
-  'inseam',
-  'outseam',
-  'thigh',
-  'knee',
-  'bottom hem',
-  'crotch / rise',
-  'crotch',
-  'rise',
-  'skirt length',
-  'leg opening',
-  'ankle',
-]);
 
 export default function JobMeasurementCard({
   job,
@@ -157,12 +141,12 @@ export default function JobMeasurementCard({
   const rawMetrics = job.measurement.metrics || {};
   const areaChoice = (rawMetrics._area as string) || 'both';
 
-  const cleanEntries = Object.entries(rawMetrics).filter(([k]) => !k.startsWith('_'));
+  const cleanEntries = Object.entries(rawMetrics).filter(([k]) => !isInternalMetricKey(k));
   const topMetrics: Array<[string, unknown]> = [];
   const bottomMetrics: Array<[string, unknown]> = [];
 
   cleanEntries.forEach(([k, v]) => {
-    if (KNOWN_BOTTOM_KEYS.has(k.toLowerCase())) {
+    if (isBottomField(k)) {
       bottomMetrics.push([k, v]);
     } else {
       topMetrics.push([k, v]);

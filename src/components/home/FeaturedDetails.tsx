@@ -51,7 +51,7 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
     <div className="flex w-full shrink-0 flex-col justify-between p-3.5 sm:p-4 lg:w-[340px] lg:p-3.5">
       <div>
         <Link href={gate(`/search?store=${store.slug}`)} className="group block">
-          <h3 className="truncate text-base font-semibold tracking-tight text-ink transition-colors group-hover:text-taupe sm:text-lg">
+          <h3 className="line-clamp-2 text-base font-semibold tracking-tight text-ink transition-colors group-hover:text-taupe sm:text-lg">
             {store.name}
           </h3>
         </Link>
@@ -75,14 +75,14 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
           {work.length > 0 && (
             <ul className="flex flex-wrap gap-1">
               {work.slice(0, 3).map((w) => (
-                <li key={w} className="rounded-full border border-line bg-sunken/30 px-2 py-0.5 text-[11px] text-ink-body">
+                <li key={w} className="rounded-full border border-line bg-sunken/30 px-2 py-0.5 text-xs text-ink-body">
                   {w}
                 </li>
               ))}
             </ul>
           )}
           {garments.length > 0 && (
-            <p className="truncate text-[11px] text-ink-muted">
+            <p className="line-clamp-2 text-xs text-ink-muted">
               <span className="text-ink-faint">Works on:</span> {shownGarments.join(' · ')}
               {garments.length > shownGarments.length ? ` +${garments.length - shownGarments.length}` : ''}
             </p>
@@ -92,7 +92,7 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
 
       {shownThumbs.length > 0 && (
         <div className="my-2">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
             Signature works
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -120,8 +120,8 @@ export default function FeaturedDetails({ store, thumbnails, hoveredId, onHover,
                     }}
                   />
                 </div>
-                <p className="mt-1 truncate text-[11px] text-ink-body leading-tight">{thumb.name}</p>
-                <p className="truncate text-[11px] font-semibold text-ink">
+                <p className="mt-1 truncate text-xs text-ink-body leading-tight">{thumb.name}</p>
+                <p className="truncate text-xs font-semibold text-ink">
                   {designPriceLabel(thumb.pricing, thumb.price)}
                 </p>
               </Link>

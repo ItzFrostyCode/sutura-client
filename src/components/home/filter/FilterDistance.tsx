@@ -33,23 +33,20 @@ export default function FilterDistance({ radiusKm, onChange }: FilterDistancePro
         <span className="mobile-body-sm text-ink-muted">
           {isActive ? `Within ${sliderValue} km` : 'Any distance'}
         </span>
+        {/* 44px tap area around the 28px switch drawn inside it. */}
         <button
           type="button"
           role="switch"
           aria-checked={isActive}
+          aria-label="Limit by distance"
           onClick={handleToggle}
-          className={[
-            'relative h-7 w-12 shrink-0 overflow-hidden rounded-full transition-colors duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-taupe',
-            isActive ? 'bg-ink' : 'bg-ink/20',
-          ].join(' ')}
+          className="flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-taupe"
         >
-          <span
-            className={[
-              'absolute top-[4px] left-[4px] h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200',
-              isActive ? 'translate-x-[20px]' : 'translate-x-0',
-            ].join(' ')}
-          />
+          <span className={`relative h-7 w-12 overflow-hidden rounded-full transition-colors duration-200 ${isActive ? 'bg-ink' : 'bg-ink/20'}`}>
+            <span
+              className={`absolute left-[4px] top-[4px] h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${isActive ? 'translate-x-[20px]' : 'translate-x-0'}`}
+            />
+          </span>
         </button>
       </div>
 
@@ -66,7 +63,7 @@ export default function FilterDistance({ radiusKm, onChange }: FilterDistancePro
           className="h-11 w-full accent-taupe"
           disabled={!isActive}
         />
-        <div className="mobile-caption flex justify-between text-ink-muted">
+        <div className="flex justify-between text-xs text-ink-muted">
           <span>{MIN_RADIUS_KM} km</span>
           <span>{MAX_RADIUS_KM} km</span>
         </div>

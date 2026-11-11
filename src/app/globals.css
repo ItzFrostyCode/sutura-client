@@ -21,7 +21,7 @@
   /* ink */
   --foreground: #2D2A26;      /* headings, primary ink */
   --ink-body: #524A44;        /* body text */
-  --ink-muted: #827A73;       /* secondary */
+  --ink-muted: #6F675F;       /* secondary — 5.1:1 on the cream canvas (was #827A73, 4.2:1, under WCAG AA at 12–14px) */
   --ink-faint: #A8A19A;       /* tertiary, hints, placeholders */
 
   /* accents */
@@ -350,7 +350,22 @@
 
 html {
   scrollbar-gutter: stable;
+  /* The SUTURA header is pinned on every page (PublicTopBar): a jump to a section (A–Z letters, #anchors) stops just under it. */
+  scroll-padding-top: var(--topbar-h, 0px);
 }
+
+/* Full-screen map & search views, plus embedded sheets, must not reserve an empty scrollbar gutter on the right */
+html:has([data-fullscreen="true"]),
+html:has(#mobile-frame-container[data-fullscreen="true"]),
+html:has([data-embedded="true"]),
+html[data-embedded="true"] {
+  scrollbar-gutter: auto !important;
+  overflow: hidden !important;
+}
+/* …but then the page is one scrollbar wider than every other page, and PublicTopBar's centred column would sit half a
+   scrollbar to the right on the map. Keep its contents exactly where they are elsewhere (--scrollbar-w is measured
+   once by PublicTopBar; 0 where scrollbars take no room, e.g. phones and macOS). */
+html:has([data-fullscreen="true"]) .public-top-bar > * { padding-right: var(--scrollbar-w, 0px); }
 
 body {
   background: var(--background);
@@ -441,6 +456,13 @@ textarea:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px #FAF6F3 inset;
   -webkit-text-fill-color: #2D2A26;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Sign-in / sign-up fields are white, not cream: keep them white when the browser autofills a name or email. */
+.auth-field:-webkit-autofill,
+.auth-field:-webkit-autofill:hover,
+.auth-field:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #FFFFFF inset;
 }
 
 /* Used on swipeable tab/chip strips that scroll horizontally on narrow
@@ -564,13 +586,13 @@ textarea:-webkit-autofill:focus {
 }
 
 .mobile-caption {
-  font-size: 11px;
+  font-size: 12px; /* AGENTS.md allows 11–12px; 12px reads better on a phone */
   font-weight: 400;
   line-height: 1.3;
 }
 
 .mobile-overline {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -901,61 +923,56 @@ textarea:-webkit-autofill:focus {
   .animate-kanban-shake { animation: none; }
 }
 
-/* ── Landing location screen: the spinning SUTURA pin & radar waves ──────
-   Smooth 360-degree rotation, floating levitation, dynamic ground shadow,
-   and concentric ground radar waves that expand to indicate active scanning. */
-.sutura-pin-stage { position: relative; width: 120px; height: 140px; display: flex; align-items: center; justify-content: center; perspective: 600px; }
-.sutura-pin-bob { position: absolute; inset: 0 0 20px; display: flex; align-items: center; justify-content: center; animation: sutura-pin-bob 2.8s ease-in-out infinite; }
-.sutura-pin-spin {
-  position: relative; width: 72px; height: 90px;
-  transform-style: preserve-3d;
-  animation: sutura-pin-spin 4.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-.sutura-pin-face-wrap {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  backface-visibility: hidden; -webkit-backface-visibility: hidden;
-}
+/* ── Opening screen: the Tailor Pin puts itself together (SuturaMarkAnimated) ──────
+   ~1.2s, once: the pin drops onto the map (small landing squash) → the needle slides through along its own angle →
+   the thread stitches itself on → the wordmark rises. Then, only while locating, soft ripples spread from the pin's tip
+   (a "finding you" ping). No spin, no endless bounce. Reduced motion: the finished logo, still. */
+.sutura-intro-pin, .sutura-intro-shadow, .sutura-intro-ripple { transform-box: fill-box; }
+.sutura-intro-pin { transform-origin: 50% 100%; animation: sutura-intro-drop 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sutura-intro-shadow { transform-origin: 50% 50%; animation: sutura-intro-shadow 620ms ease-out both; }
+.sutura-intro-needle { animation: sutura-intro-needle 420ms cubic-bezier(0.16, 1, 0.3, 1) 380ms both; }
+/* Hidden until it starts: a round line-cap would otherwise draw a dot at the thread's start before the line itself. */
+.sutura-intro-thread { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sutura-intro-thread 620ms ease-in-out 680ms both; }
+.sutura-intro-ripple { transform-origin: 50% 50%; opacity: 0; animation: sutura-intro-ripple 1.8s ease-out 1.2s infinite; }
+.sutura-intro-ripple + .sutura-intro-ripple { animation-delay: 2.1s; }
+.sutura-intro-word { animation: rise-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 1000ms both; }
 
-/* Ground radar sonar ripples */
-.sutura-radar-anchor { position: absolute; bottom: 8px; left: 50%; width: 0; height: 0; pointer-events: none; }
-.sutura-radar-wave {
-  position: absolute; left: 50%; top: 50%; width: 44px; height: 16px; margin-left: -22px; margin-top: -8px;
-  border-radius: 50%; border: 1.5px solid rgba(154, 128, 115, 0.45);
-  animation: sutura-radar-wave 2.8s ease-out infinite;
+@keyframes sutura-intro-drop {
+  0% { opacity: 0; transform: translateY(-34%); }
+  55% { opacity: 1; transform: translateY(0) scale(1.05, 0.92); }
+  75% { transform: translateY(-4%) scale(0.98, 1.03); }
+  100% { opacity: 1; transform: none; }
 }
-.sutura-radar-wave-2 { animation-delay: 0.9s; }
-.sutura-radar-wave-3 { animation-delay: 1.8s; }
-
-.sutura-pin-shadow {
-  position: absolute; left: 50%; top: 50%; width: 40px; height: 10px; margin-left: -20px; margin-top: -5px;
-  border-radius: 50%; background: radial-gradient(ellipse at center, rgba(45, 42, 38, 0.38) 0%, rgba(45, 42, 38, 0) 75%);
-  animation: sutura-pin-shadow 2.8s ease-in-out infinite;
+@keyframes sutura-intro-shadow {
+  0% { opacity: 0; transform: scale(0.3); }
+  55% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: none; }
 }
-
-@keyframes sutura-pin-spin {
-  0% { transform: rotateY(0deg); }
-  100% { transform: rotateY(360deg); }
+@keyframes sutura-intro-needle {
+  from { opacity: 0; transform: translate(16px, -20px); }
+  to { opacity: 1; transform: none; }
 }
-@keyframes sutura-pin-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+@keyframes sutura-intro-thread {
+  0% { stroke-dashoffset: 1; opacity: 0; }
+  4% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
 }
-@keyframes sutura-pin-shadow {
-  0%, 100% { transform: scale(1); opacity: 0.38; }
-  50% { transform: scale(0.7); opacity: 0.2; }
-}
-@keyframes sutura-radar-wave {
-  0% { transform: scale(0.3); opacity: 0.8; }
-  100% { transform: scale(2.8); opacity: 0; }
+@keyframes sutura-intro-ripple {
+  0% { opacity: 0.55; transform: scale(0.35); }
+  100% { opacity: 0; transform: scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sutura-pin-spin { animation: sutura-pin-spin 8s linear infinite; }
-  .sutura-pin-bob { animation: none; }
-  .sutura-radar-wave { animation: sutura-radar-wave 5s ease-out infinite; }
+  .sutura-intro-pin, .sutura-intro-shadow, .sutura-intro-needle, .sutura-intro-word { animation: none; }
+  .sutura-intro-thread { animation: none; stroke-dashoffset: 0; }
+  .sutura-intro-ripple { display: none; }
 }
 
-/* PublicBottomNav is fixed to the bottom edge; this keeps the end of the page reachable. */
+/* PublicBottomNav is fixed to the bottom edge; this keeps the end of the page reachable.
+   From 1024px the bar is hidden (the header has the links), so no room is kept. */
 body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); } /* 64px bar + 12px gap + room */
+@media (min-width: 1024px) {
+  body.has-bottom-nav { padding-bottom: 0; }
+}
 
 /* Landing "soft card": white, hairline edge, a very light lift and a generous radius. No gradients. */
 .card-soft {
@@ -967,6 +984,7 @@ body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); 
 
 /* Room the floating bottom navigation takes at the bottom of the screen, for screens that draw under it (the map). */
 :root { --bottom-nav-space: calc(72px + max(12px, env(safe-area-inset-bottom))); } /* 64px bar (with labels) + 8px */
+@media (min-width: 1024px) { :root { --bottom-nav-space: 16px; } } /* no bottom bar from 1024px */
 
 /* One column width shared by the phone/tablet sheet, the map buttons and the floating bottom navigation. */
 :root { --col-w: 640px; }

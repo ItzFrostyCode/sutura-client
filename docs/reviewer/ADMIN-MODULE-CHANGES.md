@@ -1,5 +1,13 @@
 # Admin Module: Changes Made Outside Its Owner
 
+> **Status update (2026-11-07) — the "Not done" list below is now mostly built.** This file is a
+> dated changelog of 2026-09-27 backend changes; the line "No admin frontend was built" was true *then*.
+> Today the admin portal (all 11 sections), the platform reports, the apparel-category queue,
+> branch-map verification, plan update, and the platform audit log all exist. Read
+> **`docs/ADMIN-MODULE.md`** for the current state. Genuinely still open: an approval gate on the owner
+> dashboard, a Community Guidelines page, and a plan *delete* (create + edit exist). The numbered "Not
+> done" list below is kept for provenance, not as the current gap list.
+
 **Admin module owner:** Bongo, Jossua A. · **Changes made by:** Arabejo, Joshua Wayman A. (AI-assisted), 2026-09-27
 
 The Admin module is Bongo's. These backend changes were added while fixing Customer and Shop Owner flows that depend on the admin. This file lists exactly what was touched, so the module owner knows what exists, can review it, and can build the admin screens on top of it.

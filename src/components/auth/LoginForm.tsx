@@ -1,41 +1,31 @@
 'use client';
 
-import { useState, SubmitEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import LoginPortalSwitch, { type LoginPortal } from './LoginPortalSwitch';
-import { ERROR_BOX, FIELD, LABEL, OUTLINE_BTN, PRIMARY_BTN, SHOW_BTN } from './authStyles';
+import PasswordField from './PasswordField';
+import GoogleSignInButton, { OrDivider } from './GoogleSignInButton';
+import { EMAIL_INPUT_PROPS, ERROR_BOX, FIELD, LABEL, OUTLINE_BTN, PRIMARY_BTN, TEXT_LINK, TITLE } from './authStyles';
+import { signInError } from './signInError';
 
 interface LoginFormProps {
-  // Where a customer lands after signing in. null = stay on the current page
-  // (the modal case); the /login page passes its ?redirect or '/'.
+  /** Where a customer lands after signing in. null = stay on the current page (the modal case). */
   readonly customerRedirect: string | null;
   readonly staffRedirect?: string;
   readonly registerHref: string;
-  readonly onClose: () => void;
-  // Closes the modal after sign-in or when leaving via a link.
+  /** Closes the modal after sign-in or when leaving via a link. */
   readonly onDone?: () => void;
   readonly titleId?: string;
   readonly initialPortal?: LoginPortal;
-  // The /login page uses this to keep the address in step with the tab (/login vs /login?as=store).
+  /** The /login page keeps the address in step with the tab (/login vs /login?as=store). */
   readonly onPortalChange?: (portal: LoginPortal) => void;
 }
 
-// The one Sign In card — rendered full-page by /login on mobile and inside
-// LoginModal over the current page on tablet/desktop.
-export default function LoginForm({
-  customerRedirect,
-  staffRedirect = '/dashboard',
-  registerHref,
-  onClose,
-  onDone,
-  titleId,
-  initialPortal = 'customer',
-  onPortalChange,
-}: LoginFormProps) {
+/** The one Sign In form: full page on /login, and inside LoginModal over the current page on tablet/desktop. */
+export default function LoginForm({ customerRedirect, staffRedirect = '/dashboard', registerHref, onDone, titleId, initialPortal = 'customer', onPortalChange }: LoginFormProps) {
   const [portal, setPortal] = useState<LoginPortal>(initialPortal);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,42 +34,32 @@ export default function LoginForm({
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const isShop = portal === 'store';
 
-  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
-      const response = await api.post('/auth/login', { email, password, portal });
-      if (response.data.success) {
-        const { user, token, store, staff_profile } = response.data.data;
-        const activeStore = store || staff_profile?.store;
-        const roleNames = user?.roles?.map((r: { name: string }) => r.name) || [];
-        const isAuthorized = roleNames.some((name: string) => ['store_owner', 'branch_manager', 'staff'].includes(name)) || !!staff_profile;
-        const isCustomer = roleNames.includes('customer');
-
-        if (!isAuthorized && !isCustomer) {
-          setError('This account type does not have a dashboard yet. Please contact support.');
-          return;
-        }
-        setAuth(user, token, activeStore, staff_profile);
-        onDone?.();
-        // replace, not push: Back from where they land must not show the sign-in page again.
-        // A new owner (signed up with their own email) has no shop yet: the application wizard comes first.
-        if (roleNames.includes('store_owner') && !activeStore) router.replace('/onboarding');
-        else if (isAuthorized) router.replace(staffRedirect);
-        else if (customerRedirect) router.replace(customerRedirect);
+      const response = await api.post('/auth/login', { email: email.trim(), password, portal });
+      if (!response.data.success) return;
+      const { user, token, store, staff_profile } = response.data.data;
+      const activeStore = store || staff_profile?.store;
+      const roleNames: string[] = user?.roles?.map((r: { name: string }) => r.name) || [];
+      const isShopAccount = roleNames.some((n) => ['store_owner', 'branch_manager', 'staff'].includes(n)) || !!staff_profile;
+      if (!isShopAccount && !roleNames.includes('customer')) {
+        setError('This account type does not have a dashboard yet. Please contact support.');
+        return;
       }
-    } catch (err: unknown) {
-      const error = err as { response?: { status?: number; data?: { message?: string } } };
-      if (!error.response) {
-        setError('Unable to connect to the server. Please check your internet connection and try again.');
-      } else if (error.response.status && error.response.status >= 500) {
-        setError('Our service is temporarily unavailable. Please try again in a few moments.');
-      } else {
-        setError(error.response.data?.message || 'Incorrect email or password.');
-      }
+      setAuth(user, token, activeStore, staff_profile);
+      onDone?.();
+      // replace, not push: Back from where they land must not show the sign-in page again.
+      // A new owner (signed up with their own email) has no shop yet: the application wizard comes first.
+      if (roleNames.includes('store_owner') && !activeStore) router.replace('/onboarding');
+      else if (isShopAccount) router.replace(staffRedirect);
+      else if (customerRedirect) router.replace(customerRedirect);
+    } catch (err) {
+      setError(signInError(err));
     } finally {
       setLoading(false);
     }
@@ -87,82 +67,44 @@ export default function LoginForm({
 
   return (
     <>
-      <h1 id={titleId} className="text-display text-2xl text-ink mb-6">Sign In</h1>
+      <h1 id={titleId} className={`${TITLE} mb-6`}>Sign In</h1>
 
       <LoginPortalSwitch value={portal} onChange={(next) => { setPortal(next); setError(''); onPortalChange?.(next); }} />
-      {portal === 'store' && (
-        <p className="-mt-3 mb-5 text-sm text-ink-muted">Shop owners, branch managers, and staff sign in here.</p>
-      )}
+      {isShop && <p className="-mt-3 mb-5 text-sm text-ink-muted">For shop owners, branch managers and staff.</p>}
 
-      {error && (
-        <div role="alert" className={ERROR_BOX}>
-          {error}
-        </div>
-      )}
+      {error && <div role="alert" className={ERROR_BOX}>{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="login-email" className={LABEL}>
-            Email<span className="text-danger">*</span>
-          </label>
-          <input
-            id="login-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={FIELD}
-            required
-          />
+          <label htmlFor="login-email" className={LABEL}>Email<span className="text-danger">*</span></label>
+          <input id="login-email" {...EMAIL_INPUT_PROPS} autoComplete="username" placeholder="e.g. maria@gmail.com"
+            value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} required />
         </div>
 
-        <div className="relative">
-          <label htmlFor="login-password" className={LABEL}>
-            Password<span className="text-danger">*</span>
-          </label>
-          <input
-            id="login-password"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`${FIELD} pr-20`}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className={SHOW_BTN}
-          >
-            {showPassword ? 'Hide' : 'Show'}
-          </button>
+        <div>
+          <PasswordField id="login-password" label="Password" value={password} onChange={setPassword}
+            shown={showPassword} onToggle={() => setShowPassword((s) => !s)} autoComplete="current-password" />
+          <div className="mt-1 flex justify-end">
+            <Link href="/forgot-password" onClick={onDone} className={`${TEXT_LINK} text-sm font-medium`}>Forgot password?</Link>
+          </div>
         </div>
 
-        <Link href="/forgot-password" onClick={onDone} className="inline-flex min-h-11 items-center text-sm text-ink underline underline-offset-2">
-          Forgot Password?
-        </Link>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={PRIMARY_BTN}
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
+        <button type="submit" disabled={loading} className={PRIMARY_BTN}>{loading ? 'Signing in…' : 'Sign In'}</button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-ink">
-        {portal === 'store' ? 'New to SUTURA for shops?' : <>Don&apos;t have an Account?</>}
-      </p>
+      {/* Google is for customers only; shop accounts sign in with their email and password. */}
+      {!isShop && (
+        <>
+          <OrDivider />
+          <GoogleSignInButton redirectTo={customerRedirect} />
+        </>
+      )}
 
-      <Link
-        href={portal === 'store' ? '/signup/shop' : registerHref}
-        onClick={onDone}
-        className={`${OUTLINE_BTN} mt-4`}
-      >
-        {portal === 'store' ? 'Create a Shop Account' : 'Create an Account'}
+      <p className="mt-8 text-center text-sm text-ink-muted">{isShop ? 'New to SUTURA for shops?' : 'New to SUTURA?'}</p>
+      <Link href={isShop ? '/signup/shop' : registerHref} onClick={onDone} className={`${OUTLINE_BTN} mt-3`}>
+        {isShop ? 'Create a Shop Account' : 'Create an Account'}
       </Link>
-      {portal === 'store' && (
+      {isShop && (
         <Link href="/for-shops" onClick={onDone} className="mt-2 flex min-h-11 items-center justify-center text-sm text-ink-muted underline underline-offset-2 hover:text-ink">
           See how SUTURA works for shops
         </Link>

@@ -1,44 +1,36 @@
 'use client';
 
 import { Suspense, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import PublicNav from '@/components/shared/PublicNav';
+import { Loader2 } from 'lucide-react';
+import AuthPage from '@/components/auth/AuthPage';
 import LoginForm from '@/components/auth/LoginForm';
-import AuthBrand from '@/components/auth/AuthBrand';
+import { useLeaveAuth } from '@/components/auth/useLeaveAuth';
 import { useAuthStore } from '@/store/useAuthStore';
-import { destinationFor, withRedirect } from '@/lib/authRedirect';
+import { destinationFor, safeRedirect, withRedirect } from '@/lib/authRedirect';
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-dvh flex items-center justify-center bg-white">
-          <Loader2 size={28} className="animate-spin text-ink-faint" />
-        </div>
-      }
-    >
-      <LoginFormContent />
+    <Suspense fallback={<div className="flex min-h-dvh items-center justify-center bg-canvas"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}>
+      <LoginPageContent />
     </Suspense>
   );
 }
 
-function LoginFormContent() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('redirect');
+  const redirectPath = safeRedirect(searchParams.get('redirect'));
   const initialPortal = searchParams.get('as') === 'store' ? 'store' : 'customer';
   const { user, staffProfile, hydrated } = useAuthStore();
+  const leave = useLeaveAuth();
 
-  // Already signed in (Back from the page they were sent to, or an old link): go on to where they belong, and take
-  // this page out of the history so Back does not return to it.
+  // Already signed in (Back from the page they were sent to, or an old link): go on, and take this page out of history.
   useEffect(() => {
     if (hydrated && user) router.replace(destinationFor(user, !!staffProfile, redirectPath));
   }, [hydrated, user, staffProfile, redirectPath, router]);
 
-  // Tablet/desktop customers sent here to book get the Sign In modal over the page they came
-  // from (design / service / store) rather than an empty canvas.
+  // Tablet/desktop customers sent here to book get the Sign In modal over the page they came from instead.
   useEffect(() => {
     if (!redirectPath || initialPortal === 'store' || window.innerWidth < 768) return;
     const m = redirectPath.match(/^\/store\/([^/?]+)\/book(?:\?(.*))?$/);
@@ -51,32 +43,14 @@ function LoginFormContent() {
   }, [redirectPath, initialPortal, router]);
 
   return (
-    <div className="min-h-dvh flex flex-col bg-canvas">
-      <PublicNav />
-
-      {/* Mobile: full edge-to-edge without margins. Tablet/desktop: centered card on canvas. */}
-      <div className="flex-1 w-full sm:flex sm:items-start sm:justify-center sm:px-4 sm:py-16">
-        <div className="w-full min-h-dvh sm:min-h-0 sm:max-w-md bg-white px-5 py-6 sm:p-8 sm:rounded-2xl sm:border sm:border-line sm:shadow-sm">
-          <Link
-            href="/"
-            aria-label="Back to home"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:text-ink-muted transition-colors py-1.5 -ml-1 mb-4"
-          >
-            <ArrowLeft size={18} />
-            <span>Back</span>
-          </Link>
-
-          <AuthBrand className="mb-8" />
-          <LoginForm
-            customerRedirect={redirectPath || '/'}
-            staffRedirect={redirectPath || '/dashboard'}
-            registerHref={withRedirect('/register', redirectPath)}
-            onClose={() => router.push('/')}
-            initialPortal={initialPortal}
-            onPortalChange={(next) => router.replace(withRedirect('/login', redirectPath, next === 'store' ? 'as=store' : undefined))}
-          />
-        </div>
-      </div>
-    </div>
+    <AuthPage close={{ onClick: leave, label: 'Close sign in' }}>
+      <LoginForm
+        customerRedirect={redirectPath || '/'}
+        staffRedirect={redirectPath?.startsWith('/dashboard') ? redirectPath : '/dashboard'}
+        registerHref={withRedirect('/register', redirectPath)}
+        initialPortal={initialPortal}
+        onPortalChange={(next) => router.replace(withRedirect('/login', redirectPath, next === 'store' ? 'as=store' : undefined))}
+      />
+    </AuthPage>
   );
 }

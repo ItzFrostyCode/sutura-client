@@ -7,7 +7,7 @@ const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDig
 /** One order in "Where is my order?": what is being made, at which shop, what stage it is in, and what is left to pay. */
 export default function AskOrderRow({ order }: { readonly order: MyOrder }) {
   const what = order.catalog_item_name ?? order.service_name ?? 'Your order';
-  const stage = getPhaseMeta(order.status, order.progress).label;
+  const stage = getPhaseMeta(order.status).label;
   const pending = order.pending_payment_amount ?? 0;
   return (
     <li>

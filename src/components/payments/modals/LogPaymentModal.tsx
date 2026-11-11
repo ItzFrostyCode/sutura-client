@@ -248,7 +248,7 @@ export default function LogPaymentModal({
                       <select id="pay-account" value={payAccountId} onChange={e => setPayAccountId(e.target.value)} className="w-full px-3 py-2.5 min-h-11 border border-line rounded-lg text-xs bg-canvas focus:outline-none focus:border-taupe">
                         <option value="">Not specified</option>
                         {paymentAccounts.filter(a => (a.kind === 'maya' ? 'paymaya' : a.kind) === payMethod).map(a => (
-                          <option key={a.id} value={a.id}>{a.name} — {a.account_number}</option>
+                          <option key={a.id} value={a.id}>{a.name}{a.account_number ? ` — ${a.account_number}` : ' — QR code'}</option>
                         ))}
                       </select>
                     </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
-import AuthShell, { PRIMARY_BTN } from './AuthShell';
+import AuthShell, { PRIMARY_BTN, TITLE } from './AuthShell';
 import VerifiedView from './VerifiedView';
 
 type State = { kind: 'checking' } | { kind: 'ok' } | { kind: 'failed'; message: string };
@@ -23,12 +23,12 @@ export default function VerifyEmailScreen() {
   }, []);
 
   return (
-    <AuthShell backLabel="For shops">
+    <AuthShell>
       {state.kind === 'ok' && <VerifiedView />}
       {state.kind === 'checking' && <p className="py-6 text-center text-sm text-ink-muted">Confirming your email…</p>}
       {state.kind === 'failed' && (
         <div className="text-center py-2">
-          <h1 className="text-display text-2xl text-ink mb-2">Link Not Confirmed</h1>
+          <h1 className={`${TITLE} mb-2`}>Link Not Confirmed</h1>
           <p className="mb-6 text-sm text-ink-muted leading-relaxed">{state.message}</p>
           <Link href="/signup/shop" className={PRIMARY_BTN}>Back to Sign Up</Link>
         </div>

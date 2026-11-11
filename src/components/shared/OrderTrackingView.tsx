@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
 import OrderSummaryCard from '@/components/shared/orderTracking/OrderSummaryCard';
 import OrderAppointmentsCard from '@/components/shared/orderTracking/OrderAppointmentsCard';
-import OrderProgressView from '@/components/shared/orderTracking/OrderProgressView';
-import { type OrderProgress, progressLabel } from '@/components/shared/orderTracking/orderProgress';
+import OrderStageTracker from '@/components/shared/orderTracking/OrderStageTracker';
+import type { OrderProgress } from '@/components/shared/orderTracking/orderProgress';
+import { TERMINAL_STATUSES, getCustomerPhase } from '@/components/shared/orderTracking/orderPhases';
 import OrderBatchesCard from '@/components/shared/orderTracking/OrderBatchesCard';
 import type { BatchSummary } from '@/components/jobs/batches/batchTypes';
 
@@ -13,7 +15,7 @@ export interface TrackedAppointment {
   checked_in_at?: string | null;
   duration_minutes: number | null;
   service_name: string | null;
-  branch: { name: string; address: string | null; city: string | null } | null;
+  branch: { name: string; address: string | null; city: string | null; is_main?: boolean } | null;
 }
 
 /** What the customer sees of the ordering flow (customer-safe: no costs, tailors or internal notes). */
@@ -91,6 +93,8 @@ export interface TrackedOrder {
   // Appointments linked to this job (job_order_id) — 0..N, may include ones
   // scheduled before the job existed. Customer-safe subset only.
   appointments?: TrackedAppointment[];
+  // Every payment on the order and the shop's decision (only from /my-orders/{id}, never the guest tracker).
+  payments?: import('@/components/account/orders/OrderPaymentsCard').OrderPayment[];
   // Present only for orders that use the ordering flow, and only on /my-orders (never the guest tracker).
   quotation_flow?: QuotationFlow | null;
   store: { name: string; slug: string; logo_path: string | null } | null;
@@ -98,23 +102,36 @@ export interface TrackedOrder {
 
 interface OrderTrackingViewProps {
   readonly order: TrackedOrder;
+  /** 'vertical' on the signed-in order page (every step readable on a phone); 'horizontal' for the compact guest tracker. */
+  readonly stepperLayout?: 'horizontal' | 'vertical';
+  /** Above the order summary, in the order's column (the quotation to approve). */
+  readonly before?: ReactNode;
+  /** The side column's first card ("Pay for this order"), above the related appointments. Pass null when there is none. */
+  readonly aside?: ReactNode;
 }
 
-export default function OrderTrackingView({ order }: OrderTrackingViewProps) {
+export default function OrderTrackingView({ order, stepperLayout = 'vertical', before, aside }: OrderTrackingViewProps) {
+  const phase = order.status in TERMINAL_STATUSES ? null : getCustomerPhase(order.status);
+  const hasAppointments = !!order.appointments && order.appointments.length > 0;
+  const hasSide = !!aside || hasAppointments;
   return (
-    // From md (768px) it is two columns: the order and its progress on the left, the related appointments on the right.
-    <div className="md:mx-auto md:grid md:max-w-3xl md:grid-cols-5 md:items-start md:gap-4">
-      <div className="space-y-3 md:col-span-3">
-        <OrderSummaryCard order={order} phase={progressLabel(order.progress)} />
-        {order.progress && (
-          <div className="card-soft p-4">
-            <OrderProgressView progress={order.progress} />
-          </div>
-        )}
+    // Phone: one column — the order, its progress, then payment and appointments under it.
+    // From md (768px), when there is something for the side: the order on the left (3/5); payment on top of the right
+    // column (2/5), the related appointments under it. Nothing for the side: the order keeps the full width.
+    <div className={`md:mx-auto md:max-w-3xl ${hasSide ? 'md:grid md:grid-cols-5 md:items-start md:gap-4' : ''}`}>
+      <div className={`space-y-4 ${hasSide ? 'md:col-span-3' : ''}`}>
+        {before}
+        <OrderSummaryCard order={order} phase={phase} />
+        <OrderStageTracker order={order} layout={stepperLayout} />
         {order.batch && <OrderBatchesCard batch={order.batch} signedIn={!!order.id} />}
       </div>
 
-      {order.appointments && order.appointments.length > 0 && <OrderAppointmentsCard appointments={order.appointments} />}
+      {hasSide && (
+        <div className="mt-4 space-y-4 md:sticky md:top-4 md:col-span-2 md:mt-0">
+          {aside}
+          {hasAppointments && <OrderAppointmentsCard appointments={order.appointments!} shopName={order.store?.name ?? null} />}
+        </div>
+      )}
     </div>
   );
 }

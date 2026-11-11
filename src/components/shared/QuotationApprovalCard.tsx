@@ -22,7 +22,7 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
 
   if (flow.waiting_for_materials) {
     return (
-      <div className="mb-3 flex gap-3 rounded-2xl bg-amber-50 p-4 md:mx-auto md:max-w-3xl">
+      <div className="flex gap-3 rounded-2xl bg-amber-50 p-4">
         <PackageOpen size={20} className="mt-0.5 shrink-0 text-amber-700" />
         <div>
           <p className="mobile-body-md font-semibold text-ink">Confirmed — waiting for materials</p>
@@ -36,7 +36,7 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
 
   if (flow.approved_at) {
     return (
-      <div className="mb-3 flex gap-3 rounded-2xl bg-emerald-50 p-4 md:mx-auto md:max-w-3xl">
+      <div className="flex gap-3 rounded-2xl bg-emerald-50 p-4">
         <BadgeCheck size={20} className="mt-0.5 shrink-0 text-emerald-700" />
         <div>
           <p className="mobile-body-md font-semibold text-ink">You approved the quotation</p>
@@ -48,7 +48,7 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
 
   if (flow.decision === 'changes_requested' && !flow.needs_approval) {
     return (
-      <div className="card-soft mb-3 flex gap-3 p-4 md:mx-auto md:max-w-3xl">
+      <div className="card-soft flex gap-3 p-4">
         <FileText size={20} className="mt-0.5 shrink-0 text-ink-faint" />
         <div>
           <p className="mobile-body-md font-semibold text-ink">You asked for changes</p>
@@ -60,7 +60,7 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
 
   if (!flow.needs_approval || !b) {
     return (
-      <div className="card-soft mb-3 flex gap-3 p-4 md:mx-auto md:max-w-3xl">
+      <div className="card-soft flex gap-3 p-4">
         <FileText size={20} className="mt-0.5 shrink-0 text-ink-faint" />
         <div>
           <p className="mobile-body-md font-semibold text-ink">The shop is preparing your quotation</p>
@@ -73,7 +73,7 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
   }
 
   return (
-    <section aria-label="Quotation to approve" className="card-soft mb-3 p-4 md:mx-auto md:max-w-3xl">
+    <section aria-label="Quotation to approve" className="card-soft p-4">
       <p className="mobile-overline text-taupe">Needs your answer</p>
       <h2 className="mobile-h4 mb-3 text-ink">Your price</h2>
 

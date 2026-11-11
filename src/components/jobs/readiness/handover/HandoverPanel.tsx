@@ -22,20 +22,23 @@ export default function HandoverPanel({ remaining, people, release, balance, bus
   const [receivedBy, setReceivedBy] = useState('');
   const [payBy, setPayBy] = useState('');
   const [note, setNote] = useState('');
+  // W-F03: the customer acknowledges the remaining balance and its due date before the garments leave.
+  const [acknowledged, setAcknowledged] = useState(false);
   const qty = Number(quantity);
   const today = new Date().toISOString().slice(0, 10);
   let missing = '';
   if (!(Number.isInteger(qty) && qty >= 1 && qty <= remaining)) missing = `Enter a number from 1 to ${remaining}.`;
   else if (release && !receivedBy.trim()) missing = 'Say who took the garments.';
   else if (release && !payBy) missing = 'Choose the date the balance will be paid by.';
+  else if (release && !acknowledged) missing = 'The customer must acknowledge the balance and its due date.';
 
   const send = async () => {
     if (release && !(await confirmDialog({
       title: 'Release with the balance still due?',
-      message: `The garments leave before ${peso(balance)} is paid, due by ${new Date(payBy).toLocaleDateString('en-PH', { month: 'long', day: 'numeric' })}. The order stays open until it is paid.`,
+      message: `The garments leave before ${peso(balance)} is paid, due by ${new Date(payBy).toLocaleDateString('en-PH', { month: 'long', day: 'numeric' })}. The order can be completed; the balance stays owed until it is paid.`,
       confirmLabel: 'Release the garments',
     }))) return;
-    const ok = await onSave({ quantity: qty, received_by: receivedBy.trim() || null, note: note.trim() || null, ...(release ? { release_with_balance: true, pay_by: payBy } : {}) });
+    const ok = await onSave({ quantity: qty, received_by: receivedBy.trim() || null, note: note.trim() || null, ...(release ? { release_with_balance: true, pay_by: payBy, customer_acknowledged: acknowledged } : {}) });
     if (ok) onClose();
   };
 
@@ -57,6 +60,14 @@ export default function HandoverPanel({ remaining, people, release, balance, bus
           <label htmlFor="handover-payby" className={PLAIN_LABEL}>Balance to be paid by</label>
           <input id="handover-payby" type="date" min={today} value={payBy} onChange={(e) => setPayBy(e.target.value)} className={PLAIN_FIELD} />
         </div>
+      )}
+      {release && (
+        <label className="flex min-h-12 items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" />
+          <span className="text-[15px] text-ink-body">
+            The customer acknowledges the remaining balance of <strong className="text-ink">{peso(balance)}</strong>{payBy ? <> due by <strong className="text-ink">{new Date(payBy).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</strong></> : null}.
+          </span>
+        </label>
       )}
       <div>
         <label htmlFor="handover-note" className={PLAIN_LABEL}>Note <span className="font-normal text-ink-muted">(optional)</span></label>

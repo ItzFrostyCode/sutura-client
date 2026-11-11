@@ -31,17 +31,17 @@ There is **no separate staff portal** — owner, manager and staff share `/dashb
 
 ## Explicitly OUT of scope
 
-From the thesis *Limitations of the Study* (lines 195–205 of `suturathesisapproved.txt`) plus later team decisions. If a request touches one of these, **name it as scope creep and stop** — do not build it.
+Seven rows below are **Excluded by Current Project Decision — Initial Scope** (owner decision, 2026-11-04): approved project boundaries for the initial implementation, not limitations written in `reference-repos/Title&Objectives.md`; reintroducing one needs a separate project-scope decision and, where applicable, adviser approval. The other rows still carry their earlier source (the earlier thesis *Limitations of the Study*, lines 195–205 of `suturathesisapproved.txt`, or a team decision) and their project-decision status is open item EX-2 in `reference-repos/RESTART-PLAN.md`. If a request touches one of these, **name it as scope creep and stop** — do not build it.
 
 | Out of scope | Source |
 | --- | --- |
-| Hardware integration (machinery, body scanners, RFID, digital measuring tools) — measurements are always typed in by authorized users | Thesis |
-| Offline mode / background sync — internet is required | Thesis |
-| Native payment-gateway integration; external reconciliation. Payments are **tracked** (customer pays outside SUTURA, sends proof, owner verifies) | Thesis |
-| Predictive analytics, AI forecasting, advanced BI — reports are descriptive only (so no "forecasts" wording either) | Thesis |
-| Utility-cost / equipment-maintenance tracking | Thesis |
-| Payroll, salary or attendance-based wages | Thesis |
-| Inventory, fabric/material stock monitoring, purchase orders, supplier and procurement processes — materials are only a ready / waiting check (see difference 5) | Thesis |
+| Hardware integration (machinery, body scanners, RFID, digital measuring tools) — measurements are always typed in by authorized users | Excluded by Current Project Decision — Initial Scope |
+| Offline mode / background sync — internet is required | Excluded by Current Project Decision — Initial Scope |
+| Native payment-gateway integration; external reconciliation. Payments are **tracked** (customer pays outside SUTURA, sends proof, owner verifies) | Excluded by Current Project Decision — Initial Scope |
+| Predictive analytics, AI forecasting, advanced BI — reports are descriptive only (so no "forecasts" wording either) | Excluded by Current Project Decision — Initial Scope (predictive analytics and AI forecasting); advanced BI: open item EX-2 |
+| Utility-cost / equipment-maintenance tracking | Excluded by Current Project Decision — Initial Scope |
+| Payroll, salary or attendance-based wages | Excluded by Current Project Decision — Initial Scope |
+| Inventory, fabric/material stock monitoring, purchase orders, supplier and procurement processes — materials are only a ready / waiting check (see difference 5) | Excluded by Current Project Decision — Initial Scope |
 | Tax-filing automation, business-permit validation | Thesis |
 | Logistics, courier routing, delivery management | Thesis |
 | Rental lifecycle (available → rented → returned → cleaning) — appears in interview research only | Team decision |

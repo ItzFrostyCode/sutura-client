@@ -1,7 +1,7 @@
 import type { LegalSectionData } from './legalTypes';
 
-export const TERMS_UPDATED = 'November 2, 2026';
-export const TERMS_VERSION = '2026-11-02';
+export const TERMS_UPDATED = 'November 10, 2026';
+export const TERMS_VERSION = '2026-11-10';
 
 export const TERMS_INTRO = 'These terms are the agreement between you and [Company name] ("SUTURA", "we", "us") for using the SUTURA website and related services. By creating an account or using SUTURA, you agree to them. If you do not agree, please do not use SUTURA.';
 
@@ -24,6 +24,7 @@ export const TERMS: readonly LegalSectionData[] = [
     'You must give accurate information when you sign up and keep it up to date.',
     'You must be at least 18 years old to create an account.',
     'Shop owners must confirm their email by opening the link we send. The account is created when you do.',
+    'A shop needs its own email. An email already used for a customer account cannot also be used to sign in as a shop.',
     'Keep your password private. You are responsible for what is done through your account. Tell us at [Contact email] if you think someone else has used it.',
     'One person per account. Do not share a login; owners can create separate logins for their branch managers and staff.',
   ] }] },

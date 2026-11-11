@@ -1,25 +1,30 @@
 # Module Dependencies & Implementation Boundaries
 
+> **Status update (2026-11-07):** this file is an engagement snapshot from a Staff-phase documentation
+> pass, so some statuses are *historically* correct but no longer current. Notably the **admin frontend
+> is now built** (all 11 sections under `sutura-client/src/app/admin` — see `docs/ADMIN-MODULE.md`); the
+> "FRONTEND NOT IMPLEMENTED" below was accurate only before that build.
+
 ## Implementation boundary table
 
 | Area | Status | Notes |
 |---|---|---|
 | Customer/Guest | **APPROVED BASELINE / FUNCTIONALLY ACCEPTED** | Do not redesign or add speculative features. A genuine integration issue discovered later may still warrant a fix. |
-| Staff | **IMPLEMENTED / REVIEW PENDING** | Backend + workflow decisions reviewed and approved. Frontend UI not yet personally reviewed by the user — see `docs/modules/STAFF-MODULE.md` for the per-feature `[IMPLEMENTED — NOT YET PERSONALLY REVIEWED]` labels. |
+| Staff | **IMPLEMENTED / REVIEW PENDING** | Backend + workflow decisions reviewed and approved. Frontend UI not yet personally reviewed by the user — see `docs/reviewer/3-STAFF-MODULE.md` for the per-feature `[IMPLEMENTED — NOT YET PERSONALLY REVIEWED]` labels. |
 | Owner/Branch | **PARTIALLY IMPLEMENTED (pre-existing) / NEXT-PHASE GAPS DOCUMENTED** | The Owner dashboard itself is a large, real, pre-existing implementation (predates this engagement). What's genuinely unbuilt: Store Size Chart configuration, and — pending the user's decision — the Payment Part B redesign. Do not implement either until this documentation is approved. |
-| System Admin | **BACKEND PARTIAL / FRONTEND NOT IMPLEMENTED** | Confirmed via direct code re-verification, not repetition of prior docs. Owned by a teammate — out of scope for this engagement's implementation work regardless. |
+| System Admin | **BUILT** (was "BACKEND PARTIAL / FRONTEND NOT IMPLEMENTED" at this snapshot) | The admin portal now has a real 11-section frontend (`sutura-client/src/app/admin`) plus the branch / apparel / report / plan / audit / system-health endpoints — see `docs/ADMIN-MODULE.md`. Owned by a teammate (Bongo); this snapshot predated the admin-frontend build. |
 
 ## Frozen / approved
 Customer/Guest module (baseline, integration-safe, not redesign-safe).
 
 ## Implemented but review pending
-Every Staff-facing frontend surface listed in `docs/modules/STAFF-MODULE.md` — the user has reviewed backend/workflow, not the UI.
+Every Staff-facing frontend surface listed in `docs/reviewer/3-STAFF-MODULE.md` — the user has reviewed backend/workflow, not the UI.
 
 ## Deferred
 - Store Size Chart (Owner-configured, shop-wide measurement reference)
 - Payment Capture/Verification UI Part B (two-step, receipt archive) — proposed, needs explicit approval before it's treated as in-scope for the next phase
 - `SubscriptionPlanController::update/destroy`
-- Admin frontend (any of it) — not this engagement's responsibility
+- ~~Admin frontend (any of it)~~ — **now built** (11 sections; `docs/ADMIN-MODULE.md`). Still open: an approval gate on the owner dashboard and a Community Guidelines page.
 
 ## Future
 Everything under "Owner/Branch Pre-Implementation Checklist" in the workflow files, once approved.
@@ -38,7 +43,7 @@ See the "Architectural risks" list below — these are pre-existing conditions, 
 The frontend nav shows Branch Manager most of the same items as Owner (`isStoreOwner || isBranchManager` is the dominant gating pattern in `dashboard/layout.tsx`), but the backend restricts several of those same actions to `role:store_owner` only: Shop Profile edit, Branches write, Services write, Catalog write, Staff Management write, Billing, Audit Log, Reviews, Store Posts. A Branch Manager currently sees write UI in all of these that will 403 on submit. **This is pre-existing, not introduced by the current Staff-phase work.** Needs a decision: either intentionally narrow Branch Manager's nav to match their real backend authority, or intentionally widen their backend authority to match the nav — currently neither is true, the two have drifted apart.
 
 ### 2. Staff sees write-action UI it can't use (systemic)
-Independent of #1: Services, Job Order delete/create/reassign, and Customer delete all render their write-action buttons unconditionally, relying entirely on the backend's 403 rather than not rendering the control for Staff. Confirmed not a security gap (the backend gate is correct everywhere checked) — a UX inconsistency. See `docs/modules/STAFF-MODULE.md`'s "Cross-cutting finding" section.
+Independent of #1: Services, Job Order delete/create/reassign, and Customer delete all render their write-action buttons unconditionally, relying entirely on the backend's 403 rather than not rendering the control for Staff. Confirmed not a security gap (the backend gate is correct everywhere checked) — a UX inconsistency. See `docs/reviewer/3-STAFF-MODULE.md`'s "Cross-cutting finding" section.
 
 ### 3. `super_admin` role referenced in frontend code, never seeded in backend
 `dashboard/jobs/[id]/page.tsx` and `components/appointments/useAppointments.ts` both include `'super_admin'` in their owner-or-manager role-check arrays. No role named `super_admin` exists anywhere in the seeders — the real admin role is named `admin`. Dead/aspirational code, harmless today (an always-false branch), but worth cleaning up or deciding whether a `super_admin` tier is actually planned.

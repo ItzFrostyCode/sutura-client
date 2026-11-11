@@ -147,7 +147,7 @@ export default function FilterChips({
             type="button"
             onClick={() => handleArrowScroll('left')}
             aria-label="Scroll categories left"
-            className="pointer-events-auto w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface/95 backdrop-blur-xs border border-line shadow-xs text-ink flex items-center justify-center hover:bg-canvas hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="pointer-events-auto w-11 h-11 rounded-full bg-surface/95 backdrop-blur-xs border border-line shadow-xs text-ink flex items-center justify-center hover:bg-canvas hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             <ChevronLeft size={16} />
           </button>
@@ -161,7 +161,7 @@ export default function FilterChips({
             type="button"
             onClick={() => handleArrowScroll('right')}
             aria-label="Scroll categories right"
-            className="pointer-events-auto w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface/95 backdrop-blur-xs border border-line shadow-xs text-ink flex items-center justify-center hover:bg-canvas hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="pointer-events-auto w-11 h-11 rounded-full bg-surface/95 backdrop-blur-xs border border-line shadow-xs text-ink flex items-center justify-center hover:bg-canvas hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             <ChevronRight size={16} />
           </button>

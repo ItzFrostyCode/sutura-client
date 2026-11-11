@@ -4,6 +4,7 @@ import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { isStoreOpen } from '@/lib/storeStatus';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
+import PremiumBadge from '@/components/shared/PremiumBadge';
 import { type StoreResult } from './storesTypes';
 
 export default function StoreCard({ store }: Readonly<{ store: StoreResult }>) {
@@ -36,17 +37,19 @@ export default function StoreCard({ store }: Readonly<{ store: StoreResult }>) {
           </div>
         )}
 
+        {store.is_featured && <PremiumBadge className="absolute left-2.5 top-2.5 z-10" />}
         {/* Live Open / Closed Status Pill */}
         <div className="absolute top-2.5 right-2.5">
           <span
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md shadow-xs border ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-md shadow-xs border ${
               isOpen
                 ? 'bg-white/90 text-emerald-700 border-emerald-200'
                 : 'bg-white/90 text-ink-muted border-line'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-ink-muted/50'}`} />
-            {isOpen ? 'Open' : 'Closed'}
+            {store.operating_hours && <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-ink-muted/50'}`} />}
+            {/* No hours on record: say so (grey), never a guessed "Closed" (ShopHoursStatus rule). */}
+            {!store.operating_hours ? 'Hours not set' : isOpen ? 'Open' : 'Closed'}
           </span>
         </div>
       </div>
@@ -62,7 +65,7 @@ export default function StoreCard({ store }: Readonly<{ store: StoreResult }>) {
               textClassName="text-base font-bold text-taupe"
             />
             <div className="min-w-0 flex-1">
-              <h3 className="mobile-h4 font-bold text-ink group-hover:text-taupe transition-colors truncate leading-tight">
+              <h3 className="mobile-h4 text-ink group-hover:text-taupe-dark transition-colors line-clamp-2 leading-tight">
                 {store.name}
               </h3>
               <p className="mobile-caption text-ink-muted flex items-center gap-1 mt-1 truncate font-normal">

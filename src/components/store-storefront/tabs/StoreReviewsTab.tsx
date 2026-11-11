@@ -49,13 +49,16 @@ export default function StoreReviewsTab({
           </p>
         </div>
 
+        {/* Only worth showing once there is something to filter. */}
+        {(reviews.length > 0 || reviewFilterRating) && (
         <select
+          aria-label="Show ratings with"
           value={reviewFilterRating}
           onChange={(e) => {
             setReviewFilterRating(e.target.value);
             setReviewsPage(1);
           }}
-          className="h-9 px-3 bg-surface border border-line text-sm text-ink focus:outline-none focus:border-taupe transition-colors"
+          className="h-11 px-3 bg-surface border border-line text-base text-ink focus:outline-none focus:border-taupe-dark transition-colors"
         >
           <option value="">All Stars</option>
           <option value="5">5 Stars only</option>
@@ -64,12 +67,14 @@ export default function StoreReviewsTab({
           <option value="2">2 Stars only</option>
           <option value="1">1 Star only</option>
         </select>
+        )}
       </div>
 
       {/* Overall Ratings Summary Card */}
       <StoreRatingSummaryCard
         store={store}
         reviews={reviews}
+        reviewsComplete={!reviewFilterRating && reviewsLastPage <= 1 && !reviewsLoading}
         isOwnerViewingOwnStore={isOwnerViewingOwnStore}
         myReview={myReview}
         onOpenRatingModal={onOpenRatingModal}
@@ -81,21 +86,11 @@ export default function StoreReviewsTab({
           <Loader2 className="animate-spin text-ink-faint w-6 h-6" />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-10 bg-surface border border-line p-5">
-          <Star className="mx-auto h-10 w-10 text-ink-faint mb-2" />
-          <p className="text-sm font-semibold text-ink">No ratings yet</p>
-          <p className="mobile-caption text-ink-muted mt-0.5">Be the first to rate {store.name}!</p>
-          {!isOwnerViewingOwnStore && (
-            <button
-              type="button"
-              onClick={onOpenRatingModal}
-              className="mt-3.5 min-h-[44px] h-[48px] px-6 bg-taupe text-white text-sm font-semibold hover:bg-taupe-hover transition-colors inline-flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-            >
-              <Star size={15} className="fill-white text-white" />
-              <span>Rate Now</span>
-            </button>
-          )}
-        </div>
+        // The summary card above already says "No ratings yet" and holds the one rate button; only a star filter that
+        // matches nothing needs its own line here.
+        reviewFilterRating ? (
+          <p className="mobile-body-sm border border-line bg-surface p-5 text-center text-ink-muted">No {reviewFilterRating}-star ratings yet.</p>
+        ) : null
       ) : (
         <div className="bg-surface border border-line divide-y divide-line overflow-hidden">
           {reviews.map((review) => (

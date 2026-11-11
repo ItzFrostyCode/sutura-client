@@ -24,6 +24,13 @@ export function ServicePhotoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   return <ImageUploadField value={d.image_url} onChange={url => patch({ image_url: url })} storeId={edit.storeId} hint="The photo customers see first on this service." alt="Service" />;
 }
 
+/** B6-O11: three ways to show a price; no range. Extras, rush fees and discounts belong in the quotation. */
+const PRICE_CHOICES: ['fixed' | 'starting' | 'quotation', string, string][] = [
+  ['fixed', 'Fixed price', 'One set price'],
+  ['starting', 'Starting price', 'From this amount'],
+  ['quotation', 'Quotation required', 'Priced after assessment'],
+];
+
 export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   const { d, patch } = useSet(edit);
   const from = Number(d.estimated_days);
@@ -35,11 +42,25 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
         <label htmlFor="svc-name" className={LABEL}>Service name <span className="text-red-600">*</span></label>
         <input id="svc-name" value={d.name} onChange={e => patch({ name: e.target.value })} className={FIELD} />
       </div>
-      <div className="sm:col-span-2">
-        <label htmlFor="svc-price" className={LABEL}>Starting price (PHP)</label>
-        <input id="svc-price" type="number" min="0" value={d.base_price} onChange={e => patch({ base_price: e.target.value })} placeholder="Leave empty for a custom quote" className={FIELD} />
-        <p className="text-[11px] text-ink-faint mt-1.5">Leave empty for a custom quote.</p>
-      </div>
+      <fieldset className="sm:col-span-2">
+        <legend className={LABEL}>How customers see the price</legend>
+        <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-2" role="radiogroup">
+          {PRICE_CHOICES.map(([value, title, sub]) => (
+            <label key={value} className={`min-h-12 border px-3 py-2.5 cursor-pointer transition-colors ${d.price_display === value ? 'border-espresso bg-sunken' : 'border-line bg-white hover:bg-sunken'}`}>
+              <input type="radio" name="svc-price-display" value={value} checked={d.price_display === value} onChange={() => patch({ price_display: value })} className="sr-only" />
+              <span className="block text-sm font-semibold text-ink">{title}</span>
+              <span className="block text-[12px] text-ink-muted leading-snug">{sub}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      {d.price_display !== 'quotation' && (
+        <div className="sm:col-span-2">
+          <label htmlFor="svc-price" className={LABEL}>{d.price_display === 'fixed' ? 'Price (PHP)' : 'Starting price (PHP)'} {d.price_display === 'fixed' && <span className="text-red-600">*</span>}</label>
+          <input id="svc-price" type="number" min="0" value={d.base_price} onChange={e => patch({ base_price: e.target.value })} className={FIELD} />
+          <p className="text-[11px] text-ink-faint mt-1.5">{d.price_display === 'fixed' ? 'The price the customer pays for this service.' : 'The lowest price. The quotation sets the actual total.'}</p>
+        </div>
+      )}
       <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="svc-days" className={`${LABEL} sm:min-h-[2.5rem] flex items-end`}>

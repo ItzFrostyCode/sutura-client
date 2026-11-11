@@ -5,8 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ToastProvider } from '@/context/ToastContext';
 import api from '@/lib/axios';
-import PublicNav from '@/components/shared/PublicNav';
-import PageBrandRow from '@/components/shared/publicNav/PageBrandRow';
 import AccountWebSidebar from '@/components/account/hub/AccountWebSidebar';
 import { withRedirect } from '@/lib/authRedirect';
 
@@ -14,10 +12,10 @@ import { withRedirect } from '@/lib/authRedirect';
 // shared by every /account/* page. PublicNav sits above all of it, same as
 // /search, store profile, and /track.
 //
-// Desktop/tablet (md+): a persistent left sidebar (Shopee "My Account"
+// Desktop (lg+, 1024px): a persistent left sidebar (Shopee "My Account"
 // pattern — profile summary + grouped nav) lives HERE in the layout so it
 // stays put across every /account/* route instead of each page rebuilding
-// it; only the content pane on the right swaps. Below md: no sidebar —
+// it; only the content pane on the right swaps. Below lg (phones and tablets): no sidebar — a 256px menu beside 768px of content left too little room —
 // `/account` itself is the real "Me" hub (profile header + quick cards),
 // and every other /account/* page is a drill-down with its own local back
 // button (AccountHeader) — standard mobile hub-and-drill-down nav.
@@ -84,13 +82,13 @@ export default function AccountLayout({ children }: { readonly children: React.R
 
   return (
     <ToastProvider>
-      <div className="min-h-dvh flex flex-col bg-canvas">
-        <PublicNav />
-        <main className="flex-1 w-full max-w-7xl mx-auto mobile-screen-margins py-4 md:py-6">
-          <PageBrandRow className="mb-2" />
+      <div className="flex flex-1 flex-col bg-canvas">
+        
+        <main className="flex-1 mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-4 md:py-6">
+          
           {showSidebar ? (
-            <div className="flex flex-col md:flex-row md:items-start md:gap-8">
-              <div className="hidden md:block">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:gap-4">
+              <div className="hidden lg:block">
                 <AccountWebSidebar user={user} />
               </div>
               <div className="flex-1 min-w-0 flex flex-col">{children}</div>

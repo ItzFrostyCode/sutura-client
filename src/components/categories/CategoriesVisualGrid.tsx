@@ -71,22 +71,22 @@ export default function CategoriesVisualGrid({ className = '' }: CategoriesVisua
           onScroll={checkScroll}
           className="overflow-x-auto hide-scrollbar scroll-smooth"
         >
-          <div className="inline-grid min-w-full grid-rows-2 grid-flow-col auto-cols-[120px] sm:auto-cols-[135px] md:auto-cols-[minmax(140px,1fr)]">
+          <div className="inline-grid min-w-full grid-rows-2 grid-flow-col auto-cols-[96px] min-[400px]:auto-cols-[108px] sm:auto-cols-[128px] lg:auto-cols-[minmax(128px,1fr)]">
             {VISUAL_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               return (
                 <Link
                   key={cat.id}
                   href={cat.href}
-                  className="h-[125px] sm:h-[138px] flex flex-col items-center justify-center p-2.5 text-center border-r border-b border-line/60 bg-surface hover:bg-canvas/60 transition-colors group relative cursor-pointer"
+                  className="min-h-[104px] sm:min-h-[120px] flex flex-col items-center justify-center p-2 sm:p-2.5 text-center border-r border-b border-line/60 bg-surface hover:bg-canvas/60 transition-colors group relative cursor-pointer"
                 >
                   {/* Visual Circle with Icon */}
-                  <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-taupe/10 text-taupe flex items-center justify-center transition-all duration-200 group-hover:scale-108 group-hover:bg-taupe/20 group-hover:text-ink shadow-2xs border border-taupe/15 shrink-0">
-                    <Icon size={24} className="sm:w-6 sm:h-6" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-taupe/10 text-taupe flex items-center justify-center transition-all duration-200 group-hover:scale-108 group-hover:bg-taupe/20 group-hover:text-ink shadow-2xs border border-taupe/15 shrink-0">
+                    <Icon size={20} className="sm:w-6 sm:h-6" />
                   </div>
 
                   {/* Text Label */}
-                  <span className="text-xs sm:text-[13px] font-medium text-ink leading-snug line-clamp-2 mt-2 px-1 group-hover:text-taupe transition-colors">
+                  <span className="text-xs sm:text-[13px] font-medium text-ink leading-snug line-clamp-3 break-words mt-1.5 px-0.5 group-hover:text-taupe-dark transition-colors">
                     {cat.label}
                   </span>
                 </Link>

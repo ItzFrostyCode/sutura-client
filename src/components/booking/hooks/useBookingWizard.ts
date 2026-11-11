@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback, FormEvent } from 'rea
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getSavedLocation, haversineKm } from '@/lib/customerLocation';
+import { getBestPosition, getSavedLocation, haversineKm } from '@/lib/customerLocation';
 import { buildBookingTypes } from '../bookingTypes';
 import type { DesignSource } from '@/lib/designSource';
 import {
@@ -317,10 +317,10 @@ export function useBookingWizard(storeId: string) {
     const loc = getSavedLocation();
     if (loc) {
       setUserLocation({ lat: loc.lat, lng: loc.lng });
-    } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+    } else {
+      getBestPosition(
         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {}
+        () => {},
       );
     }
   }, []);

@@ -8,6 +8,8 @@ export interface StoreResult {
   logo_path: string | null;
   banner_path: string | null;
   reviews_count: number;
+  /** On Premium right now (server: Store::scopeWithPremiumNow). */
+  is_featured?: boolean;
   reviews_avg_rating: number | null;
   branches: { city: string | null; name: string; district?: string | null }[];
   operating_hours?: OperatingHours | string | null;

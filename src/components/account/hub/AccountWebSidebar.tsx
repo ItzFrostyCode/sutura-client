@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -46,10 +46,10 @@ const TOP_LINKS = [
 
 const MID_LINKS = [
   { href: '/account/orders', label: 'My Job Orders', icon: Package },
-  { href: '/account/appointments', label: 'Appointments', icon: Calendar },
+  { href: '/account/appointments', label: 'Appointments & Fittings', icon: Calendar },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/account/measurements', label: 'My Measurements', icon: Ruler },
-  { href: '/account/saved', label: 'My Saved Items', icon: Heart },
+  { href: '/account/saved', label: 'My Saved', icon: Heart },
   { href: '/account/ratings', label: 'My Ratings', icon: Star },
   { href: '/account/recently-viewed', label: 'Recently Viewed', icon: Clock },
 ];
@@ -61,6 +61,7 @@ function isPathActive(pathname: string, href: string, exact = false) {
 
 export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarProps>) {
   const pathname = usePathname();
+  const router = useRouter();
   const { logout } = useAuthStore();
 
   const settingsSectionActive = pathname.startsWith('/account/settings');
@@ -158,7 +159,7 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
       <div className="pt-2">
         <button
           type="button"
-          onClick={() => logout()}
+          onClick={() => { logout(); router.push('/'); }}
           className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 text-sm font-semibold text-danger transition-colors hover:bg-danger/5"
         >
           <LogOut size={16} />

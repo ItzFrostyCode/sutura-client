@@ -1,7 +1,10 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { isAuthPath } from './publicNav/bottomNavPaths';
+import { useEffect, useState } from 'react';
+import { isAuthPath, usesCustomerNavOn } from './publicNav/bottomNavPaths';
+import { useShopAccount } from '@/hooks/useShopAccount';
+import PublicTopBar from './topbar/PublicTopBar';
 
 /**
  * Breakpoint-aware layout frame:
@@ -25,18 +28,31 @@ import { isAuthPath } from './publicNav/bottomNavPaths';
  */
 export default function MobileFrame({ children }: { readonly children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isEmbed, setIsEmbed] = useState(false);
+  const { isShopAccount } = useShopAccount();
+  useEffect(() => {
+    setIsEmbed(new URLSearchParams(window.location.search).get('embed') === '1');
+  }, [pathname]);
   // The System Admin console is desktop-first too, same as /dashboard.
   const isDashboard = (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) ?? false;
 
   if (isDashboard) return <>{children}</>;
 
-  if (pathname === '/map') {
+  // The top bar (location, header) of every bottom-nav page lives HERE, not in each page: it is drawn once and stays
+  // mounted while only the page under it changes, so moving between Discover, Map, Track Order… never redraws it
+  // (no address flashing back to "Davao City", no appointment strip popping in, no header jump). Same idea as
+  // PublicBottomNav in RootLayout. Pages just fill the rest (`flex-1`).
+  const topBar = pathname && usesCustomerNavOn(pathname, isShopAccount) && !isEmbed ? <PublicTopBar /> : null;
+
+  if (pathname === '/map' || pathname?.startsWith('/search')) {
     return (
       <div
         id="mobile-frame-container"
         data-mobile-frame="true"
+        data-fullscreen="true"
         className="w-full h-dvh overflow-hidden bg-canvas relative flex flex-col"
       >
+        {topBar}
         {children}
       </div>
     );
@@ -46,8 +62,9 @@ export default function MobileFrame({ children }: { readonly children: React.Rea
     <div
       id="mobile-frame-container"
       data-mobile-frame="true"
-      className="w-full min-h-dvh bg-canvas relative"
+      className="w-full min-h-dvh bg-canvas relative flex flex-col"
     >
+      {topBar}
       {children}
     </div>
   );

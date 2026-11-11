@@ -5,6 +5,7 @@ import HomeSheet from './HomeSheet';
 import FilterDistance from './filter/FilterDistance';
 import FilterMore from './filter/FilterMore';
 import FilterShopLights from './filter/FilterShopLights';
+import FilterLocation from './filter/FilterLocation';
 import { DEFAULT_ALL_FILTERS, type AllFilters, type MoreFilters, type NearFilters } from './homeFilters';
 
 interface HomeFilterSheetProps {
@@ -14,10 +15,12 @@ interface HomeFilterSheetProps {
   /** Also show price, rating and district. Defaults to true for consistency between landing and search screens. */
   readonly showMore?: boolean;
   readonly onApply: (filters: AllFilters) => void;
+  /** The Map: where shops are measured from (its top strip is left out there), first in the pop-up. */
+  readonly showLocation?: boolean;
 }
 
 /** The filter pop-up: Distance, Open / Closed lights, and price, rating, and district filters. */
-export default function HomeFilterSheet({ isOpen, onClose, value, showMore = true, onApply }: HomeFilterSheetProps) {
+export default function HomeFilterSheet({ isOpen, onClose, value, showMore = true, onApply, showLocation = false }: HomeFilterSheetProps) {
   const [draft, setDraft] = useState<AllFilters>({ ...DEFAULT_ALL_FILTERS, ...value });
   useEffect(() => { if (isOpen) setDraft({ ...DEFAULT_ALL_FILTERS, ...value }); }, [isOpen, value]);
 
@@ -33,8 +36,10 @@ export default function HomeFilterSheet({ isOpen, onClose, value, showMore = tru
         </div>
       )}
     >
+      {showLocation && <FilterLocation />}
+
       {/* Distance */}
-      <section>
+      <section className={showLocation ? 'mt-6' : ''}>
         <h3 className="mobile-h4 mb-3 text-ink">Distance</h3>
         <FilterDistance radiusKm={draft.radiusKm} onChange={(radiusKm) => setDraft({ ...draft, radiusKm })} />
       </section>

@@ -1,0 +1,200 @@
+🧵 SUTURA — Full System Audit
+Generated: June 29, 2026 | Auditor: Antigravity
+
+🏗️ Tech Stack
+Layer	Technology
+Frontend	Next.js (App Router), TypeScript, Axios, Zustand, Lucide Icons
+Backend	Laravel (PHP), SQLite (dev DB), Laravel Sanctum (auth)
+API Style	REST, versioned under /api/v1
+Auth	Bearer token stored in localStorage (sutura_token)
+State	Zustand (useAuthStore) — persists user, token, shop, staffProfile
+Notifications	Custom ToastContext + NotificationBell component
+👥 User Roles
+The system has 4 roles with different access levels:
+
+Role	Portal	What They Can Do
+shop_owner	/dashboard	Full access — all features, billing, branches
+branch_manager	/dashboard	Customers, appointments, job orders, analytics
+staff	/staff-dashboard	Job orders (read/update), customers
+admin	(API only)	Approve/reject shops, manage subscription plans, handle support tickets
+🗺️ Pages & Routes — CLIENT SIDE
+📌 Root Level Pages
+Route	File	Description
+/	app/page.tsx	Redirect entry point
+/login	app/login/	Login form
+/register	app/register/	Registration form
+/shop/[shop_id]	app/shop/[shop_id]/	Public shop profile page (customer-facing)
+🏢 Shop Owner / Manager Dashboard — /dashboard
+The main sidebar is divided into 5 groups:
+
+GROUP 1 — Command Center
+Nav Item	Route	Description
+🏠 Home	/dashboard	Main analytics overview page
+📅 Appointments	/dashboard/appointments	Calendar + appointment management
+💳 Payments Queue	/dashboard/payments	Track unpaid/paid job payments
+GROUP 2 — Workroom
+Nav Item	Route	Description
+✂️ Custom Jobs	/dashboard/jobs	Full job order management (tailoring)
+📦 Ready-to-Wear	/dashboard/orders	Premade catalog orders
+👥 Customers	/dashboard/customers	CRM — customer list + profiles
+GROUP 3 — Showroom
+Nav Item	Route	Description
+🛍️ Design Catalog	/dashboard/catalog	Catalog items management
+🗂️ Services	/dashboard/services	Services offered + pricing
+⭐ Reviews	/dashboard/reviews	Shop reviews + response management
+GROUP 4 — Team & Performance
+Nav Item	Route	Description
+🧑‍🔧 Team Members	/dashboard/staff	Staff accounts + availability
+📊 Insights	/dashboard/reports	Business analytics charts
+GROUP 5 — Configuration
+Nav Item	Route	Description
+⚙️ Shop Settings	/dashboard/settings	Shop identity, hours, policies, gallery
+🧾 Billing & Plans	/dashboard/billing	Subscription management
+🏗️ Branches	/dashboard/branches	Shop owner only — branch management
+Footer (below sidebar divider)
+Nav Item	Route	Description
+🆘 Help & Support	/dashboard/support	Support ticket system
+Profile Dropdown (top-right avatar)
+Item	Route	Description
+My Profile	/dashboard/profile	View/edit user profile
+Account Settings	/dashboard/account-settings	Personal info, password, branches
+Log Out	—	POST /auth/logout then redirect to /login
+🧵 Staff Dashboard — /staff-dashboard
+Simplified dashboard for staff and branch_manager roles only.
+
+Nav Item	Route	Description
+✂️ My Jobs	/staff-dashboard	Job orders assigned to this staff member
+👥 Customers	/staff-dashboard/customers	View customer list + measurements
+Profile Dropdown
+Item	Route	Description
+My Profile	/staff-dashboard/profile	View staff profile
+Log Out	—	Logout + redirect to /login
+🗂️ Pages WITH TABS
+1. /dashboard/settings — Shop Settings
+Has 4 tabs (SettingsTab type):
+
+Tab ID	Label	Icon	Content
+identity	Store Identity	🏪 Store	Shop name, description, address, city, province, phone, email, business type
+hours	Hours & Location	⏰ Clock	Operating hours per day (Mon–Sun), map coordinates
+policies	Policies	📄 FileText	Booking policy text, custom booking questions
+gallery	Gallery & Social	🖼️ Image	Shop images, Facebook/Instagram/TikTok links, courier options
+2. /dashboard/account-settings — Account Settings
+Has 2–3 tabs (conditional on role):
+
+Tab ID	Label	Icon	Who Sees It	Content
+personal	Personal Info	👤 User	Everyone	Name, email (read-only), phone number
+security	Security	🛡️ ShieldCheck	Everyone	Current password → New password change form with strength meter
+branches	Branches	🏗️ Building2	Shop owners only	Add/edit/delete shop branches with CRUD modals
+3. /dashboard/jobs — Custom Jobs
+List view of all job orders
+Sub-routes: /dashboard/jobs/new (create), /dashboard/jobs/[id] (detail)
+Filter/status tabs likely inside the page component
+4. /dashboard/catalog — Design Catalog
+List of catalog items
+Sub-routes: /dashboard/catalog/new (create), /dashboard/catalog/[id] (edit/detail)
+5. /dashboard/customers — Customer CRM
+List of customers + search
+Sub-routes: /dashboard/customers/[id] (customer profile + measurement history)
+🗄️ Database Models (28 total)
+Model	Purpose
+User	Core user account
+Role	Role assignment (shop_owner, staff, branch_manager, admin)
+Shop	Shop entity (name, slug, address, settings)
+ShopBranch	Physical branches of a shop
+ShopSubscription	Current subscription for a shop
+SubscriptionPlan	Available plans (Free, Basic, Pro, etc.)
+StaffProfile	Staff details, specializations, availability
+Service	Services offered by a shop
+ServicePricing	Price tiers per service
+ApparelSpecialization	Specializations (barong, gown, suit, etc.)
+Appointment	Scheduled appointments (measurements, fittings, consultations)
+JobOrder	Custom tailoring orders (main entity)
+JobOrderStaff	Many-to-many: staff assigned to a job
+Measurement	Customer body measurements
+CatalogItem	Product in design catalog
+CatalogImage	Images for a catalog item
+CatalogOrder	Ready-to-wear/premade purchases
+CatalogItemReview	Reviews on catalog items
+CatalogItemSave	Saved/bookmarked catalog items
+CatalogRecommendation	Recommendations system
+ShopReview	Customer reviews for a shop
+Payment	Payment records
+InventoryItem	Fabric/material stock items
+InventoryTransaction	Stock in/out movements
+Supplier	Fabric/material suppliers
+SupportTicket	Shop-to-admin support requests
+SupportTicketReply	Replies on support tickets
+AuditLog	Action logs for accountability
+🔌 API Controllers (Backend — 24 controllers)
+Controller	Endpoints Handled
+AuthController	Register, Login, Logout, Me
+ProfileController	Personal info, Password change, Availability toggle, Image upload
+ShopController	CRUD for shop, public profile
+ShopBranchController	Branch CRUD
+StaffController	Staff CRUD (owner only)
+AppointmentController	CRUD + status updates + payment verify + complete
+JobOrderController	CRUD + staff assign + pay
+CustomerController	CRM CRUD
+MeasurementController	Measurement CRUD
+ServiceController	Service CRUD
+ServicePricingController	Pricing CRUD
+SpecializationController	Specialization CRUD
+CatalogController	Catalog item CRUD (public + private)
+CatalogInteractionController	Save/unsave, Rate, Increment views
+CatalogOrderController	Ready-to-wear order CRUD + payment
+ShopReviewController	Reviews list + reply + delete
+SubscriptionController	Plans list + current + subscribe
+AnalyticsController	Shop analytics data
+InventoryController	Inventory CRUD + stock adjustment
+SupplierController	Supplier CRUD
+FileUploadController	Image/file upload (shop, support, public receipt)
+NotificationController	List + mark read + mark all read
+SupportTicketController	Ticket CRUD + reply + close
+AuditLogController	Audit log read (owner only)
+Admin/ShopController	Admin: approve/reject shops
+Admin/SubscriptionPlanController	Admin: manage plans
+Admin/SupportTicketAdminController	Admin: view + reply + update status
+PublicBookingController	Public booking settings + submission
+⚠️ Known Issues & Missing Pieces
+🔴 Missing Pages (routes exist in nav but may be empty/stub)
+Route	Status	Notes
+/dashboard/inventory	❌ Empty directory	Folder exists but no page.tsx!
+/dashboard/profile	Exists in /components/profile	Need to verify the page itself
+/dashboard/specializations	Has page.tsx	Needs verification if wired to API
+/staff-dashboard/jobs	Has page.tsx	Needs verification
+🟡 Connection Considerations
+API Base URL: http://127.0.0.1:8000/api/v1 (hardcoded default — must match running Laravel server)
+DB: SQLite file at sutura-server/database/database.sqlite
+Auth: Tokens stored in localStorage (sutura_token + auth-storage)
+401 auto-logout: Any 401 response triggers redirect to /login (except during login itself)
+🟡 Branch Switcher (Top Nav)
+Fetches branches from /shops/{id}/branches
+Currently a UI-only filter — the selectedBranch state is not passed to any API calls in the layout. Pages don't currently filter by branch selection.
+🟡 Inventory Module
+/dashboard/inventory folder is completely empty — no page.tsx exists. The nav doesn't show inventory (it's not in NAV_GROUPS), but controllers and models exist on the backend.
+📊 Progress Summary
+
+✅ DONE (fully built):
+  - Auth system (login, register, logout, session restore)
+  - Dashboard home (analytics, appointments, quick actions)
+  - Custom Jobs (list, create, detail, update, pay)
+  - Appointments (calendar, CRUD, status flow)
+  - Customers CRM (list, detail, measurements)
+  - Design Catalog (list, create, edit, image upload)
+  - Services + Pricing
+  - Staff management
+  - Shop Settings (4-tab form: identity, hours, policies, gallery)
+  - Account Settings (personal, security, branches tabs)
+  - Reviews management
+  - Support ticket system
+  - Billing & subscription
+  - Branch management (dedicated page + account settings tab)
+  - Notifications (bell + real-time read)
+  - Staff Dashboard (jobs + customers)
+  - Public shop profile + booking
+🟡 PARTIAL / NEEDS WORK:
+  - Ready-to-Wear Orders (backend done, frontend page is minimal stub)
+  - Reports/Insights page (has page.tsx but needs chart depth verification)
+  - Payments Queue (page exists, needs full verification)
+  - Branch switcher (UI only, not yet filtering API calls)
+  - Specializations page (exists, needs API wiring verification)

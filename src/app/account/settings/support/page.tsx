@@ -66,7 +66,7 @@ export default function SupportTicketListPage() {
       {tickets === null && <div className="flex min-h-[50vh] items-center justify-center"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}
 
       {tickets !== null && tickets.length === 0 && (
-        <EmptyState Icon={LifeBuoy} title="No support tickets yet" message="Tickets you submit — like reporting a product — will show up here." />
+        <EmptyState Icon={LifeBuoy} title="No support tickets yet" message="Tickets you submit — like reporting a design or asking about a payment — will show up here." />
       )}
 
       {tickets !== null && tickets.length > 0 && (

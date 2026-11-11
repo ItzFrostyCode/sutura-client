@@ -33,8 +33,9 @@ export function useServiceFilters(services: Service[]) {
     const q = search.trim().toLowerCase();
     return services
       .filter((s) => {
-        if (statusFilter === 'active' && !s.is_active) return false;
-        if (statusFilter === 'paused' && s.is_active) return false;
+        const status = s.status ?? (s.is_active ? 'published' : 'unpublished');
+        if (statusFilter === '' && status === 'archived') return false;
+        if (statusFilter !== '' && status !== statusFilter) return false;
         if (kindFilter && s.service_category !== kindFilter) return false;
         if (garmentFilter && !matchesGarmentCategory(s, garmentFilter as GarmentCategory)) return false;
         if (taskFilter && !(s.capabilities ?? []).includes(taskFilter)) return false;

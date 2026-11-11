@@ -10,6 +10,8 @@ import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { SearchServiceResult, RelatedStore, SearchActiveTab } from './types';
 import ServiceCarouselRow from './ServiceCarouselRow';
 import SearchServiceCard from './SearchServiceCard';
+import SearchNoResults from './SearchNoResults';
+import { addRecentItem } from '@/lib/recentSearches';
 
 interface SearchServicesTabProps {
   readonly services: SearchServiceResult[];
@@ -19,6 +21,12 @@ interface SearchServicesTabProps {
   readonly activeTab: SearchActiveTab;
   readonly effectiveQ: string;
   readonly gate: (href: string) => string;
+  readonly district?: string;
+  readonly userCoords?: { lat: number; lng: number } | null;
+  /** Search for a garment (a tile on the "nothing found" screen). */
+  readonly onSearch?: (term: string) => void;
+  /** Opens the shop (or one of its pages) in the map's side panel, like the Shops list. Returns false when it cannot. */
+  readonly onShowOnMap?: (slug: string, path?: string) => boolean;
 }
 
 export default function SearchServicesTab({
@@ -29,6 +37,10 @@ export default function SearchServicesTab({
   activeTab,
   effectiveQ,
   gate,
+  district,
+  userCoords,
+  onSearch,
+  onShowOnMap,
 }: SearchServicesTabProps) {
   if (activeTab !== 'services' && (activeTab !== 'all' || (!servicesLoading && services.length === 0))) {
     return null;
@@ -39,7 +51,7 @@ export default function SearchServicesTab({
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
           <Scissors size={17} className="text-taupe shrink-0" />
-          <h2 className="text-base font-bold text-ink">Tailoring Services</h2>
+          <h2 className="mobile-h3 text-ink">Tailoring services</h2>
         </div>
         <span className="text-xs text-ink-muted font-medium">{servicesTotal}</span>
       </div>
@@ -78,11 +90,8 @@ export default function SearchServicesTab({
           ))}
         </div>
       ) : services.length === 0 ? (
-        <div className="bg-transparent border-y border-line px-4 py-10 text-center">
-          <Scissors size={28} className="mx-auto mb-2 text-ink-faint" />
-          <p className="text-sm font-semibold text-ink">No Services Found</p>
-          <p className="mt-1 text-xs text-ink-muted">No tailoring services matched your search.</p>
-        </div>
+        // Nothing found: the same screen as Shops — garment tiles, then the nearby shops under a line.
+        <SearchNoResults query={effectiveQ} what="services" district={district} onSearch={(term) => onSearch?.(term)} userCoords={userCoords} />
       ) : (() => {
         const storeOrder: number[] = [];
         const storeMap: Record<number, SearchServiceResult[]> = {};
@@ -128,11 +137,17 @@ export default function SearchServicesTab({
                 (storeInfo as { is_featured?: boolean })?.is_featured;
               const rating = matchedStore?.reviews_avg_rating;
               const reviewsCount = matchedStore?.reviews_count;
+              const hasPin = (storeInfo?.branches ?? []).some((b) => (b as { latitude?: unknown }).latitude && (b as { longitude?: unknown }).longitude);
 
               return (
                 <div key={storeId} className="border-b border-line border-x-0 rounded-none px-0 py-3.5 space-y-3">
                   {/* Store row */}
-                  <Link href={storeHref} className="flex items-center justify-between gap-3 group active:opacity-80">
+                  <Link
+                    href={storeHref}
+                    // Same as the Shops list: the shop opens in the map's side panel (the page stays on the map), not as its own page.
+                    onClick={(e) => { if (hasPin && onShowOnMap?.(storeSlug, effectiveQ.trim() ? `?tab=services&q=${encodeURIComponent(effectiveQ.trim())}` : '')) e.preventDefault(); }}
+                    className="flex items-center justify-between gap-3 group active:opacity-80"
+                  >
                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                       <StoreLogoAvatar
                         src={logoSrc}
@@ -144,20 +159,20 @@ export default function SearchServicesTab({
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {distKm != null ? (
-                            <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                            <span className="text-xs font-extrabold uppercase tracking-wide text-taupe">
                               {storeIndex === 0 ? `NEAREST · ${distKm.toFixed(1)} km` : `${distKm.toFixed(1)} km`}
                             </span>
                           ) : isFeatured ? (
-                            <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                            <span className="text-xs font-extrabold uppercase tracking-wide text-taupe">
                               ★ FEATURED STORE
                             </span>
                           ) : (
-                            <span className="text-[10px] font-extrabold uppercase tracking-wide text-taupe">
+                            <span className="text-xs font-extrabold uppercase tracking-wide text-taupe">
                               DAVAO CITY
                             </span>
                           )}
                           {rating ? (
-                            <span className="text-[10px] font-bold text-ink-muted flex items-center gap-0.5">
+                            <span className="text-xs font-bold text-ink-muted flex items-center gap-0.5">
                               <Star size={10} className="fill-current text-taupe" />
                               {Number(rating).toFixed(1)} ({reviewsCount ?? 0})
                             </span>
@@ -166,10 +181,10 @@ export default function SearchServicesTab({
                         <h3 className="text-[15px] font-bold text-ink truncate leading-tight group-hover:text-taupe transition-colors">
                           {storeName}
                         </h3>
-                        <p className="text-[11px] text-ink-muted truncate">
+                        <p className="text-xs text-ink-muted truncate">
                           {ownerName ? `by ${ownerName}` : 'by Tailoring Master'}
                         </p>
-                        <p className="text-[11px] text-ink-faint truncate">
+                        <p className="text-xs text-ink-faint truncate">
                           {addressText}
                         </p>
                       </div>
@@ -180,7 +195,7 @@ export default function SearchServicesTab({
                   {/* Service carousel header */}
                   {storeServices.length > 0 && (
                     <div className="px-0.5 pt-0.5">
-                      <span className="text-[11px] font-bold text-ink">
+                      <span className="text-xs font-bold text-ink">
                         {effectiveQ.trim()
                           ? `${storeServices.length} matching service${storeServices.length === 1 ? '' : 's'}`
                           : `Services (${storeServices.length})`}
@@ -191,12 +206,14 @@ export default function SearchServicesTab({
                   {/* Service cards carousel */}
                   <ServiceCarouselRow>
                     {storeServices.map((service) => (
-                      <SearchServiceCard
-                        key={service.id}
-                        service={service}
-                        storeSlug={storeSlug}
-                        gate={gate}
-                      />
+                      // Tapping a service puts it in the recent searches.
+                      // Like the Shops list, the service opens in the map's side panel when it can (the page stays on the map).
+                      <div key={service.id} className="contents" onClickCapture={(e) => {
+                        addRecentItem({ kind: 'service', term: service.name, href: `/store/${storeSlug}/service/${service.id}` });
+                        if (hasPin && onShowOnMap?.(storeSlug, `/service/${service.id}`)) e.preventDefault();
+                      }}>
+                        <SearchServiceCard service={service} storeSlug={storeSlug} gate={gate} />
+                      </div>
                     ))}
                   </ServiceCarouselRow>
                 </div>

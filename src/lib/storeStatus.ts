@@ -63,7 +63,7 @@ export function formatClock(hhmm: string): string {
  * The line a person wants about the hours: "Closes 6:00 PM" while open, otherwise when it opens next
  * ("Opens 9:00 AM" later today, "Opens Tuesday 9:00 AM" on a later day). null when no hours are on file.
  */
-export function hoursLine(operating_hours?: OperatingHours | string | null): { open: boolean; text: string } | null {
+export function hoursLine(operating_hours?: OperatingHours | string | null): { open: boolean; text: string; soon?: boolean } | null {
   if (!operating_hours) return null;
   let parsed: OperatingHours;
   try {
@@ -82,8 +82,9 @@ export function hoursLine(operating_hours?: OperatingHours | string | null): { o
     const d = parsed[DAY_KEYS[day]];
     if (!d?.is_open || !d.open || !d.close) continue;
     if (ahead === 0) {
-      if (nowMin >= minutes(d.open) && nowMin <= minutes(d.close)) return { open: true, text: `Closes ${formatClock(d.close)}` };
-      if (nowMin < minutes(d.open)) return { open: false, text: `Opens ${formatClock(d.open)}` };
+      // "soon": the last hour before closing (Google's "Closes soon"), so a customer does not walk over for nothing.
+      if (nowMin >= minutes(d.open) && nowMin <= minutes(d.close)) return { open: true, text: `Closes ${formatClock(d.close)}`, soon: minutes(d.close) - nowMin <= 60 };
+      if (nowMin < minutes(d.open)) return { open: false, text: `Opens ${formatClock(d.open)}`, soon: minutes(d.open) - nowMin <= 60 };
       continue; // already closed for today: look at the next open day
     }
     return { open: false, text: `Opens ${ahead === 1 ? 'tomorrow' : DAY_NAMES[day]} ${formatClock(d.open)}` };

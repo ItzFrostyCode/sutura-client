@@ -21,10 +21,10 @@ export default function ShopsHero() {
               Start free trial <ArrowRight size={18} />
             </Link>
             <a href="#pricing" className="btn-secondary-mobile inline-flex items-center justify-center rounded-[10px] border border-line-strong px-6 text-ink transition-colors hover:bg-sunken">
-              See plans
+              Register with a plan
             </a>
           </div>
-          <p className="mobile-caption mt-4 max-w-md text-ink-muted">Free for 14 days once your documents are verified. Nothing to pay.</p>
+          <p className="mobile-caption mt-4 max-w-md text-ink-muted">Try it free for 14 days, or register with a paid plan. Either way, your shop goes live once your documents are verified.</p>
         </div>
         <OrderRecordMock />
       </ShopsContainer>

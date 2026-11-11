@@ -29,6 +29,10 @@ export function useStoreApplication({ signedInOwner = false }: { readonly signed
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   // The free 14 days on Basic: no payment method or receipt. Chosen here or from the landing page (?trial=1).
   const [trial, setTrial] = useState(false);
+  // Which path the owner took on /for-shops: 'trial' (Start free trial) or 'plan' (Choose Basic/Pro/Premium) keep the
+  // plan step to that path only; 'choose' (a plain sign-up) shows the Free trial / Pay for a plan switch.
+  const [path, setPathState] = useState<'trial' | 'plan' | 'choose'>('choose');
+  const setPath = (next: 'trial' | 'plan') => { setPathState(next); setTrial(next === 'trial'); };
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +50,8 @@ export function useStoreApplication({ signedInOwner = false }: { readonly signed
         // What was clicked on /for-shops (the free trial, or a plan), remembered through the email sign-up.
         const intent = readShopIntent();
         const wanted = list.find((p) => p.slug === intent?.plan);
-        if (intent?.trial) setTrial(true);
+        if (intent?.trial) { setTrial(true); setPathState('trial'); }
+        else if (intent?.plan) setPathState('plan');
         if (intent?.cycle === 'yearly') setBillingCycle('yearly');
         setPlanId((current) => current ?? wanted?.id ?? list[0]?.id ?? null);
       })
@@ -139,7 +144,7 @@ export function useStoreApplication({ signedInOwner = false }: { readonly signed
   return {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
-    trial, setTrial, paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
+    trial, setTrial, path, setPath, paymentMethod, setPaymentMethod, error, setError, submitting, submit, submittedTo,
     submittedStoreId, submittedStoreName,
   };
 }

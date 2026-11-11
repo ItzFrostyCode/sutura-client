@@ -49,7 +49,7 @@ export default function AccountSettingsMenuPage() {
 
       <div className="space-y-4">
         <HubGroup title="My Account">
-          <HubRow href="/account/settings/account" Icon={UserIcon} title="Account" />
+          <HubRow href="/account/settings/account" Icon={UserIcon} title="Profile" subtitle="Name, photo, phone and password" />
           <HubRow
             href={locationHref}
             Icon={MapPin}
@@ -67,9 +67,9 @@ export default function AccountSettingsMenuPage() {
         <button
           type="button"
           onClick={handleLogout}
-          className="card-soft flex min-h-14 w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-danger transition-opacity active:opacity-70"
+          className="card-soft flex min-h-14 w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-danger transition-opacity active:opacity-70 lg:hidden"
         >
-          <LogOut size={16} /> Switch Account / Logout
+          <LogOut size={16} /> Sign Out
         </button>
       </div>
     </div>

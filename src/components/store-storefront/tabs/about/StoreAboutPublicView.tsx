@@ -2,7 +2,6 @@ import React from 'react';
 import { StoreProfile } from '../../types';
 import OpeningHoursCard from './OpeningHoursCard';
 import SocialLinksCard from './SocialLinksCard';
-import DescriptionCard from './DescriptionCard';
 import SpecializationBadges from './SpecializationBadges';
 import PaymentDetailsCard from './PaymentDetailsCard';
 
@@ -21,20 +20,21 @@ export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: St
     store.bank_qr_path
   );
 
+  // A customer sees no empty boxes: Social links only when there are some. The description is already under the shop's
+  // name at the top of the page, so it is not repeated here word for word.
+  const hasLinks = (store.social_links ?? []).some((l) => l?.url);
+
   return (
     <div className="space-y-3.5">
       <SpecializationBadges specializations={store.specializations} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-stretch">
-        <div className="space-y-3.5">
-          <OpeningHoursCard
-            operatingHours={store.operating_hours}
-            isStoreCurrentlyOpen={isStoreCurrentlyOpen}
-            canEdit={false}
-            onOpenHoursModal={() => {}}
-          />
-          <SocialLinksCard links={store.social_links} />
-        </div>
-        <DescriptionCard description={store.description} />
+      <div className={`grid grid-cols-1 gap-3.5 items-stretch ${hasLinks ? 'sm:grid-cols-2' : ''}`}>
+        <OpeningHoursCard
+          operatingHours={store.operating_hours}
+          isStoreCurrentlyOpen={isStoreCurrentlyOpen}
+          canEdit={false}
+          onOpenHoursModal={() => {}}
+        />
+        {hasLinks && <SocialLinksCard links={store.social_links} />}
       </div>
 
       {hasPaymentDetails && (

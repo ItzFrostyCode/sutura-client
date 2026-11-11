@@ -346,22 +346,3 @@ SUTURA/
     ├── src/components/← UI components
     └── .env.example   ← Copy to .env.local
 ```
-
----
-
-## 🔄 Git Workflow
-
-1. Always pull before working:
-   ```bash
-   git pull origin main
-   ```
-2. Work on a feature branch:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. Pull before pushing:
-   ```bash
-   git pull origin main --rebase
-   git push origin feature/your-feature-name
-   ```
-4. `.gitattributes` enforces LF line endings — no CRLF conflicts on fresh clones.

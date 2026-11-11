@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, Star, Clock, MapPin, Pencil, Trash2, Heart } from 'lucide-react';
+import { Store, Clock, MapPin, Pencil, Trash2 } from 'lucide-react';
+import ItemStats from '@/components/shared/ItemStats';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import { getItemDistanceInfo } from '@/lib/customerLocation';
@@ -26,6 +27,7 @@ export default function CatalogItemCard({
   canManage,
   onDelete,
   hideLocation,
+  hideServiceName = false,
   hrefOverride,
   isPaused,
   reviewBadge,
@@ -37,6 +39,8 @@ export default function CatalogItemCard({
   readonly onDelete?: (id: number) => void;
   /** Dashboard grids: every item is this store's own, so location is a given. */
   readonly hideLocation?: boolean;
+  /** Inside a service's own section the service name above every design is repeated noise. */
+  readonly hideServiceName?: boolean;
   /** Dashboard grids link to the item's own management page, not its public storefront page. */
   readonly hrefOverride?: string;
   /** Owner-only: this item is currently paused (is_active === false). */
@@ -90,10 +94,10 @@ export default function CatalogItemCard({
         {(isPaused || reviewBadge) && (
           <div className="absolute top-1.5 left-1.5 z-10 flex flex-col items-start gap-1">
             {isPaused && (
-              <span className="px-2 py-0.5 bg-ink/85 text-white text-[9px] font-bold uppercase tracking-wider">Paused</span>
+              <span className="px-2 py-0.5 bg-ink/85 text-white text-xs font-bold uppercase tracking-wider">Paused</span>
             )}
             {reviewBadge && (
-              <span className="px-2 py-0.5 bg-taupe text-white text-[9px] font-bold uppercase tracking-wider">{reviewBadge}</span>
+              <span className="px-2 py-0.5 bg-taupe text-white text-xs font-bold uppercase tracking-wider">{reviewBadge}</span>
             )}
           </div>
         )}
@@ -103,8 +107,9 @@ export default function CatalogItemCard({
             src={getMediaUrl(displayImage)}
             alt={item.name}
             fill
+            sizes="(min-width: 1024px) 220px, (min-width: 640px) 30vw, 50vw"
             onError={() => setImgError(true)}
-            className={`object-cover object-top transition-transform duration-700 group-hover:scale-105 ${isPaused ? 'grayscale opacity-60' : ''}`}
+            className={`object-contain object-center transition-transform duration-700 group-hover:scale-105 ${isPaused ? 'grayscale opacity-60' : ''}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -114,7 +119,7 @@ export default function CatalogItemCard({
 
         {/* Hover overlay with material badge */}
         <div className="absolute inset-0 bg-surface/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-2 text-center">
-          <span className="text-[10px] font-medium tracking-widest uppercase text-ink border border-ink px-3 py-1.5">
+          <span className="text-xs font-medium tracking-widest uppercase text-ink border border-ink px-3 py-1.5">
             {item.material || 'View Details'}
           </span>
         </div>
@@ -124,17 +129,17 @@ export default function CatalogItemCard({
       <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between gap-1.5">
         <div className="space-y-1">
           {/* Service Link / Label */}
-          {(item.service_name || item.service?.name) && (
+          {!hideServiceName && (item.service_name || item.service?.name) && (
             <span
               title={item.service_name || item.service?.name}
-              className="text-[10px] font-semibold uppercase tracking-wider text-taupe truncate block"
+              className="text-xs font-semibold text-taupe-dark line-clamp-2 break-words"
             >
               {item.service_name || item.service?.name}
             </span>
           )}
 
           {/* 2. Name */}
-          <h3 className="text-[13px] font-semibold text-ink line-clamp-2 leading-snug group-hover:text-taupe transition-colors min-h-[36px]">
+          <h3 className="text-[13px] font-semibold text-ink line-clamp-2 [overflow-wrap:anywhere] leading-snug group-hover:text-taupe transition-colors min-h-[36px]">
             {item.name}
           </h3>
 
@@ -143,28 +148,12 @@ export default function CatalogItemCard({
             {designPriceLabel(item.pricing, item.price)}
           </p>
 
-          {/* 4. Star (Average Rating) | (count) sold | (count) favorites */}
-          <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-            <div className="flex items-center gap-1 shrink-0">
-              <Star size={11} className="fill-amber-400 text-amber-500 shrink-0" />
-              <span className="font-semibold text-ink">
-                {item.reviews_avg_rating && Number(item.reviews_avg_rating) > 0
-                  ? Number(item.reviews_avg_rating).toFixed(1)
-                  : '0.0'}
-              </span>
-            </div>
-            <span className="text-ink-faint">|</span>
-            <span className="truncate">{item.order_count ?? 0} sold</span>
-            <span className="text-ink-faint">|</span>
-            <span className="flex items-center gap-0.5 text-rose-600 shrink-0" title={`${item.saves_count ?? (item as any).favorites_count ?? 0} favorites`}>
-              <Heart size={10} className="fill-rose-500 text-rose-500 shrink-0" />
-              <span>{item.saves_count ?? (item as any).favorites_count ?? 0}</span>
-            </span>
-          </div>
+          {/* 4. Rating, sold and saves — only what is real ("New" until the first rating). */}
+          <ItemStats rating={item.reviews_avg_rating} reviewsCount={item.reviews_count} sold={item.order_count} saves={item.saves_count ?? (item as any).favorites_count} />
 
           {/* 5. Clock {estimated exact count days day-day/monthday - day} */}
           <div
-            className="flex items-center gap-1 text-[11px] text-ink-muted truncate"
+            className="flex items-center gap-1 text-xs text-ink-muted truncate"
             title={turnaroundText}
           >
             <Clock size={11} className="text-taupe shrink-0" />
@@ -176,13 +165,13 @@ export default function CatalogItemCard({
             own dashboard grid, where every item is obviously this store's
             own and repeating its location on every card is just noise. */}
         {!hideLocation && (
-          <div className="flex items-center justify-between gap-1 text-[11px] text-ink-faint pt-1 border-t border-line/50">
+          <div className="flex items-center justify-between gap-1 text-xs text-ink-faint pt-1 border-t border-line/50">
             <div className="flex items-center gap-1 min-w-0 truncate">
               <MapPin size={11} className="text-taupe/70 shrink-0" />
               <span className="truncate">{locationText}</span>
             </div>
             {distInfo ? (
-              <span className="shrink-0 text-ink-muted font-medium text-[10px] pl-1">
+              <span className="shrink-0 text-ink-muted font-medium text-xs pl-1">
                 {distInfo.distanceKm.toFixed(1)} km
               </span>
             ) : null}

@@ -1,5 +1,13 @@
 # ADMIN WORKFLOW
 
+> **⚠ Superseded — read `docs/ADMIN-MODULE.md` first (corrected 2026-11-07).** This file was the
+> original "zero admin UI" scaffold. The admin portal is now **built** (all 11 sections under
+> `sutura-client/src/app/admin`), and the branch-verification / apparel-validation / platform-reports /
+> plan-update / audit-log / system-health / account-suspend endpoints that are marked "does not exist"
+> or "GAP" below are now **implemented**. For the defense use **`docs/ADMIN-MODULE.md`** (capability →
+> objective → in/out-of-scope + panelist Q&A) and **`docs/workflows/OWNER-TO-ADMIN-WORKFLOW.md`**
+> (the section → route map). Treat every "CURRENT / does not exist / GAP" statement below as **stale**.
+
 > **This is a documentation scaffold, not a finalized Admin specification.** It was created to give the System Admin developer a structured starting point — every `CURRENT` claim below is verified directly against the running code (same standard as `CUSTOMER-WORKFLOW.md`/`STAFF-WORKFLOW.md`); every `TARGET` claim is limited strictly to what an already-approved document (`EMERGENCY-WORKFLOW.md`) explicitly decided; everything else is marked `GAP` or left as an open `[TEAM DECISION]` for the System Admin developer to fill in after inspecting the codebase themselves. No business rule not already evidenced or already decided is assumed here. No code was modified in producing this document.
 
 ---

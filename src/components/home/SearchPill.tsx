@@ -1,6 +1,6 @@
 'use client';
 
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Search, Settings2, X } from 'lucide-react';
 import { SEARCH_PLACEHOLDER } from './HeroSearch';
 
@@ -16,18 +16,23 @@ interface SearchPillProps {
   readonly large?: boolean;
   /** A slimmer 48px bar (the search screen). */
   readonly slim?: boolean;
+  /** Replaces the magnifier at the left (the Map puts the SUTURA logo there on a phone or tablet). */
+  readonly leading?: ReactNode;
+  /** The bar was tapped (the Map opens its categories + recent searches panel). */
+  readonly onFocus?: () => void;
 }
 
 /** Rounded search bar with the filter icon inside it, after a thin divider. */
-export default function SearchPill({ value, onChange, onSubmit, onOpenFilter, activeFilterCount, onClear, inputRef, large = false, slim = false }: SearchPillProps) {
+export default function SearchPill({ value, onChange, onSubmit, onOpenFilter, activeFilterCount, onClear, inputRef, large = false, slim = false, leading, onFocus }: SearchPillProps) {
   return (
     <form onSubmit={onSubmit} role="search" className={`flex items-center rounded-full border border-line/60 bg-surface shadow-[0_1px_2px_rgba(45,42,38,0.04),0_8px_24px_rgba(45,42,38,0.06)] transition-colors focus-within:border-line-strong ${slim ? 'h-12 pl-4' : `h-14 pl-5 ${large ? 'sm:h-16 sm:pl-6' : ''}`}`}>
-      <Search size={slim ? 20 : 24} className="shrink-0 text-ink-faint" />
+      {leading ?? <Search size={slim ? 20 : 24} className="shrink-0 text-ink-faint" />}
       <input
         ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
         placeholder={SEARCH_PLACEHOLDER}
         aria-label="Search garments, services or shops"
         className="h-full min-w-0 flex-1 bg-transparent px-3 text-lg text-ink placeholder:text-ink-muted focus:outline-none"

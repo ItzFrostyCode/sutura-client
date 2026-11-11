@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { clearShopIntent, parseShopIntent, saveShopIntentFromUrl } from '@/lib/shopIntent';
-import { EMAIL_TAKEN_MESSAGE, isEmailTaken } from '@/lib/checkEmail';
+import { isEmailTaken } from '@/lib/checkEmail';
+
+/** One email = one role: a customer's email can't also be a shop sign-in (shop accounts live in the dashboard), so say why. */
+const SHOP_EMAIL_TAKEN = 'This email already has a SUTURA account. A shop needs its own email — use your business email.';
 export type SignupStep = 'email' | 'password' | 'inbox';
 
 const KEY = 'sutura.ownerSignup';
@@ -89,7 +92,7 @@ export function useOwnerSignup() {
     setEmailError('');
     const taken = await isEmailTaken(email);
     setChecking(false);
-    if (taken) { setEmailError(EMAIL_TAKEN_MESSAGE); return; }
+    if (taken) { setEmailError(SHOP_EMAIL_TAKEN); return; }
     goTo('password');
   };
 
@@ -108,7 +111,7 @@ export function useOwnerSignup() {
     } catch (err) {
       // Taken between the email step and now (or the check could not run): back to the email step, with the reason.
       const taken = (err as { response?: { status?: number; data?: { errors?: { email?: string[] } } } }).response?.data?.errors?.email;
-      if (taken) { setEmailError(EMAIL_TAKEN_MESSAGE); setStep('email'); return; }
+      if (taken) { setEmailError(SHOP_EMAIL_TAKEN); setStep('email'); return; }
       setError(getErrorMessage(err, 'Could not create your sign-up. Please try again.'));
     } finally {
       setBusy(false);

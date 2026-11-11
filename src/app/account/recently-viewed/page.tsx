@@ -33,13 +33,13 @@ type RecentRow = RecentCatalogItem | RecentService | RecentStore;
 
 type Tab = 'showroom' | 'services' | 'stores';
 const TABS: { key: Tab; label: string; shortLabel: string; type: RecentRow['type'] }[] = [
-  { key: 'showroom', label: 'Designs', shortLabel: 'Designs', type: 'catalog_item' },
+  { key: 'stores', label: 'Shops', shortLabel: 'Shops', type: 'store' },
   { key: 'services', label: 'Services', shortLabel: 'Services', type: 'service' },
-  { key: 'stores', label: 'Stores', shortLabel: 'Stores', type: 'store' },
+  { key: 'showroom', label: 'Designs', shortLabel: 'Designs', type: 'catalog_item' },
 ];
 
 export default function RecentlyViewedPage() {
-  const [tab, setTab] = useState<Tab>('showroom');
+  const [tab, setTab] = useState<Tab>('stores');
   const [rows, setRows] = useState<RecentRow[] | null>(null);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function RecentlyViewedPage() {
       {rows === null && <div className="flex min-h-[50vh] items-center justify-center"><Loader2 size={28} className="animate-spin text-ink-faint" /></div>}
 
       {rows !== null && filtered.length === 0 && (
-        <EmptyState Icon={History} title="Nothing here yet" message="What you look at will be remembered here." action={{ href: '/search', label: 'Go to Search' }} />
+        <EmptyState Icon={History} title="Nothing here yet" message="What you look at will be remembered here." action={{ href: '/search', label: 'Find a Shop' }} />
       )}
 
       {rows !== null && filtered.length > 0 && tab === 'showroom' && (
@@ -67,7 +67,7 @@ export default function RecentlyViewedPage() {
       )}
 
       {rows !== null && filtered.length > 0 && tab === 'services' && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {(filtered as RecentService[]).map((service) => (
             <ServiceMiniCard
               key={service.id}
@@ -86,7 +86,7 @@ export default function RecentlyViewedPage() {
       )}
 
       {rows !== null && filtered.length > 0 && tab === 'stores' && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {(filtered as RecentStore[]).map((store) => <StoreCard key={store.id} store={store} />)}
         </div>
       )}
