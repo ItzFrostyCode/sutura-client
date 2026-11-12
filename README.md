@@ -319,6 +319,28 @@ git add --renormalize .
 git commit -m "chore: normalize line endings"
 ```
 
+### ❌ `git pull` / `git push` problems
+**`fatal: Need to specify how to reconcile divergent branches`**: your branch and GitHub both have new commits. Tell Git to merge them (once per machine), then pull again and fix any conflicts it lists:
+```bash
+git config --global pull.rebase false
+git pull
+```
+
+**`! [rejected] main -> main (fetch first)` / "Updates were rejected because the remote contains work that you do not have locally"**: someone pushed to `main` after your last pull. Pull, fix any conflicts, then push again. Never use `--force`: `main` has no branch protection, so a force-push would erase other people's commits.
+```bash
+git pull
+git push origin main
+```
+
+**`Permission denied` / `403` when pushing**: your GitHub account is not a collaborator on that repo, or the invite expired (invites expire after 7 days). Cloning and pulling still work because both repos are public. Ask the repo owner to re-send the invite (*Settings → Collaborators*) and accept it.
+
+**`Your local changes ... would be overwritten by merge`**: commit or stash your edits first:
+```bash
+git stash
+git pull
+git stash pop
+```
+
 ---
 
 ## 🛠️ Recommended Tools

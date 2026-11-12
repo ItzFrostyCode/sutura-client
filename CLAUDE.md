@@ -31,7 +31,7 @@ Don't add these even if a groupmate, an interview doc, or a "wouldn't it be cool
 - Payroll, attendance-based wage calculation, utility-cost tracking.
 - Tax filing automation, business permit validation.
 - Logistics, courier routing, physical delivery/handover management.
-- **Rental lifecycle management** (available → reserved → rented → returned → inspection → cleaning). This shows up in the interview research for "Fashion Shop" businesses (`Tailorshop,Sublimationshop,FashionShop.txt`), but was never part of SUTURA's approved scope. If it comes up, name it as scope creep.
+- **Rental lifecycle management** (available → reserved → rented → returned → inspection → cleaning). This shows up in the interview research for "Fashion Shop" businesses (`docs/research/Complete Business Tailor Shops.txt`), but was never part of SUTURA's approved scope. If it comes up, name it as scope creep.
 
 ## Order/production tracking — what's REAL vs what's in the research docs
 
@@ -46,7 +46,7 @@ When asked to add/change tracking stages, check the model/migration in `sutura-s
 
 ## What's already built vs. genuinely missing
 
-Check `GroupTasks.md` directly before trusting this — it goes stale fast, but as of the last sync:
+Check `docs/STATUS.md` and the real routes before trusting this — it goes stale fast, but as of the last sync:
 
 The Shop Owner dashboard (`/dashboard`) is **fully built and heavily polished**: Jobs, Appointments, Catalog, Services (Packages is a tab inside Services now, not its own nav item), Payments, Staff, Reports, Branches, Billing. Don't rebuild this area — check the systems below before assuming something's missing rather than just not yet found.
 
@@ -176,13 +176,13 @@ Supersedes the older Services notes above (which name files and actions that no 
 
 ## UX principles — what "right" looks like here
 
-Grounded in real shop-owner/customer interviews (`Tailorshop,Sublimationshop,FashionShop.txt`), not guesses:
+Grounded in real shop-owner/customer interviews (`docs/research/Complete Business Tailor Shops.txt`), not guesses:
 
 - **Mobile-first for customers, desktop-first for the shop floor.** The approved thesis UI design splits this explicitly: Shop Owner/Staff/Admin dashboards are desktop-oriented and data-dense with sidebar nav; the customer-facing side is a mobile-responsive card layout. Don't port a data-dense dashboard pattern onto customer-facing pages, and don't try to cram shop-floor data density into a phone screen.
 - **Minimize clicks — for both sides.** A real shop owner or staff member is running the shop *and* the software between customers/fittings; every extra tap during a fitting is a real cost. Favor single-tap stage updates over multi-step wizards, inline edits over separate edit pages, and batch actions for bulk orders (e.g. a school's uniform batch, a team's jersey set).
-- **Every customer-facing order view should answer 3 questions without extra taps** (these are literally the questions real customers ask, per the interviews): *Ano ang ginatahi?* (what's being made — garment, fabric, size, qty), *Saan na ang order ko?* (what stage, right now), *Magkano na ang nabayad at magkano pa?* (payment status). A visible progress indicator (stepper/progress bar with timestamps) beats a bare status word — see the ASCII dashboard mockups in `Tailorshop,Sublimationshop,FashionShop.txt` §G for the shape customers expect.
+- **Every customer-facing order view should answer 3 questions without extra taps** (these are literally the questions real customers ask, per the interviews): *Ano ang ginatahi?* (what's being made — garment, fabric, size, qty), *Saan na ang order ko?* (what stage, right now), *Magkano na ang nabayad at magkano pa?* (payment status). A visible progress indicator (stepper/progress bar with timestamps) beats a bare status word.
 - **Multi-branch is a first-class dimension, not an afterthought.** A shop owner with multiple branches needs to filter by branch everywhere — jobs, staff, appointments, analytics — not just on a dedicated branches page. `ShopBranch` model and `/branches` route already exist; when adding a new list/dashboard view, check whether it needs a branch filter too.
-- **Staff notifications matter operationally**, not just as a nice-to-have: staff should get an in-app ping the moment they're assigned to a production stage (built recently per `GroupTasks.md` — verify it still fires end-to-end before building more on top of it).
+- **Staff notifications matter operationally**, not just as a nice-to-have: staff should get an in-app ping the moment they're assigned to a production stage (built — verify it still fires end-to-end before building more on top of it).
 
 ## Audit Log nav — mobile view re-check (2026-09-28)
 
@@ -245,14 +245,10 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 
 ## Reference docs in this repo
 
-- **`TASK_DIVISION.md` and `REQUIREMENTS.md`** — team module ownership and the fuller functional spec. **Module 3, "Shop Owner Module," owned by Joshua Wayman A. Arabejo**, is the one that governs work in this repo's `/dashboard/*` (owner-facing) area — check it before assuming something belongs to (or is missing from) this scope rather than Customer (Renalyn)/Staff (Masudog)/Admin (Bongo) module work. Goes stale relative to shipped code fast — trust the actual routes/pages over it when they conflict, but check it first for *whose* scope something is.
-- `BUILD_RULES.md` — an earlier, never-actually-adopted multi-agent build methodology (orchestrator/frontend-dev/backend-dev/qa/adversary roles, `DEFECTS.md`/`ADVERSARIAL_REVIEW.md` ledgers). No such role split or ledger has ever been used in this project's real history — treat as an unused planning artifact, not a live process to follow. Kept for provenance since it's paired with (and references) `REQUIREMENTS.md`.
+- **`docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/STATUS.md`** — scope (with the out-of-scope list), architecture, and what is done or open. Any team member can work in any module (Shop Owner, Customer/Guest, Staff, Admin); there is no per-person module boundary to check before building. Trust the actual routes/pages over these docs when they conflict.
 - `Title&Objectives.md`, `suturathesisapproved.txt` — the full approved capstone proposal: objectives, scope & limitations, RRL/RRS, methodology, use-case/BPMN/ERD narrative descriptions, and per-dashboard UI design intent (Admin, Shop Owner, Staff, Customer).
-- `Tailorshop,Sublimationshop,FashionShop.txt` — the polished, synthesized interview-derived business analysis (workflows, pain points, proposed tracking stages, ASCII dashboard mockups) covering 3 business types. Tailoring-shop findings are directly in scope; sublimation/fashion findings (incl. rental) are market-research context only, not adopted scope. `docs/research/Complete Business Tailor Shops.txt` is the earlier raw-data-extraction draft this was synthesized from — archived there, kept for provenance, not meant to be read as authoritative (it predates and is superseded by the file above).
-- `GroupTasks.md` — current task ownership, checked against real code, not assumptions.
+- `docs/research/Complete Business Tailor Shops.txt` — interview-derived business analysis (workflows, pain points, proposed tracking stages) covering 3 business types. Tailoring-shop findings are directly in scope; sublimation/fashion findings (incl. rental) are market-research context only, not adopted scope. It is the raw extraction; the polished `Tailorshop,Sublimationshop,FashionShop.txt` synthesis is no longer in the repo.
 - `DEADLINE.md` — deployment timeline and the MySQL → Postgres migration plan, including a known bug to fix in `FileUploadController.php` when switching off local disk storage.
-- `ShopOwnerSubscription.md` — actor/entity breakdown for Shop Owner responsibilities.
-- `Activity-Diagram.md`, `BPMN.md`, `Sequence-Diagram.md`, `Usecase-Diagram.md` — supplementary design diagrams (Sequence-Diagram.md has real renderable Mermaid syntax). **Same caveat as the ERD above applies**: these capture the *originally proposed* design approved at proposal defense — treat them as design intent/reference, not as a live spec. Where they conflict with the actual code (e.g. class/entity names, stage counts), the code wins. Don't regenerate features straight from these diagrams without checking `app/Models/` and the routes first.
 
 ## Staff module — thesis alignment (2026-10-01)
 
