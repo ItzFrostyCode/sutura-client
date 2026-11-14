@@ -57,7 +57,7 @@ export function FeaturedSkeleton() {
 /** A "Shops near you" card, as HomeShopCard draws it: cover, logo LEFT of a two-line name + "Verified", then place and rating. */
 export function ShopCardSkeleton() {
   return (
-    <div className="card-soft flex w-[260px] shrink-0 flex-col overflow-hidden" aria-hidden>
+    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[20px] border border-[rgba(235,230,224,0.7)] bg-[var(--card-bg)]" aria-hidden>
       <div className={`h-28 w-full ${block}`} />
       <div className="flex flex-1 flex-col gap-3 p-3.5">
         <div className="flex items-start gap-3">

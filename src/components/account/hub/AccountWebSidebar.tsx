@@ -93,7 +93,7 @@ export default function AccountWebSidebar({ user }: Readonly<AccountWebSidebarPr
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-ink truncate leading-snug">{user.name}</p>
+          <p className="text-[13px] font-semibold text-ink leading-snug truncate" title={user.name}>{user.name}</p>
           <p className="text-xs text-ink-muted truncate font-normal">{user.email}</p>
           <span className="mt-1 inline-block rounded-full bg-sunken px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-taupe">
             Customer

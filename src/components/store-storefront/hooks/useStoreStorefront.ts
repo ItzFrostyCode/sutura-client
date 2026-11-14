@@ -18,6 +18,7 @@ import {
   StorefrontReview,
   StorefrontTab,
 } from '../types';
+import { DEFAULT_THREAD_NEEDLE_SOCIALS } from '../header/StoreSocialLinks';
 
 const emptySubscribe = () => () => {};
 const MAX_POST_IMAGES = 12;
@@ -388,6 +389,14 @@ export function useStoreStorefront(storeId: string) {
     api.get(`/public/stores/${storeId}`)
       .then(res => {
         const fetchedStore = res.data.data;
+        if (fetchedStore) {
+          if (
+            (!fetchedStore.social_links || fetchedStore.social_links.length === 0) &&
+            (fetchedStore.slug === 'thread-needle' || fetchedStore.name?.toLowerCase().includes('thread'))
+          ) {
+            fetchedStore.social_links = DEFAULT_THREAD_NEEDLE_SOCIALS;
+          }
+        }
         setStore(fetchedStore);
         if (fetchedStore?.my_review) {
           setMyReview(fetchedStore.my_review);

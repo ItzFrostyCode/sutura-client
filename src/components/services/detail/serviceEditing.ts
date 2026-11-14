@@ -126,7 +126,7 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
     return 'Select at least one garment this service works on. Not in the list? Add it under “Other garments”.';
   }
   if ((section === 'capabilities' || section === 'work') && d.capabilities.includes('bulk_orders')) {
-    if (!d.min_order_qty || Number(d.min_order_qty) < 1) return 'Enter the minimum order for bulk orders.';
+    if (!d.min_order_qty || Number(d.min_order_qty) < 2) return 'Enter the group order minimum: 2 people or more.';
   }
   if (section === 'spec') {
     const hasTiers = d.tiers.some((t) => t.label.trim() !== '');

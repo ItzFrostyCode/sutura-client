@@ -76,7 +76,7 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
         ) : (
           <>
             <p className="text-2xl font-bold text-taupe leading-none">Price after quotation</p>
-            <p className="text-xs text-ink-muted mt-2 leading-snug">Book an appointment. The shop assesses what you need and sends a quotation, and nothing starts until you accept it in your account.</p>
+            <p className="text-xs text-ink-muted mt-2 leading-snug">Order online. The shop reviews your order and sends the price, and nothing starts until you accept it in My Orders.</p>
           </>
         )}
         {minOrder && <p className="text-sm text-ink-body mt-3">Usual minimum: <span className="font-semibold">{minOrder} pieces</span></p>}

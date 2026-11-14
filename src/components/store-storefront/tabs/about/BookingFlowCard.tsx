@@ -48,6 +48,10 @@ export default function BookingFlowCard({ formData, onChange, setFormData, isEdi
           <span className="text-ink-body font-medium">{formData.repair_requires_downpayment ? 'Yes' : 'No'}</span>
         </div>
         <div className="flex justify-between gap-3">
+          <span className="text-ink-muted text-xs">Rush orders</span>
+          <span className="text-ink-body font-medium">{!formData.rush_available ? 'Not taken' : formData.rush_fee_mode === 'per_piece' ? `+₱${formData.rush_fee_per_piece.toLocaleString()} per piece` : `+${formData.rush_fee_percent}% of the price`}</span>
+        </div>
+        <div className="flex justify-between gap-3">
           <span className="text-ink-muted text-xs">Measuring unit</span>
           <span className="text-ink-body font-medium">{formData.default_measurement_unit === 'cm' ? 'Centimeters' : 'Inches'}</span>
         </div>

@@ -29,7 +29,7 @@ export default function FilterLocation({ returnTo = '/search' }: Readonly<{ retu
           <p className="mobile-body-sm line-clamp-2 font-medium text-ink">{loc?.address || 'Davao City'}</p>
         </div>
         <Link href={`/location?returnTo=${encodeURIComponent(returnTo)}`} className="flex h-11 shrink-0 items-center rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold text-ink hover:border-ink">
-          {rough ? 'Set exact spot' : 'Change'}
+          Change
         </Link>
       </div>
     </section>

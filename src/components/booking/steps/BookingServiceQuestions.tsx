@@ -20,8 +20,10 @@ export default function BookingServiceQuestions({ fields, answers, setAnswers }:
 
   return (
     <div className="space-y-3">
-      {shown.map((f) => {
-        const id = `svc-q-${f.id}`;
+      {shown.map((f, i) => {
+        // Questions saved without an id (older services) still need a stable, unique key and input id.
+        const key = f.id != null && f.id !== '' ? String(f.id) : `q${i}-${f.label}`;
+        const id = `svc-q-${key.replace(/[^\w-]/g, '_')}`;
         const v = answers[f.label] || '';
         const label = (
           <label htmlFor={id} className="mobile-caption font-semibold text-ink-body mb-1 block">
@@ -30,7 +32,7 @@ export default function BookingServiceQuestions({ fields, answers, setAnswers }:
         );
         if (f.type === 'checkbox') {
           return (
-            <label key={f.id} className="flex items-center gap-3 min-h-11 cursor-pointer">
+            <label key={key} className="flex items-center gap-3 min-h-11 cursor-pointer">
               <input id={id} type="checkbox" checked={v === 'Yes'} onChange={e => set(f.label, e.target.checked ? 'Yes' : 'No')} className="w-5 h-5 accent-taupe-dark" />
               <span className="text-base text-ink">{f.label}</span>
             </label>
@@ -38,17 +40,17 @@ export default function BookingServiceQuestions({ fields, answers, setAnswers }:
         }
         if ((f.type === 'select' || f.type === 'radio') && (f.options?.length ?? 0) > 0) {
           return (
-            <div key={f.id}>
+            <div key={key}>
               {label}
               <select id={id} required={f.required} value={v} onChange={e => set(f.label, e.target.value)} className={INPUT}>
                 <option value="">Choose…</option>
-                {f.options!.map(o => <option key={o} value={o}>{o}</option>)}
+                {f.options!.map((o, oi) => <option key={`${oi}-${o}`} value={o}>{o}</option>)}
               </select>
             </div>
           );
         }
         return (
-          <div key={f.id}>
+          <div key={key}>
             {label}
             <input id={id} type={f.type === 'number' ? 'number' : 'text'} inputMode={f.type === 'number' ? 'decimal' : undefined} required={f.required} value={v} onChange={e => set(f.label, e.target.value)} className={INPUT} />
           </div>

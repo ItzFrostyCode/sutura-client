@@ -41,7 +41,7 @@ export default function StoreRatingSummaryCard({ store, reviews, reviewsComplete
             <>
               <Star size={32} className="text-line-strong" aria-hidden />
               <p className="mobile-h4 mt-2 text-ink">No ratings yet</p>
-              <p className="mobile-body-sm mt-1 text-ink-muted">Customers can rate {store.name} after a completed order or appointment.</p>
+              <p className="mobile-body-sm mt-1 text-ink-muted">Be the first to rate and share your experience with {store.name}.</p>
             </>
           )}
 

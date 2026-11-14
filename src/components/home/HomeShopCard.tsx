@@ -24,7 +24,7 @@ export default function HomeShopCard({ store }: { readonly store: StoreResult })
   const status = store.operating_hours ? getStoreStatus(store.operating_hours) : null;
 
   return (
-    <Link href={`/store/${store.slug}`} className="card-soft group flex w-[260px] shrink-0 snap-start flex-col overflow-hidden transition-shadow hover:shadow-md">
+    <Link href={`/store/${store.slug}`} className="group flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] border border-[rgba(235,230,224,0.7)] bg-[var(--card-bg)] transition-colors hover:border-line-strong">
       <div className="relative h-28 shrink-0 overflow-hidden bg-sunken">
         {/* The placeholder sits under the photo, so a photo that fails to load falls back to it too. */}
         <div className="absolute inset-0 flex items-center justify-center text-ink-faint" aria-hidden>

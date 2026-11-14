@@ -30,7 +30,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import ScrollNav from '@/components/shared/ScrollNav';
-import StoreSocialLinks from './StoreSocialLinks';
+import StoreSocialLinks, { DEFAULT_THREAD_NEEDLE_SOCIALS } from './StoreSocialLinks';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -579,16 +579,20 @@ export default function StoreHeroHeader({
                 {Boolean(activeBranch.is_main) ? ' · Main HQ' : ''}
               </span>
             )}
-            {Boolean(store.reviews_count && store.reviews_count > 0) && (
-              <>
-                {activeBranch && <span className="text-ink-faint">·</span>}
-                <span className="inline-flex items-center gap-1 font-semibold text-ink-body">
-                  <Star size={13} className="fill-amber-400 text-amber-500 shrink-0" />
-                  {Number(store.reviews_avg_rating ?? 0).toFixed(1)}
-                  <span className="text-ink-faint font-normal">({store.reviews_count})</span>
-                </span>
-              </>
-            )}
+            {/* Always visible Rating button: jumps directly to the Reviews tab */}
+            {(activeBranch || store.is_premium) && <span className="text-ink-faint">·</span>}
+            <button
+              type="button"
+              onClick={() => setActiveTab('reviews')}
+              className="inline-flex items-center gap-1 font-semibold text-ink-body hover:text-taupe transition-colors cursor-pointer"
+              title="View customer reviews and ratings"
+            >
+              <Star size={13} className="fill-amber-400 text-amber-500 shrink-0" />
+              <span>{store.reviews_count && store.reviews_count > 0 ? Number(store.reviews_avg_rating ?? 0).toFixed(1) : 'New'}</span>
+              <span className="text-ink-faint font-normal">
+                {store.reviews_count && store.reviews_count > 0 ? `(${store.reviews_count})` : '(No reviews yet)'}
+              </span>
+            </button>
 
           </div>}
 
@@ -664,7 +668,7 @@ export default function StoreHeroHeader({
 
           {/* 📝 4. Centered Bio / Description */}
           {store.description && (
-            <p className="mobile-body-sm sm:tablet-body-md text-ink-body text-center max-w-xl mx-auto mt-3 px-2 font-normal leading-relaxed">
+            <p className="mobile-body-sm sm:tablet-body-md text-ink-body text-center max-w-xl mx-auto mt-3 font-normal leading-relaxed">
               {store.description}
             </p>
           )}
@@ -674,8 +678,24 @@ export default function StoreHeroHeader({
             <div className="mt-2 w-full text-left">
               <ShopQuickInfo
                 address={cleanAddress || null}
+                landmark={(activeBranch as { landmark?: string | null } | null)?.landmark || store.landmark || null}
                 hours={(activeBranch as { operating_hours?: OperatingHours | null } | null)?.operating_hours ?? store.operating_hours}
                 phone={(activeBranch as { contact_number?: string | null } | null)?.contact_number || store.phone}
+                coords={
+                  activeBranch?.latitude && activeBranch?.longitude
+                    ? { lat: Number(activeBranch.latitude), lng: Number(activeBranch.longitude) }
+                    : (store.latitude && store.longitude ? { lat: Number(store.latitude), lng: Number(store.longitude) } : null)
+                }
+                storeName={store.name}
+              />
+              <StoreSocialLinks
+                links={
+                  (store.social_links && store.social_links.length > 0)
+                    ? store.social_links
+                    : (store.slug === 'thread-needle' || store.name?.toLowerCase().includes('thread')
+                      ? DEFAULT_THREAD_NEEDLE_SOCIALS
+                      : (store.social_links || []))
+                }
               />
             </div>
           )}
@@ -686,24 +706,37 @@ export default function StoreHeroHeader({
             <div className="mt-3 w-full max-w-md text-left">
               <ShopQuickInfo
                 address={cleanAddress || null}
+                landmark={(activeBranch as { landmark?: string | null } | null)?.landmark || store.landmark || null}
                 hours={(activeBranch as { operating_hours?: OperatingHours | null } | null)?.operating_hours ?? store.operating_hours}
                 phone={(activeBranch as { contact_number?: string | null } | null)?.contact_number || store.phone}
+                coords={
+                  activeBranch?.latitude && activeBranch?.longitude
+                    ? { lat: Number(activeBranch.latitude), lng: Number(activeBranch.longitude) }
+                    : (store.latitude && store.longitude ? { lat: Number(store.latitude), lng: Number(store.longitude) } : null)
+                }
+                storeName={store.name}
+              />
+              <StoreSocialLinks
+                links={
+                  (store.social_links && store.social_links.length > 0)
+                    ? store.social_links
+                    : (store.slug === 'thread-needle' || store.name?.toLowerCase().includes('thread')
+                      ? DEFAULT_THREAD_NEEDLE_SOCIALS
+                      : (store.social_links || []))
+                }
               />
             </div>
           )}
-
-          {/* Social pages on their own line under the details, each clickable (the owner adds them in About). */}
-          {!embedded && <StoreSocialLinks links={store.social_links} />}
         </div>
 
       </div>
 
       {/* 📑 6. Navigation tabs (not pinned: only the Services search stays at the top while scrolling). */}
         {/* Pinned while scrolling a long Services list, so About and Ratings are always one tap away. */}
-        <div ref={tabBarRef} className="mt-4 mb-4 border-b border-line bg-surface">
+        <div ref={tabBarRef} className="mt-4 border-b border-line bg-surface">
           <div className="max-w-[960px] mx-auto w-full px-4 sm:px-8 lg:px-0">
           <ScrollNav className="flex justify-center">
-          <div className="flex items-center justify-center gap-1 sm:gap-6 px-2 min-w-full sm:min-w-0">
+          <div className="flex items-center justify-center gap-1 sm:gap-6 min-w-full sm:min-w-0">
             {tabList.map((tab) => {
               const isActive = activeTab === tab.id;
               return (

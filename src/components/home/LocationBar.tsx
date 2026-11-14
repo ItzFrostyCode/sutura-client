@@ -29,7 +29,7 @@ export default function LocationBar({ location, changeHref, ready = true }: Loca
           <span className="font-medium">{location?.address || 'Davao City'}</span>
         </p>
         <Link href={changeHref} className="flex h-11 shrink-0 items-center whitespace-nowrap text-sm font-semibold text-taupe-dark underline-offset-4 hover:underline">
-          {rough ? <><span className="max-sm:hidden">Set exact spot</span><span className="sm:hidden">Change</span></> : 'Change'}
+          Change
         </Link>
       </div>
     </div>

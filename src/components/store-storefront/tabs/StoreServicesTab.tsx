@@ -158,7 +158,7 @@ export default function StoreServicesTab({
   return (
     <div className="space-y-6">
       {isOwnerViewingOwnStore && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-4">
           <button type="button" onClick={onAddService} className="flex h-11 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white active:opacity-80">
             <Plus size={16} aria-hidden="true" /> Add Service
           </button>
@@ -214,7 +214,7 @@ export default function StoreServicesTab({
               <h2 id="service-list-title" className="mobile-h3 mt-5 font-semibold text-ink">
                 {matched.length > 0 ? `Matches “${serviceSearch.trim()}”` : `No service matches “${serviceSearch.trim()}”`}
               </h2>
-              {matched.length > 0 && <div className="mt-4 grid grid-cols-1 gap-6">{matched.map(row)}</div>}
+              {matched.length > 0 && <div className="mt-2 divide-y divide-line">{matched.map(row)}</div>}
             </>
           )}
 
@@ -224,7 +224,7 @@ export default function StoreServicesTab({
                 {q ? 'Other services from this shop' : activeGroup === 'all' ? 'All services' : group?.label}
               </h2>
               {!q && activeGroup !== 'all' && group?.blurb && <p className="mobile-body-sm text-ink-muted">{group.blurb}</p>}
-              <div className="mt-4 grid grid-cols-1 gap-6">{others.map(row)}</div>
+              <div className="mt-2 divide-y divide-line">{others.map(row)}</div>
             </>
           )}
         </section>

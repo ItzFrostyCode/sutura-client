@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
-import { Wallet, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Wallet, X, Copy, Check, QrCode } from 'lucide-react';
 import EditableCard from './EditableCard';
 import PaymentChannelEdit from './PaymentChannelEdit';
 import PaymentChannelView from './PaymentChannelView';
+import { getMediaUrl } from '@/lib/media';
 
 interface PaymentDetailsData {
   gcash_number?: string | null;
   gcash_account_name?: string | null;
   gcash_qr_path?: string | null;
-  bank_name?: string | null;
-  bank_account_number?: string | null;
-  bank_account_name?: string | null;
-  bank_qr_path?: string | null;
 }
 
 interface PaymentDetailsCardProps {
@@ -24,9 +21,7 @@ interface PaymentDetailsCardProps {
   readonly onCancel?: () => void;
   readonly onSave?: () => void;
   readonly onGcashQrUpload?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  readonly onBankQrUpload?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   readonly onRemoveGcashQr?: () => void;
-  readonly onRemoveBankQr?: () => void;
 }
 
 export default function PaymentDetailsCard({
@@ -39,21 +34,47 @@ export default function PaymentDetailsCard({
   onCancel,
   onSave,
   onGcashQrUpload,
-  onBankQrUpload,
   onRemoveGcashQr,
-  onRemoveBankQr,
 }: PaymentDetailsCardProps) {
-  const [zoomQr, setZoomQr] = useState<{ url: string; title: string } | null>(null);
+  const [zoomQr, setZoomQr] = useState<{
+    url: string;
+    title: string;
+    number?: string | null;
+    name?: string | null;
+  } | null>(null);
 
-  const hasGcash = Boolean(formData.gcash_number || formData.gcash_qr_path);
-  const hasQrPh = Boolean(formData.bank_account_number || formData.bank_qr_path);
-  const hasAny = hasGcash || hasQrPh;
+  const [modalCopied, setModalCopied] = useState(false);
+
+  // Lock background scrolling completely while the QR modal is open
+  useEffect(() => {
+    if (zoomQr) {
+      const prevOverflow = document.body.style.overflow;
+      const prevTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        document.body.style.touchAction = prevTouchAction;
+      };
+    }
+  }, [zoomQr]);
+
+  const handleCopyModalNumber = async () => {
+    if (!zoomQr?.number) return;
+    try {
+      await navigator.clipboard.writeText(zoomQr.number);
+      setModalCopied(true);
+      setTimeout(() => setModalCopied(false), 2000);
+    } catch {
+      // clipboard blocked
+    }
+  };
 
   return (
     <>
       <EditableCard
         icon={<Wallet size={16} className="text-taupe" />}
-        title="Payment Details"
+        title="Payment Method"
         isEditing={isEditing}
         saving={saving}
         canEdit={canEdit}
@@ -63,112 +84,123 @@ export default function PaymentDetailsCard({
         editBody={
           <div className="space-y-4">
             <p className="text-xs text-ink-muted">
-              Where customers send payments (printed on receipts and available on your store profile).
+              Configure your shop GCash payment details for customer payments and deposits.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Left Column: GCash / Maya */}
-              <PaymentChannelEdit
-                title="GCash / Maya"
-                badgeLabel="E-Wallet"
-                badgeColor="blue"
-                dotColor="#0057e0"
-                numberId="gcash-number"
-                numberName="gcash_number"
-                numberLabel="GCash / Maya Number"
-                numberPlaceholder="09XX XXX XXXX"
-                numberValue={formData.gcash_number || ''}
-                nameId="gcash-name"
-                nameName="gcash_account_name"
-                nameValue={formData.gcash_account_name || ''}
-                qrPath={formData.gcash_qr_path}
-                onUpload={onGcashQrUpload}
-                onRemoveQr={onRemoveGcashQr}
-                onChange={onChange}
-              />
-
-              {/* Right Column: QR Ph */}
-              <PaymentChannelEdit
-                title="QR Ph"
-                badgeLabel="All Banks & Wallets"
-                badgeColor="amber"
-                dotColor="#e52427"
-                numberId="qrph-number"
-                numberName="bank_account_number"
-                numberLabel="Account / QR Ph Number"
-                numberPlaceholder="09XX XXX XXXX or Account #"
-                numberValue={formData.bank_account_number || ''}
-                nameId="qrph-name"
-                nameName="bank_account_name"
-                nameValue={formData.bank_account_name || ''}
-                qrPath={formData.bank_qr_path}
-                onUpload={onBankQrUpload}
-                onRemoveQr={onRemoveBankQr}
-                onChange={onChange}
-              />
-            </div>
+            <PaymentChannelEdit
+              title="GCash"
+              badgeLabel="Direct Payment"
+              dotColor="#005CE6"
+              numberId="gcash-number"
+              numberName="gcash_number"
+              numberLabel="Number"
+              numberPlaceholder="09XX XXX XXXX"
+              numberValue={formData.gcash_number || ''}
+              nameId="gcash-name"
+              nameName="gcash_account_name"
+              nameValue={formData.gcash_account_name || ''}
+              qrPath={formData.gcash_qr_path}
+              onUpload={onGcashQrUpload}
+              onRemoveQr={onRemoveGcashQr}
+              onChange={onChange}
+            />
           </div>
         }
       >
-        {hasAny ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PaymentChannelView
-              title="GCash / Maya"
-              badgeLabel="E-Wallet"
-              badgeColor="blue"
-              dotColor="#0057e0"
-              numberLabel="GCash / Maya Number"
-              numberValue={formData.gcash_number}
-              nameValue={formData.gcash_account_name}
-              qrPath={formData.gcash_qr_path}
-              onPreviewQr={(url, title) => setZoomQr({ url, title })}
-            />
-
-            <PaymentChannelView
-              title="QR Ph"
-              badgeLabel="All Banks & Wallets"
-              badgeColor="amber"
-              dotColor="#e52427"
-              numberLabel="Account / QR Ph Number"
-              numberValue={formData.bank_account_number}
-              nameValue={formData.bank_account_name}
-              qrPath={formData.bank_qr_path}
-              onPreviewQr={(url, title) => setZoomQr({ url, title })}
-            />
-          </div>
-        ) : (
-          <p className="mobile-body-sm text-ink-muted">No payment details set yet.</p>
-        )}
+        <PaymentChannelView
+          title="GCash"
+          brandColor="#005CE6"
+          numberLabel="Number"
+          numberValue={formData.gcash_number}
+          nameValue={formData.gcash_account_name}
+          qrPath={formData.gcash_qr_path}
+          onPreviewQr={(url, title, num, name) =>
+            setZoomQr({ url, title, number: num, name })
+          }
+        />
       </EditableCard>
 
-      {/* QR Zoom Preview Modal */}
+      {/* High-Resolution QR Zoom Lightbox Modal */}
       {zoomQr && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`${zoomQr.title} QR Code preview`}
-          className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
-          onClick={() => setZoomQr(null)}
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-none touch-none select-none animate-in fade-in duration-150"
+          onClick={() => {
+            setZoomQr(null);
+            setModalCopied(false);
+          }}
+          onTouchMove={(e) => e.preventDefault()}
         >
           <div
-            className="bg-surface rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-line"
+            className="bg-surface rounded-2xl max-w-[360px] sm:max-w-[400px] w-full p-4 sm:p-4.5 text-center space-y-2.5 shadow-2xl border border-line overflow-hidden flex flex-col shrink-0 animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-line">
-              <h4 className="text-sm font-bold text-ink">{zoomQr.title} QR Code</h4>
+            <div className="flex items-center justify-between pb-2.5 border-b border-line">
+              <div className="flex items-center gap-2">
+                <QrCode size={17} className="text-taupe" />
+                <h4 className="text-sm font-bold text-ink">{zoomQr.title} QR Code</h4>
+              </div>
               <button
                 type="button"
-                onClick={() => setZoomQr(null)}
+                onClick={() => {
+                  setZoomQr(null);
+                  setModalCopied(false);
+                }}
+                aria-label="Close QR zoom"
                 className="w-8 h-8 rounded-full hover:bg-canvas flex items-center justify-center text-ink-muted hover:text-ink cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-line flex items-center justify-center">
+
+            {/* High-Resolution QR Container (Edge-to-edge width, fits viewport without scroll) */}
+            <div className="w-full flex items-center justify-center shrink-1 min-h-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={zoomQr.url} alt={`${zoomQr.title} QR Code`} className="w-64 h-64 object-contain" />
+              <img
+                src={getMediaUrl(zoomQr.url)}
+                alt={`${zoomQr.title} QR Code`}
+                className="w-full max-h-[48vh] sm:max-h-[52vh] object-contain rounded-xl shadow-xs border border-line/60"
+              />
             </div>
-            <p className="text-xs text-ink-muted">Scan using GCash, Maya, or any QR Ph banking app</p>
+
+            {/* Account Info inside Modal */}
+            <div className="space-y-1.5 pt-1 text-left bg-canvas/50 p-2.5 rounded-xl border border-line/60 shrink-0">
+              {zoomQr.name && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-ink-muted">Account Name:</span>
+                  <span className="font-bold text-ink truncate">{zoomQr.name}</span>
+                </div>
+              )}
+              {zoomQr.number && (
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-ink-muted">Number:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-bold text-ink select-all">
+                      {zoomQr.number}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyModalNumber}
+                      className="p-1 hover:bg-sunken rounded text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                      title="Copy number"
+                      aria-label="Copy number"
+                    >
+                      {modalCopied ? (
+                        <Check size={13} className="text-emerald-600" />
+                      ) : (
+                        <Copy size={13} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-ink-muted shrink-0">
+              Scan the QR code or enter / copy the number to pay.
+            </p>
           </div>
         </div>
       )}

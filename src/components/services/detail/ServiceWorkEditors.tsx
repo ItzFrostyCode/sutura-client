@@ -175,9 +175,9 @@ export function ServiceCapabilitiesEditor({ edit }: Readonly<{ edit: DraftEdit }
       </fieldset>
       {chosen.has('bulk_orders') && (
         <div>
-          <label htmlFor="svc-minqty" className={LABEL}>Usual minimum order (pieces) <span className="text-red-600">*</span></label>
-          <input id="svc-minqty" type="number" min="1" value={d.min_order_qty} onChange={e => patch({ min_order_qty: e.target.value })} className={FIELD} />
-          <p className="text-[11px] text-ink-faint mt-1.5">Shown on the service so teams know how many to order. It is a guide, not a rule: the shop can still take a smaller order and is warned when it does. Bulk orders get a team roster.</p>
+          <label htmlFor="svc-minqty" className={LABEL}>Group order minimum (people) <span className="text-red-600">*</span></label>
+          <input id="svc-minqty" type="number" min="2" value={d.min_order_qty} onChange={e => patch({ min_order_qty: e.target.value })} className={FIELD} />
+          <p className="text-[11px] text-ink-faint mt-1.5">Online, a Group order of this service needs at least this many people, each with a name and a size. At the counter it is a guide: you can still take a smaller order and are warned when you do.</p>
         </div>
       )}
     </div>

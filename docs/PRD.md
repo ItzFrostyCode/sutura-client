@@ -56,7 +56,7 @@ Seven rows below are **Excluded by Current Project Decision — Initial Scope** 
 1. Shared `/dashboard` instead of a dedicated staff portal.
 2. Map is **Leaflet / OpenStreetMap**; "Directions" hands off to Google Maps (thesis shows Google Maps API).
 3. No payment gateway: "Process Payment" / "automatic refund" become *record → verify → reconcile manually*.
-4. Database: thesis says MySQL on PlanetScale; code runs MySQL locally and targets **Supabase (Postgres)** for deployment.
+4. Database: thesis says MySQL on PlanetScale; code runs on MySQL.
 5. **Materials are a yes/no check, not a record.** The ordering flow asks "are the materials ready?" (ready / waiting, with a note) and, when the customer brings their own fabric, "is it suitable?" before the price is final. There is no material list, supplier, cost, stock or purchase record. Refunds use an amount the owner enters ("costs already spent that cannot be recovered"). Labor is attributed by stage plus optional planned tailors.
 6. Appointment assignment and job-order production attribution are separate by design (attribution is automatic when staff move a job into a stage).
 7. No `CustomerProfile` table (customers are `User` + `customer` role); feedback is split across `StoreReview`, `CatalogItemReview` and `ServiceReview` instead of one `feedback` table.

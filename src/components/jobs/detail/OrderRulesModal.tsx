@@ -10,7 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import type { Job } from '../jobTypes';
 import { BTN, BTN_PRIMARY } from '@/components/shared/plainForm';
 import {
-  FITTING_OPTIONS, MEASUREMENT_OPTIONS, PAYMENT_OPTIONS, fittingLabel, measurementLabel, paymentPolicyLabel,
+  FITTING_OPTIONS, MEASUREMENT_OPTIONS, MIN_DEPOSIT_PERCENT, PAYMENT_OPTIONS, clampDeposit, fittingLabel, measurementLabel, paymentPolicyLabel,
   type FittingRequirement, type MeasurementRequirement, type PaymentPolicy,
 } from '../requirements';
 
@@ -43,8 +43,8 @@ export default function OrderRulesModal({ job, isOpen, onClose, onChanged }: Rea
   const toast = useToast();
   const [measure, setMeasure] = useState<MeasurementRequirement>(job.measurement_requirement ?? 'shop');
   const [fitting, setFitting] = useState<FittingRequirement>(job.fitting_requirement ?? 'optional');
-  const [payment, setPayment] = useState<PaymentPolicy>(job.payment_policy === 'custom' ? 'deposit' : job.payment_policy ?? 'deposit');
-  const [percent, setPercent] = useState(String(job.payment_policy_percent ?? 50));
+  const [payment, setPayment] = useState<PaymentPolicy>(job.payment_policy === 'full' ? 'full' : 'deposit');
+  const [percent, setPercent] = useState(String(clampDeposit(Number(job.payment_policy_percent ?? 50))));
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -92,12 +92,12 @@ export default function OrderRulesModal({ job, isOpen, onClose, onChanged }: Rea
         {!started && payment === 'deposit' && (
           <div className="sm:max-w-40">
             <label htmlFor="rules_percent" className="mb-1.5 block text-[13px] font-medium text-ink-muted">Deposit (%)</label>
-            <input id="rules_percent" type="number" inputMode="numeric" min={1} max={100} value={percent} onChange={(e) => setPercent(e.target.value)} className="h-12 w-full rounded-lg border border-espresso/[0.12] bg-white px-3 text-base text-ink focus:border-taupe focus:outline-none sm:text-sm" />
+            <input id="rules_percent" type="number" inputMode="numeric" min={MIN_DEPOSIT_PERCENT} max={100} value={percent} onChange={(e) => setPercent(e.target.value)} onBlur={() => setPercent(String(clampDeposit(Number(percent))))} className="h-12 w-full rounded-lg border border-espresso/[0.12] bg-white px-3 text-base text-ink focus:border-taupe focus:outline-none sm:text-sm" />
           </div>
         )}
         <div>
           <label htmlFor="rules_reason" className="mb-1.5 block text-[13px] font-medium text-ink-muted">Reason for the change <span className="text-danger">*</span></label>
-          <input id="rules_reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="e.g. Regular customer, agreed to pay at pick-up" className="h-12 w-full rounded-lg border border-espresso/[0.12] bg-white px-3 text-base text-ink placeholder:text-ink-faint focus:border-taupe focus:outline-none sm:text-sm" />
+          <input id="rules_reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="e.g. Customer asked to pay in full" className="h-12 w-full rounded-lg border border-espresso/[0.12] bg-white px-3 text-base text-ink placeholder:text-ink-faint focus:border-taupe focus:outline-none sm:text-sm" />
           <p className="mt-1 text-xs text-ink-muted">Saved in the audit log.</p>
         </div>
       </form>

@@ -98,7 +98,7 @@ plan / audit endpoints. What genuinely remains:
    where the rules live; have a one-line answer ready.
 4. **Visual admin pass not yet browser-verified.** The portal builds, type-checks, and the admin routes
    return 200 in the API click-through, but the 11 screens haven't been opened in a browser against
-   seeded data yet — see `docs/BROWSER-PASS-CHECKLIST.md`.
+   seeded data yet.
 
 ## Thesis paper vs system
 

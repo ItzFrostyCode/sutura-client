@@ -4,7 +4,7 @@ ope
 
 > **Last checked: 2026-10-29** — the "Current state" and "Corrections" blocks below were re-read from the code that day (routes, models, migrations, scheduler, `git status`). The dated sections after them are a build log of what shipped when; where a log line disagrees with the Corrections block, **the Corrections block and the code win**. Older ✔ marks were re-verified on 2026-10-10 / 10-14. Items marked *(10-02)* are carried over from [`THESIS-CROSS-CHECK.md`](THESIS-CROSS-CHECK.md) and **not** re-verified — confirm in code before relying on them. Update this file when something ships or a claim turns out wrong; don't let it grow into a changelog.
 
-**Dates (confirmed by Joshua 2026-10-20):** the adviser's ordering-flow check for deployment was **Fri 2026-10-23** (already past; its outcome is not recorded here); mock defense 2nd week of November; exam Mon 2026-11-16; **final defense Fri 2026-11-20**. (`CLAUDE.md` / `DEADLINE.md` still say "first week of October 2026"; that is out of date.) Work plan: [`PLAN-design-styles-batches.md`](PLAN-design-styles-batches.md).
+**Dates (confirmed by Joshua 2026-10-20):** the adviser's ordering-flow check for deployment was **Fri 2026-10-23** (already past; its outcome is not recorded here); mock defense 2nd week of November; exam Mon 2026-11-16; **final defense Fri 2026-11-20**. (`CLAUDE.md` still says "first week of October 2026"; that is out of date.) Work plan: [`PLAN-design-styles-batches.md`](PLAN-design-styles-batches.md).
 
 ## Current state (2026-10-29)
 
@@ -210,12 +210,12 @@ One table (`support_tickets`) already fed four surfaces: shop dashboard (`/dashb
 ## Open work, ranked
 
 0. **Before the next demo / defense rehearsal:** ~~run the pending migration~~ ✅ (both migrations already **Ran** on the dev DB, confirmed 2026-11-06); do the browser pass nobody has done yet (list at the end of "Measurement display, team-list cards…" below, plus the phone and tablet checks marked "Not browser-checked" in the log); ~~decide whether to fix the 20 known server-test failures or delete the obsolete ones~~ ✅ (all 20 re-pointed at current behavior, suite **260 / 0**, 1218 assertions — see "Server suite baseline"); make the client branch (already in `main`) and the server branch (2 ahead) land in `main` by PR.
-1. **Deployment proof** — the Postgres **substrate is now run and passing** (2026-11-06): against a local Postgres 16 engine, all 236 migrations + the 444-row snapshot seed + the **full 260-test suite (1218 assertions)** are green, and the run caught + fixed a real `DataSnapshot::import()` bug (snapshot seed failed on Postgres — see `DEPLOYMENT-RAILWAY-SUPABASE.md` "Postgres snapshot-import fix"). Still open: the true **end-to-end** (live Vercel + Hostinger VPS + Supabase + R2 + a live Semaphore SMS test send) — needs the team's real creds/browser. `DEPLOYMENT-RAILWAY-SUPABASE.md` §0 has the exact commands; a seeded `sutura_pg_proof` Postgres DB is left on the local engine for click-through.
-2. **Durable backups** — `app:backup-database` ✔ exists and is scheduled daily; it only survives redeploys if `BACKUP_DISK` points at R2 and the scheduler is running.
+1. **Deployment** — handled by the team leader (MySQL, live Semaphore SMS, SMTP email).
+2. **Durable backups** — `app:backup-database` ✔ exists and is scheduled daily; the scheduler must be running.
 3. **Admin: system-health panel** — ✅ Built: `GET /api/v1/admin/system-health` (DB latency ping, storage check, backup snapshot, queue errors) + `SystemHealthPanel.tsx` on `/admin`.
 4. **Live SMS** — needs a provider account (Semaphore driver included, untested live). Defensible as "third-party dependent" per the Limitations if no provider is available.
 5. **Usability testing (SUS)** — thesis non-functional requirement; nothing recorded yet *(10-02)*.
-6. **Phone-width check** of the newest screens (Statements, Text Messages, Payment Methods, service Requirements box, staff Home) — `LEADER-GO-LIVE-STEPS.md` says these were only type-checked, not seen in a browser *(10-01)*.
+6. **Phone-width check** of the newest screens (Statements, Text Messages, Payment Methods, service Requirements box, staff Home) — only type-checked, not seen in a browser *(10-01)*.
 
 ## Documentation debt (resolved 2026-10-20 — all verified against code and corrected)
 
@@ -235,7 +235,7 @@ All items below have been corrected across the repository:
 
 **Size warning:** the two `CLAUDE.md` files are ~60 KB (client) and ~46 KB (server) and load into every session. Much of that is dated "mobile re-check" and bug-fix logs that no longer guide future work. Suggested (not done): move those logs into `docs/` and keep `CLAUDE.md` to rules + pointers.
 
-**Still stale in both `CLAUDE.md` files (2026-10-29):** the Branch-Manager-writes-services/catalog/packages paragraphs, the Service Packages / combo sections and the "staff create job orders" bullet (see Corrections above); the pointer to `DEADLINE.md`; and "deadline: first week of October 2026". A short "superseded" note was added at the top of each; the full cleanup is the size-warning task above.
+**Still stale in both `CLAUDE.md` files (2026-10-29):** the Branch-Manager-writes-services/catalog/packages paragraphs, the Service Packages / combo sections and the "staff create job orders" bullet (see Corrections above); and "deadline: first week of October 2026". A short "superseded" note was added at the top of each; the full cleanup is the size-warning task above.
 
 ## Job Orders, 2026-10-28 (Joshua + Claude; now committed on the combined branch)
 

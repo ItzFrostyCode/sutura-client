@@ -1,6 +1,7 @@
 import React from 'react';
 import { PLAIN_FIELD, PLAIN_LABEL } from '@/components/shared/plainForm';
 import { peso } from './readinessFormat';
+import { MIN_DEPOSIT_PERCENT, clampDeposit } from '@/components/jobs/requirements';
 
 interface QuotationPaymentSectionProps {
   readonly policy: string;
@@ -15,7 +16,6 @@ interface QuotationPaymentSectionProps {
 export function paymentLine(policy: string, total: number, deposit: number): string {
   if (policy === 'deposit') return `Customer pays ${peso(deposit)} before work starts and ${peso(total - deposit)} at pick-up.`;
   if (policy === 'full') return `Customer pays ${peso(total)} before work starts.`;
-  if (policy === 'none') return `Customer pays ${peso(total)} at pick-up.`;
   return '';
 }
 
@@ -29,12 +29,11 @@ export default function QuotationPaymentSection({ policy, setPolicy, percent, se
           <select value={policy} onChange={(e) => setPolicy(e.target.value)} className={`${PLAIN_FIELD} mt-1.5 font-normal`}>
             <option value="deposit">Deposit first, the rest at pick-up</option>
             <option value="full">Full payment first</option>
-            <option value="none">Pay at pick-up</option>
           </select>
         </label>
         {policy === 'deposit' && (
           <label className={PLAIN_LABEL}>Deposit (%)
-            <input type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(Math.min(100, Math.max(1, Number(e.target.value) || 1)))} className={`${PLAIN_FIELD} mt-1.5 font-normal`} />
+            <input type="number" min={MIN_DEPOSIT_PERCENT} max={100} value={percent} onChange={(e) => setPercent(Number(e.target.value) || 0)} onBlur={() => setPercent(clampDeposit(percent))} className={`${PLAIN_FIELD} mt-1.5 font-normal`} />
           </label>
         )}
       </div>

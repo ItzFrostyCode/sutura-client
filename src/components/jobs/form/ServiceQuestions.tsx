@@ -14,13 +14,15 @@ export default function ServiceQuestions({ fields, values, onChange }: Props) {
   if (fields.length === 0) return null;
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {fields.map((f) => {
+      {fields.map((f, i) => {
         const value = values[f.label] ?? '';
+        // Questions saved without an id (older services) still get a unique key and input id.
+        const fid = f.id ? String(f.id) : `svc-q-${i}`;
         return (
-          <div key={f.id} className={f.type === 'checkbox' || f.type === 'radio' ? 'md:col-span-2' : ''}>
-            <label htmlFor={f.id} className={LABEL}>{f.label} {f.required && <span className="text-danger">*</span>}</label>
+          <div key={fid} className={f.type === 'checkbox' || f.type === 'radio' ? 'md:col-span-2' : ''}>
+            <label htmlFor={fid} className={LABEL}>{f.label} {f.required && <span className="text-danger">*</span>}</label>
             {f.type === 'select' && (
-              <select id={f.id} required={f.required} value={value} onChange={(e) => onChange(f.label, e.target.value)} className={FIELD}>
+              <select id={fid} required={f.required} value={value} onChange={(e) => onChange(f.label, e.target.value)} className={FIELD}>
                 <option value="">Select…</option>
                 {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
@@ -39,7 +41,7 @@ export default function ServiceQuestions({ fields, values, onChange }: Props) {
               </div>
             )}
             {(f.type === 'text' || f.type === 'number') && (
-              <input id={f.id} type={f.type} inputMode={f.type === 'number' ? 'decimal' : undefined} required={f.required} value={value} onChange={(e) => onChange(f.label, e.target.value)} className={FIELD} />
+              <input id={fid} type={f.type} inputMode={f.type === 'number' ? 'decimal' : undefined} required={f.required} value={value} onChange={(e) => onChange(f.label, e.target.value)} className={FIELD} />
             )}
           </div>
         );

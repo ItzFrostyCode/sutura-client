@@ -23,6 +23,9 @@ export default function QuotationBreakdown({ f, pieces }: { readonly f: Quotatio
         <span>Total</span>
         <span className="tabular-nums">{peso(f.total)}</span>
       </div>
+      {/* Like a POS slip: what must be in before production starts, and what is left for pick-up. */}
+      <Line label={f.policy === 'full' ? 'Pay before production (full)' : `Pay before production (${f.percent}%)`} value={peso(f.policy === 'full' ? f.total : f.deposit ?? 0)} />
+      {f.policy !== 'full' && <Line label="Balance at pick-up" value={peso(Math.max(0, f.total - (f.deposit ?? 0)))} />}
     </div>
   );
 }

@@ -105,14 +105,22 @@ export default function ShopDetail({
           <div className="min-w-0 flex-1 pt-1.5">
             <h2 className="line-clamp-2 text-lg font-semibold leading-tight text-ink">{store.name}</h2>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
-              {rated && (
+              {rated ? (
                 <span className="inline-flex items-center gap-1 font-medium text-ink-body">
-                  <Star size={13} className="fill-amber-400 text-amber-500" />{Number(store.reviews_avg_rating).toFixed(1)}
+                  <Star size={13} className="fill-amber-400 text-amber-500" />
+                  <span>{Number(store.reviews_avg_rating).toFixed(1)}</span>
                   <span className="font-normal text-ink-muted">({store.reviews_count})</span>
                 </span>
+              ) : (
+                <span className="text-xs text-ink-muted">No reviews yet</span>
               )}
               <span className={branch.isOpen ? 'font-semibold text-emerald-800' : 'font-semibold text-[#9C4F40]'}>{branch.isOpen ? 'Open now' : 'Closed'}</span>
               {distanceLabel && <span>{distanceLabel}</span>}
+              {branch.branchName && (
+                <span className="rounded bg-taupe/15 px-2 py-0.5 text-xs font-semibold text-taupe">
+                  {branch.branchName}
+                </span>
+              )}
             </p>
           </div>
           <Link href={`/store/${store.slug}`} className="flex min-h-11 shrink-0 items-center px-2 text-sm font-semibold text-taupe-dark hover:text-ink">

@@ -87,7 +87,8 @@ export default function RatingModal({
         <form onSubmit={onSubmit} className="p-4 sm:p-5 space-y-4">
           <div className="text-center">
             <p className="mobile-body-sm text-ink-muted mb-3">
-              How was your experience with <span className="font-semibold text-ink">{subjectName}</span>?
+              How was your experience with
+              <span className="block mt-1 font-semibold text-ink break-words">{subjectName}</span>
             </p>
 
             {/* Stars row */}

@@ -50,7 +50,7 @@ export default function CustomerFinancialLedgerCard({ customer, jobs, canCollect
         <div>
           <span className="text-[11px] uppercase tracking-wider font-semibold text-ink-faint">Remaining Balance</span>
           <div className={`font-serif text-2xl font-bold mt-0.5 tabular-nums ${balance > 0 ? 'text-danger' : 'text-ink'}`}>{peso(balance)}</div>
-          <span className="text-[10px] text-ink-faint">{customer?.is_trusted ? 'Deposit waived (Trusted client)' : 'Outstanding across live orders'}</span>
+          <span className="text-[10px] text-ink-faint">Outstanding across live orders</span>
         </div>
       </div>
 

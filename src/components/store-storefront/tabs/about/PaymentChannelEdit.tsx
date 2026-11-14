@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { QrCode, Upload, Loader2, X } from 'lucide-react';
+import { getMediaUrl } from '@/lib/media';
+
+interface ProviderNameField {
+  readonly id: string;
+  readonly name: string;
+  readonly label: string;
+  readonly placeholder: string;
+  readonly value: string;
+}
 
 interface PaymentChannelEditProps {
   readonly title: string;
   readonly badgeLabel: string;
-  readonly badgeColor: 'blue' | 'amber';
+  readonly badgeClass?: string;
   readonly dotColor: string;
   readonly numberId: string;
   readonly numberName: string;
@@ -14,6 +23,7 @@ interface PaymentChannelEditProps {
   readonly nameId: string;
   readonly nameName: string;
   readonly nameValue: string;
+  readonly providerField?: ProviderNameField;
   readonly qrPath?: string | null;
   readonly onUpload?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   readonly onRemoveQr?: () => void;
@@ -23,7 +33,7 @@ interface PaymentChannelEditProps {
 export default function PaymentChannelEdit({
   title,
   badgeLabel,
-  badgeColor,
+  badgeClass = 'bg-blue-50 text-blue-700 border-blue-200',
   dotColor,
   numberId,
   numberName,
@@ -33,6 +43,7 @@ export default function PaymentChannelEdit({
   nameId,
   nameName,
   nameValue,
+  providerField,
   qrPath,
   onUpload,
   onRemoveQr,
@@ -40,33 +51,28 @@ export default function PaymentChannelEdit({
 }: PaymentChannelEditProps) {
   const [uploading, setUploading] = useState(false);
 
-  const badgeClass =
-    badgeColor === 'blue'
-      ? 'bg-blue-50 text-blue-700 border-blue-200'
-      : 'bg-amber-50 text-amber-700 border-amber-200';
-
   return (
-    <div className="p-3.5 sm:p-4 rounded-xl border border-line bg-canvas/40 space-y-3">
+    <div className="p-4 rounded-xl border border-line bg-canvas/40 space-y-3.5">
       {/* Channel Header */}
       <div className="flex items-center justify-between pb-2 border-b border-line/60">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
-          <span className="text-xs sm:text-sm font-bold text-ink">{title}</span>
+          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+          <span className="text-sm font-bold text-ink">{title}</span>
         </div>
-        <span className={`text-xs sm:text-xs font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
+        <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${badgeClass}`}>
           {badgeLabel}
         </span>
       </div>
 
       {/* Main Channel Layout */}
-      <div className="flex flex-col min-[420px]:flex-row gap-3 sm:gap-4 items-start pt-0.5">
-        {/* Left: QR Placeholder on top, Upload button at the bottom */}
-        <div className="flex flex-col items-center shrink-0 w-full min-[420px]:w-28 sm:w-32">
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl border border-line bg-surface flex items-center justify-center overflow-hidden shadow-xs">
+      <div className="flex flex-col min-[440px]:flex-row gap-4 items-start pt-0.5">
+        {/* Left: QR Upload (explicitly marked optional) */}
+        <div className="flex flex-col items-center shrink-0 w-full min-[440px]:w-32">
+          <div className="relative w-28 h-28 min-[440px]:w-32 min-[440px]:h-32 rounded-xl border border-line bg-surface flex items-center justify-center overflow-hidden shadow-xs">
             {qrPath ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrPath} alt={`${title} QR Code`} className="w-full h-full object-contain p-1.5" />
+                <img src={getMediaUrl(qrPath)} alt={`${title} QR Code`} className="w-full h-full object-contain p-1.5" />
                 {onRemoveQr && (
                   <button
                     type="button"
@@ -80,15 +86,16 @@ export default function PaymentChannelEdit({
               </>
             ) : (
               <div className="flex flex-col items-center justify-center text-ink-faint p-2 text-center select-none">
-                <QrCode size={30} strokeWidth={1.5} />
-                <span className="text-xs mt-1 font-medium text-ink-muted">No QR image</span>
+                <QrCode size={28} strokeWidth={1.5} />
+                <span className="text-[11px] mt-1 font-medium text-ink-muted">No QR image</span>
+                <span className="text-[10px] text-ink-faint">(Optional)</span>
               </div>
             )}
           </div>
 
-          <label className="w-full mt-2 inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs font-semibold text-taupe hover:text-white hover:bg-taupe bg-surface border border-line px-2.5 py-2 rounded-lg transition-colors min-h-[38px]">
+          <label className="w-full mt-2 inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs font-semibold text-taupe hover:text-white hover:bg-taupe bg-surface border border-line px-2.5 py-2 rounded-lg transition-colors min-h-[44px]">
             {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-            <span>{uploading ? 'Uploading...' : 'Upload QR'}</span>
+            <span>{uploading ? 'Uploading...' : (qrPath ? 'Replace QR' : 'Upload QR')}</span>
             <input
               type="file"
               accept="image/*"
@@ -106,10 +113,27 @@ export default function PaymentChannelEdit({
           </label>
         </div>
 
-        {/* Right: Number on top, Name (optional) at the bottom */}
-        <div className="flex-1 min-w-0 space-y-2.5 w-full">
+        {/* Right: Inputs */}
+        <div className="flex-1 min-w-0 space-y-3 w-full">
+          {providerField && (
+            <div className="space-y-1">
+              <label htmlFor={providerField.id} className="block text-xs font-semibold text-ink-body">
+                {providerField.label} <span className="text-ink-faint text-[11px] font-normal">(Optional)</span>
+              </label>
+              <input
+                id={providerField.id}
+                name={providerField.name}
+                type="text"
+                value={providerField.value}
+                onChange={onChange}
+                placeholder={providerField.placeholder}
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-base sm:text-sm focus:outline-none focus:border-taupe min-h-[48px]"
+              />
+            </div>
+          )}
+
           <div className="space-y-1">
-            <label htmlFor={numberId} className="block text-xs font-medium text-ink-body">
+            <label htmlFor={numberId} className="block text-xs font-semibold text-ink-body">
               {numberLabel}
             </label>
             <input
@@ -119,13 +143,13 @@ export default function PaymentChannelEdit({
               value={numberValue}
               onChange={onChange}
               placeholder={numberPlaceholder}
-              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-xs sm:text-sm focus:outline-none focus:border-taupe min-h-[42px]"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-base sm:text-sm font-mono focus:outline-none focus:border-taupe min-h-[48px]"
             />
           </div>
 
           <div className="space-y-1">
-            <label htmlFor={nameId} className="block text-xs font-medium text-ink-body">
-              Account Name <span className="text-ink-faint text-xs">(Optional)</span>
+            <label htmlFor={nameId} className="block text-xs font-semibold text-ink-body">
+              Account Name <span className="text-ink-faint text-[11px] font-normal">(Optional)</span>
             </label>
             <input
               id={nameId}
@@ -134,7 +158,7 @@ export default function PaymentChannelEdit({
               value={nameValue}
               onChange={onChange}
               placeholder="e.g. Juan Dela Cruz"
-              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-xs sm:text-sm focus:outline-none focus:border-taupe min-h-[42px]"
+              className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-ink text-base sm:text-sm focus:outline-none focus:border-taupe min-h-[48px]"
             />
           </div>
         </div>

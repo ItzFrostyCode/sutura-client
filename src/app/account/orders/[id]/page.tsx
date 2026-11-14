@@ -12,6 +12,7 @@ import PayForOrder from '@/components/account/orders/PayForOrder';
 import QuotationApprovalCard from '@/components/shared/QuotationApprovalCard';
 import OrderPaymentsCard from '@/components/account/orders/OrderPaymentsCard';
 import OrderClaimsSection from '@/components/account/orders/OrderClaimsSection';
+import GarmentCheckCard from '@/components/account/orders/GarmentCheckCard';
 
 export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -62,6 +63,8 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
             order={order}
             before={order.quotation_flow ? (
               <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
+            ) : order.garment_check ? (
+              <GarmentCheckCard orderId={Number(id)} check={order.garment_check} dropOff={order.drop_off} onAnswered={load} />
             ) : null}
             // The side column: Pay for this order (while there is something to pay), then Your Payments (each payment and
             // the shop's decision), then Report a problem on a completed order, then the related appointments.

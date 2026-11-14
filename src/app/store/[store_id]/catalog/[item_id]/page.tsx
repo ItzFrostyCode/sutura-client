@@ -67,7 +67,6 @@ export default function PublicProductDetailPage({
     gate,
     handleBackClick,
     handleReportClick,
-    buildBookHref,
   } = useCatalogItemDetail(storeId, itemId);
 
   if (loading) {
@@ -86,7 +85,9 @@ export default function PublicProductDetailPage({
     );
   }
 
-  const bookHref = gate(buildBookHref());
+  // "Order online" opens this design's service with the design already picked as the style to follow.
+  const designServiceId = item.service?.id ?? item.service_id;
+  const orderHref = designServiceId ? gate(`/store/${storeId}/order?service_id=${designServiceId}&design_id=${item.id}`) : null;
 
   return (
     <div ref={pageRef} className="min-h-full flex flex-col bg-canvas">
@@ -178,8 +179,8 @@ export default function PublicProductDetailPage({
               onChange={setQuantity}
             />
 
-            {/* Book an Appointment (desktop/tablet inline button) */}
-            <CatalogDesktopActionButtons bookHref={bookHref} />
+            {/* Order online (desktop/tablet inline button) */}
+            <CatalogDesktopActionButtons orderHref={orderHref} />
           </div>
           }
         />
@@ -231,7 +232,7 @@ export default function PublicProductDetailPage({
       </main>
 
       {/* Mobile sticky bottom action bar */}
-      <CatalogBottomActionBar bookHref={bookHref} />
+      <CatalogBottomActionBar orderHref={orderHref} />
     </div>
   );
 }

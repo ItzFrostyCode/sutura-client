@@ -114,9 +114,32 @@ export default function SearchMapView() {
     }
   }, [s.searchParams, s.stores]);
 
+  // Deep link for Directions mode: auto-open directions if ?directions=1 and store are specified
+  const handledDirectionsParamRef = useRef<string | null>(null);
+  useEffect(() => {
+    const isDirections = s.searchParams.get('directions') === '1';
+    const targetStore = s.searchParams.get('store') || s.searchParams.get('shop');
+    if (isDirections && targetStore && s.stores.length > 0 && handledDirectionsParamRef.current !== targetStore) {
+      const st = s.stores.find((item) => item.slug === targetStore);
+      if (st && st.branches && st.branches.length > 0) {
+        const br = st.branches.find((b) => b.is_main) ?? st.branches[0];
+        if (br && br.latitude != null && br.longitude != null) {
+          handledDirectionsParamRef.current = targetStore;
+          showOnMap(targetStore);
+          void nav.start({ lat: Number(br.latitude), lng: Number(br.longitude) }, targetStore, st.name);
+        }
+      }
+    }
+  }, [s.searchParams, s.stores]);
+
   const getDirections = (branch: { latitude: number; longitude: number; storeSlug: string }, name: string) => {
     void nav.start({ lat: branch.latitude, lng: branch.longitude }, branch.storeSlug, name);
-    // Directions mode: the sheet gives way to the route card and the summary.
+    const url = new URL(window.location.href);
+    url.searchParams.set('store', branch.storeSlug);
+    url.searchParams.set('directions', '1');
+    const next = `${url.pathname}${url.search}`;
+    window.history.replaceState(window.history.state, '', next);
+    rememberSearch(next);
   };
   const locate = () => {
     enableCompass();
@@ -129,7 +152,16 @@ export default function SearchMapView() {
   };
 
   // Back out of Directions: the route goes and the shop's sheet is back where it was.
-  const leaveRoute = () => { nav.cancel(); sheet.setSnap('half'); };
+  const leaveRoute = () => {
+    nav.cancel();
+    sheet.setSnap('half');
+    handledDirectionsParamRef.current = null;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('directions');
+    const next = `${url.pathname}${url.search}`;
+    window.history.replaceState(window.history.state, '', next);
+    rememberSearch(next);
+  };
 
   const handleBack = () => {
     setShopPath(null);
@@ -205,18 +237,29 @@ export default function SearchMapView() {
   // Where the person is — the List / Map view and the open shop — is kept in the address (next to the search words and
   // filters already there) and remembered for the session, so tapping Discover / Track / Profile by mistake and then
   // Map again brings them back to exactly this (lib/lastSearch, used by the Map tab).
-  const openSlug = map.selected?.storeSlug ?? null;
+  const openSlug = map.selected?.storeSlug ?? nav.route?.slug ?? null;
   useEffect(() => {
     const url = new URL(window.location.href);
     if (view === 'list') url.searchParams.set('view', 'list'); else url.searchParams.delete('view');
     const pending = url.searchParams.get('store') ?? url.searchParams.get('shop');
-    if (openSlug) { url.searchParams.set('store', openSlug); handledStoreParamRef.current = openSlug; }
-    // A shop in the address that has not been opened yet (the list is still loading) is kept, not wiped.
-    else if (!pending || handledStoreParamRef.current === pending) { url.searchParams.delete('store'); url.searchParams.delete('shop'); }
+    if (openSlug) {
+      url.searchParams.set('store', openSlug);
+      handledStoreParamRef.current = openSlug;
+    } else if (!pending || handledStoreParamRef.current === pending) {
+      url.searchParams.delete('store');
+      url.searchParams.delete('shop');
+    }
+    if (nav.route) {
+      url.searchParams.set('directions', '1');
+    } else {
+      url.searchParams.delete('directions');
+    }
     const next = `${url.pathname}${url.search}`;
-    if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(window.history.state, '', next);
+    if (next !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(window.history.state, '', next);
+    }
     rememberSearch(next);
-  }, [view, openSlug, s.searchParams]);
+  }, [view, openSlug, nav.route, s.searchParams]);
 
   // A shop picked in the list: back to the map, with its card open there.
   const pickFromList = (slug: string, path?: string) => {
@@ -250,6 +293,7 @@ export default function SearchMapView() {
       <div className={`absolute inset-0 z-0 ${mapBlocked ? 'pointer-events-none select-none' : ''}`}>
         <DiscoveryMap
           fullScreen
+          cluster
           branches={map.pins}
           userLocation={nav.position ?? s.userCoords}
           userCourse={nav.course}

@@ -12,10 +12,9 @@ interface ServiceRecommendationsSectionProps {
   gate: (href: string) => string;
 }
 
-// Mirrors CatalogRecommendationsSection.tsx's "From The Same Shop" bordered
-// card + "You May Also Like" divider/grid pattern, reusing SearchServiceCard
-// (the app's one canonical service tile) the same way Catalog reuses its own
-// canonical CatalogItemCard.
+// The same layout as a design's page (CatalogRecommendationsSection.tsx): both lists are grids that grow downward,
+// never a sideways rail. From the Same Shop: 2 columns on a phone, 5 from 600px. You May Also Like: 2 columns on a
+// phone, 3 on a tablet, 6 on a desktop, as many rows as there are services. Cards are `fluid` so they fill their cell.
 export default function ServiceRecommendationsSection({
   fromSameShop,
   moreLikeThis,
@@ -35,9 +34,9 @@ export default function ServiceRecommendationsSection({
               See All &gt;
             </Link>
           </div>
-          <div className="p-3 flex gap-2.5 overflow-x-auto hide-scrollbar">
-            {fromSameShop.slice(0, 8).map((svc) => (
-              <SearchServiceCard key={svc.id} service={svc} storeSlug={storeId} gate={gate} />
+          <div className="p-3 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            {fromSameShop.slice(0, 5).map((svc) => (
+              <SearchServiceCard key={svc.id} service={svc} storeSlug={storeId} gate={gate} fluid />
             ))}
           </div>
         </div>
@@ -53,9 +52,9 @@ export default function ServiceRecommendationsSection({
             <div className="flex-1 h-px bg-line" />
           </div>
 
-          <div className="flex gap-2.5 overflow-x-auto hide-scrollbar">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
             {moreLikeThis.map((svc) => (
-              <SearchServiceCard key={svc.id} service={svc} storeSlug={svc.store?.slug ?? storeId} gate={gate} />
+              <SearchServiceCard key={svc.id} service={svc} storeSlug={svc.store?.slug ?? storeId} gate={gate} fluid />
             ))}
           </div>
         </div>

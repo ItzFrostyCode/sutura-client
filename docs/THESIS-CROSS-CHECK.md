@@ -114,19 +114,19 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 
 | Requirement | Status |
 |---|---|
-| Reliability / uptime | 🟡 not measurable yet — deployment still to be proven (see `DEPLOYMENT-RAILWAY-SUPABASE.md`) |
-| **Automated database backup every 24 hours** | 🟡 `app:backup-database` runs daily, **but writes to the server's local disk**, which is wiped on every Railway redeploy; it also needs the scheduler running |
+| Reliability / uptime | 🟡 not measurable yet — deployment still to be proven (deployment handled by the team leader) |
+| **Automated database backup every 24 hours** | 🟡 `app:backup-database` runs daily, **but writes to the server's local disk**, which a redeploy can wipe; it also needs the scheduler running |
 | Security of customer measurements | ✅ shop-scoped; API audit found no cross-shop or cross-customer access (`API-SECURITY-AUDIT.md`) |
 | Usability for non-technical staff | 🟡 usability scoring (SUS) belongs to the testing phase; nothing recorded yet |
 | Scalability / multi-tenant | ✅ every record is shop-scoped, branch-scoped for managers and staff |
-| Cloud deployment | 🟡 planned Vercel + Railway + Supabase; dry run on Postgres still pending |
+| Cloud deployment | 🟡 handled by the team leader |
 
 ## 7. Intentional differences (be ready to explain)
 
 1. **Shared dashboard, not a separate staff portal** — a standalone staff portal was deliberately removed; staff and owners share `/dashboard`, gated by role.
 2. **Map = Leaflet / OpenStreetMap**, with directions handed off to Google Maps.
 3. **No payment gateway** — in line with the stated limitation; "Process Payment" and "automatic refund" in the diagrams become *record, verify and reconcile manually*.
-4. **Database:** thesis says MySQL on PlanetScale; the code runs on MySQL locally and targets **Supabase (Postgres)** for deployment (`DEADLINE.md`).
+4. **Database:** thesis says MySQL on PlanetScale; the code runs on MySQL.
 5. **Materials allocation / inventory** — excluded by the thesis scope; only labor (stage) attribution exists.
 6. **Appointment-level and job-level assignment are separate** by design; job attribution happens automatically when staff move a job into a stage.
 
@@ -134,7 +134,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 
 | Gap | Now |
 |---|---|
-| Backups lost on redeploy | `app:backup-database` uploads to the `BACKUP_DISK` disk (e.g. Cloudflare R2) and removes the local copy; the scheduler must be running (cron / `schedule:work`) |
+| Backups lost on redeploy | `app:backup-database` writes to `storage/app/backups` (must be on persistent storage); the scheduler must be running (cron / `schedule:work`) |
 | Appointment confirmation only in-app | Email too, for confirmed / rejected / rescheduled / cancelled (walk-ins excluded) |
 | "Forecasts" wording | Removed from the Premium "Advanced dashboard" text |
 | Reviews not verified | A shop can be reviewed only after a completed order or appointment with it |
@@ -146,7 +146,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 
 | # | Gap | Why it matters | Effort |
 |---|---|---|---|
-| 1 | Backups to durable storage (R2 / S3) | Objective-level NFR; right now a redeploy loses them | 1–2 h |
+| 1 | Backups kept on persistent storage | Objective-level NFR; right now a redeploy loses them | 1–2 h |
 | 2 | Appointment confirmation / reschedule / rejection by **email** (stage changes already email) | Scope: "notifications when a client books" and BPMN confirmations | 1 h |
 | 3 | Remove the word **"forecasts"** from the Premium "Advanced dashboard" text | Contradicts the Limitations | 5 min |
 | 4 | Reviews only after a completed order / appointment | Thesis calls them "verified customer reviews" | 1 h |

@@ -183,7 +183,7 @@ objective.
   and `/admin/branches` returned 200 against the seeded Postgres DB).
 - **Built but not yet browser-verified:** the visual in-browser pass over the 11 admin screens
   (open `src/app/admin` routes in a browser against the seeded DB). "Builds & type-checks clean" ≠
-  "visually verified" — that pass is still open; see `docs/BROWSER-PASS-CHECKLIST.md`.
+  "visually verified" — that pass is still open.
 
 ## 8. Where to look
 

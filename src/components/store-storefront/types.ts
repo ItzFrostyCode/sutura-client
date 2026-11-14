@@ -66,6 +66,8 @@ export interface PublicService {
   garment_types?: string[] | null;
   /** Tasks it offers (capability slugs of its service group). */
   capabilities?: string[] | null;
+  /** Columns asked for every person on a group order (Jersey Number, Position…), set by the shop on the service. */
+  roster_fields?: { id?: string; label: string; type?: string; required?: boolean }[] | null;
   custom_fields?: {
     name: string;
     label: string;
@@ -128,6 +130,9 @@ export interface StoreProfile {
   address: string;
   city: string;
   province: string;
+  landmark?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
   phone: string;
   email: string;
   logo_path: string;

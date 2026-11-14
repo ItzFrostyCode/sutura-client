@@ -16,8 +16,8 @@
 | --- | --- |
 | Backend | Laravel **12.69.2**, Sanctum 4.3.3, PHP `^8.2` (`composer.json`) — `README.md` says "Laravel 13 / PHP 8.3+": that is wrong |
 | Frontend | Next.js `^16.3.5` (App Router), React `^19.3`, TypeScript, Tailwind `^4.3`, Zustand `^5`, Axios `^1.20`, Leaflet (maps), lucide-react |
-| Dev DB | Local **MySQL 8.4** (Homebrew). Never point local dev at Supabase — Sydney region, 3–5 s per request |
-| Deploy target | Vercel (client) + Railway (API) + Supabase **Postgres** + Cloudflare R2 (files, backups). Steps: `DEPLOYMENT-RAILWAY-SUPABASE.md`, `LEADER-GO-LIVE-STEPS.md` |
+| Dev DB | Local **MySQL 8.4** (Homebrew) |
+| Deploy | Handled by the team leader. Production DB is MySQL; SMS via Semaphore (live), email via SMTP |
 
 Next.js here has breaking changes vs. older versions — read `node_modules/next/dist/docs/` before writing framework code (see `sutura-client/AGENTS.md`).
 
@@ -93,7 +93,7 @@ A schema doc rots on every migration, so there isn't one. Read the source of tru
 - **Garments vs people**: handover and the completion gate count garments (`JobOrder::garmentCount()`), not wearers; `people_count` is wearers, `pieces_count` is garments.
 - **A design has no price of its own** — it costs its service's price (`catalog_items.pricing_mode` null/`same`), the service's price + `extra_charge` (`extra`), or a quotation (`quote`). Read `pricing` from the API (`App\Support\DesignPricing`, client `lib/designPricing.ts`); never show or charge `catalog_items.price` for a design that has a service (that column is only for a design with no service). Service prices are starting prices; the confirmed price is the order's quotation.
 - **Garments are 2 levels, services are 4** — Garment Category → Garment (`CanonicalTaxonomy::GARMENT_CATEGORIES` / `GARMENTS`), and Custom Tailoring & Garment Making / Uniform, Jersey & Teamwear / Alterations & Repairs / Garment Customization & Embroidery (`SERVICE_GROUPS`, each with `capabilities`). No gender or top/bottom level. An old 4-level slug still in the data resolves through `LEGACY_GARMENT_SLUGS` — match garments with `CatalogItem::scopeOfGarment(s)`, never `garment_type = ?`, and keep `knownGarmentSlugs()` old + new (an unknown slug makes the design a custom name waiting for admin approval). A service's order types (`service_types`) are worked out on save (`Service::deriveOrderTypes`), not ticked. Search goes through `App\Support\SearchIntent`. The client copy `src/lib/garmentTaxonomy.ts` is generated: `node scripts/gen-garment-taxonomy.mjs`.
-- **Postgres portability**: search with `whereRaw('LOWER(col) LIKE ?', …)`; URL/path columns are `TEXT`, not `string()`; use the single `UPLOAD_DISK` constant, never bare `Storage::url()`.
+- **DB portability** (the code also runs on Postgres/SQLite; keep it that way): search with `whereRaw('LOWER(col) LIKE ?', …)`; URL/path columns are `TEXT`, not `string()`; use the single `UPLOAD_DISK` constant, never bare `Storage::url()`.
 - **Fillable**: a column missing from the model's fillable list silently fails to save (shipped 3×).
 - **`Cache::remember`**: store plain arrays/scalars, never Collections or models.
 - **Link fields** go through `App\Rules\SafeLink` (server) and `safeHref()` (client).
@@ -102,7 +102,7 @@ A schema doc rots on every migration, so there isn't one. Read the source of tru
 
 | Command | When |
 | --- | --- |
-| `app:backup-database` | daily (uploads to `BACKUP_DISK`, e.g. R2) |
+| `app:backup-database` | daily (to `BACKUP_DISK`, default `storage/app/backups`) |
 | `app:expire-subscriptions`, `app:remind-expiring-subscriptions` | daily |
 | `app:notify-overdue-jobs`, `app:notify-unclaimed-pickups`, `app:notify-jobs-on-hold` | daily 08:00 |
 | `app:remind-upcoming-appointments` | hourly |

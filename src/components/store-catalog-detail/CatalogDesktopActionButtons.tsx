@@ -2,25 +2,17 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Calendar } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 
-interface CatalogDesktopActionButtonsProps {
-  bookHref: string;
-}
-
-export default function CatalogDesktopActionButtons({
-  bookHref,
-}: CatalogDesktopActionButtonsProps) {
+/** 600px+: "Order online" for this design, inline. Hidden for a design with no service to order. */
+export default function CatalogDesktopActionButtons({ orderHref }: Readonly<{ orderHref: string | null }>) {
+  if (!orderHref) return null;
   return (
-    <div className="hidden min-[600px]:flex flex-col gap-2.5 pt-4">
-      <Link
-        href={bookHref}
-        className="w-full h-12 flex items-center justify-center gap-2 bg-taupe hover:bg-ink text-white text-sm font-semibold transition-colors text-center px-4 rounded-xl cursor-pointer shadow-xs"
-      >
-        <Calendar size={18} className="shrink-0" />
-        Book Appointment
+    <div className="hidden pt-4 min-[600px]:flex">
+      <Link href={orderHref} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 text-base font-semibold text-white active:opacity-90">
+        <ShoppingBag size={18} className="shrink-0" aria-hidden />
+        Order online
       </Link>
     </div>
   );
 }
-

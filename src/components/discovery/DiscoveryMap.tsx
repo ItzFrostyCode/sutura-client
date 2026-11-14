@@ -11,6 +11,7 @@ import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import YouMarker from './YouMarker';
 import DistrictHighlight from './DistrictHighlight';
 import { focusOn } from '@/lib/mapFocus';
+import ClusteredPins from './ClusteredPins';
 
 // Generic fallback pin — same inline store SVG used when a store has no
 // logo on file, kept visually close to BranchesMap.tsx's own pin so it
@@ -29,6 +30,7 @@ export function buildStorePinIcon(
   badgeTextOrIsMain?: string | boolean | null,
   isOpen?: boolean,
   selected = false,
+  bounce = false,
 ): L.DivIcon {
   const ringColor = selected ? '#9A8073' : '#2D2A26';
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
@@ -49,6 +51,7 @@ export function buildStorePinIcon(
     : '';
 
   const html = `
+    <div class="${bounce ? 'pin-bounce' : ''}" style="position:relative;width:40px;height:52px;">
     <div style="position:relative;width:40px;height:52px;transform-origin:50% 100%;transform:scale(${selected ? 1.15 : 1});">
       <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};box-shadow:0 2px 6px rgba(45,42,38,0.45);background:#fff;">
         ${logoHtml}
@@ -59,6 +62,7 @@ export function buildStorePinIcon(
       <span style="position:absolute;bottom:10px;right:-2px;width:12px;height:12px;border-radius:50%;background:${statusColor};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);z-index:10;" title="${isOpen ? 'Online (Open now)' : 'Offline (Closed now)'}"></span>
 
       ${badgeHtml}
+    </div>
     </div>
   `;
 
@@ -80,13 +84,14 @@ export const userLocationIcon = L.divIcon({
 });
 
 // Leaflet re-creates a pin whenever its icon object changes, and the live navigation re-renders the map about once a second,
-// so an icon is built once per look (logo, badge, open, selected) and reused.
+// so an icon is built once per look (logo, badge, open, selected) and reused. Because it is reused, the selected pin's
+// one-shot hop (pin-bounce in globals.css) plays only when it becomes selected, not on every re-render.
 const pinIcons = new Map<string, L.DivIcon>();
 function pinIcon(logoPath: string | null, badgeText?: string | boolean | null, isOpen?: boolean, selected = false): L.DivIcon {
   const key = `${logoPath ?? ''}|${badgeText ?? ''}|${isOpen}|${selected}`;
   let icon = pinIcons.get(key);
   if (!icon) {
-    icon = buildStorePinIcon(logoPath, badgeText, isOpen, selected);
+    icon = buildStorePinIcon(logoPath, badgeText, isOpen, selected, selected);
     pinIcons.set(key, icon);
   }
   return icon;
@@ -290,6 +295,8 @@ interface DiscoveryMapProps {
   readonly showCity?: boolean;
   /** Frame the whole city now (the person picked "All Davao"); the pin fit pauses meanwhile. */
   readonly fitCity?: boolean;
+  /** Merge nearby pins into numbered bubbles that split again when zooming in (needs `onSelectBranch`). */
+  readonly cluster?: boolean;
 }
 
 export default function DiscoveryMap({
@@ -313,6 +320,7 @@ export default function DiscoveryMap({
   highlightDistrict = null,
   showCity = false,
   fitCity = false,
+  cluster = false,
 }: DiscoveryMapProps) {
   const gate = useGuestGatedHref();
   const hasNoResults = branches.length === 0 && !userLocation && !selectable;
@@ -369,7 +377,14 @@ export default function DiscoveryMap({
         <FollowUser position={followPosition ?? null} pad={fitPadding} onUserPan={onUserPan} />
         {route && route.length > 1 && <Polyline positions={route} pathOptions={{ color: '#6B4E3E', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} />}
         {userLocation && <YouMarker position={userLocation} course={userCourse} />}
-        {branches.map((b) => {
+        {cluster && onSelectBranch && (
+          <ClusteredPins
+            branches={branches}
+            iconFor={(b) => pinIcon(b.storeLogoPath, b.badgeText ?? null, b.isOpen, Boolean(b.isSelected))}
+            onSelect={onSelectBranch}
+          />
+        )}
+        {!(cluster && onSelectBranch) && branches.map((b) => {
           const key = `${b.storeSlug}-${b.branchId}`;
           return (
             <Marker

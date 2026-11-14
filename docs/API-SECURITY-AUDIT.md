@@ -24,7 +24,7 @@ Checked against the ten API-security mistake categories (Frontend, Access Contro
 1. `APP_ENV=production`, `APP_DEBUG=false`, `FRONTEND_URL=<the real site>`, HTTPS only.
 2. Do **not** run the demo seeders — the guard skips them in production, but create the real admin account deliberately and give it a strong password.
 3. `php artisan config:cache && php artisan route:cache`.
-4. Move uploads off the local public disk (planned Cloudflare R2). Receipts are served by unguessable random file names, but anyone holding the link can open it.
+4. Uploads stay on the server disk. Receipts are served by unguessable random file names, but anyone holding the link can open it.
 5. Run the two dependency fixes below on a machine with network access.
 
 ## Not fixed here (needs network, or a decision)

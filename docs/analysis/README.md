@@ -4,9 +4,8 @@ This folder holds the business analysis of how SUTURA really works. It covers se
 
 | Folder / file | What goes in it |
 | --- | --- |
-| `research/` | Your own research: shop-owner interviews, notes from shop visits, adviser and panel feedback, findings on service vs. design vs. price. The main set is in `../Sutura_Research Analysis/`. |
-| `codebase/` | What the current code actually does, explained in plain words (no code). The audit report is saved here. |
-| `AUDIT-PROMPT.md` | The prompt for the full audit, to run once `research/` has your material in it. |
+| `research/` | Your own research: shop-owner interviews, notes from shop visits, adviser and panel feedback, findings on service vs. design vs. price. |
+| `codebase/` | What the current code actually does, explained in plain words (no code). |
 
 ## Rules for this folder
 
@@ -18,8 +17,6 @@ This folder holds the business analysis of how SUTURA really works. It covers se
 
 These belong to the same subject. They were left where they are, and can be moved here later:
 
-- `../service to catalog design.md` — Service → Catalog Design relationship
-- `../service to catalog achievable task.md` — task roadmap for the same
 - `../architecture/` — cross-module data flow, source-of-truth matrix
 - `../workflows/` — owner → customer / staff / admin workflows
 - `../research/Complete Business Tailor Shops.txt` — the early raw interview extraction

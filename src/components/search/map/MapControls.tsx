@@ -66,8 +66,34 @@ export default function MapControls({
       className="absolute bottom-[var(--controls-bottom)] z-30 flex flex-col gap-2 lg:bottom-[var(--bottom-nav-space)] lg:right-4"
       style={style}
     >
-      <button type="button" onClick={onLocate} disabled={locating} aria-label="Go to my location" className={circleBtn}>
-        <LocateFixed size={22} className={locating ? 'animate-pulse' : ''} />
+      <button
+        type="button"
+        onClick={onLocate}
+        disabled={locating}
+        aria-label={locating ? 'Detecting your GPS location…' : 'Go to my location'}
+        title={locating ? 'Detecting GPS…' : 'Go to my location'}
+        className={`relative flex h-12 w-12 items-center justify-center rounded-full bg-surface shadow-[0_2px_12px_rgba(45,42,38,0.18)] transition-all active:scale-95 ${
+          locating
+            ? 'cursor-wait text-taupe-dark ring-2 ring-taupe/60 shadow-[0_0_16px_rgba(156,128,105,0.35)]'
+            : 'text-ink hover:opacity-90 active:opacity-70'
+        }`}
+      >
+        {locating && (
+          <>
+            {/* Tactile radar sonar ping waves expanding outward */}
+            <span className="pointer-events-none absolute -inset-1 animate-ping rounded-full bg-taupe/25 duration-1000" aria-hidden="true" />
+            <span className="pointer-events-none absolute -inset-2 animate-pulse rounded-full border border-taupe/30" aria-hidden="true" />
+            {/* Dynamic rotating radar perimeter ring */}
+            <span className="pointer-events-none absolute inset-0.5 animate-spin rounded-full border-2 border-taupe-dark border-t-transparent" aria-hidden="true" />
+          </>
+        )}
+        <LocateFixed
+          size={22}
+          className={`relative z-10 transition-all ${
+            locating ? 'animate-pulse scale-90 text-taupe-dark' : 'text-ink'
+          }`}
+          aria-hidden="true"
+        />
       </button>
       {/* Zoom buttons at every size: pinching is not obvious to everyone, and a tablet-width window may have a mouse. */}
       <button type="button" onClick={onZoomIn} aria-label="Zoom in" className={circleBtn}>

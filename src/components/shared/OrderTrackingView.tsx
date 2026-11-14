@@ -83,6 +83,9 @@ export interface TrackedOrder {
   // The customer's own original repair request — kept separate from any
   // staff-authored operational notes, never shown mixed together.
   repair_note?: string | null;
+  /** Work on the customer's own garment requested online: the shop's drop-off check, and where to bring it. */
+  garment_check?: import('@/components/account/orders/GarmentCheckCard').GarmentCheckInfo | null;
+  drop_off?: import('@/components/account/orders/GarmentCheckCard').DropOffInfo | null;
   customer_material_status?: 'safe' | 'damaged' | 'lost' | 'returned' | null;
   progress_photos?: string[] | null;
   // Best-effort real per-stage timestamps (see myOrderDetail's own comment)

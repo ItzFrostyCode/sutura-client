@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { clampDeposit } from '@/components/jobs/requirements';
 import type { Job } from '../jobHelpers';
 import { priceStart, round2, sumRows, unitBasis } from './quotationBasis';
 import type { ChargeRow, ReadinessData } from './readinessTypes';
@@ -18,8 +19,9 @@ export function useQuotationForm(job: Job, data: ReadinessData, currentTotal: nu
   const [deductions, setDeductions] = useState<ChargeRow[]>(q?.customer_provided_deduction ?? []);
   const [dueDate, setDueDate] = useState(day(data.order?.due_date));
   const [notes, setNotes] = useState(q?.notes ?? '');
-  const [policy, setPolicy] = useState(data.terms?.policy ?? 'deposit');
-  const [percent, setPercent] = useState(data.terms?.percent ?? 50);
+  // Production needs at least half paid first, so an old "pay at pick-up" or a smaller deposit opens as the 50% deposit.
+  const [policy, setPolicy] = useState(data.terms?.policy === 'full' ? 'full' : 'deposit');
+  const [percent, setPercent] = useState(clampDeposit(Number(data.terms?.percent ?? 50)));
   const [validUntil, setValidUntil] = useState(day(data.decision?.valid_until));
   const [reason, setReason] = useState('');
 
@@ -33,8 +35,7 @@ export function useQuotationForm(job: Job, data: ReadinessData, currentTotal: nu
   const termsChanged = policy !== (data.terms?.policy ?? null) || ((policy === 'deposit' || policy === 'custom') && percent !== (data.terms?.percent ?? 50));
   const changed = round2(total) !== round2(data.quotation?.total ?? currentTotal) || dueDate !== day(data.order?.due_date) || termsChanged;
   const askChange = sent && changed;
-  const askPickup = policy === 'none' && data.terms?.policy !== 'none';
-  const needsReason = askChange || askPickup;
+  const needsReason = askChange;
 
   const priceEdited = unit !== start.unit || discount !== start.discount || JSON.stringify(extras) !== JSON.stringify(start.extras) || JSON.stringify(deductions) !== JSON.stringify(q?.customer_provided_deduction ?? []);
   const resetPrices = () => { setUnit(start.unit); setDiscount(start.discount); setExtras(start.extras); setDeductions(q?.customer_provided_deduction ?? []); };

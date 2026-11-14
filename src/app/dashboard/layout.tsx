@@ -276,7 +276,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     // (sidebar/drawer, sticky header) until the page is scrolled once.
     // Matches the min-h-dvh pattern already used on customer-facing pages.
     <div className="h-dvh bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
-      {/* ── Header: Aligned 1:1 with desktop rail width (Cloudflare-style) ── */}
+      {/* ── Header: Aligned 1:1 with desktop rail width ── */}
       <header className="print:hidden h-16 bg-surface border-b border-line flex items-center sticky top-0 z-50">
         {/* Left Box: 100% matched to rail width (w-60 / w-16) with vertical border-r */}
         <div

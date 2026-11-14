@@ -84,7 +84,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
       />
 
       {/* Main Tab Content */}
-      <main className="flex-1 max-w-[960px] w-full mx-auto px-4 sm:px-8 lg:px-0 py-6">
+      <main className={`flex-1 max-w-[960px] w-full mx-auto px-4 sm:px-8 lg:px-0 ${s.activeTab === 'services' ? 'pt-0 pb-6' : 'py-6'}`}>
         {s.activeTab === 'services' && (
           <StoreServicesTab
             services={s.services}

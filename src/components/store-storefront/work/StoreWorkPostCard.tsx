@@ -1,9 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
-import { Trash2, MessageCircle, Calendar } from 'lucide-react';
+import { Trash2, MessageCircle, ShoppingBag } from 'lucide-react';
 import { PublicStorePost, StoreProfile } from '../types';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { getSocialUrl, getMessengerUrl } from '../storeStorefrontHelpers';
+import { serviceOrderHref } from '@/lib/serviceOrderHref';
 
 interface StoreWorkPostCardProps {
   readonly post: PublicStorePost;
@@ -111,10 +112,11 @@ export default function StoreWorkPostCard({
 
           {post.service && (
             <Link
-              href={`/store/${storeId}/book?service_id=${post.service.id}&service_name=${encodeURIComponent(post.service.name)}`}
+              // A service is ordered online (a repair opens its own request form: the order page sends it there).
+              href={serviceOrderHref(storeId, post.service)}
               className="w-full min-h-[48px] h-[52px] rounded-lg flex items-center justify-center gap-2 bg-surface border border-line hover:bg-sunken text-ink text-sm font-medium transition-colors active:scale-[0.99] cursor-pointer"
             >
-              <Calendar size={16} /> Book &quot;{post.service.name}&quot;
+              <ShoppingBag size={16} aria-hidden /> <span className="min-w-0 truncate">Order &quot;{post.service.name}&quot; online</span>
             </Link>
           )}
         </div>

@@ -11,7 +11,7 @@ import type { StoreResult } from './homeTypes';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { isStoreOpen } from '@/lib/storeStatus';
 import HomeSectionHeader from './HomeSectionHeader';
-import FeaturedServiceCard, { orderedServices } from './FeaturedServiceCard';
+import FeaturedServiceCard, { orderedServices, type FeaturedService } from './FeaturedServiceCard';
 import { useHoverPreview } from './useHoverPreview';
 
 interface HomeFeaturedSpotlightProps {
@@ -51,6 +51,9 @@ function getStoreCoverImage(s: StoreResult): string | null {
   if (s.banner_path) return getMediaUrl(s.banner_path);
   return null;
 }
+
+// Stand-in for an empty service slot on desktop: drawn invisible so the card always has the height of 4 services.
+const SLOT_FILLER = { id: -1, name: ' ' } as FeaturedService;
 
 export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightProps) {
   const gate = useGuestGatedHref();
@@ -259,12 +262,12 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
 
                   <div className="min-w-0 flex-1">
                     <Link href={gate(`/store/${storeSlug}`)} className="group/name block">
-                      <h3 className="text-base sm:text-lg font-semibold text-ink leading-tight line-clamp-2 group-hover/name:text-taupe transition-colors">
+                      <h3 className="text-base sm:text-lg font-semibold text-ink leading-tight line-clamp-2 lg:min-h-[2lh] group-hover/name:text-taupe transition-colors">
                         {storeName}
                       </h3>
                     </Link>
                     {subtitle && (
-                      <p className="text-xs text-ink-muted line-clamp-2 mt-0.5">
+                      <p className="text-xs text-ink-muted line-clamp-2 mt-0.5 lg:min-h-[2lh]">
                         {subtitle}
                       </p>
                     )}
@@ -290,8 +293,9 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
                 </div>
 
                 {/* No services yet: one box in the same space, so the card keeps the size of the others (no jump on Next). */}
+                <div className="relative">
                 {services.length === 0 && (
-                  <div className="flex min-h-[233px] flex-1 flex-col sm:min-h-[228px] lg:min-h-[248px] items-center justify-center rounded-xl border border-dashed border-line-strong bg-sunken/40 px-4 text-center">
+                  <div className="flex min-h-[233px] flex-1 flex-col sm:min-h-[228px] lg:absolute lg:inset-0 lg:z-10 lg:min-h-0 items-center justify-center rounded-xl border border-dashed border-line-strong bg-sunken/40 px-4 text-center">
                     <Scissors size={24} className="text-taupe-dark" aria-hidden />
                     <p className="mobile-h4 mt-2 text-ink">No services listed yet</p>
                     <p className="mobile-body-sm mt-1 text-ink-muted">Visit the shop to ask about custom work.</p>
@@ -309,6 +313,13 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
                       onToggleSave={() => toggleSaveService(svc.id)}
                     />
                   ))}
+                  {/* Desktop: fill the empty slots invisibly, so a shop with fewer than 4 services is as tall as one with 4 (no jump on Next). */}
+                  {Array.from({ length: 4 - services.length }, (_, i) => (
+                    <div key={`slot-${i}`} aria-hidden inert className="invisible hidden lg:grid">
+                      <FeaturedServiceCard service={services[0] ?? SLOT_FILLER} href="#" hovered={false} saved={false} onHoverChange={() => {}} onToggleSave={() => {}} />
+                    </div>
+                  ))}
+                </div>
                 </div>
               </div>
 

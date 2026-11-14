@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
-import { FITTING_OPTIONS, MEASUREMENT_OPTIONS, PAYMENT_OPTIONS } from '@/components/jobs/requirements';
+import { FITTING_OPTIONS, MEASUREMENT_OPTIONS, MIN_DEPOSIT_PERCENT, PAYMENT_OPTIONS, clampDeposit } from '@/components/jobs/requirements';
 import type { RequirementsDraft } from './requirementsDraft';
 
 interface RequirementsEditorProps {
@@ -136,11 +136,6 @@ export default function RequirementsEditor({
               payment_policy: 'full',
               payment_policy_percent: '100',
             });
-          } else if (v === 'none') {
-            set({
-              payment_policy: 'none',
-              payment_policy_percent: '0',
-            });
           } else {
             // Inherit default (empty)
             set({
@@ -160,16 +155,17 @@ export default function RequirementsEditor({
               id="req-percent"
               type="number"
               inputMode="numeric"
-              min={1}
+              min={MIN_DEPOSIT_PERCENT}
               max={99}
               value={value.payment_policy_percent || '50'}
               onChange={(e) => set({ payment_policy_percent: e.target.value })}
+              onBlur={(e) => set({ payment_policy_percent: String(clampDeposit(Number(e.target.value))) })}
               placeholder="50"
               className={FIELD}
             />
             <span className="text-base font-medium text-ink-muted">%</span>
           </div>
-          <p className="text-sm text-ink-body mt-2 leading-relaxed">Specify downpayment percentage (1–99%).</p>
+          <p className="text-sm text-ink-body mt-2 leading-relaxed">50% to 99%. Production starts only after the customer pays this much.</p>
         </div>
       )}
     </div>

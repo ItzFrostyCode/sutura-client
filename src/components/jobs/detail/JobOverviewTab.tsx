@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { Job, GarmentSpecTable, CustomizationInstruction } from '../jobTypes';
 import { detailsLocked } from '../jobHelpers';
 import CancelledNotice from './CancelledNotice';
+import GarmentCheckPanel from './GarmentCheckPanel';
 import JobSpecCard from './JobSpecCard';
 import JobConsultationCard from './JobConsultationCard';
 import JobCutSheetCard from './JobCutSheetCard';
@@ -59,6 +60,7 @@ export default function JobOverviewTab({
   return (
     <div className="space-y-4">
       <CancelledNotice job={job} />
+      {storeId && !readOnly && <GarmentCheckPanel job={job} storeId={storeId} onDone={onRefreshJob} />}
 
       {/* Rejection Notice */}
       {job.status === 'rejected' && job.rejection_reason && (

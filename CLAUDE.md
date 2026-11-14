@@ -233,11 +233,11 @@ Everything else checked clean this round: `AppointmentCreateModal`, `Appointment
 |---|---|---|
 | Frontend | Next.js, React, TypeScript, Tailwind CSS, Zustand | Same — matches |
 | Backend | Laravel (PHP), RESTful API | Same — matches |
-| Database | MySQL hosted on **PlanetScale** | **Real local MySQL 8.4 (Homebrew, not XAMPP)** right now; migrating to **Supabase (Postgres)** around mid-September 2026 — see `DEADLINE.md`. PlanetScale was the original paper's plan and was superseded. |
-| File storage | not specified in the paper | **Cloudflare R2** (planned at migration time) |
-| Deploy | Vercel (frontend) + Railway or Render (backend) | Vercel (frontend) + **Railway** (backend) — Render was dropped |
+| Database | MySQL hosted on **PlanetScale** | **MySQL** (local MySQL 8.4 for dev). Hosting is handled by the team leader. |
+| File storage | not specified in the paper | Server disk (`public` / `local` disks) |
+| Deploy | Vercel + cloud backend host | Handled by the team leader — not documented here |
 
-When touching deployment or DB config, trust `DEADLINE.md` over the paper — the paper is frozen at proposal-approval time, `DEADLINE.md` reflects what the team actually decided since.
+Notifications go out by **SMS and email** (Semaphore account is paid and live).
 
 ## Data model — paper ERD vs. actual code (they've diverged)
 
@@ -248,7 +248,6 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 - **`docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/STATUS.md`** — scope (with the out-of-scope list), architecture, and what is done or open. Any team member can work in any module (Shop Owner, Customer/Guest, Staff, Admin); there is no per-person module boundary to check before building. Trust the actual routes/pages over these docs when they conflict.
 - `Title&Objectives.md`, `suturathesisapproved.txt` — the full approved capstone proposal: objectives, scope & limitations, RRL/RRS, methodology, use-case/BPMN/ERD narrative descriptions, and per-dashboard UI design intent (Admin, Shop Owner, Staff, Customer).
 - `docs/research/Complete Business Tailor Shops.txt` — interview-derived business analysis (workflows, pain points, proposed tracking stages) covering 3 business types. Tailoring-shop findings are directly in scope; sublimation/fashion findings (incl. rental) are market-research context only, not adopted scope. It is the raw extraction; the polished `Tailorshop,Sublimationshop,FashionShop.txt` synthesis is no longer in the repo.
-- `DEADLINE.md` — deployment timeline and the MySQL → Postgres migration plan, including a known bug to fix in `FileUploadController.php` when switching off local disk storage.
 
 ## Staff module — thesis alignment (2026-10-01)
 

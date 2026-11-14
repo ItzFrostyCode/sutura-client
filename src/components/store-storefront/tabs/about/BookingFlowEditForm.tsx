@@ -89,6 +89,43 @@ export default function BookingFlowEditForm({ formData, onChange, setFormData }:
       </div>
 
       <div className="space-y-3 pt-2 border-t border-line/60">
+        <h4 className="text-xs font-semibold text-ink">Rush orders</h4>
+        <label className="flex items-start gap-2.5 cursor-pointer select-none text-sm text-ink-body">
+          <input type="checkbox" checked={formData.rush_available} onChange={(e) => setFormData((prev) => ({ ...prev, rush_available: e.target.checked }))} className="mt-0.5" />
+          Take rush orders
+        </label>
+        {formData.rush_available && (
+          <div className="space-y-3">
+            <fieldset className="space-y-1.5">
+              <legend className={labelClass}>Charge rush as</legend>
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-ink-body">
+                <input type="radio" name="rush_fee_mode" checked={formData.rush_fee_mode === 'percent'} onChange={() => setFormData((prev) => ({ ...prev, rush_fee_mode: 'percent' }))} />
+                A percentage of the order price
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-ink-body">
+                <input type="radio" name="rush_fee_mode" checked={formData.rush_fee_mode === 'per_piece'} onChange={() => setFormData((prev) => ({ ...prev, rush_fee_mode: 'per_piece' }))} />
+                A peso amount for every piece
+              </label>
+            </fieldset>
+            {formData.rush_fee_mode === 'percent' ? (
+              <div className="space-y-1 max-w-xs">
+                <label htmlFor="rush-percent" className={labelClass}>Rush fee (% of the order price)</label>
+                <input id="rush-percent" type="number" min={0} max={200} step={1} value={formData.rush_fee_percent}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, rush_fee_percent: Math.max(0, Math.min(200, Number(e.target.value) || 0)) }))} className={inputClass} />
+              </div>
+            ) : (
+              <div className="space-y-1 max-w-xs">
+                <label htmlFor="rush-per-piece" className={labelClass}>Rush fee per piece (₱)</label>
+                <input id="rush-per-piece" type="number" min={0} step={1} value={formData.rush_fee_per_piece}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, rush_fee_per_piece: Math.max(0, Number(e.target.value) || 0) }))} className={inputClass} />
+              </div>
+            )}
+            <p className="text-xs text-ink-muted">Customers see the exact amount before they order, and it is on the quotation, where you can still change it for one order. A customer with 3 or more orders here pays half.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3 pt-2 border-t border-line/60">
         <h4 className="text-xs font-semibold text-ink">Default order requirements</h4>
         <p className="text-xs text-ink-muted">Used when a design or service does not set its own. Each order keeps a copy of what applied when it was created.</p>
         <RequirementsEditor

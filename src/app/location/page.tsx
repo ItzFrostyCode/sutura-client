@@ -49,7 +49,17 @@ function LocationPageContent() {
 
         <section className="card-soft p-2">
           <LocationRow
-            icon={<LocateFixed size={22} className={l.locatingCurrent ? 'animate-pulse' : ''} />}
+            icon={
+              <div className="relative flex h-7 w-7 items-center justify-center">
+                {l.locatingCurrent && (
+                  <>
+                    <span className="pointer-events-none absolute -inset-0.5 animate-ping rounded-full bg-taupe/25 duration-1000" aria-hidden="true" />
+                    <span className="pointer-events-none absolute inset-0 animate-spin rounded-full border-2 border-taupe-dark border-t-transparent" aria-hidden="true" />
+                  </>
+                )}
+                <LocateFixed size={20} className={`relative z-10 transition-all ${l.locatingCurrent ? 'scale-90 animate-pulse text-taupe-dark' : 'text-ink'}`} />
+              </div>
+            }
             title="Current location"
             subtitle={l.locatingCurrent ? 'Detecting GPS…' : l.currentAddressPreview || 'Use device GPS to find the nearest tailors'}
             onClick={l.handleUseCurrentGps}

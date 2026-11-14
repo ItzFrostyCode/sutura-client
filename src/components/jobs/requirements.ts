@@ -26,8 +26,7 @@ export const FITTING_OPTIONS: { value: FittingRequirement; label: string; hint: 
 ];
 
 export const PAYMENT_OPTIONS: { value: PaymentPolicy; label: string; hint: string }[] = [
-  { value: 'none', label: 'No payment first', hint: 'Production starts without advance payment (pay upon pickup).' },
-  { value: 'deposit', label: 'Deposit', hint: 'Require an advance deposit (default 50%, or set your preferred %).' },
+  { value: 'deposit', label: 'Deposit', hint: 'The customer pays at least 50% before production starts, the rest at pick-up.' },
   { value: 'full', label: 'Full payment', hint: '100% paid in full before production starts.' },
 ];
 
@@ -37,7 +36,13 @@ const labelOf = <T extends string>(list: { value: T; label: string }[], v: T | n
 export const measurementLabel = (v?: MeasurementRequirement | null) => labelOf(MEASUREMENT_OPTIONS, v);
 export const fittingLabel = (v?: FittingRequirement | null) => labelOf(FITTING_OPTIONS, v);
 
-/** Share of the amount due that must be paid before production. */
+/** Shop rule: a made-to-order job never starts production on less than this share paid (same as the server). */
+export const MIN_DEPOSIT_PERCENT = 50;
+
+/** A typed deposit percent kept between the minimum and 100. */
+export const clampDeposit = (n: number) => Math.min(100, Math.max(MIN_DEPOSIT_PERCENT, Math.round(Number.isFinite(n) ? n : MIN_DEPOSIT_PERCENT)));
+
+/** Share of the amount due that must be paid before production. "none" is only left on repairs (paid at pick-up). */
 export function depositFraction(policy?: PaymentPolicy | null, percent?: number | null): number {
   if (policy === 'none') return 0;
   if (policy === 'full') return 1;
@@ -47,7 +52,7 @@ export function depositFraction(policy?: PaymentPolicy | null, percent?: number 
 
 /** "No payment first", "Full payment", "50% deposit" … */
 export function paymentPolicyLabel(policy?: PaymentPolicy | null, percent?: number | null): string {
-  if (policy === 'none') return 'No payment first';
+  if (policy === 'none') return 'Pay at pick-up';
   if (policy === 'full') return 'Full payment';
   return `${Math.round(depositFraction(policy, percent) * 100)}% deposit`;
 }

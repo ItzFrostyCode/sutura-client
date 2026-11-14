@@ -67,7 +67,7 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
 
       {/* The details have the margin. */}
       <div className="flex min-w-0 flex-col gap-1 p-2.5">
-        <h4 className="line-clamp-3 break-words text-xs font-semibold leading-snug text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
+        <h4 className="line-clamp-3 break-words text-xs font-semibold leading-snug lg:line-clamp-2 lg:min-h-[2lh] text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
         <p className="line-clamp-1 break-words text-xs font-medium text-taupe-dark" title={kind}>{kind}</p>
         {onSale ? (
           <p className="flex items-center gap-1.5">
@@ -81,7 +81,7 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
         ) : (
           <p className="text-xs font-bold text-ink">Depends on the item</p>
         )}
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-muted">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-muted lg:flex-nowrap lg:overflow-hidden">
           <span className="flex shrink-0 items-center gap-0.5 font-semibold text-ink"><Star size={10} className="shrink-0 fill-amber-400 text-amber-500" />{rating}</span>
           <span aria-hidden className="text-ink-faint">|</span>
           <span className="whitespace-nowrap">{service.orders_count ?? 0} sold</span>

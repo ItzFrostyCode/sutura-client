@@ -36,6 +36,12 @@ export interface StoreSettingsData {
   fitting_limit: number;
   fitting_limit_policy: 'fee' | 'block';
   repair_requires_downpayment: boolean;
+  /** Rush orders: taken or not, and what rush adds to the price (a repeat customer pays half). */
+  rush_available: boolean;
+  /** percent = rush_fee_percent of the price; per_piece = rush_fee_per_piece pesos for every piece. */
+  rush_fee_mode: 'percent' | 'per_piece';
+  rush_fee_percent: number;
+  rush_fee_per_piece: number;
   // Shown to the customer before they approve a quotation; empty = the built-in default text.
   cancellation_policy: string;
   // Shop-wide defaults for new orders; designs and services can override them.
@@ -104,6 +110,10 @@ export function useSettings() {
     fitting_limit: 3,
     fitting_limit_policy: 'fee' as 'fee' | 'block',
     repair_requires_downpayment: false,
+    rush_available: true,
+    rush_fee_mode: 'percent',
+    rush_fee_percent: 30,
+    rush_fee_per_piece: 0,
     cancellation_policy: '',
     default_measurement_requirement: 'shop' as 'none' | 'existing' | 'shop',
     default_measurement_unit: 'in' as 'in' | 'cm',
@@ -169,6 +179,10 @@ export function useSettings() {
             fitting_limit: s.fitting_limit ?? 3,
             fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
             repair_requires_downpayment: !!s.repair_requires_downpayment,
+            rush_available: s.rush_available !== false && s.rush_available !== 0,
+            rush_fee_mode: s.rush_fee_mode === 'per_piece' ? 'per_piece' : 'percent',
+            rush_fee_percent: Number(s.rush_fee_percent ?? 30),
+            rush_fee_per_piece: Number(s.rush_fee_per_piece ?? 0),
             cancellation_policy: s.cancellation_policy || '',
             default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
             default_measurement_unit: s.default_measurement_unit === 'cm' ? 'cm' : 'in',
@@ -271,9 +285,9 @@ export function useSettings() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setFormDataWithDirty(prev => ({ ...prev, gcash_qr_path: res.data.data.url }));
-        toast.success('GCash / Maya QR uploaded — click Save to apply.');
+        toast.success('GCash QR uploaded — click Save to apply.');
       } catch (err) {
-        toast.error(getErrorMessage(err, 'Failed to upload GCash / Maya QR. Please try again.'));
+        toast.error(getErrorMessage(err, 'Failed to upload GCash QR. Please try again.'));
       }
     }
   };
