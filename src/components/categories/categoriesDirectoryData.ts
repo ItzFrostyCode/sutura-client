@@ -70,7 +70,18 @@ export interface VisualCategory {
   icon: LucideIcon;
 }
 
-/** The two-row tile strip: the 10 garment categories, then the 4 services. */
+/** The 10 garment categories as tiles (All Categories → Browse by garment). */
+export const GARMENT_TILES: VisualCategory[] = LISTED_CATEGORIES.map((cat) => ({
+  id: cat,
+  label: GARMENT_CATEGORIES[cat].label,
+  href: categoryHref(cat),
+  icon: CATEGORY_ICONS[cat] ?? Shirt,
+}));
+
+/** The 4 services with their icon, for the "What do you need?" cards (labels come from lib/customerTaxonomy). */
+export const SERVICE_TILE_ICONS = SERVICE_ICONS;
+
+/** The two-row tile strip on Home and Search: the 10 garment categories, then the 4 services. */
 export const VISUAL_CATEGORIES: VisualCategory[] = [
   ...LISTED_CATEGORIES.map((cat) => ({
     id: cat,
@@ -109,15 +120,8 @@ function buildAlphabetDirectory(): AlphabetGroup[] {
       categoryHref: categoryHref(cat),
       subCategories: garmentsInCategory(cat).map((slug) => ({ label: GARMENTS[slug].label, href: garmentHref(slug) })),
     })),
-    ...SERVICE_GROUP_KEYS.map((group) => ({
-      title: SERVICE_GROUPS[group].label,
-      categoryHref: serviceHref(group),
-      subCategories: Object.entries(SERVICE_GROUPS[group].capabilities).map(([slug, cap]) => ({
-        label: cap.label,
-        href: serviceHref(group, slug),
-      })),
-    })),
   ];
+  // Services are not mixed into this A–Z: they have their own "What do you need?" cards above it.
 
   const byLetter = new Map<string, AlphabetCategorySection[]>();
   for (const section of sections) {
@@ -129,7 +133,7 @@ function buildAlphabetDirectory(): AlphabetGroup[] {
     .map(([letter, categories]) => ({ letter, categories }));
 }
 
-/** The A–Z directory: each garment category and each service under its first letter, with its garments / tasks. */
+/** The A–Z directory of garments: each garment category under its first letter, with its garments. */
 export const ALPHABET_DIRECTORY: AlphabetGroup[] = buildAlphabetDirectory();
 
 export const ALPHABET = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));

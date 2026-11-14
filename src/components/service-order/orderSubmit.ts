@@ -49,13 +49,15 @@ export async function submitOrder(
             const fit = tableFit(r.fit, gets || 'both', f.hiddenCols, r.units, f.customCols);
             const any = Object.keys(fit).length > 0;
             return {
-              player_name: r.name.trim(), measure_area: gets || 'both',
+              player_name: r.name.trim(), measure_area: gets || 'both', pricing_id: r.pricingId ?? undefined,
               size: any ? 'Custom Fit' : 'To be measured', bottom_size: (gets || 'both') === 'both' ? (any ? 'Custom Fit' : 'To be measured') : undefined,
               fit_metrics: any ? fit : undefined, extra: Object.keys(r.extra).length ? r.extra : undefined,
             };
           }
           return {
             player_name: r.name.trim(),
+            // This person's own option (Complete set / Blouse only…); the server prices each person by it.
+            pricing_id: r.pricingId ?? undefined,
             measure_area: gets || undefined,
             size: r.size,
             bottom_size: o.sizesNeeded && gets === 'both' ? r.bottomSize : undefined,

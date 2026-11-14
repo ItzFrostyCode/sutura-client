@@ -6,12 +6,12 @@ import {
   GARMENTS,
   SERVICE_GROUPS,
   canonicalGarment,
-  capabilityLabel,
   serviceGroupLabel,
   type ServiceGroup,
   type ServiceGroupKey,
 } from '@/lib/garmentTaxonomy';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
+import { SERVICE_INTENTS, customerTaskLabel, whoItIsFor } from '@/lib/customerTaxonomy';
 import { PublicService } from '@/components/store-storefront/types';
 import GuideImage from '@/components/shared/GuideImage';
 import { optionLine } from '@/lib/orderUnits';
@@ -50,16 +50,19 @@ export function ServiceWorkBlock({ service }: Readonly<{ service: PublicService 
     ? (SERVICE_GROUPS[service.service_category as ServiceGroupKey] as ServiceGroup)
     : null;
   const garments = garmentsByCategory(service.garment_types ?? []);
-  const caps = (service.capabilities ?? []).map((c) => capabilityLabel(service.service_category, c));
-  const bulk = (service.capabilities ?? []).includes('bulk_orders') || (service.service_types ?? []).includes('bulk_sublimation');
+  // The customer's words (lib/customerTaxonomy), not the shop editor's ("Bulk / Batch Orders Accepted").
+  const caps = (service.capabilities ?? []).map((c) => customerTaskLabel(service.service_category, c));
   const rows: [string, string][] = [];
-  const kind = group?.label ?? serviceGroupLabel(service.service_category);
+  const intent = service.service_category && service.service_category in SERVICE_INTENTS ? SERVICE_INTENTS[service.service_category as ServiceGroupKey].title : null;
+  const kind = intent ?? group?.label ?? serviceGroupLabel(service.service_category);
   if (kind) rows.push(['Service', kind]);
   if (garments) rows.push(['Works on', garments]);
   else if (ANY_GARMENT_GROUPS.includes(service.service_category ?? '')) rows.push(['Works on', 'Any garment — bring it in or ask for a quotation']);
   if (caps.length > 0) rows.push(['What they do', caps.join(' · ')]);
-  const hasMinOrder = Boolean(service.min_order_qty && Number(service.min_order_qty) > 1);
-  if (hasMinOrder) rows.push(['Usual minimum', `${service.min_order_qty} pieces`]);
+  // The minimum is the group minimum (people), never a minimum for one person: say who can order instead.
+  if (!(service.service_types ?? []).includes('alteration_repair')) {
+    rows.push(["Who it's for", whoItIsFor(service.capabilities, service.service_types, service.min_order_qty)]);
+  }
   rows.push(['Estimated Completion', formatServiceTurnaround(service.estimated_days, service.estimated_days_max)]);
 
   return (

@@ -9,11 +9,33 @@ export const sumRows = (rows: ChargeRow[]) => rows.reduce((t, r) => t + (Number(
 export interface UnitBasis {
   /** What one piece costs from the service or design; null = the shop quotes it. */
   readonly amount: number | null;
-  readonly source: 'design' | 'service' | null;
+  readonly source: 'order' | 'design' | 'service' | null;
+}
+
+/** One line of the price: what it is, the price for one, how many (8 complete sets; 2 blouses). */
+export interface QuoteLine { label: string; unit: number; qty: number }
+
+const orderData = (job: Job) => (job.custom_order_data ?? {}) as Record<string, unknown>;
+
+/** The order's own lines when its people got different options (set by the online order or a saved quotation). */
+export function orderLines(job: Job): QuoteLine[] | null {
+  const raw = orderData(job).price_lines;
+  if (!Array.isArray(raw) || raw.length < 2) return null;
+  const lines = raw.map((l) => ({ label: String(l?.label ?? ''), unit: Number(l?.unit) || 0, qty: Math.max(1, Math.floor(Number(l?.qty) || 1)) }));
+  return lines.every((l) => l.label) ? lines : null;
+}
+
+/** The customer's own fabric taken off when the order was placed: the quotation starts with it, so it is never lost. */
+export function orderFabricDeduction(job: Job): ChargeRow[] {
+  const n = Number(orderData(job).own_fabric_deduction);
+  return n > 0 ? [{ label: "Customer's own fabric", amount: n }] : [];
 }
 
 /** Same rule as the Create Job Order form: the design's price when it belongs to this service, else the service's own price. */
 export function unitBasis(job: Job): UnitBasis {
+  // What the customer actually ordered comes first: the option they picked (with any design price), saved on the order.
+  const rate = Number(orderData(job).item_rate);
+  if (Number.isFinite(rate) && rate > 0) return { amount: rate, source: 'order' };
   const item = job.catalog_item;
   if (item) {
     if (item.pricing?.mode === 'quote') return { amount: null, source: null };

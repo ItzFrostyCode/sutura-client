@@ -78,7 +78,9 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
       <h2 className="mobile-h4 mb-3 text-ink">Your price</h2>
 
       <dl className="mobile-body-sm space-y-1.5 font-normal">
-        <div className="flex justify-between"><dt className="text-ink-muted">Service</dt><dd>{peso(b.base_price)}</dd></div>
+        {b.price_lines && b.price_lines.length > 1
+          ? b.price_lines.map((l, i) => <div key={`l${i}`} className="flex justify-between gap-3"><dt className="min-w-0 text-ink-muted">{l.label}: {peso(l.unit)} × {l.qty}</dt><dd className="shrink-0">{peso(l.unit * l.qty)}</dd></div>)
+          : <div className="flex justify-between"><dt className="text-ink-muted">Service</dt><dd>{peso(b.base_price)}</dd></div>}
         {b.quantity_adjustment !== 0 && <div className="flex justify-between"><dt className="text-ink-muted">Quantity pricing</dt><dd>{b.quantity_adjustment > 0 ? '+' : '−'}{peso(Math.abs(b.quantity_adjustment))}</dd></div>}
         {b.additional_charges.map((r, i) => <div key={`a${i}`} className="flex justify-between"><dt className="text-ink-muted">{r.label}</dt><dd>{peso(r.amount)}</dd></div>)}
         {b.customer_provided_deduction.map((r, i) => <div key={`d${i}`} className="flex justify-between"><dt className="text-ink-muted">Less: {r.label}</dt><dd>−{peso(r.amount)}</dd></div>)}

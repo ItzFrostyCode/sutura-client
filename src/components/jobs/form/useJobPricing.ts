@@ -22,14 +22,21 @@ function suggestedUnit(service: ServiceData | undefined, design: CatalogItem | n
  * the owner types their own (then `formData.price` / `formData.due_date` are not null) — no effects, so a changed
  * service or quantity can never leave a stale number behind.
  */
-export function useJobPricing(formData: JobCreateFormData, service: ServiceData | undefined, design: CatalogItem | null, isBulk: boolean, teamPieces = 1, optionAmount: number | null = null) {
+/** One line of a team order's price: an option, its price for one, how many pieces (8 sets; 2 blouses). */
+export interface TeamLine { label: string; unit: number | null; qty: number }
+
+export function useJobPricing(formData: JobCreateFormData, service: ServiceData | undefined, design: CatalogItem | null, isBulk: boolean, teamPieces = 1, optionAmount: number | null = null, teamLines: TeamLine[] = []) {
   // A team order is priced per piece: every person's pieces count, so adding a person adds to the total.
   const quantity = isBulk ? Math.max(1, teamPieces) : Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
   const suggested = suggestedUnit(service, design, formData.service_id, optionAmount);
   // The owner may type the price of one piece (a top only, a bottom only…); the total follows the number of pieces.
   const typedUnit = formData.unit_price != null && formData.unit_price.trim() !== '' ? num(formData.unit_price) : null;
   const unit = typedUnit ?? suggested;
-  const suggestedPrice = unit == null ? '' : (unit * quantity).toFixed(2);
+  // People on a team got different options: the suggestion is the sum of each person's option (same rule as the online
+  // order). A price per piece typed by the owner still overrides it for everyone.
+  const lines = isBulk && typedUnit == null && teamLines.length > 1 && teamLines.every((l) => l.unit != null && l.unit > 0) ? teamLines : null;
+  const lineTotal = lines ? lines.reduce((t, l) => t + (l.unit as number) * l.qty, 0) : null;
+  const suggestedPrice = lineTotal != null ? lineTotal.toFixed(2) : unit == null ? '' : (unit * quantity).toFixed(2);
   const price = formData.price ?? suggestedPrice;
 
   // One turnaround drives the suggested date, the "ready around" line and the "too quick" warning: the design's own
@@ -53,6 +60,9 @@ export function useJobPricing(formData: JobCreateFormData, service: ServiceData 
     /** One piece: what is typed, else the design's or service's price. null = to be quoted. */
     unit,
     suggestedUnit: suggested,
+    /** The price by option when people differ; null when one price per piece applies. */
+    lines,
+    lineTotal,
     price,
     needsQuote: unit == null,
     dueDate,

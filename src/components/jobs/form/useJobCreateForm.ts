@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useBranch } from '@/context/BranchContext';
@@ -13,7 +13,7 @@ import { defaultColumns, resetSizing } from './rosterHelpers';
 import { measurementNeed } from './measurementNeed';
 import type { GarmentSpecColumn } from '@/components/jobs/jobTypes';
 import { useCustomerMeasurements, useJobFormLookups } from './useJobFormLookups';
-import { useJobPricing } from './useJobPricing';
+import { useJobPricing, type TeamLine } from './useJobPricing';
 import { useJobSubmit } from './useJobSubmit';
 import type { ExtraService, JobCreateFormData, RosterMember } from './types';
 
@@ -132,11 +132,29 @@ export function useJobCreateForm() {
   const options = service?.pricing ?? [];
   const configured = options.some((o) => o.covers || o.sold_as);
   const option = options.find((o) => String(o.id) === pricingId) ?? (options.length === 1 && configured ? options[0] : null);
-  const areaLocked = Boolean(option?.covers);
+  // A team may mix parts (sets for most, blouses for some) when the service prices each part: then each person's
+  // "Covers" stays open and their piece is priced by the option for that part.
+  const partOptions = options.filter((o) => o.covers === 'top' || o.covers === 'bottom' || o.covers === 'both');
+  const perPerson = isBulk && partOptions.length > 1;
+  const areaLocked = Boolean(option?.covers) && !perPerson;
   const optionRequired = configured && !option;
   const optionAmount = option && option.amount !== null && option.amount !== '' ? Number(option.amount) : null;
   const teamPieces = roster.reduce((sum, r) => sum + Math.max(1, Number.parseInt(r.qty ?? '1', 10) || 1), 0);
-  const pricing = useJobPricing(formData, service, design, isBulk, teamPieces, optionAmount);
+  const teamLines = useMemo(() => {
+    if (!perPerson) return [];
+    const byKey = new Map<string, TeamLine>();
+    for (const r of roster) {
+      const part = r.measure_area || option?.covers || '';
+      const o = option?.covers === part ? option : partOptions.find((p) => p.covers === part) ?? option;
+      const unit = o && o.amount !== null && o.amount !== '' ? Number(o.amount) : null;
+      const key = `${o?.label ?? 'Order'}|${unit}`;
+      const line = byKey.get(key) ?? { label: o?.label ?? 'Order', unit, qty: 0 };
+      line.qty += Math.max(1, Number.parseInt(r.qty ?? '1', 10) || 1);
+      byKey.set(key, line);
+    }
+    return [...byKey.values()];
+  }, [perPerson, roster, option, partOptions]);
+  const pricing = useJobPricing(formData, service, design, isBulk, teamPieces, optionAmount, teamLines);
   const rosterColumns = editedColumns ?? defaultColumns(service?.roster_fields);
 
   // A team order opens with as many empty rows as the service's minimum, so the list is ready to fill in.

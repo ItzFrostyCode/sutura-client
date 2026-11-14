@@ -6,6 +6,7 @@ import type { ServiceOrderState } from './useServiceOrder';
 import { CUSTOM_FIT, rowArea } from './useOrderForm';
 import { INPUT, SectionLabel, Segments, TEXTAREA } from './orderUi';
 import OrderRosterRow from './OrderRosterRow';
+import OrderGetsSelect from './OrderGetsSelect';
 import OrderMeasureSection from './OrderMeasureSection';
 import OrderUnitPicker from './OrderUnitPicker';
 import { sizesOf } from './OrderSizeChart';
@@ -58,7 +59,8 @@ export default function OrderGroupRoster({ o }: Readonly<{ o: ServiceOrderState 
         {!o.chartSizes ? <OrderMeasureSection o={o} /> : (
           <ol className="space-y-3">
             {f.roster.map((r, i) => (
-              <OrderRosterRow key={r.id} row={r} index={i} area={areaOf(r)} partChoosable={!o.areaLocked} columns={o.rosterColumns}
+              <OrderRosterRow key={r.id} row={r} index={i} area={areaOf(r)} partChoosable={!o.areaLocked}
+                gets={o.perPerson ? <OrderGetsSelect o={o} row={r} prefix="Gets: " className="h-12 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-base text-ink focus:border-ink focus:outline-none" /> : undefined} columns={o.rosterColumns}
                 sizes={sizes} unit={f.unit} sized={sized} allowCustom={o.measurementsNeeded}
                 canRemove={f.roster.length > o.groupMin} onChange={(patch) => f.updateRow(r.id, patch)} onRemove={() => f.removeRow(r.id)} />
             ))}

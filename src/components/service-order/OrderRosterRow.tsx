@@ -16,8 +16,8 @@ const PARTS: readonly { value: Area; label: string }[] = [
  * One person on a Group order: name, the shop's own columns (Jersey Number…), what they get (when the option does not
  * decide it), their size(s), and — for Custom Fit — their measurements in the unit chosen for the whole group.
  */
-export default function OrderRosterRow({ row, index, area, partChoosable, columns, sizes, unit, sized, allowCustom, canRemove, onChange, onRemove }: Readonly<{
-  row: RosterRow; index: number; area: Area | ''; partChoosable: boolean; columns: string[]; sizes: readonly string[];
+export default function OrderRosterRow({ row, index, area, partChoosable, gets, columns, sizes, unit, sized, allowCustom, canRemove, onChange, onRemove }: Readonly<{
+  row: RosterRow; index: number; area: Area | ''; partChoosable: boolean; gets?: React.ReactNode; columns: string[]; sizes: readonly string[];
   unit: Unit | ''; sized: boolean; allowCustom: boolean; canRemove: boolean; onChange: (patch: Partial<RosterRow>) => void; onRemove: () => void;
 }>) {
   const n = index + 1;
@@ -70,7 +70,8 @@ export default function OrderRosterRow({ row, index, area, partChoosable, column
             ))}
           </div>
         )}
-        {sized && partChoosable && (
+        {sized && gets}
+        {sized && !gets && partChoosable && (
           <Segments label={`What ${name || `row ${n}`} gets`} value={area} onChange={(v) => onChange({ area: v, bottomSize: v === 'both' ? row.bottomSize : '' })} options={PARTS} />
         )}
         {sized && (

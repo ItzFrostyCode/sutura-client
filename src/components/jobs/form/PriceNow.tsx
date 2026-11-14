@@ -28,12 +28,23 @@ export default function PriceNow({ form }: Readonly<{ form: JobCreateForm }>) {
         </div>
         <div>
           <span className={LABEL}>Total for {p.quantity} {p.quantity === 1 ? 'piece' : 'pieces'}</span>
-          <p className="flex h-11 items-center text-base font-semibold text-espresso">{p.unit == null ? 'To be quoted' : peso(p.unit * p.quantity)}</p>
+          <p className="flex h-11 items-center text-base font-semibold text-espresso">{p.lineTotal != null ? peso(p.lineTotal) : p.unit == null ? 'To be quoted' : peso(p.unit * p.quantity)}</p>
         </div>
       </div>
+      {p.lines && (
+        // The team mixes options: each person is priced by the option for their part (same as an online order).
+        <ul className="space-y-1 rounded-xl bg-sunken/70 p-3 text-sm text-espresso">
+          {p.lines.map((l) => (
+            <li key={`${l.label}-${l.unit}`} className="flex justify-between gap-3">
+              <span className="min-w-0">{l.label}: {peso(l.unit ?? 0)} × {l.qty}</span>
+              <span className="shrink-0 tabular-nums">{peso((l.unit ?? 0) * l.qty)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="text-sm text-espresso/60">
         {p.suggestedUnit == null && !typed && dp?.mode !== 'quote' ? `${serviceName} has no fixed price. Type the price you agreed, or leave it empty to quote later.` : basis}
-        {' '}Making only a top or only a bottom? Type that price here.
+        {p.lines ? ' Each person is priced by the option for their part; typing a price here uses it for everyone.' : ' Making only a top or only a bottom? Type that price here.'}
         {isBulk && ' Every piece in the team list is counted in the next step.'}
       </p>
       {typed && <button type="button" onClick={() => set({ unit_price: null })} className={BTN_SM}>Use the {design && dp?.mode !== 'same' ? 'design' : 'service'} price again</button>}

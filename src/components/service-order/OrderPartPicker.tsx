@@ -50,7 +50,8 @@ function PartCard({ part, on, onPick, readOnly }: Readonly<{ part: (typeof PARTS
 export default function OrderPartPicker({ o }: Readonly<{ o: ServiceOrderState }>) {
   const { f } = o;
   const locked = Boolean(o.option?.covers);
-  const hint = locked ? 'Fixed by the option you chose.'
+  const hint = locked && o.perPerson ? 'From the option you chose. You can pick another option for each person in the next step.'
+    : locked ? 'Fixed by the option you chose.'
     : f.mode === 'group' ? 'For everyone to start with. You can change it per person in the next step.'
       : 'This decides which sizes and measurements we ask next.';
 

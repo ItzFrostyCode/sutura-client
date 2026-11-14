@@ -19,7 +19,8 @@ function Row({ label, value, strong = false, muted = false }: Readonly<{ label: 
 export default function OrderPriceSummary({ o }: Readonly<{ o: ServiceOrderState }>) {
   const m = o.money;
   const unit = o.option?.sold_as === 'set' ? 'set' : 'pc';
-  if (m.unitPrice === null) {
+  // Quoted only when there is no total (a line without a price); lines with different prices are still priced.
+  if (m.total === null) {
     return (
       <dl className="divide-y divide-line">
         <Row label={`${m.pieces} ${m.pieces === 1 ? unit : `${unit}s`}`} value="Quoted by the shop" />
@@ -33,10 +34,13 @@ export default function OrderPriceSummary({ o }: Readonly<{ o: ServiceOrderState
   const due = m.dueBeforeProduction;
   return (
     <dl className="divide-y divide-line">
-      <Row label={`${peso(m.unitPrice)} × ${m.pieces} ${m.pieces === 1 ? unit : `${unit}s`}`} value={peso(m.unitPrice * m.pieces)} />
+      {/* Like a POS slip: one line per option, its price × how many (a group with 8 sets and 2 blouses shows two lines). */}
+      {m.lines.map((l) => (
+        <Row key={`${l.label}-${l.unit}`} label={`${m.lines.length > 1 || o.option ? `${l.label} · ` : ''}${peso(l.unit ?? 0)} × ${l.qty}`} value={peso((l.unit ?? 0) * l.qty)} />
+      ))}
       {m.fabricTotal > 0 && <Row label="Your own fabric" value={`−${peso(m.fabricTotal)}`} />}
       {(m.rushFee ?? 0) > 0 && (
-        <Row label={o.rushPerPiece !== null ? `Rush ${peso(o.rushPerPiece)} × ${m.pieces}` : `Rush ${percent(o.rushPercent)} (${peso((m.rushFee ?? 0) / m.pieces)} per ${unit})`}
+        <Row label={o.rushPerPiece !== null ? `Rush ${peso(o.rushPerPiece)} × ${m.pieces}` : `Rush ${percent(o.rushPercent)}`}
           value={`+${peso(m.rushFee ?? 0)}`} />
       )}
       <Row label="Estimated total" value={peso(m.total ?? 0)} strong />

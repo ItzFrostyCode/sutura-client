@@ -21,9 +21,16 @@ export const isBottomField = (key: string) => KNOWN_BOTTOM_KEYS.has(key.toLowerC
 export function splitByArea(metrics: Record<string, unknown> | null | undefined): { top: [string, string][]; bottom: [string, string][] } {
   const top: [string, string][] = [];
   const bottom: [string, string][] = [];
-  for (const [key, raw] of Object.entries(metrics ?? {})) {
-    const value = String(raw ?? '').trim();
+  for (const [rawKey, raw] of Object.entries(metrics ?? {})) {
+    let key = rawKey;
+    let value = String(raw ?? '').trim();
     if (isInternalMetricKey(key) || value === '') continue;
+    // Older online group orders put a centimeter value's unit in the name ("Waist (cm)": "90"): read it as "Waist": "90 cm".
+    const cm = /^(.*?)\s*\(cm\)$/i.exec(key);
+    if (cm) {
+      key = cm[1];
+      if (!/(in|cm)\s*$/i.test(value)) value = `${value} cm`;
+    }
     (isBottomField(key) ? bottom : top).push([key, value]);
   }
   return { top, bottom };

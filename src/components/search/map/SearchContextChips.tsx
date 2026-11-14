@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
-import { capabilityLabel, garmentLabel, serviceGroupLabel } from '@/lib/garmentTaxonomy';
+import { garmentLabel, serviceGroupLabel } from '@/lib/garmentTaxonomy';
+import { customerTaskLabel } from '@/lib/customerTaxonomy';
 
 interface SearchContextChipsProps {
   readonly department?: string;
@@ -18,7 +19,7 @@ export default function SearchContextChips({ garmentType, serviceCategory, servi
   const parts = [
     garmentType && (garmentLabel(garmentType) ?? garmentType),
     serviceCategory && (serviceGroupLabel(serviceCategory) ?? serviceCategory),
-    serviceType && capabilityLabel(serviceCategory, serviceType),
+    serviceType && customerTaskLabel(serviceCategory, serviceType),
   ].filter(Boolean);
 
   if (parts.length === 0) return null;

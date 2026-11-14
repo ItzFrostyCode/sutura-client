@@ -43,9 +43,12 @@ export const UNIT_LABEL: Record<Unit, string> = { in: 'Inches', cm: 'Centimeters
 export const UNIT_SHORT: Record<Unit, string> = { in: 'in', cm: 'cm' };
 
 /** Ease the shop adds for comfort, said in the unit the customer chose. */
+// The team's wording (Bongo's measuring tip): the customer adds the room for movement themselves.
 export const EASE_TIP: Record<Unit, string> = {
-  in: 'Measure the body, not your clothes. Enter the exact number: the shop adds the room for movement.',
-  cm: 'Measure the body, not your clothes. Enter the exact number: the shop adds the room for movement.',
+  // Room is added around the body only: a length (sleeve, inseam, pants or top length) is entered as measured,
+  // otherwise the garment comes out 3 inches too long.
+  in: 'To ensure a comfortable fit, add 3 inches to your chest, waist and hips measurements. (Example: If your chest measures 38 inches, please enter 41.) Enter lengths (sleeve, inseam, pants length) as measured.',
+  cm: 'To ensure a comfortable fit, add 7.5 cm (3 inches) to your chest, waist and hips measurements. (Example: If your chest measures 97 cm, please enter 104.5.) Enter lengths (sleeve, inseam, pants length) as measured.',
 };
 
 /** "09171234567": 11 digits that start with 09. */
@@ -107,8 +110,9 @@ export function tableFit(
   const out: Record<string, string> = {};
   for (const p of cols) {
     const v = (fit[p.label] ?? '').trim();
-    // Inches by default; a column switched to centimeters says so in its name ("Chest (cm)").
-    if (v && !hidden.includes(p.label)) out[units[p.label] === 'cm' ? `${p.label} (cm)` : p.label] = v;
+    // Inches by default; a value typed in centimeters carries its unit ("90 cm"), the same way the shop's own
+    // measurement form saves a field switched to cm, so every screen reads it right (lib/measurementUnit splitMeasure).
+    if (v && !hidden.includes(p.label)) out[p.label] = units[p.label] === 'cm' ? `${v} cm` : v;
   }
   return out;
 }

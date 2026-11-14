@@ -39,7 +39,7 @@ export default function OrderInfoTip({ label, text }: Readonly<{ label: string; 
               </button>
             </div>
             <p className="mobile-body-md mt-2 text-ink-body">{text}</p>
-            <p className="mobile-body-sm mt-2 text-ink-muted">Measure the body, not the clothes. Not sure? Leave it blank — the shop measures it.</p>
+            <p className="mobile-body-sm mt-2 text-ink-muted">Measure the body. Add 3 inches (7.5 cm) to chest, waist and hips; enter lengths as measured. Not sure? Leave it blank — the shop measures it.</p>
             <button type="button" onClick={() => setOpen(false)} className="mt-5 h-12 w-full rounded-xl bg-ink text-base font-semibold text-white">Got it</button>
           </div>
         </div>,

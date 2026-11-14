@@ -182,6 +182,10 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
       // One person: the chart size ("M"), or "M / L" when the top and the bottom differ; plus what they get (top, bottom or both).
       standard_size: !s.isBulk && s.measurementMode === 'standard_size' ? soloSize(s) : null,
       measure_area: !s.isBulk ? (soloArea(s) || null) : null,
+      // What one piece costs (or the price by option when the team mixes them): the quotation starts from it, never
+      // from the service's lowest price.
+      item_rate: !p.lines && p.unit != null ? String(p.unit) : null,
+      price_lines: p.lines ?? null,
       discount_reason: f.discount_reason || null,
       team_name: s.teamName || null,
       ...(s.isBulk ? teamFields(s) : { team_roster: null }),

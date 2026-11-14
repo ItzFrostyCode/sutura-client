@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useOrderData } from './useOrderData';
 import { useOrderForm } from './useOrderForm';
 import { orderMoney } from './orderMath';
+import { partOptions, priceLines } from './orderLines';
 import { clampDeposit } from '@/components/jobs/requirements';
 import { isPhoneValid, pointsFor, type Area } from './orderPoints';
 import { stepProblem } from './orderRules';
@@ -63,7 +64,11 @@ export function useServiceOrder(storeId: string) {
   const groupMin = (service?.capabilities ?? []).includes('bulk_orders') ? Math.max(2, service?.min_order_qty ?? 2) : 0;
   // A team / uniform service sold by the batch takes group orders only: no "one person" choice, the list starts at the minimum.
   const groupOnly = groupMin > 0 && (service?.service_types ?? []).length === 1 && service?.service_types?.[0] === 'bulk_sublimation';
-  const areaLocked = Boolean(option?.covers);
+  // A group may give each person their own option (Complete set for most, Blouse only for some) when the service has
+  // two or more options that say what they cover. Then the part follows each person's option instead of being locked.
+  const personOptions = f.mode === 'group' ? partOptions(pricing) : [];
+  const perPerson = personOptions.length > 1;
+  const areaLocked = Boolean(option?.covers) && !perPerson;
   const pieces = f.mode === 'group' ? f.roster.length : f.quantity;
   // The service's own list columns (Jersey Number, Position…) asked for every person on a group.
   const rosterColumns = (service?.roster_fields ?? []).map((c) => c.label?.trim()).filter((l): l is string => Boolean(l));
@@ -77,19 +82,14 @@ export function useServiceOrder(storeId: string) {
   // A design picked as the style prices the order its own way: the service's price, its own price, the service's
   // price plus an extra charge, or a quotation (same as DesignPricing on the server).
   const quoted = service?.price_display === 'quotation' || Boolean(designPricing?.needs_quote);
-  const unitPrice = useMemo(() => {
-    if (quoted) return null;
-    const n = Number(option?.amount ?? service?.base_price);
-    const base = Number.isFinite(n) && n > 0 ? n : null;
-    if (designPricing?.mode === 'set') return designPricing.amount ?? base;
-    if (designPricing?.mode === 'extra' && base !== null) return base + Number(designPricing.extra_charge ?? 0);
-    return base;
-  }, [quoted, option, service, designPricing]);
+  const lines = useMemo(() => priceLines({
+    group: f.mode === 'group', roster: f.roster, quantity: f.quantity, pricing, option, service: service ?? null, design: designPricing, quoted,
+  }), [f.mode, f.roster, f.quantity, pricing, option, service, designPricing, quoted]);
   const rushAvailable = terms ? terms.rush_available : Boolean(data.store && (data.store as { rush_available?: boolean }).rush_available !== false);
   const rushPercent = terms?.rush_fee_percent ?? Number((data.store as { rush_fee_percent?: number } | null)?.rush_fee_percent ?? 30);
   const rushPerPiece = terms?.rush_fee_mode === 'per_piece' ? terms.rush_fee_per_piece : null;
   const money = orderMoney({
-    unitPrice, pieces,
+    lines,
     fabricEach: f.material === 'own' ? Number(service?.own_fabric_deduction ?? 0) || 0 : 0,
     rushAsked: f.rush && rushAvailable, rushPerPiece, rushPercent, depositPercent, payFull: f.payFull || policy === 'full',
   });
@@ -119,7 +119,7 @@ export function useServiceOrder(storeId: string) {
   return {
     router, user, storeId, data, f, step, setStep, problem, submit, submitting, error, placed,
     service, store: data.store, pricing, option, area, areaLocked, answerContext, measurementsNeeded, sizesNeeded, hasChart, chartSizes, groupMin, groupOnly, rosterColumns, pieces, design,
-    policy, depositPercent, quoted, unitPrice, rushAvailable, rushPercent, rushPerPiece, money,
+    policy, depositPercent, quoted, unitPrice: money.unitPrice, rushAvailable, rushPercent, rushPerPiece, money, personOptions, perPerson,
     isRepairOnly: !!service && (service.service_types ?? []).length === 1 && service.service_types![0] === 'alteration_repair',
   };
 }

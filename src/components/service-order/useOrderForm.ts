@@ -23,6 +23,8 @@ export interface RosterRow {
   /** This person's own unit for each measurement (inches unless switched). */
   units: Record<string, Unit>;
   extra: Record<string, string>;
+  /** This person's own option on a group order (Complete set / Blouse only…); null = the order's option. */
+  pricingId?: number | null;
 }
 
 export const CUSTOM_FIT = 'Custom Fit';

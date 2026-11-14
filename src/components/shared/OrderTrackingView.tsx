@@ -23,6 +23,8 @@ export interface QuotationFlow {
   quotation_status: 'estimate' | 'final' | null;
   breakdown: {
     base_price: number;
+    /** Line by line when people got different options; null for one price. */
+    price_lines?: { label: string; unit: number; qty: number }[] | null;
     quantity_adjustment: number;
     additional_charges: { label: string; amount: number }[];
     customer_provided_deduction: { label: string; amount: number }[];

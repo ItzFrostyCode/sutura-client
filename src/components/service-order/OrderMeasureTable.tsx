@@ -5,6 +5,7 @@ import type { ServiceOrderState } from './useServiceOrder';
 import type { RosterRow } from './useOrderForm';
 import OrderInfoTip from './OrderInfoTip';
 import OrderAddColumn from './OrderAddColumn';
+import OrderGetsSelect from './OrderGetsSelect';
 import OrderUnitCell from './OrderUnitCell';
 import type { Area, MeasuringPoint } from './orderPoints';
 import { CUTS, CUT_COLUMN, CUT_TIP, type MeasureColumns } from './useMeasureColumns';
@@ -96,9 +97,7 @@ export default function OrderMeasureTable({ o, c }: Readonly<{ o: ServiceOrderSt
                 ))}
                 {!o.areaLocked && (
                   <td className="px-2 py-1.5">
-                    <select value={gets} aria-label={`What ${who} gets`} onChange={(e) => f.updateRow(r.id, { area: e.target.value as Area })} className={`${FIELD} px-2`}>
-                      {GETS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                    </select>
+                    <OrderGetsSelect o={o} row={r} className={`${FIELD} px-2`} />
                   </td>
                 )}
                 {c.top.map((p, k) => cell(r, p, gets === 'bottom', k === 0))}

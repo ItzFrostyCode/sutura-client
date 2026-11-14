@@ -7,6 +7,7 @@ import DirectorySearchBar from '@/components/shared/DirectorySearchBar';
 import HomeFooter from '@/components/home/HomeFooter';
 import CategoriesVisualGrid from '@/components/categories/CategoriesVisualGrid';
 import CategoriesAlphabetDirectory from '@/components/categories/CategoriesAlphabetDirectory';
+import CategoriesServiceIntents from '@/components/categories/CategoriesServiceIntents';
 
 export default function CategoriesPage() {
   const router = useRouter();
@@ -19,10 +20,6 @@ export default function CategoriesPage() {
 
   return (
     <div className="flex flex-1 flex-col bg-canvas">
-      <div className="sticky top-0 z-50">
-        
-      </div>
-
       <main className="flex-1 mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-6 sm:py-8">
         
         
@@ -37,32 +34,30 @@ export default function CategoriesPage() {
         <div className="mb-6">
           <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">All Categories</h1>
           <p className="mobile-body-md text-ink-muted max-w-2xl">
-            Explore every custom garment category, tailoring service, and alteration option available across SUTURA shops in Davao City.
+            Find a tailoring shop in Davao City by the work you need, or by the garment.
           </p>
         </div>
 
-        {/* Top Visual Bar: Shopee-Style 2-Row Grid Carousel */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-ink-muted">
-              Main Categories
-            </h2>
-          </div>
-          <CategoriesVisualGrid />
-        </div>
+        {/* Two questions a customer asks, kept apart: the work they need, and the garment. */}
+        <CategoriesServiceIntents />
 
-        {/* Search Bar - Landing page rounded style with generous height, no filter */}
-        <DirectorySearchBar
-          value={query}
-          onChange={setQuery}
-          onSubmit={handleSearchSubmit}
-          placeholder="Search categories or sub-categories, e.g. Barong, Wedding Gown, Uniforms, Alterations..."
-          ariaLabel="Search categories or sub-categories"
-          className="mb-6"
-        />
+        <section aria-labelledby="garments-title">
+          <h2 id="garments-title" className="mobile-h2 sm:tablet-h2 text-ink">Browse by garment</h2>
+          <p className="mobile-body-sm mt-1 mb-4 text-ink-muted">Shops that make it, alter it or fix it.</p>
+          <CategoriesVisualGrid className="mb-8" />
+
+          <DirectorySearchBar
+            value={query}
+            onChange={setQuery}
+            onSubmit={handleSearchSubmit}
+            placeholder="Search a garment, e.g. barong, wedding gown, slacks"
+            ariaLabel="Search garments"
+            className="mb-6"
+          />
 
         {/* A–Z Alphabet Index Bar & 4-Column Directory */}
-        <CategoriesAlphabetDirectory query={query} />
+          <CategoriesAlphabetDirectory query={query} />
+        </section>
       </main>
 
       <HomeFooter />

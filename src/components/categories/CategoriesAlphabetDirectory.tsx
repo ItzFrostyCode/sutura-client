@@ -97,10 +97,10 @@ export default function CategoriesAlphabetDirectory({ query }: CategoriesAlphabe
       {filteredGroups.length === 0 && (
         <div className="py-12 text-center bg-surface border border-line">
           <p className="text-ink text-base font-medium">
-            No categories match &ldquo;{query}&rdquo;
+            No garment matches &ldquo;{query}&rdquo;
           </p>
           <p className="text-ink-muted text-xs mt-1">
-            Try searching for terms like &ldquo;Barong&rdquo;, &ldquo;Suit&rdquo;, &ldquo;Uniform&rdquo;, or &ldquo;Dress&rdquo;.
+            Try &ldquo;barong&rdquo;, &ldquo;suit&rdquo;, &ldquo;uniform&rdquo; or &ldquo;dress&rdquo;, or press Enter to search every shop.
           </p>
         </div>
       )}

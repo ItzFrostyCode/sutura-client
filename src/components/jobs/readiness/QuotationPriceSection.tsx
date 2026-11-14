@@ -17,13 +17,26 @@ export default function QuotationPriceSection({ f, pieces }: QuotationPriceSecti
   const differs = basis.amount !== null && Math.abs(f.unit - basis.amount) > 0.004;
   return (
     <>
+      {f.lines ? (
+        // People on this order got different options: each line keeps its own price (8 sets; 2 blouses).
+        <fieldset className="space-y-3">
+          <legend className={PLAIN_LABEL}>Price per option</legend>
+          {f.lines.map((l, i) => (
+            <div key={`${l.label}-${i}`} className="rounded-xl border border-line p-3">
+              <p className="text-sm font-medium text-ink">{l.label} <span className="font-normal text-ink-muted">× {l.qty}</span></p>
+              <PesoInput value={l.unit} onChange={(v) => f.setLineUnit(i, v)} className="mt-1.5 font-normal" />
+              <p className="mt-1 text-[13px] text-ink-muted">{peso(l.unit)} × {l.qty} = {peso(l.unit * l.qty)}</p>
+            </div>
+          ))}
+        </fieldset>
+      ) : (
       <div>
         <label className={PLAIN_LABEL}>Price per piece
           <PesoInput value={f.unit} onChange={f.setUnit} className="mt-1.5 font-normal" />
         </label>
         {basis.amount !== null ? (
           <div className="flex flex-wrap items-center gap-x-3">
-            <p className="text-[13px] text-ink-muted">From the {basis.source}: {peso(basis.amount)} each</p>
+            <p className="text-[13px] text-ink-muted">{basis.source === 'order' ? 'What the customer ordered' : `From the ${basis.source}`}: {peso(basis.amount)} each</p>
             {differs && <button type="button" onClick={() => f.setUnit(basis.amount ?? 0)} className="min-h-11 text-[13px] font-medium text-espresso underline-offset-2 hover:underline">Reset to {peso(basis.amount)}</button>}
           </div>
         ) : (
@@ -31,6 +44,7 @@ export default function QuotationPriceSection({ f, pieces }: QuotationPriceSecti
         )}
         <p className="text-sm font-medium text-ink">{peso(f.unit)} × {pieces} pcs = {peso(f.goods)}</p>
       </div>
+      )}
       <div>
         <label className={PLAIN_LABEL}>Bulk discount (optional)
           <PesoInput value={f.discount} onChange={f.setDiscount} className="mt-1.5 font-normal" />

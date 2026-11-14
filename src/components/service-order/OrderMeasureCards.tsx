@@ -6,10 +6,10 @@ import type { ServiceOrderState } from './useServiceOrder';
 import type { RosterRow } from './useOrderForm';
 import type { Area, MeasuringPoint, Unit } from './orderPoints';
 import OrderUnitCell from './OrderUnitCell';
+import OrderGetsSelect from './OrderGetsSelect';
 import { CUTS, CUT_COLUMN, type MeasureColumns } from './useMeasureColumns';
 
 const FIELD = 'h-12 w-full min-w-0 rounded-xl border border-line bg-surface text-base text-ink focus:border-ink focus:outline-none';
-const GETS: { value: Area; label: string }[] = [{ value: 'both', label: 'Set' }, { value: 'top', label: 'Top' }, { value: 'bottom', label: 'Bottom' }];
 
 function Points({ title, points, r, onChange, onUnit }: Readonly<{
   title: string; points: MeasuringPoint[]; r: RosterRow; onChange: (label: string, v: string) => void; onUnit: (label: string, u: Unit) => void;
@@ -57,11 +57,7 @@ function PersonCard({ o, c, r, i }: Readonly<{ o: ServiceOrderState; c: MeasureC
           <option value="">Cut (optional)</option>
           {CUTS.map((cut) => <option key={cut} value={cut}>{cut} cut</option>)}
         </select>
-        {!o.areaLocked && (
-          <select value={gets} aria-label={`What ${who} gets`} onChange={(e) => f.updateRow(r.id, { area: e.target.value as Area })} className={`${FIELD} px-2`}>
-            {GETS.map((g) => <option key={g.value} value={g.value}>Gets: {g.label}</option>)}
-          </select>
-        )}
+        <OrderGetsSelect o={o} row={r} className={`${FIELD} px-2`} prefix="Gets: " />
       </div>
       {o.rosterColumns.length > 0 && (
         <div className="mt-2 grid grid-cols-2 gap-2 pl-8">
