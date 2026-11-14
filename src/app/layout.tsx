@@ -37,8 +37,10 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${outfit.variable} ${playfair.variable} h-full antialiased bg-[#FAF6F3] text-[#2D2A26]`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-sans">
+      {/* Browser extensions inject attributes (e.g. location="localhost") on <body> before hydration. */}
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         <ToastProvider>
           <NetworkGuard>
             <AuthHydrator />
