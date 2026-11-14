@@ -11,6 +11,7 @@ import EmptyState from '@/components/account/EmptyState';
 import PayForOrder from '@/components/account/orders/PayForOrder';
 import QuotationApprovalCard from '@/components/shared/QuotationApprovalCard';
 import OrderPaymentsCard from '@/components/account/orders/OrderPaymentsCard';
+import OrderClaimsSection from '@/components/account/orders/OrderClaimsSection';
 
 export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -54,6 +55,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
         const payActive = !['cancelled', 'rejected', 'completed'].includes(order.status) && !(order.quotation_flow && order.status === 'pending' && !order.quotation_flow.approved_at);
         const showPay = payActive && order.balance > 0;
         const payments = order.payments ?? [];
+        const canReport = order.status === 'completed';
         return (
         <>
           <OrderTrackingView
@@ -62,8 +64,8 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
               <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
             ) : null}
             // The side column: Pay for this order (while there is something to pay), then Your Payments (each payment and
-            // the shop's decision), then the related appointments.
-            aside={showPay || payments.length > 0 ? (
+            // the shop's decision), then Report a problem on a completed order, then the related appointments.
+            aside={showPay || payments.length > 0 || canReport ? (
               <div className="space-y-4">
               {showPay && <PayForOrder
                 orderId={Number(id)}
@@ -78,6 +80,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
                 onSubmitted={load}
               />}
               {payments.length > 0 && <OrderPaymentsCard payments={payments} canPayAgain={showPay} />}
+              {canReport && <OrderClaimsSection orderId={Number(id)} storeSlug={order.store?.slug} />}
               </div>
             ) : null}
           />

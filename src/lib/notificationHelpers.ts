@@ -10,6 +10,9 @@ import {
   PauseCircle,
   Info,
   MessageSquare,
+  CheckCircle2,
+  Wrench,
+  Banknote,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -198,6 +201,13 @@ export const TYPE_CONFIG: Record<string, TypeConfig> = {
     color: 'text-emerald-700',
     label: 'Customer Review',
   },
+  claim_filed: { icon: AlertTriangle, bg: 'bg-amber-50', color: 'text-amber-700', label: 'Problem Reported' },
+  claim_accepted: { icon: CheckCircle2, bg: 'bg-emerald-50', color: 'text-emerald-700', label: 'Problem Accepted' },
+  claim_declined: { icon: XCircle, bg: 'bg-red-50', color: 'text-red-700', label: 'Problem Declined' },
+  claim_repair_offered: { icon: Wrench, bg: 'bg-blue-50', color: 'text-blue-700', label: 'Free Repair Offered' },
+  claim_offer_declined: { icon: Banknote, bg: 'bg-amber-50', color: 'text-amber-700', label: 'Refund Kept' },
+  claim_offer_accepted: { icon: Wrench, bg: 'bg-emerald-50', color: 'text-emerald-700', label: 'Repair Accepted' },
+  claim_refunded: { icon: Banknote, bg: 'bg-emerald-50', color: 'text-emerald-700', label: 'Refund Sent' },
   default: {
     icon: Info,
     bg: 'bg-sunken',
