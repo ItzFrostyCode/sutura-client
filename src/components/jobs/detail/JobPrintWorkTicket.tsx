@@ -15,7 +15,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
 
   const customSpecEntries = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(
-        ([k]) => !['roster', 'team_roster', 'size_breakdown', 'personalization_config'].includes(k)
+        ([k]) => !['roster', 'team_roster', 'size_breakdown', 'personalization_config', 'member_measurements'].includes(k)
       )
     : [];
 

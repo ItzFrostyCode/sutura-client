@@ -4,6 +4,7 @@ import React from 'react';
 import { Shirt, CheckCircle2, Circle, Ruler } from 'lucide-react';
 import { Job, RosterItem } from '../jobTypes';
 import { CUSTOM_SIZE } from '@/components/store-catalog-detail/BulkOrderSheet';
+import { MEASUREMENT_FIELDS, MEASUREMENT_LABELS } from '@/lib/garmentMeasurements';
 
 interface JobRosterCardProps {
   job: Job;
@@ -132,6 +133,11 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
   if (!sizeBreakdown || typeof sizeBreakdown !== 'object') return null;
   const entries = Object.entries(sizeBreakdown).filter(([, qty]) => Number(qty) > 0);
   if (entries.length === 0) return null;
+  // Online bulk orders: optional body measurements the customer gave for some people.
+  const members = (Array.isArray(job.custom_order_data?.member_measurements)
+    ? job.custom_order_data.member_measurements
+    : []) as Array<Record<string, string | undefined>>;
+  const memberKeys = MEASUREMENT_FIELDS.map((f) => f.key).filter((k) => members.some((m) => m[k]));
 
   const total = entries.reduce((sum, [, qty]) => sum + Number(qty), 0);
   const garmentType = job.custom_order_data?.garment_type as string | undefined;
@@ -161,6 +167,43 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
           </span>
         ))}
       </div>
+
+      {members.length > 0 && (
+        <div className="space-y-2 pt-3 border-t border-line">
+          <p className="text-xs font-bold text-ink flex items-center gap-1.5">
+            <Ruler size={13} className="text-taupe" /> Body measurements from the customer
+            <span className="font-semibold text-ink-muted">({members.length} {members.length === 1 ? 'person' : 'people'})</span>
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-120 text-left text-xs divide-y divide-line">
+              <thead>
+                <tr className="text-ink-muted font-bold uppercase tracking-wider text-[10px]">
+                  <th className="pb-2 w-8">#</th>
+                  <th className="pb-2">Name</th>
+                  <th className="pb-2">Size</th>
+                  {memberKeys.map((k) => (
+                    <th key={k} className="pb-2 whitespace-nowrap">{MEASUREMENT_LABELS[k] ?? k}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line/60">
+                {members.map((m, i) => (
+                  <tr key={`${m.name ?? ''}-${i}`}>
+                    <td className="py-2 text-ink-faint font-mono">{i + 1}</td>
+                    <td className="py-2 font-semibold text-ink">{m.name || '—'}</td>
+                    <td className="py-2">{m.size ? <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{m.size}</span> : '—'}</td>
+                    {memberKeys.map((k) => (
+                      <td key={k} className="py-2 tabular-nums text-ink-body whitespace-nowrap">
+                        {m[k] ? `${m[k]} ${m.unit === 'cm' ? 'cm' : 'in'}` : '—'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

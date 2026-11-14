@@ -33,6 +33,16 @@ export type IndividualMeasurements = BodyMeasurements;
 
 export const BULK_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] as const;
 const MAX_PHOTOS = 5;
+/** Most people a bulk order can list with their own body measurements. */
+export const MAX_MEMBERS = 100;
+
+/** One person in a bulk order with their own (optional) body measurements. */
+export interface BulkMember {
+  id: number;
+  name: string;
+  size: string;
+  values: IndividualMeasurements;
+}
 const EMPTY_MEASUREMENTS: IndividualMeasurements = EMPTY_BODY_MEASUREMENTS;
 
 // Customer-side "Online Order" for one service. Follows the shop's walk-in
@@ -68,7 +78,15 @@ export function useServiceOrder(storeId: string) {
   const [step, setStep] = useState(1);
 
   // 1 · Customer Information
-  const [contactPhone, setContactPhone] = useState('');
+  // A PH mobile number, kept as 11 digits (09XXXXXXXXX). "+63 917…" becomes "0917…".
+  const [contactPhone, setContactPhoneRaw] = useState('');
+  const setContactPhone = (value: string) => {
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('63') && digits.length > 11) digits = `0${digits.slice(2)}`;
+    else if (digits.startsWith('9') && digits.length === 10) digits = `0${digits}`;
+    setContactPhoneRaw(digits.slice(0, 11));
+  };
+  const phoneValid = /^09\d{9}$/.test(contactPhone);
   const [branchId, setBranchId] = useState<number | null>(null);
 
   // 2 · Measurements
@@ -80,6 +98,8 @@ export function useServiceOrder(storeId: string) {
   const [measurements, setMeasurements] = useState<IndividualMeasurements>(EMPTY_MEASUREMENTS);
   const [sizeBreakdown, setSizeBreakdown] = useState<Record<string, string>>({});
   const [teamName, setTeamName] = useState('');
+  // Bulk: optional body measurements per person (name, size, measurements).
+  const [members, setMembers] = useState<BulkMember[]>([]);
   const [sheets, setSheets] = useState<string[]>([]);
   const [uploadingSheet, setUploadingSheet] = useState(false);
 
@@ -113,7 +133,9 @@ export function useServiceOrder(storeId: string) {
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
   useEffect(() => {
-    if (user?.phone) setContactPhone((prev) => prev || user.phone || '');
+    if (user?.phone && !contactPhone) setContactPhone(user.phone);
+    // Only when the account's number loads; never overwrite what the customer typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.phone]);
 
   useEffect(() => {
@@ -182,7 +204,20 @@ export function useServiceOrder(storeId: string) {
   const measurementsNeeded = requirements?.measurement_requirement !== 'none';
   const isRepairOnly = !!service && (service.service_types ?? []).length === 1 && service.service_types![0] === 'alteration_repair';
 
-  const bulkPieces = Object.values(sizeBreakdown).reduce((sum, v) => sum + (Number.parseInt(v, 10) || 0), 0);
+  // A bulk order counts pieces in the service's own chart sizes when it has a size chart.
+  const bulkSizes: string[] = sizes.length > 0 ? sizes : [...BULK_SIZES];
+  const bulkPieces = bulkSizes.reduce((sum, s) => sum + (Number.parseInt(sizeBreakdown[s] ?? '', 10) || 0), 0);
+
+  const addMember = () =>
+    setMembers((prev) => prev.length >= MAX_MEMBERS ? prev : [
+      ...prev,
+      { id: Date.now() + prev.length, name: '', size: '', values: { ...EMPTY_MEASUREMENTS, unit: prev[prev.length - 1]?.values.unit ?? 'in' } },
+    ]);
+  const updateMember = (id: number, patch: Partial<Omit<BulkMember, 'id'>>) =>
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  const removeMember = (id: number) => setMembers((prev) => prev.filter((m) => m.id !== id));
+  // Only people with a name or at least one measurement are sent.
+  const filledMembers = members.filter((m) => m.name.trim() !== '' || hasAnyMeasurement(m.values, garmentType));
   const pieces = orderMode === 'bulk' ? bulkPieces : quantity;
 
   const unitPrice = useMemo(() => {
@@ -212,7 +247,7 @@ export function useServiceOrder(storeId: string) {
   const hasOwnMeasurement = hasAnyMeasurement(measurements, garmentType);
 
   const stepReady: Record<number, boolean> = {
-    1: contactPhone.replace(/\D/g, '').length >= 7 && (branches.length <= 1 || branchId !== null),
+    1: phoneValid && (branches.length <= 1 || branchId !== null),
     2:
       !uploadingSheet &&
       (orderMode === 'bulk'
@@ -279,9 +314,14 @@ export function useServiceOrder(storeId: string) {
         measurement_source: individual && measurementsNeeded ? measurementSource : undefined,
         garment_category: garmentType || undefined,
         individual_measurements: individual && measurementSource === 'own' && hasOwnMeasurement ? pickMeasurements(measurements, garmentType) : undefined,
-        size_breakdown: individual ? undefined : sizeBreakdown,
+        size_breakdown: individual ? undefined : Object.fromEntries(bulkSizes.map((s) => [s, sizeBreakdown[s] ?? ''])),
         team_name: individual ? undefined : teamName.trim() || undefined,
-        measurement_sheets: individual && measurementSource === 'own' ? sheets : [],
+        member_measurements: individual || filledMembers.length === 0 ? undefined : filledMembers.map((m) => ({
+          name: m.name.trim() || undefined,
+          size: m.size || undefined,
+          ...pickMeasurements(m.values, garmentType),
+        })),
+        measurement_sheets: (individual && measurementSource === 'own') || !individual ? sheets : [],
         pricing_id: pricingId ?? undefined,
         size: individual ? size.trim() || undefined : undefined,
         material_source: materialSource === 'own' ? 'customer_supplied' : 'store_supplied',
@@ -324,6 +364,7 @@ export function useServiceOrder(storeId: string) {
     // 1
     contactPhone,
     setContactPhone,
+    phoneValid,
     branches,
     branchId,
     setBranchId,
@@ -343,6 +384,12 @@ export function useServiceOrder(storeId: string) {
     sizeBreakdown,
     setSizeBreakdown,
     bulkPieces,
+    bulkSizes,
+    members,
+    addMember,
+    updateMember,
+    removeMember,
+    maxMembers: MAX_MEMBERS,
     teamName,
     setTeamName,
     sheets,

@@ -31,7 +31,7 @@ export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementC
   const customSpecEntries = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(
         ([label, value]) =>
-          !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config', 'individual_measurements', 'measurement_sheets'].includes(label) &&
+          !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config', 'individual_measurements', 'measurement_sheets', 'member_measurements'].includes(label) &&
           value !== null && value !== ''
       )
     : [];

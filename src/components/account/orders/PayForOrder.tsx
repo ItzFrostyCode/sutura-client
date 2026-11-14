@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Landmark, Smartphone, Wallet } from 'lucide-react';
 import PayMethodDialog from './PayMethodDialog';
 import { usePayForOrder, type ShopPaymentMethod } from './usePayForOrder';
@@ -26,14 +26,30 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
   const [chosen, setChosen] = useState<ShopPaymentMethod | null>(null);
   const outstanding = Math.max(0, Math.round((balance - pending) * 100) / 100);
 
+  // Opened from "Pay ₱X" on My Orders (#pay): scroll here once the box has loaded.
+  useEffect(() => {
+    if (pay.loading || typeof window === 'undefined' || window.location.hash !== '#pay') return;
+    document.getElementById('pay')?.scrollIntoView({ block: 'start' });
+  }, [pay.loading]);
+
   if (!active || pay.loading || balance <= 0) return null;
   if (outstanding <= 0) {
-    return <p className="mobile-caption text-ink-muted font-normal mt-4">Your payment was sent and is waiting for the shop to verify it.</p>;
+    return <p id="pay" className="mobile-caption text-ink-muted font-normal mb-4 scroll-mt-20">Your payment was sent and is waiting for the shop to verify it.</p>;
   }
-  if (pay.methods.length === 0) return null;
+  if (pay.methods.length === 0) {
+    // Never a silent gap: say why there's no pay button.
+    return (
+      <section id="pay" className="bg-surface border border-line p-4 mb-4 scroll-mt-20" aria-label="Pay for this order">
+        <h2 className="mobile-h4 font-semibold text-ink">₱{outstanding.toLocaleString()} left to pay</h2>
+        <p className="mobile-body-sm text-ink-muted font-normal mt-1">
+          This shop hasn&apos;t added a GCash or bank account for online payment yet. Pay at the shop, or check back here later.
+        </p>
+      </section>
+    );
+  }
 
   return (
-    <section className="bg-surface border border-line p-4 mt-4" aria-label="Pay for this order">
+    <section id="pay" className="bg-surface border border-line p-4 mb-4 scroll-mt-20" aria-label="Pay for this order">
       <h2 className="mobile-h4 font-semibold text-ink">Pay for this order</h2>
       <p className="mobile-body-sm text-ink-muted font-normal mt-1">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
       {requiredDeposit > 0 && totalAmount - balance + 0.005 < requiredDeposit && (

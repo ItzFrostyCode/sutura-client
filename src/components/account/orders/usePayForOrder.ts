@@ -17,7 +17,10 @@ export function usePayForOrder(orderId: number, storeSlug: string | undefined, b
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!storeSlug) return;
+    if (!storeSlug) {
+      setLoading(false);
+      return;
+    }
     api.get(`/public/stores/${storeSlug}/payment-methods`, { params: branchId ? { branch_id: branchId } : {} })
       .then((r) => setMethods(r.data?.data ?? []))
       .catch(() => setMethods([]))

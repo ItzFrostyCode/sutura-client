@@ -325,27 +325,9 @@ export function useJobCreateForm() {
     }
   }, [store, formData.customer_id, searchParams]);
 
-  // Auto-calculate suggested total price based on service base price, quantity,
-  // and rush fee. Quantity multiplies the base price only (several identical
-  // pieces for one person) — the rush fee is a flat add-on for the whole
-  // order, not per-piece, so it's added after multiplying, not before.
-  useEffect(() => {
-    if (!isTotalAmountCustom && formData.service_id) {
-      const selected = services.find((s) => s.id.toString() === formData.service_id);
-      if (selected) {
-        const basePrice = Number.parseFloat(selected.base_price?.toString() || '0');
-        const qty = Math.max(1, Number.parseInt(formData.quantity, 10) || 1);
-        const rushFee = formData.is_rush ? (Number.parseFloat(formData.rush_fee) || 0) : 0;
-        const suggested = basePrice * qty + rushFee;
-        Promise.resolve().then(() => {
-          setFormData((prev) => ({
-            ...prev,
-            total_amount: suggested > 0 ? suggested.toFixed(2) : '',
-          }));
-        });
-      }
-    }
-  }, [formData.service_id, formData.quantity, formData.is_rush, formData.rush_fee, services, isTotalAmountCustom]);
+  // The order total is worked out by the wizard (JobCreateForm) from the price the
+  // owner actually typed, plus rush fee, minus own fabric. A total from the
+  // service's list price here used to overwrite it whenever Rush was ticked.
 
   // Auto-suggest a due date from turnaround
   useEffect(() => {

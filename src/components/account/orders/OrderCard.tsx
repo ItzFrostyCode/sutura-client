@@ -8,10 +8,13 @@ export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
   const meta = getPhaseMeta(order.status);
   const StatusIcon = meta.Icon;
   const itemName = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? order.garment_category ?? 'Garment';
+  // Something left to pay (not counting a payment the shop is still checking) on an open order.
+  const toPay = Math.max(0, Math.round((order.balance - (order.pending_payment_amount ?? 0)) * 100) / 100);
+  const canPay = toPay > 0 && !['cancelled', 'rejected', 'completed'].includes(order.status);
 
   return (
     <Link
-      href={`/account/orders/${order.id}`}
+      href={canPay ? `/account/orders/${order.id}#pay` : `/account/orders/${order.id}`}
       className="flex gap-3 bg-surface border border-line p-3.5 hover:border-line-strong transition-colors"
     >
       <div className="w-[52px] h-[52px] rounded-full bg-sunken overflow-hidden relative shrink-0 border border-line">
@@ -68,9 +71,15 @@ export default function OrderCard({ order }: Readonly<{ order: MyOrder }>) {
               ₱{order.balance.toLocaleString()} balance of ₱{order.total_amount.toLocaleString()}
             </span>
           </div>
-          <div className="w-7 h-7 rounded-full bg-sunken flex items-center justify-center shrink-0 text-ink-muted">
-            <Eye size={14} />
-          </div>
+          {canPay ? (
+            <span className="h-8 px-3 rounded-full bg-taupe text-white text-xs font-semibold flex items-center gap-1 shrink-0">
+              Pay ₱{toPay.toLocaleString()}
+            </span>
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-sunken flex items-center justify-center shrink-0 text-ink-muted">
+              <Eye size={14} />
+            </div>
+          )}
         </div>
 
         {!!order.pending_payment_amount && order.pending_payment_amount > 0 && (

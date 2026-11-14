@@ -143,6 +143,8 @@ export default function JobCreateForm() {
   const servicePricing = selectedService?.pricing ?? [];
   const selectedPricing = servicePricing.find((p) => p.id === pricingId) ?? null;
   const [paymentTerm, setPaymentTerm] = useState<'full' | 'downpayment'>('downpayment');
+  // Cash the customer hands over for what's paid now ('' = exact amount).
+  const [cashTendered, setCashTendered] = useState('');
 
   // Sync incoming customer if prefilled from query
   useEffect(() => {
@@ -159,7 +161,12 @@ export default function JobCreateForm() {
 
   // Sync unit price from service or catalog item
   useEffect(() => {
-    if (catalogItemId) {
+    if (servicePackage) {
+      // A combo is sold at its bundle price (or, with none, its services' total).
+      const sum = (servicePackage.services ?? []).reduce((t, s) => t + (Number(s.base_price) || 0), 0);
+      const price = servicePackage.bundle_price ? Number(servicePackage.bundle_price) : sum;
+      if (price > 0) setItemRate(String(price));
+    } else if (catalogItemId) {
       const cat = catalogItems.find((c) => c.id.toString() === catalogItemId);
       if (cat && cat.price) {
         setItemRate(cat.price.toString());
@@ -170,7 +177,25 @@ export default function JobCreateForm() {
         setItemRate(svc.base_price.toString());
       }
     }
-  }, [catalogItemId, formData.service_id, catalogItems, services]);
+  }, [servicePackage, catalogItemId, formData.service_id, catalogItems, services]);
+
+  // The total always follows the price typed on step 4: price × pieces + rush fee
+  // − the customer's own fabric. The amount paid now follows it too: the whole
+  // total on Full Payment, and never more than the total on a deposit.
+  const fabricLessNow = formData.material_source === 'customer_supplied' ? Math.max(0, Number(fabricDeduction) || 0) : 0;
+  useEffect(() => {
+    const rate = parseFloat(itemRate) || 0;
+    if (rate <= 0) return;
+    const qty = isBulkOrder ? Math.max(1, parseInt(formData.quantity, 10) || 1) : 1;
+    const rush = formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0;
+    const total = Math.max(0, rate * qty + rush - fabricLessNow).toFixed(2);
+    setFormData((prev) => {
+      const paid = parseFloat(prev.downpayment) || 0;
+      const downpayment = paymentTerm === 'full' ? total : paid > Number(total) ? total : prev.downpayment;
+      if (prev.total_amount === total && prev.downpayment === downpayment) return prev;
+      return { ...prev, total_amount: total, downpayment };
+    });
+  }, [itemRate, isBulkOrder, formData.quantity, formData.is_rush, formData.rush_fee, fabricLessNow, paymentTerm, setFormData]);
 
   // Sync bulk quantities
   useEffect(() => {
@@ -336,6 +361,16 @@ export default function JobCreateForm() {
       return;
     }
 
+    // Cash handed over has to cover what's being paid now (empty = exact amount).
+    {
+      const total = parseFloat(formData.total_amount) || 0;
+      const payingNow = Math.min(total, paymentTerm === 'full' ? total : parseFloat(formData.downpayment) || 0);
+      if (cashTendered.trim() !== '' && payingNow > 0 && Number(cashTendered) < payingNow) {
+        setWizardError("Cash tendered can't be less than the amount being paid now.");
+        return;
+      }
+    }
+
     setSubmitting(true);
     setWizardError('');
 
@@ -360,6 +395,7 @@ export default function JobCreateForm() {
       const downPay = paymentTerm === 'full' ? totalAmt : (parseFloat(formData.downpayment) || 0);
       const appliedDownPay = Math.min(downPay, totalAmt);
       const balance = Math.max(0, totalAmt - appliedDownPay);
+      const tendered = cashTendered.trim() === '' ? null : Number(cashTendered);
 
       // 3. Merge all image references
       const combinedImages = Array.from(
@@ -383,6 +419,7 @@ export default function JobCreateForm() {
         total_amount: totalAmt.toFixed(2),
         discount_amount: 0,
         balance: balance.toFixed(2),
+        cash_tendered: tendered !== null && appliedDownPay > 0 ? tendered : null,
         due_date: formData.due_date || null,
         notes: formData.notes,
         custom_order_data: {
@@ -580,6 +617,8 @@ export default function JobCreateForm() {
           onSelectPricing={setPricingId}
           paymentTerm={paymentTerm}
           setPaymentTerm={setPaymentTerm}
+          cashTendered={cashTendered}
+          setCashTendered={setCashTendered}
           isBulkOrder={isBulkOrder}
           submitting={submitting}
           onBack={() => goToStep(3)}

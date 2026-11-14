@@ -51,7 +51,8 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
 
       {!loading && !notFound && order && (
         <>
-          <OrderTrackingView order={order} stepperLayout="vertical" />
+          {/* Paying comes first, so it's never below a long progress stepper. Same width as the tracker. */}
+          <div className="md:max-w-3xl md:mx-auto">
           <PayForOrder
             orderId={Number(id)}
             storeSlug={order.store?.slug}
@@ -64,6 +65,8 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
             active={!['cancelled', 'rejected', 'completed'].includes(order.status)}
             onSubmitted={load}
           />
+          </div>
+          <OrderTrackingView order={order} stepperLayout="vertical" />
           <OrderClaimsSection orderId={Number(id)} storeSlug={order.store?.slug} status={order.status} />
         </>
       )}

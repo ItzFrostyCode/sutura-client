@@ -28,6 +28,9 @@ interface Step4InvoicePaymentProps {
   onSelectPricing: (pricingId: number | null) => void;
   paymentTerm: 'full' | 'downpayment';
   setPaymentTerm: (term: 'full' | 'downpayment') => void;
+  /** Cash the customer hands over for what's paid now ('' = exact amount). */
+  cashTendered: string;
+  setCashTendered: (v: string) => void;
   /** Individual orders are always 1 piece; a bulk order's count comes from its size sheet. */
   isBulkOrder: boolean;
   submitting: boolean;
@@ -48,6 +51,8 @@ export default function Step4InvoicePayment({
   onSelectPricing,
   paymentTerm,
   setPaymentTerm,
+  cashTendered,
+  setCashTendered,
   isBulkOrder,
   submitting,
   onBack,
@@ -58,28 +63,28 @@ export default function Step4InvoicePayment({
   const rushFee = formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0;
 
   // Total = price × pieces + rush fee − customer's own fabric (never below zero).
-  const totalFor = (r: number, fee: number) => Math.max(0, r * qty + fee - fabricDeduction).toFixed(2);
+  // JobCreateForm keeps formData.total_amount in step with this; it's worked out
+  // here too so the summary never shows a stale figure for a frame.
   const subtotal = rate * qty + rushFee;
   const fabricTooHigh = fabricDeduction > 0 && rate > 0 && fabricDeduction > subtotal;
-  const computedNetTotal = rate > 0 ? totalFor(rate, rushFee) : formData.total_amount;
-  const currentTotal = parseFloat(formData.total_amount || computedNetTotal || '0') || 0;
+  const currentTotal = rate > 0
+    ? Math.max(0, subtotal - fabricDeduction)
+    : parseFloat(formData.total_amount || '0') || 0;
 
-  const currentDeposit = paymentTerm === 'full'
-    ? currentTotal
-    : parseFloat(formData.downpayment || '0') || 0;
+  const currentDeposit = Math.min(
+    currentTotal,
+    paymentTerm === 'full' ? currentTotal : parseFloat(formData.downpayment || '0') || 0,
+  );
 
   const remainingBalance = Math.max(0, currentTotal - currentDeposit);
 
-  const handleRateChange = (newRate: string) => {
-    setItemRate(newRate);
-    const parsedRate = parseFloat(newRate) || 0;
-    const newTotal = parsedRate > 0 ? totalFor(parsedRate, rushFee) : formData.total_amount;
-    setFormData((prev) => ({
-      ...prev,
-      total_amount: newTotal,
-      downpayment: paymentTerm === 'full' ? newTotal : prev.downpayment,
-    }));
-  };
+  // Cash handed over for what's paid now. Empty = exact amount, no change.
+  const tenderedValue = cashTendered.trim() === '' ? null : parseFloat(cashTendered) || 0;
+  const cashShort = tenderedValue !== null && currentDeposit > 0 && tenderedValue < currentDeposit;
+  const change = tenderedValue !== null && !cashShort ? tenderedValue - currentDeposit : 0;
+  const money = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const handleRateChange = (newRate: string) => setItemRate(newRate);
 
   // Default is the whole service; a line from its price list replaces the price (still editable).
   const pickLine = (id: number | null, amount: string | number | null) => {
@@ -89,18 +94,13 @@ export default function Step4InvoicePayment({
   const peso = (a: string | number | null) =>
     a !== null && a !== '' && Number.isFinite(Number(a)) ? `₱${Number(a).toLocaleString('en-PH')}` : 'Quoted';
 
+  // Only the rush flag and fee change here; the total follows the typed price.
   const handleRushToggle = (checked: boolean) => {
-    setFormData((prev) => {
-      const nextRush = checked;
-      const fee = nextRush ? (parseFloat(prev.rush_fee) || 200) : 0;
-      const newTotal = rate > 0 ? totalFor(rate, fee) : prev.total_amount;
-      return {
-        ...prev,
-        is_rush: nextRush,
-        rush_fee: nextRush ? (prev.rush_fee || '200') : '',
-        total_amount: newTotal,
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      is_rush: checked,
+      rush_fee: checked ? (prev.rush_fee || '200') : '',
+    }));
   };
 
   const handleDepositPreset = (fraction: number) => {
@@ -227,11 +227,7 @@ export default function Step4InvoicePayment({
                 value={formData.rush_fee}
                 onChange={(e) => {
                   const fee = e.target.value;
-                  setFormData((prev) => {
-                    const parsedFee = parseFloat(fee) || 0;
-                    const newTot = rate > 0 ? totalFor(rate, parsedFee) : prev.total_amount;
-                    return { ...prev, rush_fee: fee, total_amount: newTot };
-                  });
+                  setFormData((prev) => ({ ...prev, rush_fee: fee }));
                 }}
                 className="w-24 h-8 px-2 bg-surface border border-line rounded-lg text-xs font-bold text-ink"
               />
@@ -337,6 +333,43 @@ export default function Step4InvoicePayment({
             />
           </div>
         )}
+
+        {/* Cash tendered & change — for when the customer doesn't have the exact amount. */}
+        {currentDeposit > 0 && (
+          <div className="p-4 bg-canvas/40 border border-line rounded-xl space-y-3 max-w-lg">
+            <div className="flex items-baseline justify-between gap-3">
+              <label htmlFor="create-cash-tendered" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
+                Cash Tendered (₱)
+              </label>
+              <span className="text-[11px] text-ink-muted">Due now <strong className="tabular-nums text-ink">{money(currentDeposit)}</strong></span>
+            </div>
+            <input
+              id="create-cash-tendered"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={cashTendered}
+              onChange={(e) => setCashTendered(e.target.value)}
+              placeholder={`Exact amount (${money(currentDeposit)})`}
+              aria-invalid={cashShort}
+              aria-describedby="create-cash-help"
+              className={`w-full h-11 px-3.5 bg-surface border rounded-xl text-xs sm:text-sm font-bold text-ink focus:outline-none focus:ring-1 shadow-2xs tabular-nums ${
+                cashShort ? 'border-danger focus:ring-danger focus:border-danger' : 'border-line focus:ring-taupe focus:border-taupe'
+              }`}
+            />
+            <div id="create-cash-help" className="flex items-center justify-between gap-3 text-xs">
+              {cashShort ? (
+                <p role="alert" className="font-semibold text-danger">Cash tendered can&apos;t be less than {money(currentDeposit)}.</p>
+              ) : (
+                <>
+                  <span className="text-ink-muted">{tenderedValue === null ? 'Leave empty if they paid the exact amount.' : 'Change to give back'}</span>
+                  <span className="font-bold tabular-nums text-emerald-700">{money(change)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SUMMARY CARD */}
@@ -378,6 +411,19 @@ export default function Step4InvoicePayment({
               ₱{currentDeposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
+
+          {tenderedValue !== null && currentDeposit > 0 && !cashShort && (
+            <>
+              <div className="flex justify-between items-center text-ink-muted">
+                <span>Cash Tendered:</span>
+                <span className="tabular-nums">{money(tenderedValue)}</span>
+              </div>
+              <div className="flex justify-between items-center text-ink-muted">
+                <span>Change:</span>
+                <span className="tabular-nums font-semibold text-ink">{money(change)}</span>
+              </div>
+            </>
+          )}
 
           {/* Remaining Balance */}
           <div className="flex justify-between items-center pt-2 border-t border-line font-bold">

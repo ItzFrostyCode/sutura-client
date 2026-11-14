@@ -96,7 +96,7 @@ export default function PrintWorkTicketPage() {
 
   const customSpecs = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(([k, v]) =>
-        !['team_roster', 'roster', 'po_number'].includes(k) && v !== null && v !== undefined && String(v).trim() !== ''
+        !['team_roster', 'roster', 'po_number', 'member_measurements'].includes(k) && v !== null && v !== undefined && String(v).trim() !== ''
       )
     : [];
 

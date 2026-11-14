@@ -36,14 +36,24 @@ export default function OrderCustomerStep({ o }: Readonly<{ o: ServiceOrderState
         <input
           id="order-phone"
           type="tel"
-          inputMode="tel"
+          inputMode="numeric"
           autoComplete="tel"
-          maxLength={20}
           value={o.contactPhone}
           onChange={(e) => o.setContactPhone(e.target.value)}
-          placeholder="09XX XXX XXXX"
-          className={FIELD}
+          placeholder="09XXXXXXXXX"
+          aria-invalid={o.contactPhone !== '' && !o.phoneValid}
+          aria-describedby="order-phone-help"
+          className={`${FIELD}${o.contactPhone !== '' && !o.phoneValid ? ' border-danger! focus:border-danger!' : ''}`}
         />
+        <p id="order-phone-help" className={`mobile-caption ${o.contactPhone !== '' && !o.phoneValid ? 'text-danger font-semibold' : 'text-ink-muted'}`}>
+          {o.contactPhone === ''
+            ? '11 digits, starting with 09.'
+            : o.phoneValid
+              ? '11 / 11 digits'
+              : !o.contactPhone.startsWith('09')
+                ? 'The number should start with 09.'
+                : `${o.contactPhone.length} / 11 digits. ${11 - o.contactPhone.length} more to go.`}
+        </p>
       </div>
 
       {o.branches.length > 1 && (
