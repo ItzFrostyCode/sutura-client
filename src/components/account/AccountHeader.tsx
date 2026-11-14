@@ -3,20 +3,24 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { canGoBackInApp } from '@/lib/inAppBack';
 
 interface AccountHeaderProps {
   readonly title: string;
   readonly backHref: string;
   /** A control that belongs to the whole page (e.g. List / Calendar), on the title row's right. */
   readonly action?: ReactNode;
+  /** Keep the back arrow on desktop too: for detail pages (one order, one appointment) the side menu has no entry for. */
+  readonly backOnDesktop?: boolean;
 }
 
 /**
  * The title row of every /account/* sub-page — the page's one H1 at every width.
  * Phone and tablet (below 1024px): sticky, with a back arrow (there is no side menu, so Back is the way up).
  * Desktop (1024px+): the side menu is the navigation, so no back arrow — just the page title, larger.
+ * Detail pages pass `backOnDesktop`, since the side menu can't lead back to the list or notification they came from.
  */
-export default function AccountHeader({ title, backHref, action }: AccountHeaderProps) {
+export default function AccountHeader({ title, backHref, action, backOnDesktop = false }: AccountHeaderProps) {
   const router = useRouter();
   // Settings is a hierarchy (profile → settings → one setting), and leaving it for /location or the map and coming back leaves those
   // screens in the browser history, so a history "back" from Settings landed on them instead of the profile. Under /account/settings
@@ -33,9 +37,10 @@ export default function AccountHeader({ title, backHref, action }: AccountHeader
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // A real back (to wherever the person came from); `backHref` only when there is no app history (opened by URL / new tab).
+  // A real back (to wherever the person came from: the list, a notification, a shop page); `backHref` when the previous
+  // page isn't a SUTURA page (opened by URL, new tab, email link), so Back never leaves the app.
   const handleBack = () => {
-    if (!parentOnly && typeof window !== 'undefined' && window.history.length > 1) router.back();
+    if (!parentOnly && canGoBackInApp()) router.back();
     else router.push(backHref);
   };
 
@@ -46,7 +51,7 @@ export default function AccountHeader({ title, backHref, action }: AccountHeader
           type="button"
           onClick={handleBack}
           aria-label="Back"
-          className="relative -ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink transition-colors before:absolute before:-inset-2 hover:bg-sunken active:bg-sunken lg:hidden"
+          className={`relative -ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink transition-colors before:absolute before:-inset-2 hover:bg-sunken active:bg-sunken ${backOnDesktop ? 'lg:-ml-2 lg:mr-1 lg:h-11 lg:w-11 lg:before:inset-0' : 'lg:hidden'}`}
         >
           <ChevronLeft size={26} />
         </button>

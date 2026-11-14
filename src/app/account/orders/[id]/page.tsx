@@ -40,7 +40,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
 
   return (
     <div>
-      <AccountHeader title="Order Details" backHref="/account/orders" />
+      <AccountHeader title="Order Details" backHref="/account/orders" backOnDesktop />
 
       {loading && (
         <div className="text-center py-16 text-sm text-ink-muted">Loading your order…</div>

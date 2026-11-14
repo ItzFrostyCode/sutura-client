@@ -54,7 +54,7 @@ export default function AppointmentDetailPage({ params }: Readonly<{ params: Pro
 
   return (
     <div className="w-full">
-      <AccountHeader title="Appointment Details" backHref="/account/appointments" />
+      <AccountHeader title="Appointment Details" backHref="/account/appointments" backOnDesktop />
 
       {loading && (
         <div className="min-h-[50vh] flex items-center justify-center bg-white">
