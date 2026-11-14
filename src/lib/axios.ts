@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authToken, clearAuth } from './authStorage';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1',
@@ -10,7 +11,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (globalThis.window !== undefined) {
-    const token = sessionStorage.getItem('sutura_token');
+    const token = authToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,11 +33,10 @@ api.interceptors.response.use(
     );
     if (error.response?.status === 401) {
       if (globalThis.window !== undefined) {
-        // Clear invalid auth credentials from storage
-        sessionStorage.removeItem('sutura_token');
-        sessionStorage.removeItem('sutura_user');
-        sessionStorage.removeItem('sutura_store');
-        sessionStorage.removeItem('sutura_staff');
+        // Clear the dead login — only if it is still the one this request sent, so a late 401 can't sign out a newer
+        // login made in another tab. Clearing it signs the other tabs out too (AuthHydrator's tab sync).
+        const sent = String(error.config?.headers?.Authorization ?? '').replace(/^Bearer /, '');
+        clearAuth(sent || null);
 
         const pathname = globalThis.window.location.pathname;
         const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');

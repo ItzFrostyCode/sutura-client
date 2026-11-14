@@ -5,6 +5,7 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { clearShopIntent, readShopIntent } from '@/lib/shopIntent';
+import { authToken } from '@/lib/authStorage';
 import {
   EMPTY_OWNER, EMPTY_SHOP,
   type ApplicationStep, type BillingCycle, type DocumentKey, type OwnerFields,
@@ -127,7 +128,7 @@ export function useStoreApplication({ signedInOwner = false }: { readonly signed
       if (signedInOwner) {
         clearShopIntent();
         const me = await api.get('/auth/me');
-        const token = sessionStorage.getItem('sutura_token');
+        const token = authToken();
         if (me.data?.success && token) setAuth(me.data.data.user, token, me.data.data.store ?? undefined, me.data.data.staff_profile ?? undefined);
       }
       setSubmittedTo(res.data.data.contact_email);

@@ -24,9 +24,10 @@ Next.js here has breaking changes vs. older versions — read `node_modules/next
 ## Client ↔ API contract
 
 - Base URL: `NEXT_PUBLIC_API_URL`, default `http://127.0.0.1:8000/api/v1`. All routes live under `/api/v1`.
-- One Axios instance: `src/lib/axios.ts`. It adds `Authorization: Bearer <token>` from `sessionStorage['sutura_token']`.
-- On **401**: it clears `sutura_token/user/store/staff` and redirects to `/login?redirect=…` **only** from `/dashboard*` and `/account/*` — public pages (`/`, `/search`, `/store/*`, `/map`) stay open to guests.
+- One Axios instance: `src/lib/axios.ts`. It adds `Authorization: Bearer <token>` from the shared login, `localStorage['sutura_auth']` (`src/lib/authStorage.ts`).
+- On **401**: it clears `sutura_auth` (only if it still holds the token that failed) and redirects to `/login?redirect=…` **only** from `/dashboard*` and `/account/*` — public pages (`/`, `/search`, `/store/*`, `/map`) stay open to guests.
 - Auth state: Zustand — `src/store/useAuthStore.ts`, `useAdminAuthStore.ts`, `useLoginModalStore.ts`.
+- **One login per browser, shared by all tabs (since 2026-11-14, like Facebook).** `AuthHydrator` listens for the `storage` event: logging out in one tab reloads the others signed out; logging in or switching account reloads them as that account; a same-token update (profile, shop) applies without a reload. Two accounts at once need a private window or another browser. The **admin portal** (`useAdminAuthStore`) still keeps its login per tab (`sessionStorage`).
 - Error text for the UI: `getErrorMessage()` in `src/lib/apiError.ts` (first field error → `message` → fallback).
 
 ### Response & error shapes (what the code actually does)

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { clearAuth, migrateOldAuth, readAuth, writeAuth } from '@/lib/authStorage';
 
 export interface UserSocialLink {
   label: string;
@@ -127,16 +128,22 @@ interface AuthState {
 // first paint diverge from the server-rendered HTML whenever a token was already
 // stored, causing React hydration mismatches. `hydrate()` is called once from
 // a client-only effect (see AuthHydrator.tsx) so auth state updates safely post-mount.
-// Each browser tab is its own login. Auth used to be mirrored into localStorage, which every tab
-// shares — so signing in as a shop owner in one tab and a customer in another overwrote each other,
-// and a fresh tab or a browser restart woke up as whichever account signed in last. These keys are
-// only ever removed now (old builds may have left them behind).
-function clearLegacySharedAuth() {
-  if (globalThis.window === undefined) return;
-  for (const key of ['sutura_token', 'sutura_user', 'sutura_store', 'sutura_staff_profile']) localStorage.removeItem(key);
+//
+// One login per browser, shared by every tab (like Facebook) — see lib/authStorage.ts. Two different accounts at
+// once need a private window or another browser. Tab sync lives in AuthHydrator.
+
+const SIGNED_OUT = { user: null, store: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true } as const;
+
+// Lists a page kept in this tab for quick reopening (e.g. Appointments) belong to the account that signed out.
+export function clearTabCaches() {
+  try {
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('sutura_appts:')) sessionStorage.removeItem(k);
+  } catch {
+    // Storage blocked
+  }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   store: null,
   staffProfile: null,
@@ -145,51 +152,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   hydrated: false,
 
   setAuth: (user, token, store, staffProfile) => {
-    if (globalThis.window !== undefined) {
-      sessionStorage.setItem('sutura_token', token);
-      sessionStorage.setItem('sutura_user', JSON.stringify(user));
-      if (store) sessionStorage.setItem('sutura_store', JSON.stringify(store));
-      else sessionStorage.removeItem('sutura_store');
-      if (staffProfile) sessionStorage.setItem('sutura_staff', JSON.stringify(staffProfile));
-      else sessionStorage.removeItem('sutura_staff');
-
-    }
+    if (globalThis.window !== undefined) writeAuth({ token, user, store: store ?? null, staffProfile: staffProfile ?? null });
     set({ user, token, store: store || null, staffProfile: staffProfile || null, isAuthenticated: true, hydrated: true });
   },
 
   logout: () => {
     if (globalThis.window !== undefined) {
-      sessionStorage.removeItem('sutura_token');
-      sessionStorage.removeItem('sutura_user');
-      sessionStorage.removeItem('sutura_store');
-      sessionStorage.removeItem('sutura_staff');
-      // Lists a page kept for quick reopening (e.g. Appointments) belong to the account that signed out.
-      for (const k of Object.keys(sessionStorage)) if (k.startsWith('sutura_appts:')) sessionStorage.removeItem(k);
-      clearLegacySharedAuth();
+      clearAuth(get().token);
+      clearTabCaches();
     }
-    set({ user: null, store: null, staffProfile: null, token: null, isAuthenticated: false, hydrated: true });
+    set(SIGNED_OUT);
   },
 
   hydrate: () => {
     if (globalThis.window === undefined) return;
-    clearLegacySharedAuth();
-    const token = sessionStorage.getItem('sutura_token');
-    const userStr = sessionStorage.getItem('sutura_user');
-    const storeStr = sessionStorage.getItem('sutura_store');
-    const staffStr = sessionStorage.getItem('sutura_staff');
-    let user: User | null = null;
-    let store: Store | null = null;
-    let staffProfile: StaffProfile | null = null;
-    try { if (userStr) user = JSON.parse(userStr); } catch {}
-    try { if (storeStr) store = JSON.parse(storeStr); } catch {}
-    try { if (staffStr) staffProfile = JSON.parse(staffStr); } catch {}
-    set({
-      token,
-      user,
-      store,
-      staffProfile,
-      isAuthenticated: token !== null,
-      hydrated: true,
-    });
+    migrateOldAuth();
+    const saved = readAuth();
+    set(saved
+      ? { token: saved.token, user: saved.user, store: saved.store, staffProfile: saved.staffProfile, isAuthenticated: true, hydrated: true }
+      : SIGNED_OUT);
   },
 }));
