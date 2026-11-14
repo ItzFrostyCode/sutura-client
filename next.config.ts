@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', port: '', pathname: '/storage/**' },
       // Seeded demo services/catalog items reference stock photos from Unsplash.
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      // Profile photos of customers who sign in with Google (lh3.googleusercontent.com and its siblings).
+      { protocol: 'https', hostname: '**.googleusercontent.com' },
     ],
   },
   async redirects() {
