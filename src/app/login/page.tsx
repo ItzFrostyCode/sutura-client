@@ -22,13 +22,15 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const redirectPath = safeRedirect(searchParams.get('redirect'));
   const initialPortal = searchParams.get('as') === 'store' ? 'store' : 'customer';
+  // ?add=1: "Log in as Shop Owner" from a signed-in customer — a second account, the first one stays.
+  const addAccount = searchParams.get('add') === '1';
   const { user, staffProfile, hydrated } = useAuthStore();
   const leave = useLeaveAuth();
 
   // Already signed in (Back from the page they were sent to, or an old link): go on, and take this page out of history.
   useEffect(() => {
-    if (hydrated && user) router.replace(destinationFor(user, !!staffProfile, redirectPath));
-  }, [hydrated, user, staffProfile, redirectPath, router]);
+    if (hydrated && user && !addAccount) router.replace(destinationFor(user, !!staffProfile, redirectPath));
+  }, [hydrated, user, staffProfile, redirectPath, router, addAccount]);
 
   // Tablet/desktop customers sent here to book get the Sign In modal over the page they came from instead.
   useEffect(() => {
@@ -49,7 +51,11 @@ function LoginPageContent() {
         staffRedirect={redirectPath?.startsWith('/dashboard') ? redirectPath : '/dashboard'}
         registerHref={withRedirect('/register', redirectPath)}
         initialPortal={initialPortal}
-        onPortalChange={(next) => router.replace(withRedirect('/login', redirectPath, next === 'store' ? 'as=store' : undefined))}
+        addAccount={addAccount}
+        onPortalChange={(next) => {
+          const extra = [next === 'store' ? 'as=store' : null, addAccount ? 'add=1' : null].filter(Boolean).join('&');
+          router.replace(withRedirect('/login', redirectPath, extra || undefined));
+        }}
       />
     </AuthPage>
   );

@@ -1,6 +1,7 @@
 import { Heart, History, Layers, LifeBuoy, Ruler, Star, Store } from 'lucide-react';
 import HubGroup from './HubGroup';
 import HubRow from './HubRow';
+import ShopAccountRow from './ShopAccountRow';
 
 /** The rest of the Me hub as two grouped lists, like iOS Settings: what I have done here, then the store owner and support entries. */
 export default function AccountActivityGroups({ measurementCount }: { readonly measurementCount: number | null }) {
@@ -15,6 +16,7 @@ export default function AccountActivityGroups({ measurementCount }: { readonly m
         <HubRow href="/account/recently-viewed" Icon={History} title="Recently Viewed" />
       </HubGroup>
       <HubGroup>
+        <ShopAccountRow />
         <HubRow href="/account/settings/become-store-owner" Icon={Store} title="Start a Shop Owner Account" subtitle="Open your tailoring shop on SUTURA" />
         <HubRow href="/account/settings/support" Icon={LifeBuoy} title="Support" subtitle="Open a ticket or follow one" />
       </HubGroup>

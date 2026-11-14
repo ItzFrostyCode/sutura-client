@@ -10,6 +10,8 @@ import PasswordField from './PasswordField';
 import GoogleSignInButton, { OrDivider } from './GoogleSignInButton';
 import { EMAIL_INPUT_PROPS, ERROR_BOX, FIELD, LABEL, OUTLINE_BTN, PRIMARY_BTN, TEXT_LINK, TITLE } from './authStyles';
 import { signInError } from './signInError';
+import { readAuth } from '@/lib/authStorage';
+import { homeOf, rememberAccount } from '@/lib/savedAccounts';
 
 interface LoginFormProps {
   /** Where a customer lands after signing in. null = stay on the current page (the modal case). */
@@ -22,10 +24,12 @@ interface LoginFormProps {
   readonly initialPortal?: LoginPortal;
   /** The /login page keeps the address in step with the tab (/login vs /login?as=store). */
   readonly onPortalChange?: (portal: LoginPortal) => void;
+  /** "Log in as Shop Owner" from a signed-in account: keep that account so the menu can switch back to it. */
+  readonly addAccount?: boolean;
 }
 
 /** The one Sign In form: full page on /login, and inside LoginModal over the current page on tablet/desktop. */
-export default function LoginForm({ customerRedirect, staffRedirect = '/dashboard', registerHref, onDone, titleId, initialPortal = 'customer', onPortalChange }: LoginFormProps) {
+export default function LoginForm({ customerRedirect, staffRedirect = '/dashboard', registerHref, onDone, titleId, initialPortal = 'customer', onPortalChange, addAccount = false }: LoginFormProps) {
   const [portal, setPortal] = useState<LoginPortal>(initialPortal);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +38,8 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const currentName = useAuthStore((state) => state.user?.name);
+  const keepCurrent = addAccount && !!currentName;
   const isShop = portal === 'store';
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -51,8 +57,19 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
         setError('This account type does not have a dashboard yet. Please contact support.');
         return;
       }
+      const added = { token, user, store: activeStore ?? null, staffProfile: staff_profile ?? null };
+      const previous = keepCurrent ? readAuth() : null;
+      if (previous && previous.user.id !== user.id) {
+        rememberAccount(previous);
+        rememberAccount(added);
+      }
       setAuth(user, token, activeStore, staff_profile);
       onDone?.();
+      // A second account: a full load, so nothing the first account fetched stays on screen.
+      if (previous) {
+        window.location.replace(homeOf(added));
+        return;
+      }
       // replace, not push: Back from where they land must not show the sign-in page again.
       // A new owner (signed up with their own email) has no shop yet: the application wizard comes first.
       if (roleNames.includes('store_owner') && !activeStore) router.replace('/onboarding');
@@ -71,6 +88,11 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
 
       <LoginPortalSwitch value={portal} onChange={(next) => { setPortal(next); setError(''); onPortalChange?.(next); }} />
       {isShop && <p className="-mt-3 mb-5 text-sm text-ink-muted">For shop owners, branch managers and staff.</p>}
+      {keepCurrent && (
+        <p className="mb-5 rounded-xl bg-sunken p-3 text-sm text-ink-body">
+          You stay signed in as <span className="font-semibold">{currentName}</span>. Switch back any time from your account menu.
+        </p>
+      )}
 
       {error && <div role="alert" className={ERROR_BOX}>{error}</div>}
 
@@ -92,8 +114,9 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
         <button type="submit" disabled={loading} className={PRIMARY_BTN}>{loading ? 'Signing in…' : 'Sign In'}</button>
       </form>
 
-      {/* Google is for customers only; shop accounts sign in with their email and password. */}
-      {!isShop && (
+      {/* Google is for customers only; shop accounts sign in with their email and password. Not offered when adding a
+          second account: the Google round trip can't keep the account already signed in. */}
+      {!isShop && !keepCurrent && (
         <>
           <OrDivider />
           <GoogleSignInButton redirectTo={customerRedirect} />

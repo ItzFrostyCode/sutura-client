@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { clearAuth, migrateOldAuth, readAuth, writeAuth } from '@/lib/authStorage';
+import { forgetAllAccounts } from '@/lib/savedAccounts';
 
 export interface UserSocialLink {
   label: string;
@@ -160,6 +161,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (globalThis.window !== undefined) {
       clearAuth(get().token);
       clearTabCaches();
+      // Log out means out of every account this browser remembers (Log in as Shop Owner), not just this one.
+      forgetAllAccounts();
     }
     set(SIGNED_OUT);
   },

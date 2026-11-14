@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
-import { ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, LogOut } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { getMediaUrl } from '@/lib/media';
 import { roleLabel } from '@/components/staff/staffHelpers';
+import { useAccountSwitch } from '@/hooks/useAccountSwitch';
+import { isShopAccount } from '@/lib/savedAccounts';
 
 // The account-menu cluster (bell + profile dropdown) from the dashboard
 // header, extracted so the storefront page can show the exact same thing for
@@ -33,6 +35,8 @@ export default function AccountHeaderMenu() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  // Accounts kept by "Log in as Shop Owner" (e.g. the owner's Gmail customer account): back in one tap.
+  const { others, switchTo, switching } = useAccountSwitch();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -103,6 +107,21 @@ export default function AccountHeaderMenu() {
             <Link href="/dashboard/account-settings" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
               <UserCog size={16} /> Account Settings
             </Link>
+            {others.map((a) => (
+              <button
+                key={a.user.id}
+                type="button"
+                disabled={switching}
+                onClick={() => void switchTo(a)}
+                className="w-full flex items-start gap-3 px-4 py-2.5 text-left text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors disabled:opacity-60"
+              >
+                <ArrowLeftRight size={16} className="mt-0.5 shrink-0" />
+                <span className="min-w-0">
+                  <span className="block">{isShopAccount(a) ? 'Switch to shop account' : 'Switch to customer account'}</span>
+                  <span className="block truncate text-xs text-ink-muted">{a.user.name}</span>
+                </span>
+              </button>
+            ))}
             <div className="h-px bg-line my-1"></div>
             <button
               onClick={handleLogout}
