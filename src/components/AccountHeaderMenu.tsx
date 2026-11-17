@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
-import { ArrowLeftRight, ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, LogOut } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown, Eye, LayoutDashboard, Receipt, UserCog, User as UserIcon, LogOut } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { getMediaUrl } from '@/lib/media';
 import { roleLabel } from '@/components/staff/staffHelpers';
@@ -68,14 +68,17 @@ export default function AccountHeaderMenu() {
           onClick={() => setIsProfileOpen(!isProfileOpen)}
           className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer"
         >
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-taupe flex items-center justify-center text-white font-semibold">
-            {user?.profile_picture && !photoFailed ? (
+          {user?.profile_picture && !photoFailed ? (
+            <div className="w-10 h-10 rounded-full overflow-hidden">
               // eslint-disable-next-line @next/next/no-img-element
               <img src={getMediaUrl(user.profile_picture)} alt={user.name ?? 'Profile'} onError={() => setPhotoFailed(true)} className="h-full w-full object-cover" />
-            ) : (
-              user?.name?.charAt(0) || 'U'
-            )}
-          </div>
+            </div>
+          ) : (
+            // No photo yet: the same sunken avatar treatment as the /account sidebar — a person icon, not a text initial.
+            <div className="w-10 h-10 rounded-full bg-sunken border border-line-strong flex items-center justify-center">
+              <UserIcon size={16} className="text-ink-faint" />
+            </div>
+          )}
           {/* A solid grey disc: the translucent hairline colour went dark over the photo. */}
           <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-gray-200 rounded-full border-[1.5px] border-white flex items-center justify-center text-ink-body">
             <ChevronDown size={12} strokeWidth={3} />

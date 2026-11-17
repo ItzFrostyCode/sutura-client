@@ -7,8 +7,7 @@ import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
 import FilterChips from '@/components/account/FilterChips';
 import EmptyState from '@/components/account/EmptyState';
-import OrderCard from '@/components/account/orders/OrderCard';
-import OrderGroup from '@/components/account/orders/OrderGroup';
+import ShopOrderCard from '@/components/account/orders/ShopOrderCard';
 import { type MyOrder, TABS } from '@/components/account/orders/ordersTypes';
 
 export default function MyOrdersPage() {
@@ -28,14 +27,23 @@ export default function MyOrdersPage() {
 function MyOrdersPageContent() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<MyOrder[]>([]);
+  // Uncapped counts from the server, preferred over deriving from the capped
+  // list; an older server sends neither, so the chips fall back to the
+  // per_page=100 derivation.
+  const [total, setTotal] = useState<number | null>(null);
+  const [statusCounts, setStatusCounts] = useState<{ inProduction?: number; readyForPickup?: number; completed?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') ?? 'all');
 
   useEffect(() => {
     setLoading(true);
     api.get('/my-orders', { params: { per_page: 100 } })
-      .then((res) => setOrders(res.data.data ?? []))
-      .catch(() => setOrders([]))
+      .then((res) => {
+        setOrders(res.data.data ?? []);
+        setTotal(typeof res.data.total === 'number' ? res.data.total : null);
+        setStatusCounts(res.data.status_counts && typeof res.data.status_counts === 'object' ? res.data.status_counts : null);
+      })
+      .catch(() => { setOrders([]); setTotal(null); setStatusCounts(null); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -44,6 +52,19 @@ function MyOrdersPageContent() {
     () => orders.filter((o) => activeMatch(o)),
     [orders, activeMatch],
   );
+
+  // Tab badge: server number when the server knows it, capped-list derivation otherwise.
+  // (Cancelled has no server bucket yet, so it always derives.)
+  const tabCount = (tab: (typeof TABS)[number]): number | undefined => {
+    if (loading) return undefined;
+    const serverCount =
+      tab.key === 'all' ? total
+      : tab.key === 'production' ? statusCounts?.inProduction
+      : tab.key === 'pickup' ? statusCounts?.readyForPickup
+      : tab.key === 'completed' ? statusCounts?.completed
+      : undefined;
+    return serverCount ?? orders.filter((o) => tab.match(o)).length;
+  };
 
   // Linked orders (batches or a set of services) are shown together, in the order of the first one.
   const entries = useMemo(() => {
@@ -67,7 +88,7 @@ function MyOrdersPageContent() {
         label="Order status"
         active={activeTab}
         onChange={setActiveTab}
-        options={TABS.map((tab) => ({ key: tab.key, label: tab.label, count: loading ? undefined : orders.filter((o) => tab.match(o)).length }))}
+        options={TABS.map((tab) => ({ key: tab.key, label: tab.label, count: tabCount(tab) }))}
       />
 
       {loading && <div className="py-16 text-center mobile-body-sm text-ink-muted">Loading your orders…</div>}
@@ -84,12 +105,10 @@ function MyOrdersPageContent() {
       )}
 
       {!loading && filteredOrders.length > 0 && (
-        // One column on a phone; two from 640px (tablet, and the 672px content beside the desktop menu). Never three:
-        // beside the menu each card would be too narrow for the shop, order number and badge.
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {entries.map((e) => (e.orders.length > 1
-            ? <div key={e.key} className="sm:col-span-2"><OrderGroup orders={e.orders} /></div>
-            : <OrderCard key={e.key} order={e.orders[0]} />))}
+        // One column at every width, one card shape: a solo order is a one-line card, a group is the same card
+        // with more lines — the list never mixes two layouts.
+        <div className="mt-3 space-y-3">
+          {entries.map((e) => <ShopOrderCard key={e.key} orders={e.orders} />)}
         </div>
       )}
     </div>

@@ -187,8 +187,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
               s.setIsRatingModalOpen(true);
             }}
             onDeleteReview={s.handleDeleteReview}
-            onReplyToReview={s.handleReplyToReview}
-            onToggleFeaturedReview={s.handleToggleFeaturedReview}
           />
         )}
       </main>

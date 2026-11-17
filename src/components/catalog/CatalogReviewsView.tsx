@@ -10,8 +10,6 @@ import { confirmDialog } from '@/store/useConfirmStore';
 interface CatalogItemReview {
   id: number;
   rating: number;
-  comment: string | null;
-  reply: string | null;
   created_at: string;
   user: { id: number; name: string; email: string };
   catalog_item: { id: number; name: string } | null;
@@ -118,19 +116,6 @@ export default function CatalogReviewsView() {
                     <Star key={star} size={15} className={star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
                   ))}
                 </div>
-
-                <p className="text-ink-body leading-relaxed text-sm">
-                  {review.comment || <span className="italic text-ink-faint">No written comment provided.</span>}
-                </p>
-
-                {review.reply && (
-                  <div className="mt-2 bg-sunken/50 border-l-2 border-taupe p-4 rounded-r-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-taupe">Store Response</span>
-                    </div>
-                    <p className="text-ink-body text-sm">{review.reply}</p>
-                  </div>
-                )}
               </div>
 
               <div className="flex flex-row md:flex-col items-start md:items-end gap-3 shrink-0">
@@ -177,7 +162,7 @@ export default function CatalogReviewsView() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold text-ink">Item Reviews</h2>
-          <p className="text-ink-muted text-sm mt-0.5">Ratings and comments left on your individual catalog designs.</p>
+          <p className="text-ink-muted text-sm mt-0.5">Ratings left on your individual catalog designs.</p>
         </div>
 
         <div className="flex items-center gap-2">

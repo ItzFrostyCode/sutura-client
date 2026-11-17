@@ -49,7 +49,7 @@ interface StoreHeroHeaderProps {
   readonly activeTab: StorefrontTab;
   readonly setActiveTab: (tab: StorefrontTab) => void;
   readonly tabBarRef: React.RefObject<HTMLDivElement | null>;
-  readonly myReview: { id?: number; rating: number; comment?: string | null } | null;
+  readonly myReview: { id?: number; rating: number } | null;
   readonly onOpenRatingModal: () => void;
   readonly isBookmarked: boolean;
   /** Saves or unsaves the shop on the server (My Saved > Shops). */

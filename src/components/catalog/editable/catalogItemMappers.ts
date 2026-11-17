@@ -34,7 +34,6 @@ export function toStorefrontItem(item: DetailedCatalogItem): StorefrontCatalogIt
     reviews: (item.reviews ?? []).map((r) => ({
       id: r.id,
       rating: r.rating,
-      comment: r.comment ?? null,
       created_at: r.created_at,
       user: r.user ? { name: r.user.name } : null,
     })),

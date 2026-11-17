@@ -8,7 +8,7 @@ interface StoreRatingSummaryCardProps {
   /** True when `reviews` is every review of the shop (one page, no star filter), so the bars can be drawn from it. */
   readonly reviewsComplete: boolean;
   readonly isOwnerViewingOwnStore: boolean;
-  readonly myReview: { id?: number; rating: number; comment?: string | null } | null;
+  readonly myReview: { id?: number; rating: number } | null;
   readonly onOpenRatingModal: () => void;
 }
 

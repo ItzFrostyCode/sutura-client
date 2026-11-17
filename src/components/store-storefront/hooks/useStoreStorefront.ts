@@ -74,7 +74,7 @@ export function useStoreStorefront(storeId: string) {
   // Review State
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [ratingValue, setRatingValue] = useState(0);
-  const [myReview, setMyReview] = useState<{ id?: number; rating: number; comment?: string | null } | null>(null);
+  const [myReview, setMyReview] = useState<{ id?: number; rating: number } | null>(null);
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
@@ -764,29 +764,6 @@ export function useStoreStorefront(storeId: string) {
     }
   };
 
-  const handleReplyToReview = async (reviewId: number, reply: string): Promise<boolean> => {
-    if (!authStore) return false;
-    try {
-      const res = await api.put(`/stores/${authStore.id}/reviews/${reviewId}`, { reply });
-      setReviews(prev => prev.map(r => (r.id === reviewId ? { ...r, reply: res.data.data.reply } : r)));
-      toast.success('Reply saved.');
-      return true;
-    } catch {
-      toast.error('Failed to save reply.');
-      return false;
-    }
-  };
-
-  const handleToggleFeaturedReview = async (reviewId: number, isFeatured: boolean) => {
-    if (!authStore) return;
-    try {
-      const res = await api.put(`/stores/${authStore.id}/reviews/${reviewId}`, { is_featured: isFeatured });
-      setReviews(prev => prev.map(r => (r.id === reviewId ? { ...r, is_featured: res.data.data.is_featured } : r)));
-    } catch {
-      toast.error('Failed to update review.');
-    }
-  };
-
   const submitRating = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     if (!user) {
@@ -1020,8 +997,6 @@ export function useStoreStorefront(storeId: string) {
     reviewFilterRating,
     setReviewFilterRating,
     handleDeleteReview,
-    handleReplyToReview,
-    handleToggleFeaturedReview,
     isRatingModalOpen,
     setIsRatingModalOpen,
     ratingValue,

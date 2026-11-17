@@ -72,10 +72,6 @@ function ReviewItem({ review }: { review: CatalogItemReview }) {
             />
           ))}
         </div>
-        {/* Comment */}
-        {review.comment && (
-          <p className="text-sm text-ink-body mt-1.5 leading-relaxed">{review.comment}</p>
-        )}
       </div>
     </div>
   );

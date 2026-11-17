@@ -3,8 +3,8 @@ import OrderSummaryCard from '@/components/shared/orderTracking/OrderSummaryCard
 import OrderAppointmentsCard from '@/components/shared/orderTracking/OrderAppointmentsCard';
 import OrderStageTracker from '@/components/shared/orderTracking/OrderStageTracker';
 import type { OrderProgress } from '@/components/shared/orderTracking/orderProgress';
-import { TERMINAL_STATUSES, getCustomerPhase } from '@/components/shared/orderTracking/orderPhases';
 import OrderBatchesCard from '@/components/shared/orderTracking/OrderBatchesCard';
+import OrderProgressPhotos from '@/components/shared/orderTracking/OrderProgressPhotos';
 import type { BatchSummary } from '@/components/jobs/batches/batchTypes';
 
 export interface TrackedAppointment {
@@ -88,8 +88,16 @@ export interface TrackedOrder {
   /** Work on the customer's own garment requested online: the shop's drop-off check, and where to bring it. */
   garment_check?: import('@/components/account/orders/GarmentCheckCard').GarmentCheckInfo | null;
   drop_off?: import('@/components/account/orders/GarmentCheckCard').DropOffInfo | null;
+  // The customer's own attachments from the online booking: the inspiration photos they picked or took,
+  // and the design / reference links they pasted. Their own data, so shown on their order page.
+  // The server falls back to the order's design/service image when they attached nothing, so a
+  // service or design order always has something to show.
+  reference_images?: string[] | null;
+  design_link?: string | null;
+  reference_link?: string | null;
   customer_material_status?: 'safe' | 'damaged' | 'lost' | 'returned' | null;
-  progress_photos?: string[] | null;
+  /** The shop's own uploaded progress photos (staff-uploaded evidence, not the customer's). */
+  progress_photos?: { url: string; stage?: string | null; uploaded_at?: string | null }[] | null;
   // Best-effort real per-stage timestamps (see myOrderDetail's own comment)
   // — only present from /my-orders/{id}, not the guest /track lookup, so a
   // stage with no tracked data (or the guest view entirely) just shows no
@@ -109,34 +117,25 @@ interface OrderTrackingViewProps {
   readonly order: TrackedOrder;
   /** 'vertical' on the signed-in order page (every step readable on a phone); 'horizontal' for the compact guest tracker. */
   readonly stepperLayout?: 'horizontal' | 'vertical';
-  /** Above the order summary, in the order's column (the quotation to approve). */
-  readonly before?: ReactNode;
-  /** The side column's first card ("Pay for this order"), above the related appointments. Pass null when there is none. */
-  readonly aside?: ReactNode;
+  /** Under the progress: the quotation to approve, when the order uses the ordering flow. */
+  readonly quotation?: ReactNode;
+  /** Under the progress: pay for this order, your payments, and report a problem, stacked in reading order. */
+  readonly actions?: ReactNode;
 }
 
-export default function OrderTrackingView({ order, stepperLayout = 'vertical', before, aside }: OrderTrackingViewProps) {
-  const phase = order.status in TERMINAL_STATUSES ? null : getCustomerPhase(order.status);
+export default function OrderTrackingView({ order, stepperLayout = 'vertical', quotation, actions }: OrderTrackingViewProps) {
   const hasAppointments = !!order.appointments && order.appointments.length > 0;
-  const hasSide = !!aside || hasAppointments;
   return (
-    // Phone: one column — the order, its progress, then payment and appointments under it.
-    // From md (768px), when there is something for the side: the order on the left (3/5); payment on top of the right
-    // column (2/5), the related appointments under it. Nothing for the side: the order keeps the full width.
-    <div className={`md:mx-auto md:max-w-3xl ${hasSide ? 'md:grid md:grid-cols-5 md:items-start md:gap-4' : ''}`}>
-      <div className={`space-y-4 ${hasSide ? 'md:col-span-3' : ''}`}>
-        {before}
-        <OrderSummaryCard order={order} phase={phase} />
-        <OrderStageTracker order={order} layout={stepperLayout} />
-        {order.batch && <OrderBatchesCard batch={order.batch} signedIn={!!order.id} />}
-      </div>
-
-      {hasSide && (
-        <div className="mt-4 space-y-4 md:sticky md:top-4 md:col-span-2 md:mt-0">
-          {aside}
-          {hasAppointments && <OrderAppointmentsCard appointments={order.appointments!} shopName={order.store?.name ?? null} />}
-        </div>
-      )}
+    // One wide column at every width: the order, where it stands, then its own extras in reading order —
+    // a side column read as a second screen, and the payments sat away from the progress they explain.
+    <div className="md:mx-auto md:max-w-3xl space-y-4">
+      <OrderSummaryCard order={order} />
+      <OrderStageTracker order={order} layout={stepperLayout} />
+      <OrderProgressPhotos order={order} />
+      {order.batch && <OrderBatchesCard batch={order.batch} signedIn={!!order.id} />}
+      {quotation}
+      {actions}
+      {hasAppointments && <OrderAppointmentsCard appointments={order.appointments!} shopName={order.store?.name ?? null} />}
     </div>
   );
 }

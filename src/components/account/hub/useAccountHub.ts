@@ -10,6 +10,7 @@ import { IN_PRODUCTION, READY_FOR_PICKUP } from '@/components/shared/orderTracki
 
 export function useAccountHub(isAuthenticated: boolean) {
   const [orders, setOrders] = useState<MyOrder[]>([]);
+  const [statusCounts, setStatusCounts] = useState<{ inProduction: number; readyForPickup: number; completed: number } | null>(null);
   const [appointments, setAppointments] = useState<MyAppointment[] | null>(null);
   const [measurementCount, setMeasurementCount] = useState<number | null>(null);
   const [apptView, setApptView] = useState<'list' | 'calendar'>('list');
@@ -17,8 +18,19 @@ export function useAccountHub(isAuthenticated: boolean) {
   useEffect(() => {
     if (!isAuthenticated) return;
     api.get('/my-orders', { params: { per_page: 100 } })
-      .then((res) => setOrders(res.data.data ?? []))
-      .catch(() => setOrders([]));
+      .then((res) => {
+        setOrders(res.data.data ?? []);
+        // Uncapped counts straight from the server; when an older server
+        // doesn't send them (null), the tiles below fall back to the
+        // capped-list derivation.
+        const sc = res.data.status_counts;
+        setStatusCounts(
+          sc && typeof sc.inProduction === 'number' && typeof sc.readyForPickup === 'number' && typeof sc.completed === 'number'
+            ? { inProduction: sc.inProduction, readyForPickup: sc.readyForPickup, completed: sc.completed }
+            : null,
+        );
+      })
+      .catch(() => { setOrders([]); setStatusCounts(null); });
     api.get('/my-appointments', { params: { per_page: 100 } })
       .then((res) => setAppointments(res.data.data ?? []))
       .catch(() => setAppointments([]));
@@ -71,9 +83,17 @@ export function useAccountHub(isAuthenticated: boolean) {
   }, [countsByDay]);
 
   // Same rules as the Job Orders tabs the tiles open, so a tile's number always matches its tab.
-  const inProduction = useMemo(() => orders.filter((o) => IN_PRODUCTION.has(o.status)).length, [orders]);
-  const readyForPickup = useMemo(() => orders.filter((o) => READY_FOR_PICKUP.has(o.status)).length, [orders]);
-  const completed = useMemo(() => orders.filter((o) => o.status === 'completed').length, [orders]);
+  // Server counts (uncapped) win when present; the capped-list derivation below is the fallback
+  // for older servers that don't send status_counts yet.
+  const inProduction = statusCounts
+    ? statusCounts.inProduction
+    : orders.filter((o) => IN_PRODUCTION.has(o.status)).length;
+  const readyForPickup = statusCounts
+    ? statusCounts.readyForPickup
+    : orders.filter((o) => READY_FOR_PICKUP.has(o.status)).length;
+  const completed = statusCounts
+    ? statusCounts.completed
+    : orders.filter((o) => o.status === 'completed').length;
 
   return {
     orders,

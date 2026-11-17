@@ -170,7 +170,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             <div
               onClick={() => move(-1)}
               aria-label={`Previous: ${prevStore.name}`}
-              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:self-stretch xl:my-8 rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/prev select-none"
+              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:self-stretch xl:my-8 rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-sunken group/prev select-none"
             >
               {prevCover ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -197,7 +197,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
           {/* Center card. Desktop (lg+): the photo (with the hover preview) on the left, the details on the right, at least 650px tall so the arrows rarely move — but a MINIMUM, not a fixed height: when the services need more room the card grows, instead of the last row sliding under "Visit Shop". Tablet and phone: the details only, no photo. */}
           <div className="w-full max-w-[960px] min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-xs lg:flex lg:min-h-[650px]">
             {/* Left: Large Hero Image Area (desktop only) */}
-            <div className="relative hidden min-w-0 flex-1 overflow-hidden bg-surface-sunken lg:block">
+            <div className="relative hidden min-w-0 flex-1 overflow-hidden bg-sunken lg:block">
               <Link href={heroHref} className="absolute inset-0 block group">
                 {heroPhoto ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -341,7 +341,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             <div
               onClick={() => move(1)}
               aria-label={`Next: ${nextStore.name}`}
-              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:self-stretch xl:my-8 rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-surface-sunken group/next select-none"
+              className="hidden xl:flex flex-col justify-center items-center shrink-0 w-32 xl:w-48 2xl:w-64 xl:self-stretch xl:my-8 rounded-2xl overflow-hidden relative cursor-pointer opacity-50 hover:opacity-85 transition-all duration-300 scale-95 shadow-xs border border-line bg-sunken group/next select-none"
             >
               {nextCover ? (
                 // eslint-disable-next-line @next/next/no-img-element

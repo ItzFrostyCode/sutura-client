@@ -12,7 +12,6 @@ import ScrollNav from '@/components/shared/ScrollNav';
 interface CatalogItemReview {
   id: number;
   rating: number;
-  comment: string | null;
   created_at: string;
   user: { id: number; name: string; profile_picture: string | null } | null;
 }
@@ -250,9 +249,6 @@ export default function ProductRatingsPage({ params }: Readonly<{ params: Promis
                     <Star key={n} size={12} fill={n <= review.rating ? 'currentColor' : 'none'} />
                   ))}
                 </div>
-                {review.comment && (
-                  <p className="text-sm text-ink-body leading-relaxed">{review.comment}</p>
-                )}
               </div>
               );
             })}

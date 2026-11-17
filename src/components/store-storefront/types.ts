@@ -114,9 +114,6 @@ export interface StorefrontReview {
   id: number;
   user: { id: number; name: string };
   rating: number;
-  comment: string | null;
-  reply: string | null;
-  is_featured: boolean;
   created_at: string;
 }
 
@@ -142,7 +139,7 @@ export interface StoreProfile {
   /** On Premium right now (server: PlanGate, ended subscriptions excluded) — the Premium mark on the page. */
   is_premium?: boolean;
   reviews_count: number;
-  my_review?: { id?: number; rating: number; comment?: string | null } | null;
+  my_review?: { id?: number; rating: number } | null;
   district?: string;
   specializations?: string[];
   business_type?: string | null;

@@ -37,6 +37,13 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
 
   const { user, isAuthenticated } = useAuthStore();
   const gate = useGuestGatedHref();
+  // The recently-viewed POST is signed-in-only, and the auth store hydrates
+  // post-mount (user null -> object) — so it gets its own guarded effect
+  // instead of riding along on the item fetch (which must NOT depend on
+  // user, or every hydration re-fires the fetch + view POST). Keying the
+  // guard on the item id means later re-renders / user object swaps never
+  // re-fire it.
+  const recentlyViewedItemRef = useRef<number | null>(null);
 
   useEffect(() => {
     api.get(`/catalog/${storeId}/${itemId}`)
@@ -70,16 +77,21 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
           setSelectedVariation(primary.view_angle || '');
         }
         setLoading(false);
+        // View count — public endpoint, fires once per item visit (guests included).
         api.post(`/catalog/${storeId}/${itemId}/view`).catch(() => {});
-        if (user) {
-          api.post('/recently-viewed', { type: 'catalog_item', id: res.data.data.id }).catch(() => {});
-        }
       })
       .catch(err => {
         console.error(err);
         setLoading(false);
       });
-  }, [storeId, itemId, user]);
+  }, [storeId, itemId]);
+
+  useEffect(() => {
+    if (!user || !item) return;
+    if (recentlyViewedItemRef.current === item.id) return;
+    recentlyViewedItemRef.current = item.id;
+    api.post('/recently-viewed', { type: 'catalog_item', id: item.id }).catch(() => {});
+  }, [user, item]);
 
   useEffect(() => {
     if (!user || !item) return;

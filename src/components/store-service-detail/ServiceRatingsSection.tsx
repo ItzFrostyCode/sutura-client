@@ -22,7 +22,6 @@ export default function ServiceRatingsSection({ service }: Readonly<{ service: P
         reviews: (service.reviews ?? []).map((r) => ({
           id: r.id,
           rating: r.rating,
-          comment: null,
           created_at: r.created_at,
           user: r.user ? { name: r.user.name } : null,
         })),

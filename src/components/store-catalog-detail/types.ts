@@ -23,7 +23,6 @@ export interface Recommendation {
 export interface CatalogItemReview {
   id: number;
   rating: number;
-  comment: string | null;
   created_at: string;
   user: { name: string } | null;
 }

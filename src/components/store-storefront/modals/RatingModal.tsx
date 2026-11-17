@@ -11,7 +11,7 @@ interface RatingModalProps {
   readonly subjectName: string;
   /** "Store" or "Service" — only used for the "Rate this {subjectType}" heading. */
   readonly subjectType?: string;
-  readonly myReview: { id?: number; rating: number; comment?: string | null } | null;
+  readonly myReview: { id?: number; rating: number } | null;
   readonly ratingValue: number;
   readonly setRatingValue: (val: number) => void;
   readonly hoveredStar: number | null;

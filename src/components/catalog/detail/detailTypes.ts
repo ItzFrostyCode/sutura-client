@@ -13,8 +13,6 @@ export interface CatalogImage {
 export interface CatalogReview {
   id: number;
   rating: number;
-  comment?: string;
-  reply?: string;
   created_at: string;
   user?: { id: number; name: string };
 }

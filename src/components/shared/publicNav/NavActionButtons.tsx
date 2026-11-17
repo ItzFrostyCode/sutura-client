@@ -109,8 +109,10 @@ export default function NavActionButtons({
               />
             </div>
           ) : (
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-taupe text-white text-[12px] sm:text-[13px] font-bold flex items-center justify-center">
-              {(user.name || 'U').charAt(0).toUpperCase()}
+            // No photo yet: the same sunken avatar circle as the /account sidebar's fallback,
+            // not a text initial — one profile treatment everywhere.
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-sunken border border-line-strong flex items-center justify-center">
+              <UserIcon size={14} className="text-ink-faint" />
             </div>
           )
         ) : (

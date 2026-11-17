@@ -61,29 +61,29 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
         <>
           <OrderTrackingView
             order={order}
-            before={order.quotation_flow ? (
+            quotation={order.quotation_flow ? (
               <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
             ) : order.garment_check ? (
               <GarmentCheckCard orderId={Number(id)} check={order.garment_check} dropOff={order.drop_off} onAnswered={load} />
             ) : null}
-            // The side column: Pay for this order (while there is something to pay), then Your Payments (each payment and
-            // the shop's decision), then Report a problem on a completed order, then the related appointments.
-            aside={showPay || payments.length > 0 || canReport ? (
+            /* Stacked under the progress, in reading order: Pay for this order (while there is something to pay), then Your
+               Payments (each payment and the shop's decision), then Report a problem on a completed order. */
+            actions={showPay || payments.length > 0 || canReport ? (
               <div className="space-y-4">
-              {showPay && <PayForOrder
-                orderId={Number(id)}
-                storeSlug={order.store?.slug}
-                branchId={order.store_branch_id}
-                totalAmount={order.total_amount}
-                balance={order.balance}
-                pending={order.pending_payment_amount ?? 0}
-                requiredDeposit={order.required_deposit ?? 0}
-                depositLabel={paymentPolicyLabel(order.payment_policy, order.payment_policy_percent)}
-                active={payActive}
-                onSubmitted={load}
-              />}
-              {payments.length > 0 && <OrderPaymentsCard payments={payments} canPayAgain={showPay} />}
-              {canReport && <OrderClaimsSection orderId={Number(id)} storeSlug={order.store?.slug} />}
+                {showPay && <PayForOrder
+                  orderId={Number(id)}
+                  storeSlug={order.store?.slug}
+                  branchId={order.store_branch_id}
+                  totalAmount={order.total_amount}
+                  balance={order.balance}
+                  pending={order.pending_payment_amount ?? 0}
+                  requiredDeposit={order.required_deposit ?? 0}
+                  depositLabel={paymentPolicyLabel(order.payment_policy, order.payment_policy_percent)}
+                  active={payActive}
+                  onSubmitted={load}
+                />}
+                {payments.length > 0 && <OrderPaymentsCard payments={payments} canPayAgain={showPay} />}
+                {canReport && <OrderClaimsSection orderId={Number(id)} storeSlug={order.store?.slug} />}
               </div>
             ) : null}
           />

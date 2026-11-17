@@ -24,6 +24,9 @@ export function useAccountHistory() {
   const [appointments, setAppointments] = useState<MyAppointment[]>([]);
   const [measurements, setMeasurements] = useState<MyMeasurement[]>([]);
   const [loading, setLoading] = useState(true);
+  // Uncapped totals the server sends alongside each my-* list; an older
+  // server sends none, so consumers fall back to the capped list lengths.
+  const [totals, setTotals] = useState<{ orders?: number; appointments?: number; measurements?: number }>({});
 
   useEffect(() => {
     // No setLoading(true) here — the initial state above is already true,
@@ -37,6 +40,17 @@ export function useAccountHistory() {
       setOrders(ordersRes.status === 'fulfilled' ? (ordersRes.value.data.data ?? []) : []);
       setAppointments(apptRes.status === 'fulfilled' ? (apptRes.value.data.data ?? []) : []);
       setMeasurements(measRes.status === 'fulfilled' ? (measRes.value.data.data ?? []) : []);
+      const next: { orders?: number; appointments?: number; measurements?: number } = {};
+      const readTotal = (key: 'orders' | 'appointments' | 'measurements', res: PromiseSettledResult<{ data: { total?: unknown } }>) => {
+        if (res.status === 'fulfilled') {
+          const t = res.value.data.total;
+          if (typeof t === 'number') next[key] = t;
+        }
+      };
+      readTotal('orders', ordersRes);
+      readTotal('appointments', apptRes);
+      readTotal('measurements', measRes);
+      setTotals(next);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -60,5 +74,10 @@ export function useAccountHistory() {
     return Array.from(map.values());
   })();
 
-  return { orders, appointments, measurements, shops, loading };
+  return {
+    orders, appointments, measurements, shops, loading,
+    orderCount: totals.orders ?? orders.length,
+    appointmentCount: totals.appointments ?? appointments.length,
+    measurementCount: totals.measurements ?? measurements.length,
+  };
 }

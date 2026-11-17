@@ -25,12 +25,22 @@ export function useDiscoverData(coords: { lat: number; lng: number } | null, fil
     // No lat/lng on purpose: without a location the server lists Premium shops first, and is_featured says which
     // they are (the live plan: StoreController / Store::scopeWithPremiumNow). Only those are "Featured" — no filling
     // the section with ordinary shops when there is no Premium one; the section is simply left out then.
-    api.get('/public/stores', { params: { per_page: 20 } })
+    //
+    // The `featured=1` flag moves that filter to the server (a shop past row 20 of the unfiltered list used to be
+    // unreachable to the old client-side filter). If the running server does not know the flag yet it simply
+    // ignores it, so the rows come back unfiltered — detect that (any non-featured row slipped in) and fall back
+    // to today's per_page=20 + client-side filter, so the landing page keeps working against an old server.
+    const loadFeaturedLegacy = () =>
+      api.get('/public/stores', { params: { per_page: 20 } })
+        .then((res) => setFeatured(((res.data.data ?? []) as StoreResult[]).filter((s) => s.is_featured).slice(0, 8)))
+        .catch(() => setFeatured([]));
+    api.get('/public/stores', { params: { per_page: 8, featured: 1 } })
       .then((res) => {
         const rows = (res.data.data ?? []) as StoreResult[];
-        setFeatured(rows.filter((s) => s.is_featured).slice(0, 8));
+        if (rows.some((s) => !s.is_featured)) return loadFeaturedLegacy();
+        setFeatured(rows.slice(0, 8));
       })
-      .catch(() => setFeatured([]))
+      .catch(loadFeaturedLegacy)
       .finally(() => setFeaturedLoading(false));
     // Real best-seller signal (order count), only used to fill the spotlight's thumbnails.
     api.get('/public/catalog-items', { params: { per_page: 8, sort_by: 'top_sales' } })

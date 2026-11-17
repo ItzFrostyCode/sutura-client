@@ -11,7 +11,7 @@ interface QuotationApprovalCardProps {
   readonly onApproved: () => void;
 }
 
-const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`;
 
 /**
  * Before the shop starts: what the customer is being quoted, the date, the deposit and the

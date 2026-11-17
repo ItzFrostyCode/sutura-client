@@ -13,7 +13,7 @@ import { getPhaseMeta } from '@/components/account/orders/ordersTypes';
 import { STATUS_META as APPOINTMENT_STATUS_META } from '@/components/account/appointments/appointmentTypes';
 
 export default function AccountHistoryPage() {
-  const { orders, appointments, measurements, shops, loading } = useAccountHistory();
+  const { orders, appointments, measurements, shops, loading, orderCount, appointmentCount, measurementCount } = useAccountHistory();
   const empty = !loading && orders.length === 0 && appointments.length === 0 && measurements.length === 0;
 
   return (
@@ -31,7 +31,7 @@ export default function AccountHistoryPage() {
       {!loading && !empty && (
         <div className="space-y-4">
           {orders.length > 0 && (
-            <HubGroup title={`Orders · ${orders.length}`}>
+            <HubGroup title={`Orders · ${orderCount}`}>
               {orders.map((o) => (
                 <HistoryRow
                   key={o.id}
@@ -46,7 +46,7 @@ export default function AccountHistoryPage() {
           )}
 
           {appointments.length > 0 && (
-            <HubGroup title={`Appointments · ${appointments.length}`}>
+            <HubGroup title={`Appointments · ${appointmentCount}`}>
               {appointments.map((a) => (
                 <HistoryRow
                   key={a.id}
@@ -62,7 +62,7 @@ export default function AccountHistoryPage() {
 
           {measurements.length > 0 && (
             <div>
-              <HubGroup title={`Measurements · ${measurements.length}`}>
+              <HubGroup title={`Measurements · ${measurementCount}`}>
                 {measurements.map((m) => (
                   <HistoryRow key={m.id} Icon={Ruler} title={m.profile_name} subtitle={`${m.store?.name ?? 'Store'} · Version ${m.version}${m.superseded_at ? ' (past)' : ''}`} />
                 ))}
