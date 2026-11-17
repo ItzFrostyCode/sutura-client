@@ -31,7 +31,7 @@ const SIDEBAR_KEY = 'sutura.sidebar';
 const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-inter', display: 'swap' });
 
 function DashboardLayoutContent({ children }: { readonly children: React.ReactNode }) {
-  const { user, isAuthenticated, logout, setAuth, token, staffProfile, store } = useAuthStore();
+  const { user, isAuthenticated, logout, setAuth, token, staffProfile, store, hydrated } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -91,6 +91,9 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }, []);
 
   useEffect(() => {
+    // Wait until the saved sign-in has been read: this effect runs before the root's hydrate(), so deciding earlier sent
+    // every refreshed dashboard page (a job order, the walk-in form…) to the sign-in page and then to Home.
+    if (!hydrated) return;
     if (!token && !isAuthenticated) {
       // replace: Back from the sign-in page must not land here again (that would loop back to sign-in).
       router.replace(withRedirect('/login', pathname, 'as=store'));
@@ -117,7 +120,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           }
         });
     }
-  }, [token, isAuthenticated, router, setAuth, logout]);
+  }, [hydrated, token, isAuthenticated, router, setAuth, logout]);
 
   const roleNames = user?.roles?.map(r => r.name) || [];
   const isStoreOwner = roleNames.includes('store_owner');

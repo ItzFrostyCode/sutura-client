@@ -3,7 +3,9 @@
 import { Suspense, use, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Receipt, Ruler, Shirt, Sparkles, User } from 'lucide-react';
+import { useFullPage } from '@/hooks/useFullPage';
 import StatusStepper, { type StepperStage } from '@/components/shared/StatusStepper';
+import FlowProgress from '@/components/shared/FlowProgress';
 import { STEPS, useServiceOrder } from '@/components/service-order/useServiceOrder';
 import OrderDetailsStep from '@/components/service-order/OrderDetailsStep';
 import OrderWhatStep from '@/components/service-order/OrderWhatStep';
@@ -22,6 +24,8 @@ const Spinner = () => (
 
 function ServiceOrderContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
+  // A flow always fills the whole window, even when it was opened inside the search map's panel.
+  useFullPage();
   const o = useServiceOrder(storeId);
 
   // Repairs keep their own request form (damage notes + repair items).
@@ -61,7 +65,9 @@ function ServiceOrderContent({ params }: Readonly<{ params: Promise<{ store_id: 
       <main className="mobile-screen-margins flex-1 py-6 pb-[calc(160px+env(safe-area-inset-bottom))] lg:pb-16">
         <div className="mx-auto w-full max-w-xl min-[600px]:max-w-2xl lg:grid lg:max-w-5xl lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
           <div className="min-w-0">
-            <div className="mb-8"><StatusStepper stages={STAGES} currentKey={STEPS[o.step - 1].key} layout="horizontal" /></div>
+            {/* Phone: the step by name, how many, the next one. 600px and up: every step in a row. */}
+            <FlowProgress labels={STEPS.map((s) => s.label)} current={o.step} className="mb-8 min-[600px]:hidden" />
+            <div className="mb-8 hidden min-[600px]:block"><StatusStepper stages={STAGES} currentKey={STEPS[o.step - 1].key} layout="horizontal" /></div>
             {o.step === 1 && <OrderDetailsStep o={o} />}
             {o.step === 2 && <OrderWhatStep o={o} />}
             {o.step === 3 && <OrderSizesStep o={o} />}

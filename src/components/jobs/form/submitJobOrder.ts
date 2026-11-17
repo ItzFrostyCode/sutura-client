@@ -35,6 +35,8 @@ export interface JobSubmission {
   inlineMeasurements?: import('./types').InlineMeasurementData[];
   /** The owner or a branch manager chose to go below the service's usual minimum. */
   confirmBelowMinimum?: boolean;
+  /** The shop saw that this customer already has an open order for the service and continues on purpose. */
+  confirmPossibleDuplicate?: boolean;
   /** The shop's measuring unit, written with each new measurement. */
   defaultUnit?: 'in' | 'cm';
   /** Other services asked for at the same visit; each becomes its own linked order. */
@@ -169,6 +171,7 @@ export async function submitJobOrder(s: JobSubmission, onStaffFailed: () => void
     design_link: f.design_link || null,
     consultation_notes: f.consultation_notes || null,
     confirm_below_minimum: s.confirmBelowMinimum || undefined,
+    confirm_possible_duplicate: s.confirmPossibleDuplicate || undefined,
     extra_services: (s.extras ?? []).filter((x) => x.service_id).map((x) => ({
       service_id: Number(x.service_id), catalog_item_id: x.catalog_item_id ? Number(x.catalog_item_id) : undefined,
       quantity: Math.max(1, Number(x.quantity) || 1), total_amount: x.price.trim() !== '' ? Number(x.price) : undefined,

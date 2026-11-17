@@ -72,7 +72,7 @@ interface BookingStep3ReviewProps {
   readonly materialSource: 'own' | 'shop' | '';
   readonly materialDescription: string;
   readonly quantity?: string | null;
-  readonly bookingError?: { message: string; isConflict?: boolean } | null;
+  readonly bookingError?: { message: string; isConflict?: boolean; orderId?: number } | null;
   readonly onClearBookingError?: () => void;
   readonly handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }
@@ -173,6 +173,11 @@ export default function BookingStep3Review({
               <p className="mobile-body-sm text-amber-900/90 font-normal mt-0.5 leading-relaxed">
                 {bookingError.message}
               </p>
+              {bookingError.orderId && (
+                <a href={`/account/orders/${bookingError.orderId}`} className="mt-2 inline-flex min-h-11 items-center font-semibold text-amber-950 underline underline-offset-2">
+                  Open my order
+                </a>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 pt-2 border-t border-amber-500/20">

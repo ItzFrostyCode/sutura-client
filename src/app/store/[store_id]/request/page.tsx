@@ -4,6 +4,7 @@ import { Suspense, use } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import { useFullPage } from '@/hooks/useFullPage';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useOrderRequest } from '@/components/order-request/useOrderRequest';
 import OrderRequestForm from '@/components/order-request/OrderRequestForm';
@@ -18,6 +19,8 @@ export default function OrderRequestPage({ params }: Readonly<{ params: Promise<
 
 function OrderRequestContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
+  // A flow always fills the whole window, even when it was opened inside the search map's panel.
+  useFullPage();
   const router = useRouter();
   const search = useSearchParams();
   const { isAuthenticated } = useAuthStore();

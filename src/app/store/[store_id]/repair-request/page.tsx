@@ -3,6 +3,7 @@
 import { Suspense, use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useFullPage } from '@/hooks/useFullPage';
 import { useGarmentWork, type GarmentWorkState } from '@/components/garment-work/useGarmentWork';
 import GarmentWorkForm from '@/components/garment-work/GarmentWorkForm';
 import GarmentWorkSummary from '@/components/garment-work/GarmentWorkSummary';
@@ -27,6 +28,8 @@ function SendButton({ w, full = false }: Readonly<{ w: GarmentWorkState; full?: 
 /** Repair, alteration or embroidery on the customer's own garment: one page, a POS-style price, paid at pick-up. */
 function GarmentWorkContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
+  // A flow always fills the whole window, even when it was opened inside the search map's panel.
+  useFullPage();
   const w = useGarmentWork(storeId);
 
   if (w.loading) return <Spinner />;

@@ -84,6 +84,13 @@ export interface Service extends RequirementFields {
   estimated_days: number | null;
   estimated_days_max?: number | null;
   min_order_qty?: number;
+  /** Pesos off each piece when the customer brings their own fabric (null = none). */
+  own_fabric_deduction?: string | number | null;
+  /** Rush for this service: null = the shop's rule, false = no rush, true = its own fee. */
+  rush_available?: boolean | null;
+  rush_fee_mode?: 'percent' | 'per_piece' | null;
+  rush_fee_percent?: string | number | null;
+  rush_fee_per_piece?: string | number | null;
   is_active: boolean;
   /** Lifecycle (Services decision S2). `is_active` mirrors "status is published". */
   status?: ServiceStatus;

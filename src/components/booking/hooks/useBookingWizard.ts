@@ -248,7 +248,7 @@ export function useBookingWizard(storeId: string) {
   // The owner's Appointment Configuration for the design being booked from.
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [bookingError, setBookingError] = useState<{ message: string; isConflict?: boolean } | null>(null);
+  const [bookingError, setBookingError] = useState<{ message: string; isConflict?: boolean; orderId?: number } | null>(null);
 
   // Form Data
   const [appointmentType, setAppointmentType] = useState<string>(() => {
@@ -554,21 +554,24 @@ export function useBookingWizard(storeId: string) {
       clearStoreItems(storeId);
       setSuccess(true);
     } catch (err: unknown) {
-      console.warn('Failed to book appointment:', err);
       const axiosErr = err as {
         response?: {
           status?: number;
-          data?: { message?: string; errors?: Record<string, string[]> };
+          data?: { message?: string; code?: string; errors?: Record<string, string[]>; data?: { job_order_id?: number } };
         };
       };
       const status = axiosErr?.response?.status;
       const res = axiosErr?.response?.data;
+      // A refusal the server explains (4xx) is shown to the customer, not logged; only a real failure is logged.
+      if (!status || status >= 500) console.error('Failed to book appointment:', err);
       const firstFieldError = res?.errors ? Object.values(res.errors)[0]?.[0] : undefined;
       const detail = firstFieldError || (res?.message && res.message !== 'The given data was invalid.' ? res.message : undefined);
       const message = detail || 'Failed to book appointment. Please check all fields and try again.';
       setBookingError({
         message,
         isConflict: status === 409,
+        // "You already sent a request for this": the order to bring the garment for.
+        orderId: res?.code === 'request_already_open' ? res.data?.job_order_id : undefined,
       });
     } finally {
       setSubmitting(false);

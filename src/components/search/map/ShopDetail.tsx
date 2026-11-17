@@ -123,7 +123,8 @@ export default function ShopDetail({
               )}
             </p>
           </div>
-          <Link href={`/store/${store.slug}`} className="flex min-h-11 shrink-0 items-center px-2 text-sm font-semibold text-taupe-dark hover:text-ink">
+          {/* On a phone the sheet expands to the full storefront already, so "View store" would only repeat it. */}
+          <Link href={`/store/${store.slug}`} className="flex min-h-11 shrink-0 items-center px-2 text-sm font-semibold text-taupe-dark hover:text-ink max-[599px]:hidden">
             View store
           </Link>
         </div>

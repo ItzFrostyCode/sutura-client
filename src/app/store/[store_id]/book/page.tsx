@@ -2,6 +2,7 @@
 
 import { use, Suspense } from 'react';
 import { Loader2, MapPin, ClipboardList, CalendarDays as CalendarDaysIcon, CheckCircle2 } from 'lucide-react';
+import { useFullPage } from '@/hooks/useFullPage';
 import BookingHeader from '@/components/booking/BookingHeader';
 import BookingSuccessState from '@/components/booking/BookingSuccessState';
 import RequestedItemsSection from '@/components/booking/RequestedItemsSection';
@@ -12,6 +13,7 @@ import BookingStep2Schedule from '@/components/booking/steps/BookingStep2Schedul
 import BookingStep3Review from '@/components/booking/steps/BookingStep3Review';
 import { useBookingWizard } from '@/components/booking/hooks/useBookingWizard';
 import StatusStepper, { type StepperStage } from '@/components/shared/StatusStepper';
+import FlowProgress from '@/components/shared/FlowProgress';
 
 // Real visual progress indicator, replacing a plain "Step X of Y" text pill
 // — reuses the same StatusStepper already proven on OrderTrackingView rather
@@ -27,6 +29,8 @@ const BOOKING_STAGES: StepperStage[] = [
 
 function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
+  // A flow always fills the whole window, even when it was opened inside the search map's panel.
+  useFullPage();
   const b = useBookingWizard(storeId);
 
   if (b.loading) {
@@ -72,7 +76,9 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
           </div>
 
           {/* Step Progress — real visual stepper, not a text pill */}
-          <div className="mb-5">
+          {/* Same progress as the online order and the walk-in form: by name on a phone, every step in a row from 600px. */}
+          <FlowProgress labels={BOOKING_STAGES.map((st) => st.label)} current={b.step} className="mb-5 min-[600px]:hidden" />
+          <div className="mb-5 hidden min-[600px]:block">
             <StatusStepper stages={BOOKING_STAGES} currentKey={BOOKING_STAGE_KEYS[b.step - 1]} layout="horizontal" />
           </div>
 

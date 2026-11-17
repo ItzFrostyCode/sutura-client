@@ -1,12 +1,13 @@
 import { Check } from 'lucide-react';
 import { WIZARD_STEPS } from './wizardSteps';
+import FlowProgress from '@/components/shared/FlowProgress';
 
 /** The four steps in a row: done ones tick, the open one is solid, later ones wait. A step already reached can be reopened. */
 export default function WizardProgress({ id, step, reached, onGo }: Readonly<{ id: string; step: number; reached: number; onGo: (to: number) => void }>) {
-  const current = WIZARD_STEPS[step - 1];
   return (
     <nav id={id} aria-label="New job order steps" className="scroll-mt-20 px-4 pt-4 sm:px-6">
-      <ol className="grid grid-cols-4 gap-2">
+      <FlowProgress labels={WIZARD_STEPS.map((s) => s.label)} current={step} className="min-[600px]:hidden" />
+      <ol className="hidden grid-cols-4 gap-2 min-[600px]:grid">
         {WIZARD_STEPS.map((s) => {
           const done = s.id < step;
           const open = s.id === step;
@@ -33,7 +34,6 @@ export default function WizardProgress({ id, step, reached, onGo }: Readonly<{ i
           );
         })}
       </ol>
-      <p className="mt-3 text-sm text-espresso/70 sm:hidden">Step {step} of {WIZARD_STEPS.length} · <span className="font-medium text-espresso">{current.label}</span></p>
     </nav>
   );
 }

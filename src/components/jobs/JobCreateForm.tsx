@@ -83,7 +83,14 @@ export default function JobCreateForm() {
           <div className={alert}>
             <div role="alert" className="flex flex-col gap-3 rounded-lg border border-espresso/30 bg-white px-4 py-3 text-sm text-espresso sm:flex-row sm:items-center sm:justify-between">
               <p>{form.below.message}</p>
-              {form.below.canContinue && <button type="button" onClick={form.continueAnyway} disabled={form.submitting} className={BTN_PRIMARY}>Continue anyway</button>}
+              <div className="flex flex-wrap gap-2">
+                {form.below.openOrderId && <Link href={`/dashboard/jobs/${form.below.openOrderId}`} className={BTN}>Open that order</Link>}
+                {form.below.canContinue && (
+                  <button type="button" onClick={form.continueAnyway} disabled={form.submitting} className={BTN_PRIMARY}>
+                    {form.below.kind === 'duplicate' ? "Continue, it's a separate order" : 'Continue anyway'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

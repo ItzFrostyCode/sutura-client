@@ -1,5 +1,6 @@
 'use client';
 
+import ServiceChargesEditor from './ServiceChargesEditor';
 import React from 'react';
 import { ImagePlus, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import api from '@/lib/axios';
@@ -169,6 +170,7 @@ export function ServiceSpecEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
           <Plus size={14} /> Add a price or add-on
         </button>
       </div>
+      <ServiceChargesEditor d={d} patch={patch} />
     </div>
   );
 }

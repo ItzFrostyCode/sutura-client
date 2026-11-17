@@ -10,6 +10,27 @@ import { SET_NEEDS_BOTH } from '@/lib/orderUnits';
 // 'workprices' is card 1 of the customer page ("What they do & prices"): the work and the prices edited together.
 export type ServiceSection = 'photo' | 'info' | 'type' | 'garments' | 'capabilities' | 'work' | 'spec' | 'workprices' | 'chart' | 'description' | 'booking' | 'requirements';
 
+/** Rush for this service and the own-fabric deduction, as typed. */
+export interface ServiceCharges {
+  rush: 'shop' | 'none' | 'custom';
+  rushMode: 'percent' | 'per_piece';
+  rushPercent: string;
+  rushPerPiece: string;
+  ownFabric: string;
+}
+
+const num = (v: string | number | null | undefined) => (v == null || v === '' ? '' : String(Number(v)));
+
+export function chargesFrom(service: Service | null): ServiceCharges {
+  return {
+    rush: service?.rush_available === false ? 'none' : service?.rush_available === true ? 'custom' : 'shop',
+    rushMode: service?.rush_fee_mode === 'per_piece' ? 'per_piece' : 'percent',
+    rushPercent: num(service?.rush_fee_percent),
+    rushPerPiece: num(service?.rush_fee_per_piece),
+    ownFabric: Number(service?.own_fabric_deduction) > 0 ? num(service?.own_fabric_deduction) : '',
+  };
+}
+
 // Everything a section can change, held as strings / plain values while editing.
 export interface ServiceDraft {
   name: string;
@@ -30,6 +51,8 @@ export interface ServiceDraft {
   /** Tasks it offers (capabilities of the service type). */
   capabilities: string[];
   tiers: PricingTierInput[];
+  /** What changes the price: rush (the shop's rule, none, or this service's own) and the own-fabric deduction. */
+  charges: ServiceCharges;
   image_url: string;
   sizeChart: SizeChartValue;
   custom_fields: ServiceField[];
@@ -85,6 +108,7 @@ export function toDraft(service: Service): ServiceDraft {
     garment_types: Array.from(new Set((service.garment_types ?? []).map((g) => canonicalGarment(g) ?? g.trim()).filter(Boolean))),
     capabilities: service.capabilities ?? [],
     tiers: deriveTiersFromService(service),
+    charges: chargesFrom(service),
     image_url: service.image_url ?? '',
     sizeChart: {
       image_url: service.size_chart_image_url ?? null,
@@ -103,6 +127,7 @@ export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', price_display: 'starting', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
   service_category: '', service_types: [], garment_types: [], capabilities: [],
   tiers: [{ label: '', amount: '', covers: '', sold_as: '' }],
+  charges: chargesFrom(null),
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
 });
 
@@ -133,6 +158,10 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
     const halfFilled = d.tiers.some((t) => t.amount.trim() !== '' && t.label.trim() === '');
     if (halfFilled) return 'Enter a label for every price or add-on you entered.';
     if (d.tiers.some((t) => t.sold_as === 'set' && t.covers !== 'both')) return SET_NEEDS_BOTH;
+    const c = d.charges;
+    if (c.rush === 'custom' && c.rushMode === 'percent' && !(Number(c.rushPercent) >= 1 && Number(c.rushPercent) <= 200)) return 'Enter the rush percentage (1 to 200), or choose "Same as the shop".';
+    if (c.rush === 'custom' && c.rushMode === 'per_piece' && !(Number(c.rushPerPiece) >= 1)) return 'Enter the rush fee per piece, or choose "Same as the shop".';
+    if (c.ownFabric !== '' && !(Number(c.ownFabric) >= 0)) return 'The own-fabric deduction must be a peso amount.';
     const priced = Number(d.base_price) > 0 || d.tiers.some((t) => t.label.trim() !== '' && Number(t.amount) > 0);
     if (d.price_display !== 'quotation' && !priced && !hasTiers) {
       return 'Add a price or a priced option, or choose "Quotation required" under Basics.';
@@ -187,7 +216,20 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     size_chart_columns: (draft.sizeChart?.columns ?? []).length > 0 ? draft.sizeChart.columns.filter((c) => c.trim() !== '') : null,
     size_chart_rows: validRows.length > 0 ? validRows : null,
     pricing_tiers: tiers,
+    ...chargesPayload(draft.charges),
     ...requirementsPayload(draft.requirements),
+  };
+}
+
+/** Rush (null = the shop's rule, false = none, true = its own fee) and the own-fabric deduction, in the server's fields. */
+export function chargesPayload(c: ServiceCharges) {
+  const custom = c.rush === 'custom';
+  return {
+    rush_available: c.rush === 'shop' ? null : custom,
+    rush_fee_mode: custom ? c.rushMode : null,
+    rush_fee_percent: custom && c.rushMode === 'percent' ? Number(c.rushPercent) : null,
+    rush_fee_per_piece: custom && c.rushMode === 'per_piece' ? Number(c.rushPerPiece) : null,
+    own_fabric_deduction: c.ownFabric.trim() === '' ? null : Number(c.ownFabric),
   };
 }
 
@@ -198,8 +240,8 @@ const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   garments: ['garment_types'],
   capabilities: ['capabilities', 'min_order_qty'],
   work: ['service_category', 'garment_types', 'capabilities', 'min_order_qty'],
-  spec: ['tiers'],
-  workprices: ['service_category', 'garment_types', 'capabilities', 'min_order_qty', 'tiers'],
+  spec: ['tiers', 'charges'],
+  workprices: ['service_category', 'garment_types', 'capabilities', 'min_order_qty', 'tiers', 'charges'],
   chart: ['sizeChart'],
   description: ['description'],
   booking: ['custom_fields', 'roster_fields'],
