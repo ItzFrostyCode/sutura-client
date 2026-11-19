@@ -42,7 +42,6 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
     handleSocialChange,
     handleBusinessTypeChange,
     handleGcashQrUpload,
-    handleBankQrUpload,
     handleSave,
     handleDiscard,
   } = useSettings();
@@ -107,7 +106,6 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
         onChange={handleChange}
         {...sectionProps('payment_details')}
         onGcashQrUpload={handleGcashQrUpload}
-        onBankQrUpload={handleBankQrUpload}
       />
 
       <FittingNoticeCard formData={formData} setFormData={setFormDataWithDirty} {...sectionProps('fitting_notice')} />

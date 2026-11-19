@@ -17,6 +17,22 @@ import type { CustomerData } from './form/types';
 import { EMPTY_BODY_MEASUREMENTS, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
+import { usePeopleList, type OrderPerson } from '@/components/order-people/usePeopleList';
+import { CUSTOM_SIZE } from '@/components/store-catalog-detail/BulkOrderSheet';
+
+const WALK_IN_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+/** Same cap as an online order (the server caps a job at 500 pieces). */
+const MAX_WALK_IN_PEOPLE = 500;
+
+/** Pieces per size; people without a standard size are counted under "Custom". */
+function bulkSizeBreakdown(persons: OrderPerson[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of persons) {
+    const key = p.method === 'standard' ? p.size : CUSTOM_SIZE;
+    out[key] = (out[key] ?? 0) + 1;
+  }
+  return out;
+}
 
 export default function JobCreateForm() {
   const router = useRouter();
@@ -57,8 +73,6 @@ export default function JobCreateForm() {
     setIsBulkOrder,
     teamName,
     setTeamName,
-    roster,
-    setRoster,
     preExistingDamageNotes,
     setPreExistingDamageNotes,
     formData,
@@ -81,17 +95,15 @@ export default function JobCreateForm() {
   // Step 2: Measurements
   const [measurements, setMeasurements] = useState<IndividualMeasurements>(EMPTY_BODY_MEASUREMENTS);
   const [selectedMeasurementProfileId, setSelectedMeasurementProfileId] = useState<string>('');
-  const [sizeBreakdown, setSizeBreakdown] = useState<Record<string, string>>({
-    XS: '',
-    S: '',
-    M: '',
-    L: '',
-    XL: '',
-    '2XL': '',
-    '3XL': '',
-  });
   const [measurementSheets, setMeasurementSheets] = useState<string[]>([]);
   const [uploadingSheet, setUploadingSheet] = useState<boolean>(false);
+  // Bulk: the same people list + editor as the customer's online order (one piece per person).
+  const people = usePeopleList({
+    sizes: WALK_IN_SIZES,
+    garmentType: formData.garment_category,
+    hasSheets: measurementSheets.length > 0,
+    max: MAX_WALK_IN_PEOPLE,
+  });
 
   // Step 3: Order Specifications
   const [orderType, setOrderType] = useState<'catalog' | 'custom' | 'alteration'>('custom');
@@ -197,18 +209,13 @@ export default function JobCreateForm() {
     });
   }, [itemRate, isBulkOrder, formData.quantity, formData.is_rush, formData.rush_fee, fabricLessNow, paymentTerm, setFormData]);
 
-  // Sync bulk quantities
+  // A bulk order is one piece per person on the list.
+  const bulkPeopleCount = people.persons.length;
   useEffect(() => {
-    if (isBulkOrder) {
-      const totalPcs = Object.values(sizeBreakdown).reduce(
-        (sum, val) => sum + (parseInt(val, 10) || 0),
-        0
-      );
-      if (totalPcs > 0) {
-        setFormData((prev) => ({ ...prev, quantity: totalPcs.toString() }));
-      }
+    if (isBulkOrder && bulkPeopleCount > 0) {
+      setFormData((prev) => ({ ...prev, quantity: bulkPeopleCount.toString() }));
     }
-  }, [isBulkOrder, sizeBreakdown, setFormData]);
+  }, [isBulkOrder, bulkPeopleCount, setFormData]);
 
   // When saved measurement profile is picked
   const handleSelectSavedProfile = (profileId: string) => {
@@ -313,6 +320,10 @@ export default function JobCreateForm() {
   };
 
   const handleStep2Proceed = () => {
+    if (isBulkOrder && people.persons.length === 0) {
+      setWizardError('Add at least one person to the list for a bulk order.');
+      return;
+    }
     setWizardError('');
     setMaxCompletedStep((prev) => Math.max(prev, 2));
     goToStep(3);
@@ -412,10 +423,8 @@ export default function JobCreateForm() {
         assigned_staff_id: assignedStaffId ? Number(assignedStaffId) : null,
         assigned_to: assignedStaffId ? Number(assignedStaffId) : null,
         measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
-        // An individual order is one piece for one person; a bulk order counts its size sheet.
-        quantity: isBulkOrder
-          ? Math.max(1, Object.values(sizeBreakdown).reduce((s, c) => s + (parseInt(c, 10) || 0), 0))
-          : 1,
+        // An individual order is one piece for one person; a bulk order is one piece per person.
+        quantity: isBulkOrder ? Math.max(1, people.persons.length) : 1,
         total_amount: totalAmt.toFixed(2),
         discount_amount: 0,
         balance: balance.toFixed(2),
@@ -426,10 +435,18 @@ export default function JobCreateForm() {
           ...customFieldValues,
           // Only the measurements asked for this Garment Type.
           individual_measurements: !isBulkOrder ? pickMeasurements(measurements, formData.garment_category) : null,
-          size_breakdown: isBulkOrder ? sizeBreakdown : null,
+          size_breakdown: isBulkOrder ? bulkSizeBreakdown(people.persons) : null,
           measurement_sheets: measurementSheets.length > 0 ? measurementSheets : null,
           team_name: isBulkOrder ? teamName || null : null,
-          team_roster: isBulkOrder ? roster : null,
+          // One roster row per person: standard size, or "Custom" with their measurements / to be measured.
+          team_roster: isBulkOrder ? people.persons.map((p) => ({
+            name: p.name,
+            print_name: p.printName,
+            number: p.number,
+            size: p.method === 'standard' ? p.size : CUSTOM_SIZE,
+            ...(p.method === 'shop' ? { measure_at_shop: true } : {}),
+            ...(p.method === 'body' ? pickMeasurements(p.values, formData.garment_category) : {}),
+          })) : null,
           pre_existing_damage_notes: orderType === 'alteration' ? preExistingDamageNotes.trim() : null,
           item_rate: itemRate || null,
           // Shown on the order and work ticket ("own fabric deduction: ₱200.00").
@@ -546,10 +563,7 @@ export default function JobCreateForm() {
           customerMeasurements={customerMeasurements}
           selectedMeasurementProfileId={selectedMeasurementProfileId}
           onSelectSavedProfile={handleSelectSavedProfile}
-          sizeBreakdown={sizeBreakdown}
-          setSizeBreakdown={setSizeBreakdown}
-          roster={roster}
-          setRoster={setRoster}
+          people={people}
           teamName={teamName}
           setTeamName={setTeamName}
           measurementSheets={measurementSheets}

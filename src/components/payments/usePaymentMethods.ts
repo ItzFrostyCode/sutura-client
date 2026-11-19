@@ -31,7 +31,8 @@ export function usePaymentMethods() {
 
   useEffect(() => { load(); }, [load]);
 
-  const payload = (f: MethodForm) => ({ ...f, qr_path: f.qr_path || null, instructions: f.instructions || null, store_branch_id: f.store_branch_id ? Number(f.store_branch_id) : null });
+  // GCash is the only account customers pay to online (cash is paid at the shop, no account needed).
+  const payload = (f: MethodForm) => ({ ...f, kind: 'gcash', qr_path: f.qr_path || null, instructions: f.instructions || null, store_branch_id: f.store_branch_id ? Number(f.store_branch_id) : null });
 
   const save = async (f: MethodForm, id?: number): Promise<boolean> => {
     if (!store?.id) return false;
@@ -50,11 +51,12 @@ export function usePaymentMethods() {
     }
   };
 
-  const remove = async (id: number) => {
+  /** With a branch: an "Entire shop" method is removed from that branch only (the others keep it). */
+  const remove = async (id: number, fromBranchId?: number | null) => {
     if (!store?.id) return;
     try {
-      await api.delete(`/stores/${store.id}/payment-methods/${id}`);
-      toast.success('Payment method removed.');
+      await api.delete(`/stores/${store.id}/payment-methods/${id}`, { params: fromBranchId ? { branch_id: fromBranchId } : {} });
+      toast.success(fromBranchId ? 'Payment method removed from this branch.' : 'Payment method removed.');
       load();
     } catch (err) {
       toast.error(getErrorMessage(err, 'Could not remove this payment method.'));

@@ -46,35 +46,7 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         </fieldset>
       )}
 
-      {/* Only when the shop set sizes for this service. No free-text size box: the
-          measurements step already says how the customer will be sized. */}
-      {o.orderMode === 'individual' && o.sizes.length > 0 && (
-        <div className="space-y-2.5">
-          <SectionLabel>
-            Standard size <span className="text-ink-faint font-normal">(Optional)</span>
-          </SectionLabel>
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Standard size">
-            {o.sizes.map((s) => {
-              const on = o.size === s;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => o.setSize(on ? '' : s)}
-                  className={`min-w-12 h-11 px-3.5 rounded-lg border text-sm font-semibold transition-colors ${
-                    on ? 'border-taupe bg-taupe text-white' : 'border-line bg-surface text-ink-body hover:border-taupe/50'
-                  }`}
-                >
-                  {s}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
+      {/* Each person's standard size is picked on the Measurements step. */}
       <BookingMaterialSelector
         materialSource={o.materialSource}
         setMaterialSource={o.setMaterialSource}

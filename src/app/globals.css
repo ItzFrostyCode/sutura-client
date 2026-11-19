@@ -316,6 +316,14 @@ textarea:-webkit-autofill:focus {
   display: none;
 }
 
+/* Upload buttons (a <label> wrapping a visually hidden file input): keep the
+   hidden input inside its button. Without a positioned parent, the sr-only
+   input is placed against a far-away ancestor, and clicking the button (which
+   focuses the input) scrolls the dashboard's fixed-height frame out of place. */
+label:has(> input[type="file"].sr-only) {
+  position: relative;
+}
+
 /* Flat card treatment — no shadow, no blur, just a solid bg + border. */
 .glass-panel {
   background: var(--card-bg);

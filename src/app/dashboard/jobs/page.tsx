@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useMemo } from 'react';
+import React, { Suspense, useCallback, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AlertCircle, X } from 'lucide-react';
@@ -19,6 +19,8 @@ import {
 import StageNotifSettingsModal from '@/components/jobs/StageNotifSettingsModal';
 import JobsPageHeader from '@/components/jobs/JobsPageHeader';
 import JobsPageToolbar from '@/components/jobs/JobsPageToolbar';
+import JobsAttentionBar from '@/components/jobs/JobsAttentionBar';
+import { ATTENTION_FILTERS, assignedStaffId, matchesAttention, type AttentionKey } from '@/components/jobs/boardAttention';
 
 export default function JobOrdersPage() {
   return (
@@ -101,6 +103,37 @@ function JobOrdersPageContent() {
     });
   };
 
+  // "Needs attention" chips + "Assigned to" filter, applied to what the board shows.
+  const repairRequiresDownpayment = Boolean(store?.repair_requires_downpayment);
+  const [attention, setAttention] = useState<AttentionKey | null>(null);
+  const [staffFilter, setStaffFilter] = useState('all');
+  const activeJobs = useMemo(
+    () => [...Object.entries(groupedJobs).filter(([k]) => k !== 'completed').flatMap(([, list]) => list), ...onHoldJobs],
+    [groupedJobs, onHoldJobs]
+  );
+  const attentionCounts = useMemo(() => {
+    const counts = {} as Record<AttentionKey, number>;
+    for (const f of ATTENTION_FILTERS) {
+      counts[f.key] = activeJobs.filter((j) => matchesAttention(j, f.key, repairRequiresDownpayment)).length;
+    }
+    return counts;
+  }, [activeJobs, repairRequiresDownpayment]);
+  const keepJob = useCallback((j: Job) => {
+    if (attention && !matchesAttention(j, attention, repairRequiresDownpayment)) return false;
+    if (staffFilter !== 'all') {
+      const id = assignedStaffId(j);
+      if (staffFilter === 'none' ? id !== null : String(id) !== staffFilter) return false;
+    }
+    return true;
+  }, [attention, staffFilter, repairRequiresDownpayment]);
+  const filtering = attention !== null || staffFilter !== 'all';
+  const visibleGrouped = useMemo(
+    () => (filtering ? Object.fromEntries(Object.entries(groupedJobs).map(([k, list]) => [k, list.filter(keepJob)])) : groupedJobs),
+    [filtering, groupedJobs, keepJob]
+  );
+  const visibleOnHold = useMemo(() => (filtering ? onHoldJobs.filter(keepJob) : onHoldJobs), [filtering, onHoldJobs, keepJob]);
+  const shownActiveCount = filtering ? activeJobs.filter(keepJob).length : activeJobs.length;
+
   const stageIconFilters = useMemo(
     () =>
       buildStageIconFilters(
@@ -168,14 +201,26 @@ function JobOrdersPageContent() {
         />
         </div>
 
+        <JobsAttentionBar
+          counts={attentionCounts}
+          active={attention}
+          onToggle={(key) => setAttention((prev) => (prev === key ? null : key))}
+          staffList={isOwnerOrManager ? staffList : undefined}
+          staffFilter={staffFilter}
+          onStaffFilter={setStaffFilter}
+          shownCount={shownActiveCount}
+          totalCount={activeJobs.length}
+          onClear={() => { setAttention(null); setStaffFilter('all'); }}
+        />
+
         <div data-tour="jobs-board" className="p-3 sm:p-5 flex-1 overflow-hidden">
           {loading ? (
             <KanbanSkeleton columns={4} />
           ) : (
             <JobKanbanBoard
-              groupedJobs={groupedJobs}
+              groupedJobs={visibleGrouped}
               activeColumns={activeColumns}
-              onHoldJobs={onHoldJobs}
+              onHoldJobs={visibleOnHold}
               actionLoadingId={actionLoadingId}
               onUpdateStatus={updateJobStatus}
               onApprove={(id) => setApprovingJob(jobs.find((j) => j.id === id) ?? null)}

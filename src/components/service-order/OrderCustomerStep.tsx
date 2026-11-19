@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import NoGcashAlert from './NoGcashAlert';
 import type { ServiceOrderState } from './useServiceOrder';
 import { ChoiceCard, FIELD, SectionLabel, StepIntro } from './orderUi';
 import { formatAddress } from '@/lib/formatAddress';
@@ -9,6 +11,7 @@ import { formatAddress } from '@/lib/formatAddress';
 // customer; online, the customer is the signed-in account, so this confirms
 // who the order is for and how the shop reaches them.
 export default function OrderCustomerStep({ o }: Readonly<{ o: ServiceOrderState }>) {
+  const [blockedOpen, setBlockedOpen] = useState(false);
   return (
     <div className="space-y-7">
       <StepIntro title="Customer Information" text="Who the order is for and how the shop can reach you." />
@@ -61,18 +64,30 @@ export default function OrderCustomerStep({ o }: Readonly<{ o: ServiceOrderState
           <SectionLabel as="legend">Branch</SectionLabel>
           <p className="mobile-caption text-ink-muted -mt-1">Where you'll go for fittings and pickup.</p>
           <div className="grid grid-cols-1 gap-2.5" role="radiogroup" aria-label="Branch">
-            {o.branches.map((b) => (
-              <ChoiceCard
-                key={b.id}
-                selected={o.branchId === b.id}
-                onSelect={() => o.setBranchId(b.id)}
-                label={b.name}
-                detail={formatAddress({ address: b.address, city: b.city })}
-              />
-            ))}
+            {o.branches.map((b) => {
+              const open = o.branchTakesOnline(b.id);
+              const address = formatAddress({ address: b.address, city: b.city });
+              return (
+                <ChoiceCard
+                  key={b.id}
+                  selected={o.branchId === b.id}
+                  // A branch without GCash can't take online orders: explain instead of selecting it.
+                  onSelect={() => (open ? o.setBranchId(b.id) : setBlockedOpen(true))}
+                  label={b.name}
+                  detail={open ? address : `Not taking online orders yet${address ? ` · ${address}` : ''}`}
+                />
+              );
+            })}
           </div>
         </fieldset>
       )}
+
+      <NoGcashAlert
+        open={blockedOpen}
+        onClose={() => setBlockedOpen(false)}
+        storeSlug={o.store?.slug ?? ''}
+        message="This branch hasn't set up a GCash account for payments. Pick another branch, or book an appointment with the shop instead."
+      />
     </div>
   );
 }

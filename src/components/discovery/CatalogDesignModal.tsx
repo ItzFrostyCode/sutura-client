@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Loader2, Store } from 'lucide-react';
 import api from '@/lib/axios';
@@ -10,6 +9,7 @@ import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { serviceOrderHref } from '@/lib/serviceOrderHref';
+import OnlineOrderLink from '@/components/service-order/OnlineOrderLink';
 
 interface DesignDetail {
   description?: string | null;
@@ -67,9 +67,13 @@ export default function CatalogDesignModal({ item, isOpen, onClose }: Readonly<{
       title={item.name}
       maxWidth="md:max-w-3xl"
       footer={orderHref ? (
-        <Link href={orderHref} className="h-11 px-5 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center transition-colors">
+        <OnlineOrderLink
+          href={orderHref}
+          storeSlug={slug!}
+          className="h-11 px-5 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center transition-colors"
+        >
           Place Order
-        </Link>
+        </OnlineOrderLink>
       ) : loading ? (
         <Loader2 size={18} className="animate-spin text-ink-faint" />
       ) : undefined}

@@ -6,12 +6,14 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { PublicService, StoreBranch, StoreProfile } from '@/components/store-storefront/types';
 import type { ShopPaymentMethod } from '@/components/account/orders/usePayForOrder';
-import { EMPTY_BODY_MEASUREMENTS, hasAnyMeasurement, pickMeasurements, type BodyMeasurements } from '@/lib/garmentMeasurements';
+import { hasAnyMeasurement, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
+import { usePeopleList } from '@/components/order-people/usePeopleList';
 
 export interface SavedMeasurement {
   id: number;
   profile_name: string;
   version: number;
+  metrics?: Record<string, string | undefined> | null;
   superseded_at?: string | null;
   updated_at?: string;
   store?: { slug: string } | null;
@@ -25,25 +27,12 @@ export interface PlacedOrder {
 
 export type MaterialChoice = 'own' | 'shop' | '';
 export type OrderMode = 'individual' | 'bulk';
-export type MeasurementSource = 'saved' | 'own' | 'shop';
 export type PaymentTerm = 'full' | 'downpayment';
-
-// Same fields as the walk-in wizard's Individual Order measurements (see lib/garmentMeasurements).
-export type IndividualMeasurements = BodyMeasurements;
 
 export const BULK_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] as const;
 const MAX_PHOTOS = 5;
-/** Most people a bulk order can list with their own body measurements. */
-export const MAX_MEMBERS = 100;
-
-/** One person in a bulk order with their own (optional) body measurements. */
-export interface BulkMember {
-  id: number;
-  name: string;
-  size: string;
-  values: IndividualMeasurements;
-}
-const EMPTY_MEASUREMENTS: IndividualMeasurements = EMPTY_BODY_MEASUREMENTS;
+/** Most people one online order can list (the server caps pieces at 500). */
+export const MAX_PEOPLE = 500;
 
 // Customer-side "Online Order" for one service. Follows the shop's walk-in
 // wizard step for step — Customer Information → Measurements → Order
@@ -89,23 +78,17 @@ export function useServiceOrder(storeId: string) {
   const phoneValid = /^09\d{9}$/.test(contactPhone);
   const [branchId, setBranchId] = useState<number | null>(null);
 
-  // 2 · Measurements
+  // 2 · Measurements (the person forms are set up below, once the sizes are known).
+  // Individual = one person's own form; Bulk = the people list, one piece per person.
   const [orderMode, setOrderMode] = useState<OrderMode>('individual');
   // Top / Bottom / Full Set…: decides which body measurements are asked.
   const [garmentType, setGarmentType] = useState('');
-  const [measurementSource, setMeasurementSource] = useState<MeasurementSource>('shop');
-  const [measurementId, setMeasurementId] = useState<number | null>(null);
-  const [measurements, setMeasurements] = useState<IndividualMeasurements>(EMPTY_MEASUREMENTS);
-  const [sizeBreakdown, setSizeBreakdown] = useState<Record<string, string>>({});
   const [teamName, setTeamName] = useState('');
-  // Bulk: optional body measurements per person (name, size, measurements).
-  const [members, setMembers] = useState<BulkMember[]>([]);
   const [sheets, setSheets] = useState<string[]>([]);
   const [uploadingSheet, setUploadingSheet] = useState(false);
 
   // 3 · Order Specifications
   const [pricingId, setPricingId] = useState<number | null>(null);
-  const [size, setSize] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [materialSource, setMaterialSource] = useState<MaterialChoice>('');
   const [materialDescription, setMaterialDescription] = useState('');
@@ -156,7 +139,6 @@ export function useServiceOrder(storeId: string) {
           if ((found.min_order_qty ?? 1) > 1 || (found.service_types ?? []).includes('bulk_sublimation')) setOrderMode('bulk');
           const policy = found.order_requirements?.payment_policy;
           setPaymentTerm(policy === 'full' ? 'full' : 'downpayment');
-          if (found.order_requirements?.measurement_requirement === 'none') setMeasurementSource('shop');
         }
       })
       .catch(() => setService(null))
@@ -172,10 +154,6 @@ export function useServiceOrder(storeId: string) {
           (m: SavedMeasurement) => m.store?.slug === storeId && !m.superseded_at
         );
         setSavedMeasurements(mine);
-        if (mine.length > 0) {
-          setMeasurementSource((prev) => (prev === 'shop' ? 'saved' : prev));
-          setMeasurementId((prev) => prev ?? mine[0].id);
-        }
       })
       .catch(() => setSavedMeasurements([]));
   }, [user, storeId]);
@@ -196,6 +174,21 @@ export function useServiceOrder(storeId: string) {
       .catch(() => setGcashAccounts([]))
       .finally(() => setGcashLoading(false));
   }, [store?.slug, orderBranchId]);
+
+  // Every GCash account in the shop (any branch), so Step 1 can tell which
+  // branches take online orders. null while loading or if it failed (then
+  // nothing is blocked here; Step 4 and the server still check).
+  const [shopGcash, setShopGcash] = useState<ShopPaymentMethod[] | null>(null);
+  useEffect(() => {
+    if (!store?.slug) return;
+    api.get(`/public/stores/${store.slug}/payment-methods`, { params: { any_branch: 1 } })
+      .then((res) => setShopGcash(((res.data?.data ?? []) as ShopPaymentMethod[]).filter((m) => m.kind === 'gcash')))
+      .catch(() => setShopGcash(null));
+  }, [store?.slug]);
+  // Payment is due before production (deposit or full), so the branch needs a GCash account to pay to.
+  const paysUpFront = (service?.order_requirements?.payment_policy ?? 'deposit') !== 'none';
+  const branchTakesOnline = (id: number) =>
+    !paysUpFront || shopGcash === null || shopGcash.some((m) => m.store_branch_id == null || m.store_branch_id === id);
   const pricing = service?.pricing ?? [];
   const selectedPricing = pricing.find((p) => p.id === pricingId) ?? null;
   const minQty = Math.max(1, service?.min_order_qty ?? 1);
@@ -204,21 +197,32 @@ export function useServiceOrder(storeId: string) {
   const measurementsNeeded = requirements?.measurement_requirement !== 'none';
   const isRepairOnly = !!service && (service.service_types ?? []).length === 1 && service.service_types![0] === 'alteration_repair';
 
-  // A bulk order counts pieces in the service's own chart sizes when it has a size chart.
+  // Standard sizes are the service's own chart sizes when it has a size chart.
   const bulkSizes: string[] = sizes.length > 0 ? sizes : [...BULK_SIZES];
-  const bulkPieces = bulkSizes.reduce((sum, s) => sum + (Number.parseInt(sizeBreakdown[s] ?? '', 10) || 0), 0);
 
-  const addMember = () =>
-    setMembers((prev) => prev.length >= MAX_MEMBERS ? prev : [
-      ...prev,
-      { id: Date.now() + prev.length, name: '', size: '', values: { ...EMPTY_MEASUREMENTS, unit: prev[prev.length - 1]?.values.unit ?? 'in' } },
-    ]);
-  const updateMember = (id: number, patch: Partial<Omit<BulkMember, 'id'>>) =>
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-  const removeMember = (id: number) => setMembers((prev) => prev.filter((m) => m.id !== id));
-  // Only people with a name or at least one measurement are sent.
-  const filledMembers = members.filter((m) => m.name.trim() !== '' || hasAnyMeasurement(m.values, garmentType));
+  const hasSheets = sheets.length > 0;
+  // Bulk: the people on the order (same list + editor as the walk-in wizard).
+  const people = usePeopleList({ sizes: bulkSizes, garmentType, hasSheets, max: MAX_PEOPLE });
+  const { persons } = people;
+  // Individual: the customer's own sizing, one form with no list (its draft is used as-is).
+  const solo = usePeopleList({ sizes: bulkSizes, garmentType, hasSheets, max: 1 });
+
+  const bulkPieces = persons.length;
   const pieces = orderMode === 'bulk' ? bulkPieces : quantity;
+
+  // Fills the active form from a measurement profile this shop has on file for the customer.
+  const fillDraftFromProfile = (profileId: number) => {
+    const profile = savedMeasurements.find((m) => m.id === profileId);
+    if (!profile) return;
+    const metrics = profile.metrics ?? {};
+    const values = { unit: metrics.unit === 'cm' ? 'cm' as const : 'in' as const, ...measurementsFromMetrics(metrics) };
+    if (orderMode === 'individual') {
+      solo.fillDraft(values, profileId);
+      return;
+    }
+    const firstPerson = persons.length === 0 && people.editingId === null;
+    people.fillDraft(values, profileId, firstPerson ? user?.name : undefined);
+  };
 
   const unitPrice = useMemo(() => {
     if (selectedPricing && selectedPricing.amount !== null && selectedPricing.amount !== '') return Number(selectedPricing.amount);
@@ -244,18 +248,13 @@ export function useServiceOrder(storeId: string) {
     return field.required && field.type !== 'checkbox' && field.label?.trim() && !(answers[field.label] ?? '').trim();
   });
 
-  const hasOwnMeasurement = hasAnyMeasurement(measurements, garmentType);
-
   const stepReady: Record<number, boolean> = {
     1: phoneValid && (branches.length <= 1 || branchId !== null),
     2:
       !uploadingSheet &&
-      (orderMode === 'bulk'
-        ? bulkPieces >= minQty && bulkPieces <= 500
-        : !measurementsNeeded ||
-          measurementSource === 'shop' ||
-          (measurementSource === 'saved' && measurementId !== null) ||
-          (measurementSource === 'own' && (hasOwnMeasurement || sheets.length > 0))),
+      (orderMode === 'individual'
+        ? !measurementsNeeded || solo.draftValid
+        : bulkPieces >= Math.max(1, minQty) && bulkPieces <= MAX_PEOPLE),
     3: (pricing.length <= 1 || pricingId !== null) && materialSource !== '' && !unansweredRequired && !uploading,
     4: pieces >= minQty && !submitting && !gcashLoading && !uploadingReceipt && (!paymentNeeded || (gcashId !== null && receipt !== '')),
   };
@@ -303,27 +302,38 @@ export function useServiceOrder(storeId: string) {
     setSubmitting(true);
     setError('');
     const individual = orderMode === 'individual';
+    // The customer's own sizing on an individual order (none when the service needs no measurements).
+    const me = individual && measurementsNeeded && solo.draftValid ? solo.draft : undefined;
+    const soloSource = !me || me.method === 'standard'
+      ? undefined
+      : me.method === 'shop' ? 'shop' : me.profileId !== null ? 'saved' : 'own';
     try {
       const res = await api.post(`/stores/${store.slug}/service-orders`, {
         service_id: service.id,
         contact_phone: contactPhone.trim(),
         store_branch_id: branchId ?? undefined,
         order_mode: orderMode,
-        measurement_id: individual && measurementSource === 'saved' ? measurementId ?? undefined : undefined,
+        measurement_id: soloSource === 'saved' ? me!.profileId ?? undefined : undefined,
         // Saved with the order so the shop sees "measure me at the shop" and books the visit.
-        measurement_source: individual && measurementsNeeded ? measurementSource : undefined,
+        measurement_source: measurementsNeeded ? soloSource : undefined,
         garment_category: garmentType || undefined,
-        individual_measurements: individual && measurementSource === 'own' && hasOwnMeasurement ? pickMeasurements(measurements, garmentType) : undefined,
-        size_breakdown: individual ? undefined : Object.fromEntries(bulkSizes.map((s) => [s, sizeBreakdown[s] ?? ''])),
-        team_name: individual ? undefined : teamName.trim() || undefined,
-        member_measurements: individual || filledMembers.length === 0 ? undefined : filledMembers.map((m) => ({
-          name: m.name.trim() || undefined,
-          size: m.size || undefined,
-          ...pickMeasurements(m.values, garmentType),
+        individual_measurements: soloSource === 'own' && hasAnyMeasurement(me!.values, garmentType) ? pickMeasurements(me!.values, garmentType) : undefined,
+        // Standard-size people counted per size; everyone else is counted by the server as custom fit.
+        size_breakdown: individual ? undefined : Object.fromEntries(bulkSizes.map((s) => {
+          const count = persons.filter((p) => p.method === 'standard' && p.size === s).length;
+          return [s, count > 0 ? String(count) : ''];
         })),
-        measurement_sheets: (individual && measurementSource === 'own') || !individual ? sheets : [],
+        team_name: individual ? undefined : teamName.trim() || undefined,
+        // One row per person, so the shop sees every name and how each is sized.
+        member_measurements: individual ? undefined : persons.map((p) => ({
+          name: p.name || undefined,
+          size: p.method === 'standard' ? p.size : undefined,
+          measure_at_shop: p.method === 'shop' || undefined,
+          ...(p.method === 'body' ? pickMeasurements(p.values, garmentType) : {}),
+        })),
+        measurement_sheets: sheets,
         pricing_id: pricingId ?? undefined,
-        size: individual ? size.trim() || undefined : undefined,
+        size: me?.method === 'standard' ? me.size : undefined,
         material_source: materialSource === 'own' ? 'customer_supplied' : 'store_supplied',
         material_description: materialSource === 'own' ? materialDescription.trim() || undefined : undefined,
         answers: Object.keys(answers).length > 0 ? answers : undefined,
@@ -368,28 +378,20 @@ export function useServiceOrder(storeId: string) {
     branches,
     branchId,
     setBranchId,
+    branchTakesOnline,
     // 2
     orderMode,
     setOrderMode,
     garmentType,
     setGarmentType,
     measurementsNeeded,
-    measurementSource,
-    setMeasurementSource,
     savedMeasurements,
-    measurementId,
-    setMeasurementId,
-    measurements,
-    setMeasurements,
-    sizeBreakdown,
-    setSizeBreakdown,
     bulkPieces,
     bulkSizes,
-    members,
-    addMember,
-    updateMember,
-    removeMember,
-    maxMembers: MAX_MEMBERS,
+    people,
+    persons,
+    solo,
+    fillDraftFromProfile,
     teamName,
     setTeamName,
     sheets,
@@ -401,9 +403,6 @@ export function useServiceOrder(storeId: string) {
     pricingId,
     setPricingId,
     selectedPricing,
-    sizes,
-    size,
-    setSize,
     answers,
     setAnswers,
     materialSource,

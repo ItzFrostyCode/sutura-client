@@ -26,8 +26,9 @@ export default function OrderGcashPayment({ o }: Readonly<{ o: ServiceOrderState
 
   if (o.gcashAccounts.length === 0) {
     return (
-      <div className="border border-line rounded-lg bg-sunken px-4 py-3 text-sm text-ink-body">
-        This shop hasn't added a GCash account yet. Place your order now and pay from My Orders once the shop accepts it.
+      <div role="alert" className="border border-amber-200 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="font-semibold">You can&apos;t place this order yet.</p>
+        <p className="mt-0.5">This shop hasn&apos;t set up a GCash account for payments. Please check back later, or book an appointment with the shop instead.</p>
       </div>
     );
   }

@@ -1,16 +1,21 @@
 import React from 'react';
 import Link from 'next/link';
 import { MessageCircle, ShoppingCart } from 'lucide-react';
+import OnlineOrderLink from '@/components/service-order/OnlineOrderLink';
 
 interface ServiceActionButtonsProps {
   orderHref: string;
   messageHref?: string | null;
   storeHref: string;
+  /** The shop's slug: "Online Order" checks it has a GCash account first. */
+  storeSlug: string;
+  /** False when the service asks for no payment before production. */
+  paymentRequired?: boolean;
 }
 
 // 600px+: the inline pair in the info column (outline "Message" + filled
 // "Online Order"), same sizes as the Catalog Design's buttons.
-export function ServiceInlineActions({ orderHref, messageHref }: Omit<ServiceActionButtonsProps, 'storeHref'>) {
+export function ServiceInlineActions({ orderHref, messageHref, storeSlug, paymentRequired }: Omit<ServiceActionButtonsProps, 'storeHref'>) {
   return (
     <div className="hidden min-[600px]:flex items-center gap-2 pt-4">
       {messageHref && (
@@ -23,18 +28,20 @@ export function ServiceInlineActions({ orderHref, messageHref }: Omit<ServiceAct
           <MessageCircle size={16} className="shrink-0" /> Message the Shop
         </a>
       )}
-      <Link
+      <OnlineOrderLink
         href={orderHref}
+        storeSlug={storeSlug}
+        paymentRequired={paymentRequired}
         className="flex-1 h-12 flex items-center justify-center gap-1.5 bg-taupe hover:bg-ink text-white text-xs min-[900px]:text-sm font-semibold transition-colors text-center whitespace-nowrap px-2"
       >
         <ShoppingCart size={16} className="shrink-0" /> Online Order
-      </Link>
+      </OnlineOrderLink>
     </div>
   );
 }
 
 // Below 600px: the sticky bottom bar (Shop · Message | Online Order).
-export function ServiceBottomBar({ orderHref, messageHref, storeHref }: ServiceActionButtonsProps) {
+export function ServiceBottomBar({ orderHref, messageHref, storeHref, storeSlug, paymentRequired }: ServiceActionButtonsProps) {
   return (
     <div
       className="min-[600px]:hidden sticky bottom-0 left-0 right-0 z-40 bg-white border-t border-line shrink-0"
@@ -61,9 +68,14 @@ export function ServiceBottomBar({ orderHref, messageHref, storeHref }: ServiceA
             </a>
           )}
         </div>
-        <Link href={orderHref} className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors text-center">
+        <OnlineOrderLink
+          href={orderHref}
+          storeSlug={storeSlug}
+          paymentRequired={paymentRequired}
+          className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-white bg-taupe hover:bg-ink transition-colors text-center"
+        >
           <ShoppingCart size={18} className="shrink-0" /> Online Order
-        </Link>
+        </OnlineOrderLink>
       </div>
     </div>
   );

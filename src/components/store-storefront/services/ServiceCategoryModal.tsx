@@ -7,6 +7,7 @@ import Modal from '@/components/Modal';
 import { getMediaUrl } from '@/lib/media';
 import { getActiveSale } from '@/lib/salePricing';
 import { serviceOrderHref } from '@/lib/serviceOrderHref';
+import OnlineOrderLink from '@/components/service-order/OnlineOrderLink';
 import type { ServiceGroup } from './ServiceCategoryList';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
@@ -86,13 +87,15 @@ export default function ServiceCategoryModal({
               </div>
 
               <div className="flex shrink-0 gap-2 sm:flex-col sm:items-end">
-                <Link
+                <OnlineOrderLink
                   href={serviceOrderHref(storeId, service)}
+                  storeSlug={storeId}
+                  paymentRequired={service.order_requirements?.payment_policy !== 'none'}
                   onClick={() => onOpenService(service.id)}
                   className="flex min-h-10 flex-1 items-center justify-center rounded-lg bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taupe sm:flex-none"
                 >
                   Place Order
-                </Link>
+                </OnlineOrderLink>
                 <Link
                   href={detailsHref}
                   onClick={() => onOpenService(service.id)}

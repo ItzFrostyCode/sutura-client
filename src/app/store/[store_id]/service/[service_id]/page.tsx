@@ -258,6 +258,7 @@ export default function ServiceDetailPage({
 
   const facebookUrl = getSocialUrl(store.social_links, 'facebook');
   const orderHref = serviceOrderHref(storeId, service);
+  const orderPaymentRequired = service.order_requirements?.payment_policy !== 'none';
   const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
@@ -485,7 +486,7 @@ export default function ServiceDetailPage({
           buyZone={
             <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
               <ServiceProductInfo service={service} />
-              <ServiceInlineActions orderHref={orderHref} messageHref={messageHref} />
+              <ServiceInlineActions orderHref={orderHref} messageHref={messageHref} storeSlug={storeId} paymentRequired={orderPaymentRequired} />
             </div>
           }
         />
@@ -517,7 +518,7 @@ export default function ServiceDetailPage({
         </div>
       </main>
 
-      <ServiceBottomBar orderHref={orderHref} messageHref={messageHref} storeHref={`/store/${storeId}`} />
+      <ServiceBottomBar orderHref={orderHref} messageHref={messageHref} storeHref={`/store/${storeId}`} storeSlug={storeId} paymentRequired={orderPaymentRequired} />
     </div>
   );
 }

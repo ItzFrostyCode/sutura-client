@@ -28,6 +28,9 @@ export default function JobOverviewSidebar({
 }: JobOverviewSidebarProps) {
   const balance = Number.parseFloat(String(job.balance || 0));
   const depositLabel = paymentPolicyLabel(job.payment_policy, job.payment_policy_percent);
+  // Fully paid: there was something to pay and nothing is left.
+  const fullyPaid = Number.parseFloat(String(job.total_amount || 0)) > 0 && balance <= 0.005;
+  const depositMet = fullyPaid || jobPaidSoFar >= requiredDownpayment;
 
   return (
     <div className="space-y-6">
@@ -83,16 +86,22 @@ export default function JobOverviewSidebar({
           </div>
         </div>
 
-        {/* Required-payment progress meter (from this job's payment policy) */}
+        {/* Payment meter: toward the required deposit, then "Fully paid" once nothing is left. */}
         <div className="pt-2 space-y-2">
-          <div className="flex justify-between text-[11px] font-bold text-ink-muted">
-            <span>{depositLabel}</span>
-            <span>{jobPaidSoFar >= requiredDownpayment ? '✓ Met' : `₱${jobPaidSoFar.toFixed(0)} / ₱${requiredDownpayment.toFixed(0)}`}</span>
+          <div className="flex justify-between text-[11px] font-bold">
+            <span className={fullyPaid ? 'text-emerald-700' : 'text-ink-muted'}>{fullyPaid ? 'Fully paid' : depositLabel}</span>
+            <span className={depositMet ? 'text-emerald-700' : 'text-ink-muted'}>
+              {fullyPaid
+                ? `✓ ₱${jobPaidSoFar.toFixed(2)}`
+                : depositMet
+                  ? `✓ Met · ₱${balance.toFixed(2)} left`
+                  : `₱${jobPaidSoFar.toFixed(0)} / ₱${requiredDownpayment.toFixed(0)}`}
+            </span>
           </div>
           <div className="w-full h-2 bg-canvas rounded-full overflow-hidden border border-line">
             <div
-              className={`h-full rounded-full transition-all ${jobPaidSoFar >= requiredDownpayment ? 'bg-emerald-600' : 'bg-amber-500'}`}
-              style={{ width: `${Math.min(100, requiredDownpayment > 0 ? (jobPaidSoFar / requiredDownpayment) * 100 : 100)}%` }}
+              className={`h-full rounded-full transition-all ${depositMet ? 'bg-emerald-600' : 'bg-amber-500'}`}
+              style={{ width: `${fullyPaid ? 100 : Math.min(100, requiredDownpayment > 0 ? (jobPaidSoFar / requiredDownpayment) * 100 : 100)}%` }}
             />
           </div>
           {showDownpaymentGate && (
@@ -114,7 +123,7 @@ export default function JobOverviewSidebar({
             onClick={onGoToFinancials}
             className="w-full py-2.5 bg-taupe hover:bg-taupe-hover text-white text-xs font-bold rounded-xl shadow-2xs transition-colors"
           >
-            Log Payment / Deposit
+            {fullyPaid ? 'View Payments' : 'Log Payment / Deposit'}
           </button>
         )}
       </div>

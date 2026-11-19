@@ -25,6 +25,22 @@ export const PRODUCTION_COLUMNS = [
 export const ALL_COLUMNS = [...PRODUCTION_COLUMNS];
 
 /**
+ * One colour per stage so a stage is spotted at a glance: the column's dot and
+ * top accent, and the stage chip in list view. Full class strings so Tailwind
+ * keeps them. Hues stay clear of the red/amber used for overdue / due today.
+ */
+export const STAGE_STYLE: Record<string, { chip: string; dot: string; accent: string }> = {
+  pending:           { chip: 'bg-slate-100 text-slate-700',    dot: 'bg-slate-400',   accent: 'border-t-slate-400' },
+  production:        { chip: 'bg-blue-50 text-blue-800',       dot: 'bg-blue-500',    accent: 'border-t-blue-500' },
+  quality_check:     { chip: 'bg-purple-50 text-purple-800',   dot: 'bg-purple-500',  accent: 'border-t-purple-500' },
+  ready_for_fitting: { chip: 'bg-cyan-50 text-cyan-800',       dot: 'bg-cyan-500',    accent: 'border-t-cyan-500' },
+  adjustments:       { chip: 'bg-orange-50 text-orange-800',   dot: 'bg-orange-500',  accent: 'border-t-orange-500' },
+  ready_for_pickup:  { chip: 'bg-emerald-50 text-emerald-800', dot: 'bg-emerald-500', accent: 'border-t-emerald-500' },
+  completed:         { chip: 'bg-sunken text-ink-body',        dot: 'bg-taupe',       accent: 'border-t-taupe' },
+  on_hold:           { chip: 'bg-yellow-50 text-yellow-800',   dot: 'bg-yellow-500',  accent: 'border-t-yellow-500' },
+};
+
+/**
  * Where a card can go next from each stage (the board's one-click actions).
  * Used to preview the destination column while hovering an action button.
  */

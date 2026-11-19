@@ -5,6 +5,8 @@ import { useToast } from '@/context/ToastContext';
 
 export interface ShopPaymentMethod {
   id: number; kind: string; name: string; account_name: string; account_number: string;
+  /** null = the whole shop; else the one branch it belongs to. */
+  store_branch_id?: number | null;
   qr_path?: string | null; instructions?: string | null;
 }
 

@@ -12,7 +12,6 @@ interface PaymentDetailsCardProps {
   readonly onCancel: () => void;
   readonly onSave: () => void;
   readonly onGcashQrUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  readonly onBankQrUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }
 
 const inputClass = 'w-full px-3 py-2 bg-canvas border border-line text-ink text-sm focus:outline-none focus:border-taupe';
@@ -51,11 +50,10 @@ function QrSlot({ path, uploading, onUpload }: { readonly path: string; readonly
 }
 
 export default function PaymentDetailsCard({
-  formData, onChange, isEditing, saving, onEdit, onCancel, onSave, onGcashQrUpload, onBankQrUpload,
+  formData, onChange, isEditing, saving, onEdit, onCancel, onSave, onGcashQrUpload,
 }: PaymentDetailsCardProps) {
   const [uploadingGcash, setUploadingGcash] = React.useState(false);
-  const [uploadingBank, setUploadingBank] = React.useState(false);
-  const hasAny = formData.gcash_number || formData.bank_name;
+  const hasAny = Boolean(formData.gcash_number);
 
   return (
     <EditableCard
@@ -69,7 +67,7 @@ export default function PaymentDetailsCard({
       editBody={
         <div className="space-y-4">
           <p className="text-xs text-ink-muted">
-            Where customers send GCash/bank payments — printed on receipts. The system only tracks payment status, it never moves money itself.
+            Where customers send GCash payments — printed on receipts. The system only tracks payment status, it never moves money itself.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field id="gcash-number" label="GCash Number" name="gcash_number" value={formData.gcash_number} onChange={onChange} placeholder="09XX XXX XXXX" />
@@ -80,16 +78,6 @@ export default function PaymentDetailsCard({
             uploading={uploadingGcash}
             onUpload={async (e) => { setUploadingGcash(true); await onGcashQrUpload(e); setUploadingGcash(false); e.target.value = ''; }}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-line/60">
-            <Field id="bank-name" label="Bank Name" name="bank_name" value={formData.bank_name} onChange={onChange} placeholder="e.g. BDO, BPI" />
-            <Field id="bank-number" label="Bank Account Number" name="bank_account_number" value={formData.bank_account_number} onChange={onChange} />
-            <Field id="bank-account-name" label="Bank Account Name" name="bank_account_name" value={formData.bank_account_name} onChange={onChange} />
-          </div>
-          <QrSlot
-            path={formData.bank_qr_path}
-            uploading={uploadingBank}
-            onUpload={async (e) => { setUploadingBank(true); await onBankQrUpload(e); setUploadingBank(false); e.target.value = ''; }}
-          />
         </div>
       }
     >
@@ -97,9 +85,6 @@ export default function PaymentDetailsCard({
         <div className="space-y-1.5 text-sm">
           {formData.gcash_number && (
             <div className="flex justify-between gap-3"><span className="text-ink-muted text-xs">GCash</span><span className="text-ink-body font-medium">{formData.gcash_number} {formData.gcash_account_name && `(${formData.gcash_account_name})`}</span></div>
-          )}
-          {formData.bank_name && (
-            <div className="flex justify-between gap-3"><span className="text-ink-muted text-xs">Bank</span><span className="text-ink-body font-medium">{formData.bank_name} — {formData.bank_account_number}</span></div>
           )}
         </div>
       ) : (

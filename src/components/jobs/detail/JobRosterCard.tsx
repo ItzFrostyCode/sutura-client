@@ -11,19 +11,35 @@ interface JobRosterCardProps {
   onToggleRosterItem: (index: number) => void;
 }
 
+// Roster table cells: even spacing between columns, one-line headers (the table scrolls sideways instead).
+const TH = 'pb-2.5 pr-5 last:pr-0 whitespace-nowrap';
+const TD = 'py-2.5 pr-5 last:pr-0 whitespace-nowrap';
+/** Divider before the first measurement column. */
+const MEASURE_START = 'pl-5 border-l border-line';
+
 export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCardProps) {
   const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
 
   // Render Personalized Team Roster if present
   if (teamRoster && teamRoster.length > 0) {
     const doneCount = teamRoster.filter(r => r.completed).length;
-    const customFitCount = teamRoster.filter(r => r.size === CUSTOM_SIZE).length;
+    // Walk-in rows can carry the person's body measurements (custom fit, already measured).
+    const rowValue = (r: RosterItem, key: string) => (r as unknown as Record<string, unknown>)[key];
+    const rosterMeasureKeys = MEASUREMENT_FIELDS.map(f => f.key).filter(k => teamRoster.some(r => rowValue(r, k)));
+    const isMeasured = (r: RosterItem) => rosterMeasureKeys.some(k => rowValue(r, k));
+    const customFitCount = teamRoster.filter(r => r.size === CUSTOM_SIZE && !isMeasured(r)).length;
+    // Same labels as the Size column: a custom row is "Custom fit" once measured.
     const sizeCounts = teamRoster.reduce<Record<string, number>>((acc, r) => {
-      if (r.size) acc[r.size] = (acc[r.size] || 0) + 1;
+      if (!r.size) return acc;
+      const label = r.size !== CUSTOM_SIZE ? r.size : isMeasured(r) ? 'Custom fit' : 'Measure at shop';
+      acc[label] = (acc[label] || 0) + 1;
       return acc;
     }, {});
 
-    const knownRosterKeys = new Set(['name', 'print_name', 'number', 'size', 'completed']);
+    const knownRosterKeys = new Set([
+      'name', 'print_name', 'number', 'size', 'completed', 'unit', 'measure_at_shop',
+      ...MEASUREMENT_FIELDS.map(f => f.key),
+    ]);
     const extraColumns = Array.from(
       teamRoster.reduce((set, row) => {
         Object.keys(row as unknown as Record<string, unknown>).forEach(k => {
@@ -72,24 +88,27 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs divide-y divide-line">
+          <table className="w-full min-w-max text-left text-xs divide-y divide-line">
             <thead>
               <tr className="text-ink-muted font-bold uppercase tracking-wider text-[10px]">
-                <th className="pb-2.5 w-10">Done</th>
-                <th className="pb-2.5 w-12">#</th>
-                <th className="pb-2.5">Player / Staff Name</th>
-                <th className="pb-2.5">Print Name</th>
-                <th className="pb-2.5 w-20">Number</th>
-                <th className="pb-2.5 w-20">Size</th>
+                <th className={`${TH} w-10`}>Done</th>
+                <th className={`${TH} w-10`}>#</th>
+                <th className={TH}>Name</th>
+                <th className={TH}>Print Name</th>
+                <th className={TH}>No.</th>
+                <th className={TH}>Size</th>
+                {rosterMeasureKeys.map((k, i) => (
+                  <th key={k} className={`${TH} ${i === 0 ? MEASURE_START : ''}`}>{MEASUREMENT_LABELS[k] ?? k}</th>
+                ))}
                 {extraColumns.map(col => (
-                  <th key={col} className="pb-2.5">{col}</th>
+                  <th key={col} className={TH}>{col}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
               {teamRoster.map((row, idx: number) => (
                 <tr key={`${row.name}-${row.number}-${idx}`} className={row.completed ? 'bg-emerald-50/40' : undefined}>
-                  <td className="py-2.5">
+                  <td className={TD}>
                     <button
                       type="button"
                       onClick={() => onToggleRosterItem(idx)}
@@ -98,24 +117,39 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                       {row.completed ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Circle size={16} className="text-line-strong" />}
                     </button>
                   </td>
-                  <td className="py-2.5 text-ink-faint font-mono">{idx + 1}</td>
-                  <td className={`py-2.5 font-bold ${row.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>{row.name || '—'}</td>
-                  <td className="py-2.5 text-ink-muted">{row.print_name || '—'}</td>
-                  <td className="py-2.5 font-mono text-ink font-bold">{row.number || '—'}</td>
-                  <td className="py-2.5">
-                    {row.size === CUSTOM_SIZE ? (
+                  <td className={`${TD} text-ink-faint font-mono`}>{idx + 1}</td>
+                  <td className={`${TD} font-bold ${row.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>{row.name || '—'}</td>
+                  <td className={`${TD} text-ink-muted`}>{row.print_name || '—'}</td>
+                  <td className={`${TD} font-mono text-ink font-bold`}>{row.number || '—'}</td>
+                  <td className={TD}>
+                    {row.size === CUSTOM_SIZE && isMeasured(row) ? (
+                      <span
+                        title="Made to this person's body measurements"
+                        className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink whitespace-nowrap"
+                      >
+                        Custom fit
+                      </span>
+                    ) : row.size === CUSTOM_SIZE ? (
                       <span
                         title="Needs to be measured in person — not one of the service's standard sizes"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-700"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-700 whitespace-nowrap"
                       >
-                        <Ruler size={10} /> Custom
+                        <Ruler size={10} /> Measure at shop
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{row.size}</span>
                     )}
                   </td>
+                  {rosterMeasureKeys.map((k, i) => {
+                    const v = rowValue(row, k);
+                    return (
+                      <td key={k} className={`${TD} tabular-nums text-ink-body ${i === 0 ? MEASURE_START : ''}`}>
+                        {v ? `${String(v)} ${rowValue(row, 'unit') === 'cm' ? 'cm' : 'in'}` : '—'}
+                      </td>
+                    );
+                  })}
                   {extraColumns.map(col => (
-                    <td key={col} className="py-2.5 text-ink-muted">
+                    <td key={col} className={`${TD} text-ink-muted`}>
                       {(row as unknown as Record<string, unknown>)[col] as string || '—'}
                     </td>
                   ))}
@@ -136,7 +170,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
   // Online bulk orders: optional body measurements the customer gave for some people.
   const members = (Array.isArray(job.custom_order_data?.member_measurements)
     ? job.custom_order_data.member_measurements
-    : []) as Array<Record<string, string | undefined>>;
+    : []) as Array<Record<string, string | boolean | undefined>>;
   const memberKeys = MEASUREMENT_FIELDS.map((f) => f.key).filter((k) => members.some((m) => m[k]));
 
   const total = entries.reduce((sum, [, qty]) => sum + Number(qty), 0);
@@ -171,7 +205,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
       {members.length > 0 && (
         <div className="space-y-2 pt-3 border-t border-line">
           <p className="text-xs font-bold text-ink flex items-center gap-1.5">
-            <Ruler size={13} className="text-taupe" /> Body measurements from the customer
+            <Ruler size={13} className="text-taupe" /> People from the customer
             <span className="font-semibold text-ink-muted">({members.length} {members.length === 1 ? 'person' : 'people'})</span>
           </p>
           <div className="overflow-x-auto">
@@ -190,7 +224,12 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                 {members.map((m, i) => (
                   <tr key={`${m.name ?? ''}-${i}`}>
                     <td className="py-2 text-ink-faint font-mono">{i + 1}</td>
-                    <td className="py-2 font-semibold text-ink">{m.name || '—'}</td>
+                    <td className="py-2 font-semibold text-ink">
+                      {m.name || '—'}
+                      {Boolean(m.measure_at_shop) && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[10px] font-semibold text-amber-800 whitespace-nowrap">Measure at shop</span>
+                      )}
+                    </td>
                     <td className="py-2">{m.size ? <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{m.size}</span> : '—'}</td>
                     {memberKeys.map((k) => (
                       <td key={k} className="py-2 tabular-nums text-ink-body whitespace-nowrap">

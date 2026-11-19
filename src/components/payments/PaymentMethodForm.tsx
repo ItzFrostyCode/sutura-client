@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
 import { getErrorMessage } from '@/lib/apiError';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
-import { KIND_LABELS, type MethodForm } from './usePaymentMethods';
+import type { MethodForm } from './usePaymentMethods';
 
 interface PaymentMethodFormProps {
   readonly value: MethodForm;
@@ -47,14 +47,8 @@ export default function PaymentMethodForm({ value, onChange, onSave, onCancel, s
       <h3 className="text-sm font-bold uppercase tracking-wider text-ink">{editing ? 'Edit payment method' : 'Add payment method'}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="pm-kind" className={LABEL}>Type</label>
-          <select id="pm-kind" value={value.kind} onChange={(e) => set({ kind: e.target.value, name: value.name === KIND_LABELS[value.kind] || !value.name ? KIND_LABELS[e.target.value] : value.name })} className={FIELD}>
-            {Object.entries(KIND_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-          </select>
-        </div>
-        <div>
           <label htmlFor="pm-name" className={LABEL}>Name customers see <span className="text-red-600">*</span></label>
-          <input id="pm-name" value={value.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. GCash, BPI" className={FIELD} />
+          <input id="pm-name" value={value.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. GCash" className={FIELD} />
         </div>
         <div>
           <label htmlFor="pm-acct" className={LABEL}>Account name <span className="text-red-600">*</span></label>
@@ -87,7 +81,9 @@ export default function PaymentMethodForm({ value, onChange, onSave, onCancel, s
               <div className="w-24 h-24 border border-dashed border-line-strong bg-canvas flex items-center justify-center text-ink-faint"><QrCode size={28} /></div>
             )}
             <div className="flex flex-col gap-2">
-              <label className="h-11 px-4 border border-line-strong bg-white text-sm font-medium text-ink flex items-center gap-2 cursor-pointer hover:bg-sunken">
+              {/* relative + overflow-hidden keep the visually hidden input inside this button: without them it is
+                  positioned against a far-away ancestor, and focusing it scrolls the whole dashboard frame. */}
+              <label className="relative overflow-hidden h-11 px-4 border border-line-strong bg-white text-sm font-medium text-ink flex items-center gap-2 cursor-pointer hover:bg-sunken focus-within:ring-2 focus-within:ring-taupe/40">
                 {uploading && <Loader2 size={14} className="animate-spin" />} {value.qr_path ? 'Replace' : 'Upload QR'}
                 <input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
               </label>

@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense, use, useEffect } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
+import NoGcashAlert from '@/components/service-order/NoGcashAlert';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Receipt, Ruler, ShoppingCart, Sparkles, User } from 'lucide-react';
 import StatusStepper, { type StepperStage } from '@/components/shared/StatusStepper';
@@ -28,6 +29,7 @@ function Centered({ children }: Readonly<{ children: React.ReactNode }>) {
 function ServiceOrderContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
   const o = useServiceOrder(storeId);
+  const [noGcashOpen, setNoGcashOpen] = useState(false);
 
   // Repairs have their own request form (damage notes + repair items).
   useEffect(() => {
@@ -85,7 +87,13 @@ function ServiceOrderContent({ params }: Readonly<{ params: Promise<{ store_id: 
   }
 
   const nextDisabled = !o.stepReady[o.step];
-  const onNext = () => (o.step < LAST_STEP ? o.setStep(o.step + 1) : void o.submit());
+  // Payment is due up front but the shop has no GCash account: explain instead of submitting.
+  const noGcash = o.dueNow !== null && o.dueNow > 0 && !o.gcashLoading && o.gcashAccounts.length === 0;
+  const onNext = () => {
+    if (o.step < LAST_STEP) o.setStep(o.step + 1);
+    else if (noGcash) setNoGcashOpen(true);
+    else void o.submit();
+  };
 
   return (
     <div className="min-h-dvh flex flex-col bg-canvas text-ink">
@@ -150,6 +158,8 @@ function ServiceOrderContent({ params }: Readonly<{ params: Promise<{ store_id: 
           ))}
         </button>
       </footer>
+
+      <NoGcashAlert open={noGcashOpen} onClose={() => setNoGcashOpen(false)} storeSlug={o.store.slug ?? storeId} />
     </div>
   );
 }

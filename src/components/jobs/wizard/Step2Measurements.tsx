@@ -12,12 +12,18 @@ import {
   Loader2,
   ArrowLeft,
   ArrowRight,
-  Plus,
-  Trash2,
 } from 'lucide-react';
-import type { CustomerMeasurement, RosterMember } from '../form/types';
+import type { CustomerMeasurement } from '../form/types';
 import { GARMENT_TYPE_OPTIONS, GARMENT_CATEGORY_LABELS } from '../jobHelpers';
 import { measurementFieldsFor, type BodyMeasurements } from '@/lib/garmentMeasurements';
+import type { PeopleListState } from '@/components/order-people/usePeopleList';
+import {
+  PeopleList,
+  PersonEditor,
+  UnsavedDraftNote,
+  droppedMeasurementCount,
+  peopleBreakdown,
+} from '@/components/order-people/PeopleEditor';
 
 export type IndividualMeasurements = BodyMeasurements;
 
@@ -33,11 +39,8 @@ interface Step2MeasurementsProps {
   customerMeasurements: CustomerMeasurement[];
   selectedMeasurementProfileId: string;
   onSelectSavedProfile: (id: string) => void;
-  // Bulk Breakdown & Roster
-  sizeBreakdown: Record<string, string>;
-  setSizeBreakdown: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  roster: RosterMember[];
-  setRoster: React.Dispatch<React.SetStateAction<RosterMember[]>>;
+  // Bulk: the people on the order (same list + editor as the online order)
+  people: PeopleListState;
   teamName: string;
   setTeamName: (name: string) => void;
   // Measurement Sheets Upload
@@ -62,10 +65,7 @@ export default function Step2Measurements({
   customerMeasurements,
   selectedMeasurementProfileId,
   onSelectSavedProfile,
-  sizeBreakdown,
-  setSizeBreakdown,
-  roster,
-  setRoster,
+  people,
   teamName,
   setTeamName,
   measurementSheets,
@@ -82,15 +82,8 @@ export default function Step2Measurements({
   };
   const fields = measurementFieldsFor(garmentCategory);
 
-  const handleSizeQtyChange = (size: string, val: string) => {
-    const sanitized = val.replace(/[^0-9]/g, '');
-    setSizeBreakdown((prev) => ({ ...prev, [size]: sanitized }));
-  };
-
-  const totalBulkPieces = Object.values(sizeBreakdown).reduce(
-    (acc, cur) => acc + (parseInt(cur, 10) || 0),
-    0
-  );
+  const bulkCount = people.persons.length;
+  const dropped = isBulkOrder ? droppedMeasurementCount(people.persons, garmentCategory) : 0;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -99,29 +92,6 @@ export default function Step2Measurements({
       await onUploadSheet(files[i]);
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const addRosterRow = () => {
-    setRoster((prev) => [
-      ...prev,
-      {
-        id: `roster-${Date.now()}`,
-        name: '',
-        print_name: '',
-        number: '',
-        size: 'L',
-      },
-    ]);
-  };
-
-  const updateRosterRow = (id: string, field: keyof RosterMember, val: string) => {
-    setRoster((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: val } : r))
-    );
-  };
-
-  const removeRosterRow = (id: string) => {
-    setRoster((prev) => prev.filter((r) => r.id !== id));
   };
 
   return (
@@ -214,6 +184,11 @@ export default function Step2Measurements({
           {GARMENT_TYPE_OPTIONS.find((o) => o.value === garmentCategory)?.examples
             ?? 'Pick Top, Bottom, Full Set, Gown or Outerwear to show only the measurements it needs.'}
         </p>
+        {dropped > 0 && (
+          <p role="status" className="text-[11px] text-danger">
+            {dropped === 1 ? '1 saved person has' : `${dropped} saved people have`} measurements this garment type doesn&apos;t use. Those won&apos;t be saved.
+          </p>
+        )}
       </div>
 
       {/* INDIVIDUAL MEASUREMENTS FORM */}
@@ -292,133 +267,36 @@ export default function Step2Measurements({
           </div>
         </div>
       ) : (
-        /* BULK MEASUREMENTS FORM */
-        <div className="space-y-5 p-5 bg-canvas/30 border border-line/70 rounded-2xl">
-          {/* Team / Organization Name */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
-              Team / Organization / Project Name
+        /* BULK: same people list + editor as the customer's online order. */
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <label htmlFor="bulk-team-name" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
+              Team / Organization Name <span className="normal-case tracking-normal font-normal">(Optional)</span>
             </label>
             <input
+              id="bulk-team-name"
               type="text"
+              maxLength={255}
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
-              placeholder="e.g. Barangay San Antonio Youth Basketball, St. Paul Choir"
-              className="w-full h-10.5 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+              placeholder="e.g. ABC Corp. Admin Dept., San Antonio Youth Basketball"
+              className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
             />
           </div>
 
-          {/* Size Breakdown Inputs */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-                Size Breakdown Quantities
-              </span>
-              <span className="text-xs font-bold text-taupe bg-taupe/10 px-2.5 py-0.5 rounded-full border border-taupe/20">
-                Total: {totalBulkPieces} pcs
-              </span>
-            </div>
+          <PeopleList people={people} garmentType={garmentCategory} />
 
-            <div className="grid grid-cols-3 sm:grid-cols-7 gap-2.5">
-              {BULK_SIZES.map((size) => (
-                <div key={size} className="text-center">
-                  <label className="block text-[11px] font-bold text-ink mb-1">
-                    {size}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={sizeBreakdown[size] || ''}
-                    onChange={(e) => handleSizeQtyChange(size, e.target.value)}
-                    placeholder="0"
-                    className="w-full h-10 text-center font-bold bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe shadow-2xs"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <PersonEditor people={people} sizes={BULK_SIZES} garmentType={garmentCategory} showPrintFields />
 
-          {/* Team Roster / Member Details (Optional) */}
-          <div className="space-y-3 pt-3 border-t border-line">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-                  Team Roster / Player List (Optional)
-                </p>
-                <p className="text-[11px] text-ink-muted">
-                  Names, jersey numbers, and assigned sizes for printed uniforms.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={addRosterRow}
-                className="h-8 px-3 rounded-lg bg-surface border border-line text-ink text-xs font-bold flex items-center gap-1 hover:bg-canvas shadow-2xs cursor-pointer"
-              >
-                <Plus size={13} />
-                <span>Add Person</span>
-              </button>
-            </div>
+          <UnsavedDraftNote people={people} />
 
-            {roster.length > 0 && (
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {roster.map((r, idx) => (
-                  <div
-                    key={r.id}
-                    className="grid grid-cols-12 gap-2 items-center p-2 rounded-xl bg-surface border border-line shadow-2xs"
-                  >
-                    <div className="col-span-4 sm:col-span-4">
-                      <input
-                        type="text"
-                        value={r.name}
-                        onChange={(e) => updateRosterRow(r.id, 'name', e.target.value)}
-                        placeholder={`Member #${idx + 1}`}
-                        className="w-full h-8 px-2.5 bg-canvas/50 border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-                      />
-                    </div>
-                    <div className="col-span-3 sm:col-span-3">
-                      <input
-                        type="text"
-                        value={r.print_name}
-                        onChange={(e) => updateRosterRow(r.id, 'print_name', e.target.value)}
-                        placeholder="Print Name"
-                        className="w-full h-8 px-2.5 bg-canvas/50 border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-                      />
-                    </div>
-                    <div className="col-span-2 sm:col-span-2">
-                      <input
-                        type="text"
-                        value={r.number}
-                        onChange={(e) => updateRosterRow(r.id, 'number', e.target.value)}
-                        placeholder="No."
-                        className="w-full h-8 px-2 text-center bg-canvas/50 border border-line rounded-lg text-xs text-ink focus:outline-none focus:border-taupe"
-                      />
-                    </div>
-                    <div className="col-span-2 sm:col-span-2">
-                      <select
-                        value={r.size}
-                        onChange={(e) => updateRosterRow(r.id, 'size', e.target.value)}
-                        className="w-full h-8 px-2 bg-canvas/50 border border-line rounded-lg text-xs font-bold text-ink focus:outline-none focus:border-taupe cursor-pointer"
-                      >
-                        {BULK_SIZES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-span-1 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => removeRosterRow(r.id)}
-                        className="p-1.5 text-ink-muted hover:text-danger rounded-md cursor-pointer transition-colors"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 bg-canvas/40 border border-line rounded-xl">
+            <p className="text-sm font-bold text-ink tabular-nums">
+              {bulkCount} {bulkCount === 1 ? 'piece' : 'pieces'} total
+            </p>
+            <p className="text-xs text-ink-muted text-right">
+              {bulkCount === 0 ? 'Add at least 1 person to continue.' : `${peopleBreakdown(people.persons)} · one piece each`}
+            </p>
           </div>
         </div>
       )}

@@ -198,20 +198,33 @@ export default function StoreHeroHeader({
             </div>
           </div>
 
-          {/* Main Store Name */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
-            {store.name}
-          </h1>
+          {/* Title: the shop, or, when viewing a branch, the branch with its shop above it. */}
+          {activeBranch ? (
+            <>
+              <p className="mt-3 text-sm sm:text-base font-semibold text-ink-muted">{store.name}</p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-0.5 tracking-tight">
+                {activeBranch.name}
+              </h1>
+              <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe-dark font-semibold">
+                  <MapPin size={12} aria-hidden="true" /> {Boolean(activeBranch.is_main) ? 'Main branch' : 'Branch'}
+                </span>
+                <Link
+                  href={`/store/${storeId}`}
+                  className="font-semibold text-taupe-dark underline-offset-4 hover:underline"
+                >
+                  See main shop
+                </Link>
+              </p>
+            </>
+          ) : (
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
+              {store.name}
+            </h1>
+          )}
 
-          {/* Subtitle Metadata (Branch, Owner, Ratings) */}
+          {/* Subtitle Metadata (Owner, Ratings) */}
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
-            {activeBranch && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
-                <MapPin size={11} /> {activeBranch.name}
-                {Boolean(activeBranch.is_main) ? ' · Main HQ' : ''}
-              </span>
-            )}
-            <span className="text-ink-faint">·</span>
             <span>
               Shop Owner · <strong className="font-semibold text-ink-body">{store.owner?.name || 'Shop Owner'}</strong>
             </span>
@@ -327,11 +340,11 @@ export default function StoreHeroHeader({
               </span>
             </div>
 
-            {/* Phone */}
-            {store.phone && (
+            {/* Phone: the branch's own number when viewing a branch that has one. */}
+            {(activeBranch?.contact_number || store.phone) && (
               <div className="flex items-center gap-1.5 text-ink-muted">
                 <Phone size={14} className="text-ink-muted shrink-0" />
-                <span>{store.phone}</span>
+                <span>{activeBranch?.contact_number || store.phone}</span>
               </div>
             )}
           </div>
