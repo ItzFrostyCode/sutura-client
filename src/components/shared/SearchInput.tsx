@@ -14,6 +14,8 @@ interface SearchInputProps {
    * surrounding white card) — fill it white instead of the usual canvas
    * tint, or it visually disappears into the page behind it. */
   readonly onCanvasBackground?: boolean;
+  /** The admin's field style (1.5px mid-tone border, rounder corners), matching admin-card. */
+  readonly bold?: boolean;
 }
 
 /**
@@ -24,7 +26,7 @@ interface SearchInputProps {
  * (Appointments, Payments, Jobs, Customers, Catalog, Packages, Staff,
  * Services) hand-rolled a slightly different version of this same input.
  */
-export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '', id, disabled, onFocus, onBlur, onCanvasBackground = false }: SearchInputProps) {
+export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '', id, disabled, onFocus, onBlur, onCanvasBackground = false, bold = false }: SearchInputProps) {
   return (
     <div className={`relative ${className}`}>
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" size={16} />
@@ -37,7 +39,7 @@ export default function SearchInput({ value, onChange, placeholder = 'Search...'
         onFocus={onFocus}
         onBlur={onBlur}
         disabled={disabled}
-        className={`w-full pl-9 pr-4 py-2 ${onCanvasBackground ? 'bg-surface' : 'bg-canvas'} border border-line rounded-lg text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors disabled:opacity-50`}
+        className={`w-full pl-9 pr-4 ${onCanvasBackground ? 'bg-surface' : 'bg-canvas'} ${bold ? 'admin-field h-11 hover:border-[#C9BDB0]' : 'py-2 border border-line rounded-lg'} text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe transition-colors disabled:opacity-50`}
       />
     </div>
   );

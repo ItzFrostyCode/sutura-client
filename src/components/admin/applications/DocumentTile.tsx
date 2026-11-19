@@ -114,7 +114,7 @@ function SingleTile({ storeId, storeName, doc, status }: {
   const masked = isSensitive(doc.key) && doc.type === 'image';
 
   return (
-    <figure className={`border-2 bg-surface ${status === 'requested' ? 'border-amber-300' : 'border-line-strong'}`}>
+    <figure className={`admin-card overflow-hidden ${status === 'requested' ? 'border-amber-300!' : ''}`}>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -149,7 +149,7 @@ function CompareTile({ storeId, storeName, doc }: { readonly storeId: number; re
   const previous = doc.previous!;
 
   return (
-    <figure className="col-span-2 border-2 border-line-strong bg-surface">
+    <figure className="col-span-2 admin-card overflow-hidden">
       <figcaption className="flex min-h-12 items-center justify-between gap-2 border-b border-line px-3">
         <span className="truncate text-sm font-semibold text-ink">{label}</span>
         {STATUS_BADGE.replaced}

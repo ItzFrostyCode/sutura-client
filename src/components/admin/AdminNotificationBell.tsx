@@ -127,7 +127,7 @@ export default function AdminNotificationBell({ variant = 'light' }: AdminNotifi
         <div
           role="region"
           aria-label="Platform alerts"
-          className="absolute right-0 mt-2 w-[410px] max-w-[calc(100vw-1.5rem)] rounded-2xl border-2 border-line-strong bg-surface shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+          className="absolute right-0 mt-2 w-[410px] max-w-[calc(100vw-1.5rem)] admin-card shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3.5">
@@ -204,7 +204,7 @@ export default function AdminNotificationBell({ variant = 'light' }: AdminNotifi
           </div>
 
           {/* Alerts List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y-2 divide-line-strong">
+          <div className="max-h-[380px] overflow-y-auto admin-divide">
             {filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
                 <div className="mb-2.5 flex h-11 w-11 items-center justify-center rounded-full bg-sunken text-ink-muted">

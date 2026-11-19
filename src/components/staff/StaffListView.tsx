@@ -4,6 +4,7 @@ import { UserCircle, Eye, Pencil, Trash2, X, Scissors, UserCheck, Sparkles, Buil
 import { Staff, roleLabel, formatLastSeen } from './staffHelpers';
 import { useBranch } from '@/context/BranchContext';
 import SearchInput from '@/components/shared/SearchInput';
+import { PlanLockedTag, PlanUnlockButton } from '@/components/billing/PlanLock';
 
 type WorkloadFilter = 'all' | 'light' | 'moderate' | 'heavy';
 
@@ -25,6 +26,8 @@ interface StaffListViewProps {
   readonly isStoreOwner?: boolean;
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
+  /** Reload after a staff account is unlocked/swapped (plan limits). */
+  readonly onPlanLockChange?: () => void;
 }
 
 interface StaffMemberRowProps {
@@ -33,6 +36,8 @@ interface StaffMemberRowProps {
   readonly onEdit: (member: Staff) => void;
   readonly onDelete: (id: number) => void;
   readonly onView: (id: number) => void;
+  /** Unlock/swap button for a member locked by the plan (owner only). */
+  readonly lockAction?: React.ReactNode;
 }
 
 const WORKLOAD_STYLE: Record<Exclude<WorkloadFilter, 'all'>, { bar: string; text: string; bg: string; label: string }> = {
@@ -63,6 +68,7 @@ function WorkloadBar({ jobs }: { readonly jobs: number }) {
 function StatusBadges({ member }: { readonly member: Staff }) {
   return (
     <div className="flex flex-wrap gap-1.5 items-center">
+      {member.plan_locked_at && <PlanLockedTag />}
       {member.is_active ? (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -124,7 +130,7 @@ function StaffAvatar({ member, size = 40 }: { readonly member: Staff; readonly s
   );
 }
 
-function StaffMemberRow({ member, canManage = true, onEdit, onDelete, onView }: StaffMemberRowProps) {
+function StaffMemberRow({ member, canManage = true, onEdit, onDelete, onView, lockAction }: StaffMemberRowProps) {
   return (
     <tr
       onClick={() => onView(member.id)}
@@ -152,6 +158,7 @@ function StaffMemberRow({ member, canManage = true, onEdit, onDelete, onView }: 
       <td className="px-6 py-4"><StatusBadges member={member} /></td>
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-1.5">
+          {lockAction}
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onView(member.id); }}
@@ -186,7 +193,7 @@ function StaffMemberRow({ member, canManage = true, onEdit, onDelete, onView }: 
   );
 }
 
-function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }: StaffMemberRowProps) {
+function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView, lockAction }: StaffMemberRowProps) {
   return (
     <div onClick={() => onView(member.id)} className="p-4 space-y-3 cursor-pointer active:bg-canvas transition-colors bg-surface">
       <div className="flex items-start justify-between gap-2">
@@ -200,6 +207,7 @@ function StaffMemberCard({ member, canManage = true, onEdit, onDelete, onView }:
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {lockAction}
           <button 
             type="button"
             onClick={(e) => { e.stopPropagation(); onView(member.id); }} 
@@ -253,6 +261,7 @@ export default function StaffListView({
   isStoreOwner = false,
   onEdit,
   onDelete,
+  onPlanLockChange,
 }: StaffListViewProps) {
   const router = useRouter();
   const { branches } = useBranch();
@@ -266,6 +275,12 @@ export default function StaffListView({
   const safeStaff = Array.isArray(staff) ? staff : [];
 
   const onView = (id: number) => router.push(`/dashboard/staff/${id}`);
+
+  // A member locked by the plan: Unlock (swapping with an open one when the plan is full).
+  const openStaff = safeStaff.filter((m) => !m.plan_locked_at).map((m) => ({ id: m.id, name: m.user?.name ?? `Staff #${m.id}` }));
+  const lockAction = (member: Staff) => member.plan_locked_at && onPlanLockChange
+    ? <PlanUnlockButton type="staff" id={member.id} name={member.user?.name ?? 'this account'} openItems={openStaff} onDone={onPlanLockChange} compact />
+    : undefined;
 
   const availableRoles = useMemo(() => {
     const set = new Set<string>();
@@ -414,6 +429,7 @@ export default function StaffListView({
             onEdit={onEdit}
             onDelete={onDelete}
             onView={onView}
+            lockAction={lockAction(member)}
           />
         ))}
       </div>
@@ -474,6 +490,7 @@ export default function StaffListView({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onView={onView}
+                lockAction={lockAction(member)}
               />
             ))}
           </tbody>

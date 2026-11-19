@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { MessageSquare,
   LayoutDashboard, Scissors, UserCog, Package, Users, Building2,
   Calendar, Home, CreditCard,
-  Sparkles, ScrollText, X, HelpCircle, LayoutGrid, PackageCheck,
+  Sparkles, ScrollText, X, HelpCircle, LayoutGrid, PackageCheck, Lock,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeaderMenu from '@/components/AccountHeaderMenu';
@@ -362,6 +362,15 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           <div key={selectedBranchId ?? 'all'} className="p-4 print:p-0">
             {isStoreOwner && !pathname?.startsWith('/dashboard/billing') && (
               <div className="mb-4 print:hidden"><TrialBanner sub={latestSubscription} /></div>
+            )}
+            {/* A staff account locked by the shop's plan: can look, can't change anything (server: CheckRole). */}
+            {!isStoreOwner && (staffProfile as { plan_locked_at?: string | null } | null)?.plan_locked_at && (
+              <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">
+                <Lock size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <p>
+                  <strong className="font-semibold">Your account is view-only.</strong> The shop&apos;s current plan doesn&apos;t include it, so you can look around but not make changes. Ask the shop owner to upgrade or unlock your account.
+                </p>
+              </div>
             )}
             {children}
           </div>

@@ -58,6 +58,13 @@ export default function AdminShell({ children }: { readonly children: React.Reac
 
   useEffect(() => setDrawerOpen(false), [pathname]);
 
+  // Marks the page as the admin console, so the shared admin control style
+  // (globals.css, .admin-ui) also reaches modals, which render on <body>.
+  useEffect(() => {
+    document.body.classList.add('admin-ui');
+    return () => document.body.classList.remove('admin-ui');
+  }, []);
+
   const signOut = async () => {
     await adminApi.post('/auth/logout').catch(() => undefined);
     clear();

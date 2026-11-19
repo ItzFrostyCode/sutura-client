@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, ArrowDown, ArrowUp, Download, FileSpreadsheet, Loader2, Settings } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import SearchInput from '@/components/shared/SearchInput';
+import PlanPill from '@/components/admin/ui/PlanPill';
 import Badge from '@/components/shared/Badge';
 import { Pager, StatCard } from '@/components/admin/ui/AdminPrimitives';
-import { formatDate, useAdminList, useDebounced } from '@/components/admin/useAdminList';
+import { formatDate, useAdminList, useDebounced, useStableListHeight } from '@/components/admin/useAdminList';
 import PaymentReviewModal from '@/components/admin/payments/PaymentReviewModal';
 import GcashSettingsModal from '@/components/admin/payments/GcashSettingsModal';
 import {
@@ -65,6 +66,8 @@ function PaymentsPageContent() {
     ...filters, sort: sort.by, dir: sort.dir || undefined, page, per_page: PER_PAGE,
   });
   const counts = (raw.counts ?? {}) as Record<string, number>;
+  // A shorter last page keeps the table's height (until a filter or sort changes).
+  const stable = useStableListHeight<HTMLDivElement>(JSON.stringify({ ...filters, sort }));
 
   const [stats, setStats] = useState<PaymentStats | null>(null);
   const [statsError, setStatsError] = useState('');
@@ -191,7 +194,7 @@ function PaymentsPageContent() {
         </div>
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
           <div className="lg:w-80">
-            <SearchInput value={search} onChange={(v) => { setSearch(v); resetPage(); }} placeholder="Shop, owner, email, GCash ref no., sender" />
+            <SearchInput bold onCanvasBackground value={search} onChange={(v) => { setSearch(v); resetPage(); }} placeholder="Shop, owner, email, GCash ref no., sender" />
           </div>
           <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
             <select aria-label="Plan" value={planId} onChange={(e) => { setPlanId(e.target.value); resetPage(); }} className={SELECT_CLASS}>
@@ -227,7 +230,8 @@ function PaymentsPageContent() {
       </div>
 
       {/* Fits the page at every width: a fixed table on wide screens, cards below that. */}
-      <div className="border-2 border-line-strong bg-surface">
+      <div className="admin-card overflow-hidden">
+        <div ref={stable.ref} style={stable.style}>
         <table className="hidden w-full table-fixed text-left text-sm xl:table">
           <colgroup>
             <col className="w-[12%]" /><col className="w-[13%]" /><col className="w-[15%]" /><col className="w-[9%]" />
@@ -263,7 +267,7 @@ function PaymentsPageContent() {
                 </td>
                 <td className="px-3 py-3 break-words font-semibold text-ink">{p.store?.name}</td>
                 <td className="px-3 py-3 text-ink"><span className="block break-words">{p.owner?.name}</span><span className="block truncate text-xs text-ink-muted" title={p.owner?.email}>{p.owner?.email}</span></td>
-                <td className="px-3 py-3 text-ink">{p.plan?.name}<span className="block text-xs capitalize text-ink-muted">{p.billing_cycle}</span></td>
+                <td className="px-3 py-3 text-ink">{p.plan?.name ? <PlanPill plan={p.plan.name} /> : '—'}<span className="mt-1 block text-xs capitalize text-ink-muted">{p.billing_cycle}</span></td>
                 <td className="px-3 py-3 text-right font-semibold tabular-nums text-ink">{peso(p.amount_due)}</td>
                 <td className="px-3 py-3 break-words text-ink">{p.sender_name ?? '—'}{p.sender_number && <span className="block text-xs tabular-nums text-ink-muted">{p.sender_number}</span>}</td>
                 <td className="px-3 py-3 tabular-nums text-ink-body">{formatDate(p.created_at)}<span className="block text-xs text-ink-muted">{timeOf(p.created_at)}</span></td>
@@ -275,7 +279,7 @@ function PaymentsPageContent() {
         </table>
 
         {/* Below xl: one card per payment, nothing to scroll sideways. */}
-        <ul className="divide-y-2 divide-line-strong xl:hidden">
+        <ul className="admin-divide xl:hidden">
           {loading && Array.from({ length: PER_PAGE }).map((_, i) => (
             <li key={`skc-${i}`} className="space-y-2 p-4" aria-hidden="true">
               <div className="h-4 w-1/2 animate-pulse bg-sunken" /><div className="h-4 w-3/4 animate-pulse bg-sunken" />
@@ -321,6 +325,7 @@ function PaymentsPageContent() {
         {!loading && !error && items.length === 0 && (
           <p className="px-4 py-12 text-center text-sm text-ink-muted">{emptyText}</p>
         )}
+        </div>
         <Pager meta={meta} onPage={setPage} />
       </div>
 

@@ -156,7 +156,7 @@ export default function AdminNotificationsPage() {
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <SearchInput
+          <SearchInput bold onCanvasBackground
             value={search}
             onChange={setSearch}
             placeholder="Search notifications or shop names..."
@@ -170,7 +170,7 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Notifications list */}
-      <div className="border-2 border-line-strong bg-surface rounded-xl overflow-hidden shadow-2xs">
+      <div className="admin-card overflow-hidden">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sunken text-ink-muted">
@@ -182,7 +182,7 @@ export default function AdminNotificationsPage() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y-2 divide-line-strong">
+          <ul className="admin-divide">
             {filtered.map((item) => {
               const isRead = !!item.read_at;
               return (

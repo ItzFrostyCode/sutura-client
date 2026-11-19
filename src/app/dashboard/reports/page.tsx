@@ -17,7 +17,7 @@ import UnclaimedPickupsList from '@/components/reports/UnclaimedPickupsList';
 import JobsOnHoldList from '@/components/reports/JobsOnHoldList';
 import { useBranch } from '@/context/BranchContext';
 import { useToast } from '@/context/ToastContext';
-import { PERIOD_LABELS, reportTables } from '@/components/reports/reportExport';
+import { periodLabel, reportDateRange, reportTables } from '@/components/reports/reportExport';
 
 export default function ReportsPage() {
   const { store, user } = useAuthStore();
@@ -43,7 +43,7 @@ export default function ReportsPage() {
     if (!data) return;
     const rows = [
       ['SUTURA Sales and Analytics Report'],
-      ['Period', period.toUpperCase().replace('_', ' ')],
+      ['Period', periodLabel(period)],
       ['Generated At', new Date().toLocaleString()],
       [],
       ['Metric', 'Value'],
@@ -95,7 +95,7 @@ export default function ReportsPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `sutura_reports_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `sutura_reports_${period.replaceAll(':', '_')}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -117,11 +117,11 @@ export default function ReportsPage() {
       const { downloadBrandedXlsx, shopOrSuturaLogo } = await import('@/lib/brandedExport');
       const branchName = branches.find((b) => b.id === selectedBranchId)?.name;
       await downloadBrandedXlsx({
-        fileName: `sutura_report_${period}_${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}.xlsx`,
+        fileName: `sutura_report_${period.replaceAll(':', '_')}_${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}.xlsx`,
         sheetName: 'Report',
         org: store?.name ?? 'SUTURA',
         title: 'Sales & analytics report',
-        subtitle: `${PERIOD_LABELS[period] ?? period}${branchName ? ` · ${branchName}` : ''} · generated ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`,
+        subtitle: `${periodLabel(period)}${branchName ? ` · ${branchName}` : ''} · generated ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`,
         tables: reportTables(data),
       }, await shopOrSuturaLogo(store?.id));
     } catch (err) {
@@ -132,28 +132,8 @@ export default function ReportsPage() {
     }
   };
 
-  const getDateRangeForPeriod = (p: string): { startDate: string; endDate: string } => {
-    const now = new Date();
-    if (p === 'this_month') {
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
-      };
-    }
-    if (p === 'last_month') {
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0],
-        endDate: new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0],
-      };
-    }
-    if (p === 'ytd') {
-      return {
-        startDate: new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0],
-        endDate: new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0],
-      };
-    }
-    return { startDate: '', endDate: '' };
-  };
+  // Presets and a custom date range ("custom:from:to") — the same helper the print page uses.
+  const getDateRangeForPeriod = reportDateRange;
 
   useEffect(() => {
     // Matches the backend's role:store_owner,branch_manager gate on GET /analytics

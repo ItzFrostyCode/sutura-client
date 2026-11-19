@@ -12,6 +12,7 @@ import type { Service } from './serviceHelpers';
 import ServiceFilterBody, { type ServiceStatusFilter } from './ServiceFilterBody';
 import { showcaseCategory } from '@/lib/serviceShowcase';
 import { DEFAULT_SERVICE_SORT, SERVICE_RANK_CHIPS, isServicePriceSort, type ServiceSortOption } from './serviceSort';
+import { PlanLockedTag, PlanUnlockButton } from '@/components/billing/PlanLock';
 
 // The owner's own list, shown with the very same card customers see in
 // search, so the shop sees its services exactly as customers do. One tap on a
@@ -41,9 +42,13 @@ interface ServiceGridViewProps {
   readonly loading: boolean;
   readonly canManage: boolean;
   readonly storeSlug?: string;
+  /** Reload after a service is unlocked/swapped (plan limits). */
+  readonly onPlanLockChange?: () => void;
 }
 
-export default function ServiceGridView({ services, loading, canManage }: Readonly<ServiceGridViewProps>) {
+export default function ServiceGridView({ services, loading, canManage, onPlanLockChange }: Readonly<ServiceGridViewProps>) {
+  // Active services: the ones a locked service can be swapped with.
+  const openServices = useMemo(() => services.filter((s) => s.is_active && !s.plan_locked_at).map((s) => ({ id: s.id, name: s.name })), [services]);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<ServiceSortOption>(DEFAULT_SERVICE_SORT);
   const [statusFilter, setStatusFilter] = useState<ServiceStatusFilter>('');
@@ -134,16 +139,26 @@ export default function ServiceGridView({ services, loading, canManage }: Readon
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {filtered.map((service) => (
-              <SearchServiceCard
-                key={service.id}
-                service={toCardResult(service)}
-                storeSlug=""
-                gate={(href) => href}
-                hrefOverride={`/dashboard/services/${service.id}`}
-                isPaused={!service.is_active}
-                hideLocation
-                fluid
-              />
+              <div key={service.id} className="flex flex-col gap-2">
+                <SearchServiceCard
+                  service={toCardResult(service)}
+                  storeSlug=""
+                  gate={(href) => href}
+                  hrefOverride={`/dashboard/services/${service.id}`}
+                  isPaused={!service.is_active}
+                  hideLocation
+                  fluid
+                />
+                {/* Locked by the plan (over its services limit): not bookable, kept, can be swapped. */}
+                {service.plan_locked_at && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2">
+                    <PlanLockedTag />
+                    {onPlanLockChange && (
+                      <PlanUnlockButton type="service" id={service.id} name={service.name} openItems={openServices} onDone={onPlanLockChange} compact />
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

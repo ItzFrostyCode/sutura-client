@@ -77,7 +77,7 @@ export default function PlanStoresModal({ plan, onClose }: { readonly plan: { id
 
       <ListState loading={loading} error={error} empty={!loading && stores.length === 0} emptyText={emptyText} />
       {!loading && !error && stores.length > 0 && (
-        <ul className="divide-y-2 divide-line-strong">
+        <ul className="admin-divide">
           {stores.map((s) => (
             <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
               <div className="min-w-0 flex-1 basis-56">

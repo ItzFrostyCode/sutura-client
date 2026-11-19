@@ -13,26 +13,32 @@ export function StatCard({ label, value, hint, valueClassName = 'text-3xl' }: {
     // the label always reserves two lines (one-line labels too), so every
     // number starts at the same height; the hint row always exists (empty if
     // there's no hint), reserves two lines, and sits on the bottom edge.
-    <div className="flex h-full flex-col gap-2 border-2 border-line-strong bg-surface p-4 sm:p-6">
-      <p className="text-eyebrow min-h-[2lh]">{label}</p>
+    <div className="admin-card flex h-full flex-col gap-2 p-4 sm:p-5">
+      <p className="min-h-[2lh] text-[11px] font-semibold uppercase leading-snug tracking-wider text-[#6E655F]">{label}</p>
       {/* Fixed row height (a 3xl line) so a smaller money value still lines up with the others. */}
-      <p className={`flex min-h-[1.875rem] min-w-0 items-end overflow-hidden whitespace-nowrap font-bold leading-none text-ink tabular-nums ${valueClassName}`}>{value}</p>
-      <p className="mt-auto min-h-[2lh] pt-1 text-sm text-ink-muted" aria-hidden={hint ? undefined : true}>{hint}</p>
+      <p className={`flex min-h-[1.875rem] min-w-0 items-end overflow-hidden whitespace-nowrap font-bold leading-none text-[#1E1A17] tabular-nums ${valueClassName}`}>{value}</p>
+      <p className="mt-auto min-h-[2lh] pt-1 text-xs leading-relaxed text-[#6E655F]" aria-hidden={hint ? undefined : true}>{hint}</p>
     </div>
   );
 }
 
+/** The admin's ‹ › page buttons (Shops, Reports and every paged list). */
+export const PAGER_BTN = 'admin-field flex h-10 w-10 items-center justify-center text-[#1E1A17] shadow-2xs transition-colors hover:bg-[#FAF8F5] disabled:opacity-40';
+
+/** Admin table header cell. */
+export const ADMIN_TH = 'px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-[#6E655F]';
+
 export function Pager({ meta, onPage }: { readonly meta: PageMeta | null; readonly onPage: (page: number) => void }) {
   if (!meta || meta.last_page <= 1) return null;
   return (
-    <div className="flex items-center justify-between border-t border-line px-4 py-3 text-sm text-ink-muted">
-      <span>Page {meta.current_page} of {meta.last_page} · {meta.total} total</span>
-      <div className="flex gap-1">
-        <button type="button" aria-label="Previous page" disabled={meta.current_page <= 1} onClick={() => onPage(meta.current_page - 1)} className="flex h-11 w-11 items-center justify-center border border-line disabled:opacity-40">
-          <ChevronLeft size={18} />
+    <div className="flex items-center justify-between gap-3 border-t border-[#EAE3D9] px-5 py-3 text-sm">
+      <span className="text-[#4A423C]">Page {meta.current_page} of {meta.last_page} <span className="text-[#A8A19A]">· {meta.total} total</span></span>
+      <div className="flex gap-2">
+        <button type="button" aria-label="Previous page" disabled={meta.current_page <= 1} onClick={() => onPage(meta.current_page - 1)} className={PAGER_BTN}>
+          <ChevronLeft size={17} />
         </button>
-        <button type="button" aria-label="Next page" disabled={meta.current_page >= meta.last_page} onClick={() => onPage(meta.current_page + 1)} className="flex h-11 w-11 items-center justify-center border border-line disabled:opacity-40">
-          <ChevronRight size={18} />
+        <button type="button" aria-label="Next page" disabled={meta.current_page >= meta.last_page} onClick={() => onPage(meta.current_page + 1)} className={PAGER_BTN}>
+          <ChevronRight size={17} />
         </button>
       </div>
     </div>

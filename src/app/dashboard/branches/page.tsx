@@ -311,6 +311,7 @@ export default function BranchesPage() {
           onEdit={handleEditClickGated}
           onDelete={isStoreOwner ? handleDeleteClick : undefined}
           onSetMain={isStoreOwner ? handleSetMain : undefined}
+          onPlanLockChange={isStoreOwner ? () => { fetchBranches(); refreshBranches(); } : undefined}
         />
       )}
 

@@ -6,14 +6,16 @@ import Modal from '@/components/Modal';
 import PlatformPaymentBox from '@/components/shared/PlatformPaymentBox';
 import { FileField, INPUT_CLASS } from '@/components/store-application/ApplicationFields';
 import { paymentKind, planPrice, type PaymentDetails, type Plan, type Subscription } from './billingTypes';
+import DowngradeTerms from './DowngradeTerms';
 
 interface UpgradePaymentModalProps {
   readonly plan: Plan | null;
   readonly current: Subscription | null;
   readonly onClose: () => void;
-  readonly onSubmit: (planId: number, cycle: 'monthly' | 'yearly', receipt: File, details: PaymentDetails) => Promise<boolean>;
+  /** acceptTerms: a downgrade's terms were agreed to (the server refuses a downgrade without it). */
+  readonly onSubmit: (planId: number, cycle: 'monthly' | 'yearly', receipt: File, details: PaymentDetails, acceptTerms?: boolean) => Promise<boolean>;
   /** Opens the GCash checkout (the browser leaves the page on success). */
-  readonly onPayOnline: (planId: number, cycle: 'monthly' | 'yearly') => Promise<boolean>;
+  readonly onPayOnline: (planId: number, cycle: 'monthly' | 'yearly', acceptTerms?: boolean) => Promise<boolean>;
 }
 
 type Method = 'online' | 'receipt';
@@ -58,6 +60,9 @@ export default function UpgradePaymentModal({ plan, current, onClose, onSubmit, 
   const [receipt, setReceipt] = useState<File | null>(null);
   const [details, setDetails] = useState<PaymentDetails>({ reference: '', senderName: '', senderNumber: '', amountSent: '', paidAt: '' });
   const [sending, setSending] = useState(false);
+  // A downgrade first shows its warning + terms; payment comes after "I agree".
+  const [agreed, setAgreed] = useState(false);
+  const [termsDone, setTermsDone] = useState(false);
 
   useEffect(() => {
     if (plan) {
@@ -65,6 +70,8 @@ export default function UpgradePaymentModal({ plan, current, onClose, onSubmit, 
       setMethod('online');
       setReceipt(null);
       setDetails({ reference: '', senderName: '', senderNumber: '', amountSent: String(planPrice(plan, 'monthly')), paidAt: nowLocal() });
+      setAgreed(false);
+      setTermsDone(false);
     }
   }, [plan]);
 
@@ -79,7 +86,7 @@ export default function UpgradePaymentModal({ plan, current, onClose, onSubmit, 
     if (!plan) return;
     if (method === 'online') {
       setSending(true);
-      const opened = await onPayOnline(plan.id, cycle);
+      const opened = await onPayOnline(plan.id, cycle, isDowngrade && agreed);
       setSending(false);
       // The GCash checkout opens in its own modal.
       if (opened) onClose();
@@ -87,17 +94,29 @@ export default function UpgradePaymentModal({ plan, current, onClose, onSubmit, 
     }
     if (!receipt) return;
     setSending(true);
-    const ok = await onSubmit(plan.id, cycle, receipt, details);
+    const ok = await onSubmit(plan.id, cycle, receipt, details, isDowngrade && agreed);
     setSending(false);
     if (ok) onClose();
   };
 
   const kind = plan ? paymentKind(plan, current) : 'upgrade';
+  const isDowngrade = kind === 'downgrade';
+  const showTerms = isDowngrade && !termsDone;
+  // An upgrade keeps the days left on the running plan (or trial), day for day (server: SubscriptionSwitcher::apply).
+  const daysLeft = current?.ends_at && ['active', 'trial'].includes(current.status)
+    ? Math.max(0, Math.ceil((new Date(current.ends_at).getTime() - Date.now()) / 86_400_000))
+    : 0;
+  const carryEnd = current?.ends_at
+    ? new Date(new Date(current.ends_at).getTime() + (cycle === 'yearly' ? 365 : 30) * 86_400_000).toISOString()
+    : null;
+  const confirmWhen = method === 'online' ? 'once GCash confirms your payment' : 'once the SUTURA team confirms your payment';
   const note = !plan ? '' : kind === 'downgrade' && current?.ends_at
     ? `You stay on ${current.plan.name} until ${day(current.ends_at)}. Once this payment is confirmed, your shop moves to ${plan.name} from then.`
     : kind === 'renewal' && current?.ends_at
       ? `Renewing adds the new period after ${day(current.ends_at)}, so you don't lose any days.`
-      : method === 'online'
+      : kind === 'upgrade' && daysLeft > 0 && carryEnd
+        ? `Your ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left on ${current?.plan.name} carry over. You get ${plan.name} right away ${confirmWhen}, and it runs until ${day(carryEnd)}.`
+        : method === 'online'
         ? 'Your plan changes as soon as GCash confirms your payment.'
         : 'Your plan changes as soon as the SUTURA team confirms your payment.';
   const set = (key: keyof PaymentDetails) => (e: React.ChangeEvent<HTMLInputElement>) => setDetails((d) => ({ ...d, [key]: e.target.value }));
@@ -106,7 +125,9 @@ export default function UpgradePaymentModal({ plan, current, onClose, onSubmit, 
   const complete = method === 'online' || receipt && refOk && details.senderName.trim() && /^09\d{9}$/.test(details.senderNumber)
     && Number(details.amountSent) > 0 && details.paidAt;
 
-  const title = plan ? `${kind === 'renewal' ? 'Renew' : kind === 'downgrade' ? 'Switch to' : 'Pay for'} ${plan.name}` : 'Pay for plan';
+  const title = plan
+    ? showTerms ? `Before you switch to ${plan.name}` : `${kind === 'renewal' ? 'Renew' : kind === 'downgrade' ? 'Switch to' : 'Pay for'} ${plan.name}`
+    : 'Pay for plan';
 
   return (
     <Modal
@@ -115,18 +136,38 @@ export default function UpgradePaymentModal({ plan, current, onClose, onSubmit, 
       title={title}
       maxWidth="max-w-lg"
       footer={
+        showTerms ? (
+          <>
+            <button type="button" onClick={onClose} className="h-11 px-5 border border-line-strong bg-white text-sm font-medium text-ink hover:bg-sunken cursor-pointer">
+              Keep my plan
+            </button>
+            <button type="button" onClick={() => setTermsDone(true)} disabled={!agreed} className="h-11 px-5 bg-taupe hover:bg-taupe/90 text-white text-sm font-semibold cursor-pointer disabled:opacity-50">
+              Continue to payment
+            </button>
+          </>
+        ) : (
         <>
-          <button type="button" onClick={onClose} disabled={sending} className="h-11 px-5 border border-line-strong bg-white text-sm font-medium text-ink hover:bg-sunken cursor-pointer disabled:opacity-50">
-            Cancel
-          </button>
-          <button type="submit" form="upgrade-payment-form" disabled={sending || !complete} className="h-11 px-5 bg-taupe hover:bg-taupe/90 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50">
+          {isDowngrade ? (
+            <button type="button" onClick={() => setTermsDone(false)} disabled={sending} className="h-11 px-5 border border-line-strong bg-white text-sm font-medium text-ink hover:bg-sunken cursor-pointer disabled:opacity-50">
+              Back
+            </button>
+          ) : (
+            <button type="button" onClick={onClose} disabled={sending} className="h-11 px-5 border border-line-strong bg-white text-sm font-medium text-ink hover:bg-sunken cursor-pointer disabled:opacity-50">
+              Cancel
+            </button>
+          )}
+          <button type="submit" form="upgrade-payment-form" disabled={sending || !complete || (isDowngrade && !agreed)} className="h-11 px-5 bg-taupe hover:bg-taupe/90 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50">
             {sending && <Loader2 size={16} className="animate-spin" />}
             {method === 'online' ? <>Continue to GCash {!sending && <ArrowUpRight size={16} aria-hidden />}</> : 'Send for review'}
           </button>
         </>
+        )
       }
     >
-      {plan && (
+      {plan && showTerms && current && (
+        <DowngradeTerms from={current.plan} to={plan} endsAt={current.ends_at ?? null} agreed={agreed} onAgree={setAgreed} />
+      )}
+      {plan && !showTerms && (
         <form id="upgrade-payment-form" onSubmit={send} className="space-y-5">
           <div className="grid grid-cols-2 border border-line-strong" role="radiogroup" aria-label="Billing cycle">
             {CYCLES.map((c) => (

@@ -8,8 +8,29 @@ export const PERIOD_LABELS: Record<string, string> = {
   ytd: 'Year to date',
 };
 
+/** A custom date range travels as one period value: "custom:2026-09-01:2026-10-31". */
+export function customPeriod(from: string, to: string): string {
+  return `custom:${from}:${to}`;
+}
+
+/** The from/to of a custom period, or null for the presets. */
+export function parseCustomPeriod(p: string): { from: string; to: string } | null {
+  const m = /^custom:(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/.exec(p);
+  return m ? { from: m[1], to: m[2] } : null;
+}
+
+const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/** "This month", or "Sep 1, 2026 – Oct 31, 2026" for a custom range. */
+export function periodLabel(p: string): string {
+  const custom = parseCustomPeriod(p);
+  return custom ? `${shortDate(custom.from)} – ${shortDate(custom.to)}` : PERIOD_LABELS[p] ?? p;
+}
+
 /** Same ranges the Reports page sends to /analytics. */
 export function reportDateRange(p: string): { startDate: string; endDate: string } {
+  const custom = parseCustomPeriod(p);
+  if (custom) return { startDate: custom.from, endDate: custom.to };
   const now = new Date();
   const iso = (d: Date) => d.toISOString().split('T')[0];
   if (p === 'this_month') return { startDate: iso(new Date(now.getFullYear(), now.getMonth(), 1)), endDate: iso(new Date(now.getFullYear(), now.getMonth() + 1, 0)) };

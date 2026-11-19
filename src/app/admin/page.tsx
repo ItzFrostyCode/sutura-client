@@ -50,7 +50,7 @@ export default function AdminOverviewPage() {
             <StatCard label="Accounts" value={data.users.total} hint={`${data.users.customers} customers · ${data.users.store_owners} owners`} />
           </div>
 
-          <section className="border-2 border-line-strong bg-surface">
+          <section className="admin-card overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
               <h2 className="tablet-h3 text-ink">Review queue</h2>
               <Link href="/admin/applications" className="inline-flex min-h-11 items-center gap-1 text-sm text-ink underline underline-offset-2">
@@ -60,7 +60,7 @@ export default function AdminOverviewPage() {
             {data.recent_applications.length === 0 ? (
               <p className="px-5 py-10 text-center text-sm text-ink-muted">No shops are waiting for review.</p>
             ) : (
-              <ul className="divide-y-2 divide-line-strong">
+              <ul className="admin-divide">
                 {data.recent_applications.map((app) => (
                   <li key={app.id}>
                     <Link href={`/admin/applications/${app.id}`} className="flex min-h-16 items-center gap-4 px-5 py-3 hover:bg-canvas">

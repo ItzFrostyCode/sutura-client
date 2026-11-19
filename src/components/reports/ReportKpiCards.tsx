@@ -5,6 +5,7 @@ import {
   Users, Target, DollarSign, AlertTriangle, BarChart2, Flag, PackageX, Timer, Star, CalendarCheck,
 } from 'lucide-react';
 import { AnalyticsData } from './reportHelpers';
+import { parseCustomPeriod, periodLabel } from './reportExport';
 
 interface ReportKpiCardsProps {
   readonly data: AnalyticsData | null;
@@ -25,7 +26,8 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
   // other period-scoped KPI on this page — "Lifetime collected" was
   // accurate only for the all_time default and silently wrong the moment
   // an owner picked "This Month"/"Last Month"/"Year to Date".
-  const revenueSub = REVENUE_PERIOD_LABELS[period] ?? REVENUE_PERIOD_LABELS.all_time;
+  const revenueSub = REVENUE_PERIOD_LABELS[period]
+    ?? (parseCustomPeriod(period) ? `Collected ${periodLabel(period)}` : REVENUE_PERIOD_LABELS.all_time);
 
   // Three semantic tones, not thirteen decorative ones. Colour here means
   // something — sage is money actually collected or a healthy rate, danger is

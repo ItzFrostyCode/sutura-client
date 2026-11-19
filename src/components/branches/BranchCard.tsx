@@ -15,15 +15,19 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { StoreBranch, StatusBadge, getMapUrl } from './branchHelpers';
+import { PlanLockedTag, PlanUnlockButton } from '@/components/billing/PlanLock';
 
 interface BranchCardProps {
   readonly branch: StoreBranch;
   readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete?: (id: number) => void;
   readonly onSetMain?: (branch: StoreBranch) => void;
+  /** Open branch shops (swap choices) and a reload, for a branch the plan locked. */
+  readonly openBranches?: { id: number; name: string }[];
+  readonly onPlanLockChange?: () => void;
 }
 
-export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Readonly<BranchCardProps>) {
+export default function BranchCard({ branch, onEdit, onDelete, onSetMain, openBranches = [], onPlanLockChange }: Readonly<BranchCardProps>) {
   const { store } = useAuthStore();
   const publicProfileUrl = store?.slug && branch.slug ? `/store/${store.slug}?branch=${branch.slug}` : '#';
 
@@ -58,6 +62,17 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain }: Read
             </div>
             <StatusBadge status={branch.status} />
           </div>
+          {branch.plan_locked_at && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+              <div className="space-y-1">
+                <PlanLockedTag />
+                <p className="text-xs text-amber-900">Over your plan&apos;s branch-shop limit. Hidden from customers; records are kept.</p>
+              </div>
+              {onPlanLockChange && (
+                <PlanUnlockButton type="branch" id={branch.id} name={branch.name} openItems={openBranches} onDone={onPlanLockChange} compact />
+              )}
+            </div>
+          )}
           {branch.verification_status === 'pending' && (
             <p className="mb-3 border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">Awaiting location check. Hidden from the map and booking until the admin verifies it.</p>
           )}

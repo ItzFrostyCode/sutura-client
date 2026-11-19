@@ -5,7 +5,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import SearchInput from '@/components/shared/SearchInput';
 import Badge from '@/components/shared/Badge';
 import { FilterTabs, ListState, Pager } from '@/components/admin/ui/AdminPrimitives';
-import { formatDate, useAdminList, useDebounced } from '@/components/admin/useAdminList';
+import { formatDate, useAdminList, useStableListHeight, useDebounced } from '@/components/admin/useAdminList';
 
 type ActorRole = 'admin' | 'store_owner' | 'branch_manager' | 'staff' | 'customer' | 'guest';
 
@@ -49,6 +49,8 @@ export default function AdminActivityPage() {
   const [page, setPage] = useState(1);
   const query = useDebounced(search);
   const { items, meta, raw, loading, error } = useAdminList<AuditRow>('/admin/audit-logs', { role, store_id: storeId, search: query, from, to, page });
+  // A shorter last page keeps the list's height, so the card doesn't shrink on Next.
+  const stable = useStableListHeight<HTMLDivElement>(`${role}|${storeId}|${query}|${from}|${to}`);
   const stores = (raw.stores ?? []) as { id: number; name: string }[];
   const resetPage = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
 
@@ -59,7 +61,7 @@ export default function AdminActivityPage() {
       </PageHeader>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <SearchInput value={search} onChange={resetPage(setSearch)} placeholder="Search action, person, or shop" className="sm:max-w-sm" />
+        <SearchInput bold onCanvasBackground value={search} onChange={resetPage(setSearch)} placeholder="Search action, person, or shop" className="sm:max-w-sm" />
         <label className="text-sm text-ink-muted">Shop
           <select value={storeId} onChange={(e) => resetPage(setStoreId)(e.target.value)} className="mt-1 block min-h-11 w-full border border-line-strong bg-surface px-3 text-base text-ink sm:w-56">
             <option value="">All shops</option>
@@ -74,10 +76,11 @@ export default function AdminActivityPage() {
         </label>
       </div>
 
-      <div className="border-2 border-line-strong bg-surface">
+      <div className="admin-card overflow-hidden">
+        <div ref={stable.ref} style={stable.style}>
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText="No activity matches." />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y-2 divide-line-strong">
+          <ul className="admin-divide">
             {items.map((row) => (
               <li key={row.id} className="flex flex-wrap gap-x-4 gap-y-1 px-5 py-3">
                 <div className="min-w-0 flex-1 basis-72">
@@ -101,6 +104,7 @@ export default function AdminActivityPage() {
             ))}
           </ul>
         )}
+        </div>
         <Pager meta={meta} onPage={setPage} />
       </div>
     </div>

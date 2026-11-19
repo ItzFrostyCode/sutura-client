@@ -29,6 +29,8 @@ const ACTION_LABEL: Record<string, string> = {
   rejected: 'Rejected',
   receipt_replaced: 'Receipt replaced',
   scheduled_change_applied: 'Plan switched',
+  days_carried_over: 'Days carried over',
+  terms_accepted: 'Downgrade terms accepted',
   checkout_opened: 'GCash checkout opened',
   paid_online: 'Paid with GCash',
   needs_review: 'Needs an admin',
@@ -152,6 +154,14 @@ export default function PaymentReviewModal({ paymentId, onClose, onDecided }: {
   const allChecked = CHECKS.every((c) => checks[c.key]);
   const reviewable = detail?.status === 'pending' && detail.type !== 'new_shop';
   const amountOff = detail && !online && detail.amount_sent !== null && Math.abs(detail.amount_sent - detail.amount_due) > 0.009;
+  // A downgrade's "I agree" to its terms, recorded on the payment's history.
+  const termsLog = detail?.logs?.find((l) => l.action === 'terms_accepted') ?? null;
+  // A pending upgrade from a running paid plan keeps that plan's days left (server: SubscriptionSwitcher::apply).
+  const runningSub = detail?.store_subscription;
+  const carryDays = detail && detail.status === 'pending' && detail.type === 'upgrade'
+    && runningSub?.status === 'active' && runningSub.ends_at && runningSub.plan !== detail.plan?.name
+    ? Math.max(0, Math.ceil((new Date(runningSub.ends_at).getTime() - Date.now()) / 86_400_000))
+    : 0;
   const refundMax = detail ? (detail.amount_sent ?? detail.amount_due) : 0;
   const refundValue = Number(refundAmount);
   const refundOk = refundValue >= 1 && refundValue <= refundMax + 0.009;
@@ -242,7 +252,7 @@ export default function PaymentReviewModal({ paymentId, onClose, onDecided }: {
               )}
 
               {refunding && (
-                <div className="space-y-3 border-2 border-line-strong p-4">
+                <div className="space-y-3 admin-field p-4">
                   <p className="text-eyebrow">Refund to the payer&apos;s GCash</p>
                   <div>
                     <label htmlFor="refund-amount" className="block text-sm text-ink mb-1">Amount (max {peso(refundMax)})</label>
@@ -271,7 +281,7 @@ export default function PaymentReviewModal({ paymentId, onClose, onDecided }: {
             <section className="space-y-4">
               <h3 className="text-eyebrow">Receipt</h3>
               <button type="button" onClick={() => receipt && setZoom(true)} disabled={!receipt} aria-label="Zoom the GCash receipt"
-                className="group relative flex h-80 w-full items-center justify-center overflow-hidden border-2 border-line-strong bg-sunken cursor-zoom-in disabled:cursor-default">
+                className="group relative flex h-80 w-full items-center justify-center overflow-hidden admin-field bg-sunken cursor-zoom-in disabled:cursor-default">
                 {receipt ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={receipt.url} alt="GCash receipt" className="h-full w-full object-contain" />
@@ -308,11 +318,23 @@ export default function PaymentReviewModal({ paymentId, onClose, onDecided }: {
                     {detail.billing_period_start
                       ? `${formatDate(detail.billing_period_start)} → ${formatDate(detail.billing_period_end)}`
                       : detail.type === 'downgrade' ? 'Starts when the current plan ends' : detail.type === 'renewal' ? 'Added to the current end date' : 'Starts on approval'}
+                    {carryDays > 0 && (
+                      <span className="mt-1 block font-semibold text-emerald-700">
+                        +{carryDays} {carryDays === 1 ? 'day' : 'days'} left on {detail.store_subscription?.plan} carry over to {detail.plan?.name}
+                      </span>
+                    )}
                   </Row>
                   {detail.store_subscription && (
                     <Row label="Current plan">
                       {detail.store_subscription.plan} ({detail.store_subscription.status}{detail.store_subscription.ends_at ? `, until ${formatDate(detail.store_subscription.ends_at)}` : ''})
                       {detail.store_subscription.scheduled_plan && <span className="block text-ink-muted">Switching to {detail.store_subscription.scheduled_plan} at the end</span>}
+                    </Row>
+                  )}
+                  {detail.type === 'downgrade' && (
+                    <Row label="Terms">
+                      {termsLog
+                        ? <span className="text-emerald-700">Owner accepted the downgrade terms on {formatDate(termsLog.created_at, true)}</span>
+                        : <span className="text-ink-muted">No terms on record (sent before terms were required)</span>}
                     </Row>
                   )}
                   {detail.rejection_reason && <Row label="Reject reason"><span className="text-danger">{detail.rejection_reason}</span></Row>}
@@ -344,7 +366,7 @@ export default function PaymentReviewModal({ paymentId, onClose, onDecided }: {
               )}
 
               {!online && reviewable && !rejecting && (
-                <fieldset className="border-2 border-line-strong p-4">
+                <fieldset className="admin-field p-4">
                   <legend className="px-1 text-eyebrow">Checked in GCash</legend>
                   <p className="mb-3 text-xs text-ink-muted">Open your GCash app, find this transaction, then tick each one.</p>
                   <div className="space-y-2">
@@ -359,7 +381,7 @@ export default function PaymentReviewModal({ paymentId, onClose, onDecided }: {
               )}
 
               {!online && reviewable && rejecting && (
-                <div className="border-2 border-danger/30 p-4">
+                <div className="rounded-xl border-[1.5px] border-danger/30 p-4">
                   <label htmlFor="payment-reject-reason" className="block text-eyebrow mb-2">Why is it rejected?</label>
                   <div className="mb-3 flex flex-wrap gap-2">
                     {QUICK_REJECT_REASONS.map((r) => (

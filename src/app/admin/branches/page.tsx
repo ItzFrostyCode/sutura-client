@@ -57,10 +57,10 @@ export default function AdminBranchesPage() {
         <FilterTabs options={tabs} value={status} onChange={setStatus} />
       </PageHeader>
 
-      <div className="border-2 border-line-strong bg-surface">
+      <div className="admin-card overflow-hidden">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText="No branches here." />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y-2 divide-line-strong">
+          <ul className="admin-divide">
             {items.map((b) => <BranchRow key={b.id} branch={b} onVerify={verify} onReject={setRejecting} />)}
           </ul>
         )}

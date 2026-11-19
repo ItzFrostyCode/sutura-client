@@ -204,7 +204,7 @@ export default function ServicesPage() {
 
       {activeTab === 'services' ? (
         <div data-tour="services-list">
-          <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} />
+          <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} onPlanLockChange={() => { fetchServices(); fetchPackages(); }} />
         </div>
       ) : activeTab === 'packages' ? (
         <PackageGridView packages={packages} loading={packagesLoading} />

@@ -92,11 +92,13 @@ export function useBillingData() {
   };
 
   // A paid upgrade / renewal / downgrade: GCash receipt + its details → admin check; the plan changes then.
-  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, details: PaymentDetails) => {
+  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, details: PaymentDetails, acceptTerms = false) => {
     if (!store) return false;
     const fd = new FormData();
     fd.append('plan_id', String(planId));
     fd.append('billing_cycle', billingCycle);
+    // A downgrade: the owner ticked "I agree" to its terms on Billing.
+    if (acceptTerms) fd.append('accept_terms', '1');
     fd.append('payment_receipt', receipt);
     if (details.reference.trim()) fd.append('payment_reference', details.reference.trim());
     fd.append('sender_name', details.senderName.trim());
@@ -119,10 +121,10 @@ export function useBillingData() {
   // Pay with GCash: the server opens a checkout, shown in a modal on this page. If GCash
   // ever takes over the whole tab, it sends the owner back to
   // /dashboard/billing?payment=ID&gcash=success|failed (handled below).
-  const payOnline = async (planId: number, billingCycle: 'monthly' | 'yearly') => {
+  const payOnline = async (planId: number, billingCycle: 'monthly' | 'yearly', acceptTerms = false) => {
     if (!store) return false;
     try {
-      const res = await api.post(`/stores/${store.id}/subscription/pay-online`, { plan_id: planId, billing_cycle: billingCycle });
+      const res = await api.post(`/stores/${store.id}/subscription/pay-online`, { plan_id: planId, billing_cycle: billingCycle, accept_terms: acceptTerms || undefined });
       setOnlineResult(null);
       setCheckout({ paymentId: res.data.data.payment_id, url: res.data.data.checkout_url });
       return true;

@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePrintAuthGuard } from '@/hooks/usePrintAuthGuard';
 import type { AnalyticsData } from '@/components/reports/reportHelpers';
-import { PERIOD_LABELS, reportDateRange, reportSummary, reportTables } from '@/components/reports/reportExport';
+import { periodLabel, reportDateRange, reportSummary, reportTables } from '@/components/reports/reportExport';
 import { toNumber } from '@/lib/brandedExport';
 import PrintDocument, { PrintSummary } from '@/components/print/PrintDocument';
 
@@ -48,7 +48,7 @@ function Report() {
       org={store?.name ?? 'SUTURA'}
       logoPath={store?.logo_path}
       title="Sales & analytics report"
-      subtitle={`${PERIOD_LABELS[period] ?? period}${branchName ? ` · ${branchName}` : ''} · printed ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`}
+      subtitle={`${periodLabel(period)}${branchName ? ` · ${branchName}` : ''} · printed ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`}
     >
       <PrintSummary items={headline} />
 

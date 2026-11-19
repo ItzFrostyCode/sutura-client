@@ -17,9 +17,9 @@ function Row({ label, children }: { readonly label: string; readonly children: R
 
 function Card({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
   return (
-    <section className="border-2 border-line-strong bg-surface px-5 py-4">
+    <section className="admin-card overflow-hidden px-5 py-4">
       <h2 className="tablet-h4 text-ink mb-1">{title}</h2>
-      <dl className="divide-y-2 divide-line-strong">{children}</dl>
+      <dl className="admin-divide">{children}</dl>
     </section>
   );
 }

@@ -372,6 +372,43 @@ textarea:-webkit-autofill:focus {
   .admin-toast:hover { border-color: var(--color-line-strong); }
 }
 
+/* ── Admin dashboard: one card style everywhere ──────────────────────────
+   The "in between" look: a 1.5px mid-tone border (firmer than a hairline,
+   calmer than the old 2px rule), rounded corners, white surface and a light
+   lift off the page. Every admin card, list, table, stat tile and chart
+   container uses admin-card; rows inside a list use admin-divide. */
+@utility admin-card {
+  background-color: #ffffff;
+  border: 1.5px solid #DDD4C9;
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 2px rgba(30, 26, 23, 0.04), 0 4px 14px rgba(30, 26, 23, 0.04);
+}
+@utility admin-divide {
+  & > :not(:last-child) { border-bottom: 1px solid #EAE3D9; }
+}
+/* Admin console only (AdminShell puts .admin-ui on <body>): any bordered
+   field or button that doesn't set its own corners gets the rounded admin
+   corner. In the base layer, so a control's own rounded-* class still wins;
+   underline tabs (border-b-*) and checkboxes/radios keep their shape. */
+@layer base {
+  .admin-ui :where(select, textarea, input:not([type='checkbox']):not([type='radio'])) {
+    border-radius: 0.75rem;
+  }
+  .admin-ui :where(button, a, label, figure, fieldset)[class*='border']:not([class*='border-b']):not([class*='border-t']),
+  .admin-ui :where(button, a)[class*='bg-ink'],
+  .admin-ui :where(button, a)[class*='bg-taupe'],
+  .admin-ui :where(button, a)[class*='bg-danger'] {
+    border-radius: 0.75rem;
+  }
+}
+
+/* Form fields, search boxes and small bordered buttons in the admin. */
+@utility admin-field {
+  background-color: #ffffff;
+  border: 1.5px solid #DDD4C9;
+  border-radius: 0.75rem;
+}
+
 /* The bell's unread badge, when the count goes up. */
 @keyframes badge-bump {
   0%   { transform: scale(1); }

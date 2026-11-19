@@ -50,6 +50,8 @@ export const SERVICE_TYPE_META: Record<ServiceType, { icon: LucideIcon; text: st
 
 export interface Service extends RequirementFields {
   id: number;
+  /** Locked by the shop's plan (over its limit; never deleted). Server: PlanLimits. */
+  plan_locked_at?: string | null;
   name: string;
   description: string;
   categories: string[];

@@ -8,7 +8,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import { FilterTabs, ListState, Pager } from '@/components/admin/ui/AdminPrimitives';
 import ReasonModal from '@/components/admin/ui/ReasonModal';
 import ApparelTypeRow, { type ApparelType } from '@/components/admin/apparel/ApparelTypeRow';
-import { useAdminList } from '@/components/admin/useAdminList';
+import { useAdminList, useStableListHeight } from '@/components/admin/useAdminList';
 
 // "Validate apparel categories": picking from the fixed apparel list is
 // instant, but a name a shop types in waits here. Designs using it stay off
@@ -19,6 +19,8 @@ export default function AdminApparelPage() {
   const [page, setPage] = useState(1);
   const [rejecting, setRejecting] = useState<ApparelType | null>(null);
   const { items, meta, raw, loading, error, reload } = useAdminList<ApparelType>('/admin/apparel-types', { status, page });
+  // A shorter last page keeps the list's height, so the card doesn't shrink on Next.
+  const stable = useStableListHeight<HTMLDivElement>(status);
   const counts = (raw.counts ?? {}) as Record<string, number>;
 
   const tabs = [
@@ -58,13 +60,15 @@ export default function AdminApparelPage() {
         <FilterTabs options={tabs} value={status} onChange={changeTab} />
       </PageHeader>
 
-      <div className="border-2 border-line-strong bg-surface">
+      <div className="admin-card overflow-hidden">
+        <div ref={stable.ref} style={stable.style}>
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText={status === 'pending' ? 'No apparel names waiting for review.' : 'Nothing here yet.'} />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y-2 divide-line-strong">
+          <ul className="admin-divide">
             {items.map((t) => <ApparelTypeRow key={t.id} type={t} onApprove={approve} onReject={setRejecting} />)}
           </ul>
         )}
+        </div>
         <Pager meta={meta} onPage={setPage} />
       </div>
 

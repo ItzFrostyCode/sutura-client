@@ -323,6 +323,7 @@ export default function StaffPage() {
           isStoreOwner={isStoreOwner}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
+          onPlanLockChange={isStoreOwner ? fetchStaff : undefined}
         />
 
         {/* Add Staff Modal */}

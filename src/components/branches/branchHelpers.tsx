@@ -18,6 +18,8 @@ export interface BranchManager {
 
 export interface StoreBranch {
   id: number;
+  /** Locked by the shop's plan (over its limit; never deleted). Server: PlanLimits. */
+  plan_locked_at?: string | null;
   slug?: string;
   name: string;
   address: string;

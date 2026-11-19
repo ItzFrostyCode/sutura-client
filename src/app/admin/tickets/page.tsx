@@ -55,10 +55,10 @@ function AdminTickets() {
         <FilterTabs options={FILTERS} value={status} onChange={setStatus} />
       </PageHeader>
 
-      <div className="border-2 border-line-strong bg-surface">
+      <div className="admin-card overflow-hidden">
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText="No tickets here." />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y-2 divide-line-strong">
+          <ul className="admin-divide">
             {items.map((t) => (
               <li key={t.id}>
                 <button type="button" onClick={() => setOpenId(t.id)} className="flex min-h-16 w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-left hover:bg-canvas">

@@ -15,6 +15,8 @@ interface BranchListViewProps {
   readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete?: (id: number) => void;
   readonly onSetMain?: (branch: StoreBranch) => void;
+  /** Reload after a branch shop is unlocked/swapped (plan limits). */
+  readonly onPlanLockChange?: () => void;
 }
 
 export default function BranchListView({
@@ -25,8 +27,11 @@ export default function BranchListView({
   onEdit,
   onDelete,
   onSetMain,
+  onPlanLockChange,
 }: BranchListViewProps) {
   const safeBranches = Array.isArray(branches) ? branches : [];
+  // Open branch shops: the ones a locked branch shop can be swapped with.
+  const openBranches = safeBranches.filter((b) => !b.is_main && !b.plan_locked_at && b.status === 'active').map((b) => ({ id: b.id, name: b.name }));
 
   if (safeBranches.length === 0) {
     return (
@@ -165,7 +170,9 @@ export default function BranchListView({
                 branch={branch}
                 onEdit={onEdit}
                 onDelete={onDelete}
-                onSetMain={onSetMain}
+                onSetMain={branch.plan_locked_at ? undefined : onSetMain}
+                openBranches={openBranches}
+                onPlanLockChange={onPlanLockChange}
               />
             ))}
           </div>
