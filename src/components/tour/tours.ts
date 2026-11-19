@@ -3,7 +3,7 @@
  * Each stop points at a `data-tour` element on that page; stops whose element
  * isn't on screen (another role, a phone layout, an empty list) are skipped.
  */
-export type TourId = 'services' | 'jobs' | 'payments';
+export type TourId = 'services' | 'jobs' | 'payments' | 'appointments' | 'staff' | 'branches' | 'catalog' | 'profile';
 
 export interface TourStop {
   /** CSS selector of the element to spotlight. */
@@ -16,6 +16,8 @@ export interface Tour {
   id: TourId;
   /** Page the tour runs on. */
   path: string;
+  /** Also runs on pages under this prefix (the Shop Profile is the owner's /store/<slug> page). */
+  pathPrefix?: string;
   stops: TourStop[];
 }
 
@@ -103,9 +105,110 @@ export const TOURS: Record<TourId, Tour> = {
       },
     ],
   },
+  appointments: {
+    id: 'appointments',
+    path: '/dashboard/appointments',
+    stops: [
+      {
+        element: '[data-tour="appts-create"]',
+        title: 'Book an appointment',
+        text: 'Add a fitting, consultation or measurement session for a walk-in or phone customer. Online bookings arrive here on their own.',
+      },
+      {
+        element: '[data-tour="appts-stats"]',
+        title: 'Today at a glance',
+        text: 'Today’s schedule, bookings waiting for your approval, and what’s confirmed. Tap a card to filter the list.',
+      },
+      {
+        element: '[data-tour="appts-toolbar"]',
+        title: 'Find and switch views',
+        text: 'Search by customer, filter by status, and switch between list, cards and a calendar.',
+      },
+      {
+        element: '[data-tour="appts-list"]',
+        title: 'Run each visit',
+        text: 'Approve or decline new bookings, check customers in when they arrive, and turn a fitting into a Job Order once measurements are confirmed.',
+      },
+    ],
+  },
+  staff: {
+    id: 'staff',
+    path: '/dashboard/staff',
+    stops: [
+      {
+        element: '[data-tour="staff-create"]',
+        title: 'Add your team',
+        text: 'Create an account for each tailor, cutter or designer, pick their branch and role. Make someone a branch manager to let them run that branch.',
+      },
+      {
+        element: '[data-tour="staff-stats"]',
+        title: 'Workload at a glance',
+        text: 'How many staff are active, how many jobs they’re on, and whether anyone is overloaded.',
+      },
+      {
+        element: '[data-tour="staff-list"]',
+        title: 'Your staff list',
+        text: 'Filter by role, status, workload or branch. Open anyone to see their profile, jobs and work history. Whoever moves an order to a stage is recorded on it automatically.',
+      },
+    ],
+  },
+  branches: {
+    id: 'branches',
+    path: '/dashboard/branches',
+    stops: [
+      {
+        element: '[data-tour="branches-create"]',
+        title: 'Add a branch shop',
+        text: 'Add each extra location with its address, map pin and contact number. Your main shop never counts toward your plan’s branch limit.',
+      },
+      {
+        element: '[data-tour="branches-list"]',
+        title: 'Your locations',
+        text: 'A new or moved branch waits for SUTURA to check its map pin before customers can see it. Assign a branch manager to let them run it.',
+      },
+      {
+        element: '[data-tour="branches-view"]',
+        title: 'Cards or map',
+        text: 'Switch to the map to see every location the way customers find you.',
+      },
+    ],
+  },
+  profile: {
+    id: 'profile',
+    path: '/dashboard/profile',
+    pathPrefix: '/store/',
+    stops: [
+      {
+        element: '[data-tour="profile-hero"]',
+        title: 'This is your shop page',
+        text: 'It’s exactly what customers see. Signed in as the owner, you edit it right here: change your cover photo and logo, and use Edit Profile to update your details.',
+      },
+      {
+        element: '[data-tour="profile-content"]',
+        title: 'Fill in every tab',
+        text: 'Use the tabs to add your description and social links (About), your opening hours, and your services and designs. A complete page helps customers choose you.',
+      },
+    ],
+  },
+  catalog: {
+    id: 'catalog',
+    path: '/dashboard/catalog',
+    stops: [
+      {
+        element: '[data-tour="catalog-create"]',
+        title: 'Show your work',
+        text: 'Add photos of past work: a barong, a gown, a uniform set. Customers browse them and can order or book a fitting for a design they like.',
+      },
+      {
+        element: '[data-tour="catalog-grid"]',
+        title: 'Your catalog',
+        text: 'Every design shows here the way customers see it. Search and filter by garment type, or open one to edit its photos, price and sizes.',
+      },
+    ],
+  },
 };
 
-export const isTourId = (v: string | null): v is TourId => v === 'services' || v === 'jobs' || v === 'payments';
+export const isTourId = (v: string | null): v is TourId => v !== null && v in TOURS;
 
 // Progress is kept in this browser (per signed-in user): finishing or skipping a tour marks it done.
 const key = (userId: number | string | undefined) => `sutura_tours_done:${userId ?? 'guest'}`;

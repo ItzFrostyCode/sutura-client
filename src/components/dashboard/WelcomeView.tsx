@@ -29,6 +29,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     desc: 'Open your Shop Profile to add your logo, banner, description and social links, and set your map location and operating hours. This is what customers see when they find you.',
     icon: Store,
     href: '/dashboard/profile',
+    tour: 'profile',
   },
   {
     step: 'Step 2',
@@ -36,6 +37,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     desc: 'If you operate from more than one location, add each branch here — address, contact number, and a guide photo customers can use to find it. Every branch-scoped view in the dashboard (Jobs, Appointments, Payments, Reports) can be filtered per branch from the header selector.',
     icon: Building2,
     href: '/dashboard/branches',
+    tour: 'branches',
   },
   {
     step: 'Step 3',
@@ -51,6 +53,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     desc: 'Add photos of past work and craftsmanship samples customers can browse and request fittings for — bespoke tailoring works, not off-the-shelf inventory. Each catalog item showcases your atelier craftsmanship.',
     icon: ShoppingBag,
     href: '/dashboard/catalog',
+    tour: 'catalog',
   },
   {
     step: 'Step 5',
@@ -58,6 +61,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     desc: 'Bring on tailors, cutters, designers, and other roles, assign each to a branch, and set their specializations. Staff get their own profile with bio, workload, and job assignment history — visible to you only, never to customers.',
     icon: UserCog,
     href: '/dashboard/staff',
+    tour: 'staff',
   },
   {
     step: 'Step 6',
@@ -65,6 +69,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     desc: 'Book fittings, consultations, and measurement sessions for walk-in or online customers. Each appointment auto-calculates duration by type, and a fitting can convert straight into a Job Order once measurements are confirmed.',
     icon: Calendar,
     href: '/dashboard/appointments',
+    tour: 'appointments',
   },
   {
     step: 'Step 7',

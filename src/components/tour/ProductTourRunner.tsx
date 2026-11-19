@@ -43,7 +43,7 @@ export default function ProductTourRunner() {
   useEffect(() => {
     if (!isTourId(tourParam) || starting.current || active.current) return;
     const tour = TOURS[tourParam];
-    if (pathname !== tour.path) return;
+    if (pathname !== tour.path && !(tour.pathPrefix && pathname?.startsWith(tour.pathPrefix))) return;
     starting.current = true;
     let aborted = false;
 

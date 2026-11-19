@@ -17,7 +17,8 @@ export default function StoreProfileRedirect() {
 
   useEffect(() => {
     if (store?.slug) {
-      router.replace(`/store/${store.slug}`);
+      // Keeps ?tour=profile (Welcome Guide → Configure now) so the tour starts on the shop page.
+      router.replace(`/store/${store.slug}${window.location.search}`);
     }
   }, [store, router]);
 

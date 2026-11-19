@@ -2,6 +2,7 @@
 
 import { use, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import ProductTourRunner from '@/components/tour/ProductTourRunner';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Modal from '@/components/Modal';
@@ -69,7 +70,11 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         <PublicNav />
       )}
 
+      {/* The owner's Shop Profile tour (Welcome Guide step 1) runs here. */}
+      {s.isOwnerViewingOwnStore && <ProductTourRunner />}
+
       {/* Hero Banner, Avatar, Details & Tab Bar */}
+      <div data-tour="profile-hero">
       <StoreHeroHeader
         store={s.store}
         storeId={storeId}
@@ -93,9 +98,10 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         onOpenMap={() => router.push(`/map?shop=${encodeURIComponent(s.store?.slug ?? storeId)}`)}
         onImagesSaved={s.fetchStore}
       />
+      </div>
 
       {/* Main Tab Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
+      <main data-tour="profile-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
         {s.activeTab === 'services' && (
           <StoreServicesTab
             services={s.services}

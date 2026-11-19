@@ -32,6 +32,7 @@ export default function CatalogShowcaseShell() {
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
+            data-tour="catalog-create"
             className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
           >
             <Plus size={15} />
@@ -40,7 +41,9 @@ export default function CatalogShowcaseShell() {
         ) : undefined}
         inlineActions
       />
-      <CatalogGridView key={refreshKey} onCreate={canManage ? () => setCreateOpen(true) : undefined} />
+      <div data-tour="catalog-grid">
+        <CatalogGridView key={refreshKey} onCreate={canManage ? () => setCreateOpen(true) : undefined} />
+      </div>
       {createOpen && (
         <CatalogCreateModal
           isOpen

@@ -199,6 +199,7 @@ export default function AppointmentsPage() {
                 setError('');
                 setShowCreateModal(true);
               }}
+              data-tour="appts-create"
               className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
             >
               <Plus size={16} /> New Appointment
@@ -208,7 +209,7 @@ export default function AppointmentsPage() {
       />
 
       {/* ── Operational KPI Cards (Clickable Quick Filters) ───────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div data-tour="appts-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Today's Schedule */}
         <button
           type="button"
@@ -273,9 +274,9 @@ export default function AppointmentsPage() {
       </div>
 
       {/* ── Main Container Card ──────────────────────────────────────────── */}
-      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
+      <div data-tour="appts-list" className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
         {/* Table & Cards Filter & View Switcher Bar (Always Single Full Row) */}
-        <div className="p-3.5 sm:p-4 border-b border-line bg-canvas/30">
+        <div data-tour="appts-toolbar" className="p-3.5 sm:p-4 border-b border-line bg-canvas/30">
           <div className="flex items-center justify-between gap-3">
             {/* Left Controls: Search + Filter Button (or Type Select on huge screens) */}
             <div className="flex items-center gap-2.5 min-w-0 flex-1">

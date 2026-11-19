@@ -323,7 +323,7 @@ export default function StaffListView({
   const selectClass = 'px-3 py-2 bg-surface border border-line rounded-xl text-xs font-semibold text-ink-body focus:outline-none focus:border-taupe shadow-2xs cursor-pointer';
 
   return (
-    <div className="bg-surface shadow-2xs border border-line rounded-2xl overflow-hidden">
+    <div data-tour="staff-list" className="bg-surface shadow-2xs border border-line rounded-2xl overflow-hidden">
       {/* Filter Toolbar */}
       {loading ? (
         <div className="p-4 sm:p-5 border-b border-line flex flex-col sm:flex-row sm:items-center gap-3 sm:flex-wrap bg-canvas/30 animate-pulse">

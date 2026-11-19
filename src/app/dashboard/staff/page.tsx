@@ -244,6 +244,7 @@ export default function StaffPage() {
                 });
                 setShowModal(true);
               }}
+              data-tour="staff-create"
               className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
             >
               <Plus size={16} />
@@ -256,7 +257,8 @@ export default function StaffPage() {
       {/* Workload Summary Cards */}
       <SubscriptionGate feature="staff">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          // Same tour marker as the loaded cards: the tour can start while staff still load.
+          <div data-tour="staff-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={`workload-skel-${i}`} className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between animate-pulse">
                 <div className="space-y-2 flex-1">
@@ -269,7 +271,7 @@ export default function StaffPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div data-tour="staff-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Active Staff</span>

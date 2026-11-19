@@ -261,7 +261,7 @@ export default function BranchesPage() {
         description="Manage every physical location of your shop. Each branch appears on the customer discovery map."
         actions={
           <>
-            <div className="flex items-center bg-sunken rounded-lg p-1">
+            <div data-tour="branches-view" className="flex items-center bg-sunken rounded-lg p-1">
               <button
                 type="button"
                 onClick={() => setViewMode('cards')}
@@ -279,6 +279,7 @@ export default function BranchesPage() {
             </div>
             {isStoreOwner && (addLocked ? (
               <Link
+                data-tour="branches-create"
                 href="/dashboard/billing"
                 title={`${limitText}. Upgrade to add more.`}
                 className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
@@ -290,6 +291,7 @@ export default function BranchesPage() {
               <button
                 type="button"
                 onClick={openAddModal}
+                data-tour="branches-create"
                 className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
               >
                 <Plus size={17} />
@@ -303,6 +305,7 @@ export default function BranchesPage() {
       {viewMode === 'map' ? (
         <BranchesMap branches={branches} />
       ) : (
+        <div data-tour="branches-list">
         <BranchListView
           branches={branches}
           onAddClick={isStoreOwner ? openAddModal : undefined}
@@ -313,6 +316,7 @@ export default function BranchesPage() {
           onSetMain={isStoreOwner ? handleSetMain : undefined}
           onPlanLockChange={isStoreOwner ? () => { fetchBranches(); refreshBranches(); } : undefined}
         />
+        </div>
       )}
 
       {/* Add / Edit Modal */}
