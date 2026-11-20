@@ -34,7 +34,7 @@ export default function OrderPriceSummary({ o }: Readonly<{ o: ServiceOrderState
   const due = m.dueBeforeProduction;
   return (
     <dl className="divide-y divide-line">
-      {/* Like a POS slip: one line per option, its price × how many (a group with 8 sets and 2 blouses shows two lines). */}
+      {/* Itemized receipt slip: one line per option, its price × how many (a group with 8 sets and 2 blouses shows two lines). */}
       {m.lines.map((l) => (
         <Row key={`${l.label}-${l.unit}`} label={`${m.lines.length > 1 || o.option ? `${l.label} · ` : ''}${peso(l.unit ?? 0)} × ${l.qty}`} value={peso((l.unit ?? 0) * l.qty)} />
       ))}

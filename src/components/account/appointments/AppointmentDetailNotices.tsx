@@ -71,7 +71,7 @@ export default function AppointmentDetailNotices({ appt, isPastDue }: { readonly
             </div>
           )}
           {appt.shared_images && appt.shared_images.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-3 gap-2 pt-1 md:grid-cols-4">
               {appt.shared_images.map((url) => (
                 <a key={url} href={getMediaUrl(url)} target="_blank" rel="noopener noreferrer" className="relative block aspect-square overflow-hidden rounded-xl bg-surface border border-line shadow-2xs">
                   <Image src={getMediaUrl(url)} alt="Shared by the store" fill sizes="120px" className="object-cover" unoptimized />

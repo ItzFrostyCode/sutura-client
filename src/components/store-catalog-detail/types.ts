@@ -81,6 +81,7 @@ export interface CatalogItem {
     catalog_items_count?: number;
     services_count?: number;
     branches?: StoreBranch[];
+    social_links?: { label: string; url: string }[] | null;
   } | null;
   service_id?: number | null;
   service?: {

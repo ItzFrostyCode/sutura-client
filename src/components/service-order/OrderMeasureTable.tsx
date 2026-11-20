@@ -50,6 +50,7 @@ export default function OrderMeasureTable({ o, c }: Readonly<{ o: ServiceOrderSt
         <thead className="text-ink-muted">
           <tr>
             <th scope="col" rowSpan={2} className="sticky left-0 z-20 bg-surface px-3 pb-2 text-left align-bottom font-semibold">Name</th>
+            <th scope="col" rowSpan={2} className="px-1 pb-2 align-bottom font-semibold">Gender</th>
             <th scope="col" rowSpan={2} className="px-1 pb-2 align-bottom font-semibold">
               <span className="flex items-center justify-center gap-0.5">{CUT_COLUMN}<OrderInfoTip label={CUT_COLUMN} text={CUT_TIP} /></span>
             </th>
@@ -82,6 +83,14 @@ export default function OrderMeasureTable({ o, c }: Readonly<{ o: ServiceOrderSt
                     )}
                   </span>
                 </th>
+                <td className="px-1 py-1.5">
+                  <select value={r.extra['Gender'] ?? ''} aria-label={`${who}, gender`} onChange={(e) => f.updateRow(r.id, { extra: { ...r.extra, Gender: e.target.value } })}
+                    className={`${FIELD} w-24 px-1`}>
+                    <option value="">—</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </td>
                 <td className="px-1 py-1.5">
                   <select value={r.extra[CUT_COLUMN] ?? ''} aria-label={`${who}, cut`} onChange={(e) => f.updateRow(r.id, { extra: { ...r.extra, [CUT_COLUMN]: e.target.value } })}
                     className={`${FIELD} w-24 px-1`}>

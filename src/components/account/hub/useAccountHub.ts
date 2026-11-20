@@ -46,8 +46,31 @@ export function useAccountHub(isAuthenticated: boolean) {
 
   const previewAppt = useMemo(() => {
     const list = appointments ?? [];
-    return list.find((a) => a.status === 'pending' || a.status === 'confirmed') ?? list[0] ?? null;
+    const active = list.filter((a) => a.status === 'pending' || a.status === 'confirmed');
+    if (active.length === 0) return list[0] ?? null;
+    // Earliest scheduled active appointment — fetch order is not chronological.
+    return [...active].sort(
+      (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
+    )[0];
   }, [appointments]);
+
+  // Action-ranked next order: ready for pickup first, then an unpaid balance, then the
+  // soonest-due one still in production (no due date goes last).
+  const previewOrder = useMemo<MyOrder | null>(() => {
+    const open = orders.filter((o) => !['cancelled', 'rejected', 'completed'].includes(o.status));
+    const ready = open.find((o) => READY_FOR_PICKUP.has(o.status));
+    if (ready) return ready;
+    const owes = open.find((o) => o.balance > 0 && o.payment_status !== 'paid');
+    if (owes) return owes;
+    const inProduction = open
+      .filter((o) => IN_PRODUCTION.has(o.status))
+      .sort((a, b) => {
+        const da = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+        const db = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+        return da - db;
+      });
+    return inProduction[0] ?? null;
+  }, [orders]);
 
   const countsByDay = useMemo(() => {
     const map = new Map<string, number>();
@@ -103,6 +126,7 @@ export function useAccountHub(isAuthenticated: boolean) {
     setApptView,
     hasActiveAppointment,
     previewAppt,
+    previewOrder,
     calCells,
     inProduction,
     readyForPickup,

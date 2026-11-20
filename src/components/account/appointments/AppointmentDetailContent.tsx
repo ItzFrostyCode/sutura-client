@@ -76,9 +76,13 @@ export default function AppointmentDetailContent({ appt, cancelling, onCancel, o
   // A fitting belongs to the order, so only the shop cancels it; the customer can pick another time.
   const canSelfCancel = (appt.status === 'pending' || appt.status === 'confirmed') && appt.kind !== 'production';
   const isPastDue = canSelfCancel && scheduled < new Date();
+  // The "When" row turns tappable whenever the customer may still move the time.
+  const canReschedule = appt.status === 'pending' || (appt.status === 'confirmed' && !appt.checked_in_at);
+  const needsNewTime = Boolean(appt.needs_new_time && appt.status === 'pending');
 
   return (
-    <div className="card-soft p-4">
+    <div className="w-full">
+      <div className="card-soft p-4 md:mx-auto md:max-w-3xl">
       <AppointmentDetailHeader appt={appt} />
       <AppointmentOrderLink appt={appt} />
 
@@ -110,9 +114,10 @@ export default function AppointmentDetailContent({ appt, cancelling, onCancel, o
         </div>
       )}
 
-      <AppointmentDetailFacts appt={appt} scheduled={scheduled} />
+      <AppointmentDetailFacts appt={appt} scheduled={scheduled} canReschedule={canReschedule} needsNewTime={needsNewTime} onReschedule={onReschedule} />
       <AppointmentDetailNotices appt={appt} isPastDue={isPastDue} />
-      <AppointmentDetailActions appt={appt} canSelfCancel={canSelfCancel} cancelling={cancelling} onCancel={onCancel} onReschedule={onReschedule} />
+      <AppointmentDetailActions appt={appt} canSelfCancel={canSelfCancel} cancelling={cancelling} onCancel={onCancel} />
+      </div>
     </div>
   );
 }

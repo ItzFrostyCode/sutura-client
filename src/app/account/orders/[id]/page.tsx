@@ -13,6 +13,9 @@ import QuotationApprovalCard from '@/components/shared/QuotationApprovalCard';
 import OrderPaymentsCard from '@/components/account/orders/OrderPaymentsCard';
 import OrderClaimsSection from '@/components/account/orders/OrderClaimsSection';
 import GarmentCheckCard from '@/components/account/orders/GarmentCheckCard';
+import OrderReceiptBreakdown from '@/components/account/orders/OrderReceiptBreakdown';
+import OrderDestinationCard from '@/components/account/orders/OrderDestinationCard';
+import OrderMeasurementsCard from '@/components/account/orders/OrderMeasurementsCard';
 
 export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -68,8 +71,13 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
             ) : null}
             /* Stacked under the progress, in reading order: Pay for this order (while there is something to pay), then Your
                Payments (each payment and the shop's decision), then Report a problem on a completed order. */
-            actions={showPay || payments.length > 0 || canReport ? (
+            actions={
               <div className="space-y-4">
+                <OrderReceiptBreakdown order={order} />
+                {order.measurement_data && (
+                  <OrderMeasurementsCard measurements={order.measurement_data} peopleCount={order.people_count} />
+                )}
+                {order.drop_off && <OrderDestinationCard dropOff={order.drop_off} shopName={order.store?.name} />}
                 {showPay && <PayForOrder
                   orderId={Number(id)}
                   storeSlug={order.store?.slug}
@@ -85,7 +93,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
                 {payments.length > 0 && <OrderPaymentsCard payments={payments} canPayAgain={showPay} />}
                 {canReport && <OrderClaimsSection orderId={Number(id)} storeSlug={order.store?.slug} />}
               </div>
-            ) : null}
+            }
           />
         </>
         );

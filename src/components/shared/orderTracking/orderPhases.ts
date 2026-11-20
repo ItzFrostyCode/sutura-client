@@ -78,11 +78,36 @@ export function stepperKey(status: string): string {
 const REPAIR_STATUSES = new Set(['queued', 'in_repair', 'qc_check']);
 const FITTING_STATUSES = new Set(['ready_for_fitting', 'final_adjustments', 'adjustments']);
 
-/** The production steps to draw for this order: repair, bulk (no fitting) or custom tailoring — the shop's own pipeline. */
-export function buildStages(status: string, timestamps?: Record<string, string | null>, pipeline?: 'custom' | 'bulk' | 'repair'): StepperStage[] {
+/** The production steps to draw for this order: repair, alteration, bulk, or custom tailoring — the shop's own pipeline. */
+export function buildStages(status: string, timestamps?: Record<string, string | null>, pipeline?: 'custom' | 'bulk' | 'repair' | 'alteration'): StepperStage[] {
   const withTimes = (list: StepperStage[]) => (timestamps ? list.map((s) => ({ ...s, timestamp: timestamps[s.key] ?? null })) : list);
 
-  if (pipeline === 'repair' || REPAIR_STATUSES.has(status)) {
+  // Repair pipeline — damaged garment, short 6-step flow, no designing or mass cutting.
+  if (pipeline === 'repair') {
+    return withTimes([
+      { key: 'pending', label: 'Pending', Icon: Clock },
+      { key: 'queued', label: 'Queued', Icon: Clock },
+      { key: 'in_repair', label: 'In Repair', Icon: Wrench },
+      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
+      { key: 'completed', label: 'Completed', Icon: Flag },
+    ]);
+  }
+
+  // Alteration pipeline — fit adjustment on existing garment, no designing or mass cutting.
+  if (pipeline === 'alteration') {
+    return withTimes([
+      { key: 'pending', label: 'Pending', Icon: Clock },
+      { key: 'queued', label: 'Queued', Icon: Clock },
+      { key: 'in_repair', label: 'In Alteration', Icon: Scissors },
+      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
+      { key: 'completed', label: 'Completed', Icon: Flag },
+    ]);
+  }
+
+  // Legacy fallback: if no pipeline tag but status is repair-specific, draw the repair steps.
+  if (REPAIR_STATUSES.has(status)) {
     return withTimes([
       { key: 'pending', label: 'Pending', Icon: Clock },
       { key: 'queued', label: 'Queued', Icon: Clock },

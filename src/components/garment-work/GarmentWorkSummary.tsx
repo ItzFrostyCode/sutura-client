@@ -13,7 +13,7 @@ function Line({ label, value, strong = false, muted = false }: Readonly<{ label:
 }
 
 /**
- * The price like a POS receipt: one line per job picked, the total, then what is paid today and at pick-up.
+ * The price like an official receipt: one line per job picked, the total, then what is paid today and at pick-up.
  * Work on the customer's own garment is paid at pick-up; the shop confirms the price once it sees the garment.
  */
 export default function GarmentWorkSummary({ w }: Readonly<{ w: GarmentWorkState }>) {

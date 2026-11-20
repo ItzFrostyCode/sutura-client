@@ -18,6 +18,7 @@ export default function AccountHubPage() {
     setApptView,
     hasActiveAppointment,
     previewAppt,
+    previewOrder,
     calCells,
     inProduction,
     readyForPickup,
@@ -38,7 +39,7 @@ export default function AccountHubPage() {
         <AccountProfileHeader user={user} />
       </div>
 
-      <JobOrdersQuickBar inProduction={inProduction} readyForPickup={readyForPickup} completed={completed} />
+      <JobOrdersQuickBar inProduction={inProduction} readyForPickup={readyForPickup} completed={completed} previewOrder={previewOrder} />
 
       {/* Two columns from 640px: content is 576px+ wide there on a tablet, and 672px beside the desktop menu. */}
       <div className="flex flex-col gap-4 sm:grid sm:grid-cols-2 sm:items-start">

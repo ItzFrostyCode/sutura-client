@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarClock, Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import type { AppointmentDetailData } from './AppointmentDetailContent';
 
 interface AppointmentDetailActionsProps {
@@ -7,21 +7,14 @@ interface AppointmentDetailActionsProps {
   readonly canSelfCancel: boolean;
   readonly cancelling: boolean;
   readonly onCancel: () => void;
-  readonly onReschedule: () => void;
 }
 
 const button = 'mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-opacity active:opacity-70';
 
-/** What the person can do: pick a new time, book again after a cancellation, or cancel. Soft round buttons, the dark one only when it matters most. */
-export default function AppointmentDetailActions({ appt, canSelfCancel, cancelling, onCancel, onReschedule }: AppointmentDetailActionsProps) {
+/** What the person can do: book again after a cancellation, or cancel. Picking a new time lives on the tappable "When" row. */
+export default function AppointmentDetailActions({ appt, canSelfCancel, cancelling, onCancel }: AppointmentDetailActionsProps) {
   return (
     <>
-      {(appt.status === 'pending' || (appt.status === 'confirmed' && !appt.checked_in_at)) && (
-        <button type="button" onClick={onReschedule} className={`${button} ${appt.needs_new_time ? 'bg-ink text-white' : 'bg-sunken text-ink'}`}>
-          <CalendarClock size={16} /> {appt.status === 'confirmed' ? 'Move to another time' : 'Pick a new time'}
-        </button>
-      )}
-
       {appt.status === 'cancelled' && (
         <>
           {appt.cancellation_reason && (

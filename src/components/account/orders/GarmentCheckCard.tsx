@@ -15,6 +15,7 @@ export interface GarmentCheckInfo {
 }
 export interface DropOffInfo {
   name: string; address: string | null; landmark: string | null; operating_hours: string | null; contact_number: string | null;
+  latitude?: number | null; longitude?: number | null;
 }
 
 /**

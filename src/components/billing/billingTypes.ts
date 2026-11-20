@@ -18,12 +18,14 @@ export interface Plan {
 }
 
 export interface Subscription {
+  id?: number;
   plan_id: number;
   plan: Plan;
   status: string;
   starts_at: string;
   ends_at: string;
   billing_cycle?: string;
+  cancelled_at?: string | null;
 }
 
 export const PLAN_META: Record<

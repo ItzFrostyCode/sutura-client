@@ -25,7 +25,7 @@ function SendButton({ w, full = false }: Readonly<{ w: GarmentWorkState; full?: 
   );
 }
 
-/** Repair, alteration or embroidery on the customer's own garment: one page, a POS-style price, paid at pick-up. */
+/** Repair, alteration or embroidery on the customer's own garment: one page, itemized service price, paid at pick-up. */
 function GarmentWorkContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
   // A flow always fills the whole window, even when it was opened inside the search map's panel.

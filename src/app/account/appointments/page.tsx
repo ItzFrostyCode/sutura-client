@@ -38,7 +38,7 @@ export default function MyAppointmentsPage() {
         <div className="mb-3 flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3">
           <Info size={18} className="mt-0.5 shrink-0 text-ink-muted" />
           <p className="mobile-caption text-ink-body">
-            You can only hold one active appointment per shop at a time. Cancel your current one if you&apos;d like to book a different date.
+            You can only hold one active appointment per shop at a time. To book something different, move it to a new time or cancel it.
           </p>
         </div>
       )}

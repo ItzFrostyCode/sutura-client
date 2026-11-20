@@ -1,3 +1,7 @@
+-claude
+
+c
+
 # How to Open SUTURA
 
 Run these steps after the one-time setup is complete. Keep both terminals open.

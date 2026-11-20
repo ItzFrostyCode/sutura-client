@@ -1,15 +1,24 @@
 import Image from 'next/image';
-import { CalendarDays, CheckCircle2, Clock, FileText, Link as LinkIcon, MapPin, Wallet } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock, FileText, Link as LinkIcon, MapPin, Pencil, Wallet } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import type { AppointmentDetailData } from './AppointmentDetailContent';
 
 const row = 'mobile-body-sm flex items-start gap-2.5 text-ink-body';
 const icon = 'mt-0.5 shrink-0 text-ink-faint';
 
+interface AppointmentDetailFactsProps {
+  readonly appt: AppointmentDetailData;
+  readonly scheduled: Date;
+  readonly canReschedule: boolean;
+  readonly needsNewTime: boolean;
+  readonly onReschedule: () => void;
+}
+
 /** When, where and the small print: date, time, branch, payment, what to bring, the customer's note, link, and reference photos. */
-export default function AppointmentDetailFacts({ appt, scheduled }: { readonly appt: AppointmentDetailData; readonly scheduled: Date }) {
+export default function AppointmentDetailFacts({ appt, scheduled, canReschedule, needsNewTime, onReschedule }: AppointmentDetailFactsProps) {
   const bringsOwnFabric = appt.material_source === 'own';
   const sampleDetail = appt.material_note;
+  const timeLabel = scheduled.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
 
   return (
     <div className="mt-4 space-y-2.5">
@@ -17,13 +26,34 @@ export default function AppointmentDetailFacts({ appt, scheduled }: { readonly a
         <CalendarDays size={16} className={icon} />
         <span>{scheduled.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
       </div>
-      <div className={row}>
-        <Clock size={16} className={icon} />
-        <span>
-          {scheduled.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}
-          {appt.duration_minutes ? ` · ${appt.duration_minutes} min` : ''}
-        </span>
-      </div>
+      {canReschedule ? (
+        <button
+          type="button"
+          onClick={onReschedule}
+          aria-label={needsNewTime ? 'Pick a new time' : 'Change appointment time'}
+          className={`w-full flex items-center gap-2.5 rounded-xl px-3 min-h-11 text-left transition-opacity active:opacity-70 cursor-pointer ${needsNewTime ? 'bg-amber-50 border border-amber-200' : 'bg-sunken'}`}
+        >
+          <Clock size={16} className={needsNewTime ? 'shrink-0 text-amber-600' : icon} />
+          <span className="min-w-0 flex-1">
+            <span className="block mobile-body-sm text-ink">
+              {timeLabel}
+              {appt.duration_minutes ? ` · ${appt.duration_minutes} min` : ''}
+            </span>
+            {needsNewTime && <span className="block mobile-caption text-amber-800">Pick a new time</span>}
+          </span>
+          <span className={`shrink-0 w-11 h-11 -mr-2 flex items-center justify-center rounded-full ${needsNewTime ? 'text-amber-700' : 'text-ink-faint'}`}>
+            <Pencil size={20} />
+          </span>
+        </button>
+      ) : (
+        <div className={row}>
+          <Clock size={16} className={icon} />
+          <span>
+            {timeLabel}
+            {appt.duration_minutes ? ` · ${appt.duration_minutes} min` : ''}
+          </span>
+        </div>
+      )}
       {appt.branch && (
         <div className={row}>
           <MapPin size={16} className={icon} />
@@ -62,7 +92,7 @@ export default function AppointmentDetailFacts({ appt, scheduled }: { readonly a
       {appt.reference_images && appt.reference_images.length > 0 && (
         <div className="pt-1">
           <p className="mobile-caption mb-1.5 font-medium text-ink-muted">Reference Photos</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
             {appt.reference_images.map((url) => (
               <a
                 key={url}

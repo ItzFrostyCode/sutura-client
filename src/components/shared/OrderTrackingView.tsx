@@ -44,6 +44,25 @@ export interface QuotationFlow {
   waiting_for_materials: boolean;
 }
 
+export interface MeasurementData {
+  profile_name?: string | null;
+  size?: string | null;
+  unit?: string;
+  source?: string | null;
+  verified?: boolean;
+  verified_at?: string | null;
+  metrics?: Record<string, number | string> | null;
+  team_roster?: {
+    name: string;
+    gender?: string | null;
+    size?: string;
+    bottom_size?: string | null;
+    cut?: string | null;
+    number?: string | null;
+    fit?: Record<string, number | string> | null;
+  }[] | null;
+}
+
 export interface TrackedOrder {
   order_number: string;
   tracking_code?: string | null;
@@ -59,6 +78,9 @@ export interface TrackedOrder {
   catalog_item_name?: string | null;
   service_name: string | null;
   is_rush: boolean;
+  rush_fee?: number;
+  discount_amount?: number;
+  balance_due_by?: string | null;
   due_date: string | null;
   // Time-of-day refinement on top of due_date — mainly meaningful for
   // same-day repair ETAs ("ready at 3:00 PM"), additive, not a replacement.
@@ -110,6 +132,7 @@ export interface TrackedOrder {
   payments?: import('@/components/account/orders/OrderPaymentsCard').OrderPayment[];
   // Present only for orders that use the ordering flow, and only on /my-orders (never the guest tracker).
   quotation_flow?: QuotationFlow | null;
+  measurement_data?: MeasurementData | null;
   store: { name: string; slug: string; logo_path: string | null } | null;
 }
 

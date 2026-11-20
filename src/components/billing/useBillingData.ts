@@ -83,6 +83,36 @@ export function useBillingData() {
     }
   };
 
+  const handleCancelSubscription = async (): Promise<boolean> => {
+    if (!store) return false;
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/cancel`);
+      toast.success(res.data?.message || 'Subscription cancelled successfully.');
+      await fetchBillingData();
+      await refreshSubscriptionTier(store.id);
+      return true;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to cancel subscription.');
+      return false;
+    }
+  };
+
+  const handleResubscribe = async (): Promise<boolean> => {
+    if (!store) return false;
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/resubscribe`);
+      toast.success(res.data?.message || 'Subscription reactivated successfully!');
+      await fetchBillingData();
+      await refreshSubscriptionTier(store.id);
+      return true;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to reactivate subscription.');
+      return false;
+    }
+  };
+
   // A paid upgrade / renewal: GCash receipt → admin approval; the plan only changes then.
   const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, reference: string) => {
     if (!store) return false;
@@ -135,6 +165,8 @@ export function useBillingData() {
     isExpired,
     isExpiringSoon,
     handleSubscribe,
+    handleCancelSubscription,
+    handleResubscribe,
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,

@@ -280,7 +280,7 @@ export default function InteractiveCalendar({
             onDateChange(dateStr);
             onTimeChange(''); // reset time when date changes
           }}
-          className={`relative h-10 w-10 flex items-center justify-center rounded-full text-sm font-medium transition-all
+          className={`relative h-10 w-10 min-[400px]:h-11 min-[400px]:w-11 flex items-center justify-center rounded-full text-sm font-medium transition-all
             ${isSelected ? 'bg-taupe text-white hover:bg-taupe-hover' : ''}
             ${!isSelected && !disabled && isToday ? 'border-2 border-taupe text-taupe' : ''}
             ${!isSelected && !disabled && !isToday ? 'text-ink hover:bg-line' : ''}

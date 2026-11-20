@@ -1,9 +1,10 @@
 'use client';
 
-import { Minus, Plus, User, Users } from 'lucide-react';
+import { Minus, Plus, User, Users, Clock } from 'lucide-react';
 import type { ServiceOrderState } from './useServiceOrder';
 import { ChoiceCard, SectionLabel, StepIntro, peso } from './orderUi';
 import OrderPartPicker from './OrderPartPicker';
+import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 
 function WhoCard({ on, onClick, Icon, title, text }: Readonly<{ on: boolean; onClick: () => void; Icon: typeof User; title: string; text: string }>) {
   return (
@@ -25,6 +26,16 @@ export default function OrderWhatStep({ o }: Readonly<{ o: ServiceOrderState }>)
   return (
     <div className="space-y-8">
       <StepIntro title="What you're ordering" text={o.service?.name ?? ''} />
+
+      {o.service?.estimated_days != null && (
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-sunken p-3.5">
+          <Clock size={18} className="shrink-0 text-taupe" />
+          <div className="min-w-0 text-sm">
+            <span className="font-semibold text-ink">Turnaround Time: </span>
+            <span className="text-ink-muted">Usually takes {formatServiceTurnaround(o.service.estimated_days, o.service.estimated_days_max ?? null)}. Rush turnaround available on request.</span>
+          </div>
+        </div>
+      )}
 
       {o.pricing.length > 1 && (
         <fieldset>

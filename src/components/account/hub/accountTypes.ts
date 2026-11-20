@@ -8,7 +8,16 @@ import {
 export interface MyOrder {
   id: number;
   status: string;
+  order_number: string;
+  catalog_item_name: string | null;
+  service_name: string | null;
   progress?: import('@/components/shared/orderTracking/orderProgress').OrderProgress;
+  due_date: string | null;
+  balance: number;
+  payment_status: string;
+  /** GCash/PayMaya payments submitted but not yet verified — not reflected in balance. */
+  pending_payment_amount?: number;
+  store: { name: string; slug: string; logo_path: string | null } | null;
 }
 
 export interface MyAppointment {

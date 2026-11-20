@@ -1,4 +1,4 @@
-# Thesis cross-check — SUTURA (2026-10-02)
+ca# Thesis cross-check — SUTURA (2026-10-02)
 
 > **Update, later the same day — closed since the first version of this report:** durable backups (set `BACKUP_DISK`), appointment confirmations / changes now go by **email**, the word "forecasts" is gone, shop reviews now require a completed order or appointment, Reports-only analytics and exports are **refused by the server** on lower plans (not just locked in the browser), and **SMS** is built (review-before-send, test mode, see below). **New-branch verification is now built** (a branch is hidden from the map, search and booking until the System Admin verifies its pin). Still open: two Admin gaps (custom apparel categories, system-health panel). Where a table row below still shows the old status, this note wins.
 
@@ -48,7 +48,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 | Role-based staff access | ✅ | owner, branch manager, staff; `CheckRole` also enforces the shop boundary (tested: 0 of 53 cross-shop routes leaked) |
 | Tier enforcement | 🟡 | **Server-enforced:** staff limit (1 / 5 / unlimited), multi-branch (Premium), featured placement. **UI-only** (`SubscriptionGate`): analytics, gallery, notifications, exports — a Basic shop calling the API directly is not blocked |
 | Keep subscription valid for visibility | ✅ | Daily `app:expire-subscriptions` hides expired shops; expiring / expired notices |
-| Process subscription payment | ➖ | Manual: the shop uploads a receipt and the admin verifies (no gateway, per the limitation) |
+| Process subscription payment | ➖ | Direct GCash via Xendit / GCash invoice or proof upload with admin verification |
 
 ### Objective 3 — Shop Discovery and Map-Based Navigation
 | Requirement | Status | Evidence / gap |
@@ -78,7 +78,7 @@ Compared against the real code (Laravel API + Next.js client, the four roles: Sy
 | Allocate materials and labor | ➖ | Labor allocation = stage attribution. Materials / stock is **out of scope** in the thesis itself |
 | QA check, adjustments, ready for fitting, fitting loop | ✅ | `qc_ironing`, `final_adjustments`, `ready_for_fitting` with an automatic fitting appointment and a fitting-limit rule |
 | Settle final balance, digital receipt, rate | ✅ | balance gate before completion, printable receipt, reviews |
-| Process payment via a gateway; automatic refund | ➖ | Deposits and payments are **tracked** (cash, GCash, Maya, bank): the customer pays outside SUTURA and sends proof, the owner verifies. No refunds are issued automatically (consistent with the payment limitation) |
+| Process payment via a gateway; automatic refund | ➖ | Deposits and payments are **tracked** (cash, GCash only — standardized to remove bank/Maya fragmentation): the customer pays outside SUTURA via GCash/cash and sends proof, the owner verifies. No refunds are issued automatically (consistent with the payment limitation) |
 
 ### Objective 6 — Interactive Analytics Dashboard
 | Requirement | Status | Evidence / gap |

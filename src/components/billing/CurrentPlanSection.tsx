@@ -1,5 +1,5 @@
 import {
-  CreditCard, CheckCircle, Crown, Zap, Calendar, TrendingUp, Clock,
+  CreditCard, CheckCircle, Crown, Zap, Calendar, TrendingUp, Clock, AlertTriangle, RotateCcw,
 } from 'lucide-react';
 import type { Subscription } from './billingTypes';
 
@@ -7,12 +7,16 @@ interface CurrentPlanSectionProps {
   currentSubscription: Subscription | null;
   activePlanSlug: string;
   daysUntilExpiry: number | null;
+  onCancel?: () => void;
+  onResubscribe?: () => void;
 }
 
 export default function CurrentPlanSection({
   currentSubscription,
   activePlanSlug,
   daysUntilExpiry,
+  onCancel,
+  onResubscribe,
 }: CurrentPlanSectionProps) {
   const getPlanIcon = () => {
     if (activePlanSlug === 'premium') return Crown;
@@ -101,6 +105,50 @@ export default function CurrentPlanSection({
           </div>
         </div>
       </div>
+
+      {/* Cancellation Pending Banner */}
+      {currentSubscription?.cancelled_at && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-amber-300 bg-amber-50">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="text-amber-700 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Cancellation Scheduled</p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Auto-renewal is cancelled. You retain full access to your {currentSubscription.plan?.name} features until{' '}
+                <span className="font-semibold">
+                  {currentSubscription.ends_at
+                    ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'the end of your period'}
+                </span>
+                .
+              </p>
+            </div>
+          </div>
+          {onResubscribe && (
+            <button
+              type="button"
+              onClick={onResubscribe}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-900 active:opacity-75 shrink-0"
+            >
+              <RotateCcw size={14} />
+              <span>Resubscribe / Restore</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Cancel Subscription link */}
+      {!currentSubscription?.cancelled_at && activePlanSlug !== 'basic' && currentSubscription?.status === 'active' && onCancel && (
+        <div className="flex justify-end pt-1">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs font-medium text-ink-muted hover:text-danger underline underline-offset-4 transition-colors"
+          >
+            Cancel subscription
+          </button>
+        </div>
+      )}
     </section>
   );
 }

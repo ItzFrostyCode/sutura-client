@@ -10,6 +10,7 @@ import PlanComparisonSection from '@/components/billing/PlanComparisonSection';
 import BillingHistorySection from '@/components/billing/BillingHistorySection';
 import UpgradePaymentModal from '@/components/billing/UpgradePaymentModal';
 import UpgradeRequestsSection from '@/components/billing/UpgradeRequestsSection';
+import CancelSubscriptionModal from '@/components/billing/CancelSubscriptionModal';
 import { planNeedsPayment, type Plan } from '@/components/billing/billingTypes';
 
 export default function BillingPage() {
@@ -26,12 +27,15 @@ export default function BillingPage() {
     isExpired,
     isExpiringSoon,
     handleSubscribe,
+    handleCancelSubscription,
+    handleResubscribe,
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,
     storeId,
   } = useBillingData();
   const [payingFor, setPayingFor] = useState<Plan | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Moving up to (or renewing) a paid plan takes a GCash payment + receipt;
   // free plans and step-downs switch right away, as before.
@@ -99,6 +103,8 @@ export default function BillingPage() {
         currentSubscription={currentSubscription}
         activePlanSlug={activePlanSlug}
         daysUntilExpiry={daysUntilExpiry}
+        onCancel={() => setShowCancelModal(true)}
+        onResubscribe={handleResubscribe}
       />
 
       <FeatureUsageSection
@@ -126,6 +132,14 @@ export default function BillingPage() {
       <UpgradeRequestsSection requests={upgradeRequests} storeId={storeId} />
 
       <UpgradePaymentModal plan={payingFor} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} />
+
+      {showCancelModal && (
+        <CancelSubscriptionModal
+          subscription={currentSubscription}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelSubscription}
+        />
+      )}
 
       <PlanComparisonSection
         plans={plans}

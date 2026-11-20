@@ -19,7 +19,12 @@ export function usePayForOrder(orderId: number, storeSlug: string | undefined, b
   useEffect(() => {
     if (!storeSlug) return;
     api.get(`/public/stores/${storeSlug}/payment-methods`, { params: branchId ? { branch_id: branchId } : {} })
-      .then((r) => setMethods(r.data?.data ?? []))
+      .then((r) => {
+        const all: ShopPaymentMethod[] = r.data?.data ?? [];
+        // Locked to GCash only per validated thesis requirement
+        const gcash = all.filter((m) => m.kind.toLowerCase() === 'gcash' || m.name.toLowerCase().includes('gcash'));
+        setMethods(gcash.length > 0 ? gcash : all);
+      })
       .catch(() => setMethods([]))
       .finally(() => setLoading(false));
   }, [storeSlug, branchId]);

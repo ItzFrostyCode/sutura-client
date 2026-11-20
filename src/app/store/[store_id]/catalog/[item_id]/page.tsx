@@ -21,6 +21,7 @@ import { useEmbedded } from '@/hooks/useEmbedded';
 import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogDetailBreadcrumb from '@/components/store-catalog-detail/CatalogDetailBreadcrumb';
+import { getSocialUrl, getMessengerUrl } from '@/components/store-storefront/storeStorefrontHelpers';
 import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
 
 export default function PublicProductDetailPage({
@@ -88,6 +89,8 @@ export default function PublicProductDetailPage({
   // "Order online" opens this design's service with the design already picked as the style to follow.
   const designServiceId = item.service?.id ?? item.service_id;
   const orderHref = designServiceId ? gate(`/store/${storeId}/order?service_id=${designServiceId}&design_id=${item.id}`) : null;
+  const facebookUrl = getSocialUrl(item.store?.social_links ?? undefined, 'facebook');
+  const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
     <div ref={pageRef} className="min-h-full flex flex-col bg-canvas">
@@ -180,7 +183,7 @@ export default function PublicProductDetailPage({
             />
 
             {/* Order online (desktop/tablet inline button) */}
-            <CatalogDesktopActionButtons orderHref={orderHref} />
+            <CatalogDesktopActionButtons orderHref={orderHref} messageHref={messageHref} />
           </div>
           }
         />
@@ -232,7 +235,7 @@ export default function PublicProductDetailPage({
       </main>
 
       {/* Mobile sticky bottom action bar */}
-      <CatalogBottomActionBar orderHref={orderHref} />
+      <CatalogBottomActionBar orderHref={orderHref} messageHref={messageHref} />
     </div>
   );
 }

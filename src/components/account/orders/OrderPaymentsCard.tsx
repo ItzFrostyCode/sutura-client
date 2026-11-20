@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 export interface OrderPayment {
   id: number;
   amount: number;
+  type?: 'deposit' | 'partial' | 'balance' | 'full' | string;
   method: string | null;
   reference: string | null;
   /** 'walk_in' = paid in person and recorded by the shop; 'online' = proof the customer sent. */
@@ -23,6 +24,16 @@ const STATUS = {
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const day = (iso: string) => new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const methodLabel = (m: string | null) => (m ? m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).replace('Gcash', 'GCash') : 'Payment');
+const typeLabel = (t: string | undefined) => {
+  if (!t) return null;
+  const map: Record<string, string> = {
+    deposit: 'Deposit',
+    balance: 'Balance Settlement',
+    partial: 'Partial Payment',
+    full: 'Full Payment',
+  };
+  return map[t] || t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 /**
  * "Your Payments": every payment on this order and what the shop decided — waiting, approved, or rejected with the
@@ -39,7 +50,12 @@ export default function OrderPaymentsCard({ payments, canPayAgain }: { readonly 
             <li key={p.id} className="py-3 first:pt-0 last:pb-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-base font-semibold text-ink">{peso(p.amount)} <span className="text-sm font-normal text-ink-muted">· {methodLabel(p.method)}</span></p>
+                  <p className="text-base font-semibold text-ink">
+                    {peso(p.amount)}{' '}
+                    <span className="text-sm font-normal text-ink-muted">
+                      · {typeLabel(p.type) ? `${typeLabel(p.type)} · ` : ''}{methodLabel(p.method)}
+                    </span>
+                  </p>
                   <p className="mobile-caption mt-0.5 text-ink-muted">
                     {p.source === 'walk_in' ? 'Paid at the shop' : 'Sent'} {day(p.paid_at)}{p.reference ? <> · Ref <span className="font-mono">{p.reference}</span></> : null}
                   </p>

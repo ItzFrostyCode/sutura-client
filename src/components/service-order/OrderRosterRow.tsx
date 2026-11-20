@@ -52,6 +52,14 @@ export default function OrderRosterRow({ row, index, area, partChoosable, gets, 
       <div className="mt-3 space-y-3 sm:pl-11">
         <div className="grid grid-cols-2 gap-3">
           <div className="min-w-0">
+            <label htmlFor={`p${row.id}-gender`} className="mobile-caption mb-1 block text-ink-muted">Gender</label>
+            <select id={`p${row.id}-gender`} value={row.extra['Gender'] ?? ''} onChange={(e) => onChange({ extra: { ...row.extra, Gender: e.target.value } })} className={FIELD}>
+              <option value="">—</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div className="min-w-0">
             <label htmlFor={`p${row.id}-cut`} className="mobile-caption mb-1 block text-ink-muted">Cut (optional)</label>
             <select id={`p${row.id}-cut`} value={row.extra[CUT_COLUMN] ?? ''} onChange={(e) => onChange({ extra: { ...row.extra, [CUT_COLUMN]: e.target.value } })} className={FIELD}>
               <option value="">—</option>

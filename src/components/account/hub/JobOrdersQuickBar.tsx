@@ -1,16 +1,20 @@
 import Link from 'next/link';
 import { ChevronRight, Hammer, PackageCheck, Flag } from 'lucide-react';
+import { type MyOrder } from './accountTypes';
+import OrderPreviewItem from './OrderPreviewItem';
 
 interface JobOrdersQuickBarProps {
   inProduction: number;
   readyForPickup: number;
   completed: number;
+  previewOrder: MyOrder | null;
 }
 
 export default function JobOrdersQuickBar({
   inProduction,
   readyForPickup,
   completed,
+  previewOrder,
 }: Readonly<JobOrdersQuickBarProps>) {
   const orderShortcuts = [
     { href: '/account/orders?tab=production', label: 'In Production', Icon: Hammer, count: inProduction },
@@ -19,7 +23,7 @@ export default function JobOrdersQuickBar({
   ];
 
   return (
-    <section aria-labelledby="hub-orders-title" className="card-soft p-4">
+    <section aria-labelledby="hub-orders-title" className="card-soft p-4 md:max-w-2xl">
       <div className="flex items-center justify-between">
         <h2 id="hub-orders-title" className="mobile-h4 text-ink">Job Orders</h2>
         <Link href="/account/orders" className="-mr-2 flex min-h-11 items-center gap-0.5 px-2 text-sm text-taupe transition-opacity active:opacity-70">
@@ -39,6 +43,8 @@ export default function JobOrdersQuickBar({
           </Link>
         ))}
       </div>
+
+      {previewOrder && <OrderPreviewItem order={previewOrder} />}
     </section>
   );
 }
