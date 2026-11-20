@@ -77,7 +77,13 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
                 {order.measurement_data && (
                   <OrderMeasurementsCard measurements={order.measurement_data} peopleCount={order.people_count} />
                 )}
-                {order.drop_off && <OrderDestinationCard dropOff={order.drop_off} shopName={order.store?.name} />}
+                {order.drop_off && (
+                  <OrderDestinationCard
+                    dropOff={order.drop_off}
+                    shopName={order.store?.name}
+                    storeSlug={order.store?.slug}
+                  />
+                )}
                 {showPay && <PayForOrder
                   orderId={Number(id)}
                   storeSlug={order.store?.slug}
