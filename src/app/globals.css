@@ -1004,3 +1004,58 @@ body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); 
 @media (prefers-reduced-motion: reduce) {
   .pin-bounce { animation: none; }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Welcome Guide Product Tour (driver.js)
+   ──────────────────────────────────────────────────────────────────────────── */
+.sutura-tour .driver-popover-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  padding-right: 24px;
+  color: var(--foreground);
+}
+.sutura-tour .driver-popover-description {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-body);
+}
+.sutura-tour .driver-popover-close-btn { color: var(--ink-faint); width: 36px; height: 36px; font-size: 20px; }
+.sutura-tour .driver-popover-close-btn:hover,
+.sutura-tour .driver-popover-close-btn:focus-visible { color: var(--foreground); }
+.sutura-tour .driver-popover-footer { margin-top: 16px; gap: 10px; }
+.sutura-tour .driver-popover-progress-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-taupe);
+}
+.sutura-tour .driver-popover-footer-btn {
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: none;
+  border: 1px solid var(--brand-border);
+  background: var(--card-bg);
+  color: var(--foreground);
+  transition: background-color 150ms ease-out, border-color 150ms ease-out;
+}
+.sutura-tour .driver-popover-footer-btn:hover { background: var(--background); border-color: var(--ink-faint); }
+.sutura-tour .driver-popover-footer-btn:focus-visible { outline: 2px solid var(--brand-taupe); outline-offset: 2px; }
+.sutura-tour .driver-popover-next-btn {
+  background: var(--brand-taupe);
+  border-color: var(--brand-taupe);
+  color: #fff;
+}
+.sutura-tour .driver-popover-next-btn:hover { background: var(--brand-taupe-hover); border-color: var(--brand-taupe-hover); }
+.sutura-tour .driver-popover-navigation-btns button + button { margin-left: 8px; }
+.sutura-tour .driver-popover-arrow { border-color: var(--card-bg); }
+.sutura-tour .driver-popover-arrow-side-left { border-top-color: transparent; border-bottom-color: transparent; border-right-color: transparent; }
+.sutura-tour .driver-popover-arrow-side-right { border-top-color: transparent; border-bottom-color: transparent; border-left-color: transparent; }
+.sutura-tour .driver-popover-arrow-side-top { border-bottom-color: transparent; border-left-color: transparent; border-right-color: transparent; }
+.sutura-tour .driver-popover-arrow-side-bottom { border-top-color: transparent; border-left-color: transparent; border-right-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  .driver-fade .driver-overlay, .driver-fade .driver-popover { animation: none; }
+}

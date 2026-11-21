@@ -27,6 +27,7 @@ import ServiceDetailBreadcrumb from '@/components/store-service-detail/ServiceDe
 import type { SearchServiceResult } from '@/components/search/types';
 import { confirmDialog } from '@/store/useConfirmStore';
 import { serviceOrderHref } from '@/lib/serviceOrderHref';
+import { useCanGoBack } from '@/hooks/useCanGoBack';
 
 // Dedicated page for a single service — was an in-place swap inside the
 // Store Profile's Service tab (the old ServiceDetailView.tsx component,
@@ -71,6 +72,7 @@ export default function ServiceDetailPage({
   const [headerOpacity, setHeaderOpacity] = useState(0);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const canGoBack = useCanGoBack();
 
   const [myRating, setMyRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -188,22 +190,12 @@ export default function ServiceDetailPage({
 
   const isOwnerViewingOwnStore = !!authStore && authStore.slug === storeId && !!user?.roles?.some((r) => r.name === 'store_owner' || r.name === 'branch_manager');
 
-  // Real history-back when there's actual history to go back to (matches
-  // useCatalogItemDetail.ts's handleBackClick) — a plain unconditional
-  // router.push() here was pushing a *new* Profile entry on top of Search
-  // instead of reusing/popping the existing one, so the stack became
-  // [Search, ServiceDetail, Profile]. Profile's own back button is real
-  // browser history (router.back(), see StoreHeroHeader.tsx) — it would
-  // then pop back into ServiceDetail instead of Search, forcing the
-  // customer to hit back twice no matter which shop they were on. Only
-  // fall back to a hardcoded destination when there's truly no history to
-  // go back to (a direct link, recently-viewed on a fresh tab, etc.).
+  // Real history-back — always call router.back(). If there's no history,
+  // the browser simply does nothing (or closes the tab in rare cases),
+  // which is better than pushing a new entry that breaks the back stack.
+  // The back button is only shown when useCanGoBack() returns true.
   const handleBack = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(`/store/${storeId}?tab=services`);
-    }
+    router.back();
   };
 
   const handleShare = async () => {
@@ -290,6 +282,7 @@ export default function ServiceDetailPage({
   const minQuantity = Math.max(1, Number(service.min_order_qty) || 1);
   const bookHref = `/store/${storeId}/book?service_id=${service.id}&service_name=${encodeURIComponent(service.name)}&ref_qty=${Math.max(minQuantity, quantity)}&ref_min_qty=${minQuantity}${service.base_price != null ? `&ref_price=${encodeURIComponent(String(service.base_price))}` : ''}${service.image_url ? `&ref_image=${encodeURIComponent(service.image_url)}` : ''}`;
   const orderHref = serviceOrderHref(storeId, service);
+  const orderPaymentRequired = service.order_requirements?.payment_policy !== 'none';
   const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
@@ -302,14 +295,16 @@ export default function ServiceDetailPage({
       <div className="hidden min-[600px]:block">
         <header className="sticky top-0 z-50 w-full bg-surface border-b border-line">
           <div className="max-w-7xl mx-auto px-4 min-[600px]:px-[10px] md:px-8 h-14 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={handleBack}
-              aria-label="Back"
-              className="w-9 h-9 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
+            {canGoBack && (
+              <button
+                type="button"
+                onClick={handleBack}
+                aria-label="Back"
+                className="w-9 h-9 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
             <div className="flex items-center gap-1 relative">
               <button
                 type="button"
@@ -395,9 +390,11 @@ export default function ServiceDetailPage({
             borderBottom: headerOpacity > 0.6 ? '1px solid var(--brand-border)' : 'none',
           }}
         >
-          <button type="button" onClick={handleBack} aria-label="Back" className={iconButtonClass}>
-            <ArrowLeft size={22} />
-          </button>
+          {canGoBack && (
+            <button type="button" onClick={handleBack} aria-label="Back" className={iconButtonClass}>
+              <ArrowLeft size={22} />
+            </button>
+          )}
           <div className="flex items-center gap-1.5 relative">
             <button type="button" onClick={handleShare} aria-label="Share this service" className={iconButtonClass}>
               <Share2 size={19} />
@@ -521,6 +518,8 @@ export default function ServiceDetailPage({
                 orderHref={orderHref}
                 bookHref={bookHref}
                 messageHref={messageHref}
+                storeSlug={storeId}
+                paymentRequired={orderPaymentRequired}
               />
             </div>
           }
@@ -567,6 +566,8 @@ export default function ServiceDetailPage({
         orderHref={orderHref}
         bookHref={bookHref}
         messageHref={messageHref}
+        storeSlug={storeId}
+        paymentRequired={orderPaymentRequired}
       />
     </div>
   );

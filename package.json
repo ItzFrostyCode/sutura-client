@@ -12,8 +12,12 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "1.1.1",
     "@types/leaflet": "^1.9.22",
+    "@vladmandic/face-api": "1.7.15",
     "axios": "^1.20.0",
+    "driver.js": "1.10.2",
+    "exceljs": "4.4.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.45.0",
     "next": "^16.3.5",

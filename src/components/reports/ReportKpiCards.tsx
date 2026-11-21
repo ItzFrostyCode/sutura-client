@@ -5,6 +5,7 @@ import {
   Users, Target, DollarSign, AlertTriangle, BarChart2, Flag, PackageX, Timer, Star, CalendarCheck,
 } from 'lucide-react';
 import { AnalyticsData } from './reportHelpers';
+import { parseCustomPeriod, periodLabel } from './reportExport';
 
 interface ReportKpiCardsProps {
   readonly data: AnalyticsData | null;
@@ -25,7 +26,8 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
   // other period-scoped KPI on this page — "Lifetime collected" was
   // accurate only for the all_time default and silently wrong the moment
   // an owner picked "This Month"/"Last Month"/"Year to Date".
-  const revenueSub = REVENUE_PERIOD_LABELS[period] ?? REVENUE_PERIOD_LABELS.all_time;
+  const revenueSub = REVENUE_PERIOD_LABELS[period]
+    ?? (parseCustomPeriod(period) ? `Collected ${periodLabel(period)}` : REVENUE_PERIOD_LABELS.all_time);
 
   // Three semantic tones, not thirteen decorative ones. Colour here means
   // something — sage is money actually collected or a healthy rate, danger is
@@ -58,7 +60,9 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
     {
       label: 'Outstanding Balance',
       value: `₱${Number(data?.total_outstanding_balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-      sub: 'Unpaid from clients',
+      sub: (data?.pending_approval_balance ?? 0) > 0
+        ? `Accepted orders · +₱${Number(data?.pending_approval_balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })} awaiting approval`
+        : 'Unpaid on accepted orders',
       icon: <Wallet size={20} />,
       color: TONE.neutral,
     },
@@ -163,7 +167,7 @@ export default function ReportKpiCards({ data, completionRate, period = 'all_tim
       {/* Total Revenue is the one number that matters most on a reports
           page — was sitting at the exact same visual weight as "Forfeited
           Deposits," among 13 identical cards with no hierarchy at all. */}
-      <div className="bg-espresso rounded-xl p-6 text-white">
+      <div className="bg-taupe rounded-xl p-6 text-white">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70 flex items-center gap-1.5">
           <TrendingUp size={12} /> Total Revenue
         </p>

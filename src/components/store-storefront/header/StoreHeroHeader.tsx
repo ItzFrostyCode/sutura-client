@@ -54,6 +54,7 @@ interface StoreHeroHeaderProps {
   readonly isBookmarked: boolean;
   /** Saves or unsaves the shop on the server (My Saved > Shops). */
   readonly onToggleBookmark: () => void;
+  readonly onOpenMap?: () => void;
   /** Refreshes the storefront's own `store` state after the logo/banner is replaced. */
   readonly onImagesSaved?: () => void;
 }
@@ -106,6 +107,7 @@ export default function StoreHeroHeader({
   onOpenRatingModal,
   isBookmarked,
   onToggleBookmark,
+  onOpenMap,
   onImagesSaved,
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);

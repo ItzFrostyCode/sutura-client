@@ -68,6 +68,7 @@ export default function PublicProductDetailPage({
     gate,
     handleBackClick,
     handleReportClick,
+    canGoBack,
   } = useCatalogItemDetail(storeId, itemId);
 
   if (loading) {
@@ -98,13 +99,14 @@ export default function PublicProductDetailPage({
       {embedded && <style>{'nextjs-portal{display:none!important}'}</style>}
       {/* Header — desktop minimal / mobile floating overlay */}
       <div className="hidden min-[600px]:block">
-        <CatalogDesktopHeader onBack={handleBackClick} onReport={handleReportClick} />
+        <CatalogDesktopHeader onBack={handleBackClick} onReport={handleReportClick} canGoBack={canGoBack} />
       </div>
       <div className="min-[600px]:hidden">
         <CatalogDetailHeader
           headerOpacity={headerOpacity}
           onBack={handleBackClick}
           onReport={handleReportClick}
+          canGoBack={canGoBack}
         />
       </div>
 

@@ -24,7 +24,7 @@ export interface AdminPlan {
 const FIELD = 'w-full min-h-11 border border-line-strong bg-surface px-3 text-base text-ink focus:border-ink focus:outline-none';
 const NUMBERS = [
   ['price_monthly', 'Monthly (₱)'], ['price_yearly', 'Yearly (₱)'], ['max_staff', 'Max staff'],
-  ['max_branches', 'Max branches'], ['max_services', 'Max services'], ['max_appointments_per_month', 'Appointments / mo'],
+  ['max_branches', 'Max branch shops'], ['max_services', 'Max services'], ['max_appointments_per_month', 'Appointments / mo'],
 ] as const;
 
 export default function PlanEditorCard({ plan, onSaved }: { readonly plan: AdminPlan; readonly onSaved: (plan: AdminPlan) => void }) {
@@ -51,7 +51,7 @@ export default function PlanEditorCard({ plan, onSaved }: { readonly plan: Admin
   };
 
   return (
-    <form onSubmit={save} className="border border-line bg-surface p-5">
+    <form onSubmit={save} className="admin-card overflow-hidden p-5">
       <div className="flex items-center justify-between gap-3">
         <input aria-label="Plan name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="tablet-h3 min-w-0 flex-1 border-b border-transparent bg-transparent text-ink focus:border-ink focus:outline-none" />
         <Badge variant={draft.is_active ? 'success' : 'neutral'}>{draft.is_active ? 'On sale' : 'Retired'}</Badge>
@@ -67,7 +67,7 @@ export default function PlanEditorCard({ plan, onSaved }: { readonly plan: Admin
           </label>
         ))}
       </div>
-      <p className="mt-2 text-xs text-ink-faint">-1 means unlimited. Max staff and max branches are shown to shops automatically (e.g. “Up to 2 staff accounts”, “1 branch”) — no need to add them as perks. Branches can’t be 0: every shop has at least its main branch.</p>
+      <p className="mt-2 text-xs text-ink-faint">-1 means unlimited. Max branch shops counts locations beyond the main shop, which never counts (0 = main shop only). Both limits are shown to shops automatically (e.g. “Up to 2 staff accounts”, “Main shop + 1 branch shop”) — no need to add them as perks.</p>
 
       <label className="mt-4 block text-sm text-ink-muted">
         Perks (one per line)

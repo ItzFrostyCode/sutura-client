@@ -1,4 +1,5 @@
 import Badge from '@/components/shared/Badge';
+import { PILL } from '@/components/admin/ui/PlanPill';
 import { formatDate } from '../useAdminList';
 
 export interface AdminAccount {
@@ -18,6 +19,15 @@ const ROLE_LABELS: Record<string, string> = {
   branch_manager: 'Branch Manager',
   staff: 'Staff',
   customer: 'Customer',
+};
+
+// One soft hue per role (kept apart from the plan pills: stone / blue / amber).
+const ROLE_TONE: Record<string, string> = {
+  admin: 'bg-[#2B2522] text-white border-[#2B2522]',
+  store_owner: 'bg-[#F3EBE3] text-[#7A5A44] border-[#E2D3C4]',
+  branch_manager: 'bg-violet-50 text-violet-700 border-violet-200',
+  staff: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  customer: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 interface AccountRowProps {
@@ -41,7 +51,7 @@ export default function AccountRow({ account, onSuspend, onReactivate }: Account
       </div>
       <div className="flex w-44 shrink-0 flex-wrap gap-1">
         {account.roles.map((r) => (
-          <Badge key={r.id} variant={r.name === 'admin' ? 'accent' : 'neutral'}>{ROLE_LABELS[r.name] ?? r.name}</Badge>
+          <span key={r.id} className={`${PILL} ${ROLE_TONE[r.name] ?? 'border-line bg-sunken text-ink-muted'}`}>{ROLE_LABELS[r.name] ?? r.name}</span>
         ))}
       </div>
       <p className="w-36 shrink-0 text-sm text-ink-muted">

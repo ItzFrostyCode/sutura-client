@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { Lock, Plus, Map as MapIcon, LayoutGrid } from 'lucide-react';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import { StoreBranch, EMPTY_FORM } from '@/components/branches/branchHelpers';
+import { StoreBranch, EMPTY_FORM, branchPayload, type BranchManagerCredentials } from '@/components/branches/branchHelpers';
+import BranchCredentialsModal from '@/components/branches/BranchCredentialsModal';
 import BranchFormModal from '@/components/branches/BranchFormModal';
 import BranchDeleteModal from '@/components/branches/BranchDeleteModal';
 import BranchListView from '@/components/branches/BranchListView';
@@ -27,7 +27,6 @@ const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
 });
 
 export default function BranchesPage() {
-  const router = useRouter();
   const { store, user, staffProfile } = useAuthStore();
   const { refreshBranches } = useBranch();
   const toast = useToast();
@@ -38,12 +37,17 @@ export default function BranchesPage() {
   const myBranchId = staffProfile?.store_branch_id ?? null;
   const [branches, setBranches] = useState<StoreBranch[]>([]);
   const [loading, setLoading] = useState(true);
-  // Same rule as StoreBranchController::store(): the plan's branch limit,
-  // set on the admin Plans page (-1 = unlimited). Lock the add buttons up
-  // front instead of letting the owner fill in the whole form to hit a 403.
+  // Same rule as StoreBranchController::store(): the plan's limit counts
+  // Branch Shops only (-1 = unlimited, 0 = main shop only); the Main Shop
+  // never uses it up, and a shop with no locations can always add its Main
+  // Shop. Lock the add buttons up front instead of letting the owner fill in
+  // the whole form to hit a 403.
   const { maxBranches, loading: tierLoading } = useSubscriptionTier();
-  const addLocked = isStoreOwner && !tierLoading && maxBranches !== -1 && branches.length >= maxBranches;
-  const limitText = `Your plan allows ${maxBranches === 1 ? '1 branch' : `up to ${maxBranches} branches`}`;
+  const branchShopCount = branches.filter(b => !b.is_main).length;
+  const addLocked = isStoreOwner && !tierLoading && branches.length > 0 && maxBranches !== -1 && branchShopCount >= maxBranches;
+  const limitText = maxBranches === 0
+    ? 'Your plan includes your main shop only'
+    : `Your plan allows ${maxBranches === 1 ? '1 branch shop' : `up to ${maxBranches} branch shops`} besides your main shop`;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -53,6 +57,7 @@ export default function BranchesPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [credentials, setCredentials] = useState<BranchManagerCredentials | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
 
   const fetchBranches = useCallback(() => {
@@ -77,7 +82,10 @@ export default function BranchesPage() {
   }, [fetchBranches]);
 
   const openAddModal = () => {
-    router.push('/dashboard/branches/new');
+    setEditingId(null);
+    setFormData(EMPTY_FORM);
+    setErrorMsg('');
+    setIsModalOpen(true);
   };
 
   const handleEditClickGated = (branch: StoreBranch) => {
@@ -94,6 +102,7 @@ export default function BranchesPage() {
       name: branch.name,
       address: branch.address,
       landmark: branch.landmark || '',
+      landmark_image_url: branch.landmark_image_url || '',
       barangay: branch.barangay || '',
       city: branch.city,
       district: branch.district || '',
@@ -103,14 +112,10 @@ export default function BranchesPage() {
       operating_hours: branch.operating_hours || '',
       status: branch.status || 'active',
       guide_image_url: branch.guide_image_url || '',
-      manager_current: branch.manager?.user?.name ? `${branch.manager.user.name} (${branch.manager.user.email})` : '',
-      manager_mode: 'none',
-      manager_staff_id: '',
-      manager_name: '',
-      manager_email: '',
-      manager_phone: '',
-      manager_password: '',
-      manager_password_confirmation: '',
+      manager_id: branch.manager?.id || '',
+      new_manager_name: '',
+      new_manager_phone: '',
+      new_manager_role: 'tailor',
     });
     setErrorMsg('');
     setIsModalOpen(true);
@@ -129,31 +134,23 @@ export default function BranchesPage() {
     setIsSubmitting(true);
     setErrorMsg('');
 
-    // The manager's login is sent only when the owner filled it in (edit mode).
-    const {
-      manager_current: _current, manager_mode: _mode, manager_staff_id: _sid,
-      manager_name, manager_email, manager_phone, manager_password, manager_password_confirmation: _confirm,
-      ...branchFields
-    } = formData;
-    const payload = manager_name && manager_email && manager_password
-      ? { ...branchFields, manager: { name: manager_name, email: manager_email, phone: manager_phone || undefined, password: manager_password } }
-      : branchFields;
-
     try {
       if (editingId) {
-        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, payload);
+        const res = await api.put(`/stores/${store.id}/branches/${editingId}`, branchPayload(formData));
         const updated = res.data?.data;
         if (updated) {
           setBranches(prev => prev.map(b => (b.id === editingId ? { ...b, ...updated } : b)));
         }
         toast.success('Branch details updated successfully.');
       } else {
-        const res = await api.post(`/stores/${store.id}/branches`, payload);
+        const res = await api.post(`/stores/${store.id}/branches`, branchPayload(formData));
         const created = res.data?.data;
         if (created) {
           setBranches(prev => [...prev, created]);
         }
         toast.success('New branch registered successfully.');
+        // A new manager's login is shown once, right now.
+        if (res.data?.credentials) setCredentials(res.data.credentials);
       }
       setIsModalOpen(false);
       setEditingId(null);
@@ -174,7 +171,7 @@ export default function BranchesPage() {
     try {
       const res = await api.put(`/stores/${store.id}/branches/${branch.id}/set-main`);
       if (res.data?.success) {
-        toast.success(`${branch.name} is now the main branch.`);
+        toast.success(`${branch.name} is now your Main Shop.`);
         fetchBranches();
         refreshBranches();
       }
@@ -213,32 +210,42 @@ export default function BranchesPage() {
         {/* Header Skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="h-7 bg-line rounded-lg w-36 mb-2"></div>
-            <div className="h-4 bg-line rounded w-72 max-w-full"></div>
+            <div className="h-8 bg-line rounded w-48 mb-2"></div>
+            <div className="h-4 bg-line rounded w-96 max-w-full"></div>
           </div>
           <div className="flex gap-2">
-            <div className="h-9 bg-line rounded-xl w-28"></div>
-            <div className="h-9 bg-line rounded-xl w-28"></div>
+            <div className="h-9 bg-line rounded w-32"></div>
+            <div className="h-9 bg-line rounded w-32"></div>
           </div>
+        </div>
+        
+        {/* Summary Bar Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <div key={`summary-skel-${i}`} className="bg-surface border border-line rounded-xl p-4 flex items-center gap-3">
+              <div className="w-9 h-9 bg-sunken rounded-lg"></div>
+              <div className="space-y-1">
+                <div className="h-5 bg-line rounded w-8"></div>
+                <div className="h-3 bg-line rounded w-20"></div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {[1, 2, 3].map(i => (
-            <div key={`card-skel-${i}`} className="h-56 bg-surface border border-line rounded-2xl p-5 space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 bg-sunken rounded-xl"></div>
-                  <div className="space-y-1.5">
-                    <div className="h-4 bg-line rounded w-32"></div>
-                    <div className="h-3 bg-line rounded w-20"></div>
-                  </div>
+            <div key={`card-skel-${i}`} className="h-48 bg-surface border border-line rounded-2xl p-5">
+              <div className="flex justify-between items-start mb-4">
+                <div className="space-y-2">
+                  <div className="h-5 bg-line rounded w-32"></div>
+                  <div className="h-4 bg-line rounded w-48"></div>
                 </div>
-                <div className="w-14 h-5 bg-sunken rounded-full"></div>
+                <div className="w-8 h-8 bg-sunken rounded-full"></div>
               </div>
-              <div className="space-y-2 pt-2">
-                <div className="h-3.5 bg-line rounded w-full"></div>
-                <div className="h-3.5 bg-line rounded w-2/3"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-line rounded w-full"></div>
+                <div className="h-4 bg-line rounded w-2/3"></div>
               </div>
             </div>
           ))}
@@ -250,51 +257,45 @@ export default function BranchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Branches"
-        description="Manage your shop locations and customer visit spots."
+        title="Shop Branches"
+        description="Manage every physical location of your shop. Each branch appears on the customer discovery map."
         actions={
           <>
-            <div className="flex items-center bg-sunken rounded-xl p-1 border border-line/60">
+            <div data-tour="branches-view" className="flex items-center bg-sunken rounded-lg p-1">
               <button
                 type="button"
                 onClick={() => setViewMode('cards')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  viewMode === 'cards'
-                    ? 'bg-surface text-ink shadow-2xs'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[38px] ${viewMode === 'cards' ? 'bg-surface text-ink' : 'text-ink-muted hover:text-ink'}`}
               >
-                <LayoutGrid size={14} /> Cards
+                <LayoutGrid size={15} /> Cards
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('map')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  viewMode === 'map'
-                    ? 'bg-surface text-ink shadow-2xs'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[38px] ${viewMode === 'map' ? 'bg-surface text-ink' : 'text-ink-muted hover:text-ink'}`}
               >
-                <MapIcon size={14} /> Map
+                <MapIcon size={15} /> Map
               </button>
             </div>
             {isStoreOwner && (addLocked ? (
               <Link
+                data-tour="branches-create"
                 href="/dashboard/billing"
                 title={`${limitText}. Upgrade to add more.`}
-                className="flex items-center gap-1.5 border border-line bg-surface hover:bg-sunken text-ink px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm transition-colors min-h-[38px]"
+                className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
               >
-                <Lock size={15} />
-                Upgrade plan for more branches
+                <Lock size={16} />
+                Branch limit reached · Upgrade
               </Link>
             ) : (
               <button
                 type="button"
-                onClick={() => router.push('/dashboard/branches/new')}
-                className="flex items-center gap-1.5 bg-espresso hover:bg-espresso/90 text-white px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm shadow-2xs transition-colors min-h-[38px]"
+                onClick={openAddModal}
+                data-tour="branches-create"
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
               >
-                <Plus size={16} />
-                Add Location
+                <Plus size={17} />
+                Add Branch
               </button>
             ))}
           </>
@@ -304,6 +305,7 @@ export default function BranchesPage() {
       {viewMode === 'map' ? (
         <BranchesMap branches={branches} />
       ) : (
+        <div data-tour="branches-list">
         <BranchListView
           branches={branches}
           onAddClick={isStoreOwner ? openAddModal : undefined}
@@ -312,7 +314,9 @@ export default function BranchesPage() {
           onEdit={handleEditClickGated}
           onDelete={isStoreOwner ? handleDeleteClick : undefined}
           onSetMain={isStoreOwner ? handleSetMain : undefined}
+          onPlanLockChange={isStoreOwner ? () => { fetchBranches(); refreshBranches(); } : undefined}
         />
+        </div>
       )}
 
       {/* Add / Edit Modal */}
@@ -327,6 +331,8 @@ export default function BranchesPage() {
         formData={formData}
         setFormData={setFormData}
       />
+
+      <BranchCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
 
       {/* Delete Modal */}
       <BranchDeleteModal

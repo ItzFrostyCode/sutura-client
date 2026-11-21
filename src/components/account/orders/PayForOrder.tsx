@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Landmark, Smartphone, Wallet } from 'lucide-react';
 import PayMethodDialog from './PayMethodDialog';
 import { usePayForOrder, type ShopPaymentMethod } from './usePayForOrder';
@@ -26,14 +26,20 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
   const [chosen, setChosen] = useState<ShopPaymentMethod | null>(null);
   const outstanding = Math.max(0, Math.round((balance - pending) * 100) / 100);
 
+  // Opened from "Pay ₱X" on My Orders (#pay): scroll here once the box has loaded.
+  useEffect(() => {
+    if (pay.loading || typeof window === 'undefined' || window.location.hash !== '#pay') return;
+    document.getElementById('pay')?.scrollIntoView({ block: 'start' });
+  }, [pay.loading]);
+
   if (!active || pay.loading || balance <= 0) return null;
   if (outstanding <= 0) {
-    return <p className="mobile-caption px-1 text-ink-muted">Your payment was sent and is waiting for the shop to verify it.</p>;
+    return <p id="pay" className="mobile-caption px-1 text-ink-muted mb-4 scroll-mt-20">Your payment was sent and is waiting for the shop to verify it.</p>;
   }
   // Never an empty side column: a shop without online payment methods still tells the customer how to pay.
   if (pay.methods.length === 0) {
     return (
-      <section className="card-soft p-4" aria-label="Pay for this order">
+      <section id="pay" className="card-soft p-4 mb-4 scroll-mt-20" aria-label="Pay for this order">
         <h2 className="mobile-h4 text-ink">Pay for this order</h2>
         <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. This shop takes payment in person — pay at the shop on your next visit.</p>
       </section>
@@ -41,7 +47,7 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
   }
 
   return (
-    <section className="card-soft p-4" aria-label="Pay for this order">
+    <section id="pay" className="card-soft p-4 mb-4 scroll-mt-20" aria-label="Pay for this order">
       <h2 className="mobile-h4 text-ink">Pay for this order</h2>
       <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
       {requiredDeposit > 0 && totalAmount - balance + 0.005 < requiredDeposit && (

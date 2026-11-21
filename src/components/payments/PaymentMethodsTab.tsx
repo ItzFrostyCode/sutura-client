@@ -7,12 +7,11 @@ import { useAuthStore } from '@/store/useAuthStore';
 import PaymentMethodForm from './PaymentMethodForm';
 import { KIND_LABELS, emptyMethodForm, usePaymentMethods, type MethodForm } from './usePaymentMethods';
 import type { PaymentAccount } from './usePayments';
-import { confirmDialog } from '@/store/useConfirmStore';
 
 // Where customers can pay this shop. They pay outside SUTURA (GCash, Maya, bank…), upload proof, and the shop verifies it.
 export default function PaymentMethodsTab() {
   const { methods, loading, saving, save, remove, toggle, storeId } = usePaymentMethods();
-  const { branches } = useBranch();
+  const { branches, selectedBranchId } = useBranch();
   const { user } = useAuthStore();
   const isOwner = Boolean(user?.roles?.some((r) => r.name === 'store_owner'));
   const [form, setForm] = useState<MethodForm | null>(null);
@@ -24,11 +23,29 @@ export default function PaymentMethodsTab() {
   };
   const close = () => { setForm(null); setEditingId(undefined); };
 
+  // Removing only ever affects the branch you remove it from:
+  // - a branch-only method belongs to that one branch;
+  // - an "Entire shop" method viewed under one branch is taken off that branch, the others keep it;
+  // - under "All Branches" an "Entire shop" method needs a branch picked first (unless the shop has one branch).
+  const askRemove = (m: PaymentAccount) => {
+    const multiBranch = (branches ?? []).length > 1;
+    if (m.store_branch_id || !multiBranch) {
+      if (window.confirm(`Remove ${m.name}${m.branch ? ` from ${m.branch.name}` : ''}? Past payments keep their record.`)) remove(m.id);
+      return;
+    }
+    const branch = (branches ?? []).find((b: { id: number }) => b.id === selectedBranchId) as { id: number; name: string } | undefined;
+    if (!branch) {
+      window.alert(`${m.name} is used by every branch. Pick the branch to remove it from in the branch switcher at the top, then remove it again. The other branches will keep it.`);
+      return;
+    }
+    if (window.confirm(`Remove ${m.name} from ${branch.name}? The other branches keep it. Past payments keep their record.`)) remove(m.id, branch.id);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm text-ink-muted max-w-xl">The accounts customers see when they pay. SUTURA never handles the money — they pay you directly and send proof for you to verify.</p>
-        {!form && <button type="button" onClick={() => open()} className="h-11 px-4 bg-espresso hover:bg-espresso/90 text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"><Plus size={16} /> Add</button>}
+        {!form && <button type="button" onClick={() => open()} className="h-11 px-4 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"><Plus size={16} /> Add</button>}
       </div>
 
       {form && (
@@ -50,7 +67,7 @@ export default function PaymentMethodsTab() {
       ) : methods.length === 0 && !form ? (
         <div className="bg-surface border border-line p-10 text-center">
           <p className="text-sm font-medium text-ink">No payment methods yet</p>
-          <p className="text-xs text-ink-muted mt-1">Add your GCash, Maya or bank account so customers know where to pay.</p>
+          <p className="text-xs text-ink-muted mt-1">Add your GCash account so customers know where to pay.</p>
         </div>
       ) : (
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -60,12 +77,12 @@ export default function PaymentMethodsTab() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-ink truncate">{m.name} <span className="text-[11px] font-medium text-ink-muted">· {KIND_LABELS[m.kind] ?? m.kind}</span></p>
                 <p className="text-sm text-ink-body truncate">{m.account_name}</p>
-                <p className="text-sm font-mono text-ink truncate">{m.account_number || 'QR code only'}</p>
+                <p className="text-sm font-mono text-ink truncate">{m.account_number}</p>
                 <p className="text-[11px] text-ink-faint mt-1">{m.branch ? `${m.branch.name} only` : 'Entire shop'}{m.is_active ? '' : ' · Inactive'}</p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <button type="button" onClick={() => open(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink flex items-center gap-1.5 cursor-pointer hover:bg-sunken"><Pencil size={13} /> Edit</button>
                   <button type="button" onClick={() => toggle(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink cursor-pointer hover:bg-sunken">{m.is_active ? 'Pause' : 'Activate'}</button>
-                  <button type="button" onClick={async () => { if (await confirmDialog({ title: `Remove ${m.name}?`, message: 'Past payments keep their record.', confirmLabel: 'Remove', danger: true })) remove(m.id); }} aria-label={`Remove ${m.name}`} className="h-11 w-11 border border-line-strong text-danger flex items-center justify-center cursor-pointer hover:bg-danger/5"><Trash2 size={15} /></button>
+                  <button type="button" onClick={() => askRemove(m)} aria-label={`Remove ${m.name}`} className="h-11 w-11 border border-line-strong text-danger flex items-center justify-center cursor-pointer hover:bg-danger/5"><Trash2 size={15} /></button>
                 </div>
               </div>
             </li>

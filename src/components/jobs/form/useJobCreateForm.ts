@@ -1,298 +1,546 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
+import { FileText } from 'lucide-react';
+import { SERVICE_TYPE_META } from '@/components/services/serviceHelpers';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
-import type { Appointment } from '@/components/appointments/appointmentHelpers';
-import { planPrefill, type PrefillPlan } from './prefillPlan';
-import { canonicalGarment, categoryOfGarment, type GarmentCategory } from '@/lib/garmentTaxonomy';
-import { designImage, serviceGarments, servicesForGarment } from './jobFormHelpers';
-import { defaultColumns, resetSizing } from './rosterHelpers';
-import { measurementNeed } from './measurementNeed';
-import type { GarmentSpecColumn } from '@/components/jobs/jobTypes';
-import { useCustomerMeasurements, useJobFormLookups } from './useJobFormLookups';
-import { useJobPricing, type TeamLine } from './useJobPricing';
-import { useJobSubmit } from './useJobSubmit';
-import type { ExtraService, JobCreateFormData, RosterMember } from './types';
+import { CatalogItem } from '@/components/catalog/catalogHelpers';
+import {
+  CustomerData,
+  ServiceData,
+  ServiceField,
+  CustomerMeasurement,
+  RosterMember,
+  JobCreateFormData,
+} from './types';
 
-const blankRow = (): RosterMember => ({ id: `${Date.now()}-${Math.random()}`, player_name: '', print_name: '', number: '', position: '', size: '', qty: '1' });
-
-const EMPTY: JobCreateFormData = {
-  customer_id: '', service_id: '', measurement_id: '', quantity: '1', price: null, unit_price: null, downpayment: '', due_date: null,
-  notes: '', is_rush: false, rush_fee: '', material_source: 'store_supplied', garment_type: '',
-  discount_mode: 'fixed', discount_value: '', discount_reason: '',
-  design_source: null, design_link: '', consultation_notes: '',
-};
-
-/** All the state of the Create Job Order form; the pieces on screen only read from it. */
-export function useJobCreateForm() {
-  const params = useSearchParams();
-  const { selectedBranchId } = useBranch();
-  const lookups = useJobFormLookups();
-  const { store, services, catalogItems } = lookups;
-
-  const [formData, setFormData] = useState<JobCreateFormData>(EMPTY);
-  const [garmentCategory, setGarmentCategory] = useState<GarmentCategory | ''>('');
-  const [catalogItemId, setCatalogItemId] = useState('');
-  const [extras, setExtras] = useState<ExtraService[]>([]);
-  const [standardSize, setStandardSize] = useState('Custom Measurements');
-  /** The bottom's size when one person gets top & bottom (standardSize is then the top's). */
-  const [standardSizeBottom, setStandardSizeBottom] = useState('Custom Measurements');
-  /** The pricing option of the service this order is made from ('' = none chosen). */
-  const [pricingId, setPricingId] = useState('');
-  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
-  const [bulkChosen, setBulkChosen] = useState(false);
-  const [teamName, setTeamName] = useState('');
-  const [roster, setRoster] = useState<RosterMember[]>([blankRow()]);
-  // The team table's columns: the service's own until the owner renames, adds or removes one.
-  const [editedColumns, setRosterColumns] = useState<GarmentSpecColumn[] | null>(null);
-  const [damageNotes, setDamageNotes] = useState('');
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [referenceLink, setReferenceLink] = useState('');
-  const [assignees, setAssignees] = useState<Record<number, string>>({});
-  const [appointmentId, setAppointmentId] = useState<string | null>(params.get('appointment_id'));
-  // The consultation / booking this order is written up from, as the shop saw it — shown beside the form so nothing it recorded is lost.
-  const [appointment, setAppointment] = useState<Appointment | null>(null);
-  const [intakeChannel, setIntakeChannel] = useState<'walk_in' | 'online'>('walk_in');
-  const [customerLocked, setCustomerLocked] = useState(!!params.get('customer_id'));
-
-  const [measurementMode, setMeasurementModeState] = useState<import('./types').MeasurementSourceMode>('existing');
-  // The branch the order belongs to: the consultation's, else the one chosen at the top of the dashboard.
-  const [orderBranchId, setOrderBranchId] = useState<number | null>(null);
-  const branchId = orderBranchId ?? selectedBranchId ?? null;
-  const [inlineMeasurements, setInlineMeasurements] = useState<import('./types').InlineMeasurementData[]>([
-    {
-      id: `person-${Date.now()}`,
-      profile_name: '',
-      measurement_area: '',
-      metrics: {},
-      top_columns: ['Chest', 'Shoulder', 'Sleeve', 'Neck', 'Shirt Length'],
-      bottom_columns: ['Waist', 'Hips', 'Inseam', 'Outseam', 'Thigh'],
-      notes: '',
-      photo_urls: [],
-    },
-  ]);
-  const [activePersonIndex, setActivePersonIndex] = useState(0);
-
-  const activeInlineMeasurement = inlineMeasurements[activePersonIndex] || inlineMeasurements[0];
-
-  const setInlineMeasurement: React.Dispatch<React.SetStateAction<import('./types').InlineMeasurementData>> = (updaterOrVal) => {
-    setInlineMeasurements((prev) => {
-      const current = prev[activePersonIndex] || prev[0];
-      const updated = typeof updaterOrVal === 'function' ? updaterOrVal(current) : updaterOrVal;
-      return prev.map((p, idx) => (idx === activePersonIndex ? updated : p));
+function sanitizeServiceCustomFields(servicesRaw: unknown[]): ServiceData[] {
+  return servicesRaw.map((s) => {
+    const serviceObj = s as Record<string, unknown>;
+    const customFieldsRaw = Array.isArray(serviceObj.custom_fields) ? serviceObj.custom_fields : [];
+    const sanitizedFields = customFieldsRaw.map((f) => {
+      const fieldObj = f as Record<string, unknown>;
+      const fieldType = String(fieldObj.type || 'text');
+      const resolvedType = fieldType === 'dropdown' ? 'select' : (fieldType === 'short_text' ? 'text' : fieldType);
+      return {
+        id: String(fieldObj.id || fieldObj.name || Math.random().toString(36).substring(2, 11)),
+        label: String(fieldObj.label || ''),
+        type: resolvedType as 'text' | 'number' | 'select' | 'radio' | 'checkbox',
+        required: Boolean(fieldObj.required),
+        options: Array.isArray(fieldObj.options) ? fieldObj.options.map(String) : [],
+      };
     });
-  };
-
-  const addPersonToMeasure = () => {
-    setInlineMeasurements((prev) => [
-      ...prev,
-      {
-        id: `person-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        profile_name: '',
-        measurement_area: '',
-        metrics: {},
-        top_columns: ['Chest', 'Shoulder', 'Sleeve', 'Neck', 'Shirt Length'],
-        bottom_columns: ['Waist', 'Hips', 'Inseam', 'Outseam', 'Thigh'],
-        notes: '',
-        photo_urls: [],
-      },
-    ]);
-    setActivePersonIndex(inlineMeasurements.length);
-  };
-
-  const removePersonToMeasure = (idx: number) => {
-    if (inlineMeasurements.length <= 1) return;
-    setInlineMeasurements((prev) => prev.filter((_, i) => i !== idx));
-    setActivePersonIndex((prev) => Math.max(0, Math.min(prev, inlineMeasurements.length - 2)));
-  };
-
-  const updatePersonMeasurement = (
-    idx: number,
-    updater: (prev: import('./types').InlineMeasurementData) => import('./types').InlineMeasurementData
-  ) => {
-    setInlineMeasurements((prev) => prev.map((p, i) => (i === idx ? updater(p) : p)));
-  };
-
-  const set = (patch: Partial<JobCreateFormData>) => setFormData((prev) => ({ ...prev, ...patch }));
-  const measurements = useCustomerMeasurements(store?.id, formData.customer_id);
-
-  const service = services.find((s) => s.id.toString() === formData.service_id);
-  const design = catalogItems.find((c) => c.id.toString() === catalogItemId) ?? null;
-  const isRepair = serviceHasType(service, 'alteration_repair');
-  const isBulk = serviceHasType(service, 'bulk_sublimation') || bulkChosen;
-  // A service that needs no measuring keeps the measurement form out of the way until someone asks for it.
-  const [addMeasurements, setAddMeasurements] = useState(false);
-  const need = measurementNeed({ design, service, store });
-  const measurementHidden = need === 'none' && !isBulk && !addMeasurements;
-  // The option decides what is covered and what one ordered unit is (the server reads both from it). A service whose options are
-  // not configured works as before: choosing one is optional and only suggests the price.
-  const options = service?.pricing ?? [];
-  const configured = options.some((o) => o.covers || o.sold_as);
-  const option = options.find((o) => String(o.id) === pricingId) ?? (options.length === 1 && configured ? options[0] : null);
-  // A team may mix parts (sets for most, blouses for some) when the service prices each part: then each person's
-  // "Covers" stays open and their piece is priced by the option for that part.
-  const partOptions = options.filter((o) => o.covers === 'top' || o.covers === 'bottom' || o.covers === 'both');
-  const perPerson = isBulk && partOptions.length > 1;
-  const areaLocked = Boolean(option?.covers) && !perPerson;
-  const optionRequired = configured && !option;
-  const optionAmount = option && option.amount !== null && option.amount !== '' ? Number(option.amount) : null;
-  const teamPieces = roster.reduce((sum, r) => sum + Math.max(1, Number.parseInt(r.qty ?? '1', 10) || 1), 0);
-  const teamLines = useMemo(() => {
-    if (!perPerson) return [];
-    const byKey = new Map<string, TeamLine>();
-    for (const r of roster) {
-      const part = r.measure_area || option?.covers || '';
-      const o = option?.covers === part ? option : partOptions.find((p) => p.covers === part) ?? option;
-      const unit = o && o.amount !== null && o.amount !== '' ? Number(o.amount) : null;
-      const key = `${o?.label ?? 'Order'}|${unit}`;
-      const line = byKey.get(key) ?? { label: o?.label ?? 'Order', unit, qty: 0 };
-      line.qty += Math.max(1, Number.parseInt(r.qty ?? '1', 10) || 1);
-      byKey.set(key, line);
-    }
-    return [...byKey.values()];
-  }, [perPerson, roster, option, partOptions]);
-  const pricing = useJobPricing(formData, service, design, isBulk, teamPieces, optionAmount, teamLines);
-  const rosterColumns = editedColumns ?? defaultColumns(service?.roster_fields);
-
-  // A team order opens with as many empty rows as the service's minimum, so the list is ready to fill in.
-  useEffect(() => {
-    const min = service?.min_order_qty ?? 0;
-    if (isBulk && min > 1) setRoster((cur) => (cur.length >= min || cur.some((r) => r.player_name) ? cur : [...cur, ...Array.from({ length: min - cur.length }, blankRow)]));
-  }, [isBulk, service?.id, service?.min_order_qty]);
-
-  // An option that covers something fixes it for the one wearer and for everyone on the team list (changing it clears sizes that meant another part).
-  useEffect(() => {
-    const c = option?.covers;
-    if (!c) return;
-    setInlineMeasurements((prev) => prev.map((p) => (p.measurement_area === c ? p : { ...p, measurement_area: c })));
-    setRoster((cur) => cur.map((r) => (r.measure_area === c ? r : { ...r, ...(r.measure_area ? resetSizing(r) : {}), measure_area: c })));
-  }, [option?.covers, roster.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // The newest measurement profile is pre-selected (or the one the page was opened with).
-  // If customer has no measurements, default to 'record_now' so staff can measure directly.
-  // Preference: the one asked for in the link, the one taken at this consultation, one made for this service/design, then the newest.
-  useEffect(() => {
-    const forThis = (m: (typeof measurements)[number]) => (catalogItemId && String(m.catalog_item_id) === catalogItemId) || (formData.service_id && String(m.service_id) === formData.service_id);
-    const best = measurements.find((m) => appointmentId && String(m.appointment_id) === appointmentId) ?? measurements.find(forThis) ?? measurements[0];
-    setFormData((prev) => ({ ...prev, measurement_id: params.get('measurement_id') || best?.id.toString() || '' }));
-  }, [measurements, params, appointmentId, catalogItemId, formData.service_id]);
-
-  // Measuring starts as "now" for someone at the counter, "later" or the booked size for a consultation; saved measurements lead only
-  // when one already fits. It is set again only when the measurements load, never after the person has chosen themselves.
-  const planMode = useRef<'standard_size' | 'none' | null>(null);
-  const userMode = useRef(false);
-  const matchesConsultation = measurements.some((m) => appointmentId && String(m.appointment_id) === appointmentId);
-  const hasMatchingMeasurement = matchesConsultation || measurements.some((m) => (catalogItemId && String(m.catalog_item_id) === catalogItemId) || (formData.service_id && String(m.service_id) === formData.service_id));
-  useEffect(() => {
-    if (userMode.current) return;
-    if (appointmentId) setMeasurementModeState(matchesConsultation ? 'existing' : planMode.current ?? 'record_now');
-    else setMeasurementModeState(hasMatchingMeasurement ? 'existing' : 'record_now');
-  }, [hasMatchingMeasurement, matchesConsultation, appointmentId]);
-  const setMeasurementMode = (mode: import('./types').MeasurementSourceMode) => { userMode.current = true; setMeasurementModeState(mode); };
-
-  const pickService = (id: string) => {
-    const picked = services.find((s) => s.id.toString() === id);
-    set({ service_id: id, price: null, unit_price: null, due_date: null });
-    // A different service has its own designs: the design picked for the earlier one no longer applies.
-    if (design && String(design.service_id) !== id) setCatalogItemId('');
-    // A service that works on one garment names it (editable under Garment).
-    const only = picked ? serviceGarments(picked) : null;
-    if (only && only.length === 1 && !formData.garment_type) { set({ garment_type: only[0] }); setGarmentCategory(categoryOfGarment(only[0]) ?? ''); }
-    setCustomFieldValues({});
-    setPricingId('');
-    setBulkChosen(serviceHasType(picked, 'bulk_sublimation'));
-  };
-
-  const pickGarment = (garment: string, category: GarmentCategory | '' = categoryOfGarment(garment) ?? garmentCategory) => {
-    setGarmentCategory(category);
-    set({ garment_type: garment });
-    if (design && canonicalGarment(design.garment_type) !== canonicalGarment(garment)) setCatalogItemId('');
-  };
-
-  const pickDesign = (id: string) => {
-    const picked = catalogItems.find((c) => c.id.toString() === id);
-    setCatalogItemId(id);
-    if (!picked) return;
-    const garment = canonicalGarment(picked.garment_type) ?? picked.garment_type ?? '';
-    setGarmentCategory(categoryOfGarment(garment) ?? (garment ? 'other' : ''));
-    const image = designImage(picked);
-    if (image) setReferenceImages((prev) => (prev.length === 0 ? [image] : prev));
-    const serviceId = picked.service_id != null ? String(picked.service_id) : servicesForGarment(services, garment, '')[0]?.id.toString() ?? '';
-    if (serviceId && serviceId !== formData.service_id) pickService(serviceId);
-    set({ garment_type: garment, price: null, unit_price: null, due_date: null });
-  };
-
-  // Opened from an appointment, a customer, or a design: the form is filled ONCE, from one plan (see prefillPlan.ts). Nothing
-  // else fills it afterwards, so a later step can never undo an earlier one.
-  const prefilled = useRef(false);
-  const bookedPlan = useRef<PrefillPlan | null>(null);
-  const applyPlan = (plan: PrefillPlan, only?: 'booking') => {
-    setFormData((prev) => ({
-      ...prev, service_id: plan.serviceId, price: null, unit_price: null, due_date: null, garment_type: plan.garment,
-      ...(only ? {} : {
-        customer_id: plan.customerId, quantity: plan.quantity, notes: plan.notes, consultation_notes: plan.consultationNotes,
-        design_source: plan.designSource, design_link: plan.designLink,
-        ...(plan.materialSource ? { material_source: plan.materialSource } : {}),
-      }),
-    }));
-    setCatalogItemId(plan.designId);
-    setGarmentCategory(plan.garmentCategory);
-    setCustomFieldValues(plan.answers);
-    setBulkChosen(plan.group);
-    if (plan.group) setRoster((cur) => (cur.some((r) => r.player_name) ? cur : plan.rowPieces.map((n) => ({ ...blankRow(), qty: String(n) }))));
-    if (only) return;
-    if (plan.standardSize) setStandardSize(plan.standardSize);
-    setReferenceImages(plan.images);
-    setReferenceLink(plan.referenceLink);
-    setIntakeChannel(plan.intake);
-    setOrderBranchId(plan.branchId);
-    if (plan.measurementMode) { const mode = plan.measurementMode === 'none' ? 'record_now' : plan.measurementMode; planMode.current = mode === 'standard_size' ? mode : null; setMeasurementModeState(mode); }
-  };
-  /** Puts back the service, design, answers and group the booking chose (not what was typed since). */
-  const restoreBooked = () => { if (bookedPlan.current) applyPlan(bookedPlan.current, 'booking'); };
-  const changedFromBooking = !!bookedPlan.current && (bookedPlan.current.serviceId !== formData.service_id || bookedPlan.current.designId !== catalogItemId);
-
-  useEffect(() => {
-    if (lookups.loading || prefilled.current) return;
-    const aptId = params.get('appointment_id');
-    const run = (apt: Appointment | null) => {
-      prefilled.current = true;
-      const plan = planPrefill({ params, apt, services, catalogItems });
-      if (apt) { setAppointment(apt); bookedPlan.current = plan; }
-      applyPlan(plan);
-    };
-    if (!aptId || !store) return run(null);
-    const customerParam = params.get('customer_id');
-    api.get(`/stores/${store.id}/appointments`, { params: customerParam ? { customer_id: customerParam } : undefined })
-      .then((res) => run((res.data.data || []).find((a: { id: number }) => a.id === Number(aptId)) ?? null))
-      .catch(() => run(null)); // the consultation only pre-fills; the form works without it
-  }, [lookups.loading]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const submission = {
-    storeId: store?.id ?? 0, branchId, formData, pricing, service, intakeChannel, appointmentId,
-    catalogItemId, pricingId: option?.id, standardSize, standardSizeBottom, customFieldValues, isBulk, teamName, roster, rosterColumns, damageNotes, referenceImages, referenceLink, assignees,
-    measurementMode: measurementHidden ? 'none' as const : measurementMode, inlineMeasurement: activeInlineMeasurement,
-    inlineMeasurements, extras, knownProfiles: measurements, followUpOfId: params.get('follow_up_of'), defaultUnit: store?.default_measurement_unit === 'cm' ? 'cm' as const : 'in' as const,
-  };
-
-  const { submitting, error, below, handleSubmit, continueAnyway } = useJobSubmit({ storeId: store?.id, submission, appointment });
-
-  return {
-    ...lookups, formData, set, measurements, service, design, isRepair, isBulk, pricing, garmentCategory, setGarmentCategory,
-    pricingId, setPricingId, options, option, areaLocked, optionRequired,
-    appointment, pickGarment, pickService, pickDesign, setCatalogItemId, standardSize, setStandardSize, standardSizeBottom, setStandardSizeBottom, customFieldValues, setCustomFieldValues,
-    bulkChosen, setBulkChosen, teamName, setTeamName, roster, setRoster, rosterColumns, setRosterColumns, blankRow, damageNotes, setDamageNotes, referenceImages,
-    setReferenceImages, referenceLink, setReferenceLink, assignees, setAssignees, appointmentId, setAppointmentId, intakeChannel,
-    customerLocked, setCustomerLocked, submitting, error, below, handleSubmit, continueAnyway, formError: lookups.error,
-    measurementMode, setMeasurementMode, measurementNeed: need, measurementHidden, addMeasurements, setAddMeasurements, branchId, restoreBooked, changedFromBooking, extras, setExtras,
-    inlineMeasurement: activeInlineMeasurement, setInlineMeasurement,
-    inlineMeasurements, setInlineMeasurements,
-    activePersonIndex, setActivePersonIndex,
-    addPersonToMeasure, removePersonToMeasure, updatePersonMeasurement,
-  };
+    return {
+      ...serviceObj,
+      id: Number(serviceObj.id),
+      name: String(serviceObj.name || ''),
+      category: typeof serviceObj.category === 'string' ? serviceObj.category : undefined,
+      base_price: serviceObj.base_price !== null && serviceObj.base_price !== undefined ? String(serviceObj.base_price) : undefined,
+      custom_fields: sanitizedFields,
+      tags: Array.isArray(serviceObj.tags) ? serviceObj.tags : [],
+    } as ServiceData;
+  });
 }
 
-export type JobCreateForm = ReturnType<typeof useJobCreateForm>;
+function matchServiceForCatalogItem(
+  picked: CatalogItem,
+  serviceList: ServiceData[]
+): ServiceData | undefined {
+  if (!picked || !serviceList.length) return undefined;
+
+  const anyPicked = picked as unknown as { service_id?: number | string };
+  if (anyPicked.service_id) {
+    const direct = serviceList.find((s) => s.id.toString() === anyPicked.service_id?.toString());
+    if (direct) return direct;
+  }
+
+  const garment = (picked.category || picked.garment_type || '').toLowerCase();
+  if (garment) {
+    const byCategory = serviceList.find((s) => {
+      const sCat = (s.category || '').toLowerCase();
+      const sType = (s.service_type || '').toLowerCase();
+      const sCats = ((s as { categories?: string[] }).categories || []).map((c: string) => c.toLowerCase());
+      return sCat === garment || sType === garment || sCats.includes(garment);
+    });
+    if (byCategory) return byCategory;
+  }
+
+  const itemName = picked.name.toLowerCase();
+  const keywords = ['barong', 'gown', 'suit', 'filipiniana', 'uniform', 'dress', 'blazer', 'alteration', 'repair'];
+  for (const kw of keywords) {
+    if (itemName.includes(kw) || garment.includes(kw)) {
+      const byKw = serviceList.find((s) => s.name.toLowerCase().includes(kw));
+      if (byKw) return byKw;
+    }
+  }
+
+  return serviceList.find((s) => serviceHasType(s, 'custom_tailoring')) || serviceList[0];
+}
+
+export function useJobCreateForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { store, user } = useAuthStore();
+  const { selectedBranchId } = useBranch();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const [customers, setCustomers] = useState<CustomerData[]>([]);
+  const [services, setServices] = useState<ServiceData[]>([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [catalogItemId, setCatalogItemId] = useState('');
+  const [standardSize, setStandardSize] = useState<string>('Custom Measurements');
+
+  const [customerMeasurements, setCustomerMeasurements] = useState<CustomerMeasurement[]>([]);
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  // The combo package this order is for (one job order for the whole set).
+  const [servicePackage, setServicePackage] = useState<{ id: number; name: string; bundle_price?: string | null; services?: { id: number; name: string; base_price?: string | null }[] } | null>(null);
+  const [linkedAppointmentChannel, setLinkedAppointmentChannel] = useState<'walk_in' | 'online' | null>(null);
+  const effectiveIntakeChannel: 'walk_in' | 'online' = appointmentId ? (linkedAppointmentChannel ?? 'walk_in') : 'walk_in';
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const [referenceLink, setReferenceLink] = useState('');
+  const [uploadingReference, setUploadingReference] = useState(false);
+  const [customerLocked, setCustomerLocked] = useState(false);
+  const [isTotalAmountCustom, setIsTotalAmountCustom] = useState(false);
+  const [isDueDateCustom, setIsDueDateCustom] = useState(false);
+
+  // Bulk Team Roster State
+  const [isBulkOrder, setIsBulkOrder] = useState(false);
+  const [teamName, setTeamName] = useState('');
+  const [roster, setRoster] = useState<RosterMember[]>([
+    { id: 'roster-0', name: '', print_name: '', number: '', size: 'M' }
+  ]);
+
+  // Alteration/Repair pre-existing damage notes
+  const [preExistingDamageNotes, setPreExistingDamageNotes] = useState('');
+
+  const [formData, setFormData] = useState<JobCreateFormData>({
+    customer_id: '',
+    service_id: '',
+    measurement_id: '',
+    quantity: '1',
+    total_amount: '',
+    downpayment: '',
+    due_date: '',
+    notes: '',
+    po_number: '',
+    is_rush: false,
+    rush_fee: '',
+    material_source: 'store_supplied',
+    garment_category: '',
+    discount_amount: '0',
+    discount_reason: '',
+  });
+
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  const handleCheckboxChange = (
+    fieldLabel: string,
+    opt: string,
+    selected: string[],
+    checked: boolean
+  ) => {
+    let nextSelected = [...selected];
+    if (checked) {
+      if (!nextSelected.includes(opt)) {
+        nextSelected.push(opt);
+      }
+    } else {
+      nextSelected = nextSelected.filter((s) => s !== opt);
+    }
+    setCustomFieldValues((prev) => ({
+      ...prev,
+      [fieldLabel]: nextSelected.join(', '),
+    }));
+  };
+
+  useEffect(() => {
+    if (store) {
+      Promise.all([
+        api.get(`/stores/${store.id}/customers`),
+        api.get(`/stores/${store.id}/services`),
+        // Designs are owner/manager-only to read; staff opening a job from an appointment just go without the picker.
+        api.get(`/stores/${store.id}/catalog`).catch(() => ({ data: { data: [] } })),
+      ])
+        .then(([resCustomers, resServices, resCatalog]) => {
+          const custs = Array.isArray(resCustomers.data?.data) ? resCustomers.data.data : [];
+          const servs = sanitizeServiceCustomFields(Array.isArray(resServices.data?.data) ? resServices.data.data : []);
+          const catItems = Array.isArray(resCatalog.data?.data) ? resCatalog.data.data : [];
+          setCustomers(custs);
+          setServices(servs);
+          setCatalogItems(catItems);
+
+          // Prefill from query params
+          const qCust = searchParams.get('customer_id') || '';
+          const qServ = searchParams.get('service_id') || '';
+          const qNotes = searchParams.get('notes') || '';
+          const qAptId = searchParams.get('appointment_id') || '';
+          const qCatId = searchParams.get('catalog_item_id') || '';
+          const qPkgId = searchParams.get('service_package_id') || '';
+
+          setAppointmentId(qAptId || null);
+          setCustomerLocked(!!qCust);
+
+          if (qCatId) {
+            const picked = catItems.find((c: CatalogItem) => c.id.toString() === qCatId);
+            if (picked) {
+              setCatalogItemId(qCatId);
+              const pickedImage =
+                picked.images?.find((img: { is_primary?: boolean | number; image_url: string }) => Boolean(img.is_primary))?.image_url ||
+                picked.images?.[0]?.image_url ||
+                picked.fabric_image_url;
+              if (pickedImage) {
+                setReferenceImages([pickedImage]);
+              }
+              const matchedService = matchServiceForCatalogItem(picked, servs);
+              setFormData((prev) => ({
+                ...prev,
+                service_id: prev.service_id || (matchedService ? matchedService.id.toString() : prev.service_id),
+                total_amount: Number(picked.price) > 0 ? String(picked.price) : prev.total_amount,
+                garment_category: (picked.category as typeof prev.garment_category) || prev.garment_category,
+                due_date: picked.estimated_days
+                  ? (() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + picked.estimated_days);
+                      return d.toISOString().split('T')[0];
+                    })()
+                  : prev.due_date,
+              }));
+              if (matchedService) {
+                const fields = matchedService.custom_fields || [];
+                const initialValues: Record<string, string> = {};
+                fields.forEach((f) => {
+                  initialValues[f.label] = '';
+                });
+                setCustomFieldValues((prev) => ({ ...initialValues, ...prev }));
+                const name = matchedService.name.toLowerCase();
+                const looksBulk =
+                  name.includes('jersey') ||
+                  name.includes('sublimation') ||
+                  name.includes('uniform') ||
+                  name.includes('esports');
+                if (serviceHasType(matchedService, 'bulk_sublimation') || looksBulk) {
+                  setIsBulkOrder(true);
+                }
+              }
+            }
+          }
+
+          if (qAptId && store) {
+            api.get(`/stores/${store.id}/appointments`)
+              .then(res => {
+                const apt = (res.data.data || []).find((a: { id: number }) => a.id === Number(qAptId));
+                if (apt?.reference_images?.length) setReferenceImages(apt.reference_images);
+                if (apt?.reference_link) setReferenceLink(apt.reference_link);
+                if (apt?.service_package && String(apt.service_package.id) === qPkgId) {
+                  const pkg = apt.service_package;
+                  setServicePackage(pkg);
+                  // The set is sold at its bundle price (or, with none, the services' total).
+                  const sum = (pkg.services ?? []).reduce((t: number, s: { base_price?: string | null }) => t + (Number(s.base_price) || 0), 0);
+                  const price = pkg.bundle_price ? Number(pkg.bundle_price) : sum;
+                  if (price > 0) setFormData(prev => ({ ...prev, total_amount: String(price) }));
+                }
+                // What the customer already answered on the service's questions when booking.
+                if (apt?.answers && typeof apt.answers === 'object') {
+                  const given = Object.fromEntries(
+                    Object.entries(apt.answers as Record<string, unknown>).filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+                  ) as Record<string, string>;
+                  setCustomFieldValues(prev => ({ ...prev, ...given }));
+                }
+                setLinkedAppointmentChannel(apt?.intake_channel === 'online' ? 'online' : 'walk_in');
+                if (apt?.garment_category) {
+                  setFormData(prev => ({ ...prev, garment_category: apt.garment_category }));
+                }
+              })
+              .catch(() => { /* non-critical preview */ });
+          }
+
+          setFormData((prev) => ({
+            ...prev,
+            customer_id: qCust,
+            service_id: qServ,
+            notes: qNotes,
+          }));
+
+          if (qServ) {
+            const selectedService = servs.find(
+              (s: ServiceData) => s.id.toString() === qServ
+            );
+            const fields = selectedService?.custom_fields || [];
+            const initialValues: Record<string, string> = {};
+            fields.forEach((f: ServiceField) => {
+              initialValues[f.label] = '';
+            });
+            setCustomFieldValues(initialValues);
+          }
+
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setError('Failed to load data.');
+          setLoading(false);
+        });
+    } else if (user && !store) {
+      setTimeout(() => setLoading(false), 0);
+    }
+  }, [store, user, searchParams]);
+
+  // Load customer measurements when customer is selected
+  useEffect(() => {
+    if (store && formData.customer_id) {
+      api
+        .get(`/stores/${store.id}/measurements?customer_id=${formData.customer_id}`)
+        .then((res) => {
+          const measurements = (res.data.data || []).filter(
+            (m: CustomerMeasurement) => !m.superseded_at
+          );
+          setCustomerMeasurements(measurements);
+
+          const mostRecent = [...measurements].sort(
+            (a: CustomerMeasurement, b: CustomerMeasurement) =>
+              new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          )[0];
+
+          const qMeas = searchParams.get('measurement_id') || '';
+          setFormData((prev) => ({
+            ...prev,
+            measurement_id: qMeas || (mostRecent?.id?.toString() || ''),
+          }));
+        })
+        .catch((err) => {
+          console.error('Failed to load customer measurements', err);
+        });
+    } else {
+      const timer = setTimeout(() => {
+        setCustomerMeasurements([]);
+        setFormData((prev) => ({ ...prev, measurement_id: '' }));
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [store, formData.customer_id, searchParams]);
+
+  // The order total is worked out by the wizard (JobCreateForm) from the price the
+  // owner actually typed, plus rush fee, minus own fabric. A total from the
+  // service's list price here used to overwrite it whenever Rush was ticked.
+
+  // Auto-suggest a due date from turnaround
+  useEffect(() => {
+    if (!isDueDateCustom && !formData.is_rush && formData.service_id) {
+      const selected = services.find((s) => s.id.toString() === formData.service_id);
+      if (selected?.estimated_days) {
+        const suggested = new Date();
+        suggested.setDate(suggested.getDate() + selected.estimated_days);
+        setFormData((prev) => ({
+          ...prev,
+          due_date: suggested.toISOString().split('T')[0],
+        }));
+      }
+    }
+  }, [formData.service_id, formData.is_rush, services, isDueDateCustom]);
+
+  const handleSelectCatalogItem = (id: string) => {
+    setCatalogItemId(id);
+    if (!id) return;
+    const picked = catalogItems.find((c) => c.id.toString() === id);
+    if (picked) {
+      const pickedImage =
+        picked.images?.find((img: { is_primary?: boolean | number; image_url: string }) => Boolean(img.is_primary))?.image_url ||
+        picked.images?.[0]?.image_url ||
+        picked.fabric_image_url;
+      if (pickedImage) {
+        setReferenceImages((prev) => (prev.length === 0 ? [pickedImage] : prev));
+      }
+      const matchedService = matchServiceForCatalogItem(picked, services);
+      setFormData((prev) => ({
+        ...prev,
+        service_id: matchedService ? matchedService.id.toString() : prev.service_id,
+        total_amount:
+          (!isTotalAmountCustom || !prev.total_amount) && Number(picked.price) > 0
+            ? String(picked.price)
+            : prev.total_amount,
+        garment_category: (picked.category as typeof prev.garment_category) || prev.garment_category,
+        due_date:
+          (!isDueDateCustom || !prev.due_date) && picked.estimated_days
+            ? (() => {
+                const d = new Date();
+                d.setDate(d.getDate() + picked.estimated_days);
+                return d.toISOString().split('T')[0];
+              })()
+            : prev.due_date,
+      }));
+      if (matchedService) {
+        const fields = matchedService.custom_fields || [];
+        const initialValues: Record<string, string> = {};
+        fields.forEach((f) => {
+          initialValues[f.label] = '';
+        });
+        setCustomFieldValues(initialValues);
+        const name = matchedService.name.toLowerCase();
+        const looksBulk =
+          name.includes('jersey') ||
+          name.includes('sublimation') ||
+          name.includes('uniform') ||
+          name.includes('esports');
+        if (serviceHasType(matchedService, 'bulk_sublimation') || looksBulk) {
+          setIsBulkOrder(true);
+        }
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!store) return;
+
+    setSubmitting(true);
+    setError('');
+
+    const totalAmt = Number.parseFloat(formData.total_amount) || 0;
+    const downPay = Number.parseFloat(formData.downpayment || '0');
+    const rushFee = formData.is_rush ? (Number.parseFloat(formData.rush_fee) || 0) : 0;
+
+    if (formData.is_rush && totalAmt < rushFee) {
+      setError(`Total Amount must be greater than or equal to the Rush Fee (₱${rushFee.toFixed(2)}).`);
+      setSubmitting(false);
+      return;
+    }
+
+    const appliedDownPay = Math.min(downPay, totalAmt);
+    const selectedForSubmit = services.find((s) => s.id.toString() === formData.service_id);
+
+    if (isBulkOrder && selectedForSubmit?.min_order_qty && roster.length < selectedForSubmit.min_order_qty) {
+      setError(`This service requires a minimum of ${selectedForSubmit.min_order_qty} pieces — the roster currently has ${roster.length}.`);
+      setSubmitting(false);
+      return;
+    }
+
+    const isAlterationJob = serviceHasType(selectedForSubmit, 'alteration_repair') || formData.garment_category === 'alteration_repair';
+    if (isAlterationJob && !preExistingDamageNotes.trim()) {
+      setError('Please log the garment\'s pre-existing condition before creating an alteration/repair job.');
+      setSubmitting(false);
+      return;
+    }
+
+    const balance = totalAmt - appliedDownPay;
+
+    try {
+      await api.post(`/stores/${store.id}/jobs`, {
+        intake_channel: effectiveIntakeChannel,
+        fulfillment_type: 'pickup',
+        customer_id: formData.customer_id,
+        service_id: formData.service_id,
+        store_branch_id: selectedBranchId ?? undefined,
+        measurement_id: formData.measurement_id ? Number(formData.measurement_id) : null,
+        // Meaningless for a bulk order (its roster already carries one row
+        // per person) — always sent as 1 there so a stale non-1 value from
+        // switching modes mid-form can't leak into a bulk order's record.
+        // Individual order: always 1 piece.
+        quantity: 1,
+        total_amount: formData.total_amount,
+        discount_amount: formData.discount_amount ? Number.parseFloat(formData.discount_amount) : 0,
+        balance: balance,
+        due_date: formData.due_date || null,
+        notes: formData.notes,
+        custom_order_data: {
+          ...customFieldValues,
+          standard_size: standardSize && standardSize !== 'Custom Measurements' ? standardSize : null,
+          po_number: formData.po_number || null,
+          discount_reason: formData.discount_reason || null,
+          team_name: teamName || null,
+          team_roster: isBulkOrder
+            ? roster.map(({ name, print_name, number, size }) => ({ name, print_name, number, size }))
+            : null,
+          pre_existing_damage_notes: isAlterationJob
+            ? preExistingDamageNotes.trim()
+            : null,
+        },
+        appointment_id: appointmentId ? Number(appointmentId) : null,
+        catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
+        service_package_id: servicePackage?.id ?? null,
+        reference_images: referenceImages.length > 0 ? referenceImages : null,
+        reference_link: referenceLink.trim() || null,
+        material_source: formData.material_source,
+        garment_category: formData.garment_category || null,
+        is_rush: formData.is_rush,
+        rush_fee: formData.is_rush ? Number(formData.rush_fee) : 0,
+      });
+      router.push('/dashboard/jobs');
+    } catch (err: unknown) {
+      const errorResponse = err as { response?: { data?: { message?: string } } };
+      setError(errorResponse.response?.data?.message || 'Failed to create job order.');
+      setSubmitting(false);
+    }
+  };
+
+  const selectedService = services.find(
+    (s) => s.id.toString() === formData.service_id
+  );
+  const isSelectedAlterationRepair = serviceHasType(selectedService, 'alteration_repair') || formData.garment_category === 'alteration_repair';
+  const isCustomTailoring = !isSelectedAlterationRepair;
+  // A service can carry more than one type now (service_types); for the
+  // single icon/label this section shows, service_types[0] wins, falling
+  // back to the legacy singular column for an older, never-since-edited row.
+  const primaryServiceType = selectedService?.service_types?.[0] ?? selectedService?.service_type ?? null;
+  const sectionTwoMeta = primaryServiceType
+    ? SERVICE_TYPE_META[primaryServiceType as keyof typeof SERVICE_TYPE_META]
+    : { icon: FileText, bg: 'bg-sunken', border: 'border-line', text: 'text-ink-faint' };
+
+  return {
+    store,
+    user,
+    loading,
+    submitting,
+    error,
+    setError,
+    handleSubmit,
+    customers,
+    services,
+    catalogItems,
+    customerMeasurements,
+    catalogItemId,
+    setCatalogItemId,
+    handleSelectCatalogItem,
+    standardSize,
+    setStandardSize,
+    appointmentId,
+    setAppointmentId,
+    servicePackage,
+    effectiveIntakeChannel,
+    referenceImages,
+    setReferenceImages,
+    referenceLink,
+    setReferenceLink,
+    uploadingReference,
+    setUploadingReference,
+    customerLocked,
+    setCustomerLocked,
+    isTotalAmountCustom,
+    setIsTotalAmountCustom,
+    isDueDateCustom,
+    setIsDueDateCustom,
+    isBulkOrder,
+    setIsBulkOrder,
+    teamName,
+    setTeamName,
+    roster,
+    setRoster,
+    preExistingDamageNotes,
+    setPreExistingDamageNotes,
+    formData,
+    setFormData,
+    customFieldValues,
+    setCustomFieldValues,
+    handleCheckboxChange,
+    selectedService,
+    selectedCatalogItem: catalogItems.find((c) => c.id.toString() === catalogItemId) || null,
+    isSelectedAlterationRepair,
+    isCustomTailoring,
+    sectionTwoMeta,
+  };
+}

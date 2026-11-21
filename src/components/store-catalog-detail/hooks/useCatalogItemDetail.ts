@@ -7,6 +7,7 @@ import { getItemColorOptions, isAngleLabel } from '@/lib/fabricHelper';
 import { categoryOfGarment } from '@/lib/garmentTaxonomy';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { CatalogItem, CatalogItemImage } from '../types';
+import { useCanGoBack } from '@/hooks/useCanGoBack';
 
 export function useCatalogItemDetail(storeId: string, itemId: string) {
   const router = useRouter();
@@ -37,6 +38,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
 
   const { user, isAuthenticated } = useAuthStore();
   const gate = useGuestGatedHref();
+  const canGoBack = useCanGoBack();
   // The recently-viewed POST is signed-in-only, and the auth store hydrates
   // post-mount (user null -> object) — so it gets its own guarded effect
   // instead of riding along on the item fetch (which must NOT depend on
@@ -179,11 +181,7 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   }, [relatedKey, item?.id]);
 
   const handleBackClick = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(`/store/${storeId}?tab=catalog`);
-    }
+    router.back();
   };
 
   // Guest actions that require auth send the guest to /login with the
@@ -328,5 +326,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     handleReportClick,
     buildBookHref,
     displayColor,
+    canGoBack,
   };
 }

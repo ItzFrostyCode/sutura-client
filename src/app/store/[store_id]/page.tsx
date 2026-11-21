@@ -3,6 +3,7 @@
 import { use, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import ProductTourRunner from '@/components/tour/ProductTourRunner';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
 import EditOperatingHoursModal from '@/components/profile/EditOperatingHoursModal';
@@ -58,7 +59,11 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         <StoreOwnerTopBar />
       )}
 
+      {/* The owner's Shop Profile tour (Welcome Guide step 1) runs here. */}
+      {s.isOwnerViewingOwnStore && <ProductTourRunner />}
+
       {/* Hero Banner, Avatar, Details & Tab Bar */}
+      <div data-tour="profile-hero">
       <StoreHeroHeader
         store={s.store}
         storeId={storeId}
@@ -80,11 +85,13 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         activeTab={s.activeTab}
         setActiveTab={s.setActiveTab}
         tabBarRef={s.tabBarRef}
+        onOpenMap={() => router.push(`/map?shop=${encodeURIComponent(s.store?.slug ?? storeId)}`)}
         onImagesSaved={s.fetchStore}
       />
+      </div>
 
       {/* Main Tab Content */}
-      <main className={`flex-1 max-w-[960px] w-full mx-auto px-4 sm:px-8 lg:px-0 ${s.activeTab === 'services' ? 'pt-0 pb-6' : 'py-6'}`}>
+      <main data-tour="profile-content" className={`flex-1 max-w-[960px] w-full mx-auto px-4 sm:px-8 lg:px-0 ${s.activeTab === 'services' ? 'pt-0 pb-6' : 'py-6'}`}>
         {s.activeTab === 'services' && (
           <StoreServicesTab
             services={s.services}

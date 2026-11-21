@@ -5,6 +5,8 @@ import { useToast } from '@/context/ToastContext';
 
 export interface ShopPaymentMethod {
   id: number; kind: string; name: string; account_name: string; account_number: string;
+  /** null = the whole shop; else the one branch it belongs to. */
+  store_branch_id?: number | null;
   qr_path?: string | null; instructions?: string | null;
 }
 
@@ -17,7 +19,10 @@ export function usePayForOrder(orderId: number, storeSlug: string | undefined, b
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!storeSlug) return;
+    if (!storeSlug) {
+      setLoading(false);
+      return;
+    }
     api.get(`/public/stores/${storeSlug}/payment-methods`, { params: branchId ? { branch_id: branchId } : {} })
       .then((r) => {
         const all: ShopPaymentMethod[] = r.data?.data ?? [];

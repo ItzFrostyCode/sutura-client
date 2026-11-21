@@ -5,8 +5,6 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/shared/PageHeader';
 import { Plus } from 'lucide-react';
 import SubscriptionGate from '@/components/SubscriptionGate';
@@ -16,8 +14,8 @@ import StaffDeleteModal from '@/components/staff/StaffDeleteModal';
 import StaffListView from '@/components/staff/StaffListView';
 
 export default function StaffPage() {
-  const router = useRouter();
   const { store, user } = useAuthStore();
+  const { selectedBranchId } = useBranch();
   const toast = useToast();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +31,6 @@ export default function StaffPage() {
     email: '',
     password: '',
     phone: '',
-    gender: '',
     role: 'tailor',
     additional_roles: [] as string[],
     specialization: '',
@@ -48,7 +45,8 @@ export default function StaffPage() {
   const fetchStaff = useCallback(() => {
     if (store?.id) {
       api
-        .get(`/stores/${store.id}/staff`)
+        // Only the selected branch's roster (none = All Branches).
+        .get(`/stores/${store.id}/staff`, { params: selectedBranchId !== null ? { branch_id: selectedBranchId } : {} })
         .then(res => {
           const rawStaff = Array.isArray(res.data?.data)
             ? res.data.data
@@ -65,7 +63,7 @@ export default function StaffPage() {
       setStaff([]);
       setTimeout(() => setLoading(false), 0);
     }
-  }, [store, user]);
+  }, [store, user, selectedBranchId]);
 
   // Initial load + live refresh every 30 s so statuses stay current
   useEffect(() => {
@@ -84,7 +82,6 @@ export default function StaffPage() {
         name: string;
         email: string;
         phone: string;
-        gender?: string | null;
         role: string;
         additional_roles: string[];
         specialization: string[];
@@ -92,12 +89,13 @@ export default function StaffPage() {
         password?: string;
         is_active?: boolean;
         is_available?: boolean;
+        store_branch_id: number | null;
+        is_branch_manager: boolean;
         bio: string;
       } = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        gender: formData.gender || null,
         role: formData.role,
         // Sent even when empty so clearing all secondary roles on an existing
         // profile actually takes — the backend uses request->only(), which
@@ -107,6 +105,8 @@ export default function StaffPage() {
           ? formData.specialization.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         hired_at: formData.hired_at,
+        store_branch_id: formData.store_branch_id ? Number.parseInt(formData.store_branch_id, 10) : null,
+        is_branch_manager: formData.is_branch_manager,
         bio: formData.bio,
       };
 
@@ -133,7 +133,6 @@ export default function StaffPage() {
         email: '',
         password: '',
         phone: '',
-        gender: '',
         role: 'tailor',
         additional_roles: [],
         specialization: '',
@@ -160,7 +159,6 @@ export default function StaffPage() {
       email: member.user?.email || '',
       password: '',
       phone: member.user?.phone || '',
-      gender: member.user?.gender || '',
       role: member.role || 'tailor',
       additional_roles: member.additional_roles || [],
       specialization: Array.isArray(member.specialization)
@@ -201,12 +199,15 @@ export default function StaffPage() {
   const isStoreOwner = roleNames.includes('store_owner');
   const isBranchManager = roleNames.includes('branch_manager') || (user as { staff_profile?: { is_branch_manager?: boolean } })?.staff_profile?.is_branch_manager;
   const canManageStaff = isStoreOwner || isBranchManager;
-  // A branch manager adds staff to their own branch; the owner adds staff only to the branch they run themselves
-  // (the main branch, while it has no manager of its own). Branch managers are made from Store Branches.
-  const { branches } = useBranch();
-  const mainBranch = branches?.find(b => b.is_main) ?? branches?.[0];
-  const ownerAddsStaff = isStoreOwner && !!mainBranch && !mainBranch.manager;
-  const canAddStaff = isBranchManager || ownerAddsStaff;
+
+  // ?new=1 (Home → Quick Actions) opens the Add Staff form right away, then
+  // drops the flag so a refresh doesn't reopen it. The form starts empty.
+  useEffect(() => {
+    if (!canManageStaff || new URLSearchParams(window.location.search).get('new') !== '1') return;
+    setEditingId(null);
+    setShowModal(true);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [canManageStaff]);
 
   const visibleStaff = Array.isArray(staff) ? staff : [];
 
@@ -221,19 +222,34 @@ export default function StaffPage() {
         title="Staff Management"
         description="Manage your tailors, cutters, seamstresses, and branch managers."
         actions={
-          canAddStaff ? (
+          canManageStaff ? (
             <button
               type="button"
-              onClick={() => router.push('/dashboard/staff/new')}
-              className="flex items-center gap-2 bg-espresso hover:bg-espresso/90 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
+              onClick={() => {
+                setEditingId(null);
+                setFormData({
+                  name: '',
+                  email: '',
+                  password: '',
+                  phone: '',
+                  role: 'tailor',
+                  additional_roles: [],
+                  specialization: '',
+                  hired_at: new Date().toISOString().split('T')[0],
+                  is_active: true,
+                  store_branch_id: '',
+                  is_branch_manager: false,
+                  bio: '',
+                  is_available: true,
+                });
+                setShowModal(true);
+              }}
+              data-tour="staff-create"
+              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
             >
               <Plus size={16} />
               <span>Add Staff Member</span>
             </button>
-          ) : isStoreOwner ? (
-            <Link href="/dashboard/branches" className="text-sm font-semibold text-taupe underline underline-offset-4">
-              Staff are added by each branch manager. Manage branches
-            </Link>
           ) : null
         }
       />
@@ -241,7 +257,8 @@ export default function StaffPage() {
       {/* Workload Summary Cards */}
       <SubscriptionGate feature="staff">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          // Same tour marker as the loaded cards: the tour can start while staff still load.
+          <div data-tour="staff-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={`workload-skel-${i}`} className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between animate-pulse">
                 <div className="space-y-2 flex-1">
@@ -254,7 +271,7 @@ export default function StaffPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div data-tour="staff-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Active Staff</span>
@@ -274,7 +291,7 @@ export default function StaffPage() {
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Total Active Jobs Assigned</span>
                 <div className="text-2xl font-black font-mono text-ink">{totalActiveJobs}</div>
-                <div className="text-xs text-ink-muted">Jobs being worked on now</div>
+                <div className="text-xs text-ink-muted">Live stages currently in workroom</div>
               </div>
               <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs">
                 <span className="font-bold text-sm font-mono">{totalActiveJobs}</span>
@@ -292,7 +309,7 @@ export default function StaffPage() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-ink-muted">How evenly the work is shared</div>
+                <div className="text-xs text-ink-muted">Balanced workroom capacity</div>
               </div>
               <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs">
                 <span className="font-bold text-xs font-mono">{avgJobs}</span>
@@ -308,6 +325,7 @@ export default function StaffPage() {
           isStoreOwner={isStoreOwner}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
+          onPlanLockChange={isStoreOwner ? fetchStaff : undefined}
         />
 
         {/* Add Staff Modal */}

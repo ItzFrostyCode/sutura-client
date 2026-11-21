@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import adminApi from '@/lib/adminApi';
 import { getErrorMessage } from '@/lib/apiError';
 
@@ -21,12 +21,19 @@ export function useAdminList<T>(path: string, params: Record<string, string | nu
   const [items, setItems] = useState<T[]>([]);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [raw, setRaw] = useState<Record<string, unknown>>({});
+  // `loading` is only the very first load (spinner). Later loads (next page, a
+  // filter) keep the current rows on screen until the new ones arrive, so the
+  // page never collapses to a spinner and jumps back to the top. `refreshing`
+  // says a later load is in flight.
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const loadedOnce = useRef(false);
   const [error, setError] = useState('');
   const key = JSON.stringify(params);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (loadedOnce.current) setRefreshing(true);
+    else setLoading(true);
     setError('');
     try {
       const clean = Object.fromEntries(Object.entries(JSON.parse(key)).filter(([, v]) => v !== '' && v !== undefined));
@@ -37,13 +44,37 @@ export function useAdminList<T>(path: string, params: Record<string, string | nu
     } catch (err) {
       setError(getErrorMessage(err, 'Could not load this list.'));
     } finally {
+      loadedOnce.current = true;
       setLoading(false);
+      setRefreshing(false);
     }
   }, [path, key]);
 
   useEffect(() => { load(); }, [load]);
 
-  return { items, setItems, meta, raw, loading, error, reload: load };
+  return { items, setItems, meta, raw, loading, refreshing, error, reload: load };
+}
+
+/**
+ * Keeps a paged list as tall as its tallest page so far, so a shorter last
+ * page doesn't shrink the screen and throw the reader back to the top when
+ * they press Next. Resets when `resetKey` (tab / filter / search) changes.
+ * Put the returned ref and style on the list's wrapper.
+ */
+export function useStableListHeight<E extends HTMLElement>(resetKey: string) {
+  const ref = useRef<E>(null);
+  const [minHeight, setMinHeight] = useState(0);
+  useEffect(() => { setMinHeight(0); }, [resetKey]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setMinHeight((prev) => Math.max(prev, el.offsetHeight));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+  return { ref, style: minHeight ? { minHeight } : undefined };
 }
 
 /** Typing in a search box shouldn't fire a request per keystroke. */

@@ -61,6 +61,7 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
   const headerActions = !canManage ? null : (
     <Link
       href="/dashboard/catalog/new"
+      data-tour="catalog-create"
       className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
     >
       <Plus size={15} />
@@ -83,7 +84,7 @@ function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcase
         Content below the tabs: ONLY this sub-panel switches when changing tabs.
         The header, title, and tabs stay completely stable without reloading!
       */}
-      <div className="tab-content-panel">
+      <div className="tab-content-panel" data-tour="catalog-grid">
         {activeTab === 'catalog' && <CatalogGridView />}
         {activeTab === 'analytics' && <CatalogAnalyticsView />}
       </div>

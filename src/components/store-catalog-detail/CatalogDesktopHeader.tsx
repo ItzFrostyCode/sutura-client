@@ -8,6 +8,7 @@ import { useToast } from '@/context/ToastContext';
 interface CatalogDesktopHeaderProps {
   readonly onBack: () => void;
   readonly onReport: () => void;
+  readonly canGoBack?: boolean;
 }
 
 // Tablet/desktop equivalent of the mobile back/flag overlay
@@ -15,7 +16,7 @@ interface CatalogDesktopHeaderProps {
 // minimal product-page header: Back on the left, Share + a "more options"
 // dropdown (Back to Homepage / Report this product / Need help?) on the
 // right.
-export default function CatalogDesktopHeader({ onBack, onReport }: CatalogDesktopHeaderProps) {
+export default function CatalogDesktopHeader({ onBack, onReport, canGoBack = true }: CatalogDesktopHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const toast = useToast();
 
@@ -40,14 +41,16 @@ export default function CatalogDesktopHeader({ onBack, onReport }: CatalogDeskto
   return (
     <header className="sticky top-0 z-50 w-full bg-surface border-b border-line">
       <div className="max-w-7xl mx-auto px-4 min-[600px]:px-[10px] md:px-8 h-14 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back"
-          className="w-9 h-9 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
+        {canGoBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back"
+            className="w-9 h-9 flex items-center justify-center text-ink hover:bg-canvas rounded-full transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
 
         <div className="flex items-center gap-1 relative">
           <button

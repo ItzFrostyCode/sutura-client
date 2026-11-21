@@ -9,6 +9,7 @@ interface CatalogDetailHeaderProps {
   headerOpacity: number;
   onBack: () => void;
   onReport: () => void;
+  canGoBack?: boolean;
 }
 
 // Mobile counterpart to CatalogDesktopHeader — same Back / Share / 3-dot
@@ -21,6 +22,7 @@ export default function CatalogDetailHeader({
   headerOpacity,
   onBack,
   onReport,
+  canGoBack = true,
 }: CatalogDetailHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const toast = useToast();
@@ -67,9 +69,11 @@ export default function CatalogDetailHeader({
         borderBottom: headerOpacity > 0.6 ? '1px solid var(--brand-border)' : 'none',
       }}
     >
-      <button type="button" onClick={onBack} aria-label="Back" className={iconButtonClass}>
-        <ArrowLeft size={22} />
-      </button>
+      {canGoBack && (
+        <button type="button" onClick={onBack} aria-label="Back" className={iconButtonClass}>
+          <ArrowLeft size={22} />
+        </button>
+      )}
 
       <div className="flex items-center gap-1.5 relative">
         <button type="button" onClick={handleShare} aria-label="Share this product" className={iconButtonClass}>

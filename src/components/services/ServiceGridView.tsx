@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Package as PackageIcon } from 'lucide-react';
 import CatalogGridToolbar from '@/components/catalog/CatalogGridToolbar';
 import CatalogFilterSidebar from '@/components/catalog/CatalogFilterSidebar';
@@ -9,71 +9,91 @@ import SearchServiceCard from '@/components/search/SearchServiceCard';
 import type { SearchServiceResult } from '@/components/search/types';
 import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import type { Service } from './serviceHelpers';
-import ServiceFilterBody from './ServiceFilterBody';
-import { useServiceFilters } from './useServiceFilters';
-import { SERVICE_RANK_CHIPS } from './serviceSort';
+import ServiceFilterBody, { type ServiceStatusFilter } from './ServiceFilterBody';
+import { showcaseCategory } from '@/lib/serviceShowcase';
+import { DEFAULT_SERVICE_SORT, SERVICE_RANK_CHIPS, isServicePriceSort, type ServiceSortOption } from './serviceSort';
+import { PlanLockedTag, PlanUnlockButton } from '@/components/billing/PlanLock';
 
 // The owner's own list, shown with the very same card customers see in
 // search, so the shop sees its services exactly as customers do. One tap on a
 // card opens the service's own page, where every section is editable.
 function toCardResult(service: Service): SearchServiceResult {
-  const minTierPrice = (service.pricing ?? [])
-    .map((p) => Number(p.amount))
-    .filter((a) => !isNaN(a) && a > 0);
-  const startingPrice = service.base_price != null && Number(service.base_price) > 0
-    ? Number(service.base_price)
-    : minTierPrice.length > 0 ? Math.min(...minTierPrice) : null;
-
   return {
     id: service.id,
     name: service.name,
     service_category: service.service_category ?? null,
-    base_price: startingPrice,
+    service_leaf_type: service.service_leaf_type ?? null,
+    base_price: service.base_price != null ? Number(service.base_price) : null,
     sale_price: service.sale_price != null ? Number(service.sale_price) : null,
     estimated_days: service.estimated_days,
     estimated_days_max: service.estimated_days_max ?? null,
     image_url: service.image_url ?? null,
     reviews_count: service.reviews_count ?? 0,
     reviews_avg_rating: service.reviews_avg_rating ?? null,
-    orders_count: service.job_orders_count ?? (service as any).orders_count ?? 0,
-    saves_count: service.saves_count ?? 0,
-    designs_count: service.catalog_items_count ?? service.catalog_items?.length ?? 0,
+    orders_count: service.job_orders_count ?? 0,
     store: null,
   };
 }
 
-import DashboardServiceCard from './DashboardServiceCard';
+const effectivePrice = (s: Service) => Number(s.sale_price ?? s.base_price ?? 0);
 
 interface ServiceGridViewProps {
   readonly services: Service[];
   readonly loading: boolean;
   readonly canManage: boolean;
   readonly storeSlug?: string;
-  readonly onEdit?: (id: number) => void;
-  readonly onDelete?: (id: number) => void;
-  readonly onDeleteDesign?: (id: number) => void;
-  /** Archived services offer Restore instead of Edit / Archive. */
-  readonly onRestore?: (id: number) => void;
+  /** Reload after a service is unlocked/swapped (plan limits). */
+  readonly onPlanLockChange?: () => void;
 }
 
-export default function ServiceGridView({
-  services,
-  loading,
-  canManage,
-  onEdit,
-  onDelete,
-  onDeleteDesign,
-  onRestore,
-}: Readonly<ServiceGridViewProps>) {
-  const f = useServiceFilters(services);
+export default function ServiceGridView({ services, loading, canManage, onPlanLockChange }: Readonly<ServiceGridViewProps>) {
+  // Active services: the ones a locked service can be swapped with.
+  const openServices = useMemo(() => services.filter((s) => s.is_active && !s.plan_locked_at).map((s) => ({ id: s.id, name: s.name })), [services]);
+  const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState<ServiceSortOption>(DEFAULT_SERVICE_SORT);
+  const [statusFilter, setStatusFilter] = useState<ServiceStatusFilter>('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { filtered, activeFiltersCount, resetAll, search, setSearch } = f;
 
-  if (loading) return <CardGridSkeleton count={8} cols="grid-cols-1 sm:grid-cols-2" />;
+  // Grouped by the service's one Category (a standard one or the shop's own service).
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    services.forEach((s) => s.showcase_category && counts.set(s.showcase_category, (counts.get(s.showcase_category) ?? 0) + 1));
+    return Array.from(counts, ([value, count]) => ({ value, label: showcaseCategory(value)?.label ?? value, count }));
+  }, [services]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return services
+      .filter((s) => {
+        if (statusFilter === 'active' && !s.is_active) return false;
+        if (statusFilter === 'paused' && s.is_active) return false;
+        if (categoryFilter && s.showcase_category !== categoryFilter) return false;
+        return !q || s.name.toLowerCase().includes(q) || (s.categories ?? []).some((c) => c.toLowerCase().includes(q));
+      })
+      .sort((a, b) => {
+        switch (sortOrder) {
+          case 'price_asc': return effectivePrice(a) - effectivePrice(b);
+          case 'price_desc': return effectivePrice(b) - effectivePrice(a);
+          case 'top_rated': return Number(b.reviews_avg_rating ?? 0) - Number(a.reviews_avg_rating ?? 0);
+          case 'most_saved': return (b.saves_count ?? 0) - (a.saves_count ?? 0);
+          default: return (b.job_orders_count ?? 0) - (a.job_orders_count ?? 0);
+        }
+      });
+  }, [services, search, sortOrder, statusFilter, categoryFilter]);
+
+  const activeFiltersCount = (isServicePriceSort(sortOrder) ? 1 : 0) + (statusFilter ? 1 : 0) + (categoryFilter ? 1 : 0);
+  const resetAll = () => {
+    setSortOrder(DEFAULT_SERVICE_SORT);
+    setStatusFilter('');
+    setCategoryFilter('');
+  };
+
+  if (loading) return <CardGridSkeleton count={8} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" />;
 
   if (services.length === 0) {
     return (
-      <div className="bg-surface border border-line p-12 text-center rounded-2xl">
+      <div className="bg-surface border border-line p-12 text-center">
         <PackageIcon className="w-12 h-12 text-ink-muted mx-auto mb-4" />
         <h3 className="text-lg font-medium text-ink mb-2">No services yet</h3>
         <p className="text-ink-muted text-sm max-w-md mx-auto">Add the services your shop offers — alterations, custom tailoring, printing — so customers can find and book them.</p>
@@ -81,7 +101,17 @@ export default function ServiceGridView({
     );
   }
 
-  const body = <ServiceFilterBody f={f} />;
+  const body = (
+    <ServiceFilterBody
+      sortOrder={sortOrder}
+      setSortOrder={setSortOrder}
+      statusFilter={statusFilter}
+      setStatusFilter={setStatusFilter}
+      categoryFilter={categoryFilter}
+      setCategoryFilter={setCategoryFilter}
+      categoryOptions={categoryOptions}
+    />
+  );
 
   return (
     <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-5">
@@ -91,10 +121,10 @@ export default function ServiceGridView({
         <CatalogGridToolbar
           searchQuery={search}
           setSearchQuery={setSearch}
-          sortOrder={f.sortOrder}
-          setSortOrder={f.setSortOrder}
+          sortOrder={sortOrder}
+          setSortOrder={setSortOrder}
           chips={SERVICE_RANK_CHIPS}
-          searchPlaceholder="Search a service, garment or task…"
+          searchPlaceholder="Search by service name..."
           activeFiltersCount={activeFiltersCount}
           onOpenFilters={() => setSheetOpen(true)}
         />
@@ -107,22 +137,33 @@ export default function ServiceGridView({
             </button>
           </div>
         ) : (
-          <div className="space-y-5 sm:space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {filtered.map((service) => (
-              <DashboardServiceCard
-                key={service.id}
-                service={service}
-                canManage={canManage}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onDeleteDesign={onDeleteDesign}
-                onRestore={onRestore}
-              />
+              <div key={service.id} className="flex flex-col gap-2">
+                <SearchServiceCard
+                  service={toCardResult(service)}
+                  storeSlug=""
+                  gate={(href) => href}
+                  hrefOverride={`/dashboard/services/${service.id}`}
+                  isPaused={!service.is_active}
+                  hideLocation
+                  fluid
+                />
+                {/* Locked by the plan (over its services limit): not bookable, kept, can be swapped. */}
+                {service.plan_locked_at && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2">
+                    <PlanLockedTag />
+                    {onPlanLockChange && (
+                      <PlanUnlockButton type="service" id={service.id} name={service.name} openItems={openServices} onDone={onPlanLockChange} compact />
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
 
-        {!canManage && <p className="text-xs text-ink-faint">You can view services here. Only the shop owner can edit them.</p>}
+        {!canManage && <p className="text-xs text-ink-faint">You can view services here. Only the owner or a branch manager can edit them.</p>}
       </div>
 
       <CatalogFilterSheet isOpen={sheetOpen} onClose={() => setSheetOpen(false)} activeFiltersCount={activeFiltersCount} onResetAll={resetAll} resultCount={filtered.length}>

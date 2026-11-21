@@ -5,7 +5,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { refreshSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import api from '@/lib/axios';
-import { BRANCH_LIMITS, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
+import type { CheckoutOutcome } from '@/components/shared/GcashCheckoutModal';
+import { BRANCH_LIMITS, type OnlinePaymentResult, type PaymentDetails, type Plan, type Subscription, type UpgradeRequest } from './billingTypes';
 
 export function useBillingData() {
   const { store, user } = useAuthStore();
@@ -16,6 +17,9 @@ export function useBillingData() {
   const [upgradingTo, setUpgradingTo] = useState<number | null>(null);
   const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
   const [now] = useState(() => Date.now());
+  const [onlineResult, setOnlineResult] = useState<OnlinePaymentResult | null>(null);
+  // The GCash checkout open in a modal on this page.
+  const [checkout, setCheckout] = useState<{ paymentId: number; url: string } | null>(null);
 
   const [usageCounts, setUsageCounts] = useState({ branches: 0, staff: 0, services: 0 });
 
@@ -55,7 +59,10 @@ export function useBillingData() {
       api.get(`/stores/${store.id}/services`),
     ]).then(([branchRes, staffRes, servicesRes]) => {
       setUsageCounts({
-        branches: branchRes.status === 'fulfilled' ? (branchRes.value.data.data?.length ?? 0) : 0,
+        // Branch Shops only: the Main Shop never counts toward the plan.
+        branches: branchRes.status === 'fulfilled'
+          ? ((branchRes.value.data.data ?? []) as { is_main?: boolean }[]).filter((b) => !b.is_main).length
+          : 0,
         staff: staffRes.status === 'fulfilled' ? (staffRes.value.data.data?.length ?? 0) : 0,
         services: servicesRes.status === 'fulfilled' ? (servicesRes.value.data.data?.length ?? 0) : 0,
       });
@@ -71,10 +78,11 @@ export function useBillingData() {
     if (!store) return;
     setUpgradingTo(planId);
     try {
-      await api.post(`/stores/${store.id}/subscription`, { plan_id: planId, billing_cycle: 'monthly' });
+      const res = await api.post(`/stores/${store.id}/subscription`, { plan_id: planId, billing_cycle: 'monthly' });
       await fetchBillingData();
       await refreshSubscriptionTier(store.id);
-      toast.success('Subscription updated successfully.');
+      // A switch from a paid plan waits for the period to end; the server says when.
+      toast.success(res.data?.message || 'Subscription updated successfully.');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to update subscription.');
@@ -83,7 +91,7 @@ export function useBillingData() {
     }
   };
 
-  const handleCancelSubscription = async (): Promise<boolean> => {
+const handleCancelSubscription = async (): Promise<boolean> => {
     if (!store) return false;
     try {
       const res = await api.post(`/stores/${store.id}/subscription/cancel`);
@@ -113,14 +121,21 @@ export function useBillingData() {
     }
   };
 
-  // A paid upgrade / renewal: GCash receipt → admin approval; the plan only changes then.
-  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, reference: string) => {
+  // A paid upgrade / renewal / downgrade: GCash receipt + its details → admin check; the plan changes then.
+  const submitUpgradeRequest = async (planId: number, billingCycle: 'monthly' | 'yearly', receipt: File, details: PaymentDetails, acceptTerms = false) => {
     if (!store) return false;
     const fd = new FormData();
     fd.append('plan_id', String(planId));
     fd.append('billing_cycle', billingCycle);
+    // A downgrade: the owner ticked "I agree" to its terms on Billing.
+    if (acceptTerms) fd.append('accept_terms', '1');
     fd.append('payment_receipt', receipt);
-    if (reference.trim()) fd.append('payment_reference', reference.trim());
+    if (details.reference.trim()) fd.append('payment_reference', details.reference.trim());
+    fd.append('sender_name', details.senderName.trim());
+    fd.append('sender_number', details.senderNumber);
+    fd.append('amount_sent', details.amountSent);
+    // datetime-local is the owner's local (PH) time; send it with the offset.
+    fd.append('paid_at', new Date(details.paidAt).toISOString());
     try {
       const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success(res.data.message || 'Payment sent for review.');
@@ -133,15 +148,104 @@ export function useBillingData() {
     }
   };
 
+  // Pay with GCash: the server opens a checkout, shown in a modal on this page. If GCash
+  // ever takes over the whole tab, it sends the owner back to
+  // /dashboard/billing?payment=ID&gcash=success|failed (handled below).
+  const payOnline = async (planId: number, billingCycle: 'monthly' | 'yearly', acceptTerms = false) => {
+    if (!store) return false;
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/pay-online`, { plan_id: planId, billing_cycle: billingCycle, accept_terms: acceptTerms || undefined });
+      setOnlineResult(null);
+      setCheckout({ paymentId: res.data.data.payment_id, url: res.data.data.checkout_url });
+      return true;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const data = error.response?.data;
+      toast.error(Object.values(data?.errors ?? {})[0]?.[0] || data?.message || 'Could not open GCash. Please try again.');
+      return false;
+    }
+  };
+
+  // Back from GCash: ask the server (which asks GCash) how it went. Works even when
+  // GCash's own notice can't reach the server (local testing).
+  const checkOnlinePayment = useCallback(async (paymentId: number) => {
+    if (!store) return;
+    setOnlineResult({ state: 'checking' });
+    try {
+      const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests/${paymentId}/check`);
+      const d = res.data.data as { paid: boolean; status: string; plan: string | null; billing_period_end: string | null };
+      if (d.paid) {
+        setOnlineResult({ state: 'paid', plan: d.plan, until: d.billing_period_end, started: d.status === 'approved' });
+        await fetchBillingData();
+        await refreshSubscriptionTier(store.id);
+      } else {
+        setOnlineResult({ state: 'processing', paymentId });
+      }
+    } catch {
+      setOnlineResult({ state: 'processing', paymentId });
+    }
+  }, [store, fetchBillingData]);
+
+  // Polled by the checkout modal: true once GCash has confirmed this payment.
+  const isCheckoutPaid = useCallback(async () => {
+    if (!store || !checkout) return false;
+    const res = await api.post(`/stores/${store.id}/subscription/upgrade-requests/${checkout.paymentId}/check`);
+    return Boolean(res.data.data.paid);
+  }, [store, checkout]);
+
+  // The modal closed: show how it went in the banner (a closed modal may still be paid).
+  const finishCheckout = useCallback((outcome: CheckoutOutcome) => {
+    const paymentId = checkout?.paymentId;
+    setCheckout(null);
+    if (!paymentId) return;
+    if (outcome === 'failed') setOnlineResult({ state: 'failed' });
+    else checkOnlinePayment(paymentId);
+  }, [checkout, checkOnlinePayment]);
+
+  useEffect(() => {
+    if (!store?.id) return;
+    // Loaded inside the checkout modal (GCash's return trip): the page that holds the modal handles it.
+    if (window.self !== window.top) return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = Number(params.get('payment'));
+    const outcome = params.get('gcash');
+    if (!paymentId || !outcome) return;
+    const t = setTimeout(() => {
+      // Clean the address bar so a refresh doesn't re-run this. Done here, not above: dev mode
+      // runs this effect twice and cancels the first timer, so the second run must still see it.
+      window.history.replaceState(null, '', window.location.pathname);
+      if (outcome === 'failed') setOnlineResult({ state: 'failed' });
+      else checkOnlinePayment(paymentId);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [store?.id, checkOnlinePayment]);
+
+  // A free downgrade waiting for the period to end can be called off (a paid one can't).
+  const cancelScheduledChange = async () => {
+    if (!store) return;
+    try {
+      const res = await api.delete(`/stores/${store.id}/subscription/scheduled-change`);
+      toast.success(res.data.message);
+      await fetchBillingData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Could not cancel the plan change.');
+    }
+  };
+
   const pendingRequest = upgradeRequests.find((r) => r.status === 'pending') ?? null;
 
   const activePlanId = currentSubscription?.plan_id;
   const activePlanSlug = currentSubscription?.plan?.slug ?? '';
   const activePlanMaxStaff = currentSubscription?.plan?.max_staff;
   const activePlanMaxServices = currentSubscription?.plan?.max_services;
+  // Live plan limit (admin Plans page), Branch Shops beyond the Main Shop;
+  // a plan saved before it existed falls back to the server's own rule.
+  const activePlanMaxBranches = currentSubscription?.plan?.max_branches
+    ?? (activePlanSlug in BRANCH_LIMITS ? BRANCH_LIMITS[activePlanSlug] : BRANCH_LIMITS.basic);
 
   const limits = {
-    branches: activePlanSlug in BRANCH_LIMITS ? BRANCH_LIMITS[activePlanSlug] : BRANCH_LIMITS.basic,
+    branches: activePlanMaxBranches === -1 ? null : activePlanMaxBranches,
     staff: activePlanMaxStaff === -1 ? null : activePlanMaxStaff ?? null,
     services: activePlanMaxServices === -1 ? null : activePlanMaxServices ?? null,
   };
@@ -170,6 +274,14 @@ export function useBillingData() {
     upgradeRequests,
     pendingRequest,
     submitUpgradeRequest,
+    payOnline,
+    checkoutUrl: checkout?.url ?? null,
+    isCheckoutPaid,
+    finishCheckout,
+    onlineResult,
+    checkOnlinePayment,
+    dismissOnlineResult: () => setOnlineResult(null),
+    cancelScheduledChange,
     storeId: store?.id,
   };
 }

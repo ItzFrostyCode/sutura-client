@@ -61,8 +61,10 @@ export default function StoreServicesTab({
 
   // expandedServiceId is still set by useStoreStorefront.ts's own ?service_id=/?service= deep-link effects — those open
   // the service's own page rather than rendering a detail view inside this tab.
+  // Use router.push (not replace) so the Store Profile page stays in history
+  // and the Back button on the Service Detail page works correctly.
   useEffect(() => {
-    if (expandedServiceId) router.replace(`/store/${storeId}/service/${expandedServiceId}`);
+    if (expandedServiceId) router.push(`/store/${storeId}/service/${expandedServiceId}`);
   }, [expandedServiceId, storeId, router]);
 
   const designsByService = useMemo(() => {

@@ -1,21 +1,14 @@
 import type { RequirementFields } from '@/components/jobs/requirements';
 import { Scissors, Users, Sparkles, Wrench, type LucideIcon } from 'lucide-react';
 import type { SizeChartRow } from '@/components/shared/SizeChartEditor';
-import { categoryOfGarment } from '@/lib/garmentTaxonomy';
 
 export type { SizeChartRow };
-
-/** What an option covers, and what one ordered unit of it is. Both are separate settings; null = not configured (as before: no coverage implied, one unit = one garment). */
-export type OptionCovers = 'top' | 'bottom' | 'both';
-export type OptionSoldAs = 'garment' | 'set';
 
 export interface ServicePricing {
   id: number;
   service_id: number;
   label: string;
   amount: string;
-  covers?: OptionCovers | null;
-  sold_as?: OptionSoldAs | null;
 }
 
 export interface ServiceField {
@@ -29,25 +22,22 @@ export interface ServiceField {
 export type ServiceType = 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bridal' | 'alteration_repair';
 
 export const SERVICE_TYPES: { value: ServiceType; label: string; hint: string }[] = [
-  { value: 'custom_tailoring', label: 'Custom Tailoring', hint: 'Measurement-driven made-to-order garments' },
-  { value: 'bulk_sublimation', label: 'Bulk / Team Orders', hint: 'Team jerseys, corporate & school uniforms — enables team roster ordering' },
+  { value: 'custom_tailoring', label: 'Custom Tailoring & Bespoke', hint: 'Measurement-driven made-to-order garments' },
+  { value: 'bulk_sublimation', label: 'Bulk / Sublimation Printing', hint: 'Team jerseys, corporate & school uniforms — enables team roster ordering' },
   { value: 'fashion_bridal', label: 'Fashion & Bridal', hint: 'Gowns, barong, Filipiniana — supports two-fitting scheduling' },
   { value: 'alteration_repair', label: 'Alterations & Repairs', hint: 'Resizing, repairs, hemming — requires pre-existing damage notes' },
 ];
 
-// The order types (which job-order screens apply) follow from what the service is — the same rule as the
-// server's Service::deriveOrderTypes (2026-10-14), so the form can show the bulk fields as soon as the owner ticks
-// "Bulk / Batch Orders". Alterations → repair flow; uniforms with bulk orders → team roster; custom tailoring of
-// barong, Filipiniana or gowns → two fittings; anything else → custom tailoring.
-const BRIDAL_CATEGORIES = ['barong', 'traditional', 'dresses_gowns'];
-export function deriveOrderTypes(group: string, capabilities: string[], garments: string[]): ServiceType[] {
-  if (group === 'alterations_repairs') return ['alteration_repair'];
-  if (group === 'uniform_production') return [capabilities.includes('bulk_orders') ? 'bulk_sublimation' : 'custom_tailoring'];
-  if (group === 'custom_tailoring') {
-    return [garments.some((g) => BRIDAL_CATEGORIES.includes(categoryOfGarment(g) ?? '')) ? 'fashion_bridal' : 'custom_tailoring'];
-  }
-  return ['custom_tailoring'];
-}
+// What each canonical category means for order handling. The category already says
+// what the service is, so the "how it works" flag is derived from it, not asked twice.
+export const CATEGORY_HANDLING: Record<string, { types: ServiceType[]; note: string }> = {
+  custom_tailoring:        { types: ['custom_tailoring'],  note: 'Made to measure — customers are measured and fitted before the garment is finished.' },
+  alterations_repairs:     { types: ['alteration_repair'], note: 'Repairs and resizing — customers describe the damage or the change they need when ordering.' },
+  uniform_production:      { types: ['bulk_sublimation'],  note: 'Bulk order — customers can submit a team roster with sizes.' },
+  printing_sublimation:    { types: ['bulk_sublimation'],  note: 'Bulk order — customers can submit a team roster with sizes.' },
+  custom_costume_creation: { types: ['custom_tailoring'],  note: 'Made to measure — customers are measured and fitted before the garment is finished.' },
+  others:                  { types: ['custom_tailoring'],  note: 'Handled as a made-to-measure order.' },
+};
 
 // Shared icon + color per service_type, reused by both the Services catalog and Job
 // Creation's conditional fields so a type reads the same everywhere in the app.
@@ -58,13 +48,10 @@ export const SERVICE_TYPE_META: Record<ServiceType, { icon: LucideIcon; text: st
   alteration_repair: { icon: Wrench,   text: 'text-amber-700', bg: 'bg-amber-50',     border: 'border-amber-200' },
 };
 
-export type ServiceStatus = 'draft' | 'published' | 'unpublished' | 'archived';
-export type PriceDisplay = 'fixed' | 'starting' | 'quotation';
-
-export const STATUS_LABEL: Record<ServiceStatus, string> = { draft: 'Draft', published: 'Published', unpublished: 'Unpublished', archived: 'Archived' };
-
 export interface Service extends RequirementFields {
   id: number;
+  /** Locked by the shop's plan (over its limit; never deleted). Server: PlanLimits. */
+  plan_locked_at?: string | null;
   name: string;
   description: string;
   categories: string[];
@@ -73,10 +60,8 @@ export interface Service extends RequirementFields {
   // do not replace the free-text `categories` or the operational `service_types` above.
   service_category?: string | null;
   /** Storefront "Service Categories" chip (lib/serviceShowcase). */
-  /** Garments it works on (src/lib/garmentTaxonomy.ts); empty on an alteration / customization service = any garment. */
-  garment_types?: string[] | null;
-  /** Tasks it offers — capability slugs of its service group. */
-  capabilities?: string[] | null;
+  showcase_category?: string | null;
+  service_leaf_type?: string | null;
   base_price: string | null;
   sale_price?: string | number | null;
   sale_starts_at?: string | null;
@@ -84,18 +69,9 @@ export interface Service extends RequirementFields {
   estimated_days: number | null;
   estimated_days_max?: number | null;
   min_order_qty?: number;
-  /** Pesos off each piece when the customer brings their own fabric (null = none). */
-  own_fabric_deduction?: string | number | null;
-  /** Rush for this service: null = the shop's rule, false = no rush, true = its own fee. */
-  rush_available?: boolean | null;
-  rush_fee_mode?: 'percent' | 'per_piece' | null;
-  rush_fee_percent?: string | number | null;
-  rush_fee_per_piece?: string | number | null;
+  /** Per-piece amount off when the customer brings their own fabric (null = none set). */
+  own_fabric_deduction?: number | string | null;
   is_active: boolean;
-  /** Lifecycle (Services decision S2). `is_active` mirrors "status is published". */
-  status?: ServiceStatus;
-  /** How customers see the price (B6-O11): no range option. */
-  price_display?: PriceDisplay;
   image_url?: string | null;
   size_chart_image_url?: string | null;
   size_chart_columns?: string[] | null;
@@ -112,45 +88,14 @@ export interface Service extends RequirementFields {
   // as CatalogItem's own (total_amount - balance - discount_amount).
   reviews_count?: number;
   reviews_avg_rating?: number | null;
-  reviews?: {
-    id: number;
-    rating: number;
-    created_at: string;
-    user: { id: number; name: string; profile_picture: string | null } | null;
-  }[];
   saves_count?: number;
   job_orders_count?: number;
-  orders_count?: number;
-  catalog_items_count?: number;
-  catalog_items?: {
-    id: number;
-    name: string;
-    price?: number | string | null;
-    sale_price?: number | string | null;
-    estimated_days?: number | null;
-    material?: string | null;
-    garment_type?: string | null;
-    garment_category?: string | null;
-    color?: string | null;
-    description?: string | null;
-    is_active?: boolean;
-    apparel_review?: any;
-    images?: { id?: number; image_url: string; is_primary?: boolean; view_angle?: string | null; sort_order?: number }[];
-    reviews_avg_rating?: number | null;
-    reviews_count?: number;
-    order_count?: number;
-    saves_count?: number;
-    pricing?: any;
-  }[];
   total_revenue?: number;
 }
 
 export interface PricingTierInput {
   label: string;
   amount: string;
-  /** '' = not configured. */
-  covers: OptionCovers | '';
-  sold_as: OptionSoldAs | '';
 }
 
 /**
@@ -160,14 +105,22 @@ export interface PricingTierInput {
  */
 export function deriveTiersFromService(service: Service): PricingTierInput[] {
   if (service.pricing && service.pricing.length > 0) {
-    return service.pricing.map(p => ({
-      label: p.label,
-      amount: p.amount && Number(p.amount) > 0 ? String(Number(p.amount)) : '',
-      covers: p.covers ?? '',
-      sold_as: p.sold_as ?? '',
-    }));
+    return service.pricing.map(p => ({ label: p.label, amount: p.amount ? String(Number(p.amount)) : '' }));
   }
-  return (service.tags || []).map(tag => ({ label: tag, amount: '', covers: '' as const, sold_as: '' as const }));
+  return (service.tags || []).map(tag => ({ label: tag, amount: '' }));
+}
+
+export interface ServicePackage extends RequirementFields {
+  id: number;
+  name: string;
+  description: string | null;
+  image_url?: string | null;
+  service_category?: string | null;
+  job_orders_count?: number;
+  total_revenue?: number;
+  bundle_price: string | null;
+  is_active: boolean;
+  services: Service[];
 }
 
 export const SERVICE_CATEGORIES = [

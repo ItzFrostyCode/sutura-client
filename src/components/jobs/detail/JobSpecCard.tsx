@@ -2,109 +2,152 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Shirt } from 'lucide-react';
-import SectionHeader from '../ui/SectionHeader';
 import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
-import { GARMENT_CATEGORIES } from '@/lib/garmentTaxonomy';
+import { MEASUREMENT_LABELS } from '@/lib/garmentMeasurements';
+import MeasureAtShopCallout from './MeasureAtShopCallout';
 
 interface JobSpecCardProps {
   job: Job;
+  /** Opens the follow-up form set to a Measurement visit. */
+  onScheduleMeasurement?: () => void;
+  /** Reloads the order after measurements are recorded or attached. */
+  onMeasurementChanged?: () => void;
 }
 
-const LABEL = 'text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted';
-
-const humanize = (v: string) => {
-  const t = v.replaceAll('_', ' ');
-  return t.charAt(0).toUpperCase() + t.slice(1);
+// Friendlier names for keys stored on the order (others show as their key with spaces).
+const SPEC_LABELS: Record<string, string> = {
+  own_fabric_deduction: 'Own fabric deduction (₱)',
+  own_fabric_deduction_after: 'Fabric deduction added later (₱)',
 };
 
-/** The value to show for one custom-order entry, or null when there is nothing worth showing. */
-function specValue(key: string, value: unknown): string | null {
-  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') return null;
-  const text = String(value);
-  if (text === '') return null;
-  if (key === 'garment_group') return (GARMENT_CATEGORIES as Record<string, { label: string }>)[text]?.label ?? humanize(text);
-  return text;
-}
-
-function InfoItem({ label, value, sub, extra, divided }: Readonly<{ label: string; value: string; sub: string; extra?: React.ReactNode; divided?: 'mobile' | 'all' }>) {
-  return (
-    <div className={`space-y-1 ${divided === 'all' ? 'border-t border-line pt-4' : divided === 'mobile' ? 'border-t border-line pt-4 sm:border-0 sm:pt-0' : ''}`}>
-      <span className={`${LABEL} block`}>{label}</span>
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-[15px] font-medium text-ink">{value}</p>
-        {extra}
-      </div>
-      {sub && <p className="text-[13px] text-ink-muted">{sub}</p>}
-    </div>
-  );
-}
-
-export default function JobSpecCard({ job }: JobSpecCardProps) {
+export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementChanged }: JobSpecCardProps) {
   const resolvedCategory =
     job.service?.category ||
     (job.service?.categories && job.service.categories.length > 0 ? job.service.categories.join(', ') : null) ||
     (job.garment_category ? (GARMENT_CATEGORY_LABELS[job.garment_category] ?? job.garment_category) : null) ||
     'Custom Apparel & Tailoring';
 
-  const data = job.custom_order_data ?? {};
-  const customSpecEntries = Object.entries(data)
-    .filter(([label]) => !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config'].includes(label))
-    .filter(([label]) => !(label === 'garment' && 'garment_type' in data))
-    .map(([label, value]) => [label, specValue(label, value)] as const)
-    .filter((e): e is readonly [string, string] => e[1] !== null);
+  const customSpecEntries = job.custom_order_data
+    ? Object.entries(job.custom_order_data).filter(
+        ([label, value]) =>
+          !['roster', 'team_roster', 'fabric_preference', 'team_name', 'size_breakdown', 'personalization_config', 'individual_measurements', 'measurement_sheets', 'member_measurements'].includes(label) &&
+          value !== null && value !== ''
+      )
+    : [];
 
-  const fabric = job.material_source === 'customer_supplied'
-    ? "Customer's Own Fabric"
-    : (data.fabric_preference ? `${String(data.fabric_preference)} (Store Supplied)` : 'Store Supplied Material');
+  // Body measurements typed on the walk-in form or by the customer on an online order.
+  const individual = job.custom_order_data?.individual_measurements as Record<string, string> | null | undefined;
+  const unit = individual?.unit === 'cm' ? 'cm' : 'in';
+  const measurementEntries = individual
+    ? Object.entries(individual).filter(([k, v]) => k !== 'unit' && v !== null && String(v).trim() !== '')
+    : [];
 
   return (
-    <div className="h-full space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-2xs sm:p-6">
-      <SectionHeader
-        icon={Shirt}
-        title="Garment & Order Specifications"
-        subtitle="Primary tailoring requirements and fabric allocation"
-        actions={job.customer && (
-          <Link href={`/dashboard/customers/${job.customer.id}`} className="shrink-0 py-1 text-[13px] font-medium text-espresso hover:underline">
+    <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
+      <div className="flex items-center justify-between border-b border-line pb-4">
+        <div>
+          <h2 className="text-base font-bold text-ink">Garment & Order Specifications</h2>
+          <p className="text-xs text-ink-muted mt-0.5">Primary tailoring requirements and fabric allocation</p>
+        </div>
+        {job.customer && (
+          <Link
+            href={`/dashboard/customers/${job.customer.id}`}
+            className="text-xs font-bold text-taupe hover:text-taupe-hover hover:underline"
+          >
             View Customer Profile →
           </Link>
         )}
-      />
-
-      <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-        <InfoItem
-          label="Customer"
-          value={job.customer?.name || 'Walk-in Customer'}
-          sub={job.customer?.email ?? ''}
-          extra={job.customer?.suki_tag && (
-            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium uppercase text-amber-700">{job.customer.suki_tag}</span>
-          )}
-        />
-        <InfoItem divided="mobile" label="Service & Category" value={job.service?.name || 'Custom Garment'} sub={`Category: ${resolvedCategory}`} />
-        <InfoItem divided="all" label="Branch" value={job.branch?.name || 'Unassigned'} sub="Where this job is being fulfilled" />
-        <InfoItem
-          divided="all"
-          label="Fabric & Material"
-          value={fabric}
-          sub={job.material_source === 'customer_supplied' ? 'Customer dropped off fabric material' : 'Fabric supplied by the shop'}
-        />
-        <InfoItem
-          divided="all"
-          label="Last Updated By"
-          value={job.assigned_staff?.name || 'Not yet touched'}
-          sub={job.staff_stages && job.staff_stages.length > 0 ? `${job.staff_stages.length} production stage(s) recorded` : 'No production stage recorded yet'}
-        />
       </div>
 
+      <MeasureAtShopCallout job={job} onSchedule={onScheduleMeasurement} onChanged={onMeasurementChanged} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm py-1">
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Customer</span>
+          <div className="flex items-center gap-2">
+            <p className="font-bold text-ink text-sm">{job.customer?.name || 'Walk-in Customer'}</p>
+            {job.customer?.suki_tag && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800">
+                {job.customer.suki_tag.toUpperCase()}
+              </span>
+            )}
+          </div>
+          {job.customer?.email && (
+            <p className="text-xs text-ink-muted">{job.customer.email}</p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Service & Category</span>
+          <p className="font-bold text-ink text-sm">{job.service_package?.name || job.service?.name || 'Custom Garment'}</p>
+          {job.service_package && (job.service_package.services?.length ?? 0) > 0 && (
+            <p className="text-xs text-ink-body">Package · includes {job.service_package.services!.map(s => s.name).join(', ')}</p>
+          )}
+          <p className="text-xs text-ink-muted font-medium">
+            Category: <strong className="text-ink-body font-semibold">{resolvedCategory}</strong>
+          </p>
+        </div>
+
+        <div className="space-y-1 border-t border-line/60 pt-3 sm:border-0 sm:pt-0">
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Branch</span>
+          <p className="font-bold text-ink text-sm">{job.branch?.name || 'Unassigned'}</p>
+          <p className="text-xs text-ink-muted">Where this job is being fulfilled</p>
+        </div>
+
+        <div className="space-y-1 border-t border-line/60 pt-3 sm:border-0 sm:pt-0">
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Fabric & Material</span>
+          <p className="font-bold text-ink text-sm">
+            {job.material_source === 'customer_supplied'
+              ? "Customer's Own Fabric"
+              : (job.custom_order_data?.fabric_preference
+                  ? `${String(job.custom_order_data.fabric_preference)} (Shop Supplied)`
+                  : 'Shop Supplied Material')}
+          </p>
+          <p className="text-xs text-ink-muted">
+            {job.material_source === 'customer_supplied'
+              ? 'Customer dropped off fabric material'
+              : 'In-house fabric & sublimation inventory'}
+          </p>
+        </div>
+
+        <div className="space-y-1 border-t border-line/60 pt-3 sm:border-0 sm:pt-0">
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">Last Updated By</span>
+          <p className="font-bold text-ink text-sm">{job.assigned_staff?.name || 'Not yet touched'}</p>
+          <p className="text-xs text-ink-muted">
+            {job.staff_stages && job.staff_stages.length > 0
+              ? `${job.staff_stages.length} production stage(s) recorded`
+              : 'No production stage recorded yet'}
+          </p>
+        </div>
+      </div>
+
+      {measurementEntries.length > 0 && (
+        <div className="pt-3 border-t border-line">
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wider mb-2">
+            Body Measurements ({unit}){job.intake_channel === 'online' && ' · given by customer'}
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
+            {measurementEntries.map(([label, value]) => (
+              <div key={label} className="text-xs">
+                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{MEASUREMENT_LABELS[label] ?? label.replaceAll('_', ' ')}</span>
+                <span className="font-semibold text-ink block tabular-nums">{String(value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {customSpecEntries.length > 0 && (
-        <div className="border-t border-line pt-4">
-          <h3 className={`${LABEL} mb-3`}>Custom Design Specifications</h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="pt-3 border-t border-line">
+          <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wider mb-2">Custom Design Specifications</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
             {customSpecEntries.map(([label, value]) => (
-              <div key={label} className="min-w-0 rounded-xl bg-sunken/70 px-3.5 py-3">
-                <span className={`${LABEL} block truncate`}>{label.replaceAll('_', ' ')}</span>
-                <span title={value} className="mt-0.5 block truncate text-[15px] text-ink">{value}</span>
+              <div key={label} className="text-xs">
+                <span className="text-[10px] font-bold text-ink-muted uppercase block truncate">{SPEC_LABELS[label] ?? label.replaceAll('_', ' ')}</span>
+                <span className="font-semibold text-ink block truncate">
+                  {typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '—'}
+                </span>
               </div>
             ))}
           </div>

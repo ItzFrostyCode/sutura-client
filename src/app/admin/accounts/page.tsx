@@ -9,7 +9,7 @@ import SearchInput from '@/components/shared/SearchInput';
 import { FilterTabs, ListState, Pager } from '@/components/admin/ui/AdminPrimitives';
 import ReasonModal from '@/components/admin/ui/ReasonModal';
 import AccountRow, { type AdminAccount } from '@/components/admin/accounts/AccountRow';
-import { useAdminList, useDebounced } from '@/components/admin/useAdminList';
+import { useAdminList, useStableListHeight, useDebounced } from '@/components/admin/useAdminList';
 
 const ROLES = [
   { value: '', label: 'All' },
@@ -31,7 +31,9 @@ export default function AdminAccountsPage() {
   const [page, setPage] = useState(1);
   const [suspending, setSuspending] = useState<AdminAccount | null>(null);
   const query = useDebounced(search);
-  const { items, meta, loading, error, reload } = useAdminList<AdminAccount>('/admin/accounts', { role, status, search: query, page });
+  const { items, meta, loading, error, reload } = useAdminList<AdminAccount>('/admin/accounts', { role, status, search: query, page, per_page: 10 });
+  // A shorter last page keeps the list's height, so the card doesn't shrink on Next.
+  const stable = useStableListHeight<HTMLDivElement>(`${role}|${status}|${query}`);
 
   const suspend = async (reason: string) => {
     if (!suspending) return;
@@ -63,7 +65,7 @@ export default function AdminAccountsPage() {
       </PageHeader>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search name or email" className="sm:max-w-sm" />
+        <SearchInput bold onCanvasBackground value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search name or email" className="sm:max-w-sm" />
         <select aria-label="Account status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
           className="min-h-11 border border-line-strong bg-surface px-3 text-base text-ink sm:w-44">
           <option value="">Any status</option>
@@ -72,13 +74,15 @@ export default function AdminAccountsPage() {
         </select>
       </div>
 
-      <div className="border border-line bg-surface">
+      <div className="admin-card overflow-hidden">
+        <div ref={stable.ref} style={stable.style}>
         <ListState loading={loading} error={error} empty={items.length === 0} emptyText="No accounts match." />
         {!loading && !error && items.length > 0 && (
-          <ul className="divide-y divide-line">
+          <ul className="admin-divide">
             {items.map((a) => <AccountRow key={a.id} account={a} onSuspend={setSuspending} onReactivate={reactivate} />)}
           </ul>
         )}
+        </div>
         <Pager meta={meta} onPage={setPage} />
       </div>
 

@@ -330,9 +330,11 @@ export function useStoreStorefront(storeId: string) {
       .map((v) => ({ id: v, label: v }));
   }, [garmentTypeTally]);
 
+  // A selected branch with its own hours is Open/Closed by those; else the shop's hours.
+  const branchHours = store?.branches?.find((b) => b.slug === selectedBranchSlug)?.operating_hours;
   const isStoreCurrentlyOpen = useMemo(() => {
-    return isStoreOpen(store?.operating_hours);
-  }, [store?.operating_hours]);
+    return isStoreOpen(branchHours || store?.operating_hours);
+  }, [branchHours, store?.operating_hours]);
 
   const openFilterPanel = useCallback(() => {
     setDraftPriceSort(priceSort);

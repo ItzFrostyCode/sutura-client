@@ -1,6 +1,5 @@
 'use client';
 
-import { unitOfMetrics, withUnit } from '@/lib/measurementUnit';
 import React from 'react';
 import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
@@ -12,11 +11,11 @@ interface JobPrintWorkTicketProps {
 
 export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketProps) {
   const measurementMetrics = job.measurement?.metrics || {};
-  const metricEntries = Object.entries(measurementMetrics).filter(([k, v]) => Boolean(v) && !k.startsWith('_'));
+  const metricEntries = Object.entries(measurementMetrics);
 
   const customSpecEntries = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(
-        ([k]) => !['roster', 'team_roster', 'size_breakdown', 'personalization_config'].includes(k)
+        ([k]) => !['roster', 'team_roster', 'size_breakdown', 'personalization_config', 'member_measurements'].includes(k)
       )
     : [];
 
@@ -50,7 +49,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
             <p className="text-base"><strong>Material:</strong> {job.material_source === 'customer_supplied' ? "Customer's Own" : 'Store Supplied'}</p>
           )}
           <p className="text-base"><strong>Intake Channel:</strong> {job.intake_channel.replace('_', ' ').toUpperCase()}</p>
-          <p className="text-base"><strong>Fulfillment:</strong> Store Pickup</p>
+          <p className="text-base"><strong>Fulfillment:</strong> Shop Pickup</p>
           <p className="text-base"><strong>Status:</strong> {job.status.replaceAll('_', ' ').toUpperCase()}</p>
           {job.due_date && <p className="text-base"><strong>Due Date:</strong> {new Date(job.due_date).toLocaleDateString()}</p>}
         </div>
@@ -67,7 +66,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
                 <div key={k} className="flex flex-col">
                   <span className="text-[10px] text-gray-500 uppercase font-semibold">{k.replaceAll('_', ' ')}</span>
                   <span className="font-medium text-base border-b border-dashed border-gray-300 pb-1">
-                    {typeof v === 'object' && v !== null ? JSON.stringify(v) : withUnit(v, unitOfMetrics(measurementMetrics))}
+                    {typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '')}″
                   </span>
                 </div>
               ))}

@@ -27,8 +27,25 @@ const kindGroup = (k: string): StorefrontGroup =>
     ? { value: `kind:${k}`, label: SERVICE_GROUPS[k as ServiceGroupKey].label, blurb: SERVICE_GROUPS[k as ServiceGroupKey].description }
     : { value: 'kind:other', label: 'Other services', blurb: 'More of what this shop does.' };
 
+function toArray(val: unknown): string[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return val.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  if (typeof val === 'object' && val !== null) {
+    return Object.values(val).filter((v): v is string => typeof v === 'string');
+  }
+  return [];
+}
+
 export function groupsOf(s: Groupable): StorefrontGroup[] {
-  const categories = new Set((s.garment_types ?? []).map(categoryOfGarment).filter((c): c is GarmentCategory => Boolean(c)));
+  const list = toArray(s.garment_types);
+  const categories = new Set(list.map(categoryOfGarment).filter((c): c is GarmentCategory => Boolean(c)));
   if (categories.size > 0) return GARMENT_CATEGORY_KEYS.filter((c) => categories.has(c)).map(categoryGroup);
   return [kindGroup(s.service_category ?? '')];
 }
