@@ -90,8 +90,8 @@ export function useOrderReadiness(storeId: number, jobId: number, onChanged: () 
 
     // Flow 3 -- delivery
     moveTo,
-    sendToQuality: () => moveTo('qc_ironing', 'Back at the quality check.'),
-    passQuality: async () => (await post('qc', 'quality-check', { result: 'pass' }, { quiet: true })) && moveTo('ready_for_pickup', 'Quality check passed. The customer is told it is ready.'),
+    sendToQuality: () => moveTo('qc_ironing', 'Back at the Quality Check.'),
+    passQuality: async () => (await post('qc', 'quality-check', { result: 'pass' }, { quiet: true })) && moveTo('ready_for_pickup', 'Quality Check passed. The customer is told it is ready.'),
     failQuality: async (body: Record<string, unknown>) => (await post('qc', 'quality-check', { result: 'fail', ...body }, { quiet: true })) && moveTo('final_adjustments', 'Sent to fixing.'),
     /** Needs a fix at the quality check, the customer's request: a quoted change (owner / manager) that the customer approves, then the order goes to fixing. */
     chargedFix: async (body: Record<string, unknown>) => (await post('correction', 'corrections', { kind: 'change_request', ...body }, { quiet: true })) && moveTo('final_adjustments', 'Change quoted. It waits for the customer to approve it.'),

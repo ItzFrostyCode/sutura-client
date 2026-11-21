@@ -169,7 +169,7 @@ if (in_array($newStatus, JobOrder::STAGES_REQUIRING_DOWNPAYMENT, true)
 
 This is the precise answer to "how does verified payment information gate production": the check is **pure arithmetic against `JobOrder.balance`** — it has no dependency on `payment_status` as a string, and no dependency on any customer self-declaration, because none exists for JobOrder. `balance` only ever moves when Owner/Branch Manager calls `pay()` or `applyDiscount()`. In other words: **the gate is enforced against money Owner/Branch Manager has actually logged, not against anything the customer submitted or claimed.**
 
-`STAGES_REQUIRING_DOWNPAYMENT` = `pattern_making, mass_cutting_printing, cutting, sewing, ready_for_fitting, final_adjustments, qc_ironing, ready_for_pickup` — `pending` and `design` are exempt (no material is committed yet). A second, related gate exists on completion: `balance > 0` blocks `status → completed` ("no balance, no claim").
+`STAGES_REQUIRING_DOWNPAYMENT` = `pattern_making, mass_cutting, cutting, sewing, ready_for_fitting, final_adjustments, qc_ironing, ready_for_pickup` — `pending` and `design` are exempt (no material is committed yet). A second, related gate exists on completion: `balance > 0` blocks `status → completed` ("no balance, no claim").
 
 ## 7. Fraud-Prevention: Duplicate Reference Check
 

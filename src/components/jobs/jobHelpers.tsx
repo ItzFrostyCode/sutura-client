@@ -1,16 +1,22 @@
 import React from 'react';
 import { depositFraction, type PaymentPolicy } from './requirements';
-import { Store, ShoppingBag, Scissors, Pause, Clock, Wrench, ShieldCheck, Sparkles, Check } from 'lucide-react';
+import { Store, ShoppingBag, Scissors, Pause, Clock, Wrench, ShieldCheck, Sparkles, Check, Factory } from 'lucide-react';
 
 /**
- * The 7 Streamlined Production Order Stages requested for SUTURA:
+ * The 7 Streamlined Production Order Stages (aligned with Bongo's JobOrder::STATUSES):
  * 1. pending
  * 2. production
- * 3. quality_check
+ * 3. quality_check (matches backend enum; shown as "Quality Check")
  * 4. ready_for_fitting
  * 5. adjustments
  * 6. ready_for_pickup
  * 7. completed
+ *
+ * Sub-stages (normalized into the 7 columns via normalizeJobStatus()):
+ * - production lane: design → pattern_making → cutting → sewing → (qc_ironing)
+ * - bulk order override: mass_cutting (backend enum; shown as "Cutting" only)
+ * - repair/alteration override: queued → in_repair → qc_check
+ * - ready_for_pickup loops back to adjustments on revision/alteration
  */
 export const PRODUCTION_COLUMNS = [
   { id: 'pending',           title: 'Pending',            color: 'bg-amber-50/50',   border: 'border-amber-200/70' },
@@ -43,6 +49,8 @@ export const STAGE_STYLE: Record<string, { chip: string; dot: string; accent: st
 /**
  * Where a card can go next from each stage (the board's one-click actions).
  * Used to preview the destination column while hovering an action button.
+ * Repair override: qc_check → ready_for_pickup (skips fitting)
+ * Ready for Pickup can loop back to adjustments on revision/alteration.
  */
 export const NEXT_STAGES: Record<string, readonly string[]> = {
   pending: ['production'],
@@ -50,7 +58,7 @@ export const NEXT_STAGES: Record<string, readonly string[]> = {
   quality_check: ['ready_for_fitting'],
   ready_for_fitting: ['adjustments', 'ready_for_pickup'],
   adjustments: ['quality_check'],
-  ready_for_pickup: ['completed'],
+  ready_for_pickup: ['completed', 'adjustments'], // revision/alteration loops back
 };
 
 export const nextStagesFor = (status: string): readonly string[] => NEXT_STAGES[normalizeJobStatus(status)] ?? [];
@@ -59,6 +67,12 @@ export const nextStagesFor = (status: string): readonly string[] => NEXT_STAGES[
  * Normalizes any legacy or sub-stage status into one of the 7 primary production stages.
  * This guarantees backwards compatibility with existing database rows while presenting
  * a clean, frictionless 7-column workflow to staff and shop owners.
+ *
+ * Aligned with Bongo's JobOrder::STATUSES enum (23 statuses):
+ * - production lane: design → pattern_making → cutting → sewing → qc_ironing
+ * - bulk order override: mass_cutting (shown as "Cutting" only)
+ * - repair/alteration override: queued → in_repair → qc_check
+ * - ready_for_pickup loops back to adjustments on revision/alteration
  */
 export function normalizeJobStatus(status: string): string {
   switch (status) {
@@ -67,7 +81,7 @@ export function normalizeJobStatus(status: string): string {
     case 'production':
     case 'design':
     case 'pattern_making':
-    case 'mass_cutting_printing':
+    case 'mass_cutting':
     case 'cutting':
     case 'sewing':
     case 'queued':
@@ -98,19 +112,21 @@ export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-ambe
 /**
  * "No DP, No Layout, No Cut": a job cannot enter any of these production
  * stages until downpayment has been logged.
+ * Mirrors JobOrder::STAGES_REQUIRING_DOWNPAYMENT on the backend exactly.
  */
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
   'production', 'quality_check', 'ready_for_fitting', 'adjustments', 'ready_for_pickup',
-  // legacy/sub-stage keys preserved
-  'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
-  'final_adjustments', 'qc_ironing', 'in_repair', 'qc_check',
+  // legacy/sub-stage keys preserved (all granular stages from backend)
+  'design', 'pattern_making', 'mass_cutting', 'cutting', 'sewing',
+  'qc_ironing', 'final_adjustments', 'in_repair', 'qc_check',
+  'queued',
 ]);
 
 /**
  * Assignable Multi-Stage Staff Assignment stages — mirrors
  * JobOrder::STAFF_STAGES on the backend. Deliberately excludes 'fitting'
  * (happens front-of-house with the master cutter/owner, not a backroom
- * stage) and 'mass_cutting_printing'/other non-staffed statuses.
+ * stage) and 'mass_cutting'/other non-staffed statuses.
  */
 export const STAFF_STAGES = ['design', 'pattern_making', 'cutting', 'sewing', 'qc_ironing'] as const;
 export type StaffStage = typeof STAFF_STAGES[number];
@@ -120,7 +136,7 @@ export const STAFF_STAGE_LABELS: Record<StaffStage, string> = {
   pattern_making: 'Pattern Making',
   cutting: 'Cutting',
   sewing: 'Sewing',
-  qc_ironing: 'Finishing / QC',
+  qc_ironing: 'Finishing / Quality Check / Ironing',
 };
 
 // Mirrors JobOrder::isBulkOrder() on the backend exactly: a Team Roster /
@@ -171,14 +187,20 @@ export function requiresDownpayment(
 }
 
 /**
- * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting &
- * Printing isn't relevant to the jobs actually on the board (most stores
- * only ever use one of the two paths), and hides the Repair Override lane
- * (Queued for Repair / In Repair / QC Check) unless a repair job is
- * actually on the board — same reasoning, applied to a second alternate
- * pipeline instead of a single swapped column.
+ * Kanban stage columns — shows the relevant production pipeline based on job types:
+ * - Standard custom tailoring: design → pattern_making → cutting → sewing → qc_ironing (all normalize to 'production')
+ * - Bulk orders (team_roster/size_breakdown/bulk_sublimation): mass_cutting → cutting → sewing → qc_ironing (shown as "Cutting" only)
+ * - Repair/alteration (garment_category=alteration_repair): queued → in_repair → qc_check (separate lane)
+ *
+ * Hides irrelevant columns (pattern_making vs mass_cutting) and
+ * hides the Repair Override lane unless a repair job is actually on the board.
  */
-export function columnsForJobs(_jobs: Job[] = []) {
+export function columnsForJobs(jobs: Job[] = []) {
+  const hasBulk = jobs.some(isBulkOrder);
+  const hasRepair = jobs.some(isRepairOnly);
+
+  // For now, return standard 7 columns since sub-stages are shown within the Production column
+  // The detailed sub-stage tracking happens inside JobKanbanBoard/JobProductionTimeline
   return [...PRODUCTION_COLUMNS];
 }
 

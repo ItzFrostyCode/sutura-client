@@ -14,7 +14,7 @@ import {
   type FittingRequirement, type MeasurementRequirement, type PaymentPolicy,
 } from '../requirements';
 
-const PRODUCTION = ['pattern_making', 'mass_cutting_printing', 'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup', 'balance_handover'];
+const PRODUCTION = ['pattern_making', 'mass_cutting', 'cutting', 'sewing', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'ready_for_pickup', 'balance_handover'];
 
 function Group<T extends string>({ legend, usual, value, onChange, options, disabled }: Readonly<{
   legend: string; usual?: string; value: T; onChange: (v: T) => void; options: { value: T; label: string; hint: string }[]; disabled?: boolean;

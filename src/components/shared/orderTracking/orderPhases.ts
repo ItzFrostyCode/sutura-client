@@ -1,5 +1,5 @@
 import {
-  AlertCircle, Ban, Clock, Flag, Package, PauseCircle, Palette, Printer, Ruler, Scissors, Shirt, Sparkles, Wrench, type LucideIcon,
+  AlertCircle, Ban, Clock, Flag, Package, PauseCircle, Palette, Ruler, Scissors, Shirt, Sparkles, Wrench, type LucideIcon,
 } from 'lucide-react';
 import type { StepperStage } from '@/components/shared/StatusStepper';
 
@@ -17,7 +17,7 @@ export const CUSTOMER_PHASE_STATUS_MAP: Record<string, string> = {
   production: 'In Production',
   design: 'In Production',
   pattern_making: 'In Production',
-  mass_cutting_printing: 'In Production',
+  mass_cutting: 'In Production',
   cutting: 'In Production',
   sewing: 'In Production',
   in_repair: 'In Production',
@@ -63,7 +63,7 @@ export function getPhaseMeta(status: string): { label: string; Icon: LucideIcon;
 
 /** "In Production" on the hub and the orders tab: received and being made (the leader's set, plus this build's extra statuses). */
 export const IN_PRODUCTION = new Set([
-  'pending', 'confirmed', 'awaiting_materials', 'queued', 'design', 'pattern_making', 'mass_cutting_printing', 'cutting',
+  'pending', 'confirmed', 'awaiting_materials', 'queued', 'design', 'pattern_making', 'mass_cutting', 'cutting',
   'sewing', 'in_repair', 'ready_for_fitting', 'final_adjustments', 'qc_ironing', 'qc_check', 'on_hold',
 ]);
 export const READY_FOR_PICKUP = new Set(['ready_for_pickup', 'balance_handover']);
@@ -72,6 +72,8 @@ export const READY_FOR_PICKUP = new Set(['ready_for_pickup', 'balance_handover']
 export function stepperKey(status: string): string {
   if (status === 'confirmed' || status === 'awaiting_materials') return 'pending';
   if (status === 'balance_handover') return 'ready_for_pickup';
+  // For bulk orders: mass_cutting maps to the single Cutting step
+  if (status === 'mass_cutting') return 'cutting';
   return status;
 }
 
@@ -88,7 +90,7 @@ export function buildStages(status: string, timestamps?: Record<string, string |
       { key: 'pending', label: 'Pending', Icon: Clock },
       { key: 'queued', label: 'Queued', Icon: Clock },
       { key: 'in_repair', label: 'In Repair', Icon: Wrench },
-      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'qc_check', label: 'Quality Check', Icon: Sparkles },
       { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
       { key: 'completed', label: 'Completed', Icon: Flag },
     ]);
@@ -100,7 +102,7 @@ export function buildStages(status: string, timestamps?: Record<string, string |
       { key: 'pending', label: 'Pending', Icon: Clock },
       { key: 'queued', label: 'Queued', Icon: Clock },
       { key: 'in_repair', label: 'In Alteration', Icon: Scissors },
-      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'qc_check', label: 'Quality Check', Icon: Sparkles },
       { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
       { key: 'completed', label: 'Completed', Icon: Flag },
     ]);
@@ -112,23 +114,23 @@ export function buildStages(status: string, timestamps?: Record<string, string |
       { key: 'pending', label: 'Pending', Icon: Clock },
       { key: 'queued', label: 'Queued', Icon: Clock },
       { key: 'in_repair', label: 'In Repair', Icon: Wrench },
-      { key: 'qc_check', label: 'QC Check', Icon: Sparkles },
+      { key: 'qc_check', label: 'Quality Check', Icon: Sparkles },
       { key: 'ready_for_pickup', label: 'Ready', Icon: Package },
       { key: 'completed', label: 'Completed', Icon: Flag },
     ]);
   }
 
-  const bulk = pipeline === 'bulk' || status === 'mass_cutting_printing';
+  const bulk = pipeline === 'bulk' || status === 'mass_cutting';
   const stages: StepperStage[] = [
     { key: 'pending', label: 'Pending', Icon: Clock },
     { key: 'design', label: 'Design', Icon: Palette },
-    bulk ? { key: 'mass_cutting_printing', label: 'Mass Cutting & Printing', short: 'Printing', Icon: Printer }
+    bulk
+      ? { key: 'cutting', label: 'Cutting', short: 'Cutting', Icon: Scissors }
       : { key: 'pattern_making', label: 'Pattern Making', short: 'Pattern', Icon: Ruler },
-    { key: 'cutting', label: 'Cutting', Icon: Scissors },
     { key: 'sewing', label: 'Sewing / Assembly', short: 'Sewing', Icon: Shirt },
     { key: 'ready_for_fitting', label: 'Ready for Fitting', short: 'Fitting', Icon: Ruler },
     { key: 'final_adjustments', label: 'Final Adjustments', short: 'Adjust', Icon: Wrench },
-    { key: 'qc_ironing', label: 'QC & Ironing', short: 'QC', Icon: Sparkles },
+    { key: 'qc_ironing', label: 'Quality Check', short: 'Quality', Icon: Sparkles },
     { key: 'ready_for_pickup', label: 'Ready for Pickup', short: 'Ready', Icon: Package },
     { key: 'completed', label: 'Completed', short: 'Done', Icon: Flag },
   ];

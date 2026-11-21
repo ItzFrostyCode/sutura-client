@@ -4,9 +4,9 @@ import type { Job } from '../../jobHelpers';
 import { lineSteps, STEP_LABEL } from '../../productionLine';
 
 const ICON: Record<string, LucideIcon> = {
-  pattern_making: Ruler, mass_cutting_printing: Scissors, cutting: Scissors, sewing: Shirt, qc_ironing: Sparkles, in_repair: Wrench, qc_check: Sparkles,
+  pattern_making: Ruler, mass_cutting: Scissors, cutting: Scissors, sewing: Shirt, qc_ironing: Sparkles, in_repair: Wrench, qc_check: Sparkles,
 };
-const SHORT: Record<string, string> = { pattern_making: 'Pattern', mass_cutting_printing: 'Mass cut', qc_ironing: 'QC', qc_check: 'QC' };
+const SHORT: Record<string, string> = { pattern_making: 'Pattern', mass_cutting: 'Cutting', qc_ironing: 'Quality Check', qc_check: 'Quality Check' };
 
 /** The stepper: the fixed production line, then "Ready" once the quality check has passed. */
 export function buildStages(job: Job): StepperStage[] {
@@ -21,7 +21,7 @@ export function stepperKey(job: Job): string | null {
   const status = job.status === 'on_hold' ? (job.status_before_hold ?? '') : job.status;
   const qc = lineSteps(job)[lineSteps(job).length - 1].status;
   if (status === 'final_adjustments') return qc;
-  if (status === 'pattern_making' || status === 'mass_cutting_printing') return lineSteps(job)[0].status;
+  if (status === 'pattern_making' || status === 'mass_cutting') return lineSteps(job)[0].status;
   if (['ready_for_pickup', 'ready_for_fitting', 'balance_handover', 'completed'].includes(status)) return 'ready';
   return lineSteps(job).some((s) => s.status === status) ? status : null;
 }

@@ -4,9 +4,9 @@ import type { StaffQueueJob } from './useStaffOverview';
 
 const STAGE: Record<string, string> = {
   confirmed: 'Ready to start', awaiting_materials: 'Waiting for materials',
-  design: 'Design', pattern_making: 'Pattern making', mass_cutting_printing: 'Mass cutting', cutting: 'Cutting', sewing: 'Sewing',
-  final_adjustments: 'Adjustment / correction', qc_ironing: 'Quality check', qc_check: 'QC check', in_repair: 'In repair', ready_for_fitting: 'Customer fitting',
-  ready_for_pickup: 'Ready for fitting / collection', balance_handover: 'Payment & handover',
+  design: 'Design', pattern_making: 'Pattern making', mass_cutting: 'Cutting', cutting: 'Cutting', sewing: 'Sewing',
+  final_adjustments: 'Adjustments', qc_ironing: 'Quality Check', qc_check: 'Quality Check', in_repair: 'In Repair', ready_for_fitting: 'Ready for Fitting',
+  ready_for_pickup: 'Ready for Pickup', balance_handover: 'Balance & Handover',
 };
 const due = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : 'No due date');
 

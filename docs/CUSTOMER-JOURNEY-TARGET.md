@@ -144,7 +144,7 @@ Staff and Owner Module documents must keep these three distinct when they descri
 | Internal status                                                                    | Customer-facing phase                      |
 | ---------------------------------------------------------------------------------- | ------------------------------------------ |
 | `pending`                                                                        | Order Received                             |
-| `design`, `pattern_making`, `mass_cutting_printing`, `cutting`, `sewing` | In Production                              |
+| `design`, `pattern_making`, `mass_cutting`, `cutting`, `sewing` | In Production                              |
 | `ready_for_fitting`, `final_adjustments`                                       | Fitting / Adjustment                       |
 | `qc_ironing`                                                                     | Finalizing                                 |
 | `ready_for_pickup`                                                               | Ready for Pickup                           |

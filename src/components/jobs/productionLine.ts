@@ -3,8 +3,8 @@ import { isBulkOrder, isRepairOnly, type Job } from './jobHelpers';
 export interface LineStep { status: string; label: string }
 
 export const STEP_LABEL: Record<string, string> = {
-  design: 'Design', pattern_making: 'Pattern making', mass_cutting_printing: 'Mass cutting', cutting: 'Cutting', sewing: 'Sewing',
-  in_repair: 'Repair', qc_ironing: 'Quality check', qc_check: 'Quality check', final_adjustments: 'Fixing',
+  design: 'Design', pattern_making: 'Pattern making', cutting: 'Cutting', sewing: 'Sewing',
+  in_repair: 'Repair', qc_ironing: 'Quality Check', qc_check: 'Quality Check', final_adjustments: 'Fixing',
   ready_for_pickup: 'Ready for pick-up', completed: 'Completed',
 };
 const step = (status: string): LineStep => ({ status, label: STEP_LABEL[status] ?? status });
@@ -15,12 +15,25 @@ export const isGated = (job: Job) => Boolean(job.uses_confirmation_flow) && !isR
 /** The fixed line an order follows while it is made. Mirrors App\Support\ProductionLine::steps. */
 export function lineSteps(job: Job): LineStep[] {
   if (isRepairOnly(job)) return ['in_repair', 'qc_check'].map(step);
-  return [isBulkOrder(job) ? 'mass_cutting_printing' : 'pattern_making', 'cutting', 'sewing', 'qc_ironing'].map(step);
+  // Bulk orders: single "Cutting" step (merges mass_cutting + cutting)
+  // Regular orders: Pattern making → Cutting → Sewing → Quality Check
+  return isBulkOrder(job)
+    ? ['cutting', 'sewing', 'qc_ironing'].map(step)
+    : ['pattern_making', 'cutting', 'sewing', 'qc_ironing'].map(step);
 }
 
 const slot = (job: Job, status: string) => {
-  const s = status === 'pattern_making' || status === 'mass_cutting_printing' ? lineSteps(job)[0].status : status;
-  const i = lineSteps(job).findIndex((x) => x.status === s);
+  const steps = lineSteps(job);
+  // For bulk: both mass_cutting and cutting map to the single Cutting step (index 0)
+  // For regular: pattern_making maps to index 0, cutting to index 1
+  const bulk = isBulkOrder(job);
+  let s = status;
+  if (bulk && (status === 'mass_cutting' || status === 'cutting')) {
+    s = 'cutting';
+  } else if (!bulk && status === 'pattern_making') {
+    s = 'pattern_making';
+  }
+  const i = steps.findIndex((x) => x.status === s);
   return i < 0 ? null : i;
 };
 

@@ -35,7 +35,7 @@ export default function StageControls({ job, rd, fixOpen, onFix }: StageControls
         {v.back && <button type="button" disabled={off} onClick={a.productionBack} className={BTN_SM}>Back to {v.back.label}</button>}
         {v.atQc ? (
           <>
-            <button type="button" disabled={off} onClick={a.passQuality} className={BTN_PRIMARY}>Quality check passed</button>
+            <button type="button" disabled={off} onClick={a.passQuality} className={BTN_PRIMARY}>Quality Check passed</button>
             <button type="button" disabled={off} onClick={() => onFix(true)} className={BTN}>Needs a fix</button>
           </>
         ) : v.next && (

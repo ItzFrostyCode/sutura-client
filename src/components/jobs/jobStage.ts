@@ -56,9 +56,9 @@ export function nextTask(job: Job): { status: string; label: string } | null {
   return lineView(job).next;
 }
 
-/** The task production starts with (never Design): Pattern, Mass cutting for a bulk order, Repair for a repair. Same rule as JobOrder::firstProductionTask(). */
+/** The task production starts with (never Design): Pattern for regular, Cutting for bulk, Repair for a repair. Same rule as JobOrder::firstProductionTask(). */
 export function firstTask(job: Job): { status: string; label: string } {
-  const status = isRepairOnly(job) ? 'in_repair' : isBulkOrder(job) ? 'mass_cutting_printing' : 'pattern_making';
+  const status = isRepairOnly(job) ? 'in_repair' : isBulkOrder(job) ? 'mass_cutting' : 'pattern_making';
   return { status, label: TASK_LABEL[status] ?? status };
 }
 

@@ -364,7 +364,7 @@ API / BACKEND        POST /stores/{slug}/bulk-orders  (JobOrderController::custo
 VALIDATION           Item must have a linked bulk_sublimation-typed Service; roster count must meet min_order_qty
 DATABASE ENTITY      job_orders (custom_order_data.team_roster holds the full roster)
 INITIAL STATUS       pending, payment_status = unpaid, total_amount = item price × roster count
-WHO ACTS NEXT        Owner/staff — pipeline auto-detects bulk (isBulkOrder()) and swaps pattern_making for mass_cutting_printing
+WHO ACTS NEXT        Owner/staff — pipeline auto-detects bulk (isBulkOrder()) and swaps pattern_making for mass_cutting
 ```
 
 ```
@@ -379,7 +379,7 @@ INITIAL STATUS       pending, payment_status = unpaid, total_amount = item price
 ### 8.1 Production pipeline (owner/staff side, for context)
 
 ```
-JobOrder::STATUSES = pending → design → pattern_making (or mass_cutting_printing for bulk)
+JobOrder::STATUSES = pending → design → pattern_making (or mass_cutting for bulk)
                     → cutting → sewing → ready_for_fitting → final_adjustments
                     → qc_ironing → ready_for_pickup → completed
                     (cancelled / rejected / on_hold reachable from most points)
@@ -473,7 +473,7 @@ Two independent read paths onto the **same** `job_orders` row, both served by `J
 | Scope            | `customer_id = current user`                                                                                                                                                                                                                 | Any order matched by`tracking_code` or `order_number` (dash/space-insensitive) |
 | Consumed by      | `/account/orders`, `/account/orders/[id]`                                                                                                                                                                                                  | `/track`, `/track/[code]`                                                      |
 | Fields returned  | Same safe subset both ways: order_number, tracking_code, status, garment_category, item/service name, is_rush, due_date, total_amount, balance, payment_status, progress_photos, per-stage timestamps                                          | identical                                                                          |
-| Stage timestamps | Best-effort, assembled from`job_order_staff.assigned_at` per stage (no dedicated stage-history table) — stages with nothing tracked (`mass_cutting_printing`, `ready_for_fitting`, `completed`) are left `null` rather than guessed | identical                                                                          |
+| Stage timestamps | Best-effort, assembled from`job_order_staff.assigned_at` per stage (no dedicated stage-history table) — stages with nothing tracked (`mass_cutting`, `ready_for_fitting`, `completed`) are left `null` rather than guessed | identical                                                                          |
 
 Neither path exposes staff assignments, internal notes, or payment records — only the fields a customer is meant to see.
 
@@ -482,7 +482,7 @@ Neither path exposes staff assignments, internal notes, or payment records — o
 | Internal`JobOrder.status`                                                        | Customer-facing phase                         |
 | ---------------------------------------------------------------------------------- | --------------------------------------------- |
 | `pending`                                                                        | Order Received                                |
-| `design`, `pattern_making`, `mass_cutting_printing`, `cutting`, `sewing` | In Production                                 |
+| `design`, `pattern_making`, `mass_cutting`, `cutting`, `sewing` | In Production                                 |
 | `ready_for_fitting`, `final_adjustments`                                       | Fitting / Adjustment                          |
 | `qc_ironing`                                                                     | Finalizing                                    |
 | `ready_for_pickup`                                                               | Ready for Pickup                              |
@@ -529,7 +529,7 @@ Appointment  pending → confirmed → in_progress → completed
                  cancelled  cancelled    cancelled
                             no_show
 
-JobOrder     pending → design → pattern_making|mass_cutting_printing → cutting → sewing
+JobOrder     pending → design → pattern_making|mass_cutting → cutting → sewing
                   → ready_for_fitting → final_adjustments → qc_ironing
                   → ready_for_pickup → completed
              (cancelled / rejected / on_hold reachable from most points)

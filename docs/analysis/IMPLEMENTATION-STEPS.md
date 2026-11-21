@@ -14,7 +14,7 @@ Source of each fact is the code (file named) or a named outside source — nothi
 ## A. Tracking shows sewing, not printing
 
 Why: the shop wants the tracker to read as tailoring (tahi). The bulk stage key
-`mass_cutting_printing` (JobOrder::STATUSES) is shown as "Mass Cutting & Printing" with a printer icon.
+`mass_cutting` (JobOrder::STATUSES) is shown as "Mass Cutting" with a scissors icon.
 
 - [x] A1. Keep the key. Change every visible label to **"Mass Cutting"** and the printer icon to scissors:
   `OrderTrackingView.tsx`, `JobProductionTimeline.tsx`, `jobHelpers.tsx`, `stageIconFilters.ts`,

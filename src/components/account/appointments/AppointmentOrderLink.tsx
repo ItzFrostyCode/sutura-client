@@ -4,9 +4,9 @@ import type { MyJobOrder } from './appointmentTypes';
 
 const STAGE: Record<string, string> = {
   pending: 'Being prepared', confirmed: 'Confirmed', awaiting_materials: 'Waiting for materials', queued: 'In line',
-  design: 'In production', pattern_making: 'In production', mass_cutting_printing: 'In production', cutting: 'In production', sewing: 'In production',
-  in_repair: 'In production', qc_ironing: 'Final check', qc_check: 'Final check', ready_for_fitting: 'Ready for fitting', final_adjustments: 'Adjusting',
-  ready_for_pickup: 'Ready for pick-up', balance_handover: 'Ready for pick-up', completed: 'Handed over', on_hold: 'On hold', cancelled: 'Cancelled', rejected: 'Not accepted',
+  design: 'In production', pattern_making: 'In production', mass_cutting: 'In production', cutting: 'In production', sewing: 'In production',
+  in_repair: 'In production', qc_ironing: 'Quality Check', qc_check: 'Quality Check', ready_for_fitting: 'Ready for Fitting', final_adjustments: 'Adjustments',
+  ready_for_pickup: 'Ready for Pickup', balance_handover: 'Ready for Pickup', completed: 'Handed over', on_hold: 'On hold', cancelled: 'Cancelled', rejected: 'Not accepted',
 };
 
 /** The order that came out of this visit (or that this fitting is for): its number, where it is now, and the way to follow it. */

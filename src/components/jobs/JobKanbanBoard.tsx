@@ -278,7 +278,7 @@ export default function JobKanbanBoard({
         </>
       );
     }
-    if (norm === 'production') return go('quality_check', <>{compact ? 'To QC' : 'To quality check'} →</>);
+    if (norm === 'production') return go('quality_check', <>{compact ? 'To Quality Check' : 'To Quality Check'} →</>);
     if (norm === 'quality_check') return go('ready_for_fitting', <>{compact ? 'To fitting' : 'Ready for fitting'} →</>);
     // The list view has room for one button; Adjustments stays in the "…" menu there.
     if (norm === 'ready_for_fitting' && compact) return go('ready_for_pickup', <>Fitting OK →</>);
@@ -290,7 +290,7 @@ export default function JobKanbanBoard({
         </>
       );
     }
-    if (norm === 'adjustments') return go('quality_check', <>Back to QC →</>);
+    if (norm === 'adjustments') return go('quality_check', <>Back to Quality Check →</>);
     if (norm === 'ready_for_pickup') return go('completed', <><Check size={13} aria-hidden="true" /> Claimed</>, `${btn} bg-emerald-700 hover:bg-emerald-800 text-white`);
     if (norm === 'on_hold') return go('production', <>Resume →</>);
     return null;

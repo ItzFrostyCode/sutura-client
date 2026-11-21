@@ -74,7 +74,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     step: 'Step 7',
     title: 'Track Production in Jobs',
-    desc: 'Every order moves through the production stages: Design, Pattern Making, Cutting, Sewing, Fitting, Final Adjustments, QC and Ready for Pickup. Cutting waits until the required deposit is paid, and whoever moves an order to a stage is recorded on it. Bulk orders (a team’s jersey set, a school’s uniform batch) are counted by size.',
+    desc: ‘Every order moves through the production stages: Design, Pattern Making, Cutting, Sewing, Fitting, Final Adjustments, Quality Check and Ready for Pickup. Cutting waits until the required deposit is paid, and whoever moves an order to a stage is recorded on it. Bulk orders (a team’s jersey set, a school’s uniform batch) are counted by size.’,
     icon: Scissors,
     href: '/dashboard/jobs',
     tour: 'jobs',

@@ -37,7 +37,7 @@ export default function CompletionPhoto({ url, setUrl, readOnly }: CompletionPho
   return (
     <section className="space-y-2 border-t border-line pt-6">
       <SectionHeading icon={CheckCircle2} title="Completion Photo" optional />
-      <p className="text-[13px] text-ink-muted">A quick photo of the finished garment — doubles as proof-of-completion, QC evidence, and builds your portfolio.</p>
+      <p className="text-[13px] text-ink-muted">A quick photo of the finished garment — doubles as proof-of-completion, Quality Check evidence, and builds your portfolio.</p>
       {url ? (
         <div className="relative inline-block pt-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
