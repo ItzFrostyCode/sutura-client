@@ -102,7 +102,7 @@ export function FinancialStatementSummary({ job, financials }: FinancialStatemen
           <div className="flex justify-between items-center text-xs">
             <span className="text-taupe-dark font-medium flex items-center gap-1">
               <Scissors size={12} className="text-taupe" />
-              Own Fabric Deduction:
+              Fabric / Other Materials Deduction:
             </span>
             <span className="font-bold text-taupe-dark">−₱{fabricAfter.toFixed(2)}</span>
           </div>

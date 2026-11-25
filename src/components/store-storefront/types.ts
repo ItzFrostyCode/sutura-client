@@ -30,6 +30,8 @@ export interface PublicService {
   service_types?: string[];
   base_price: string;
   sale_price?: string | number | null;
+  /** Services → Discount: the % off every price tier while the sale dates run. */
+  sale_percent?: number | null;
   sale_starts_at?: string | null;
   sale_ends_at?: string | null;
   estimated_days: number | null;
@@ -59,6 +61,8 @@ export interface PublicService {
     user: { id: number; name: string; profile_picture: string | null } | null;
   }[];
   size_chart_image_url?: string | null;
+  /** Every Reference Chart image (size_chart_image_url is the first). */
+  size_chart_image_urls?: string[] | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: { size: string; values: string[] }[] | null;
   // Per-item/per-job-type pricing (e.g. Alteration -> Pants Hemming ₱150,

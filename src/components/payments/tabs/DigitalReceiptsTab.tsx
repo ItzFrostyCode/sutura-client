@@ -7,6 +7,7 @@ import { TableSkeleton } from '@/components/ui/Skeleton';
 import { ReceiptItem } from '../usePayments';
 import DeckReceiptViewer from '../receipts/DeckReceiptViewer';
 import TableReceiptList from '../receipts/TableReceiptList';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 
 const LIST_PAGE_SIZE = 7;
 
@@ -48,9 +49,12 @@ export default function DigitalReceiptsTab({
   // A receipt approved/rejected in the popup leaves this tab's list; close if it's gone.
   const inspected = inspecting !== null ? activeReceipts[inspecting] ?? null : null;
   React.useEffect(() => { setPage(0); setInspecting(null); }, [receiptFilter]);
+  // Changing page brings the list (from its filter bar) back into view.
+  const listTopRef = React.useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { setPage(n); scrollToListTop(listTopRef.current); };
 
   return (
-    <div>
+    <div ref={listTopRef} className="scroll-mt-24">
       {/* Inner Toolbar (Pending/Approved/Rejected Sub-filters & View Switcher) */}
       <div className="p-2.5 border-b border-line bg-canvas/20 flex items-center justify-between gap-2.5 flex-wrap">
         <div className="h-[38px] flex items-center gap-1 p-1 bg-canvas border border-line rounded-lg">
@@ -139,11 +143,11 @@ export default function DigitalReceiptsTab({
             <div className="flex items-center justify-between border-t border-line px-4 py-3 text-xs text-ink-muted">
               <span className="tabular-nums">Page {safePage + 1} of {pageCount} · {activeReceipts.length} total</span>
               <div className="flex gap-1">
-                <button type="button" aria-label="Previous page" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}
+                <button type="button" aria-label="Previous page" disabled={safePage === 0} onClick={() => goToPage(safePage - 1)}
                   className="flex h-9 w-9 items-center justify-center rounded-md border border-line hover:bg-canvas disabled:opacity-40">
                   <ChevronLeft size={16} />
                 </button>
-                <button type="button" aria-label="Next page" disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}
+                <button type="button" aria-label="Next page" disabled={safePage >= pageCount - 1} onClick={() => goToPage(safePage + 1)}
                   className="flex h-9 w-9 items-center justify-center rounded-md border border-line hover:bg-canvas disabled:opacity-40">
                   <ChevronRight size={16} />
                 </button>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import api from '@/lib/axios';
+import { logUnexpectedError } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
@@ -162,7 +163,7 @@ export function useJobs() {
       applyServerJob(jobId, res.data?.data);
       toast.success('Job status updated successfully.');
     } catch (err) {
-      console.error('Failed to update status', err);
+      logUnexpectedError('Failed to update status', err);
       restoreJob(jobToUpdate);
       // Surfaces server-side gate messages (e.g. the DP gate, or the fitting
       // limit's 'block' policy) instead of a generic failure — those are
@@ -195,7 +196,7 @@ export function useJobs() {
           : 'Staff assignment removed.'
       );
     } catch (err: unknown) {
-      console.error('Failed to assign staff', err);
+      logUnexpectedError('Failed to assign staff', err);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to update staff assignment.');
     }

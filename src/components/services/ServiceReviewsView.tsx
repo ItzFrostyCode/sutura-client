@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Star } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 
 interface Rating {
   id: number;
@@ -21,6 +22,9 @@ export default function ServiceReviewsView() {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [rating, setRating] = useState('');
+  // Changing page brings the card's top back into view.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { setPage(n); scrollToListTop(cardRef.current); };
 
   useEffect(() => {
     if (!store?.id) return;
@@ -34,7 +38,7 @@ export default function ServiceReviewsView() {
   }, [store?.id, page, rating]);
 
   return (
-    <div className="bg-surface border border-line p-5 space-y-4">
+    <div ref={cardRef} className="scroll-mt-24 bg-surface border border-line p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-ink">Service Ratings</h2>
@@ -68,9 +72,9 @@ export default function ServiceReviewsView() {
 
       {lastPage > 1 && (
         <div className="flex items-center justify-between pt-2 border-t border-line">
-          <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="h-11 px-4 border border-line text-sm disabled:opacity-40 cursor-pointer">Prev</button>
+          <button type="button" disabled={page <= 1} onClick={() => goToPage(page - 1)} className="h-11 px-4 border border-line text-sm disabled:opacity-40 cursor-pointer">Prev</button>
           <span className="text-xs text-ink-muted">Page {page} of {lastPage}</span>
-          <button type="button" disabled={page >= lastPage} onClick={() => setPage(page + 1)} className="h-11 px-4 border border-line text-sm disabled:opacity-40 cursor-pointer">Next</button>
+          <button type="button" disabled={page >= lastPage} onClick={() => goToPage(page + 1)} className="h-11 px-4 border border-line text-sm disabled:opacity-40 cursor-pointer">Next</button>
         </div>
       )}
     </div>

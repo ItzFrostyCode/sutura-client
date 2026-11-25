@@ -9,6 +9,12 @@ interface JobPrintWorkTicketProps {
   store: { name?: string } | null;
 }
 
+// Friendlier names for keys stored on the order (others print as the key with spaces).
+const PRINT_LABELS: Record<string, string> = {
+  own_fabric_deduction: 'Fabric / other materials deduction',
+  own_fabric_deduction_after: 'Fabric / materials deduction added later',
+};
+
 export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketProps) {
   const measurementMetrics = job.measurement?.metrics || {};
   const metricEntries = Object.entries(measurementMetrics);
@@ -64,7 +70,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
             <div className="grid grid-cols-4 gap-x-8 gap-y-3">
               {metricEntries.map(([k, v]) => (
                 <div key={k} className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 uppercase font-semibold">{k.replaceAll('_', ' ')}</span>
+                  <span className="text-[10px] text-gray-500 uppercase font-semibold">{PRINT_LABELS[k] ?? k.replaceAll('_', ' ')}</span>
                   <span className="font-medium text-base border-b border-dashed border-gray-300 pb-1">
                     {typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '')}″
                   </span>
@@ -84,7 +90,7 @@ export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketPro
           <div className="grid grid-cols-2 gap-x-8 gap-y-3">
             {customSpecEntries.map(([k, v]) => (
               <div key={k} className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase font-semibold">{k.replaceAll('_', ' ')}</span>
+                <span className="text-[10px] text-gray-500 uppercase font-semibold">{PRINT_LABELS[k] ?? k.replaceAll('_', ' ')}</span>
                 <span className="font-medium text-base border-b border-dashed border-gray-300 pb-1">
                   {typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v) : '—'}
                 </span>

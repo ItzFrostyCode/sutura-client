@@ -9,8 +9,12 @@ import { useShopAccount } from '@/hooks/useShopAccount';
 // actions on it — booking, repair requests — stay blocked.
 const OWN_STORE_SUBPATHS = ['', '/catalog', '/service', '/package', '/portfolio'];
 
+// Legal pages apply to shops too: Billing links the Subscription Agreement (/terms#subscription-agreement).
+const LEGAL_PAGES = ['/terms', '/privacy'];
+
 function isAllowed(pathname: string, ownStoreKeys: string[]): boolean {
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/print') || pathname.startsWith('/admin')) return true;
+  if (LEGAL_PAGES.includes(pathname)) return true;
   return ownStoreKeys.some((key) =>
     OWN_STORE_SUBPATHS.some((sub) => {
       const base = `/store/${key}${sub}`;

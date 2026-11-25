@@ -6,7 +6,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useRef } from 'react';
 import SearchInput from '@/components/shared/SearchInput';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 import EmptyState from '@/components/shared/EmptyState';
 import {
   type AppNotification,
@@ -53,8 +55,12 @@ export default function NotificationListTab({
   totalCount,
   onPageChange,
 }: NotificationListTabProps) {
+  // Changing page brings the list's top back into view.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { onPageChange(n); scrollToListTop(rootRef.current); };
+
   return (
-    <div className="space-y-4">
+    <div ref={rootRef} className="scroll-mt-24 space-y-4">
       {/* Action Toolbar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
@@ -230,7 +236,7 @@ export default function NotificationListTab({
               <button
                 type="button"
                 disabled={currentPage <= 1}
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                onClick={() => goToPage(Math.max(1, currentPage - 1))}
                 className="p-1.5 rounded-lg border border-line bg-surface text-ink-body hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 aria-label="Previous page"
               >
@@ -247,7 +253,7 @@ export default function NotificationListTab({
                   <button
                     key={pageNum}
                     type="button"
-                    onClick={() => onPageChange(pageNum)}
+                    onClick={() => goToPage(pageNum)}
                     className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${
                       pageNum === currentPage
                         ? 'bg-taupe text-white'
@@ -262,7 +268,7 @@ export default function NotificationListTab({
               <button
                 type="button"
                 disabled={currentPage >= lastPage}
-                onClick={() => onPageChange(Math.min(lastPage, currentPage + 1))}
+                onClick={() => goToPage(Math.min(lastPage, currentPage + 1))}
                 className="p-1.5 rounded-lg border border-line bg-surface text-ink-body hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 aria-label="Next page"
               >

@@ -7,6 +7,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import CatalogGridView from '@/components/catalog/CatalogGridView';
 import CatalogCreateModal from '@/components/catalog/create/CatalogCreateModal';
 import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 // Catalog Designs is photos and descriptions only: no Analytics tab and no
 // metric cards. "+ Create New" opens the create form in a modal.
@@ -29,15 +30,17 @@ export default function CatalogShowcaseShell() {
         title="Catalog Designs"
         description="Your garment designs: photos and descriptions customers can browse."
         actions={canManage ? (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            data-tour="catalog-create"
-            className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
-          >
-            <Plus size={15} />
-            <span>Create New</span>
-          </button>
+          <ReadOnlyLock>
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              data-tour="catalog-create"
+              className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Create New</span>
+            </button>
+          </ReadOnlyLock>
         ) : undefined}
         inlineActions
       />

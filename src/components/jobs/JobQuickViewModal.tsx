@@ -35,6 +35,7 @@ import { Job as JobItem, TypeBadge, getDueStatus, normalizeJobStatus } from './j
 import type { Staff } from '@/components/staff/staffHelpers';
 import { roleLabel, staffOptionLabel } from '@/components/staff/staffHelpers';
 import { GARMENT_CATEGORY_LABELS } from './jobHelpers';
+import { customerEmail } from '@/components/customers/customerHelpers';
 
 interface JobQuickViewModalProps {
   isOpen: boolean;
@@ -361,7 +362,7 @@ export default function JobQuickViewModal({
                 <span className="block text-[11px] text-ink-muted">Email Address</span>
                 <div className="flex items-center gap-1.5 font-semibold text-ink mt-0.5 truncate">
                   <Mail size={12} className="text-ink-muted shrink-0" />
-                  <span className="truncate">{currentJob.customer?.email || 'Not specified'}</span>
+                  <span className="truncate">{customerEmail(currentJob.customer) || 'Not specified'}</span>
                 </div>
               </div>
             </div>

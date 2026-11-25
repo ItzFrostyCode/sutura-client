@@ -16,6 +16,28 @@ export const customerEmail = (customer?: { email?: string | null; contact_email?
 
 /** Philippine mobile number: 11 digits starting with 09 (e.g. 09663946888). */
 export const PH_MOBILE_PATTERN = /^09\d{9}$/;
+export const PH_MOBILE_ERROR = 'Phone number must be 11 digits starting with 09, e.g. 09171234567.';
+
+/**
+ * Keeps a phone field to a PH mobile as it's typed or pre-filled: digits only,
+ * "+63 917…" becomes "0917…", and never more than 11 digits.
+ */
+export const toPhMobileInput = (value: string) => {
+  let digits = value.replace(/\D/g, '');
+  if (digits.startsWith('63')) digits = `0${digits.slice(2)}`;
+  return digits.slice(0, 11);
+};
+
+/** Props for a PH mobile <input>: numeric keypad, 11-digit cap, and the browser blocks submit on a bad number. */
+export const PH_MOBILE_INPUT_PROPS = {
+  type: 'tel',
+  inputMode: 'numeric',
+  maxLength: 11,
+  pattern: '09[0-9]{9}',
+  title: PH_MOBILE_ERROR,
+  placeholder: '09171234567',
+} as const;
+
 export const EMAIL_FORMAT_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export const isWalkInCustomer =(customer?: { email?: string; is_walk_in?: boolean; intake_channel?: string; suki_tag?: string | null } | null) => {

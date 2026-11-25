@@ -1,19 +1,28 @@
 import {
-  CreditCard, CheckCircle, Crown, Zap, Calendar, TrendingUp, Clock,
+  CreditCard, CheckCircle, Crown, Zap, Calendar, TrendingUp, Clock, XCircle,
 } from 'lucide-react';
-import type { Subscription } from './billingTypes';
+import { planRunState, type Subscription } from './billingTypes';
 
 interface CurrentPlanSectionProps {
   currentSubscription: Subscription | null;
   activePlanSlug: string;
   daysUntilExpiry: number | null;
+  /** Undoes a cancellation while the plan still runs. */
+  onResume: () => void;
+  busy: boolean;
 }
 
 export default function CurrentPlanSection({
   currentSubscription,
   activePlanSlug,
   daysUntilExpiry,
+  onResume,
+  busy,
 }: CurrentPlanSectionProps) {
+  const { cancelled } = planRunState(currentSubscription);
+  const endsOn = currentSubscription?.ends_at
+    ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
+    : '';
   const getPlanIcon = () => {
     if (activePlanSlug === 'premium') return Crown;
     if (activePlanSlug === 'pro') return Zap;
@@ -47,8 +56,8 @@ export default function CurrentPlanSection({
             )}
             {currentSubscription?.status && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/15">
-                <CheckCircle size={12} />
-                {currentSubscription.status.toUpperCase()}
+                {cancelled ? <XCircle size={12} /> : <CheckCircle size={12} />}
+                {cancelled ? 'CANCELLED' : currentSubscription.status.toUpperCase()}
               </span>
             )}
           </div>
@@ -59,7 +68,7 @@ export default function CurrentPlanSection({
           <div className="p-5 flex items-start gap-3">
             <Calendar size={16} className="text-white/70 mt-0.5 shrink-0" />
             <div>
-              <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">Renewal Date</p>
+              <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">{cancelled ? 'Access Until' : 'Renewal Date'}</p>
               <p className="text-sm font-semibold">
                 {currentSubscription?.ends_at
                   ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', {
@@ -101,6 +110,19 @@ export default function CurrentPlanSection({
           </div>
         </div>
       </div>
+
+      {cancelled ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center">
+          <p className="flex-1">
+            You cancelled this plan. You keep full access until <strong>{endsOn}</strong>; after that your shop becomes
+            read-only until you choose a plan again.
+          </p>
+          <button type="button" onClick={onResume} disabled={busy}
+            className="h-10 shrink-0 rounded-xl border border-amber-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-canvas disabled:opacity-50 cursor-pointer">
+            {busy ? 'Saving…' : 'Keep my subscription'}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -8,12 +8,14 @@ interface GuideImageFieldProps {
   readonly alt: string;
   readonly onUpload: (file: File | undefined) => void;
   readonly onRemove: () => void;
+  /** Extra control on the Replace / Remove row (e.g. "+ Add image" after the last chart). */
+  readonly extraAction?: React.ReactNode;
 }
 
 // The preview is the same GuideImage the customer sees — whole image, own
 // proportions — so what you attach is what they get. The empty placeholder is
 // a grey box that separates it from the white box around it.
-export default function GuideImageField({ imageUrl, uploading, alt, onUpload, onRemove }: Readonly<GuideImageFieldProps>) {
+export default function GuideImageField({ imageUrl, uploading, alt, onUpload, onRemove, extraAction }: Readonly<GuideImageFieldProps>) {
   const input = (
     <input
       type="file"
@@ -31,14 +33,15 @@ export default function GuideImageField({ imageUrl, uploading, alt, onUpload, on
     return (
       <div className="space-y-2">
         <GuideImage src={imageUrl} alt={alt} />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <label className="h-11 px-4 border border-line-strong bg-white text-sm font-medium text-ink flex items-center gap-2 cursor-pointer hover:bg-sunken">
-            <RefreshCw size={15} /> Replace
+            {uploading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />} {uploading ? 'Uploading…' : 'Replace'}
             {input}
           </label>
           <button type="button" onClick={onRemove} className="h-11 px-4 border border-line-strong bg-white text-sm font-medium text-danger flex items-center gap-2 cursor-pointer hover:bg-danger/5">
             <Trash2 size={15} /> Remove
           </button>
+          {extraAction}
         </div>
       </div>
     );

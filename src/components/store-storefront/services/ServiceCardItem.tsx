@@ -2,7 +2,7 @@ import React from 'react';
 import { Clock, Scissors, Star, MapPin, Pencil, Trash2 } from 'lucide-react';
 import { PublicService } from '../types';
 import { getMediaUrl } from '@/lib/media';
-import { getActiveSale } from '@/lib/salePricing';
+import { getActiveSale, saleEndLabel } from '@/lib/salePricing';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { SERVICE_TYPE_LABELS } from '@/lib/canonicalTaxonomy';
 
@@ -131,13 +131,11 @@ export default function ServiceCardItem({
           {/* 4. Price */}
           <div>
             {activeSale ? (
-              <div className="flex items-center gap-1.5">
-                <span className="line-through text-ink-faint text-[10px] font-normal">
-                  ₱{activeSale.original.toLocaleString()}
-                </span>
-                <span className="text-xs font-bold text-rose-600">
-                  ₱{activeSale.sale.toLocaleString()}
-                </span>
+              <div className="flex flex-wrap items-center gap-x-1.5">
+                <span className="text-xs font-bold text-rose-600 tabular-nums">₱{activeSale.sale.toLocaleString()}</span>
+                <span className="line-through text-ink-faint text-[10px] font-normal tabular-nums">₱{activeSale.original.toLocaleString()}</span>
+                <span className="text-[10px] font-bold text-rose-600">-{activeSale.percentOff}%</span>
+                {activeSale.endsAt && <span className="text-[10px] font-medium text-rose-700">· {saleEndLabel(activeSale.endsAt)}</span>}
               </div>
             ) : service.base_price !== null && service.base_price !== undefined ? (
               <p className="text-xs font-bold text-ink">

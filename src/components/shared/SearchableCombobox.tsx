@@ -1,7 +1,14 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, ChevronDown, Check, X, Loader2 } from 'lucide-react';
+
+type PanelPos = { left: number; width: number; top?: number; bottom?: number; listMax: number };
+const GAP = 6;
+const EDGE = 12;
+// Search box + its hint row, so the list's max height leaves room for them.
+const SEARCH_BLOCK = 92;
 
 export interface ComboboxOption<T = unknown> {
   id: string | number;
@@ -30,6 +37,10 @@ interface SearchableComboboxProps<T = unknown> {
   readonly autoHighlightFirst?: boolean;
   readonly allowClear?: boolean;
   readonly rightAction?: React.ReactNode;
+  /** Show the sublabel on the same line, muted, as "Label — sublabel" (e.g. a customer and their number). */
+  readonly inlineSublabel?: boolean;
+  /** Id for the trigger, so a <label htmlFor> can point at it. */
+  readonly id?: string;
 }
 
 export default function SearchableCombobox<T = unknown>({
@@ -47,14 +58,47 @@ export default function SearchableCombobox<T = unknown>({
   autoHighlightFirst = true,
   allowClear = true,
   rightAction,
+  inlineSublabel = false,
+  id,
 }: SearchableComboboxProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // The panel is portalled to <body> with fixed positioning, so a modal's
+  // scrolling body (overflow) can't clip it. It sits under the field, or
+  // flips above when there's more room there, and follows scroll/resize.
+  const [pos, setPos] = useState<PanelPos | null>(null);
+  const place = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const below = vh - r.bottom - GAP - EDGE;
+    const above = r.top - GAP - EDGE;
+    const width = Math.max(r.width, Math.min(280, window.innerWidth - EDGE * 2));
+    const left = Math.min(r.left, window.innerWidth - width - EDGE);
+    const up = below < 260 && above > below;
+    const listMax = Math.max(120, Math.min(240, (up ? above : below) - SEARCH_BLOCK));
+    setPos(up ? { left, width, bottom: vh - r.top + GAP, listMax } : { left, width, top: r.bottom + GAP, listMax });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [isOpen, place]);
 
   // Find currently selected option
   const selectedOption = useMemo(() => {
@@ -96,7 +140,8 @@ export default function SearchableCombobox<T = unknown>({
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const t = e.target as Node;
+      if (containerRef.current && !containerRef.current.contains(t) && !panelRef.current?.contains(t)) {
         setIsOpen(false);
       }
     };
@@ -132,8 +177,11 @@ export default function SearchableCombobox<T = unknown>({
         }
         break;
       case 'Escape':
+        // Close just the list, not the modal it sits in.
         e.preventDefault();
+        e.stopPropagation();
         setIsOpen(false);
+        triggerRef.current?.focus();
         break;
       case 'Tab':
         setIsOpen(false);
@@ -169,6 +217,8 @@ export default function SearchableCombobox<T = unknown>({
     <div ref={containerRef} className={`relative w-full ${className}`}>
       {/* Trigger Button */}
       <div
+        ref={triggerRef}
+        id={id}
         role="button"
         tabIndex={disabled ? -1 : 0}
         aria-haspopup="listbox"
@@ -210,8 +260,8 @@ export default function SearchableCombobox<T = unknown>({
                     </span>
                   )}
                   {selectedOption.sublabel && (
-                    <span className="text-xs text-ink-muted truncate hidden md:inline">
-                      • {selectedOption.sublabel}
+                    <span className={`text-ink-muted truncate tabular-nums ${inlineSublabel ? 'text-xs sm:text-sm' : 'text-xs hidden md:inline'}`}>
+                      {inlineSublabel ? '— ' : '• '}{selectedOption.sublabel}
                     </span>
                   )}
                 </div>
@@ -270,10 +320,11 @@ export default function SearchableCombobox<T = unknown>({
       )}
 
       {/* Dropdown Menu Popover */}
-      {isOpen && (
+      {isOpen && pos && typeof document !== 'undefined' && createPortal(
         <div
-          className="absolute z-50 left-0 right-0 mt-1.5 bg-surface border border-line rounded-2xl shadow-xl overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100"
-          style={{ minWidth: '280px' }}
+          ref={panelRef}
+          className="fixed z-90 bg-surface border border-line rounded-2xl shadow-[0_12px_32px_-8px_rgba(45,42,38,0.22)] overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100"
+          style={{ left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom }}
         >
           {/* Integrated Search Bar */}
           <div className="p-2.5 border-b border-line bg-canvas/30">
@@ -313,10 +364,15 @@ export default function SearchableCombobox<T = unknown>({
           </div>
 
           {/* Smooth Scrollable Options List */}
+          {/* Inline mode: the padded frame holds the scrolling list, so the
+              scrollbar sits inset (10px top/bottom, 4px right) and never
+              runs into the card's rounded corners. */}
+          <div className={inlineSublabel ? 'py-2.5 pl-2.5 pr-1' : ''}>
           <ul
             ref={listRef}
             role="listbox"
-            className="max-h-60 overflow-y-auto py-1 divide-y divide-line/30 custom-scrollbar"
+            style={{ maxHeight: inlineSublabel ? pos.listMax - 20 : pos.listMax }}
+            className={`overflow-y-auto slim-scrollbar ${inlineSublabel ? 'pr-1.5 scrollbar-gutter-stable space-y-0.5' : 'py-1 divide-y divide-line/30'}`}
           >
             {filteredItems.length === 0 ? (
               <li className="px-4 py-8 text-center text-xs text-ink-muted space-y-2">
@@ -348,7 +404,9 @@ export default function SearchableCombobox<T = unknown>({
                     onClick={() => handleSelect(item)}
                     onMouseEnter={() => setHighlightedIndex(idx)}
                     className={`px-3.5 py-2.5 text-xs sm:text-sm cursor-pointer flex items-center justify-between gap-3 transition-colors ${
-                      isHighlighted
+                      inlineSublabel
+                        ? `rounded-lg text-ink ${isSelected ? 'bg-[#F3EBDD]' : isHighlighted ? 'bg-[#F8F3EC]' : ''}`
+                        : isHighlighted
                         ? 'bg-taupe/10 text-ink'
                         : isSelected
                         ? 'bg-canvas text-ink'
@@ -373,9 +431,16 @@ export default function SearchableCombobox<T = unknown>({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`truncate leading-snug ${isSelected || isHighlighted ? 'font-bold' : 'font-medium'}`}>
-                            {item.label}
-                          </span>
+                          {inlineSublabel ? (
+                            <span className="truncate leading-snug">
+                              <span className={isSelected ? 'font-semibold' : 'font-medium'}>{item.label}</span>
+                              {item.sublabel && <span className="text-ink-muted tabular-nums"> — {item.sublabel}</span>}
+                            </span>
+                          ) : (
+                            <span className={`truncate leading-snug ${isSelected || isHighlighted ? 'font-bold' : 'font-medium'}`}>
+                              {item.label}
+                            </span>
+                          )}
                           {item.badge && (
                             <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
                               item.badgeColor || 'bg-canvas text-ink-muted border border-line'
@@ -384,7 +449,7 @@ export default function SearchableCombobox<T = unknown>({
                             </span>
                           )}
                         </div>
-                        {item.sublabel && (
+                        {item.sublabel && !inlineSublabel && (
                           <p className="text-[11px] text-ink-muted truncate mt-0.5">
                             {item.sublabel}
                           </p>
@@ -398,7 +463,8 @@ export default function SearchableCombobox<T = unknown>({
                           {item.price}
                         </span>
                       )}
-                      {isSelected && (
+                      {isSelected && inlineSublabel && <Check size={16} className="text-ink" aria-hidden="true" />}
+                      {isSelected && !inlineSublabel && (
                         <span className="w-5 h-5 rounded-full bg-taupe/15 text-taupe flex items-center justify-center">
                           <Check size={13} className="font-bold stroke-[3]" />
                         </span>
@@ -409,7 +475,9 @@ export default function SearchableCombobox<T = unknown>({
               })
             )}
           </ul>
-        </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

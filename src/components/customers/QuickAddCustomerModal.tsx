@@ -5,6 +5,7 @@ import { X, UserPlus, Loader2, Phone, Mail, FileText, User } from 'lucide-react'
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { toPhMobileInput, PH_MOBILE_PATTERN, PH_MOBILE_INPUT_PROPS } from './customerHelpers';
 
 export interface CreatedCustomer {
   id: number;
@@ -37,7 +38,7 @@ export default function QuickAddCustomerModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!store || !name.trim() || !phone.trim()) return;
+    if (!store || !name.trim() || !PH_MOBILE_PATTERN.test(phone)) return;
 
     setSaving(true);
     try {
@@ -125,11 +126,10 @@ export default function QuickAddCustomerModal({
               <Phone size={11} /> Phone / Mobile <span className="text-danger">*</span>
             </label>
             <input
-              type="tel"
+              {...PH_MOBILE_INPUT_PROPS}
               required
               value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="e.g. 0917 123 4567"
+              onChange={e => setPhone(toPhMobileInput(e.target.value))}
               className="w-full bg-canvas border border-line focus:border-taupe focus:ring-2 focus:ring-taupe/15 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-ink focus:outline-none transition-all"
             />
           </div>
@@ -170,7 +170,7 @@ export default function QuickAddCustomerModal({
             </button>
             <button
               type="submit"
-              disabled={saving || !name.trim() || !phone.trim()}
+              disabled={saving || !name.trim() || !PH_MOBILE_PATTERN.test(phone)}
               className="px-5 py-2 rounded-xl bg-taupe hover:bg-taupe-hover text-white text-xs font-bold shadow-2xs transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               {saving ? <Loader2 size={13} className="animate-spin" /> : <UserPlus size={13} />}

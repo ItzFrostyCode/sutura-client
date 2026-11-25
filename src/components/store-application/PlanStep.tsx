@@ -1,8 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { FileField, StepActions } from './ApplicationFields';
-import PlatformPaymentBox from '@/components/shared/PlatformPaymentBox';
+import { StepActions } from './ApplicationFields';
 import { formatPeso, type BillingCycle } from './applicationTypes';
 import type { StoreApplicationState } from './useStoreApplication';
 
@@ -10,20 +9,18 @@ const CYCLES: { value: BillingCycle; label: string }[] = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'yearly', label: 'Yearly' },
 ];
-// Plan payments are GCash only: in the GCash app right after submitting (default), or a
-// receipt of a payment already sent to SUTURA's GCash (the backup). Or a 14-day free trial.
+// Plan payments: pay in the GCash app right after submitting (default), or a 14-day free trial.
 const TRIAL_DAYS = 14;
-type Method = 'online' | 'receipt' | 'trial';
+type Method = 'online' | 'trial';
 const METHODS: { key: Method; label: string; hint: string }[] = [
   { key: 'online', label: 'Pay with GCash', hint: 'After you submit, you’ll pay in the GCash app.' },
-  { key: 'receipt', label: 'Upload a receipt', hint: 'Already sent it to SUTURA’s GCash? Attach the screenshot.' },
   { key: 'trial', label: `Free trial: ${TRIAL_DAYS} days`, hint: 'Nothing to pay now. Choose a plan before it ends.' },
 ];
 
 export default function PlanStep({ app }: { readonly app: StoreApplicationState }) {
-  const { plans, planId, setPlanId, billingCycle, setBillingCycle, payOnline, setPayOnline, freeTrial, setFreeTrial, files, setFile, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
-  const method: Method = freeTrial ? 'trial' : payOnline ? 'online' : 'receipt';
-  const pick = (m: Method) => (m === 'trial' ? setFreeTrial(true) : setPayOnline(m === 'online'));
+  const { plans, planId, setPlanId, billingCycle, setBillingCycle, setPayOnline, freeTrial, setFreeTrial, goTo, submit, submitting, termsAccepted, setTermsAccepted } = app;
+  const method: Method = freeTrial ? 'trial' : 'online';
+  const pick = (m: Method) => (m === 'trial' ? setFreeTrial(true) : setPayOnline(true));
   const selected = plans.find((p) => p.id === planId);
   const price = selected ? (billingCycle === 'yearly' ? selected.price_yearly : selected.price_monthly) : 0;
 
@@ -51,7 +48,8 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
               </span>
               {plan.description && <span className="mobile-body-sm mt-2 text-ink-muted">{plan.description}</span>}
               <ul className="mt-3 space-y-1.5">
-                {(plan.display_features ?? plan.features ?? []).slice(0, 5).map((f) => (
+                {/* Every line set on the admin Plans page, not a preview of the first few. */}
+                {(plan.display_features ?? plan.features ?? []).map((f) => (
                   <li key={f} className="flex gap-2 mobile-caption text-ink-body"><Check size={13} className="mt-0.5 shrink-0 text-sage" />{f}</li>
                 ))}
               </ul>
@@ -63,7 +61,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
       <div className="space-y-4 border-t border-line pt-5">
         <div>
           <p className="text-sm text-ink mb-2">How do you want to start?<span className="text-danger">*</span></p>
-          <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Payment method">
+          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
             {METHODS.map((m) => {
               const on = method === m.key;
               return (
@@ -88,7 +86,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
               One free trial per shop.
             </p>
           </div>
-        ) : payOnline ? (
+        ) : (
           <div className="border border-line bg-sunken p-4 mobile-body-sm text-ink-body">
             <p><span className="text-ink-muted">Amount:</span> <strong className="text-ink tabular-nums">{formatPeso(price)}</strong></p>
             <p className="mt-2">
@@ -96,12 +94,6 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
               If it isn&apos;t approved, the payment is refunded to your GCash.
             </p>
           </div>
-        ) : (
-          <>
-            <PlatformPaymentBox amount={Number(price)} note="Your plan starts once your shop is approved. After you pay, upload a screenshot of the GCash receipt below." />
-            <FileField id="app-doc-payment_receipt" label="Payment Receipt" hint="Screenshot or photo — JPG, PNG, or WEBP" accept="image/*"
-              file={files.payment_receipt} onChange={(file) => setFile('payment_receipt', file)} />
-          </>
         )}
       </div>
 
@@ -126,7 +118,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
         </span>
       </label>
 
-      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : freeTrial ? 'Submit and Start Free Trial' : payOnline ? 'Submit and Pay with GCash' : 'Submit Application'} busy={submitting || !selected || !termsAccepted} />
+      <StepActions onBack={() => goTo(3)} nextLabel={submitting ? 'Submitting…' : freeTrial ? 'Submit and Start Free Trial' : 'Submit and Pay with GCash'} busy={submitting || !selected || !termsAccepted} />
     </form>
   );
 }

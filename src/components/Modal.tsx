@@ -19,6 +19,8 @@ interface ModalProps {
    * a long list. Pass your Cancel/Confirm row here, not inside children.
    */
   readonly footer?: React.ReactNode;
+  /** Body still scrolls on a short screen, without a visible scrollbar. */
+  readonly hideScrollbar?: boolean;
 }
 
 /**
@@ -30,7 +32,7 @@ interface ModalProps {
  *      body scrolling between them. A phone user sees an app screen, not a
  *      floating box with the page bleeding through around it.
  */
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer, hideScrollbar = false }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
   const onCloseRef = useRef(onClose);
@@ -115,7 +117,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
         </div>
 
         {/* Body — the only part that scrolls. */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 min-h-0">
+        <div className={`flex-1 overflow-y-auto px-5 py-5 min-h-0 ${hideScrollbar ? 'hide-scrollbar' : ''}`}>
           {children}
         </div>
 

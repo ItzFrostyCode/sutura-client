@@ -31,6 +31,16 @@ export interface Subscription {
   scheduled_billing_cycle?: string | null;
   scheduled_payment_id?: number | null;
   scheduled_plan?: { id: number; name: string } | null;
+  /** Set when the owner cancelled: the plan still runs until ends_at, then the shop is read-only. */
+  cancelled_at?: string | null;
+}
+
+/** A plan is running while it's active or on trial with its end date ahead; cancelled = running but cancelled. */
+export function planRunState(sub: Subscription | null): { running: boolean; cancelled: boolean } {
+  const running = Boolean(
+    sub && ['active', 'trial'].includes(sub.status) && sub.ends_at && new Date(sub.ends_at).getTime() > Date.now(),
+  );
+  return { running, cancelled: running && Boolean(sub?.cancelled_at) };
 }
 
 export const PLAN_META: Record<
@@ -141,12 +151,3 @@ export const paymentKind = (plan: Plan, current: Subscription | null): PaymentKi
   if (current.plan_id === plan.id) return 'renewal';
   return plan.price_monthly < current.plan.price_monthly ? 'downgrade' : 'upgrade';
 };
-
-/** Details from the owner's GCash receipt, sent with the screenshot. */
-export interface PaymentDetails {
-  reference: string;
-  senderName: string;
-  senderNumber: string;
-  amountSent: string;
-  paidAt: string;
-}

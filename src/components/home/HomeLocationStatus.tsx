@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Loader2, LocateFixed, MapPinOff } from 'lucide-react';
+import { Loader2, MapPin, MapPinOff } from 'lucide-react';
 import type { SavedLocation } from '@/lib/customerLocation';
 import type { LocationStatus } from './useHomeData';
 
@@ -63,108 +63,91 @@ export function formatFullLocationAddress(
 }
 
 /**
- * The hero's "where are you" line: detecting → found (with a way to change
- * it) → declined (with a way to set it by hand). aria-live so a screen reader
- * hears the result when detection finishes.
+ * "Where are you" in the site header: detecting -> found (with Change) ->
+ * declined (with a way to set it by hand). Two layouts:
+ *  - header: the empty top-left of the desktop header, address over "As of ... · Change".
+ *  - bar: one slim row under the phone header (no room beside the menu button).
+ * aria-live so a screen reader hears the result when detection finishes.
  */
 export default function HomeLocationStatus({
   status,
   location,
+  variant = 'header',
 }: {
   readonly status: LocationStatus;
   readonly location: SavedLocation | null;
+  readonly variant?: 'header' | 'bar';
 }) {
   const [currentDateTime, setCurrentDateTime] = useState<string>('');
 
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      const datePart = now.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      const timePart = now.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
+      const datePart = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const timePart = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
       setCurrentDateTime(`As of ${datePart} • ${timePart}`);
     };
-
     updateDateTime();
     const interval = setInterval(updateDateTime, 30_000);
     return () => clearInterval(interval);
   }, []);
 
-  const chipBase =
-    'inline-flex min-h-9 items-center border border-white/25 bg-black/35 px-3.5 py-1.5 text-xs sm:text-sm text-white backdrop-blur-md shadow-sm transition-all';
+  const bar = variant === 'bar';
+  const iconSize = bar ? 16 : 18;
+  const linkClass =
+    'font-semibold text-ink underline underline-offset-2 hover:text-taupe transition-colors whitespace-nowrap';
 
-  const fullAddress = location ? formatFullLocationAddress(location) : '';
+  let icon: React.ReactNode;
+  let main: React.ReactNode;
+  let link: React.ReactNode = null;
+
+  if (status === 'locating') {
+    icon = <Loader2 size={iconSize} className="shrink-0 animate-spin text-taupe" aria-hidden="true" />;
+    main = <span className="text-ink-muted">Pinpointing your location…</span>;
+  } else if (status === 'denied' || !location) {
+    icon = <MapPinOff size={iconSize} className="shrink-0 text-taupe" aria-hidden="true" />;
+    main = <span className="font-semibold text-ink">Location is off</span>;
+    link = <Link href="/location" className={linkClass}>Set it manually</Link>;
+  } else {
+    const fullAddress = formatFullLocationAddress(location);
+    icon = <MapPin size={iconSize} className="shrink-0 text-taupe" aria-hidden="true" />;
+    main = (
+      <span title={fullAddress} className="block truncate font-semibold text-ink">
+        {fullAddress}
+      </span>
+    );
+    // The Davao City fallback isn't the visitor's spot, so invite them to set it.
+    link = <Link href="/location" className={linkClass}>{location.isDefault ? 'Set my location' : 'Change'}</Link>;
+  }
+
+  if (bar) {
+    return (
+      <div aria-live="polite" className="flex min-h-10 items-center gap-2 border-t border-line px-4 py-1.5 text-[13px]">
+        {icon}
+        <div className="min-w-0 flex-1">{main}</div>
+        {link && <span className="shrink-0">{link}</span>}
+      </div>
+    );
+  }
 
   return (
-    <div aria-live="polite" className="mb-5 flex justify-center">
-      {status === 'locating' && (
-        <span className={`${chipBase} gap-2`}>
-          <Loader2 size={15} className="animate-spin text-[#E8D9C9]" aria-hidden="true" />
-          Pinpointing your location…
-        </span>
-      )}
-
-      {status === 'ready' && location && (
-        <div
-          className={`${chipBase} max-w-[calc(100vw-2rem)] flex-col sm:flex-row gap-1 sm:gap-2.5 py-2 sm:py-1.5 justify-center`}
-        >
-          {/* Location details */}
-          <div className="flex items-center gap-1.5 min-w-0 max-w-full">
-            <LocateFixed size={15} className="shrink-0 text-[#E8D9C9]" aria-hidden="true" />
-            <span
-              title={fullAddress}
-              className="truncate max-w-[15rem] xs:max-w-[18rem] sm:max-w-xs md:max-w-md lg:max-w-xl font-normal leading-tight"
-            >
-              {/* The Davao City fallback isn't the visitor's spot — say "around", not "near". */}
-              {location.isDefault ? 'Showing shops around ' : 'Showing shops near '}
-              <strong className="font-semibold text-white">{fullAddress}</strong>
-            </span>
-          </div>
-
-          {/* Desktop divider */}
-          <span className="hidden sm:inline text-white/40 select-none" aria-hidden="true">
-            •
-          </span>
-
-          {/* Timestamp and Change Action */}
-          <div className="flex items-center gap-2 shrink-0 text-white/90 text-[11px] sm:text-xs">
-            {currentDateTime && (
-              <span className="text-white/80 whitespace-nowrap" suppressHydrationWarning>
-                {currentDateTime}
+    <div aria-live="polite" className="flex min-w-0 items-center gap-2.5 leading-tight">
+      {icon}
+      <div className="min-w-0 text-sm">
+        {main}
+        {status !== 'locating' && (
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted whitespace-nowrap">
+            {location && status === 'ready' && currentDateTime && (
+              // Laptop and up only: on a tablet this line would run under the centred logo.
+              <span className="hidden lg:contents">
+                <span suppressHydrationWarning>{currentDateTime}</span>
+                <span aria-hidden="true">·</span>
               </span>
             )}
-            <span className="text-white/40 select-none" aria-hidden="true">
-              •
-            </span>
-            <Link
-              href="/location"
-              className="font-semibold text-white underline underline-offset-2 hover:text-[#E8D9C9] transition-colors whitespace-nowrap"
-            >
-              {location.isDefault ? 'Set my location' : 'Change'}
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {status === 'denied' && (
-        <span className={`${chipBase} gap-2`}>
-          <MapPinOff size={15} className="text-[#E8D9C9]" aria-hidden="true" />
-          Location is off
-          <Link
-            href="/location"
-            className="font-semibold underline underline-offset-2 hover:text-[#E8D9C9]"
-          >
-            Set it manually
-          </Link>
-        </span>
-      )}
+            {link}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

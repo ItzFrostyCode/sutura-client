@@ -47,8 +47,8 @@ export function TrialBanner({ sub, showLink = true }: { readonly sub: Sub | null
           <PauseCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>
             <strong className="font-semibold">Your free trial has ended, so your shop is paused.</strong>{' '}
-            Customers can&apos;t find or book it, but all your records are kept and you can finish the orders you already have.
-            Choose a plan to open it again.
+            Customers can&apos;t find or book it, and the shop is read-only: all your records are kept and viewable, but nothing
+            new or changed. Choose a plan to open it again.
           </span>
         </p>
         {showLink && (

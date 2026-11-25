@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Building2, CheckCircle, Lock, MapPin, Plus, Star, Compass } from 'lucide-react';
 import { StoreBranch } from './branchHelpers';
 import BranchCard from './BranchCard';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 interface BranchListViewProps {
   readonly branches: StoreBranch[];
@@ -152,13 +153,15 @@ export default function BranchListView({
               <Lock size={13} /> Upgrade for more
             </Link>
           ) : (
-            <button
-              type="button"
-              onClick={onAddClick}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:text-ink px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-sunken transition-colors"
-            >
-              <Plus size={14} /> Add Branch Shop
-            </button>
+            <ReadOnlyLock>
+              <button
+                type="button"
+                onClick={onAddClick}
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-taupe hover:text-ink px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-sunken transition-colors"
+              >
+                <Plus size={14} /> Add Branch Shop
+              </button>
+            </ReadOnlyLock>
           ))}
         </div>
 

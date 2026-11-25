@@ -2,14 +2,23 @@ import React from 'react';
 import { serviceCategoryPath } from '@/lib/canonicalTaxonomy';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { PublicService } from '@/components/store-storefront/types';
-import GuideImage from '@/components/shared/GuideImage';
+import ChartImageViewer from '@/components/shared/ChartImageViewer';
+import { getActiveSale } from '@/lib/salePricing';
 
 // The content of each numbered card on a service page, kept apart from the
 // accordion chrome so the owner's editable page can wrap the very same blocks
 // in its own boxes (as the Catalog Design page does).
 
+// All Reference Chart images (e.g. Men's and Women's sizing). Older records
+// only have the single size_chart_image_url.
+export function serviceChartImages(service: Pick<PublicService, 'size_chart_image_url' | 'size_chart_image_urls'>): string[] {
+  const list = (service.size_chart_image_urls ?? []).filter(Boolean);
+  if (list.length > 0) return list;
+  return service.size_chart_image_url ? [service.size_chart_image_url] : [];
+}
+
 export function hasServiceChart(service: PublicService): boolean {
-  return Boolean(service.size_chart_image_url || (service.size_chart_columns && service.size_chart_columns.length > 0));
+  return serviceChartImages(service).length > 0 || Boolean(service.size_chart_columns && service.size_chart_columns.length > 0);
 }
 
 // Category is always the first row — the same trail the breadcrumb links through.
@@ -20,6 +29,12 @@ export function ServiceSpecBlock({ service }: Readonly<{ service: PublicService 
   if (categoryPath.length > 0) rows.push(['Category', categoryPath.join(' → ')]);
   if (rawType) rows.push(['Service Type', rawType.replace(/_/g, ' ')]);
   rows.push(['Estimated Completion', formatServiceTurnaround(service.estimated_days, service.estimated_days_max)]);
+  // A running discount takes the same % off every tier (server: Service::discountedAmount).
+  const sale = service.base_price != null
+    ? getActiveSale({ price: service.base_price, sale_price: service.sale_price, sale_starts_at: service.sale_starts_at, sale_ends_at: service.sale_ends_at })
+    : null;
+  const percent = sale && service.sale_percent ? service.sale_percent : 0;
+  const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="space-y-4">
@@ -41,9 +56,16 @@ export function ServiceSpecBlock({ service }: Readonly<{ service: PublicService 
             {service.pricing.map((tier) => (
               <div key={tier.id} className="flex items-center justify-between px-3 py-2.5 text-sm">
                 <span className="text-ink-body">{tier.label}</span>
-                <span className="font-semibold text-ink">
-                  ₱{Number.parseFloat(tier.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                {percent > 0 ? (
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-xs text-ink-faint line-through tabular-nums">{peso(Number(tier.amount))}</span>
+                    <span className="font-semibold text-rose-600 tabular-nums">{peso(Math.round(Number(tier.amount) * (100 - percent)) / 100)}</span>
+                  </span>
+                ) : (
+                  <span className="font-semibold text-ink">
+                    ₱{Number.parseFloat(tier.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -53,13 +75,14 @@ export function ServiceSpecBlock({ service }: Readonly<{ service: PublicService 
   );
 }
 
-export function ServiceChartBlock({ service }: Readonly<{ service: PublicService }>) {
+export function ServiceChartBlock({ service, compact = false }: Readonly<{ service: PublicService; compact?: boolean }>) {
   const columns = service.size_chart_columns ?? [];
+  const images = serviceChartImages(service);
   return (
     <div className="space-y-2">
-      {service.size_chart_image_url && <GuideImage src={service.size_chart_image_url} alt="Reference chart" />}
+      <ChartImageViewer images={images} compact={compact} />
       {columns.length > 0 && (
-        <div className={`overflow-x-auto border border-line rounded-none ${service.size_chart_image_url ? 'mt-3' : ''}`}>
+        <div className={`overflow-x-auto border border-line rounded-none ${images.length > 0 ? 'mt-3' : ''}`}>
           <table className="w-full mobile-body-sm">
             <thead>
               <tr className="bg-canvas">

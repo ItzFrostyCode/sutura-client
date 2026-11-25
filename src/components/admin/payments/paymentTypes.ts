@@ -77,10 +77,20 @@ export interface GcashSettings {
   qr_url: string | null;
 }
 
+// Plan payments go through the GCash gateway: "pending" = checkout started, GCash
+// hasn't confirmed yet (the webhook, or a Re-sync, settles it). Old receipt uploads
+// still use "pending" for "waiting for an admin to check" (paymentStatusLabel).
 export const STATUS_LABEL: Record<PaymentStatus, string> = {
-  pending: 'Pending verification',
+  pending: 'Processing',
   approved: 'Paid',
-  rejected: 'Rejected',
+  rejected: 'Failed / Rejected',
+};
+
+/** A row's status in words: an old receipt still waiting is "Waiting for review", not "Processing". */
+export const paymentStatusLabel = (p: Pick<PlatformPayment, 'status' | 'channel'>, short = false): string => {
+  if (p.status === 'pending') return p.channel === 'receipt' ? (short ? 'To review' : 'Waiting for review') : 'Processing';
+  if (p.status === 'rejected') return p.channel === 'online' ? 'Failed' : 'Rejected';
+  return 'Paid';
 };
 
 export const STATUS_BADGE: Record<PaymentStatus, BadgeVariant> = {

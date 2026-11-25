@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, Edit2, Mail, Phone, Clock, Scissors } from 'lucide-react';
 import { CustomerData } from '../customerTypes';
 import { customerEmail } from '../customerHelpers';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 interface CustomerProfileHeaderProps {
   readonly customer: CustomerData | null;
@@ -83,13 +84,15 @@ export default function CustomerProfileHeader({
 
         {/* Quick Header Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href={`/dashboard/jobs/new?customer_id=${customer?.id}`}
-            className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
-          >
-            <Scissors size={13} />
-            <span>New Order</span>
-          </Link>
+          <ReadOnlyLock>
+            <Link
+              href={`/dashboard/jobs/new?customer_id=${customer?.id}`}
+              className="h-9 px-3.5 rounded-xl bg-taupe hover:bg-taupe-hover text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
+            >
+              <Scissors size={13} />
+              <span>New Order</span>
+            </Link>
+          </ReadOnlyLock>
           <button
             type="button"
             onClick={onOpenNewMeasurementModal || onViewMeasurements}

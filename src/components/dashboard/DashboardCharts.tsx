@@ -47,6 +47,10 @@ const STATUS_LABELS: Record<string, string> = {
   ready_for_fitting:        'Fitting',
   final_adjustments:        'Adjustments',
   qc_ironing:               'QC/Ironing',
+  ready_for_pickup:         'Ready for Pickup',
+  quality_check:            'QC/Ironing', // older orders' name for the QC stage
+  on_hold:                  'On Hold',
+  rejected:                 'Rejected',
   completed:                'Completed',
   cancelled:                'Cancelled',
 };
@@ -127,7 +131,7 @@ export default function DashboardCharts({
   const pieData = asArray<{ status: string; count: number }>(data?.jobs_by_status)
     .filter(s => s && s.count > 0)
     .map(s => ({
-      name: STATUS_LABELS[s.status] ?? s.status,
+      name: STATUS_LABELS[s.status] ?? s.status.charAt(0).toUpperCase() + s.status.slice(1).replaceAll('_', ' '),
       value: s.count,
       color: STATUS_COLORS[s.status] ?? '#D1C7BD',
     }));
@@ -360,17 +364,20 @@ export default function DashboardCharts({
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-ink truncate">
-                      {order.customer?.name || 'Walk-in Customer'}
+                      {order.customer?.name || 'Walk-in customer'}
+                      {order.service?.name && <span className="font-normal text-ink-muted"> · {order.service.name}</span>}
                     </p>
-                    <p className="text-xs text-ink-faint">
-                      {order.order_number || `#${order.id}`}
-                      {order.created_at && (
-                        <> · {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
+                    <p className="text-xs text-ink-faint tabular-nums">
+                      {order.order_number || (order.id ? `#${order.id}` : 'New order')}
+                      {order.created_at && !Number.isNaN(new Date(order.created_at).getTime()) && (
+                        <> · {new Date(order.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}</>
                       )}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-ink shrink-0 ml-3">
-                    ₱{(Number(order.total_amount) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  <span className="text-sm font-bold text-ink shrink-0 ml-3 tabular-nums">
+                    {Number(order.total_amount) > 0
+                      ? `₱${Number(order.total_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+                      : <span className="text-xs font-medium text-ink-muted">To be quoted</span>}
                   </span>
                 </div>
               ))
@@ -379,7 +386,14 @@ export default function DashboardCharts({
                 <div className="w-10 h-10 bg-canvas rounded-full flex items-center justify-center mb-2">
                   <Package size={18} className="text-ink-faint" />
                 </div>
-                <p className="text-sm text-ink-faint">No recent orders yet.</p>
+                <p className="text-sm font-medium text-ink">No orders yet</p>
+                <p className="text-xs text-ink-muted mt-1 max-w-60">New walk-in and online orders show here as they come in.</p>
+                <Link
+                  href="/dashboard/jobs/new"
+                  className="mt-4 inline-flex items-center h-9 px-4 rounded-lg bg-taupe hover:bg-taupe-hover text-white text-xs font-semibold transition-colors"
+                >
+                  Create a job order
+                </Link>
               </div>
             )}
           </div>

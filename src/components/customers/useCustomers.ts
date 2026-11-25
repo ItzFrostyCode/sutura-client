@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import { CustomerData } from './customerTypes';
-import { isWalkInCustomer, isWalkInEmail, customerEmail } from './customerHelpers';
+import { isWalkInCustomer, isWalkInEmail, customerEmail, toPhMobileInput } from './customerHelpers';
 
 export { type CustomerData };
 
@@ -107,7 +107,7 @@ export function useCustomers() {
     setFormData({
       name: customer.name,
       email: customerEmail(customer),
-      phone: customer.phone || ''
+      phone: toPhMobileInput(customer.phone || '')
     });
     setIsModalOpen(true);
   };

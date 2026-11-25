@@ -226,7 +226,7 @@ export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'onli
   const isOnline = channel === 'online';
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase border ${
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase border whitespace-nowrap ${
         isOnline
           ? 'bg-sky-50 text-sky-700 border-sky-200'
           : 'bg-stone-50 text-stone-600 border-stone-200'

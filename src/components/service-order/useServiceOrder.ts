@@ -8,6 +8,7 @@ import type { PublicService, StoreBranch, StoreProfile } from '@/components/stor
 import type { ShopPaymentMethod } from '@/components/account/orders/usePayForOrder';
 import { hasAnyMeasurement, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
 import { usePeopleList } from '@/components/order-people/usePeopleList';
+import { saleDay } from '@/lib/salePricing';
 
 export interface SavedMeasurement {
   id: number;
@@ -101,7 +102,6 @@ export function useServiceOrder(storeId: string) {
   // 4 · Invoice & Payment
   const [quantity, setQuantity] = useState(1);
   const [rushRequested, setRushRequested] = useState(false);
-  const [neededBy, setNeededBy] = useState('');
   const [paymentTerm, setPaymentTerm] = useState<PaymentTerm>('downpayment');
   // Paid up front by GCash only (no bank transfer), proven with a receipt screenshot.
   const [gcashAccounts, setGcashAccounts] = useState<ShopPaymentMethod[]>([]);
@@ -225,7 +225,12 @@ export function useServiceOrder(storeId: string) {
   };
 
   const unitPrice = useMemo(() => {
-    if (selectedPricing && selectedPricing.amount !== null && selectedPricing.amount !== '') return Number(selectedPricing.amount);
+    // A running discount takes the same % off a price tier (server: Service::discountedAmount).
+    if (selectedPricing && selectedPricing.amount !== null && selectedPricing.amount !== '') {
+      const amount = Number(selectedPricing.amount);
+      const pct = Number(service?.sale_percent) || 0;
+      return pct > 0 && saleIsLive(service) ? Math.round(amount * (100 - pct)) / 100 : amount;
+    }
     const base = Number(service?.base_price);
     const sale = Number(service?.sale_price);
     const onSale = Number.isFinite(sale) && sale > 0 && sale < base && saleIsLive(service);
@@ -327,6 +332,7 @@ export function useServiceOrder(storeId: string) {
         // One row per person, so the shop sees every name and how each is sized.
         member_measurements: individual ? undefined : persons.map((p) => ({
           name: p.name || undefined,
+          gender: p.gender || undefined,
           size: p.method === 'standard' ? p.size : undefined,
           measure_at_shop: p.method === 'shop' || undefined,
           ...(p.method === 'body' ? pickMeasurements(p.values, garmentType) : {}),
@@ -343,7 +349,6 @@ export function useServiceOrder(storeId: string) {
         reference_link: referenceLink.trim() || undefined,
         quantity: individual ? quantity : undefined,
         rush_requested: rushRequested,
-        needed_by: neededBy || undefined,
         payment_term: paymentTerm,
         payment_method_id: paymentNeeded ? gcashId ?? undefined : undefined,
         payment_receipt: paymentNeeded ? receipt : undefined,
@@ -425,8 +430,6 @@ export function useServiceOrder(storeId: string) {
     pieces,
     rushRequested,
     setRushRequested,
-    neededBy,
-    setNeededBy,
     paymentTerm,
     setPaymentTerm,
     policy,
@@ -461,8 +464,8 @@ export type ServiceOrderState = ReturnType<typeof useServiceOrder>;
 function saleIsLive(service: PublicService | null): boolean {
   if (!service) return false;
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
-  const start = service.sale_starts_at?.slice(0, 10);
-  const end = service.sale_ends_at?.slice(0, 10);
+  const start = service.sale_starts_at ? saleDay(service.sale_starts_at) : undefined;
+  const end = service.sale_ends_at ? saleDay(service.sale_ends_at) : undefined;
   if (start && today < start) return false;
   if (end && today > end) return false;
   return true;

@@ -16,6 +16,7 @@ import AppointmentListView from '@/components/appointments/AppointmentListView';
 import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointmentModal';
 import { APPOINTMENT_TYPES, TYPE_CONFIG, STATUS_CONFIG, AppointmentType } from '@/components/appointments/appointmentHelpers';
 import { useBranch } from '@/context/BranchContext';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 export default function AppointmentsPage() {
   const {
@@ -192,18 +193,20 @@ export default function AppointmentsPage() {
               <CalendarPlus size={16} /> Schedule Follow-Up
             </button>
             {/* Every shop role books appointments (staff: their own branch, set by the server). */}
-            <button
-              type="button"
-              onClick={() => {
-                setEditingApt(null);
-                setError('');
-                setShowCreateModal(true);
-              }}
-              data-tour="appts-create"
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
-            >
-              <Plus size={16} /> New Appointment
-            </button>
+            <ReadOnlyLock>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingApt(null);
+                  setError('');
+                  setShowCreateModal(true);
+                }}
+                data-tour="appts-create"
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs transition-colors min-h-[40px]"
+              >
+                <Plus size={16} /> New Appointment
+              </button>
+            </ReadOnlyLock>
           </div>
         }
       />

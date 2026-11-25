@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Ban } from 'lucide-react';
 import { useBillingData } from '@/components/billing/useBillingData';
 import CurrentPlanSection from '@/components/billing/CurrentPlanSection';
 import FeatureUsageSection from '@/components/billing/FeatureUsageSection';
@@ -13,7 +13,8 @@ import UpgradeRequestsSection from '@/components/billing/UpgradeRequestsSection'
 import OnlinePaymentBanner from '@/components/billing/OnlinePaymentBanner';
 import { TrialBanner } from '@/components/billing/TrialNotice';
 import GcashCheckoutModal from '@/components/shared/GcashCheckoutModal';
-import { planNeedsPayment, type Plan } from '@/components/billing/billingTypes';
+import CancelSubscriptionModal, { CANCEL_TERMS_VERSION } from '@/components/billing/CancelSubscriptionModal';
+import { planNeedsPayment, planRunState, type Plan } from '@/components/billing/billingTypes';
 
 export default function BillingPage() {
   const {
@@ -31,7 +32,6 @@ export default function BillingPage() {
     handleSubscribe,
     upgradeRequests,
     pendingRequest,
-    submitUpgradeRequest,
     payOnline,
     checkoutUrl,
     isCheckoutPaid,
@@ -40,9 +40,13 @@ export default function BillingPage() {
     checkOnlinePayment,
     dismissOnlineResult,
     cancelScheduledChange,
+    cancelSubscription,
+    resumeSubscription,
+    cancelBusy,
     storeId,
   } = useBillingData();
   const [payingFor, setPayingFor] = useState<Plan | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   // Every paid plan (renewal, upgrade or step down) takes a GCash payment (online,
   // or a receipt upload); a free plan switches directly (at the end of a paid period).
@@ -107,7 +111,7 @@ export default function BillingPage() {
           />
           <p className={`text-sm font-medium ${isExpired ? 'text-red-700' : 'text-amber-700'}`}>
             {isExpired
-              ? "Your subscription has expired. Renew now to restore your shop's full visibility and features."
+              ? 'Your subscription has ended, so your shop is hidden from customers and read-only. Choose a plan below to restore it.'
               : `Your plan renews in ${daysUntilExpiry} day${
                   daysUntilExpiry === 1 ? '' : 's'
                 } — pick a plan below to renew and avoid losing access.`}
@@ -119,6 +123,17 @@ export default function BillingPage() {
         currentSubscription={currentSubscription}
         activePlanSlug={activePlanSlug}
         daysUntilExpiry={daysUntilExpiry}
+        onResume={resumeSubscription}
+        busy={cancelBusy}
+      />
+
+      <CancelSubscriptionModal
+        isOpen={cancelOpen}
+        planName={currentSubscription?.plan?.name ?? 'your plan'}
+        endsOn={endDay || 'the end of your current period'}
+        busy={cancelBusy}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={async () => { if (await cancelSubscription(CANCEL_TERMS_VERSION)) setCancelOpen(false); }}
       />
 
       <FeatureUsageSection
@@ -136,6 +151,24 @@ export default function BillingPage() {
         scheduledPlanId={scheduled?.scheduled_plan_id ?? null}
         onSubscribe={choosePlan}
       />
+
+      {/* Under the plans, centered: Cancel (only while a plan runs and isn't cancelled yet), then the agreement. */}
+      <div className="-mt-4 flex flex-col items-center gap-3">
+        {planRunState(currentSubscription).running && !planRunState(currentSubscription).cancelled && (
+          <button
+            type="button"
+            onClick={() => setCancelOpen(true)}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong bg-white px-5 text-sm font-medium text-ink-body shadow-2xs transition-colors hover:border-danger/50 hover:text-danger cursor-pointer"
+          >
+            <Ban size={16} aria-hidden="true" /> Cancel subscription
+          </button>
+        )}
+        <p className="text-xs text-ink-muted">
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">Terms &amp; Conditions</a>
+          {' / '}
+          <a href="/terms#subscription-agreement" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">Subscription Agreement</a>
+        </p>
+      </div>
 
       {scheduled && (
         <div className="flex flex-col gap-3 border border-line-strong bg-sunken p-4 text-sm text-ink sm:flex-row sm:items-center">
@@ -161,7 +194,7 @@ export default function BillingPage() {
 
       <UpgradeRequestsSection requests={upgradeRequests} storeId={storeId} />
 
-      <UpgradePaymentModal plan={payingFor} current={currentSubscription} onClose={() => setPayingFor(null)} onSubmit={submitUpgradeRequest} onPayOnline={payOnline} />
+      <UpgradePaymentModal plan={payingFor} current={currentSubscription} onClose={() => setPayingFor(null)} onPayOnline={payOnline} />
 
       <GcashCheckoutModal url={checkoutUrl} isPaid={isCheckoutPaid} onFinish={finishCheckout} />
 

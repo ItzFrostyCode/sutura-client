@@ -2,6 +2,7 @@ import { depositFraction, paymentPolicyLabel } from './requirements';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { logUnexpectedError } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { Job } from './jobTypes';
@@ -149,7 +150,7 @@ export function useJobDetail(jobId: string) {
 
       toast.success('All changes saved successfully.');
     } catch (err: unknown) {
-      console.error('Failed to update', err);
+      logUnexpectedError('Failed to update', err);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to update details.');
       if (job) {
@@ -248,10 +249,10 @@ export function useJobDetail(jobId: string) {
       setJob(updatedJob);
       setBalance(updatedJob.balance);
       setPaymentStatus(updatedJob.payment_status);
-      toast.success(kind === 'fabric' ? `₱${amount.toFixed(2)} fabric deduction applied.` : `₱${amount.toFixed(2)} discount applied successfully.`);
+      toast.success(kind === 'fabric' ? `₱${amount.toFixed(2)} fabric / materials deduction applied.` : `₱${amount.toFixed(2)} discount applied successfully.`);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || (kind === 'fabric' ? 'Failed to apply the fabric deduction.' : 'Failed to apply discount.'));
+      toast.error(error.response?.data?.message || (kind === 'fabric' ? 'Failed to apply the fabric / materials deduction.' : 'Failed to apply discount.'));
       throw err;
     } finally {
       setSaving(false);

@@ -87,7 +87,8 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
               onChange={(sizeChart) => edit.setDraft(d => (d ? { ...d, sizeChart } : d))}
               storeId={edit.storeId}
               title="Reference chart"
-              description="Upload your own chart image and/or build a size & measurement table."
+              description="Upload your own chart images and/or build a size & measurement table."
+              multipleImages
             />
           )}
         </EditableBox>

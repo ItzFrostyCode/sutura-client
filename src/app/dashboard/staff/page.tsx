@@ -12,6 +12,7 @@ import { Staff } from '@/components/staff/staffHelpers';
 import StaffFormModal from '@/components/staff/StaffFormModal';
 import StaffDeleteModal from '@/components/staff/StaffDeleteModal';
 import StaffListView from '@/components/staff/StaffListView';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 export default function StaffPage() {
   const { store, user } = useAuthStore();
@@ -223,33 +224,35 @@ export default function StaffPage() {
         description="Manage your tailors, cutters, seamstresses, and branch managers."
         actions={
           canManageStaff ? (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  name: '',
-                  email: '',
-                  password: '',
-                  phone: '',
-                  role: 'tailor',
-                  additional_roles: [],
-                  specialization: '',
-                  hired_at: new Date().toISOString().split('T')[0],
-                  is_active: true,
-                  store_branch_id: '',
-                  is_branch_manager: false,
-                  bio: '',
-                  is_available: true,
-                });
-                setShowModal(true);
-              }}
-              data-tour="staff-create"
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
-            >
-              <Plus size={16} />
-              <span>Add Staff Member</span>
-            </button>
+            <ReadOnlyLock>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({
+                    name: '',
+                    email: '',
+                    password: '',
+                    phone: '',
+                    role: 'tailor',
+                    additional_roles: [],
+                    specialization: '',
+                    hired_at: new Date().toISOString().split('T')[0],
+                    is_active: true,
+                    store_branch_id: '',
+                    is_branch_manager: false,
+                    bio: '',
+                    is_available: true,
+                  });
+                  setShowModal(true);
+                }}
+                data-tour="staff-create"
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
+              >
+                <Plus size={16} />
+                <span>Add Staff Member</span>
+              </button>
+            </ReadOnlyLock>
           ) : null
         }
       />

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import type { Appointment } from './appointmentHelpers';
 import RecordMeasurementModal from '@/components/measurements/RecordMeasurementModal';
+import { customerEmail } from '@/components/customers/customerHelpers';
 
 interface AppointmentCustomerToolkitProps {
   readonly apt: Appointment;
@@ -27,7 +28,7 @@ export default function AppointmentCustomerToolkit({ apt, onChanged }: Readonly<
   const { store } = useAuthStore();
   const accepted = apt.status === 'confirmed' || apt.status === 'in_progress';
   const phone = apt.customer?.phone?.trim() || '';
-  const email = apt.customer?.email?.trim() || '';
+  const email = customerEmail(apt.customer).trim();
 
   const [link, setLink] = useState(apt.shared_link ?? '');
   const [images, setImages] = useState<string[]>(apt.shared_images ?? []);

@@ -11,6 +11,7 @@ import HomeMapBanner from '@/components/home/HomeMapBanner';
 import HomeAboutSection from '@/components/home/HomeAboutSection';
 import HomeFooter from '@/components/home/HomeFooter';
 import LocationSplash from '@/components/home/LocationSplash';
+import HomeLocationStatus from '@/components/home/HomeLocationStatus';
 
 export default function HomePage() {
   const {
@@ -31,14 +32,17 @@ export default function HomePage() {
           instead of each fighting over its own independent `top: 0`. */}
       <div className="sticky top-0 z-50">
         <UpcomingAppointmentBar />
-        <PublicNav isSticky={false} featureNav />
+        <PublicNav
+          isSticky={false}
+          featureNav
+          start={<HomeLocationStatus status={locationStatus} location={location} />}
+          mobileBar={<HomeLocationStatus variant="bar" status={locationStatus} location={location} />}
+        />
       </div>
 
       <HomeHero
         heroSearch={heroSearch}
         onSearchChange={setHeroSearch}
-        locationStatus={locationStatus}
-        location={location}
       />
 
       <main className="flex-1 w-full">

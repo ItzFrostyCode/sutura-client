@@ -9,6 +9,7 @@ import {
   StatusBadge, TypeBadge, getLocalDateString, formatScheduled, getCustomerInitials,
   ChannelBadge, RescheduledBadge, CheckInBadge
 } from './appointmentHelpers';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 interface AppointmentCalendarViewProps {
   readonly appointments: Appointment[];
@@ -337,13 +338,15 @@ export default function AppointmentCalendarView({
           </div>
 
           {isOwnerOrManager && !isDayPast && dayEvents.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onAddClick(dayStr, '09:00')}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
-            >
-              <Plus size={14} /> Book Appointment
-            </button>
+            <ReadOnlyLock>
+              <button
+                type="button"
+                onClick={() => onAddClick(dayStr, '09:00')}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+              >
+                <Plus size={14} /> Book Appointment
+              </button>
+            </ReadOnlyLock>
           )}
 
           {isDayPast && (
@@ -369,13 +372,15 @@ export default function AppointmentCalendarView({
               : 'The atelier schedule is open for new fittings or consultations.'}
           </p>
           {isOwnerOrManager && !isDayPast && (
-            <button
-              type="button"
-              onClick={() => onAddClick(dayStr, '09:00')}
-              className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-taupe text-white hover:bg-taupe-hover transition-colors shadow-2xs"
-            >
-              <Plus size={14} /> Book Appointment
-            </button>
+            <ReadOnlyLock>
+              <button
+                type="button"
+                onClick={() => onAddClick(dayStr, '09:00')}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-taupe text-white hover:bg-taupe-hover transition-colors shadow-2xs"
+              >
+                <Plus size={14} /> Book Appointment
+              </button>
+            </ReadOnlyLock>
           )}
         </div>
       ) : (

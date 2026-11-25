@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check, Loader2, X } from 'lucide-react';
 import RejectAppointmentDialog from '@/components/appointments/RejectAppointmentDialog';
 import { useDecisionQueue } from './useDecisionQueue';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 const TYPE: Record<string, string> = { consultation: 'Consultation', measurement: 'Measurement', fitting: 'Fitting', alteration: 'Alteration', pickup: 'Pickup', other: 'Other' };
 const when = (iso: string) => new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -39,12 +40,16 @@ export default function NeedsDecisionCard({ storeId, enabled }: Readonly<{ store
                   {a.needs_new_time && <p className="text-[11px] font-semibold text-amber-700 mt-0.5">Slot was taken — needs a new time</p>}
                 </div>
                 <div className="flex gap-2 shrink-0">
+                  <ReadOnlyLock>
+                  <span className="flex gap-2">
                   <button type="button" onClick={() => approve(a.id)} disabled={busyId === a.id} className="h-11 px-4 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
                     {busyId === a.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve
                   </button>
                   <button type="button" onClick={() => setRejecting(a.id)} disabled={busyId === a.id} className="h-11 px-4 border border-rose-200 text-rose-700 hover:bg-rose-50 text-sm font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
                     <X size={14} /> Reject
                   </button>
+                  </span>
+                  </ReadOnlyLock>
                   <Link href="/dashboard/appointments" className="h-11 px-4 border border-line-strong text-ink hover:bg-sunken text-sm font-medium flex items-center">Open</Link>
                 </div>
               </li>

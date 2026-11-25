@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 import { useRouter } from 'next/navigation';
 import { Download, Loader2, SlidersHorizontal } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
@@ -33,6 +34,9 @@ export default function CompletedOrdersPage() {
   } = useCompletedOrders();
   const [showFilters, setShowFilters] = useState(false);
   const [viewing, setViewing] = useState<CompletedOrder | null>(null);
+  // Changing page brings the table's top back into view.
+  const tableRef = useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { setPage(n); scrollToListTop(tableRef.current); };
 
   if (!canView) return null;
 
@@ -79,7 +83,7 @@ export default function CompletedOrdersPage() {
 
       {stats ? <CompletedOrdersStats stats={stats} /> : <CompletedOrdersStatsSkeleton />}
 
-      <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
+      <div ref={tableRef} className="scroll-mt-24 bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
         {showFilters && (
           <div id="completed-filters">
             <CompletedOrdersFilters filters={filters} onChange={setFilters} />
@@ -108,7 +112,7 @@ export default function CompletedOrdersPage() {
       </div>
 
       {pageCount > 1 && (
-        <OrdersPager page={page} pageCount={pageCount} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
+        <OrdersPager page={page} pageCount={pageCount} total={total} pageSize={PAGE_SIZE} onChange={goToPage} />
       )}
 
       <JobQuickViewModal isOpen={viewing !== null} job={viewing} onClose={() => setViewing(null)} />

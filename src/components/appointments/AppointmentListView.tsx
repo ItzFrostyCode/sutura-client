@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import AppointmentSubject from './AppointmentSubject';
 import {
   Calendar as CalendarIcon, Clock, Loader2, Eye, Play, Scissors,
   CheckSquare, RefreshCw, Pencil, Trash2, UserX, Mail, Phone,
-  Building2, UserCheck, Sparkles, MoreHorizontal, FileText, Ruler, LogIn
+  Building2, UserCheck, Sparkles, MoreHorizontal, FileText, Ruler, LogIn,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import {
   Appointment, formatScheduled, StatusBadge, TypeBadge, getCustomerInitials,
   ChannelBadge, RescheduledBadge, WalkInPriorityBadge, CheckInBadge
 } from './appointmentHelpers';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
+import { customerEmail } from '@/components/customers/customerHelpers';
+import { scrollToListTop } from '@/lib/scrollToListTop';
+
+/** Appointments shown per page (table and cards). */
+const PER_PAGE = 7;
 
 interface AppointmentListViewProps {
   readonly filtered: Appointment[];
@@ -40,6 +47,25 @@ export default function AppointmentListView({
 
   // Active dropdown row ID for table more-menu
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+
+  // 7 per page. A new search/filter (the list's length changes) starts again at
+  // page 1; a status update on the same list keeps the page.
+  const [page, setPage] = useState(1);
+  const [seenLength, setSeenLength] = useState(filtered.length);
+  if (seenLength !== filtered.length) { setSeenLength(filtered.length); setPage(1); }
+  const lastPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const current = Math.min(page, lastPage);
+  const pageItems = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const listTopRef = useRef<HTMLDivElement>(null);
+  // Every page keeps the height of a full page, so a short last page doesn't
+  // shrink the card and jump the pager up. Measured from a full page.
+  const listBodyRef = useRef<HTMLDivElement>(null);
+  const [fullHeight, setFullHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (pageItems.length === PER_PAGE && listBodyRef.current) setFullHeight(listBodyRef.current.offsetHeight);
+  }, [pageItems.length, viewMode, current]);
+  const keepHeight = lastPage > 1 && fullHeight ? { minHeight: fullHeight } : undefined;
+  const goToPage = (n: number) => { setPage(n); scrollToListTop(listTopRef.current, 96); };
 
   const renderTableActions = (apt: Appointment) => {
     const isLoading = actionLoadingId === apt.id;
@@ -76,9 +102,11 @@ export default function AppointmentListView({
           <button
             type="button"
             onClick={() => onCheckInClick(apt.id)}
+            title="Check in"
+            aria-label="Check in"
             className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 max-[599px]:min-h-11 max-[599px]:px-4 rounded-lg bg-surface border border-taupe/40 hover:bg-taupe/10 text-taupe shadow-2xs transition-colors"
           >
-            <LogIn size={12} /> <span>Check In</span>
+            <LogIn size={12} aria-hidden="true" /> <span className="max-[599px]:inline hidden 2xl:inline">Check In</span>
           </button>
         )}
 
@@ -144,14 +172,16 @@ export default function AppointmentListView({
                   {/* Job Creation */}
                   {isConfirmed && !apt.job_order_id && (
                     <div className="py-1">
-                      <button
-                        type="button"
-                        onClick={() => { setActiveMenuId(null); onCreateJobClick(apt); }}
-                        className="w-full text-left px-3 py-2 text-xs text-ink hover:bg-canvas flex items-center gap-2 font-medium"
-                      >
-                        <Scissors size={14} className="text-taupe" />
-                        <span>Create Job Order</span>
-                      </button>
+                      <ReadOnlyLock className="w-full">
+                        <button
+                          type="button"
+                          onClick={() => { setActiveMenuId(null); onCreateJobClick(apt); }}
+                          className="w-full text-left px-3 py-2 text-xs text-ink hover:bg-canvas flex items-center gap-2 font-medium"
+                        >
+                          <Scissors size={14} className="text-taupe" />
+                          <span>Create Job Order</span>
+                        </button>
+                      </ReadOnlyLock>
                     </div>
                   )}
 
@@ -227,7 +257,7 @@ export default function AppointmentListView({
         )}
       </div>
 
-      <div className="max-w-[260px]">
+      <div className="min-w-0">
         <AppointmentSubject apt={apt} />
       </div>
     </div>
@@ -283,13 +313,15 @@ export default function AppointmentListView({
                 There are no scheduled sessions matching your search or active filter tabs.
               </p>
               {onNewAppointmentClick && isOwnerOrManager && (
-                <button
-                  type="button"
-                  onClick={onNewAppointmentClick}
-                  className="mt-3.5 inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 bg-taupe hover:bg-taupe-hover text-white rounded-lg transition-colors"
-                >
-                  <Sparkles size={13} /> Book Appointment
-                </button>
+                <ReadOnlyLock>
+                  <button
+                    type="button"
+                    onClick={onNewAppointmentClick}
+                    className="mt-3.5 inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 bg-taupe hover:bg-taupe-hover text-white rounded-lg transition-colors"
+                  >
+                    <Sparkles size={13} /> Book Appointment
+                  </button>
+                </ReadOnlyLock>
               )}
             </div>
           </td>
@@ -297,7 +329,7 @@ export default function AppointmentListView({
       );
     }
 
-    return filtered.map(apt => {
+    return pageItems.map(apt => {
       const { shortDate, time, relative, isToday } = formatScheduled(apt.scheduled_at);
       const isPending = apt.status === 'pending';
       const initials = getCustomerInitials(apt.customer?.name);
@@ -310,7 +342,7 @@ export default function AppointmentListView({
           }`}
         >
           {/* Customer */}
-          <td className="px-5 py-3.5 align-middle">
+          <td className="px-4 py-3.5 align-middle">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-taupe/10 border border-taupe/20 text-taupe flex items-center justify-center text-xs font-bold shrink-0">
                 {initials}
@@ -328,19 +360,19 @@ export default function AppointmentListView({
                   ) : null}
                 </div>
                 <p className="text-[11px] text-ink-faint truncate mt-0.5">
-                  {apt.customer?.email || apt.customer?.phone || 'No contact info'}
+                  {customerEmail(apt.customer) || apt.customer?.phone || 'No contact info'}
                 </p>
               </div>
             </div>
           </td>
 
           {/* Type & Service */}
-          <td className="px-5 py-3.5 align-middle">
+          <td className="px-4 py-3.5 align-middle">
             {renderTypeAndService(apt)}
           </td>
 
           {/* Scheduled Date & Time (Clean single-line wrap guard) */}
-          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+          <td className="px-4 py-3.5 align-middle whitespace-nowrap">
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5 text-ink font-semibold text-xs">
                 <CalendarIcon size={12} className="text-taupe shrink-0" />
@@ -362,9 +394,9 @@ export default function AppointmentListView({
           </td>
 
           {/* Branch & Staff */}
-          <td className="px-5 py-3.5 align-middle">
-            <div className="space-y-0.5 text-xs">
-              <div className="flex items-center gap-1 text-ink font-medium truncate">
+          <td className="px-4 py-3.5 align-middle">
+            <div className="space-y-0.5 text-xs min-w-0">
+              <div className="flex items-center gap-1 text-ink font-medium truncate" title={apt.branch?.name || 'Main Branch'}>
                 <Building2 size={12} className="text-ink-faint shrink-0" />
                 <span className="truncate">{apt.branch?.name || 'Main Branch'}</span>
               </div>
@@ -380,15 +412,15 @@ export default function AppointmentListView({
           </td>
 
           {/* Status */}
-          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
+          <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+            <div className="flex flex-col items-start gap-1">
               <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
               <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
             </div>
           </td>
 
           {/* Actions (Single neat row) */}
-          <td className="px-5 py-3.5 align-middle text-right">
+          <td className="px-4 py-3.5 align-middle text-right">
             {renderTableActions(apt)}
           </td>
         </tr>
@@ -426,7 +458,7 @@ export default function AppointmentListView({
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4 sm:p-5">
-        {filtered.map(apt => {
+        {pageItems.map(apt => {
           const { shortDate, time, relative, isToday } = formatScheduled(apt.scheduled_at);
           const isPending = apt.status === 'pending';
           const isConfirmed = apt.status === 'confirmed';
@@ -462,9 +494,9 @@ export default function AppointmentListView({
                           <span className="flex items-center gap-1 truncate">
                             <Phone size={11} className="shrink-0" /> {apt.customer.phone}
                           </span>
-                        ) : apt.customer?.email ? (
+                        ) : customerEmail(apt.customer) ? (
                           <span className="flex items-center gap-1 truncate">
-                            <Mail size={11} className="shrink-0" /> {apt.customer.email}
+                            <Mail size={11} className="shrink-0" /> {customerEmail(apt.customer)}
                           </span>
                         ) : null}
                       </div>
@@ -599,27 +631,63 @@ export default function AppointmentListView({
     );
   };
 
+  const pager = !loading && lastPage > 1 && (
+    <nav aria-label="Appointment pages" className="flex items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
+      <p className="text-xs text-ink-muted tabular-nums">
+        {(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, filtered.length)} of {filtered.length}
+      </p>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => goToPage(current - 1)} disabled={current <= 1} aria-label="Previous page" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-sunken disabled:opacity-40 cursor-pointer">
+          <ChevronLeft size={16} aria-hidden="true" />
+        </button>
+        <span className="min-w-20 text-center text-sm font-semibold tabular-nums text-ink">Page {current} of {lastPage}</span>
+        <button type="button" onClick={() => goToPage(current + 1)} disabled={current >= lastPage} aria-label="Next page" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-sunken disabled:opacity-40 cursor-pointer">
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
+      </div>
+    </nav>
+  );
+
   if (viewMode === 'cards') {
-    return renderCardGrid();
+    return (
+      <>
+        <div ref={listTopRef} aria-hidden="true" />
+        <div ref={listBodyRef} style={keepHeight}>{renderCardGrid()}</div>
+        {pager}
+      </>
+    );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm text-ink-body">
+    <>
+      <div ref={listTopRef} aria-hidden="true" />
+      <div ref={listBodyRef} style={keepHeight} className="overflow-x-auto">
+        {/* Fixed columns: the same widths on every page, whatever rows it holds. */}
+        <table className="w-full min-w-[60rem] table-fixed text-left text-sm text-ink-body">
+          <colgroup>
+            <col />
+            <col className="w-36" />
+            <col className="w-36" />
+            <col className="w-40" />
+            <col className="w-36" />
+            <col className="w-60 2xl:w-72" />
+          </colgroup>
         <thead className="bg-canvas/50 text-[11px] font-bold uppercase tracking-wider text-ink-faint border-b border-line">
           <tr>
-            <th className="px-5 py-3">Customer</th>
-            <th className="px-5 py-3">Type & Service</th>
-            <th className="px-5 py-3">Schedule</th>
-            <th className="px-5 py-3">Branch & Staff</th>
-            <th className="px-5 py-3">Status</th>
-            <th className="px-5 py-3 text-right">Actions</th>
+            <th className="px-4 py-3">Customer</th>
+            <th className="px-4 py-3">Type & Service</th>
+            <th className="px-4 py-3">Schedule</th>
+            <th className="px-4 py-3">Branch & Staff</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
           {renderTableBody()}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+      {pager}
+    </>
   );
 }

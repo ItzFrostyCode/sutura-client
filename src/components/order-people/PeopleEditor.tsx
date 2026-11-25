@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import { Check, Copy, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Em, FIELD, FitTip } from '@/components/service-order/orderUi';
 import { MEASUREMENT_FIELDS, measurementFieldsFor, measurementKeysFor } from '@/lib/garmentMeasurements';
-import type { OrderPerson, PeopleListState, PersonDraft, SizingMethod } from './usePeopleList';
+import { GENDER_LABELS, type OrderPerson, type PeopleListState, type PersonDraft, type PersonGender, type SizingMethod } from './usePeopleList';
 
 // The people list + one-person editor, shared by the customer's online order
 // and the shop's walk-in Create Job Order wizard.
@@ -70,7 +70,7 @@ function UnitToggle({ unit, onChange }: Readonly<{ unit: 'in' | 'cm'; onChange: 
 
 function PersonRow({ p, index, people, garmentType }: Readonly<{ p: OrderPerson; index: number; people: PeopleListState; garmentType: string }>) {
   const label = p.name || `Person ${index}`;
-  const extra = [p.number && `#${p.number}`, p.printName].filter(Boolean).join(' ');
+  const extra = [p.gender && `· ${GENDER_LABELS[p.gender]}`, p.number && `#${p.number}`, p.printName].filter(Boolean).join(' ');
   return (
     <li className={`flex items-center gap-2.5 px-3.5 py-2 min-h-14 transition-colors ${people.editingId === p.id ? 'bg-taupe/10' : ''}`}>
       <span className="w-7 h-7 shrink-0 rounded-md bg-canvas border border-line text-[11px] font-bold text-taupe flex items-center justify-center tabular-nums">
@@ -246,7 +246,14 @@ function BodyFields({
 }
 
 function StandardSizes({ people, d, sizes, chart }: Readonly<{ people: PeopleListState; d: PersonDraft; sizes: string[]; chart?: React.ReactNode }>) {
-  const [showChart, setShowChart] = useState(true);
+  // Open for the first person; once someone is on the list the chart folds
+  // away to save scrolling (Show chart brings it back).
+  const [showChart, setShowChart] = useState(people.persons.length === 0);
+  const [seenCount, setSeenCount] = useState(people.persons.length);
+  if (seenCount !== people.persons.length) {
+    setSeenCount(people.persons.length);
+    if (seenCount === 0 && people.persons.length > 0) setShowChart(false);
+  }
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -415,6 +422,30 @@ export function PersonEditor({
           />
         </div>
 
+        <div className="space-y-1.5">
+          <p id="person-gender-label" className="mobile-caption font-semibold text-ink-body">
+            Gender <span className="text-ink-faint font-normal">(Optional)</span>
+          </p>
+          {/* Tap the chosen one again to clear it. */}
+          <div className="grid grid-cols-2 gap-1 p-1 rounded-lg border border-line bg-canvas sm:max-w-xs" role="radiogroup" aria-labelledby="person-gender-label">
+            {(Object.keys(GENDER_LABELS) as Exclude<PersonGender, ''>[]).map((g) => {
+              const on = d.gender === g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => people.updateDraft({ gender: on ? '' : g })}
+                  className={`min-h-10 px-2 rounded-md text-xs font-semibold transition-colors ${on ? 'bg-taupe text-white shadow-xs' : 'text-ink-muted hover:text-ink'}`}
+                >
+                  {GENDER_LABELS[g]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {showPrintFields && (
           <div className="grid grid-cols-[1fr_6rem] gap-3">
             <div className="space-y-1.5">
@@ -459,14 +490,16 @@ export function PersonEditor({
 
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
-        <div className="pt-3 border-t border-line flex sm:justify-end">
+        {/* Full width and named after the person, so it's clear each one has
+            to be added before the page's Continue does anything. */}
+        <div className="pt-3 border-t border-line">
           <button
             type="button"
             onClick={save}
-            className="w-full sm:w-auto h-11 px-5 rounded-lg bg-taupe hover:bg-ink text-white text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-taupe/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            className="w-full h-12 px-5 rounded-lg bg-ink hover:bg-taupe text-white text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-taupe/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
-            {editing ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
-            {editing ? 'Update person' : 'Add to list'}
+            {editing ? <Check size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}
+            {editing ? `Update Person ${number}` : `Add Person ${number} to Order List`}
           </button>
         </div>
       </div>
@@ -479,7 +512,7 @@ export function UnsavedDraftNote({ people }: Readonly<{ people: PeopleListState 
   if (people.persons.length === 0 || !people.draftHasContent) return null;
   return (
     <p role="status" className="mobile-caption text-ink-muted">
-      The details in the editor aren&apos;t on the list yet. Tap {people.editingId !== null ? 'Update person' : 'Add to list'} to include them.
+      The details in the editor aren&apos;t on the list yet. Tap {people.editingId !== null ? 'Update Person' : 'the Add Person button'} to include them.
     </p>
   );
 }

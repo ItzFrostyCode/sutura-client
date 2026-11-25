@@ -316,6 +316,35 @@ textarea:-webkit-autofill:focus {
   display: none;
 }
 
+/* Slim scrollbar for dropdown lists: a 6px rounded thumb in the line colour,
+   no arrow buttons, transparent track. Chrome/Edge/Safari use the webkit
+   rules; Firefox gets the standard properties (setting those in Chrome would
+   switch off the webkit styling, hence the @supports guard). */
+.slim-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.slim-scrollbar::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+}
+.slim-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.slim-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.slim-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+@supports not selector(::-webkit-scrollbar) {
+  .slim-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+}
+
 /* Upload buttons (a <label> wrapping a visually hidden file input): keep the
    hidden input inside its button. Without a positioned parent, the sr-only
    input is placed against a far-away ancestor, and clicking the button (which

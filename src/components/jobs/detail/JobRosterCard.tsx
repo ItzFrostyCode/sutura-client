@@ -16,6 +16,7 @@ const TH = 'pb-2.5 pr-5 last:pr-0 whitespace-nowrap';
 const TD = 'py-2.5 pr-5 last:pr-0 whitespace-nowrap';
 /** Divider before the first measurement column. */
 const MEASURE_START = 'pl-5 border-l border-line';
+const genderLabel = (v: unknown) => (v === 'male' ? 'Male' : v === 'female' ? 'Female' : '—');
 
 export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCardProps) {
   const teamRoster = (job.custom_order_data?.team_roster || job.custom_order_data?.roster) as RosterItem[] | undefined;
@@ -27,6 +28,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
     const rowValue = (r: RosterItem, key: string) => (r as unknown as Record<string, unknown>)[key];
     const rosterMeasureKeys = MEASUREMENT_FIELDS.map(f => f.key).filter(k => teamRoster.some(r => rowValue(r, k)));
     const isMeasured = (r: RosterItem) => rosterMeasureKeys.some(k => rowValue(r, k));
+    const rosterHasGender = teamRoster.some(r => rowValue(r, 'gender'));
     const customFitCount = teamRoster.filter(r => r.size === CUSTOM_SIZE && !isMeasured(r)).length;
     // Same labels as the Size column: a custom row is "Custom fit" once measured.
     const sizeCounts = teamRoster.reduce<Record<string, number>>((acc, r) => {
@@ -37,7 +39,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
     }, {});
 
     const knownRosterKeys = new Set([
-      'name', 'print_name', 'number', 'size', 'completed', 'unit', 'measure_at_shop',
+      'name', 'gender', 'print_name', 'number', 'size', 'completed', 'unit', 'measure_at_shop',
       ...MEASUREMENT_FIELDS.map(f => f.key),
     ]);
     const extraColumns = Array.from(
@@ -94,6 +96,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                 <th className={`${TH} w-10`}>Done</th>
                 <th className={`${TH} w-10`}>#</th>
                 <th className={TH}>Name</th>
+                {rosterHasGender && <th className={TH}>Gender</th>}
                 <th className={TH}>Print Name</th>
                 <th className={TH}>No.</th>
                 <th className={TH}>Size</th>
@@ -119,6 +122,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                   </td>
                   <td className={`${TD} text-ink-faint font-mono`}>{idx + 1}</td>
                   <td className={`${TD} font-bold ${row.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>{row.name || '—'}</td>
+                  {rosterHasGender && <td className={`${TD} text-ink-body`}>{genderLabel(rowValue(row, 'gender'))}</td>}
                   <td className={`${TD} text-ink-muted`}>{row.print_name || '—'}</td>
                   <td className={`${TD} font-mono text-ink font-bold`}>{row.number || '—'}</td>
                   <td className={TD}>
@@ -172,6 +176,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
     ? job.custom_order_data.member_measurements
     : []) as Array<Record<string, string | boolean | undefined>>;
   const memberKeys = MEASUREMENT_FIELDS.map((f) => f.key).filter((k) => members.some((m) => m[k]));
+  const membersHaveGender = members.some((m) => m.gender);
 
   const total = entries.reduce((sum, [, qty]) => sum + Number(qty), 0);
   const garmentType = job.custom_order_data?.garment_type as string | undefined;
@@ -214,6 +219,7 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                 <tr className="text-ink-muted font-bold uppercase tracking-wider text-[10px]">
                   <th className="pb-2 w-8">#</th>
                   <th className="pb-2">Name</th>
+                  {membersHaveGender && <th className="pb-2">Gender</th>}
                   <th className="pb-2">Size</th>
                   {memberKeys.map((k) => (
                     <th key={k} className="pb-2 whitespace-nowrap">{MEASUREMENT_LABELS[k] ?? k}</th>
@@ -230,7 +236,8 @@ export default function JobRosterCard({ job, onToggleRosterItem }: JobRosterCard
                         <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[10px] font-semibold text-amber-800 whitespace-nowrap">Measure at shop</span>
                       )}
                     </td>
-                    <td className="py-2">{m.size ? <span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{m.size}</span> : '—'}</td>
+                    {membersHaveGender && <td className="py-2 text-ink-body">{genderLabel(m.gender)}</td>}
+                    <td className="py-2">{m.size ?<span className="px-2 py-0.5 bg-canvas border border-line rounded text-[10px] font-bold text-ink">{m.size}</span> : '—'}</td>
                     {memberKeys.map((k) => (
                       <td key={k} className="py-2 tabular-nums text-ink-body whitespace-nowrap">
                         {m[k] ? `${m[k]} ${m.unit === 'cm' ? 'cm' : 'in'}` : '—'}

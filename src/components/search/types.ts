@@ -64,6 +64,8 @@ export interface SearchServiceResult {
   description?: string | null;
   base_price: number | null;
   sale_price?: number | null;
+  sale_starts_at?: string | null;
+  sale_ends_at?: string | null;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
   image_url?: string | null;

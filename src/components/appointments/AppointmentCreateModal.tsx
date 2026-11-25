@@ -11,6 +11,7 @@ import {
 import { roleLabel } from '@/components/staff/staffHelpers';
 import CustomerFormModal from '@/components/customers/CustomerFormModal';
 import InteractiveCalendar from '@/components/shared/InteractiveCalendar';
+import SearchableCombobox, { type ComboboxOption } from '@/components/shared/SearchableCombobox';
 
 interface AppointmentCreateModalProps {
   readonly isOpen: boolean;
@@ -57,6 +58,9 @@ export default function AppointmentCreateModal({
       store_branch_id: a.store_branch_id ?? null,
       status: a.status,
     }));
+
+  // Customer picker: searchable by name or number.
+  const customerOptions: ComboboxOption[] = customers.map(c => ({ id: c.id, label: c.name, sublabel: c.phone || undefined }));
 
   // Quick "Add New Customer" — lets the owner register a first-time walk-in
   // without abandoning the appointment they're already mid-way through.
@@ -107,7 +111,9 @@ export default function AppointmentCreateModal({
         store_branch_id: defaultBranchId || (branches.length === 1 ? branches[0].id.toString() : '')
       });
     }
-  }, [editingApt, isOpen, customers, branches, selectedBranchId]);
+    // Not keyed on `customers`: adding a customer from inside this modal grows
+    // that list, and re-running this would wipe the form (and the new pick).
+  }, [editingApt, isOpen, branches, selectedBranchId]);
 
   // Step 1 (Who & What) — just Customer + Type now; Service/Garment Category/
   // Job Order linking were removed (finalized later at Job Order creation, or
@@ -170,11 +176,18 @@ export default function AppointmentCreateModal({
               <UserPlus size={12} /> Add New Customer
             </button>
           </div>
-          <select id="customer_id" required value={formData.customer_id} onChange={e => setFormData({ ...formData, customer_id: e.target.value })}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe">
-            <option value="" disabled>Select a customer</option>
-            {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ''}</option>)}
-          </select>
+          <SearchableCombobox
+            id="customer_id"
+            items={customerOptions}
+            value={formData.customer_id}
+            onChange={v => setFormData(prev => ({ ...prev, customer_id: String(v) }))}
+            placeholder="Select a customer"
+            searchPlaceholder="Search by name or number…"
+            emptyMessage="No customer matches that. Use Add New Customer."
+            required
+            allowClear={false}
+            inlineSublabel
+          />
         </div>
 
         {/* Appointment Type — reserves time for a consultation/measurement/

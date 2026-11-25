@@ -33,7 +33,7 @@ export default function FabricDeductionBox({ job, financials, onApply }: Readonl
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState("Customer's own fabric");
+  const [reason, setReason] = useState("Customer's own fabric / materials");
   const [busy, setBusy] = useState(false);
 
   if (job.material_source !== 'customer_supplied' || jobIsCompleted || jobIsCancelled) return null;
@@ -43,7 +43,7 @@ export default function FabricDeductionBox({ job, financials, onApply }: Readonl
     if (value <= 0) return;
     setBusy(true);
     try {
-      await onApply(Math.round(value * 100) / 100, reason.trim() || "Customer's own fabric", 'fabric');
+      await onApply(Math.round(value * 100) / 100, reason.trim() || "Customer's own fabric / materials", 'fabric');
       setOpen(false);
       setAmount('');
     } catch { /* the toast already says why */ } finally {
@@ -52,19 +52,19 @@ export default function FabricDeductionBox({ job, financials, onApply }: Readonl
   };
 
   return (
-    <section aria-label="Fabric deduction" className="rounded-2xl border-2 border-taupe/40 bg-taupe/[0.07] p-5 shadow-sm space-y-4">
+    <section aria-label="Fabric / other materials deduction"className="rounded-2xl border-2 border-taupe/40 bg-taupe/[0.07] p-5 shadow-sm space-y-4">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-taupe text-white shadow-2xs">
           <Scissors size={18} aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-wider text-taupe-dark">Customer brings own fabric</p>
-          <h3 className="text-base font-bold text-ink leading-snug">Fabric deduction</h3>
+          <h3 className="text-base font-bold text-ink leading-snug">Fabric / Other Materials Deduction</h3>
           {already === 0 && (
             <p className="mt-0.5 text-xs text-ink-body">
               {perPiece > 0
-                ? <>This service takes <strong className="font-semibold text-ink">{peso(perPiece)}</strong> off per piece.</>
-                : 'No fixed amount on this service. Enter what to take off after checking the fabric.'}
+                ? <>This service takes <strong className="font-semibold text-ink">{peso(perPiece)}</strong> off per piece for the fabric. Add more for any other materials they bring.</>
+                : 'Take off the cost of what the customer brought (fabric, lining, buttons, zippers or other trims). No fixed amount on this service, so enter it after checking the materials.'}
             </p>
           )}
         </div>
@@ -86,7 +86,7 @@ export default function FabricDeductionBox({ job, financials, onApply }: Readonl
           className="flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-taupe text-sm font-bold text-white shadow-2xs transition-colors hover:bg-taupe-hover cursor-pointer"
         >
           <Scissors size={15} aria-hidden="true" />
-          {already > 0 ? 'Take off more' : 'Apply fabric deduction'}{suggested > 0 ? ` (${peso(suggested)})` : ''}
+          {already > 0 ? 'Take off more' : 'Apply deduction'}{suggested > 0 ? ` (${peso(suggested)})` : ''}
         </button>
       ) : (
         <div className="space-y-2.5">

@@ -22,6 +22,7 @@ import HeaderBreadcrumbs from '@/components/shell/HeaderBreadcrumbs';
 import StoreApplicationGate from '@/components/dashboard/StoreApplicationGate';
 import ChangePasswordGate from '@/components/dashboard/ChangePasswordGate';
 import { TrialBanner, useLatestSubscription } from '@/components/billing/TrialNotice';
+import ReadOnlyShopBanner from '@/components/billing/ReadOnlyShopBanner';
 import ProductTourRunner from '@/components/tour/ProductTourRunner';
 
 const SIDEBAR_KEY = 'sutura.sidebar';
@@ -363,6 +364,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
             {isStoreOwner && !pathname?.startsWith('/dashboard/billing') && (
               <div className="mb-4 print:hidden"><TrialBanner sub={latestSubscription} /></div>
             )}
+            {/* No running plan: read-only for everyone in the shop (server: CheckRole). Billing has its own notice. */}
+            {!pathname?.startsWith('/dashboard/billing') && <ReadOnlyShopBanner storeId={store?.id} isOwner={isStoreOwner} />}
             {/* A staff account locked by the shop's plan: can look, can't change anything (server: CheckRole). */}
             {!isStoreOwner && (staffProfile as { plan_locked_at?: string | null } | null)?.plan_locked_at && (
               <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">

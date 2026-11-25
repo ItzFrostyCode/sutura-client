@@ -2,6 +2,7 @@ import { deriveTiersFromService, type PricingTierInput, type Service, type Servi
 import { emptySizeChart, type SizeChartValue } from '@/components/shared/SizeChartEditor';
 import { emptyRequirementsDraft, requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 import type { PublicService } from '@/components/store-storefront/types';
+import { serviceChartImages } from '@/components/store-service-detail/ServiceDetailBlocks';
 
 export type ServiceSection = 'photo' | 'info' | 'spec' | 'chart' | 'description' | 'booking' | 'requirements';
 
@@ -47,6 +48,7 @@ export function toDraft(service: Service): ServiceDraft {
     image_url: service.image_url ?? '',
     sizeChart: {
       image_url: service.size_chart_image_url ?? null,
+      image_urls: serviceChartImages(service),
       columns: service.size_chart_columns ?? [],
       rows: service.size_chart_rows ?? [],
     },
@@ -109,7 +111,8 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     roster_fields: draft.service_types.includes('bulk_sublimation') ? draft.roster_fields : [],
     is_active: isActive,
     image_url: draft.image_url || null,
-    size_chart_image_url: draft.sizeChart.image_url,
+    size_chart_image_url: draft.sizeChart.image_urls?.[0] ?? draft.sizeChart.image_url,
+    size_chart_image_urls: draft.sizeChart.image_urls ?? (draft.sizeChart.image_url ? [draft.sizeChart.image_url] : []),
     size_chart_columns: draft.sizeChart.columns.length > 0 ? draft.sizeChart.columns : null,
     size_chart_rows: draft.sizeChart.rows.length > 0 ? draft.sizeChart.rows : null,
     pricing_tiers: tiers,

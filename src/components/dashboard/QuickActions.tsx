@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, Lock, Package, Scissors, UserCog, type LucideIcon } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { READ_ONLY_HINT, useCurrentShopReadOnly } from '@/hooks/useShopReadOnly';
 
 interface QuickAction {
   key: string;
@@ -52,6 +53,9 @@ export default function QuickActions({ storeId }: { readonly storeId: number | u
     return () => { alive = false; };
   }, [storeId, canManage]);
 
+  // Plan ended: every quick action adds something, so all are shown blocked (server: CheckRole).
+  const readOnly = useCurrentShopReadOnly();
+
   // Each action only for the roles its own page allows.
   const actions: QuickAction[] = ([
     { key: 'service', allowed: canManage, label: 'Add Service', hint: 'Offer a new tailoring service', href: '/dashboard/services/new', icon: Package },
@@ -59,7 +63,8 @@ export default function QuickActions({ storeId }: { readonly storeId: number | u
     // Staff create orders too (no payment/discount; their own branch, set by the server).
     { key: 'order', allowed: isShopRole, label: 'New Order', hint: 'Start a new tailoring job', href: '/dashboard/jobs/new', icon: Scissors },
     { key: 'staff', allowed: canManage, label: 'Add Staff', hint: 'Invite a team member', href: '/dashboard/staff?new=1', icon: UserCog, blockedReason: staffFull ? LIMIT_REASON : undefined },
-  ] as (QuickAction & { allowed: boolean })[]).filter((a) => a.allowed);
+  ] as (QuickAction & { allowed: boolean })[]).filter((a) => a.allowed)
+    .map((a) => (readOnly ? { ...a, blockedReason: READ_ONLY_HINT } : a));
 
   if (actions.length === 0) return null;
 

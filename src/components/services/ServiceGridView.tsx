@@ -25,6 +25,8 @@ function toCardResult(service: Service): SearchServiceResult {
     service_leaf_type: service.service_leaf_type ?? null,
     base_price: service.base_price != null ? Number(service.base_price) : null,
     sale_price: service.sale_price != null ? Number(service.sale_price) : null,
+    sale_starts_at: service.sale_starts_at ?? null,
+    sale_ends_at: service.sale_ends_at ?? null,
     estimated_days: service.estimated_days,
     estimated_days_max: service.estimated_days_max ?? null,
     image_url: service.image_url ?? null,

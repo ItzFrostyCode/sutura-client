@@ -1,7 +1,7 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { PublicService } from '@/components/store-storefront/types';
-import { getActiveSale } from '@/lib/salePricing';
+import { getActiveSale, saleDayLabel } from '@/lib/salePricing';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 
 interface ServiceProductInfoProps {
@@ -47,10 +47,14 @@ export default function ServiceProductInfo({ service, hideStats }: ServiceProduc
 
       <div className="bg-[#fafafa] border border-line px-4 py-4">
         {sale ? (
-          <p className="flex items-baseline gap-2 leading-none">
-            <span className="text-3xl font-bold text-rose-600">₱{sale.sale.toLocaleString()}</span>
-            <span className="line-through text-ink-faint text-base">₱{sale.original.toLocaleString()}</span>
-          </p>
+          <>
+            <p className="flex flex-wrap items-baseline gap-2 leading-none">
+              <span className="text-3xl font-bold text-rose-600">₱{sale.sale.toLocaleString()}</span>
+              <span className="line-through text-ink-faint text-base">₱{sale.original.toLocaleString()}</span>
+              <span className="bg-rose-600 px-2 py-0.5 text-xs font-bold text-white tabular-nums">-{sale.percentOff}%</span>
+            </p>
+            {sale.endsAt && <p className="mt-2 text-xs font-medium text-rose-700">Discount ends {saleDayLabel(sale.endsAt)}</p>}
+          </>
         ) : hasPrice ? (
           <p className="text-3xl font-bold text-taupe leading-none">₱{Number(service.base_price).toLocaleString()}</p>
         ) : (

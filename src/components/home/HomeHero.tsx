@@ -1,23 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import type { SavedLocation } from '@/lib/customerLocation';
-import HomeLocationStatus from './HomeLocationStatus';
 import HeroSearch from './HeroSearch';
-import type { LocationStatus } from './useHomeData';
 
 interface HomeHeroProps {
   heroSearch: string;
   onSearchChange: (val: string) => void;
-  locationStatus: LocationStatus;
-  location: SavedLocation | null;
 }
 
 export default function HomeHero({
   heroSearch,
   onSearchChange,
-  locationStatus,
-  location,
 }: HomeHeroProps) {
   return (
     // Only the photo is clipped (not the section), and the section sits above
@@ -36,7 +29,6 @@ export default function HomeHero({
       </div>
 
       <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-8 py-16 text-center">
-        <HomeLocationStatus status={locationStatus} location={location} />
         <h1 className="text-display mobile-hero-title sm:tablet-hero-title text-white mb-4 text-balance">
           Discover Davao&rsquo;s Tailoring Shops.
           <br className="hidden sm:block" />{' '}

@@ -3,7 +3,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { CustomerData, MeasurementProfile, JobOrder, Appointment } from '../customerTypes';
-import { customerEmail } from '../customerHelpers';
+import { customerEmail, toPhMobileInput } from '../customerHelpers';
 
 export function useCustomerProfile(id: string) {
   const { store } = useAuthStore();
@@ -33,7 +33,7 @@ export function useCustomerProfile(id: string) {
         setCustomer(data.customer);
         setEditName(data.customer.name || '');
         setEditEmail(customerEmail(data.customer));
-        setEditPhone(data.customer.phone || '');
+        setEditPhone(toPhMobileInput(data.customer.phone || ''));
         setEditNotes(data.customer.store_notes || '');
         let loadedMeasurements = data.measurements || [];
         if (loadedMeasurements.length === 0) {

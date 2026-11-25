@@ -7,6 +7,7 @@ import { TableSkeleton } from '@/components/ui/Skeleton';
 import SearchInput from '@/components/shared/SearchInput';
 import { JobBalanceItem } from '../usePayments';
 import { getPaymentStatusBadge } from '../paymentHelpers';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 interface JobBalancesTabProps {
   balanceSearch: string;
@@ -107,13 +108,15 @@ export default function JobBalancesTab({
                   </div>
 
                   {job.balance > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => onSelectJobToPay(job)}
-                      className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
-                    >
-                      <CreditCard size={13} /> <span>Log Payment</span>
-                    </button>
+                    <ReadOnlyLock className="w-full">
+                      <button
+                        type="button"
+                        onClick={() => onSelectJobToPay(job)}
+                        className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                      >
+                        <CreditCard size={13} /> <span>Log Payment</span>
+                      </button>
+                    </ReadOnlyLock>
                   ) : (
                     <p className="flex items-center justify-center gap-1 text-xs font-bold text-emerald-700"><CheckCircle2 size={13} /> Paid in full</p>
                   )}
@@ -164,13 +167,15 @@ export default function JobBalancesTab({
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
                         {job.balance > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => onSelectJobToPay(job)}
-                            className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
-                          >
-                            <CreditCard size={12} /> <span>Log Pay</span>
-                          </button>
+                          <ReadOnlyLock>
+                            <button
+                              type="button"
+                              onClick={() => onSelectJobToPay(job)}
+                              className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-taupe hover:bg-taupe-hover text-white shadow-2xs transition-colors"
+                            >
+                              <CreditCard size={12} /> <span>Log Pay</span>
+                            </button>
+                          </ReadOnlyLock>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700"><CheckCircle2 size={12} /> Paid in full</span>
                         )}

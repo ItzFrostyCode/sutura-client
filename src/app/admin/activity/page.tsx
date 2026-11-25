@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import PageHeader from '@/components/shared/PageHeader';
 import SearchInput from '@/components/shared/SearchInput';
-import Badge from '@/components/shared/Badge';
+import { PILL } from '@/components/admin/ui/PlanPill';
 import { FilterTabs, ListState, Pager } from '@/components/admin/ui/AdminPrimitives';
 import { formatDate, useAdminList, useStableListHeight, useDebounced } from '@/components/admin/useAdminList';
 
@@ -29,9 +29,27 @@ const ROLE_LABELS: Record<ActorRole, string> = {
   guest: 'Guest',
 };
 
+// One hue per role so a row's actor reads at a glance. The two Tailoring staff
+// roles share the green family (teal / emerald) so they read as one group.
+const ROLE_TONE: Record<ActorRole, string> = {
+  admin: 'bg-violet-50 text-violet-700 border-violet-200',
+  store_owner: 'bg-amber-50 text-amber-800 border-amber-200',
+  branch_manager: 'bg-teal-50 text-teal-700 border-teal-200',
+  staff: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  customer: 'bg-sky-50 text-sky-700 border-sky-200',
+  guest: 'bg-stone-100 text-stone-600 border-stone-200',
+};
+
+// Filter tabs. Branch managers and staff are one tab, "Tailoring staff" (the
+// system's Tailoring Staff role); the server matches both for `tailoring_staff`.
+// Each row's badge still says which of the two it was.
 const ROLES = [
   { value: '', label: 'Everyone' },
-  ...(Object.keys(ROLE_LABELS) as ActorRole[]).map((r) => ({ value: r, label: ROLE_LABELS[r] })),
+  { value: 'admin', label: ROLE_LABELS.admin },
+  { value: 'store_owner', label: ROLE_LABELS.store_owner },
+  { value: 'tailoring_staff', label: 'Tailoring staff' },
+  { value: 'customer', label: ROLE_LABELS.customer },
+  { value: 'guest', label: ROLE_LABELS.guest },
 ];
 
 const humanize = (action: string) => action.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
@@ -48,7 +66,7 @@ export default function AdminActivityPage() {
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
   const query = useDebounced(search);
-  const { items, meta, raw, loading, error } = useAdminList<AuditRow>('/admin/audit-logs', { role, store_id: storeId, search: query, from, to, page });
+  const { items, meta, raw, loading, error } = useAdminList<AuditRow>('/admin/audit-logs', { role, store_id: storeId, search: query, from, to, page, per_page: 10 });
   // A shorter last page keeps the list's height, so the card doesn't shrink on Next.
   const stable = useStableListHeight<HTMLDivElement>(`${role}|${storeId}|${query}|${from}|${to}`);
   const stores = (raw.stores ?? []) as { id: number; name: string }[];
@@ -91,7 +109,7 @@ export default function AdminActivityPage() {
                   </p>
                   {row.payload?.reason && <p className="mt-0.5 text-sm text-ink-body">Reason: {row.payload.reason}</p>}
                   <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
-                    <Badge>{ROLE_LABELS[row.actor_role ?? 'guest']}</Badge>
+                    <span className={`${PILL} ${ROLE_TONE[row.actor_role ?? 'guest']}`}>{ROLE_LABELS[row.actor_role ?? 'guest']}</span>
                     <span className="min-w-0 truncate">
                       {row.user?.name ?? (row.actor_role === 'guest' || !row.actor_role ? 'Guest' : 'System')}
                       {row.store && ` · ${row.store.name}`}

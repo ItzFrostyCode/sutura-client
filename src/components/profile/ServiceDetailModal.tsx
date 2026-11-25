@@ -5,6 +5,8 @@ import React, { useState } from 'react';
 import { X, Clock, Tag, MessageCircle, Calendar, Image as ImageIcon, Wrench } from 'lucide-react';
 import Image from 'next/image';
 import { getMediaUrl } from '@/lib/media';
+import { serviceChartImages } from '@/components/store-service-detail/ServiceDetailBlocks';
+import ChartImageViewer from '@/components/shared/ChartImageViewer';
 
 export interface CustomField {
   name: string;
@@ -31,6 +33,7 @@ export interface ServiceDetailModalItem {
   service_types?: string[];
   image_url?: string | null;
   size_chart_image_url?: string | null;
+  size_chart_image_urls?: string[] | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: SizeChartRow[] | null;
   custom_fields?: CustomField[];
@@ -214,17 +217,10 @@ export default function ServiceDetailModal({
           )}
 
           {/* Size Chart */}
-          {(service.size_chart_image_url || (service.size_chart_columns && service.size_chart_columns.length > 0)) && (
+          {(serviceChartImages(service).length > 0 || (service.size_chart_columns && service.size_chart_columns.length > 0)) && (
             <div className="space-y-3 pt-2 border-t border-line">
               <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Size Chart</h4>
-              {service.size_chart_image_url && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={service.size_chart_image_url}
-                  alt="Size chart"
-                  className="w-full rounded-xl border border-line"
-                />
-              )}
+              <ChartImageViewer images={serviceChartImages(service)} label="Size chart" />
               {service.size_chart_columns && service.size_chart_columns.length > 0 && service.size_chart_rows && service.size_chart_rows.length > 0 && (
                 <div className="overflow-x-auto border border-line rounded-xl">
                   <table className="w-full text-xs">

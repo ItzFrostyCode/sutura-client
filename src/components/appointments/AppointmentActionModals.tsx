@@ -13,6 +13,7 @@ import AppointmentSubject from './AppointmentSubject';
 import AppointmentCustomerToolkit from './AppointmentCustomerToolkit';
 import RejectAppointmentDialog from './RejectAppointmentDialog';
 import AssignStaffControl from './AssignStaffControl';
+import { customerEmail } from '@/components/customers/customerHelpers';
 
 interface AppointmentActionModalsProps {
   // Modal visibility & active records
@@ -177,7 +178,7 @@ export default function AppointmentActionModals({
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-base font-bold text-ink">{reviewApt.customer?.name}</h3>
-                <p className="text-xs text-ink-faint">{reviewApt.customer?.email}</p>
+                <p className="text-xs text-ink-faint">{customerEmail(reviewApt.customer) || reviewApt.customer?.phone}</p>
               </div>
               <StatusBadge status={reviewApt.status} scheduledAt={reviewApt.scheduled_at} />
             </div>
@@ -501,7 +502,7 @@ export default function AppointmentActionModals({
             <div className="flex items-start justify-between border-b border-line pb-3">
               <div>
                 <h4 className="font-bold text-ink text-base">{viewApt.customer?.name}</h4>
-                <p className="text-xs text-ink-faint">{viewApt.customer?.email}</p>
+                <p className="text-xs text-ink-faint">{customerEmail(viewApt.customer) || viewApt.customer?.phone}</p>
               </div>
               <div className="flex flex-col gap-1 items-end">
                 <TypeBadge type={viewApt.appointment_type} label={viewApt.purpose_label} />

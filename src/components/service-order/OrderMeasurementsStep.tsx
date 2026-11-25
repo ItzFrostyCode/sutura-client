@@ -16,11 +16,11 @@ import {
 } from '@/components/order-people/PeopleEditor';
 
 // Photos of a handwritten measurement list.
-function SheetPhotos({ o }: Readonly<{ o: ServiceOrderState }>) {
+function SheetPhotos({ o, label }: Readonly<{ o: ServiceOrderState; label?: React.ReactNode }>) {
   return (
     <div className="space-y-2">
       <p className="mobile-caption font-semibold text-ink-body">
-        Or a photo of your measurement list <span className="text-ink-faint font-normal">(Optional)</span>
+        {label ?? <>Or a photo of your measurement list <span className="text-ink-faint font-normal">(Optional)</span></>}
       </p>
       <div className="flex flex-wrap gap-2">
         {o.sheets.map((url) => (
@@ -85,7 +85,7 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
   const belowMin = bulk && o.minQty > 1 && total < o.minQty;
   const dropped = bulk ? droppedMeasurementCount(o.persons, o.garmentType) : 0;
   const savedProfiles = o.savedMeasurements.map((m) => ({ id: m.id, label: `${m.profile_name} · version ${m.version}` }));
-  const chart = o.service && hasServiceChart(o.service) ? <ServiceChartBlock service={o.service} /> : undefined;
+  const chart = o.service && hasServiceChart(o.service) ? <ServiceChartBlock service={o.service} compact /> : undefined;
 
   let totalNote: string;
   if (belowMin) totalNote = `This shop's minimum is ${o.minQty} pieces. Add ${o.minQty - total} more.`;
@@ -181,20 +181,30 @@ export default function OrderMeasurementsStep({ o }: Readonly<{ o: ServiceOrderS
         </>
       )}
 
-      {(bulk || o.measurementsNeeded) && <SheetPhotos o={o} />}
+      {!bulk && o.measurementsNeeded && <SheetPhotos o={o} />}
 
+      {/* Bulk: the order-wide summary, with the one measurement-sheet photo
+          for the whole order attached to it (not to any one person). */}
       {bulk && (
-        <div className="bg-surface border border-line rounded-lg p-4 flex items-center gap-3">
-          <span className="w-9 h-9 shrink-0 rounded-lg bg-canvas text-taupe flex items-center justify-center">
-            <ShoppingBag size={17} aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-ink tabular-nums">
-              {total} {total === 1 ? 'piece' : 'pieces'} on the list
-            </p>
-            <p className={`mobile-caption ${belowMin ? 'text-danger' : 'text-ink-muted'}`}>{totalNote}</p>
+        <section aria-label="Order list summary" className="bg-surface border border-line rounded-lg overflow-hidden">
+          <div className="p-4 flex items-center gap-3">
+            <span className="w-9 h-9 shrink-0 rounded-lg bg-canvas text-taupe flex items-center justify-center">
+              <ShoppingBag size={17} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-ink tabular-nums">
+                {total} {total === 1 ? 'piece' : 'pieces'} on the list
+              </p>
+              <p className={`mobile-caption ${belowMin ? 'text-danger' : 'text-ink-muted'}`}>{totalNote}</p>
+            </div>
           </div>
-        </div>
+          <div className="px-4 py-3 border-t border-line bg-canvas/60">
+            <SheetPhotos
+              o={o}
+              label={<>Have a handwritten measurement sheet? Upload a photo of it instead <span className="text-ink-faint font-normal">(Optional)</span></>}
+            />
+          </div>
+        </section>
       )}
     </div>
   );

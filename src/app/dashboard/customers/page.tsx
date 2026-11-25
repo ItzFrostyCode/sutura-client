@@ -12,6 +12,7 @@ import CustomerMobileCards from '@/components/customers/CustomerMobileCards';
 import CustomerAddEditModal from '@/components/customers/CustomerAddEditModal';
 import CustomerDeleteModal from '@/components/customers/CustomerDeleteModal';
 import { isWalkInCustomer } from '@/components/customers/customerHelpers';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 export default function CustomersPage() {
   const {
@@ -53,18 +54,20 @@ export default function CustomersPage() {
         title="Customer Records"
         description="Manage your customer directory, loyalty suki tiers, and customer profiles."
         actions={
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setFormData({ name: '', email: '', phone: '' });
-              setError('');
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
-          >
-            <Plus size={16} />
-            Add Customer
-          </button>
+          <ReadOnlyLock>
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setFormData({ name: '', email: '', phone: '' });
+                setError('');
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
+            >
+              <Plus size={16} />
+              Add Customer
+            </button>
+          </ReadOnlyLock>
         }
       >
         <CustomersModuleTabs activeTab="customers" />

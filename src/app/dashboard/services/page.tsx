@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Plus } from 'lucide-react';
+import { Plus, Tag } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 
 import { Service, ServicePackage, deriveTiersFromService } from '@/components/services/serviceHelpers';
@@ -15,6 +15,8 @@ import PageHeader from '@/components/shared/PageHeader';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
 import NewServiceModal from '@/components/services/create/NewServiceModal';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
+import ServiceDiscountModal from '@/components/services/ServiceDiscountModal';
 
 export default function ServicesPage() {
   const { store, user } = useAuthStore();
@@ -36,6 +38,7 @@ export default function ServicesPage() {
   // Set when the owner arrived from a design's "+" (?add=1&return=/dashboard/catalog/12):
   // the add form opens right away, and saving it sends them back to that design.
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
@@ -171,25 +174,41 @@ export default function ServicesPage() {
         actions={
           !isOwnerOrManager ? null : activeTab === 'services' ? (
             <>
+              {/* % off a service for a set of days (badge + struck-out price on every card). */}
+              <ReadOnlyLock>
+                <button
+                  type="button"
+                  onClick={() => setDiscountOpen(true)}
+                  disabled={services.length === 0}
+                  className="flex items-center gap-1.5 min-h-11 border border-line-strong bg-surface hover:bg-sunken text-ink px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Tag size={16} />
+                  Discount
+                </button>
+              </ReadOnlyLock>
+              <ReadOnlyLock>
+                <button
+                  data-tour="services-create"
+                  onClick={() => { setReturnTo(null); setNewOpen(true); }}
+                  className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
+                >
+                  <Plus size={17} />
+                  Create New
+                </button>
+              </ReadOnlyLock>
+            </>
+          ) : activeTab === 'packages' ? (
+            <ReadOnlyLock>
               <button
-                data-tour="services-create"
-                onClick={() => { setReturnTo(null); setNewOpen(true); }}
-                className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
+                onClick={() => router.push('/dashboard/services/packages/new')}
+                disabled={services.length < 2}
+                title={services.length < 2 ? 'Add at least 2 services first' : undefined}
+                className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <Plus size={17} />
                 Create New
               </button>
-            </>
-          ) : activeTab === 'packages' ? (
-            <button
-              onClick={() => router.push('/dashboard/services/packages/new')}
-              disabled={services.length < 2}
-              title={services.length < 2 ? 'Add at least 2 services first' : undefined}
-              className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <Plus size={17} />
-              Create New
-            </button>
+            </ReadOnlyLock>
           ) : null
         }
       >
@@ -204,6 +223,7 @@ export default function ServicesPage() {
 
       {activeTab === 'services' ? (
         <div data-tour="services-list">
+          <ServiceDiscountModal isOpen={discountOpen} onClose={() => setDiscountOpen(false)} services={services} storeId={store?.id} onSaved={fetchServices} />
           <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} onPlanLockChange={() => { fetchServices(); fetchPackages(); }} />
         </div>
       ) : activeTab === 'packages' ? (

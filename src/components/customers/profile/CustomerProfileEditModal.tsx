@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Loader2 } from 'lucide-react';
+import { toPhMobileInput, PH_MOBILE_INPUT_PROPS } from '../customerHelpers';
 
 interface CustomerProfileEditModalProps {
   readonly isOpen: boolean;
@@ -77,13 +78,13 @@ export default function CustomerProfileEditModal({
             </label>
             <input
               id="customer-edit-phone"
-              type="text"
+              {...PH_MOBILE_INPUT_PROPS}
               required
               value={editPhone}
-              onChange={(e) => setEditPhone(e.target.value)}
-              placeholder="e.g. +63 917 123 4567"
+              onChange={(e) => setEditPhone(toPhMobileInput(e.target.value))}
               className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             />
+            <p className="mt-1 text-[11px] text-ink-muted">11 digits, starting with 09.</p>
           </div>
           <div>
             <label htmlFor="customer-edit-notes" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">

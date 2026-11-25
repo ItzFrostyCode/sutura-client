@@ -36,7 +36,9 @@ export interface AnalyticsData {
     id: number;
     order_number?: string;
     total_amount: number | string;
-    customer?: { name: string };
+    customer?: { name: string } | null;
+    service?: { name: string } | null;
+    status?: string;
     created_at?: string;
   }[];
   revenue_data?: { month: string; date?: string; revenue: number }[];

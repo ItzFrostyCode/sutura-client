@@ -240,7 +240,9 @@ export function useAppointments() {
     if (!store) throw new Error('No shop selected.');
     const res = await api.post(`/stores/${store.id}/customers`, payload);
     const newCustomer = res.data.data as CustomerData;
-    setCustomers(prev => [...prev, newCustomer]);
+    // The server may match an existing customer (same name + number); don't list them twice.
+    setCustomers(prev => (prev.some(c => c.id === newCustomer.id) ? prev : [...prev, newCustomer]));
+    toast.success(res.status === 201 ? `${newCustomer.name} added and selected.` : `${newCustomer.name} is already a customer, selected.`);
     return newCustomer;
   };
 

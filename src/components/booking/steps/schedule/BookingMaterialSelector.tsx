@@ -1,6 +1,9 @@
 import React from 'react';
 import { Shirt } from 'lucide-react';
 
+/** Fits the online order (server max 500) and the booking notes it's added to. */
+const MAX_DESCRIPTION = 300;
+
 interface BookingMaterialSelectorProps {
   readonly materialSource: 'own' | 'shop' | '';
   readonly setMaterialSource: (val: 'own' | 'shop' | '') => void;
@@ -69,17 +72,24 @@ export default function BookingMaterialSelector({
       {materialSource === 'own' && (
         <div className="pt-1 space-y-1.5">
           <label htmlFor="material-description" className="mobile-caption font-semibold text-ink-body block">
-            What fabric are you bringing? <span className="text-ink-faint font-normal">(Optional)</span>
+            Describe your fabric <span className="text-ink-faint font-normal">(Optional)</span>
           </label>
-          <input
+          <p id="material-description-hint" className="mobile-caption text-ink-muted">
+            Helps the shop check it&apos;s enough and right for the garment: the type, color, how much you have, and anything to watch out for (stretchy, thin, has a pattern to match).
+          </p>
+          <textarea
             id="material-description"
-            type="text"
-            maxLength={120}
-            placeholder="e.g. 3 yards navy blue gabardine"
+            rows={3}
+            maxLength={MAX_DESCRIPTION}
+            aria-describedby="material-description-hint material-description-count"
+            placeholder="e.g. 3 yards navy blue gabardine, slightly stretchy. Bringing a sample shirt too for the fit."
             value={materialDescription}
             onChange={(e) => setMaterialDescription(e.target.value)}
-            className={`w-full h-[48px] ${rounded ? 'bg-surface rounded-lg focus:ring-2 focus:ring-taupe/15' : 'bg-canvas rounded-none'} border border-line px-4 text-base text-ink transition-colors focus:outline-none focus:border-taupe placeholder:text-ink-faint`}
+            className={`w-full min-h-24 ${rounded ? 'bg-surface rounded-lg focus:ring-2 focus:ring-taupe/15' : 'bg-canvas rounded-none'} border border-line px-4 py-3 text-base text-ink leading-relaxed resize-y transition-colors focus:outline-none focus:border-taupe placeholder:text-ink-faint`}
           />
+          <p id="material-description-count" className="mobile-caption text-ink-faint text-right tabular-nums">
+            {materialDescription.length}/{MAX_DESCRIPTION}
+          </p>
         </div>
       )}
     </div>

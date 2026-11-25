@@ -40,8 +40,10 @@ const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => ({ '&': '&a
 const STAR_SVG = '<svg width="8" height="8" viewBox="0 0 24 24" fill="#D9A441" aria-hidden="true" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 const DOT_HTML = '<span aria-hidden="true" style="flex-shrink:0;width:5px;height:5px;border-radius:50%;background:#8D7B68"></span>';
 
-export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false, bounce = false, label?: string): L.DivIcon {
-  const t = PIN_THEME[isMain ? 'main' : 'branch'];
+// `ringColor` swaps the ring + tail colour (the admin Shops map colours it by plan); omitted, the theme's own ring is used.
+export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false, bounce = false, label?: string, ringColor?: string): L.DivIcon {
+  const theme = PIN_THEME[isMain ? 'main' : 'branch'];
+  const t = ringColor ? { ...theme, ring: ringColor } : theme;
   const name = escapeHtml((label ?? '').trim() || t.tag);
   const tail = 11;
   const h = t.size + tail;

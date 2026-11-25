@@ -54,6 +54,40 @@ const SECTIONS: LegalSection[] = [
     ),
   },
   {
+    // Billing's "Subscription Agreement" link and the cancel dialog point here.
+    id: 'subscription-agreement',
+    heading: 'Subscription agreement',
+    body: (
+      <>
+        <p>
+          A shop plan (Basic, Pro or Premium) is paid with GCash for a monthly (30-day) or yearly (365-day) period.
+          SUTURA never charges you automatically: a plan renews only when you pay for it again in Billing.
+        </p>
+        <ul>
+          <li>
+            <strong>Changing plans.</strong> An upgrade starts right away, and the days left on your current plan
+            are added to the new one. A downgrade starts when your current period ends.
+          </li>
+          <li>
+            <strong>Free trial.</strong> A new shop can start with a 14-day free trial, once per shop. Choose a plan
+            before it ends.
+          </li>
+          <li>
+            <strong>Cancelling.</strong> You can cancel at any time in Billing. You keep full access to your plan
+            until its end date, and you can undo the cancellation until then. Days already paid for are not
+            refunded.
+          </li>
+          <li>
+            <strong>When a plan ends</strong> (cancelled, not renewed, or a trial that ran out), your shop is hidden
+            from customers and becomes read-only: no new orders, appointments or edits, for you or your staff.
+            Every record is kept and you can still view and export it. Billing and Support stay open, and paying
+            for a plan restores everything.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
     heading: 'Acceptable use',
     body: (
       <ul>
@@ -87,7 +121,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      updated="November 10, 2026"
+      updated="November 24, 2026"
       intro={
         <p>
           These terms apply to everyone who uses SUTURA at suturaofficial.tech, whether you are ordering from a

@@ -64,6 +64,7 @@ export interface Service extends RequirementFields {
   service_leaf_type?: string | null;
   base_price: string | null;
   sale_price?: string | number | null;
+  sale_percent?: number | null;
   sale_starts_at?: string | null;
   sale_ends_at?: string | null;
   estimated_days: number | null;
@@ -74,6 +75,7 @@ export interface Service extends RequirementFields {
   is_active: boolean;
   image_url?: string | null;
   size_chart_image_url?: string | null;
+  size_chart_image_urls?: string[] | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: SizeChartRow[] | null;
   custom_fields?: ServiceField[] | null;

@@ -4,6 +4,7 @@ import { Scissors, Star, Clock, MapPin } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import { SERVICE_TYPE_LABELS } from '@/lib/canonicalTaxonomy';
+import { getActiveSale, saleEndLabel } from '@/lib/salePricing';
 import { SearchServiceResult } from './types';
 
 interface SearchServiceCardProps {
@@ -56,6 +57,11 @@ export default function SearchServiceCard({
   const serviceTypeDisplay = rawType.replace(/_/g, ' ');
   const soldCount = service.orders_count ?? service.reviews_count ?? 0;
   const serviceHref = hrefOverride ?? gate(`/store/${storeSlug}/service/${service.id}`);
+  // Only while the discount's dates cover today (an expired one shows the normal price).
+  const sale = service.base_price != null
+    ? getActiveSale({ price: service.base_price, sale_price: service.sale_price, sale_starts_at: service.sale_starts_at, sale_ends_at: service.sale_ends_at })
+    : null;
+  const ends = saleEndLabel(sale?.endsAt);
 
   return (
     <Link
@@ -66,6 +72,9 @@ export default function SearchServiceCard({
       <div className="aspect-4/3 w-full bg-sunken relative overflow-hidden shrink-0 border-b border-line">
         {isPaused && (
           <div className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 bg-ink/85 text-white text-[9px] font-bold uppercase tracking-wider">Paused</div>
+        )}
+        {sale && (
+          <div className="absolute top-1.5 right-1.5 z-10 px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold tabular-nums">-{sale.percentOff}%</div>
         )}
         {service.image_url ? (
           <Image
@@ -96,14 +105,11 @@ export default function SearchServiceCard({
 
           {/* 4. Price */}
           <div>
-            {service.sale_price !== null && service.sale_price !== undefined && service.base_price !== null && service.sale_price < service.base_price ? (
-              <div className="flex items-center gap-1.5">
-                <span className="line-through text-ink-faint text-[10px] font-normal">
-                  ₱{Number(service.base_price).toLocaleString()}
-                </span>
-                <span className="text-xs font-bold text-rose-600">
-                  ₱{Number(service.sale_price).toLocaleString()}
-                </span>
+            {sale ? (
+              <div className="flex flex-wrap items-center gap-x-1.5">
+                <span className="text-xs font-bold text-rose-600 tabular-nums">₱{sale.sale.toLocaleString()}</span>
+                <span className="line-through text-ink-faint text-[10px] font-normal tabular-nums">₱{sale.original.toLocaleString()}</span>
+                {ends && <span className="text-[10px] font-medium text-rose-700">· {ends}</span>}
               </div>
             ) : service.base_price !== null && service.base_price !== undefined ? (
               <p className="text-xs font-bold text-ink">

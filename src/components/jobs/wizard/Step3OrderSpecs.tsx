@@ -16,12 +16,13 @@ import {
   FileText,
   AlertTriangle,
   UserCheck,
+  Check,
 } from 'lucide-react';
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
-import type { ServiceData, JobCreateFormData } from '../form/types';
+import type { ServiceData } from '../form/types';
 import type { Staff } from '@/components/staff/staffHelpers';
 import { roleLabel, staffOptionLabel } from '@/components/staff/staffHelpers';
-import { GARMENT_CATEGORY_LABELS, GARMENT_TYPE_OPTIONS } from '../jobHelpers';
+import { GARMENT_CATEGORY_LABELS, GARMENT_TYPE_OPTIONS, serviceHasType } from '../jobHelpers';
 
 interface Step3OrderSpecsProps {
   orderType: 'catalog' | 'custom' | 'alteration';
@@ -35,7 +36,13 @@ interface Step3OrderSpecsProps {
   selectedServiceId: string;
   onSelectService: (serviceId: string) => void;
   garmentCategory: string;
-  setGarmentCategory: (category: JobCreateFormData['garment_category']) => void;
+  // Alterations & Repair only
+  alterationGarment: string;
+  setAlterationGarment: (garment: string) => void;
+  alterationTasks: string[];
+  onToggleAlterationTask: (task: string) => void;
+  alterationInstructions: string;
+  setAlterationInstructions: (text: string) => void;
   // Fabric Source
   fabricSource: 'store_supplied' | 'customer_supplied';
   setFabricSource: (source: 'store_supplied' | 'customer_supplied') => void;
@@ -63,6 +70,27 @@ interface Step3OrderSpecsProps {
   onProceed: () => void;
 }
 
+/** What the customer walked in with. Saved as written on the order. */
+const ALTERATION_GARMENTS = [
+  'Pants / Trousers',
+  'Shorts',
+  'Skirt',
+  'Shirt / Polo',
+  'Blouse',
+  'Barong Tagalog',
+  'Dress / Gown',
+  'Suit / Blazer',
+  'Jacket / Coat',
+  'Uniform',
+  'Other',
+] as const;
+
+/** The common repair jobs; anything else goes in the instructions. */
+const ALTERATION_TASKS = ['Hemming', 'Tapering / Take-in', 'Zipper Replacement', 'Patching & Restoration'] as const;
+
+const LABEL = 'block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5';
+const SELECT =
+  'w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe cursor-pointer shadow-2xs';
 
 export default function Step3OrderSpecs({
   orderType,
@@ -74,7 +102,12 @@ export default function Step3OrderSpecs({
   selectedServiceId,
   onSelectService,
   garmentCategory,
-  setGarmentCategory,
+  alterationGarment,
+  setAlterationGarment,
+  alterationTasks,
+  onToggleAlterationTask,
+  alterationInstructions,
+  setAlterationInstructions,
   fabricSource,
   setFabricSource,
   fabricDeduction,
@@ -96,6 +129,11 @@ export default function Step3OrderSpecs({
   onProceed,
 }: Step3OrderSpecsProps) {
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const isAlteration = orderType === 'alteration';
+  // A repair is priced from the shop's repair services; a shop without any
+  // marked as Alterations & Repairs still gets its full list.
+  const repairServices = services.filter((s) => serviceHasType(s, 'alteration_repair'));
+  const alterationServices = repairServices.length > 0 ? repairServices : services;
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -185,9 +223,14 @@ export default function Step3OrderSpecs({
           {/* Card 3: Alterations & Repair */}
           <button
             type="button"
+            // Only the order type changes: the garment type picked on the
+            // Measurements step stays (alteration is marked on submit).
             onClick={() => {
               setOrderType('alteration');
-              setGarmentCategory('alteration_repair');
+              // A tailoring service (e.g. Formal) isn't a repair price: pick again from the repair list.
+              if (selectedServiceId && !alterationServices.some((s) => s.id.toString() === selectedServiceId)) {
+                onSelectService('');
+              }
             }}
             className={`p-4 rounded-xl border text-left transition-all cursor-pointer shadow-2xs flex flex-col justify-between gap-3 ${
               orderType === 'alteration'
@@ -261,6 +304,123 @@ export default function Step3OrderSpecs({
         </div>
       )}
 
+      {/* Alterations & Repair: the garment, the work, its condition, then the
+          exact instructions. No fabric or style references: the garment exists. */}
+      {isAlteration && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="alteration-garment" className={LABEL}>
+                Garment to Alter / Repair <span className="text-danger">*</span>
+              </label>
+              <select
+                id="alteration-garment"
+                value={alterationGarment}
+                onChange={(e) => setAlterationGarment(e.target.value)}
+                className={SELECT}
+              >
+                <option value="">-- What did the customer bring? --</option>
+                {ALTERATION_GARMENTS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <fieldset className="space-y-3">
+            <legend className={LABEL}>
+              Type of Service <span className="text-danger">*</span>
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {ALTERATION_TASKS.map((task) => {
+                const on = alterationTasks.includes(task);
+                return (
+                  <button
+                    key={task}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={on}
+                    onClick={() => onToggleAlterationTask(task)}
+                    className={`h-10 pl-3 pr-3.5 rounded-xl border text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-taupe/40 ${
+                      on ? 'bg-taupe/10 border-taupe text-ink' : 'bg-surface border-line text-ink-muted hover:text-ink hover:bg-canvas'
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`w-4 h-4 rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${
+                        on ? 'bg-taupe border-taupe text-white' : 'bg-surface border-line'
+                      }`}
+                    >
+                      {on && <Check size={11} strokeWidth={3} />}
+                    </span>
+                    {task}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="sm:max-w-[calc(50%-0.5rem)]">
+              <label htmlFor="alteration-service" className="block text-xs font-semibold text-ink mb-1.5">
+                Service &amp; price
+              </label>
+              <select
+                id="alteration-service"
+                value={selectedServiceId}
+                onChange={(e) => onSelectService(e.target.value)}
+                className={SELECT}
+              >
+                <option value="">-- Choose a repair service --</option>
+                {alterationServices.map((svc) => (
+                  <option key={svc.id} value={svc.id.toString()}>
+                    {svc.name} {svc.base_price ? `(from ₱${Number(svc.base_price).toLocaleString()})` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-[11px] text-ink-muted">Sets the price on the next step. Pick the one that covers the work above.</p>
+            </div>
+          </fieldset>
+
+          <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-2">
+            <label htmlFor="alteration-damage" className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wide">
+              <AlertTriangle size={15} className="text-amber-700" aria-hidden="true" />
+              <span>Pre-Existing Garment Condition / Damage Notes (Required)</span>
+            </label>
+            <p className="text-[11px] text-amber-800/90">
+              Write down any stains, tears, missing buttons or wear before intake, so the shop isn&apos;t blamed for them later.
+            </p>
+            <textarea
+              id="alteration-damage"
+              rows={3}
+              maxLength={2000}
+              value={preExistingDamageNotes}
+              onChange={(e) => setPreExistingDamageNotes(e.target.value)}
+              placeholder="e.g. Loose threads, small tear on left pocket, fading on knees."
+              className="w-full p-3 bg-surface border border-amber-300 rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="alteration-instructions" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
+              Specific Alteration Instructions &amp; Measurements
+            </label>
+            <p id="alteration-instructions-hint" className="text-[11px] text-ink-muted mt-0.5 mb-1.5">
+              What needs to be done? (Specify lengths to deduct, areas to tighten, or repair tasks)
+            </p>
+            <textarea
+              id="alteration-instructions"
+              rows={4}
+              maxLength={2000}
+              aria-describedby="alteration-instructions-hint"
+              value={alterationInstructions}
+              onChange={(e) => setAlterationInstructions(e.target.value)}
+              placeholder="e.g. Shorten inseam by 1.5 inches, taper leg opening to 6.5 inches flat, and patch the tiny tear on the left pocket."
+              className="w-full p-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+            />
+          </div>
+        </>
+      )}
+
+      {!isAlteration && (
+      <>
       {/* Garment & Service Options Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Type of Service Dropdown */}
@@ -344,26 +504,6 @@ export default function Step3OrderSpecs({
         )}
       </div>
 
-      {/* If Alterations: Pre-existing Damage Notes */}
-      {orderType === 'alteration' && (
-        <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-2">
-          <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wide">
-            <AlertTriangle size={15} className="text-amber-700" />
-            <span>Pre-Existing Garment Condition / Damage Notes (Required)</span>
-          </div>
-          <p className="text-[11px] text-amber-800/90">
-            Document any stains, tears, missing buttons, or existing wear before intake to protect your shop.
-          </p>
-          <textarea
-            rows={2}
-            value={preExistingDamageNotes}
-            onChange={(e) => setPreExistingDamageNotes(e.target.value)}
-            placeholder="e.g. Small yellow stain near collar, loose bottom button, right pocket frayed."
-            className="w-full p-3 bg-surface border border-amber-300 rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
-          />
-        </div>
-      )}
-
       {/* Reference Materials (Photos + Inspiration Link) */}
       <div className="space-y-3">
         <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
@@ -435,6 +575,8 @@ export default function Step3OrderSpecs({
           />
         </div>
       </div>
+      </>
+      )}
 
       {/* Custom Tailoring Notes */}
       <div>
@@ -445,7 +587,9 @@ export default function Step3OrderSpecs({
           rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Special embroidery requests, collar cuts, button preferences, lining materials..."
+          placeholder={isAlteration
+            ? 'Anything else for the tailor: pickup reminders, how the customer wants it pressed...'
+            : 'Special embroidery requests, collar cuts, button preferences, lining materials...'}
           className="w-full p-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
         />
       </div>

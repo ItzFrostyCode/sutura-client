@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { Loader2 } from 'lucide-react';
-import { customerEmail } from './customerHelpers';
+import { customerEmail, toPhMobileInput, PH_MOBILE_PATTERN, PH_MOBILE_ERROR, PH_MOBILE_INPUT_PROPS } from './customerHelpers';
 import { CustomerData } from './customerTypes';
 
 interface CustomerFormModalProps {
@@ -30,15 +30,21 @@ export default function CustomerFormModal({
       setFormData({
         name: editingCustomer.name,
         email: customerEmail(editingCustomer),
-        phone: editingCustomer.phone || '',
+        phone: toPhMobileInput(editingCustomer.phone || ''),
       });
     } else {
       setFormData({ name: '', email: '', phone: '' });
     }
   }, [editingCustomer, isOpen]);
 
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  useEffect(() => { if (isOpen) setPhoneTouched(false); }, [isOpen]); // eslint-disable-line react-hooks/set-state-in-effect
+  const phoneInvalid = !PH_MOBILE_PATTERN.test(formData.phone);
+  const showPhoneError = phoneTouched && formData.phone !== '' && phoneInvalid;
+
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (phoneInvalid) { setPhoneTouched(true); return; }
     const payload = {
       name: formData.name,
       email: formData.email.trim() || null,
@@ -91,13 +97,18 @@ export default function CustomerFormModal({
           </label>
           <input 
             id="phone"
-            type="tel" 
+            {...PH_MOBILE_INPUT_PROPS}
             required
             value={formData.phone}
-            onChange={e => setFormData({...formData, phone: e.target.value})}
-            className="w-full bg-canvas border border-line rounded-lg px-4 py-2 text-ink focus:outline-none focus:border-taupe"
-            placeholder="+63 900 000 0000"
+            onChange={e => setFormData({...formData, phone: toPhMobileInput(e.target.value)})}
+            onBlur={() => setPhoneTouched(true)}
+            aria-invalid={showPhoneError}
+            aria-describedby="phone-hint"
+            className={`w-full bg-canvas border rounded-lg px-4 py-2 text-ink tabular-nums focus:outline-none ${showPhoneError ? 'border-danger focus:border-danger' : 'border-line focus:border-taupe'}`}
           />
+          <p id="phone-hint" className={`mt-1 text-xs ${showPhoneError ? 'text-danger' : 'text-ink-muted'}`}>
+            {showPhoneError ? PH_MOBILE_ERROR : '11 digits, starting with 09.'}
+          </p>
         </div>
 
         <div className="pt-4 flex justify-end gap-3">
@@ -110,7 +121,7 @@ export default function CustomerFormModal({
           </button>
           <button 
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || phoneInvalid}
             className="bg-taupe hover:bg-taupe/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}

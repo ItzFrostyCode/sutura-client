@@ -74,6 +74,8 @@ function DashboardPageContent() {
 
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
+  const [offlineStaff, setOfflineStaff] = useState<StaffPresence[]>([]);
+  const [presenceCheckedAt, setPresenceCheckedAt] = useState(0);
 
   const storeId = store?.id;
 
@@ -89,19 +91,25 @@ function DashboardPageContent() {
         const raw: StaffPresence[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const FIVE_MIN = 5 * 60 * 1000;
         const now = Date.now();
-        const online = raw
-          // StaffController::index has no server-side branch_id filter (unlike
-          // jobs/appointments/analytics), so this widget filters client-side —
-          // otherwise selecting a branch left "Online Staff" silently showing
-          // every branch's staff.
-          .filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId)
-          .filter(s => {
-            if (!s.user?.last_seen_at) return false;
-            return now - new Date(s.user.last_seen_at).getTime() < FIVE_MIN;
-          })
-          .map(s => ({ ...s, _onlineSince: new Date(s.user.last_seen_at!).getTime() }))
+        const seen = (s: StaffPresence) => (s.user?.last_seen_at ? new Date(s.user.last_seen_at).getTime() : 0);
+        // StaffController::index has no server-side branch_id filter (unlike
+        // jobs/appointments/analytics), so this widget filters client-side —
+        // otherwise selecting a branch left "Online Staff" silently showing
+        // every branch's staff.
+        const inBranch = raw.filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId);
+        const online = inBranch
+          .filter(s => seen(s) > 0 && now - seen(s) < FIVE_MIN)
+          .map(s => ({ ...s, _onlineSince: seen(s) }))
           .sort((a, b) => a._onlineSince - b._onlineSince);
         setOnlineStaff(online);
+        setPresenceCheckedAt(now);
+        // Everyone else, most recently seen first, so the card still shows the team when nobody's on.
+        setOfflineStaff(
+          inBranch
+            .filter(s => !(seen(s) > 0 && now - seen(s) < FIVE_MIN))
+            .map(s => ({ ...s, _onlineSince: seen(s) }))
+            .sort((a, b) => b._onlineSince - a._onlineSince),
+        );
       })
       .catch(() => {});
   }, [storeId, canViewAnalytics, selectedBranchId]);
@@ -252,7 +260,7 @@ function DashboardPageContent() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* ── Header with tabs ──────────────────────────────────────────────── */}
       <DashboardHeader
         userName={user?.name || ''}
@@ -351,7 +359,7 @@ function DashboardPageContent() {
       />
 
       {/* ── Section 4: Today's Agenda + Staff Online ─────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
         {/* Appointments — 3 of 5 cols */}
         <section className="lg:col-span-3 bg-surface border border-line rounded-xl overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
@@ -377,26 +385,36 @@ function DashboardPageContent() {
           ) : (
             <div className="divide-y divide-line">
               {todayAppointments.map(apt => {
-                const time = new Date(apt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+                // Manila time, e.g. "10:30 AM"; a missing/bad date shows a dash, never "Invalid Date".
+                const at = apt.scheduled_at ? new Date(apt.scheduled_at) : null;
+                const time = at && !Number.isNaN(at.getTime())
+                  ? at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
+                  : '—';
                 const tone =
-                  apt.status === 'completed' ? 'bg-sage/10 text-sage border-sage/20'
-                  : apt.status === 'confirmed' ? 'bg-taupe/10 text-taupe border-taupe/20'
+                  apt.status === 'completed' ? 'bg-sage/10 text-sage border-sage/25'
+                  : apt.status === 'confirmed' ? 'bg-taupe/10 text-taupe-dark border-taupe/25'
+                  : apt.status === 'in_progress' ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : apt.status === 'pending' ? 'bg-rose-50 text-rose-700 border-rose-200'
                   : 'bg-sunken text-ink-muted border-line';
+                const statusLabel = apt.status.charAt(0).toUpperCase() + apt.status.slice(1).replace(/_/g, ' ');
+                const type = apt.appointment_type
+                  ? apt.appointment_type.charAt(0).toUpperCase() + apt.appointment_type.slice(1).replace(/_/g, ' ')
+                  : 'Appointment';
                 return (
                   <Link
                     key={apt.id}
                     href="/dashboard/appointments"
                     className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-canvas transition-colors min-h-[44px]"
                   >
-                    <span className="text-figure text-sm font-bold text-ink tabular-nums shrink-0 w-[68px]">{time}</span>
+                    <span className="text-figure text-sm font-bold text-ink tabular-nums shrink-0 w-18 whitespace-nowrap">{time}</span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm font-semibold text-ink truncate">{apt.customer?.name ?? 'Walk-in'}</span>
                       <span className="block text-xs text-ink-muted truncate">
-                        {apt.appointment_type?.replace(/_/g, ' ')}{apt.service ? ` · ${apt.service.name}` : ''}
+                        {type}{apt.service ? ` · ${apt.service.name}` : ''}
                       </span>
                     </span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 capitalize ${tone}`}>
-                      {apt.status}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${tone}`}>
+                      {statusLabel}
                     </span>
                   </Link>
                 );
@@ -406,8 +424,8 @@ function DashboardPageContent() {
         </section>
 
         {/* Staff Online — 2 of 5 cols */}
-        <div className="lg:col-span-2">
-          <StaffOnline onlineStaff={onlineStaff} />
+        <div className="lg:col-span-2 flex">
+          <StaffOnline onlineStaff={onlineStaff} offlineStaff={offlineStaff} viewerName={user?.name ?? ''} checkedAt={presenceCheckedAt} />
         </div>
       </div>
 

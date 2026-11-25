@@ -15,12 +15,18 @@ export default function PublicNav({
   isSticky = true,
   className = '',
   featureNav = false,
+  start,
+  mobileBar,
 }: {
   readonly hideMenu?: boolean;
   readonly isSticky?: boolean;
   readonly className?: string;
   /** Show the Map / Measurements / Tracking / Ask feature bar (fixed to the bottom of the screen). */
   readonly featureNav?: boolean;
+  /** Desktop/tablet only: fills the empty top-left slot (the home page puts the visitor's location here). */
+  readonly start?: React.ReactNode;
+  /** Phone only: a slim row under the header bar. */
+  readonly mobileBar?: React.ReactNode;
 } = {}) {
   const {
     menuOpen,
@@ -73,10 +79,14 @@ export default function PublicNav({
           </Link>
         </div>
 
-        {/* DESKTOP/TABLET (>= md): empty left slot — the category links moved
-            to Discover (the feature bar → /categories); this keeps the action
-            icons on the right with the logo centred. */}
-        <div className="hidden md:block w-[120px]" aria-hidden="true" />
+        {/* DESKTOP/TABLET (>= md): left slot. Empty by default (keeps the action
+            icons on the right with the logo centred); the home page shows the
+            visitor's location here. Capped so it never runs under the logo. */}
+        {start ? (
+          <div className="hidden md:flex min-w-0 max-w-[min(calc(50%-7.5rem),26rem)]">{start}</div>
+        ) : (
+          <div className="hidden md:block w-[120px]" aria-hidden="true" />
+        )}
 
         {/* DESKTOP/TABLET (>= md): SUTURA Logo Centered */}
         <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 pointer-events-auto">
@@ -104,6 +114,8 @@ export default function PublicNav({
           onActionClick={closeMenu}
         />
       </div>
+
+      {mobileBar && <div className="md:hidden">{mobileBar}</div>}
 
       {featureNav && <FeatureNav />}
 

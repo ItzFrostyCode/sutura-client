@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 import Link from 'next/link';
 import { Banknote, ChevronLeft, ChevronRight, Download, ExternalLink, FileSpreadsheet, Loader2, Search } from 'lucide-react';
 import Modal from '@/components/Modal';
@@ -91,6 +92,9 @@ export default function CashTab() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<'csv' | 'xlsx' | null>(null);
   const [page, setPage] = useState(1);
+  // Changing page brings the list's top back into view.
+  const listTopRef = useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { setPage(n); scrollToListTop(listTopRef.current); };
   const [viewing, setViewing] = useState<CashRow | null>(null);
 
   // Branch column only when looking at every branch of a multi-branch shop.
@@ -252,6 +256,7 @@ export default function CashTab() {
         </div>
       ) : (
         <>
+          <div ref={listTopRef} className="scroll-mt-24" aria-hidden="true" />
           {/* Phones: one card per payment */}
           <ul className="divide-y divide-line border-t border-line md:hidden">
             {rows.map((r) => (
@@ -337,11 +342,11 @@ export default function CashTab() {
                 {(data.meta.current_page - 1) * data.meta.per_page + 1}–{Math.min(data.meta.current_page * data.meta.per_page, data.meta.total)} of {data.meta.total}
               </p>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1 || loading} aria-label="Previous page" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-sunken disabled:opacity-40 cursor-pointer">
+                <button type="button" onClick={() => goToPage(Math.max(1, page - 1))} disabled={page <= 1 || loading} aria-label="Previous page" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-sunken disabled:opacity-40 cursor-pointer">
                   <ChevronLeft size={16} aria-hidden="true" />
                 </button>
                 <span className="min-w-20 text-center text-sm font-semibold tabular-nums text-ink">Page {data.meta.current_page} of {data.meta.last_page}</span>
-                <button type="button" onClick={() => setPage((p) => Math.min(data.meta.last_page, p + 1))} disabled={page >= data.meta.last_page || loading} aria-label="Next page" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-sunken disabled:opacity-40 cursor-pointer">
+                <button type="button" onClick={() => goToPage(Math.min(data.meta.last_page, page + 1))} disabled={page >= data.meta.last_page || loading} aria-label="Next page" className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink hover:bg-sunken disabled:opacity-40 cursor-pointer">
                   <ChevronRight size={16} aria-hidden="true" />
                 </button>
               </div>

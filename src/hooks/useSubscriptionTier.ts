@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { clearShopReadOnly } from '@/hooks/useShopReadOnly';
 
 export type SubscriptionTier = 'basic' | 'pro' | 'premium';
 
@@ -79,6 +80,8 @@ const useSubscriptionStore = create<SubscriptionStore>((set) => ({
 
 /** Call after a successful plan switch so every consumer updates immediately. */
 export function refreshSubscriptionTier(storeId: number) {
+  // A plan change can end read-only mode (or start it); re-ask next time.
+  clearShopReadOnly(storeId);
   return useSubscriptionStore.getState().fetchTier(storeId);
 }
 
