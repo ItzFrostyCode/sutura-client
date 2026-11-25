@@ -36,9 +36,10 @@ function MapPageContent() {
   const [hoveredBranch, setHoveredBranch] = useState<DiscoveryMapBranch | null>(null);
 
   return (
-    // Feature bar fixed at the bottom, except while picking a location.
-    // The map area fills the screen above it.
-    <div className="flex h-[calc(100dvh-var(--fnav-h))] w-full flex-col bg-canvas">
+    // The map fills the whole screen; the feature bar floats over it (hidden
+    // while picking a location). map-fullscreen drops the page's bottom padding
+    // for the bar (globals.css), and bottom-pinned map UI sits above the bar.
+    <div className="map-fullscreen flex h-dvh w-full flex-col bg-canvas">
       {!m.isSelectMode && <FeatureNav />}
       <div className="relative min-h-0 w-full flex-1 overflow-hidden">
         <MapCanvas

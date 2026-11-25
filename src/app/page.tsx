@@ -10,6 +10,7 @@ import HomeStoresGrid from '@/components/home/HomeStoresGrid';
 import HomeMapBanner from '@/components/home/HomeMapBanner';
 import HomeAboutSection from '@/components/home/HomeAboutSection';
 import HomeFooter from '@/components/home/HomeFooter';
+import HomeShopCta from '@/components/home/HomeShopCta';
 import LocationSplash from '@/components/home/LocationSplash';
 import HomeLocationStatus from '@/components/home/HomeLocationStatus';
 
@@ -56,6 +57,7 @@ export default function HomePage() {
       </main>
 
       <HomeAboutSection />
+      <HomeShopCta />
       <HomeFooter />
     </div>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { CreditCard, Banknote, Smartphone } from 'lucide-react';
 import { Job, Payment } from '../jobTypes';
-import { depositFraction, paymentPolicyLabel } from '../requirements';
+import { depositBase, depositFraction, paymentPolicyLabel } from '../requirements';
 
 export interface JobFinancialsCardProps {
   readonly job: Job;
@@ -66,7 +66,7 @@ export function computeFinancials(job: Job): ComputedFinancials {
   const jobIsCancelled = job.status === 'cancelled';
   const percentCollected = totalAmount > 0 ? Math.min(100, Math.round(((amountPaid + discountApplied) / totalAmount) * 100)) : 0;
   const depositShare = depositFraction(job.payment_policy, job.payment_policy_percent);
-  const requiredDeposit = totalAmount * depositShare;
+  const requiredDeposit = depositBase(job) * depositShare;
   const isDownpaymentMet = totalAmount > 0 && amountPaid + 0.005 >= requiredDeposit;
 
   const paymentStatus = job.payment_status;

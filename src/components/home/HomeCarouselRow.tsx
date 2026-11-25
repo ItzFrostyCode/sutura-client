@@ -35,7 +35,7 @@ export default function HomeCarouselRow({
         type="button"
         onClick={() => scroll('left')}
         aria-label="Scroll left"
-        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 items-center justify-center bg-surface border border-line hover:border-ink text-ink opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
+        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 items-center justify-center rounded-full bg-surface border border-line shadow-[0_4px_14px_rgba(45,42,38,0.14)] hover:border-ink-faint text-ink opacity-0 focus-visible:opacity-100 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
       >
         <ChevronLeft size={18} />
       </button>
@@ -43,7 +43,7 @@ export default function HomeCarouselRow({
         type="button"
         onClick={() => scroll('right')}
         aria-label="Scroll right"
-        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 items-center justify-center bg-surface border border-line hover:border-ink text-ink opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
+        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-10 h-10 items-center justify-center rounded-full bg-surface border border-line shadow-[0_4px_14px_rgba(45,42,38,0.14)] hover:border-ink-faint text-ink opacity-0 focus-visible:opacity-100 group-hover/carousel:opacity-100 transition-opacity z-10 cursor-pointer"
       >
         <ChevronRight size={18} />
       </button>

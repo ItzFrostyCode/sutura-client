@@ -27,7 +27,24 @@ export interface StoreResult {
   operating_hours?: OperatingHours | null;
   specializations?: string[] | null;
   /** Active services (eager-loaded by /public/stores). */
-  services?: { id: number; name: string; base_price?: number | string | null; image_url?: string | null }[];
+  services?: {
+    id: number;
+    name: string;
+    base_price?: number | string | null;
+    image_url?: string | null;
+    service_leaf_type?: string | null;
+    service_type?: string | null;
+    category?: string | null;
+    estimated_days?: number | null;
+    estimated_days_max?: number | null;
+    reviews_count?: number | null;
+    reviews_avg_rating?: number | string | null;
+    saves_count?: number | null;
+    orders_count?: number | null;
+    sale_price?: number | string | null;
+    sale_starts_at?: string | null;
+    sale_ends_at?: string | null;
+  }[];
   catalog_items?: {
     id: number;
     name: string;

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, Settings, X } from 'lucide-react';
 import adminApi from '@/lib/adminApi';
 import { useAdminAuthStore } from '@/store/useAdminAuthStore';
 import { useAdminNotificationStore } from '@/store/useAdminNotificationStore';
@@ -12,6 +12,7 @@ import SignOutConfirmModal from './SignOutConfirmModal';
 import AdminNotificationBell from './AdminNotificationBell';
 import AdminNotificationToasts from './AdminNotificationToasts';
 import SuturaLogo from '@/components/brand/SuturaLogo';
+import AdminAvatar from './AdminAvatar';
 
 /**
  * System Admin console frame: session guard + dark rail. The dark rail is
@@ -22,7 +23,7 @@ import SuturaLogo from '@/components/brand/SuturaLogo';
 export default function AdminShell({ children }: { readonly children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, token, hydrated, hydrate, clear } = useAdminAuthStore();
+  const { user, token, hydrated, hydrate, clear, updateUser } = useAdminAuthStore();
   const { counts, fetchNotifications } = useAdminNotificationStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -42,11 +43,14 @@ export default function AdminShell({ children }: { readonly children: React.Reac
       if (!roles.some((r) => r.name === 'admin')) {
         clear();
         router.replace('/admin/login');
+        return;
       }
+      // Fresh name / phone / photo (they may have changed in another tab).
+      updateUser(res.data.data.user);
     }).catch(() => undefined);
 
     void fetchNotifications();
-  }, [hydrated, token, router, clear, fetchNotifications]);
+  }, [hydrated, token, router, clear, updateUser, fetchNotifications]);
 
   // One poll for the whole console (both bells and the toasts read the same
   // store): new platform alerts surface within 15s, same pace as the shop bell.
@@ -74,7 +78,9 @@ export default function AdminShell({ children }: { readonly children: React.Reac
   if (!hydrated || !token) return null;
 
   const currentNav = ADMIN_NAV.find((item) => isActiveAdminPath(pathname, item.path));
-  const sectionTitle = currentNav?.name ?? (pathname.startsWith('/admin/notifications') ? 'Notifications' : 'Admin');
+  const settingsActive = pathname.startsWith('/admin/settings');
+  const sectionTitle = currentNav?.name
+    ?? (pathname.startsWith('/admin/notifications') ? 'Notifications' : settingsActive ? 'Account settings' : 'Admin');
 
   const rail = (
     <div className="flex h-full flex-col bg-ink text-white">
@@ -104,9 +110,18 @@ export default function AdminShell({ children }: { readonly children: React.Reac
         })}
       </nav>
       <div className="border-t border-white/10 p-4">
-        <p className="truncate text-sm font-semibold">{user?.name ?? 'System Admin'}</p>
-        <p className="truncate text-xs text-white/50">{user?.email}</p>
-        <button type="button" onClick={() => { setDrawerOpen(false); setConfirmSignOut(true); }} className="mt-3 flex min-h-11 w-full items-center gap-2 text-sm text-white/70 hover:text-white">
+        <Link href="/admin/settings" className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5">
+          <AdminAvatar name={user?.name} src={user?.profile_picture} className="h-9 w-9 text-xs bg-white/10! shadow-none" />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold">{user?.name ?? 'System Admin'}</span>
+            <span className="block truncate text-xs text-white/50">{user?.email}</span>
+          </span>
+        </Link>
+        <Link href="/admin/settings" aria-current={settingsActive ? 'page' : undefined}
+          className={`mt-2 flex min-h-11 w-full items-center gap-2 text-sm transition-colors ${settingsActive ? 'font-semibold text-white' : 'text-white/70 hover:text-white'}`}>
+          <Settings size={16} className={settingsActive ? 'text-taupe' : ''} /> Account settings
+        </Link>
+        <button type="button" onClick={() => { setDrawerOpen(false); setConfirmSignOut(true); }} className="flex min-h-11 w-full items-center gap-2 text-sm text-white/70 hover:text-white">
           <LogOut size={16} /> Sign out
         </button>
       </div>
@@ -154,15 +169,14 @@ export default function AdminShell({ children }: { readonly children: React.Reac
 
           <div className="flex items-center gap-4">
             <AdminNotificationBell variant="light" />
-            <div className="flex items-center gap-3 pl-4 border-l border-line">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-white font-bold text-xs shadow-2xs">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
-              </div>
+            <Link href="/admin/settings" title="Account settings"
+              className="flex items-center gap-3 pl-4 border-l border-line rounded-r-xl pr-2 py-1 transition-colors hover:bg-sunken/60">
+              <AdminAvatar name={user?.name} src={user?.profile_picture} />
               <div className="text-left">
                 <p className="text-xs font-bold text-ink leading-tight">{user?.name ?? 'System Admin'}</p>
                 <p className="text-[11px] text-ink-muted leading-tight">System Admin</p>
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 

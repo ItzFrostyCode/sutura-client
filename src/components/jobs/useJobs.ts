@@ -206,7 +206,7 @@ export function useJobs() {
   // the page collects them in JobApproveModal. Returns whether it went through.
   const handleApproveJob = async (
     jobId: number,
-    details: { due_date: string; assigned_staff_id: number | null },
+    details: { due_date: string; assigned_staff_id: number | null; rush?: boolean; rush_fee?: number | null },
   ): Promise<boolean> => {
     if (!store) return false;
     const job = jobs.find(j => j.id === jobId);

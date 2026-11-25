@@ -15,8 +15,8 @@ const ROLES = [
   { value: '', label: 'All' },
   { value: 'customer', label: 'Customers' },
   { value: 'store_owner', label: 'Shop Owners' },
-  { value: 'branch_manager', label: 'Branch Managers' },
-  { value: 'staff', label: 'Staff' },
+  // Branch managers are shop staff too; one tab, the row's role pill tells them apart.
+  { value: 'staff,branch_manager', label: 'Tailoring Staff' },
   { value: 'admin', label: 'Admins' },
 ];
 

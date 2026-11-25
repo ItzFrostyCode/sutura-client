@@ -61,7 +61,9 @@ export function usePublicNav() {
     : 'Sign In / Register';
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Signed-in customers get the full bell (NotificationBell), which polls,
+    // chimes and toasts on its own; counting here too would chime twice.
+    if (!isAuthenticated || isCustomer) {
       setUnreadCount(0);
       return;
     }
@@ -93,7 +95,7 @@ export function usePublicNav() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isCustomer]);
 
   const effectiveUnreadCount = isAuth ? unreadCount : 0;
   const notificationsTitle = effectiveUnreadCount > 0

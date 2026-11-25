@@ -24,8 +24,31 @@ import NotificationDetailModal from '@/components/notifications/NotificationDeta
 import NotificationToasts from '@/components/notifications/NotificationToasts';
 import { useOptionalBranch } from '@/context/BranchContext';
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  /** "See all" in the panel footer. */
+  readonly seeAllHref?: string;
+  /** "Configure" in the panel footer. */
+  readonly configureHref?: string;
+  /**
+   * 'dashboard' (default): the shop header's filled round button.
+   * 'nav': the customer site header's plain icon button, and a full-width
+   * panel on phones (the bell sits mid-header there, not at the edge).
+   */
+  readonly variant?: 'dashboard' | 'nav';
+}
+
+/**
+ * The bell with its dropdown, new-notification toasts and chime. Used by the
+ * shop dashboard header and, with variant="nav", by signed-in customers on
+ * the public site (their notifications link to /account pages).
+ */
+export default function NotificationBell({
+  seeAllHref = '/dashboard/notifications',
+  configureHref = '/dashboard/notifications?tab=configure',
+  variant = 'dashboard',
+}: NotificationBellProps = {}) {
   const router = useRouter();
+  const isNav = variant === 'nav';
   // The bell follows the branch selector: a branch shows its own notifications
   // plus store-wide ones; with "All Branches" (null) the API gives the owner
   // their main shop's. Managers and staff are pinned to their branch by the API.
@@ -248,12 +271,17 @@ export default function NotificationBell() {
         id="notification-bell-btn"
         aria-label={bellLabel}
         onClick={() => setOpen(o => !o)}
-        className="relative flex items-center justify-center w-10 h-10 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        title={bellLabel}
+        className={isNav
+          ? 'relative shrink-0 flex items-center justify-center w-10 h-10 rounded-full text-ink hover:bg-sunken transition-colors cursor-pointer'
+          : 'relative flex items-center justify-center w-10 h-10 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors'}
       >
         {/* Same as the admin bell: amber while something is unread, count badge top right. */}
         <Bell
           key={`bell-${bump}`}
-          size={20}
+          size={isNav ? 19 : 20}
           className={count > 0 ? 'text-amber-500 animate-[wiggle_0.4s_ease-in-out]' : ''}
         />
         {count > 0 && (
@@ -272,8 +300,8 @@ export default function NotificationBell() {
         <div
           aria-label="Notifications panel"
           aria-modal="true"
-          className="absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
-            animate-in fade-in slide-in-from-top-2 duration-150"
+          className={`${isNav ? 'max-sm:fixed max-sm:inset-x-2 max-sm:top-[60px] max-sm:mt-0 max-sm:w-auto ' : ''}absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
+            animate-in fade-in slide-in-from-top-2 duration-150`}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-surface">
@@ -430,7 +458,7 @@ export default function NotificationBell() {
               type="button"
               onClick={() => {
                 setOpen(false);
-                router.push('/dashboard/notifications');
+                router.push(seeAllHref);
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink hover:text-taupe hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
@@ -453,7 +481,7 @@ export default function NotificationBell() {
               type="button"
               onClick={() => {
                 setOpen(false);
-                router.push('/dashboard/notifications?tab=configure');
+                router.push(configureHref);
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >

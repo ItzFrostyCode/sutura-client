@@ -171,34 +171,38 @@ function DashboardPageContent() {
   // The backend reads start_date/end_date, not a 'period' string — converting
   // client-side (same pattern as the Reports page) so the period buttons
   // actually re-scope the query instead of silently refetching this month.
+  // Local calendar day, not toISOString() — that converts to UTC, and in
+  // Manila (UTC+8) every local midnight lands on the day before ("This Year"
+  // started on Dec 31).
+  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const getDateRangeForChartPeriod = (period: string): { start_date?: string; end_date?: string } => {
     const now = new Date();
     if (period === 'this_month') {
       return {
-        start_date: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-        end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+        start_date: ymd(new Date(now.getFullYear(), now.getMonth(), 1)),
+        end_date: ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
       };
     }
     if (period === 'last_3_months') {
       return {
-        start_date: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0],
-        end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+        start_date: ymd(new Date(now.getFullYear(), now.getMonth() - 2, 1)),
+        end_date: ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
       };
     }
     if (period === 'this_year') {
       return {
-        start_date: new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0],
-        end_date: new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0],
+        start_date: ymd(new Date(now.getFullYear(), 0, 1)),
+        end_date: ymd(new Date(now.getFullYear(), 11, 31)),
       };
     }
     // 'all_time' — omit date params entirely so the query is unbounded.
     return {};
   };
 
-  const handleChartPeriod = (period: string) => {
+  const handleChartPeriod = (period: string, custom?: { start_date: string; end_date: string }) => {
     setChartPeriod(period);
     if (!store?.id || !canViewAnalytics) return;
-    const { start_date, end_date } = getDateRangeForChartPeriod(period);
+    const { start_date, end_date } = custom ?? getDateRangeForChartPeriod(period);
     const params: Record<string, string | number> = {};
     if (start_date && end_date) {
       params.start_date = start_date;
@@ -434,6 +438,7 @@ function DashboardPageContent() {
         data={data}
         activePeriod={chartPeriod}
         onPeriodChange={handleChartPeriod}
+        onCustomRange={(start_date, end_date) => handleChartPeriod('custom', { start_date, end_date })}
       />
         </>
       )}

@@ -47,6 +47,21 @@ export function depositFraction(policy?: PaymentPolicy | null, percent?: number 
 }
 
 /** "No payment first", "Full payment", "50% deposit" … */
+/**
+ * What the deposit rule is measured against (mirrors JobOrder::depositBase()):
+ * total, minus discounts, minus a rush fee added on approval of an online order.
+ * That fee goes on the remaining balance, so a deposit already met stays met.
+ */
+export function depositBase(job: {
+  total_amount?: string | number | null;
+  discount_amount?: string | number | null;
+  custom_order_data?: Record<string, unknown> | null;
+}): number {
+  const num = (v: unknown) => Number.parseFloat(String(v ?? 0)) || 0;
+  const rushOnBalance = num(job.custom_order_data?.rush_fee_on_balance);
+  return Math.max(0, num(job.total_amount) - num(job.discount_amount) - rushOnBalance);
+}
+
 export function paymentPolicyLabel(policy?: PaymentPolicy | null, percent?: number | null): string {
   if (policy === 'none') return 'No payment first';
   if (policy === 'full') return 'Full payment';

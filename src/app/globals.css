@@ -219,6 +219,17 @@ html.sutura-boot body {
 body:has(.feature-nav-bottom) {
   padding-bottom: var(--fnav-h);
 }
+/* The map page runs edge to edge under the floating bar instead. */
+body:has(.map-fullscreen) {
+  padding-bottom: 0;
+}
+/* Phones only: there the centred bar spans the full width and would cover
+   the map credit line; on wider screens the bar leaves that corner clear. */
+@media (max-width: 639px) {
+  .map-fullscreen .leaflet-bottom {
+    bottom: var(--fnav-h);
+  }
+}
 
 /* ── Hero search glow ────────────────────────────────────────────────────
    A slow, cycling brown glow ring around the landing hero's search bar —

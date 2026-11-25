@@ -6,6 +6,8 @@ export interface AdminUser {
   id: number;
   name: string;
   email: string;
+  phone?: string | null;
+  profile_picture?: string | null;
   roles: { id: number; name: string }[];
 }
 
@@ -14,6 +16,8 @@ interface AdminAuthState {
   token: string | null;
   hydrated: boolean;
   setSession: (user: AdminUser, token: string) => void;
+  /** Swap in a fresh copy of the signed-in admin (after /auth/me or a profile save). */
+  updateUser: (user: AdminUser) => void;
   clear: () => void;
   hydrate: () => void;
 }
@@ -30,6 +34,11 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
     sessionStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
     markTabSignedOut('admin', false);
     set({ user, token, hydrated: true });
+  },
+
+  updateUser: (user) => {
+    sessionStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+    set({ user });
   },
 
   clear: () => {

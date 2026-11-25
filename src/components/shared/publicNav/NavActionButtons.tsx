@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Bell, Package, User as UserIcon } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 import type { User } from '@/store/useAuthStore';
 import { getMediaUrl } from '@/lib/media';
 import { useLoginModalStore } from '@/store/useLoginModalStore';
@@ -17,6 +18,8 @@ interface NavActionButtonsProps {
   readonly notificationsHref: string;
   readonly notificationsTitle: string;
   readonly unreadCount: number;
+  /** Signed-in customer: the full bell with dropdown and toasts instead of a link. */
+  readonly isCustomer?: boolean;
   readonly accountHref: string;
   readonly userTitle: string;
   readonly user: User | null;
@@ -30,6 +33,7 @@ export default function NavActionButtons({
   notificationsHref,
   notificationsTitle,
   unreadCount,
+  isCustomer = false,
   accountHref,
   userTitle,
   user,
@@ -62,7 +66,11 @@ export default function NavActionButtons({
         <Package size={19} />
       </Link>
 
-      {/* 2. Notifications: red badge only shown when unreadCount > 0 (strictly 0 for guests) */}
+      {/* 2. Notifications: a signed-in customer gets the same dropdown bell (with
+          pop-up toasts) as the shop and admin; guests get a link to the sign-in card. */}
+      {isCustomer ? (
+        <NotificationBell variant="nav" seeAllHref="/notifications" configureHref="/account/settings/notifications" />
+      ) : (
       <Link
         href={notificationsHref}
         aria-label={notificationsTitle}
@@ -77,6 +85,7 @@ export default function NavActionButtons({
           </span>
         )}
       </Link>
+      )}
 
       {/* 3. User / Account: Customer avatar/initial when logged in, outline User icon for guests */}
       <Link

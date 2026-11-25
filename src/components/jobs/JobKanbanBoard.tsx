@@ -6,7 +6,7 @@ import { READ_ONLY_HINT, useShopReadOnly } from '@/hooks/useShopReadOnly';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
 import JobQuickViewModal from './JobQuickViewModal';
-import { depositFraction } from './requirements';
+import { depositBase, depositFraction } from './requirements';
 import { requiresDownpayment } from './jobHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
 import { staffForBranch, staffOptionLabel } from '@/components/staff/staffHelpers';
@@ -193,7 +193,7 @@ export default function JobKanbanBoard({
     const discount = Number.parseFloat(String(job.discount_amount ?? '0'));
     const amountDue = total - discount;
     const paidSoFar = total - balance - discount;
-    const noDownpayment = amountDue > 0 && paidSoFar + 0.005 < amountDue * depositFraction(job.payment_policy, job.payment_policy_percent);
+    const noDownpayment = amountDue > 0 && paidSoFar + 0.005 < depositBase(job) * depositFraction(job.payment_policy, job.payment_policy_percent);
 
     if (requiresDownpayment(job, newStatus, repairRequiresDownpayment) && noDownpayment) {
       setDpGateJobId(job.id);

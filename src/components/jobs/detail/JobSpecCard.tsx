@@ -20,6 +20,7 @@ interface JobSpecCardProps {
 const SPEC_LABELS: Record<string, string> = {
   own_fabric_deduction: 'Fabric / other materials deduction (₱)',
   own_fabric_deduction_after: 'Fabric / materials deduction added later (₱)',
+  rush_fee_on_balance: 'Rush fee added to balance (₱)',
   alteration_garment: 'Garment to alter / repair',
   alteration_tasks: 'Alteration work',
   alteration_instructions: 'Alteration instructions',

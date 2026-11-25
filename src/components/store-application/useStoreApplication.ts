@@ -46,7 +46,12 @@ export function useStoreApplication() {
       .then((res) => {
         const list: PublicPlan[] = res.data.data ?? [];
         setPlans(list);
-        setPlanId((current) => current ?? list[0]?.id ?? null);
+        // /for-shops "Choose <plan>" links arrive with ?plan=<slug>&cycle=monthly|yearly.
+        const params = new URLSearchParams(window.location.search);
+        const wanted = list.find((p) => p.slug === params.get('plan'));
+        const cycle = params.get('cycle');
+        if (cycle === 'monthly' || cycle === 'yearly') setBillingCycle(cycle);
+        setPlanId((current) => current ?? wanted?.id ?? list[0]?.id ?? null);
       })
       .catch(() => setError('Could not load subscription plans. Please refresh the page.'));
   }, []);

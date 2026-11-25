@@ -4,20 +4,27 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import Link from 'next/link';
-import { Package, TrendingUp } from 'lucide-react';
+import { CalendarRange, Package, TrendingUp } from 'lucide-react';
 import { AnalyticsData } from './dashboardHelpers';
 
 interface DashboardChartsProps {
   readonly data: AnalyticsData | null;
   readonly onPeriodChange?: (period: string) => void;
+  /** Custom range picked by the owner (YYYY-MM-DD, inclusive). */
+  readonly onCustomRange?: (start: string, end: string) => void;
   readonly activePeriod?: string;
 }
+
+/** YYYY-MM-DD in the viewer's own (Manila) day, not UTC. */
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const prettyDay = (s: string) => new Date(`${s}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
 const PERIODS = [
   { id: 'this_month', label: 'This Month' },
   { id: 'last_3_months', label: '3 Months' },
   { id: 'this_year', label: 'This Year' },
   { id: 'all_time', label: 'All Time' },
+  { id: 'custom', label: 'Custom' },
 ];
 
 // Status colours matching the production pipeline
@@ -91,13 +98,29 @@ function PieLabel({ cx = 0, cy = 0, midAngle = 0, outerRadius = 0, percent = 0 }
 export default function DashboardCharts({
   data,
   onPeriodChange,
+  onCustomRange,
   activePeriod = 'this_month',
 }: DashboardChartsProps) {
   const [localPeriod, setLocalPeriod] = useState(activePeriod);
+  // Custom range: edited in the From/To fields, sent only on Apply.
+  const [customFrom, setCustomFrom] = useState(() => { const n = new Date(); return ymd(new Date(n.getFullYear(), n.getMonth(), 1)); });
+  const [customTo, setCustomTo] = useState(() => ymd(new Date()));
+  const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
+  const customError = !customFrom || !customTo
+    ? 'Pick both dates.'
+    : customFrom > customTo ? 'The start date must be on or before the end date.' : null;
 
   const handlePeriod = (id: string) => {
     setLocalPeriod(id);
+    if (id === 'custom') return; // wait for Apply
+    setAppliedRange(null);
     onPeriodChange?.(id);
+  };
+
+  const applyCustom = () => {
+    if (customError) return;
+    setAppliedRange({ from: customFrom, to: customTo });
+    onCustomRange?.(customFrom, customTo);
   };
 
   const asArray = <T,>(val: unknown): T[] => {
@@ -124,7 +147,7 @@ export default function DashboardCharts({
   // week hasn't happened yet." Unlike the trend calculation, the chart
   // should still show today's own in-progress bucket (a real, if partial,
   // data point) — only buckets that haven't started at all get dropped.
-  const today0 = new Date().toISOString().slice(0, 10);
+  const today0 = ymd(new Date());
   const visibleChartData = chartData.filter(d => !('date' in d) || !d.date || d.date <= today0);
 
   // Jobs-by-status donut data (exclude zero-count statuses)
@@ -204,6 +227,11 @@ export default function DashboardCharts({
                 {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% vs previous period
               </p>
             )}
+            {localPeriod === 'custom' && appliedRange && (
+              <p className="text-xs mt-1 text-ink-muted">
+                {prettyDay(appliedRange.from)} – {prettyDay(appliedRange.to)}
+              </p>
+            )}
           </div>
 
           {/* Period pills — overflow-x-auto, not just flex, since the
@@ -223,11 +251,50 @@ export default function DashboardCharts({
                     : 'text-ink-muted hover:text-ink-body border-transparent'
                 }`}
               >
+                {p.id === 'custom' && <CalendarRange size={12} className="inline -mt-0.5 mr-1" aria-hidden="true" />}
                 {p.label}
               </button>
             ))}
           </div>
         </div>
+
+        {localPeriod === 'custom' && (
+          <form
+            onSubmit={(e) => { e.preventDefault(); applyCustom(); }}
+            className="-mt-2 mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-canvas/60 p-3"
+          >
+            <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              From
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="h-9 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold normal-case tracking-normal text-ink focus:border-taupe focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              To
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="h-9 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold normal-case tracking-normal text-ink focus:border-taupe focus:outline-none"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!!customError}
+              className="h-9 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+            >
+              Apply
+            </button>
+            {customError && customFrom && customTo && (
+              <p className="basis-full text-[11px] text-danger" role="alert">{customError}</p>
+            )}
+          </form>
+        )}
 
         {/* Chart */}
         <div className="h-52 w-full">

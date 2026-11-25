@@ -43,9 +43,10 @@ export default function MapShopCard({ branch, active, onSelect, onHover }: {
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="flex items-start justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 truncate text-[15px] font-semibold leading-snug text-ink">{pinName(branch)}</span>
+        {/* Full name, wrapping if needed; the badges get their own row under it. */}
+        <span className="block break-words text-[15px] font-semibold leading-snug text-ink">{pinName(branch)}</span>
+        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span className="contents">
             {/* Same colours as the map pins: deep brown = main store, taupe = branch. */}
             <span
               className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
@@ -55,7 +56,7 @@ export default function MapShopCard({ branch, active, onSelect, onHover }: {
               {branch.isMain ? 'Main Shop' : 'Branch'}
             </span>
           </span>
-          <span className="flex shrink-0 items-center gap-1.5">
+          <span className="contents">
             <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${branch.isOpen ? 'bg-sage/15 text-sage' : 'bg-danger/10 text-danger'}`}>
               {branch.isOpen ? 'Open' : 'Closed'}
             </span>

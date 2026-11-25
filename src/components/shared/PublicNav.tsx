@@ -34,6 +34,7 @@ export default function PublicNav({
     setScreen,
     openSection,
     unreadCount,
+    isCustomer,
     notificationsHref,
     notificationsTitle,
     trackOrderHref,
@@ -107,6 +108,7 @@ export default function PublicNav({
           notificationsHref={notificationsHref}
           notificationsTitle={notificationsTitle}
           unreadCount={unreadCount}
+          isCustomer={isCustomer}
           accountHref={accountHref}
           userTitle={userTitle}
           user={user}

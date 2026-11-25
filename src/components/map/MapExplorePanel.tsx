@@ -52,7 +52,7 @@ export default function MapExplorePanel(p: MapExplorePanelProps) {
   return (
     <section
       aria-label="Tailor Locator"
-      className="absolute inset-x-2 bottom-2 z-[1100] flex max-h-[52dvh] flex-col overflow-hidden rounded-2xl border border-line bg-canvas shadow-[0_10px_30px_rgba(45,42,38,0.18)] md:inset-x-auto md:left-4 md:top-4 md:bottom-4 md:max-h-none md:w-[400px]"
+      className="absolute inset-x-2 bottom-[calc(var(--fnav-h)+8px)] z-[1100] flex max-h-[52dvh] flex-col overflow-hidden rounded-2xl border border-line bg-canvas shadow-[0_10px_30px_rgba(45,42,38,0.18)] md:inset-x-auto md:left-4 md:top-4 md:bottom-[calc(var(--fnav-h)+8px)] md:max-h-none md:w-[400px] xl:bottom-4"
     >
       {/* Search row */}
       <div className="relative flex items-center gap-2 border-b border-line p-3">
