@@ -5,6 +5,7 @@ import type { CatalogSection } from './useCatalogSectionEdit';
 // Shared by the edit boxes and the create steps, so "required" means the same in both.
 export function validateCatalogSection(section: CatalogSection, form: ReturnType<typeof useCatalogForm>): string | null {
   const { formData, images, colorItems } = form;
+  if (section === 'details' && !formData.name.trim()) return 'Enter the design name.';
   if (section === 'info') {
     if (!formData.name.trim()) return 'Enter the design name.';
     if (!formData.service_id && formData.price === '') return 'Pick the service this design is made under, or enter its own price.';

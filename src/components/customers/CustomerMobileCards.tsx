@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Mail, Phone, Package, Eye, Pencil, Trash2, Users, ShieldCheck } from 'lucide-react';
 import { CustomerData } from './customerTypes';
-import { isWalkInEmail, SUKI_TAG_CONFIG } from './customerHelpers';
+import { customerEmail, SUKI_TAG_CONFIG } from './customerHelpers';
 
 interface CustomerMobileCardsProps {
   readonly customers: CustomerData[];
@@ -111,9 +111,9 @@ export default function CustomerMobileCards({
             </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-body pl-14">
-              {customer.email && !isWalkInEmail(customer.email) ? (
+              {customerEmail(customer) ? (
                 <span className="flex items-center gap-1 text-ink-muted truncate">
-                  <Mail size={12} className="text-ink-faint shrink-0" /> {customer.email}
+                  <Mail size={12} className="text-ink-faint shrink-0" /> {customerEmail(customer)}
                 </span>
               ) : (
                 <span className="inline-flex items-center text-[9px] font-bold bg-canvas text-ink-muted px-1.5 py-0.5 rounded border border-line uppercase tracking-wider">

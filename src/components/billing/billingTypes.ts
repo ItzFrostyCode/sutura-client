@@ -18,14 +18,29 @@ export interface Plan {
 }
 
 export interface Subscription {
-  id?: number;
   plan_id: number;
   plan: Plan;
   status: string;
   starts_at: string;
   ends_at: string;
+  /** Set when the shop started on a free trial. */
+  trial_ends_at?: string | null;
   billing_cycle?: string;
+  /** A downgrade queued for when this period ends (paid one: scheduled_payment_id). */
+  scheduled_plan_id?: number | null;
+  scheduled_billing_cycle?: string | null;
+  scheduled_payment_id?: number | null;
+  scheduled_plan?: { id: number; name: string } | null;
+  /** Set when the owner cancelled: the plan still runs until ends_at, then the shop is read-only. */
   cancelled_at?: string | null;
+}
+
+/** A plan is running while it's active or on trial with its end date ahead; cancelled = running but cancelled. */
+export function planRunState(sub: Subscription | null): { running: boolean; cancelled: boolean } {
+  const running = Boolean(
+    sub && ['active', 'trial'].includes(sub.status) && sub.ends_at && new Date(sub.ends_at).getTime() > Date.now(),
+  );
+  return { running, cancelled: running && Boolean(sub?.cancelled_at) };
 }
 
 export const PLAN_META: Record<
@@ -65,9 +80,11 @@ export function getPlanMeta(slug: string) {
   return PLAN_META[slug] ?? PLAN_META.basic;
 }
 
+// Fallback only, for a plan with no max_branches saved (same rule as
+// SubscriptionPlan::branchLimit()): Branch Shops beyond the Main Shop.
 export const BRANCH_LIMITS: Record<string, number | null> = {
-  basic: 1,
-  pro: 1,
+  basic: 0,
+  pro: 0,
   premium: null,
 };
 
@@ -81,7 +98,7 @@ export const BRANCH_LIMITS: Record<string, number | null> = {
 // SubscriptionSwitcher / StoreController (premium).
 export const COMPARE_ROWS = [
   { label: 'Catalog Designs & Gallery Photos', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
-  { label: 'Services', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Services & Combo Packages', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
   { label: 'Dashboard Analytics', basic: 'Included', pro: 'Included', premium: 'Included' },
   { label: 'Sales & Staff Reports', basic: '—', pro: 'Included', premium: 'Included' },
   { label: 'Branch Comparison Reports', basic: '—', pro: '—', premium: 'Included' },
@@ -92,21 +109,45 @@ export const COMPARE_ROWS = [
 
 export interface UpgradeRequest {
   id: number;
+  type?: 'new_shop' | 'upgrade' | 'renewal' | 'downgrade';
   plan_id: number;
+  billing_period_start?: string | null;
+  billing_period_end?: string | null;
   billing_cycle: 'monthly' | 'yearly';
   quoted_price: string | number;
   payment_reference: string | null;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   rejection_reason: string | null;
   created_at: string;
   reviewed_at: string | null;
   plan?: { id: number; name: string };
+  /** online = paid with GCash in SUTURA (confirmed automatically); receipt = screenshot upload. */
+  channel?: 'online' | 'receipt';
+  gateway_status?: 'awaiting' | 'paid' | 'expired' | null;
+  refund_amount?: string | number | null;
+  refund_status?: 'pending' | 'succeeded' | 'failed' | null;
+  refunded_at?: string | null;
 }
+
+/** What the Billing page shows after coming back from the GCash checkout. */
+export type OnlinePaymentResult =
+  | { state: 'checking' }
+  | { state: 'paid'; plan: string | null; until: string | null; started: boolean }
+  | { state: 'processing'; paymentId: number }
+  | { state: 'failed' };
 
 /** A plan's price for a cycle (yearly falls back to 10× monthly, matching the plan cards). */
 export const planPrice = (plan: Plan, cycle: 'monthly' | 'yearly'): number =>
   cycle === 'yearly' ? Number(plan.price_yearly ?? plan.price_monthly * 10) : plan.price_monthly;
 
-/** Mirrors the server: a paid plan that is not a step down takes a payment. */
-export const planNeedsPayment = (plan: Plan, currentMonthly: number | null): boolean =>
-  plan.price_monthly > 0 && (currentMonthly === null || plan.price_monthly >= currentMonthly);
+/** Mirrors the server: every paid plan takes a GCash payment (a step down included). */
+export const planNeedsPayment = (plan: Plan): boolean => plan.price_monthly > 0;
+
+/** What paying for this plan does: renewal, upgrade, or a downgrade that starts at the end of the period. */
+export type PaymentKind = 'renewal' | 'upgrade' | 'downgrade';
+export const paymentKind = (plan: Plan, current: Subscription | null): PaymentKind => {
+  const running = current && ['active', 'trial'].includes(current.status) && (!current.ends_at || new Date(current.ends_at).getTime() > Date.now());
+  if (!running) return 'upgrade';
+  if (current.plan_id === plan.id) return 'renewal';
+  return plan.price_monthly < current.plan.price_monthly ? 'downgrade' : 'upgrade';
+};

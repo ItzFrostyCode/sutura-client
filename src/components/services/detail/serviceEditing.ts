@@ -58,6 +58,8 @@ export interface ServiceDraft {
   custom_fields: ServiceField[];
   roster_fields: ServiceField[];
   requirements: RequirementsDraft;
+
+  showcase_category?: string;
 }
 
 function normalizeCustomFields(fields?: any[] | null): ServiceField[] {

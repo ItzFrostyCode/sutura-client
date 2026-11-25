@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// Reviews merged into the Analytics tab as its own section — old links to
-// this route still land somewhere useful instead of a stale "reviews" tab.
+// Reviews and the Analytics tab were removed; old links land on the designs list.
 export default function CatalogItemReviewsPage() {
-  redirect('/dashboard/catalog/analytics');
+  redirect('/dashboard/catalog');
 }

@@ -12,6 +12,8 @@ import { EMPTY_BODY_MEASUREMENTS, hasAnyMeasurement, type BodyMeasurements } fro
 /** How one person is sized: their own body measurements, a standard size, or measured at the shop. */
 export type SizingMethod = 'body' | 'standard' | 'shop';
 
+export type PersonGender = '' | 'male' | 'female';
+
 export interface OrderPerson {
   id: number;
   name: string;
@@ -24,6 +26,8 @@ export interface OrderPerson {
   /** Printed uniforms only (walk-in): name and number printed on the garment. */
   printName: string;
   number: string;
+
+  gender?: PersonGender;
 }
 export type PersonDraft = Omit<OrderPerson, 'id'>;
 

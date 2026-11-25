@@ -1,6 +1,7 @@
 import type { RequirementFields } from '@/components/jobs/requirements';
 import { Scissors, Users, Sparkles, Wrench, type LucideIcon } from 'lucide-react';
 import type { SizeChartRow } from '@/components/shared/SizeChartEditor';
+import { categoryOfGarment } from '@/lib/garmentTaxonomy';
 
 export type { SizeChartRow };
 
@@ -64,6 +65,7 @@ export interface Service extends RequirementFields {
   service_leaf_type?: string | null;
   base_price: string | null;
   sale_price?: string | number | null;
+  sale_percent?: number | null;
   sale_starts_at?: string | null;
   sale_ends_at?: string | null;
   estimated_days: number | null;
@@ -74,6 +76,7 @@ export interface Service extends RequirementFields {
   is_active: boolean;
   image_url?: string | null;
   size_chart_image_url?: string | null;
+  size_chart_image_urls?: string[] | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: SizeChartRow[] | null;
   custom_fields?: ServiceField[] | null;
@@ -91,11 +94,51 @@ export interface Service extends RequirementFields {
   saves_count?: number;
   job_orders_count?: number;
   total_revenue?: number;
+
+  capabilities?: string[] | null;
+  catalog_items?: {
+    id: number;
+    name: string;
+    price?: number | string | null;
+    sale_price?: number | string | null;
+    estimated_days?: number | null;
+    material?: string | null;
+    garment_type?: string | null;
+    garment_category?: string | null;
+    color?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    apparel_review?: any;
+    images?: { id?: number; image_url: string; is_primary?: boolean; view_angle?: string | null; sort_order?: number }[];
+    reviews_avg_rating?: number | null;
+    reviews_count?: number;
+    order_count?: number;
+    saves_count?: number;
+    pricing?: any;
+  }[];
+  garment_types?: string[] | null;
+  price_display?: PriceDisplay;
+  reviews?: {
+    id: number;
+    rating: number;
+    created_at: string;
+    user: { id: number; name: string; profile_picture: string | null } | null;
+  }[];
+  rush_available?: boolean | null;
+  rush_fee_mode?: 'percent' | 'per_piece' | null;
+  rush_fee_per_piece?: string | number | null;
+  rush_fee_percent?: string | number | null;
+  status?: ServiceStatus;
+  /** How many designs use this service (dashboard list). */
+  catalog_items_count?: number;
 }
 
 export interface PricingTierInput {
   label: string;
   amount: string;
+
+  covers?: OptionCovers | '';
+  sold_as?: OptionSoldAs | '';
 }
 
 /**
@@ -170,3 +213,32 @@ export const SERVICE_CATEGORIES = [
   ]},
   { group: 'Other', items: ['Other / Custom Category'] },
 ];
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+/** What an option covers, and what one ordered unit of it is. Both are separate settings; null = not configured (as before: no coverage implied, one unit = one garment). */
+export type OptionCovers = 'top' | 'bottom' | 'both';
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+export type PriceDisplay = 'fixed' | 'starting' | 'quotation';
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+export type ServiceStatus = 'draft' | 'published' | 'unpublished' | 'archived';
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+export type OptionSoldAs = 'garment' | 'set';
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+export function deriveOrderTypes(group: string, capabilities: string[], garments: string[]): ServiceType[] {
+  if (group === 'alterations_repairs') return ['alteration_repair'];
+  if (group === 'uniform_production') return [capabilities.includes('bulk_orders') ? 'bulk_sublimation' : 'custom_tailoring'];
+  if (group === 'custom_tailoring') {
+    return [garments.some((g) => BRIDAL_CATEGORIES.includes(categoryOfGarment(g) ?? '')) ? 'fashion_bridal' : 'custom_tailoring'];
+  }
+  return ['custom_tailoring'];
+}
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+const BRIDAL_CATEGORIES = ['barong', 'traditional', 'dresses_gowns'];
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+export const STATUS_LABEL: Record<ServiceStatus, string> = { draft: 'Draft', published: 'Published', unpublished: 'Unpublished', archived: 'Archived' };

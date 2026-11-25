@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { ImagePlus, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import api from '@/lib/axios';
 import GuideImageField from './GuideImageField';
+import ChartImageViewer, { CHART_FRAME } from './ChartImageViewer';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 export interface SizeChartRow {
@@ -10,10 +11,16 @@ export interface SizeChartRow {
 }
 
 export interface SizeChartValue {
+  /** The first chart image (kept for everything that shows only one). */
   image_url: string | null;
+  /** All chart images, in order. Only used with `multipleImages`. */
+  image_urls?: string[];
   columns: string[];
   rows: SizeChartRow[];
 }
+
+/** Most reference chart images one record can hold (server: StoreServiceRequest). */
+export const MAX_CHART_IMAGES = 10;
 
 export const emptySizeChart: SizeChartValue = { image_url: null, columns: [], rows: [] };
 
@@ -29,6 +36,8 @@ interface SizeChartEditorProps {
   readonly title?: string;
   readonly description?: string;
   readonly columnPlaceholder?: string;
+  /** Allow several reference chart images (e.g. Men's and Women's sizing). */
+  readonly multipleImages?: boolean;
 }
 
 export default function SizeChartEditor({
@@ -39,9 +48,14 @@ export default function SizeChartEditor({
   title = 'Size Chart',
   description = 'Show customers exactly how you measure — upload your own reference chart image and/or build a size & measurement table.',
   columnPlaceholder = 'e.g. Chest (in)',
+  multipleImages = false,
 }: SizeChartEditorProps) {
   const [showBuilder, setShowBuilder] = useState(!!(value.image_url || value.columns.length > 0));
   const [uploading, setUploading] = useState(false);
+  // Multi-image mode: which slot is uploading (an index, or 'new' for + Add image).
+  const [uploadingSlot, setUploadingSlot] = useState<number | 'new' | null>(null);
+  const [uploadError, setUploadError] = useState('');
+  const [activeChart, setActiveChart] = useState(0);
   const [newColumnInput, setNewColumnInput] = useState('');
   const [newRowSizeInput, setNewRowSizeInput] = useState('');
   const [addingColumn, setAddingColumn] = useState(false);
@@ -84,7 +98,46 @@ export default function SizeChartEditor({
     }
   };
 
-  const ensureSingleRow = (cols: string[]): SizeChartRow[] =>
+  // ── Multi-image mode ──
+  const images = value.image_urls ?? (imageUrl ? [imageUrl] : []);
+  const chartIdx = Math.min(activeChart, Math.max(0, images.length - 1));
+  const setImages = (list: string[]) =>onChange({ ...value, image_urls: list, image_url: list[0] ?? null });
+
+  const uploadChart = async (file: File | undefined, slot: number | 'new') => {
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    setUploadingSlot(slot);
+    setUploadError('');
+    try {
+      const res = await api.post(`/stores/${storeId}/upload`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const url: string | null = res.data.data?.url || res.data.url || null;
+      if (!url) throw new Error('no url');
+      setImages(slot === 'new' ? [...images, url] : images.map((u, i) => (i === slot ? url : u)));
+      // Show the chart just added.
+      if (slot === 'new') setActiveChart(images.length);
+    } catch {
+      setUploadError('That image could not be uploaded. Try again, or use a smaller JPG or PNG.');
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
+
+  const addImageButton = images.length < MAX_CHART_IMAGES ? (
+    <label className="h-11 px-4 border border-line-strong bg-white text-sm font-medium text-ink flex items-center gap-2 cursor-pointer hover:bg-sunken has-[input:disabled]:opacity-60 has-[input:disabled]:cursor-wait">
+      {uploadingSlot === 'new' ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+      {uploadingSlot === 'new' ? 'Uploading…' : 'Add image'}
+      <input
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        disabled={uploadingSlot !== null}
+        onChange={(e) => { void uploadChart(e.target.files?.[0], 'new'); e.target.value = ''; }}
+      />
+    </label>
+  ) : null;
+
+  const ensureSingleRow =(cols: string[]): SizeChartRow[] =>
     mode === 'single-row' ? [{ size: SINGLE_ROW_KEY, values: cols.map((_, i) => rows[0]?.values[i] ?? '') }] : rows;
 
   const addColumn = () => {
@@ -185,16 +238,65 @@ export default function SizeChartEditor({
 
       {showBuilder && (
         <div className="space-y-5 mt-3">
-          <div className="max-w-md">
-            <label className={labelClass}>Reference Chart Image</label>
-            <GuideImageField
-              imageUrl={imageUrl ?? ''}
-              uploading={uploading}
-              alt="Reference chart"
-              onUpload={handleImageUpload}
-              onRemove={() => onChange({ ...value, image_url: null })}
-            />
-          </div>
+          {multipleImages ? (
+            <div className="max-w-md">
+              <label className={labelClass}>Reference Chart Images</label>
+              <p className="text-[11px] text-ink-faint mb-2">
+                Add more than one if you need to, e.g. separate Men&apos;s and Women&apos;s sizing. Customers flip through them with the arrows, in this order.
+              </p>
+              {/* One fixed-size frame + one controls row for any number of
+                  charts, so this box is the same height with 0, 1 or 10. */}
+              <div className="space-y-2">
+                {images.length === 0 ? (
+                  <label className={`w-full ${CHART_FRAME} bg-sunken border border-dashed border-line-strong flex flex-col items-center justify-center gap-2 text-ink-muted cursor-pointer hover:bg-line/40 hover:text-taupe transition-colors`}>
+                    {uploadingSlot !== null ? <Loader2 size={28} className="animate-spin text-taupe" /> : <ImagePlus size={32} strokeWidth={1.5} />}
+                    <span className="text-xs font-medium">{uploadingSlot !== null ? 'Uploading…' : 'Add a chart image'}</span>
+                    <input type="file" accept="image/*" className="sr-only" disabled={uploadingSlot !== null}
+                      onChange={(e) => { void uploadChart(e.target.files?.[0], 'new'); e.target.value = ''; }} />
+                  </label>
+                ) : (
+                  <ChartImageViewer images={images} index={chartIdx} onIndexChange={setActiveChart} />
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {images.length > 0 && (
+                    <>
+                      <label className="h-11 px-4 border border-line-strong bg-white text-sm font-medium text-ink flex items-center gap-2 cursor-pointer hover:bg-sunken">
+                        {uploadingSlot === chartIdx ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                        {uploadingSlot === chartIdx ? 'Uploading…' : 'Replace'}
+                        <input type="file" accept="image/*" className="sr-only" disabled={uploadingSlot !== null}
+                          onChange={(e) => { void uploadChart(e.target.files?.[0], chartIdx); e.target.value = ''; }} />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => { setImages(images.filter((_, j) => j !== chartIdx)); setActiveChart(Math.max(0, chartIdx - 1)); }}
+                        className="h-11 px-4 border border-line-strong bg-white text-sm font-medium text-danger flex items-center gap-2 cursor-pointer hover:bg-danger/5"
+                      >
+                        <Trash2 size={15} /> Remove
+                      </button>
+                    </>
+                  )}
+                  {addImageButton}
+                </div>
+                <p className="text-[11px] text-ink-faint">
+                  {images.length > 1
+                    ? `Showing chart ${chartIdx + 1} of ${images.length}. Replace and Remove apply to this one.`
+                    : images.length >= MAX_CHART_IMAGES ? `That's the most (${MAX_CHART_IMAGES}).` : ' '}
+                </p>
+              </div>
+              {uploadError && <p role="alert" className="mt-2 text-xs text-danger">{uploadError}</p>}
+            </div>
+          ) : (
+            <div className="max-w-md">
+              <label className={labelClass}>Reference Chart Image</label>
+              <GuideImageField
+                imageUrl={imageUrl ?? ''}
+                uploading={uploading}
+                alt="Reference chart"
+                onUpload={handleImageUpload}
+                onRemove={() => onChange({ ...value, image_url: null })}
+              />
+            </div>
+          )}
 
           {mode === 'table' ? (
             <div>

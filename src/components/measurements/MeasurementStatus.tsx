@@ -24,7 +24,9 @@ export function MeasurementStatusField({ value, onChange }: Readonly<{ value: Me
       <legend className="block text-sm font-medium text-ink-body mb-1.5">Status</legend>
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Measurement status">
         {(Object.keys(MEASUREMENT_STATUS_LABEL) as MeasurementStatusValue[]).map((v) => (
-          <label key={v} className={`min-h-11 px-3 flex items-center border text-sm cursor-pointer ${value === v ? 'border-taupe bg-sunken font-semibold text-ink' : 'border-line-strong bg-white text-ink-body hover:bg-sunken'}`}>
+          // `relative` keeps the hidden radio inside the label: without it the radio is placed against the
+          // modal's outer frame, and focusing it scrolled that frame, pushing the whole form out of view.
+          <label key={v} className={`relative min-h-11 px-3 flex items-center border text-sm cursor-pointer ${value === v ? 'border-taupe bg-sunken font-semibold text-ink' : 'border-line-strong bg-white text-ink-body hover:bg-sunken'}`}>
             <input type="radio" name="measurement-status" value={v} checked={value === v} onChange={() => onChange(v)} className="sr-only" />
             {MEASUREMENT_STATUS_LABEL[v]}
           </label>

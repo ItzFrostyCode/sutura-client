@@ -50,6 +50,7 @@ export default function ServicesModuleTabs({
           <button
             key={tab.id}
             type="button"
+            data-tour={`tab-${tab.id}`}
             onClick={() => onTabChange(tab.id)}
             aria-current={active ? 'page' : undefined}
             className={`relative flex items-center gap-2 py-3 px-1 text-xs sm:text-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${

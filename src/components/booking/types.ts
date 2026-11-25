@@ -8,6 +8,7 @@ export interface Branch {
   city?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  is_main?: boolean;
   distanceKm?: number | null;
 }
 

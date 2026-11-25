@@ -25,7 +25,7 @@ Don't add these even if a groupmate, an interview doc, or a "wouldn't it be cool
 
 - Hardware integration (body scanners, RFID, digital measuring tools) — measurements are always manually encoded by staff.
 - Offline mode / background sync — the system requires an active internet connection, full stop.
-- Native third-party payment gateway integration — the system tracks payment/deposit status and amounts; it does not move money itself.
+- Third-party payment gateway for **customer → shop** payments — the system tracks those payment/deposit statuses and amounts; it does not move that money. **Exception, approved by the adviser (2026-11-13):** shop → SUTURA **plan payments** can be paid with GCash online (Xendit behind the scenes; Billing "Pay with GCash", the open-shop form, `/register/store/payment/[token]`, admin Payments refunds). The UI only ever says "GCash" (online) or "GCash · Receipt" (manual backup).
 - Predictive analytics, AI-driven forecasting, or advanced BI — reporting is descriptive/real-time only.
 - Inventory, fabric/material stock monitoring, purchase orders — completely outside the system boundary.
 - Payroll, attendance-based wage calculation, utility-cost tracking.

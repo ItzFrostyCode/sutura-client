@@ -19,6 +19,7 @@ export type CatalogSection =
   | 'measurement'
   | 'spec'
   | 'description'
+  | 'details'
   | 'requirements';
 
 // Which payload fields each box owns. The backend's update() keeps every
@@ -33,6 +34,8 @@ const SECTION_KEYS: Record<CatalogSection, string[]> = {
   measurement: ['measurement_guide'],
   spec: ['garment_type', 'service_id', 'material', 'fabric_image_url', 'features'],
   description: ['description', 'care_instructions'],
+  // The simplified design page: just the name and the description text.
+  details: ['name', 'description'],
   requirements: [],
 };
 

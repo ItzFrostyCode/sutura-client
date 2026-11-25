@@ -50,6 +50,24 @@ async function fetchRoute(mode: Mode, from: LatLng, to: LatLng, withPath: boolea
   };
 }
 
+export type TravelEstimates = Partial<Record<Mode, ModeEstimate>>;
+
+/**
+ * Road distance and drive / bike / walk times without drawing a route — the
+ * same router as Active navigation, so the numbers always match it. Null
+ * when the drive route fails; a bike or walk failure only leaves that mode out.
+ */
+export async function fetchTravelEstimates(from: LatLng, to: LatLng, signal: AbortSignal): Promise<TravelEstimates | null> {
+  const modes: Mode[] = ['drive', 'bike', 'walk'];
+  const results = await Promise.allSettled(modes.map((mode) => fetchRoute(mode, from, to, false, signal)));
+  if (results[0].status !== 'fulfilled') return null;
+  const out: TravelEstimates = {};
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') out[modes[i]] = r.value.estimate;
+  });
+  return out;
+}
+
 /**
  * In-app directions on the Tailor Locator (adviser request, after
  * tarakape.cc): draws the road route from the customer to a branch and

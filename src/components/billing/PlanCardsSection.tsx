@@ -6,8 +6,10 @@ interface PlanCardsSectionProps {
   activePlanId: number | undefined;
   currentPrice: number;
   upgradingTo: number | null;
-  /** A paid plan change is already waiting for confirmation — no second one until it is answered. */
+  /** A payment is already waiting for confirmation (or a downgrade is already paid) — no second one. */
   hasPendingRequest?: boolean;
+  /** The plan queued for when the current period ends. */
+  scheduledPlanId?: number | null;
   onSubscribe: (planId: number) => void;
 }
 
@@ -17,11 +19,14 @@ export default function PlanCardsSection({
   currentPrice,
   upgradingTo,
   hasPendingRequest = false,
+  scheduledPlanId = null,
   onSubscribe,
 }: PlanCardsSectionProps) {
   const getButtonContent = (plan: Plan) => {
     if (upgradingTo === plan.id) return <Loader2 className="w-5 h-5 animate-spin" />;
-    if (activePlanId === plan.id) return <><Check size={15} /> Current Plan</>;
+    // Renewing early adds to the time left (it doesn't restart the period).
+    if (activePlanId === plan.id) return 'Renew';
+    if (scheduledPlanId === plan.id) return <><Check size={15} /> Scheduled</>;
     if (plan.price_monthly > currentPrice) return 'Upgrade';
     if (plan.price_monthly < currentPrice) return 'Downgrade';
     return 'Select Plan';
@@ -104,11 +109,9 @@ export default function PlanCardsSection({
               <button
                 id={`plan-btn-${plan.slug}`}
                 onClick={() => onSubscribe(plan.id)}
-                disabled={isActive || upgradingTo !== null || (hasPendingRequest && plan.price_monthly >= currentPrice)}
-                className={`w-full py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm cursor-pointer ${
-                  isActive
-                    ? 'bg-sunken text-ink-faint cursor-not-allowed'
-                    : meta.btnClass
+                disabled={upgradingTo !== null || hasPendingRequest || scheduledPlanId === plan.id}
+                className={`w-full py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isActive ? 'border border-taupe bg-white text-taupe hover:bg-sunken' : meta.btnClass
                 }`}
               >
                 {getButtonContent(plan)}

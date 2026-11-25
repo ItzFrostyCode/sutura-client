@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { ADMIN_TOKEN_KEY, ADMIN_USER_KEY } from '@/lib/adminApi';
+import { borrowTabSession, markTabSignedOut } from '@/lib/tabSession';
 
 export interface AdminUser {
   id: number;
   name: string;
   email: string;
+  phone?: string | null;
+  profile_picture?: string | null;
   roles: { id: number; name: string }[];
 }
 
@@ -13,6 +16,8 @@ interface AdminAuthState {
   token: string | null;
   hydrated: boolean;
   setSession: (user: AdminUser, token: string) => void;
+  /** Swap in a fresh copy of the signed-in admin (after /auth/me or a profile save). */
+  updateUser: (user: AdminUser) => void;
   clear: () => void;
   hydrate: () => void;
 }
@@ -27,22 +32,32 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
   setSession: (user, token) => {
     sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
     sessionStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+    markTabSignedOut('admin', false);
     set({ user, token, hydrated: true });
+  },
+
+  updateUser: (user) => {
+    sessionStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+    set({ user });
   },
 
   clear: () => {
     sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     sessionStorage.removeItem(ADMIN_USER_KEY);
+    markTabSignedOut('admin', true);
     set({ user: null, token: null, hydrated: true });
   },
 
+  // A new tab ("Open link in new tab") first borrows an open admin tab's login (lib/tabSession.ts).
   hydrate: () => {
-    const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
-    let user: AdminUser | null = null;
-    try {
-      const raw = sessionStorage.getItem(ADMIN_USER_KEY);
-      if (raw) user = JSON.parse(raw);
-    } catch { /* corrupt entry — treated as signed out */ }
-    set({ token, user: token ? user : null, hydrated: true });
+    void borrowTabSession('admin').then(() => {
+      const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+      let user: AdminUser | null = null;
+      try {
+        const raw = sessionStorage.getItem(ADMIN_USER_KEY);
+        if (raw) user = JSON.parse(raw);
+      } catch { /* corrupt entry — treated as signed out */ }
+      set({ token, user: token ? user : null, hydrated: true });
+    });
   },
 }));

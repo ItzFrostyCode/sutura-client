@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import { getErrorMessage } from '@/lib/apiError';
 
 export interface QueueAppointment {
@@ -22,14 +23,16 @@ export function useDecisionQueue(storeId: number | undefined, enabled: boolean) 
   const [queue, setQueue] = useState<Queue>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const { selectedBranchId } = useBranch();
 
   const load = useCallback(() => {
     if (!storeId || !enabled) return;
-    api.get(`/stores/${storeId}/decision-queue`)
+    // Only the selected branch's queue (none = All Branches).
+    api.get(`/stores/${storeId}/decision-queue`, { params: selectedBranchId !== null ? { branch_id: selectedBranchId } : {} })
       .then((res) => setQueue(res.data?.data ?? EMPTY))
       .catch(() => setQueue(EMPTY))
       .finally(() => setLoading(false));
-  }, [storeId, enabled]);
+  }, [storeId, enabled, selectedBranchId]);
 
   useEffect(() => {
     load();

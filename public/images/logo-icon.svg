@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="SUTURA">
+<g transform="translate(0 0) scale(1)">
+<mask id="eye-i"><rect width="100" height="100" fill="#fff"/><path d="M80.2 11.2L74.8 17.6" stroke="#000" stroke-width="2" stroke-linecap="round"/></mask>
+<path fill="#8C6B5D" fill-rule="evenodd" d="M42 95C34 81 18 65 18 43A27 27 0 1 1 72 43C72 64 51 81 42 95ZM45 29A13 13 0 1 0 45.01 29Z"/>
+<path fill="#3B2A21" mask="url(#eye-i)" d="M11 91L80.6 5.8A3.4 3.4 0 0 1 86 10.2Z"/>
+<path fill="none" stroke="#3B2A21" stroke-width="3.8" stroke-linecap="round" d="M76 18C64 33 34 40 28 53C22 66 44 72 58 63C69 56 79 46 88 52C96 58 91 72 83 70"/>
+</g>
+</svg>

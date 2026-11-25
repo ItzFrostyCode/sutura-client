@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Mail, Phone, Package, Eye, Pencil, Trash2, Users, ShieldCheck } from 'lucide-react';
 import { CustomerData } from './customerTypes';
-import { isWalkInCustomer, isWalkInEmail, SUKI_TAG_CONFIG } from './customerHelpers';
+import { isWalkInCustomer, customerEmail, SUKI_TAG_CONFIG } from './customerHelpers';
 
 interface CustomerTableProps {
   readonly customers: CustomerData[];
@@ -102,19 +102,19 @@ export default function CustomerTable({
                           <span className="inline-flex items-center text-[9px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200 uppercase tracking-wider">
                             Walk-in
                           </span>
-                          {customer.email && !isWalkInEmail(customer.email) && (
+                          {customerEmail(customer) && (
                             <div className="flex items-center gap-1.5 text-xs text-ink-muted">
                               <Mail size={12} className="text-ink-faint shrink-0" />
-                              <span className="truncate max-w-45">{customer.email}</span>
+                              <span className="truncate max-w-45">{customerEmail(customer)}</span>
                             </div>
                           )}
                         </div>
                       ) : (
                         <div className="space-y-0.5">
-                          {customer.email && (
+                          {customerEmail(customer) && (
                             <div className="flex items-center gap-1.5 text-xs text-ink-body">
                               <Mail size={13} className="text-ink-faint shrink-0" />
-                              <span className="truncate max-w-45">{customer.email}</span>
+                              <span className="truncate max-w-45">{customerEmail(customer)}</span>
                             </div>
                           )}
                           <span className="inline-flex items-center text-[9px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200 uppercase tracking-wider">

@@ -6,9 +6,9 @@ import { UploadItem } from './supportHelpers';
 // owner can point straight at "which part of the app" instead of typing a
 // subject from scratch every time.
 const SUBJECT_OPTIONS = [
-  'Home', 'Appointments', 'Collect Payments', 'Job Orders', 'Customers',
+  'Home', 'Appointments', 'Payments', 'Job Orders', 'Customers',
   'Design Catalog', 'Services', 'Staff', 'Reports & Insights',
-  'Branches', 'My Store Profile', 'Billing & Plans', 'Account Settings',
+  'Branches', 'My Shop Profile', 'Billing & Plans', 'Account Settings',
   'Log Out', 'Notifications',
 ];
 

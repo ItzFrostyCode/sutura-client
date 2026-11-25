@@ -21,6 +21,8 @@ interface ModalProps {
   readonly footer?: React.ReactNode;
   /** A step form: the header shows a back arrow and a centered title (the customer's booking header) instead of the title and ✕. */
   readonly onBack?: () => void;
+  /** Hide the body's scrollbar (it still scrolls), for short panels where a bar would only add noise. */
+  readonly hideScrollbar?: boolean;
 }
 
 /**
@@ -32,7 +34,7 @@ interface ModalProps {
  *      body scrolling between them. A phone user sees an app screen, not a
  *      floating box with the page bleeding through around it.
  */
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer, onBack }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', footer, onBack, hideScrollbar = false }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
 
@@ -121,7 +123,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
         </div>
 
         {/* Body — the only part that scrolls. */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 min-h-0">
+        <div className={`flex-1 overflow-y-auto px-5 py-5 min-h-0 ${hideScrollbar ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : ''}`}>
           {children}
         </div>
 

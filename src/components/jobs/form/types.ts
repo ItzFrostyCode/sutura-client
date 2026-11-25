@@ -5,6 +5,10 @@ export interface CustomerData {
   phone?: string;
   profile_picture?: string | null;
   is_trusted?: boolean;
+
+  active_jobs?: number;
+  intake_channel?: string;
+  is_walk_in?: boolean;
 }
 
 export interface ServiceField {
@@ -127,24 +131,28 @@ export interface JobCreateFormData {
   // profile — distinct from a bulk order's roster (different people,
   // different sizes). Meaningless for a bulk order; hidden there.
   quantity: string;
-  /** Price before rush fee and discount. null until the owner types one; then the suggestion from the service / design is used. */
-  price: string | null;
-  /** Price of ONE piece, typed by the owner (e.g. a top only). null = the design's or service's own price. The total is this × pieces. */
-  unit_price: string | null;
+  total_amount: string;
   downpayment: string;
-  /** null until the owner picks one; then the service's turnaround is used. */
-  due_date: string | null;
+  due_date: string;
   notes: string;
+  po_number: string;
   is_rush: boolean;
   rush_fee: string;
   material_source: 'store_supplied' | 'customer_supplied';
+  garment_category: '' | 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair';
+  discount_amount?: string;
+  discount_reason?: string;
+  // From the other side of the merge with Bongo's Sutura_Client:
+  /** Price before rush fee and discount. null until the owner types one; then the suggestion from the service / design is used. */
+  price?: string | null;
+  /** Price of ONE piece, typed by the owner (e.g. a top only). null = the design's or service's own price. The total is this × pieces. */
+  unit_price?: string | null;
   /** Garment slug (lib/garmentTaxonomy) or a typed-in name for "Other garment". */
-  garment_type: string;
-  discount_mode: 'fixed' | 'percent';
-  discount_value: string;
-  discount_reason: string;
+  garment_type?: string;
+  discount_mode?: 'fixed' | 'percent';
+  discount_value?: string;
   /** Where the design comes from, a link to the customer's file, and what was said in the consultation. */
-  design_source: import('@/lib/designSource').DesignSource | null;
-  design_link: string;
-  consultation_notes: string;
+  design_source?: import('@/lib/designSource').DesignSource | null;
+  design_link?: string;
+  consultation_notes?: string;
 }

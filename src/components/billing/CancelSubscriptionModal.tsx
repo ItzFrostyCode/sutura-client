@@ -1,130 +1,109 @@
 'use client';
 
-import { useState } from 'react';
-import { AlertTriangle, X, CheckCircle, ShieldAlert, Loader2 } from 'lucide-react';
-import type { Subscription } from './billingTypes';
+import { useEffect, useState } from 'react';
+import { AlertTriangle, Check, Lock } from 'lucide-react';
+import Modal from '@/components/Modal';
 
-interface CancelSubscriptionModalProps {
-  readonly subscription: Subscription | null;
-  readonly onClose: () => void;
-  readonly onConfirm: () => Promise<boolean>;
-}
+/** Keep in step with SubscriptionController::CANCEL_TERMS_VERSION. */
+export const CANCEL_TERMS_VERSION = '2026-11-24';
+
+const KEEP = [
+  'All your orders, customers and payment records',
+  'Viewing and exporting them',
+  'Billing and Support',
+];
+const STOPS = [
+  'New orders and appointments',
+  'Edits to your shop, services and staff',
+  'Showing up in search and on the map',
+];
 
 /**
- * Cancel Subscription Modal with revised Terms & Conditions / Agreements.
- * Outlines retain-until-expiry terms, downgrade behavior, and resubscribe options.
+ * Cancel the running plan: what happens and when, the agreement link, and an
+ * "I understand" box before the destructive button unlocks. Nothing stops until
+ * the end date; after it the shop is read-only (server: CheckRole).
  */
-export default function CancelSubscriptionModal({ subscription, onClose, onConfirm }: CancelSubscriptionModalProps) {
+export default function CancelSubscriptionModal({ isOpen, planName, endsOn, busy, onClose, onConfirm }: Readonly<{
+  isOpen: boolean;
+  planName: string;
+  /** Formatted end date, e.g. "February 21, 2027". */
+  endsOn: string;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}>) {
   const [agreed, setAgreed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const endsAtFormatted = subscription?.ends_at
-    ? new Date(subscription.ends_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
-    : 'the end of your billing cycle';
-
-  const handleCancel = async () => {
-    if (!agreed) return;
-    setSubmitting(true);
-    const success = await onConfirm();
-    setSubmitting(false);
-    if (success) onClose();
-  };
+  useEffect(() => { if (isOpen) setAgreed(false); }, [isOpen]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-3xl border border-line bg-surface p-6 shadow-xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-            <ShieldAlert size={24} />
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Cancel your subscription?"
+      maxWidth="max-w-lg"
+      hideScrollbar
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="h-11 w-full rounded-xl border border-line-strong bg-white px-4 sm:w-auto text-sm font-semibold text-ink hover:bg-canvas cursor-pointer">
+            Keep my plan
+          </button>
           <button
             type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-sunken hover:text-ink"
-            aria-label="Close modal"
+            onClick={onConfirm}
+            disabled={!agreed || busy}
+            className="h-11 w-full rounded-xl bg-danger px-4 sm:w-auto text-sm font-semibold text-white hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
           >
-            <X size={20} />
+            {busy ? 'Cancelling…' : 'Cancel subscription'}
           </button>
         </div>
-
-        <div className="mt-4">
-          <h2 className="mobile-h2 font-heading font-bold text-ink sm:text-2xl">
-            Cancel SUTURA Subscription
-          </h2>
-          <p className="mobile-body-sm mt-1 text-ink-muted">
-            Are you sure you want to cancel your <strong>{subscription?.plan?.name ?? 'store'}</strong> plan?
+      }
+    >
+      <div className="space-y-4 text-sm">
+        <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3.5">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
+          <p className="text-amber-900">
+            <strong className="font-semibold">You keep {planName} until {endsOn}.</strong> After that, your shop
+            becomes <strong>read-only</strong> until you choose a plan again.
           </p>
         </div>
 
-        {/* Revised Terms & Conditions / Agreements */}
-        <div className="mt-5 space-y-3 rounded-2xl border border-line bg-sunken/60 p-4 text-xs text-ink-body">
-          <p className="font-semibold uppercase tracking-wider text-ink">
-            Revised Subscription Agreements &amp; Policy:
-          </p>
-          <ul className="space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-ink">1.</span>
-              <span>
-                <strong>Retained Access:</strong> You will retain full access to all plan features until{' '}
-                <strong className="text-ink">{endsAtFormatted}</strong>.
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-ink">2.</span>
-              <span>
-                <strong>Automatic Downgrade:</strong> After {endsAtFormatted}, your account will revert to the{' '}
-                <strong>Basic Plan</strong>.
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-ink">3.</span>
-              <span>
-                <strong>Data Protection:</strong> All your orders, client records, and store settings are preserved. No data is deleted.
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-bold text-ink">4.</span>
-              <span>
-                <strong>Easy Resubscribe:</strong> You can reactivate your plan or upgrade at any time with a single click.
-              </span>
-            </li>
-          </ul>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="mb-2 font-semibold text-ink">Stops after {endsOn}</p>
+            <ul className="space-y-1.5">
+              {STOPS.map((t) => (
+                <li key={t} className="flex gap-2 text-ink-body"><Lock size={14} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />{t}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="mb-2 font-semibold text-ink">Kept, always</p>
+            <ul className="space-y-1.5">
+              {KEEP.map((t) => (
+                <li key={t} className="flex gap-2 text-ink-body"><Check size={14} className="mt-0.5 shrink-0 text-sage" aria-hidden="true" />{t}</li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        {/* Agreement Checkbox */}
-        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-line p-3 hover:bg-sunken">
+        <p className="text-ink-muted">Paid days aren&apos;t refunded. You can undo this in Billing until {endsOn}.</p>
+
+        <label htmlFor="cancel-agree" className="flex cursor-pointer gap-3 border-t border-line pt-4">
           <input
+            id="cancel-agree"
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-line text-ink focus:ring-ink"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
           />
-          <span className="text-xs text-ink-body">
-            I understand and accept the revised subscription terms and wish to proceed with cancelling auto-renewal.
+          <span className="text-ink-body">
+            I understand my shop becomes read-only after {endsOn}, and I agree to the{' '}
+            <a href="/terms#subscription-agreement" target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-2">
+              Subscription Agreement
+            </a>.
           </span>
         </label>
-
-        {/* Actions */}
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="min-h-12 rounded-xl border border-line px-5 text-sm font-semibold text-ink hover:bg-sunken"
-          >
-            Keep My Plan
-          </button>
-          <button
-            type="button"
-            disabled={!agreed || submitting}
-            onClick={handleCancel}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-danger px-6 text-sm font-semibold text-white shadow-sm hover:bg-danger/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
-            <span>{submitting ? 'Cancelling…' : 'Confirm Cancellation'}</span>
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 import { ShoppingBag, LayoutList, Rows3 } from 'lucide-react';
 import { ConnectedOrder } from './detailTypes';
 import OrdersTable from './orders/OrdersTable';
@@ -29,6 +30,9 @@ export default function CatalogOrdersTab({ allOrders }: Readonly<{ allOrders: Co
   const [view, setView] = useState<View>('table');
   const [payFilter, setPayFilter] = useState<PayFilter>('all');
   const [page, setPage] = useState(1);
+  // Changing page brings the list (from its payment filters) back into view.
+  const listTopRef = useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { setPage(n); scrollToListTop(listTopRef.current); };
   const [paySort, setPaySort] = useState<PaySort>(null);
 
   const counts = {
@@ -65,7 +69,7 @@ export default function CatalogOrdersTab({ allOrders }: Readonly<{ allOrders: Co
           <ShoppingBag size={38} className="mx-auto mb-2 text-ink-faint" />
           <p className="text-sm font-semibold">No orders recorded yet for this design.</p>
           <p className="text-xs text-ink-faint mt-1 px-4">
-            When customers order this design from your store profile or via walk-in, orders will appear here.
+            When customers order this design from your shop profile or via walk-in, orders will appear here.
           </p>
         </div>
       ) : (
@@ -100,7 +104,7 @@ export default function CatalogOrdersTab({ allOrders }: Readonly<{ allOrders: Co
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar" role="group" aria-label="Filter by payment">
+          <div ref={listTopRef} className="flex scroll-mt-24 items-center gap-2 overflow-x-auto hide-scrollbar" role="group" aria-label="Filter by payment">
             {PAY_FILTERS.map(f => (
               <button
                 key={f.value}
@@ -125,7 +129,7 @@ export default function CatalogOrdersTab({ allOrders }: Readonly<{ allOrders: Co
                 /></div>
               <div className={view === 'cards' ? 'md:block' : 'md:hidden'}><OrderCards orders={shown} /></div>
               {filtered.length > PAGE_SIZE && (
-                <OrdersPager page={current} pageCount={pageCount} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+                <OrdersPager page={current} pageCount={pageCount} total={filtered.length} pageSize={PAGE_SIZE} onChange={goToPage} />
               )}
             </>
           )}

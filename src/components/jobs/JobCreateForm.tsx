@@ -19,6 +19,7 @@ import type { CatalogItem } from '@/components/catalog/catalogHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
 import { usePeopleList, type OrderPerson } from '@/components/order-people/usePeopleList';
 import { CUSTOM_SIZE } from '@/components/store-catalog-detail/BulkOrderSheet';
+import { customerEmail } from '@/components/customers/customerHelpers';
 
 const WALK_IN_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 /** Same cap as an online order (the server caps a job at 500 pieces). */
@@ -107,6 +108,12 @@ export default function JobCreateForm() {
 
   // Step 3: Order Specifications
   const [orderType, setOrderType] = useState<'catalog' | 'custom' | 'alteration'>('custom');
+  // Alterations & Repair: the customer's own garment, the work picked from the
+  // chips, and the exact instructions (lengths, areas, repairs).
+  const [alterationGarment, setAlterationGarment] = useState('');
+  const [alterationTasks, setAlterationTasks] = useState<string[]>([]);
+  const [alterationInstructions, setAlterationInstructions] = useState('');
+  const isAlteration = orderType === 'alteration';
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [assignedStaffId, setAssignedStaffId] = useState<string>('');
@@ -155,8 +162,6 @@ export default function JobCreateForm() {
   const servicePricing = selectedService?.pricing ?? [];
   const selectedPricing = servicePricing.find((p) => p.id === pricingId) ?? null;
   const [paymentTerm, setPaymentTerm] = useState<'full' | 'downpayment'>('downpayment');
-  // Cash the customer hands over for what's paid now ('' = exact amount).
-  const [cashTendered, setCashTendered] = useState('');
 
   // Sync incoming customer if prefilled from query
   useEffect(() => {
@@ -165,7 +170,8 @@ export default function JobCreateForm() {
       if (match) {
         setCustomerMode('search');
         setFullName(match.name);
-        setEmail(match.email || '');
+        // customerEmail: never prefill the walk-in placeholder login (walkin_…@sutura.com).
+        setEmail(customerEmail(match));
         setPhone(match.phone || '');
       }
     }
@@ -194,7 +200,8 @@ export default function JobCreateForm() {
   // The total always follows the price typed on step 4: price × pieces + rush fee
   // − the customer's own fabric. The amount paid now follows it too: the whole
   // total on Full Payment, and never more than the total on a deposit.
-  const fabricLessNow = formData.material_source === 'customer_supplied' ? Math.max(0, Number(fabricDeduction) || 0) : 0;
+  // A repair uses the customer's own garment: no fabric line, so nothing to take off.
+  const fabricLessNow = !isAlteration && formData.material_source === 'customer_supplied' ? Math.max(0, Number(fabricDeduction) || 0) : 0;
   useEffect(() => {
     const rate = parseFloat(itemRate) || 0;
     if (rate <= 0) return;
@@ -334,12 +341,16 @@ export default function JobCreateForm() {
       setWizardError('Please select a Type of Service before proceeding.');
       return;
     }
-    if (formData.material_source === 'customer_supplied' && fabricDeduction !== '' && !(Number(fabricDeduction) >= 0)) {
+    if (!isAlteration && formData.material_source === 'customer_supplied' && fabricDeduction !== '' && !(Number(fabricDeduction) >= 0)) {
       setWizardError('Enter a valid amount for the customer\'s fabric, or leave it empty.');
       return;
     }
-    if (orderType === 'alteration' && !preExistingDamageNotes.trim()) {
-      setWizardError('Please document any pre-existing garment condition or damage notes for alteration jobs.');
+    if (isAlteration && !alterationGarment) {
+      setWizardError('Pick the garment the customer brought in to alter or repair.');
+      return;
+    }
+    if (isAlteration && !preExistingDamageNotes.trim()) {
+      setWizardError('Write down the garment\'s current condition (stains, tears, wear) before intake.');
       return;
     }
     setWizardError('');
@@ -353,11 +364,11 @@ export default function JobCreateForm() {
     if (!store) return;
 
     // The fabric deduction can't be more than the price itself.
-    const fabricLess = formData.material_source === 'customer_supplied' ? Number(fabricDeduction) || 0 : 0;
+    const fabricLess = !isAlteration && formData.material_source === 'customer_supplied' ? Number(fabricDeduction) || 0 : 0;
     const priceBeforeFabric = (parseFloat(itemRate) || 0) * (isBulkOrder ? Math.max(1, parseInt(formData.quantity, 10) || 1) : 1)
       + (formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0);
     if (fabricLess > 0 && priceBeforeFabric > 0 && fabricLess > priceBeforeFabric) {
-      setWizardError("The customer's fabric deduction is more than the price. Lower it on the Order Specs step.");
+      setWizardError("The fabric / materials deduction is more than the price. Lower it on the Order Specs step.");
       return;
     }
 
@@ -370,16 +381,6 @@ export default function JobCreateForm() {
     if (!formData.due_date) {
       setWizardError('Please specify a production due date.');
       return;
-    }
-
-    // Cash handed over has to cover what's being paid now (empty = exact amount).
-    {
-      const total = parseFloat(formData.total_amount) || 0;
-      const payingNow = Math.min(total, paymentTerm === 'full' ? total : parseFloat(formData.downpayment) || 0);
-      if (cashTendered.trim() !== '' && payingNow > 0 && Number(cashTendered) < payingNow) {
-        setWizardError("Cash tendered can't be less than the amount being paid now.");
-        return;
-      }
     }
 
     setSubmitting(true);
@@ -406,11 +407,11 @@ export default function JobCreateForm() {
       const downPay = paymentTerm === 'full' ? totalAmt : (parseFloat(formData.downpayment) || 0);
       const appliedDownPay = Math.min(downPay, totalAmt);
       const balance = Math.max(0, totalAmt - appliedDownPay);
-      const tendered = cashTendered.trim() === '' ? null : Number(cashTendered);
 
       // 3. Merge all image references
+      // A repair has no style references (the section is hidden for it).
       const combinedImages = Array.from(
-        new Set([...referenceImages, ...measurementSheets])
+        new Set([...(isAlteration ? [] : referenceImages), ...measurementSheets])
       );
 
       // 4. API Job creation payload
@@ -428,7 +429,6 @@ export default function JobCreateForm() {
         total_amount: totalAmt.toFixed(2),
         discount_amount: 0,
         balance: balance.toFixed(2),
-        cash_tendered: tendered !== null && appliedDownPay > 0 ? tendered : null,
         due_date: formData.due_date || null,
         notes: formData.notes,
         custom_order_data: {
@@ -441,16 +441,21 @@ export default function JobCreateForm() {
           // One roster row per person: standard size, or "Custom" with their measurements / to be measured.
           team_roster: isBulkOrder ? people.persons.map((p) => ({
             name: p.name,
+            ...(p.gender ? { gender: p.gender } : {}),
             print_name: p.printName,
             number: p.number,
             size: p.method === 'standard' ? p.size : CUSTOM_SIZE,
             ...(p.method === 'shop' ? { measure_at_shop: true } : {}),
             ...(p.method === 'body' ? pickMeasurements(p.values, formData.garment_category) : {}),
           })) : null,
-          pre_existing_damage_notes: orderType === 'alteration' ? preExistingDamageNotes.trim() : null,
+          pre_existing_damage_notes: isAlteration ? preExistingDamageNotes.trim() : null,
+          // Plain text, so the order page and work ticket show them as written.
+          alteration_garment: isAlteration ? alterationGarment : null,
+          alteration_tasks: isAlteration && alterationTasks.length > 0 ? alterationTasks.join(', ') : null,
+          alteration_instructions: isAlteration ? alterationInstructions.trim() || null : null,
           item_rate: itemRate || null,
           // Shown on the order and work ticket ("own fabric deduction: ₱200.00").
-          own_fabric_deduction: formData.material_source === 'customer_supplied' && Number(fabricDeduction) > 0
+          own_fabric_deduction: !isAlteration && formData.material_source === 'customer_supplied' && Number(fabricDeduction) > 0
             ? `₱${Number(fabricDeduction).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             : null,
           // Same key the customer's own order uses, so the job shows which part was ordered.
@@ -461,9 +466,12 @@ export default function JobCreateForm() {
         catalog_item_id: catalogItemId ? Number(catalogItemId) : null,
         service_package_id: servicePackage?.id ?? null,
         reference_images: combinedImages.length > 0 ? combinedImages : null,
-        reference_link: referenceLink.trim() || null,
-        material_source: formData.material_source,
-        garment_category: formData.garment_category || null,
+        reference_link: isAlteration ? null : referenceLink.trim() || null,
+        // A repair is always on the customer's own garment.
+        material_source: isAlteration ? 'customer_supplied' : formData.material_source,
+        // The order type marks a repair (the Jobs list's Alterations filter
+        // reads it); the garment type itself is never overwritten in the form.
+        garment_category: isAlteration ? 'alteration_repair' : formData.garment_category || null,
         is_rush: formData.is_rush,
         rush_fee: formData.is_rush ? Number(formData.rush_fee) : 0,
       });
@@ -590,7 +598,14 @@ export default function JobCreateForm() {
             setPricingId(null);
           }}
           garmentCategory={formData.garment_category}
-          setGarmentCategory={(cat) => setFormData((prev) => ({ ...prev, garment_category: cat }))}
+          alterationGarment={alterationGarment}
+          setAlterationGarment={setAlterationGarment}
+          alterationTasks={alterationTasks}
+          onToggleAlterationTask={(task) =>
+            setAlterationTasks((prev) => (prev.includes(task) ? prev.filter((t) => t !== task) : [...prev, task]))
+          }
+          alterationInstructions={alterationInstructions}
+          setAlterationInstructions={setAlterationInstructions}
           fabricSource={formData.material_source}
           setFabricSource={(src) => {
             setFormData((prev) => ({ ...prev, material_source: src }));
@@ -623,7 +638,7 @@ export default function JobCreateForm() {
           setFormData={setFormData}
           itemRate={itemRate}
           setItemRate={setItemRate}
-          fabricDeduction={formData.material_source === 'customer_supplied' ? Math.max(0, Number(fabricDeduction) || 0) : 0}
+          fabricDeduction={fabricLessNow}
           serviceName={selectedService?.name ?? ''}
           wholeServicePrice={selectedService?.base_price != null ? Number(selectedService.base_price) : null}
           pricingOptions={catalogItemId ? [] : servicePricing}
@@ -631,8 +646,6 @@ export default function JobCreateForm() {
           onSelectPricing={setPricingId}
           paymentTerm={paymentTerm}
           setPaymentTerm={setPaymentTerm}
-          cashTendered={cashTendered}
-          setCashTendered={setCashTendered}
           isBulkOrder={isBulkOrder}
           submitting={submitting}
           onBack={() => goToStep(3)}

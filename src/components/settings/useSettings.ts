@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { refreshShopCategories } from '@/components/services/useShopCategories';
 
 export interface StoreSettingsData {
   name: string;
@@ -35,6 +36,10 @@ export interface StoreSettingsData {
   fitting_fee: number;
   fitting_limit: number;
   fitting_limit_policy: 'fee' | 'block';
+  /** Days a customer has to come in once the order is Ready for Fitting. */
+  fitting_visit_days: number;
+  /** Ready-for-Fitting message; {days} and {date} are filled in. '' = the default message. */
+  fitting_message: string;
   repair_requires_downpayment: boolean;
   /** Rush orders: taken or not, and what rush adds to the price (a repeat customer pays half). */
   rush_available: boolean;
@@ -52,6 +57,8 @@ export interface StoreSettingsData {
   default_payment_policy: 'none' | 'full' | 'deposit' | 'custom';
   default_payment_percent: number;
   specializations: string[];
+  /** The shop's own services ("+ Add Service"), listed with the standard ones. */
+  custom_services: string[];
   is_featured: boolean;
   is_hidden: boolean;
   // Where customers should send a GCash/bank payment — informational only,
@@ -109,6 +116,8 @@ export function useSettings() {
     fitting_fee: 0,
     fitting_limit: 3,
     fitting_limit_policy: 'fee' as 'fee' | 'block',
+    fitting_visit_days: 7,
+    fitting_message: '',
     repair_requires_downpayment: false,
     rush_available: true,
     rush_fee_mode: 'percent',
@@ -121,6 +130,7 @@ export function useSettings() {
     default_payment_policy: 'deposit' as 'none' | 'full' | 'deposit' | 'custom',
     default_payment_percent: 50,
     specializations: [] as string[],
+    custom_services: [] as string[],
     is_featured: false,
     is_hidden: false,
     gcash_number: '',
@@ -178,6 +188,8 @@ export function useSettings() {
             fitting_fee: s.fitting_fee ?? 0,
             fitting_limit: s.fitting_limit ?? 3,
             fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
+            fitting_visit_days: s.fitting_visit_days ?? 7,
+            fitting_message: s.fitting_message ?? '',
             repair_requires_downpayment: !!s.repair_requires_downpayment,
             rush_available: s.rush_available !== false && s.rush_available !== 0,
             rush_fee_mode: s.rush_fee_mode === 'per_piece' ? 'per_piece' : 'percent',
@@ -190,6 +202,7 @@ export function useSettings() {
             default_payment_policy: s.default_payment_policy ?? 'deposit',
             default_payment_percent: s.default_payment_percent ?? 50,
             specializations: Array.isArray(s.specializations) ? s.specializations : [],
+            custom_services: Array.isArray(s.custom_services) ? s.custom_services : [],
             is_featured: !!s.is_featured,
             is_hidden: !!s.is_hidden,
             gcash_number: s.gcash_number || '',
@@ -206,7 +219,7 @@ export function useSettings() {
         })
         .catch(err => {
           console.error(err);
-          toast.error('Failed to load store settings.');
+          toast.error('Failed to load shop settings.');
           setLoading(false);
         });
     } else if (user && !store) {
@@ -343,7 +356,9 @@ export function useSettings() {
       const res = await api.put(`/stores/${store.id}`, formData);
       savedDataRef.current = formData;
       setIsDirty(false);
-      toast.success('Store settings saved successfully.');
+      // The service Category list comes from the shop's Services.
+      refreshShopCategories(store.id);
+      toast.success('Shop settings saved successfully.');
       if (user && token) {
         setAuth(user, token, res.data.data, staffProfile || undefined);
       }

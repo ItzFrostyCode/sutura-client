@@ -49,13 +49,14 @@ export default function PlanComparisonSection({
             {/* Live limits from each plan (admin-editable on the Plans page). */}
             {([
               ['Staff Accounts', (p?: Plan) => p?.max_staff],
-              ['Branches', (p?: Plan) => p?.max_branches ?? (p?.slug === 'premium' ? -1 : 1)],
+              // Branch Shops beyond the Main Shop (0 = main shop only).
+              ['Branch Shops', (p?: Plan) => p?.max_branches ?? (p?.slug === 'premium' ? -1 : 0)],
             ] as const).map(([label, limitOf]) => (
               <tr key={label} className="hover:bg-canvas/50 transition-colors">
                 <td className="px-5 py-3.5 text-ink-body font-medium">{label}</td>
                 {(['basic', 'pro', 'premium'] as const).map((slug) => {
                   const limit = limitOf(plans.find((p) => p.slug === slug));
-                  const text = limit === -1 || limit == null ? 'Unlimited' : limit === 1 && label === 'Branches' ? '1' : `Up to ${limit}`;
+                  const text = limit === -1 || limit == null ? 'Unlimited' : limit === 0 ? 'Main shop only' : limit === 1 && label === 'Branch Shops' ? '1' : `Up to ${limit}`;
                   return (
                     <td
                       key={slug}

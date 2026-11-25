@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
+import { clearShopReadOnly } from '@/hooks/useShopReadOnly';
 
 export type SubscriptionTier = 'basic' | 'pro' | 'premium';
 
@@ -67,7 +68,8 @@ const useSubscriptionStore = create<SubscriptionStore>((set) => ({
       // No active subscription — treat as Basic
       const tier = planSlug ? tierFromSlug(planSlug) : 'basic';
       const rawMax = sub?.plan?.max_branches;
-      const maxBranches = rawMax === null || rawMax === undefined ? (tier === 'premium' ? -1 : 1) : Number(rawMax);
+      // Branch Shops beyond the Main Shop (-1 unlimited, 0 main shop only).
+      const maxBranches = rawMax === null || rawMax === undefined ? (tier === 'premium' ? -1 : 0) : Number(rawMax);
       set({ tier, maxBranches, loading: false });
     } catch {
       // On API error, default to premium to avoid accidental lockout during dev
@@ -78,6 +80,8 @@ const useSubscriptionStore = create<SubscriptionStore>((set) => ({
 
 /** Call after a successful plan switch so every consumer updates immediately. */
 export function refreshSubscriptionTier(storeId: number) {
+  // A plan change can end read-only mode (or start it); re-ask next time.
+  clearShopReadOnly(storeId);
   return useSubscriptionStore.getState().fetchTier(storeId);
 }
 

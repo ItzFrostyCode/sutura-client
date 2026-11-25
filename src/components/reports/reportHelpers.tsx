@@ -4,7 +4,11 @@ export interface AnalyticsData {
   total_jobs: number;
   completed_jobs: number;
   total_revenue: number;
+  /** Owed on accepted orders (not cancelled/declined, not still waiting for approval). */
   total_outstanding_balance: number;
+  /** Balances on orders still waiting for the shop's approval. */
+  pending_approval_balance?: number;
+  pending_approval_count?: number;
   upcoming_appointments: number;
   total_appointments: number;
   total_staff: number;
@@ -31,17 +35,7 @@ export interface AnalyticsData {
   booking_conversion_rate?: number;
 }
 
-export const GARMENT_CATEGORY_LABELS: Record<string, string> = {
-  barong: 'Barong Tagalog',
-  gown: 'Gown',
-  suit: 'Suit',
-  filipiniana: 'Filipiniana',
-  uniform: 'School Uniform',
-  lab_gown: 'Lab Gown',
-  scrub_suit: 'Scrub Suit',
-  corporate_wear: 'Corporate Wear',
-  alteration_repair: 'Alterations & Repair',
-};
+export { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
 
 export interface OutstandingBalanceRow {
   id: number;

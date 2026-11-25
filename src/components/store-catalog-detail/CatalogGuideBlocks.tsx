@@ -75,7 +75,7 @@ export function SizeChartBlock({ item, hideLabel }: Readonly<{ item: CatalogItem
         <p className="mt-1.5 text-[11px] text-ink-faint">Swipe to see more sizes →</p>
       )}
       {columns.length === 0 && !image ? (
-        <p className="mobile-body-sm text-ink-faint font-normal">No size guide available yet for this item — sizes follow this store&apos;s own standard. Contact the store if you&apos;re unsure.</p>
+        <p className="mobile-body-sm text-ink-faint font-normal">No size guide available yet for this item — sizes follow this shop&apos;s own standard. Contact the shop if you&apos;re unsure.</p>
       ) : null}
     </div>
   );

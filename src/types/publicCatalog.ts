@@ -26,6 +26,8 @@ export interface CatalogItemResult {
   order_count?: number;
   saves_count?: number;
   images: CatalogImageResult[];
+  /** Shown on the card and in the design modal. */
+  /** The service this design is linked to; the modal's "Place Order" uses it. */
   // Real column (catalog_items.fabric_image_url) — CatalogController's
   // publicShowroom() has no select()/$hidden restricting it, so it's
   // already present on every response; just never typed until now.

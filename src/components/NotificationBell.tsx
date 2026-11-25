@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import api from '@/lib/axios';
+import { bindNotificationSoundUnlock, playNotificationSound } from '@/lib/notificationSound';
 import {
   AppNotification,
   getSenderInfo,
@@ -20,22 +21,58 @@ import {
   relativeTime,
 } from '@/lib/notificationHelpers';
 import NotificationDetailModal from '@/components/notifications/NotificationDetailModal';
+import NotificationToasts from '@/components/notifications/NotificationToasts';
+import { useOptionalBranch } from '@/context/BranchContext';
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  /** "See all" in the panel footer. */
+  readonly seeAllHref?: string;
+  /** "Configure" in the panel footer. */
+  readonly configureHref?: string;
+  /**
+   * 'dashboard' (default): the shop header's filled round button.
+   * 'nav': the customer site header's plain icon button, and a full-width
+   * panel on phones (the bell sits mid-header there, not at the edge).
+   */
+  readonly variant?: 'dashboard' | 'nav';
+}
+
+/**
+ * The bell with its dropdown, new-notification toasts and chime. Used by the
+ * shop dashboard header and, with variant="nav", by signed-in customers on
+ * the public site (their notifications link to /account pages).
+ */
+export default function NotificationBell({
+  seeAllHref = '/dashboard/notifications',
+  configureHref = '/dashboard/notifications?tab=configure',
+  variant = 'dashboard',
+}: NotificationBellProps = {}) {
   const router = useRouter();
+  const isNav = variant === 'nav';
+  // The bell follows the branch selector: a branch shows its own notifications
+  // plus store-wide ones; with "All Branches" (null) the API gives the owner
+  // their main shop's. Managers and staff are pinned to their branch by the API.
+  const selectedBranchId = useOptionalBranch()?.selectedBranchId ?? null;
+  const branchParams = selectedBranchId === null ? undefined : { branch_id: selectedBranchId };
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [dismissing, setDismissing] = useState<string | null>(null);
   const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  // New unread notifications since the page loaded, shown as toasts.
+  const [toasts, setToasts] = useState<AppNotification[]>([]);
+  // Bumped whenever the unread count goes up, to replay the badge/bell motion.
+  const [bump, setBump] = useState(0);
+  const seenIds = useRef<Set<string> | null>(null);
+  const lastCount = useRef<number | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // ── Fetch Notifications ──────────────────────────────────────────────────
   const fetchList = async () => {
     try {
-      const res = await api.get('/notifications?limit=30');
+      const res = await api.get('/notifications', { params: { limit: 30, ...branchParams } });
       const raw = res.data.data;
       let list: AppNotification[] = [];
       if (Array.isArray(raw)) {
@@ -48,25 +85,47 @@ export default function NotificationBell() {
             item !== null && typeof item === 'object' && 'id' in item
         );
       }
+      // The first load only records what's already there; anything unread
+      // that shows up after that is new and gets a toast (newest on top).
+      if (seenIds.current) {
+        const seen = seenIds.current;
+        const fresh = list.filter(n => !n.read_at && !seen.has(n.id));
+        if (fresh.length) setToasts(prev => [...fresh.slice(0, 3), ...prev].slice(0, 4));
+      }
+      seenIds.current = new Set(list.map(n => n.id));
+
       setNotifications(list);
-      setUnreadCount(
-        typeof res.data.unread_count === 'number'
-          ? res.data.unread_count
-          : list.filter(n => !n.read_at).length
-      );
+      const nextCount = typeof res.data.unread_count === 'number'
+        ? res.data.unread_count
+        : list.filter(n => !n.read_at).length;
+      if (lastCount.current !== null && nextCount > lastCount.current) {
+        setBump(b => b + 1);
+        playNotificationSound();
+      }
+      lastCount.current = nextCount;
+      setUnreadCount(nextCount);
     } catch {
       // Silently fail
     }
   };
 
+  useEffect(() => { bindNotificationSoundUnlock(); }, []);
+
   useEffect(() => {
+    // A branch switch is a fresh first load: what it reveals isn't "new", so no toasts.
+    seenIds.current = null;
+    lastCount.current = null;
     void fetchList();
+    // Checked every 15s so a new order or payment pops up while the shop is
+    // working, without waiting for someone to open the bell.
     const interval = setInterval(() => {
       void fetchList();
-    }, 30_000);
+    }, 15_000);
 
     return () => clearInterval(interval);
-  }, []);
+    // fetchList reads the branch from this render; re-run when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranchId]);
 
   // When opening dropdown, fetch immediately to guarantee fresh data
   useEffect(() => {
@@ -112,7 +171,7 @@ export default function NotificationBell() {
     );
 
     try {
-      const res = await api.post(`/notifications/${id}/read`);
+      const res = await api.post(`/notifications/${id}/read`, null, { params: branchParams });
       if (typeof res.data?.unread_count === 'number') {
         setUnreadCount(res.data.unread_count);
       }
@@ -135,7 +194,7 @@ export default function NotificationBell() {
     );
 
     try {
-      const res = await api.post(`/notifications/${id}/unread`);
+      const res = await api.post(`/notifications/${id}/unread`, null, { params: branchParams });
       if (typeof res.data?.unread_count === 'number') {
         setUnreadCount(res.data.unread_count);
       }
@@ -154,7 +213,7 @@ export default function NotificationBell() {
     );
     setUnreadCount(0);
     try {
-      const res = await api.post('/notifications/read-all');
+      const res = await api.post('/notifications/read-all', null, { params: branchParams });
       if (typeof res.data?.unread_count === 'number') {
         setUnreadCount(res.data.unread_count);
       }
@@ -176,7 +235,7 @@ export default function NotificationBell() {
     setNotifications(prev => prev.filter(n => n.id !== id));
 
     try {
-      const res = await api.delete(`/notifications/${id}`);
+      const res = await api.delete(`/notifications/${id}`, { params: branchParams });
       if (typeof res.data?.unread_count === 'number') {
         setUnreadCount(res.data.unread_count);
       }
@@ -195,6 +254,13 @@ export default function NotificationBell() {
     setOpen(false);
   };
 
+  // Toast body: go to the record it's about, or open the bell when it has none.
+  const openFromToast = (notif: AppNotification) => {
+    void markAsRead(notif.id);
+    if (notif.data?.action_url) router.push(notif.data.action_url);
+    else setOpen(true);
+  };
+
   const count = unreadCount;
   const bellLabel = count > 0 ? `${count} unread notifications` : 'Notifications';
 
@@ -205,16 +271,23 @@ export default function NotificationBell() {
         id="notification-bell-btn"
         aria-label={bellLabel}
         onClick={() => setOpen(o => !o)}
-        className="relative flex items-center justify-center w-10 h-10 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        title={bellLabel}
+        className={isNav
+          ? 'relative shrink-0 flex items-center justify-center w-10 h-10 rounded-full text-ink hover:bg-sunken transition-colors cursor-pointer'
+          : 'relative flex items-center justify-center w-10 h-10 rounded-full bg-line text-ink-body hover:bg-[#D1C7BD] transition-colors'}
       >
+        {/* Same as the admin bell: amber while something is unread, count badge top right. */}
         <Bell
-          size={20}
-          className={count > 0 ? 'animate-[wiggle_0.4s_ease-in-out]' : ''}
-          fill="currentColor"
+          key={`bell-${bump}`}
+          size={isNav ? 19 : 20}
+          className={count > 0 ? 'text-amber-500 animate-[wiggle_0.4s_ease-in-out]' : ''}
         />
         {count > 0 && (
           <span
-            className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-[20px] px-1 bg-[#E41E3F] text-white text-[11px] font-bold rounded-full border-2 border-white"
+            key={`badge-${bump}`}
+            className={`${bump > 0 ? 'badge-bump ' : ''}absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 bg-[#E41E3F] text-white text-[10px] font-bold rounded-full border-2 border-surface shadow-xs`}
             aria-hidden="true"
           >
             {count > 99 ? '99+' : count}
@@ -227,8 +300,8 @@ export default function NotificationBell() {
         <div
           aria-label="Notifications panel"
           aria-modal="true"
-          className="absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
-            animate-in fade-in slide-in-from-top-2 duration-150"
+          className={`${isNav ? 'max-sm:fixed max-sm:inset-x-2 max-sm:top-[60px] max-sm:mt-0 max-sm:w-auto ' : ''}absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
+            animate-in fade-in slide-in-from-top-2 duration-150`}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-surface">
@@ -385,7 +458,7 @@ export default function NotificationBell() {
               type="button"
               onClick={() => {
                 setOpen(false);
-                router.push('/dashboard/notifications');
+                router.push(seeAllHref);
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink hover:text-taupe hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
@@ -408,7 +481,7 @@ export default function NotificationBell() {
               type="button"
               onClick={() => {
                 setOpen(false);
-                router.push('/dashboard/notifications?tab=configure');
+                router.push(configureHref);
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
@@ -418,6 +491,12 @@ export default function NotificationBell() {
           </div>
         </div>
       )}
+
+      <NotificationToasts
+        toasts={toasts}
+        onDismiss={id => setToasts(prev => prev.filter(t => t.id !== id))}
+        onOpen={openFromToast}
+      />
 
       {/* ── Detail Modal (Screenshot 3 Reference) ── */}
       <NotificationDetailModal

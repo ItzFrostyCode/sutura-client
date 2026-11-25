@@ -31,6 +31,7 @@ export default function StaffPage() {
     email: '',
     password: '',
     phone: '',
+    gender: '',
     role: 'tailor',
     additional_roles: [] as string[],
     specialization: '',
@@ -92,10 +93,12 @@ export default function StaffPage() {
         store_branch_id: number | null;
         is_branch_manager: boolean;
         bio: string;
+        gender?: string | null;
       } = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
+        gender: formData.gender || null,
         role: formData.role,
         // Sent even when empty so clearing all secondary roles on an existing
         // profile actually takes — the backend uses request->only(), which
@@ -133,6 +136,7 @@ export default function StaffPage() {
         email: '',
         password: '',
         phone: '',
+        gender: '',
         role: 'tailor',
         additional_roles: [],
         specialization: '',
@@ -159,6 +163,7 @@ export default function StaffPage() {
       email: member.user?.email || '',
       password: '',
       phone: member.user?.phone || '',
+      gender: member.user?.gender || '',
       role: member.role || 'tailor',
       additional_roles: member.additional_roles || [],
       specialization: Array.isArray(member.specialization)
@@ -232,6 +237,7 @@ export default function StaffPage() {
                   email: '',
                   password: '',
                   phone: '',
+                  gender: '',
                   role: 'tailor',
                   additional_roles: [],
                   specialization: '',

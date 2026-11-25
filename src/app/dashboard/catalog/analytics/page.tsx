@@ -1,5 +1,6 @@
-import CatalogShowcaseShell from '@/components/catalog/CatalogShowcaseShell';
+import { redirect } from 'next/navigation';
 
+// The Analytics tab was removed; old links land on the designs list.
 export default function CatalogAnalyticsPage() {
-  return <CatalogShowcaseShell initialTab="analytics" />;
+  redirect('/dashboard/catalog');
 }

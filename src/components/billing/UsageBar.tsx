@@ -12,6 +12,19 @@ export default function UsageBar({ label, used, max, icon: Icon }: {
   readonly max: number | null;
   readonly icon: React.ElementType;
 }) {
+  // A limit of 0 means the plan doesn't include this (e.g. Branch Shops on
+  // a main-shop-only plan): say so instead of a red "0 / 0, limit reached".
+  if (max === 0) {
+    return (
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-ink-body">
+          <Icon size={14} className="text-taupe" />
+          <span className="font-medium">{label}</span>
+        </div>
+        <span className="text-xs font-semibold text-ink-muted">Not on this plan</span>
+      </div>
+    );
+  }
   const pct = max === null ? 0 : Math.min((used / max) * 100, 100);
   const isAtLimit = max !== null && used >= max;
   return (

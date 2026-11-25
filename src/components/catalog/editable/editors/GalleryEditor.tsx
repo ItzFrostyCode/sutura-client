@@ -59,7 +59,8 @@ function UploadInput({ onFile, children, className }: Readonly<{ onFile: (f: Fil
 // Same shape as the customer gallery — a main preview with a thumbnail
 // strip under it — but the strip is the 10 photo slots (#1–#10): filled ones
 // show their photo, empty ones are grey boxes with a "+".
-export default function GalleryEditor({ edit }: Readonly<{ edit: CatalogDraftEdit }>) {
+// showColors=false: the New Design flow has no Colors section (photos + description only).
+export default function GalleryEditor({ edit, showColors = true }: Readonly<{ edit: CatalogDraftEdit; showColors?: boolean }>) {
   const { images, setImages } = edit.form;
   const list = useMemo(() => ordered(images), [images]);
   const [sel, setSel] = useState(0);
@@ -179,9 +180,11 @@ export default function GalleryEditor({ edit }: Readonly<{ edit: CatalogDraftEdi
         </div>
       )}
 
-      <div className="border-t border-line pt-4">
-        <ColorRowsEditor value={edit.form.colorItems} onChange={edit.form.setColorItems} mainPhotoUrl={list[0]?.url ?? ''} storeId={edit.storeId} />
-      </div>
+      {showColors && (
+        <div className="border-t border-line pt-4">
+          <ColorRowsEditor value={edit.form.colorItems} onChange={edit.form.setColorItems} mainPhotoUrl={list[0]?.url ?? ''} storeId={edit.storeId} />
+        </div>
+      )}
 
     </div>
   );

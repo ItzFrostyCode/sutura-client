@@ -50,7 +50,7 @@ export default function ContactInfoCard({ formData, onChange, isEditing, saving,
       editBody={
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field id="store-name" label="Store Name" name="name" value={formData.name} onChange={onChange} />
+            <Field id="store-name" label="Shop Name" name="name" value={formData.name} onChange={onChange} />
             <Field id="store-email" label="Contact Email" name="email" type="email" value={formData.email} onChange={onChange} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

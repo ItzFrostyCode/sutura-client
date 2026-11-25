@@ -7,8 +7,6 @@ interface ApproveModalProps {
   readonly isOpen: boolean;
   readonly storeName: string;
   readonly suggestedLogin: string;
-  /** False when the owner signed up with their own confirmed email: nothing to issue, so no login field. */
-  readonly issuesLogin: boolean;
   readonly loginDomain: string;
   readonly contactEmail: string;
   readonly onClose: () => void;
@@ -19,7 +17,7 @@ interface ApproveModalProps {
 // Approving issues the shop's login. Only the part before @ is editable —
 // the domain is fixed server-side so a shop login can never be a customer's
 // personal email.
-export default function ApproveModal({ isOpen, storeName, suggestedLogin, issuesLogin, loginDomain, contactEmail, onClose, onConfirm }: ApproveModalProps) {
+export default function ApproveModal({ isOpen, storeName, suggestedLogin, loginDomain, contactEmail, onClose, onConfirm }: ApproveModalProps) {
   const [local, setLocal] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -30,7 +28,7 @@ export default function ApproveModal({ isOpen, storeName, suggestedLogin, issues
   const confirm = async () => {
     setBusy(true);
     try {
-      await onConfirm(issuesLogin ? `${local.trim().toLowerCase()}@${loginDomain}` : '');
+      await onConfirm(`${local.trim().toLowerCase()}@${loginDomain}`);
     } catch {
       /* caller showed the error */
     } finally {
@@ -46,19 +44,12 @@ export default function ApproveModal({ isOpen, storeName, suggestedLogin, issues
       footer={(
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} className="min-h-11 border border-line-strong px-4 text-sm text-ink">Cancel</button>
-          <button type="button" disabled={busy || (issuesLogin && local.trim().length < 2)} onClick={confirm} className="min-h-11 bg-ink px-4 text-sm font-semibold text-white disabled:opacity-40">
-            {busy ? 'Approving…' : issuesLogin ? 'Approve & Issue Login' : 'Approve'}
+          <button type="button" disabled={busy || local.trim().length < 2} onClick={confirm} className="min-h-11 bg-ink px-4 text-sm font-semibold text-white disabled:opacity-40">
+            {busy ? 'Approving…' : 'Approve & Issue Login'}
           </button>
         </div>
       )}
     >
-      {!issuesLogin && (
-        <p className="text-sm text-ink-muted">
-          The shop goes live immediately. The owner already has an account and signs in with{' '}
-          <strong className="font-semibold text-ink break-all">{contactEmail}</strong>, so no login is issued. They get an approval email, and their free trial or plan starts now.
-        </p>
-      )}
-      {issuesLogin && <>
       <p className="text-sm text-ink-muted">
         The shop goes live immediately. We&apos;ll generate a temporary password and email the login to{' '}
         <strong className="font-semibold text-ink break-all">{contactEmail}</strong>.
@@ -71,7 +62,6 @@ export default function ApproveModal({ isOpen, storeName, suggestedLogin, issues
         <span className="flex items-center border-l border-line bg-sunken px-3 text-sm text-ink-muted">@{loginDomain}</span>
       </div>
       <p className="mt-2 text-xs text-ink-faint">Letters, numbers, dots, dashes, or underscores.</p>
-      </>}
     </Modal>
   );
 }

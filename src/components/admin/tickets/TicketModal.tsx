@@ -73,7 +73,7 @@ export default function TicketModal({ ticketId, onClose, onChanged }: { readonly
       {!ticket ? <p className="text-sm text-ink-muted">Loading…</p> : (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
-            <span>{ticket.store?.name ?? 'No store'} · {ticket.submitted_by?.name}{ticket.submitted_by_role ? ` (${ROLE_LABEL[ticket.submitted_by_role] ?? ticket.submitted_by_role})` : ''} · {formatDate(ticket.created_at, true)}</span>
+            <span>{ticket.store?.name ?? 'No shop'} · {ticket.submitted_by?.name}{ticket.submitted_by_role ? ` (${ROLE_LABEL[ticket.submitted_by_role] ?? ticket.submitted_by_role})` : ''} · {formatDate(ticket.created_at, true)}</span>
             <select aria-label="Status" value={ticket.status} disabled={busy} onChange={(e) => setStatus(e.target.value)}
               className="min-h-11 border border-line-strong bg-surface px-3 text-base capitalize text-ink">
               {TICKET_STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}

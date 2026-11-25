@@ -1,23 +1,28 @@
 import {
-  CreditCard, CheckCircle, Crown, Zap, Calendar, TrendingUp, Clock, AlertTriangle, RotateCcw,
+  CreditCard, CheckCircle, Crown, Zap, Calendar, TrendingUp, Clock, XCircle,
 } from 'lucide-react';
-import type { Subscription } from './billingTypes';
+import { planRunState, type Subscription } from './billingTypes';
 
 interface CurrentPlanSectionProps {
   currentSubscription: Subscription | null;
   activePlanSlug: string;
   daysUntilExpiry: number | null;
-  onCancel?: () => void;
-  onResubscribe?: () => void;
+  /** Undoes a cancellation while the plan still runs. */
+  onResume: () => void;
+  busy: boolean;
 }
 
 export default function CurrentPlanSection({
   currentSubscription,
   activePlanSlug,
   daysUntilExpiry,
-  onCancel,
-  onResubscribe,
+  onResume,
+  busy,
 }: CurrentPlanSectionProps) {
+  const { cancelled } = planRunState(currentSubscription);
+  const endsOn = currentSubscription?.ends_at
+    ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
+    : '';
   const getPlanIcon = () => {
     if (activePlanSlug === 'premium') return Crown;
     if (activePlanSlug === 'pro') return Zap;
@@ -51,8 +56,8 @@ export default function CurrentPlanSection({
             )}
             {currentSubscription?.status && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/15">
-                <CheckCircle size={12} />
-                {currentSubscription.status.toUpperCase()}
+                {cancelled ? <XCircle size={12} /> : <CheckCircle size={12} />}
+                {cancelled ? 'CANCELLED' : currentSubscription.status.toUpperCase()}
               </span>
             )}
           </div>
@@ -63,7 +68,7 @@ export default function CurrentPlanSection({
           <div className="p-5 flex items-start gap-3">
             <Calendar size={16} className="text-white/70 mt-0.5 shrink-0" />
             <div>
-              <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">Renewal Date</p>
+              <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">{cancelled ? 'Access Until' : 'Renewal Date'}</p>
               <p className="text-sm font-semibold">
                 {currentSubscription?.ends_at
                   ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', {
@@ -106,49 +111,18 @@ export default function CurrentPlanSection({
         </div>
       </div>
 
-      {/* Cancellation Pending Banner */}
-      {currentSubscription?.cancelled_at && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-amber-300 bg-amber-50">
-          <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="text-amber-700 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-900">Cancellation Scheduled</p>
-              <p className="text-xs text-amber-800 mt-0.5">
-                Auto-renewal is cancelled. You retain full access to your {currentSubscription.plan?.name} features until{' '}
-                <span className="font-semibold">
-                  {currentSubscription.ends_at
-                    ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : 'the end of your period'}
-                </span>
-                .
-              </p>
-            </div>
-          </div>
-          {onResubscribe && (
-            <button
-              type="button"
-              onClick={onResubscribe}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-900 active:opacity-75 shrink-0"
-            >
-              <RotateCcw size={14} />
-              <span>Resubscribe / Restore</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Cancel Subscription link */}
-      {!currentSubscription?.cancelled_at && activePlanSlug !== 'basic' && currentSubscription?.status === 'active' && onCancel && (
-        <div className="flex justify-end pt-1">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-xs font-medium text-ink-muted hover:text-danger underline underline-offset-4 transition-colors"
-          >
-            Cancel subscription
+      {cancelled ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center">
+          <p className="flex-1">
+            You cancelled this plan. You keep full access until <strong>{endsOn}</strong>; after that your shop becomes
+            read-only until you choose a plan again.
+          </p>
+          <button type="button" onClick={onResume} disabled={busy}
+            className="h-10 shrink-0 rounded-xl border border-amber-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-canvas disabled:opacity-50 cursor-pointer">
+            {busy ? 'Saving…' : 'Keep my subscription'}
           </button>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

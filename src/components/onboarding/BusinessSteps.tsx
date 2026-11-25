@@ -15,9 +15,8 @@ const PARTS = {
 /** Step 2 of the wizard, in three short parts: the shop, its documents, and the plan (or free trial). */
 export default function BusinessSteps({ app }: { readonly app: StoreApplicationState }) {
   const part = app.step as 2 | 3 | 4;
-  // The last part reads as the path the owner chose on /for-shops: a free trial, a paid plan, or (no choice yet) either.
-  const copy = part === 4 && app.path === 'trial' && app.trial ? { title: 'Your free trial', body: 'Check what the 14 free days include, then send your application.' }
-    : part === 4 && !app.trial && app.path === 'plan' ? { title: 'Choose your plan', body: 'Pick a plan, pay, and upload your payment receipt.' }
+  // The last part reads as what the owner picked there: a free trial, or a paid plan.
+  const copy = part === 4 && app.freeTrial ? { title: 'Your free trial', body: 'Check what the 14 free days include, then send your application.' }
     : PARTS[part];
   return (
     <>

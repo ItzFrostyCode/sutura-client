@@ -28,9 +28,6 @@ interface Step4InvoicePaymentProps {
   onSelectPricing: (pricingId: number | null) => void;
   paymentTerm: 'full' | 'downpayment';
   setPaymentTerm: (term: 'full' | 'downpayment') => void;
-  /** Cash the customer hands over for what's paid now ('' = exact amount). */
-  cashTendered: string;
-  setCashTendered: (v: string) => void;
   /** Individual orders are always 1 piece; a bulk order's count comes from its size sheet. */
   isBulkOrder: boolean;
   submitting: boolean;
@@ -51,8 +48,6 @@ export default function Step4InvoicePayment({
   onSelectPricing,
   paymentTerm,
   setPaymentTerm,
-  cashTendered,
-  setCashTendered,
   isBulkOrder,
   submitting,
   onBack,
@@ -65,7 +60,8 @@ export default function Step4InvoicePayment({
   // Total = price × pieces + rush fee − customer's own fabric (never below zero).
   // JobCreateForm keeps formData.total_amount in step with this; it's worked out
   // here too so the summary never shows a stale figure for a frame.
-  const subtotal = rate * qty + rushFee;
+  const baseSubtotal = rate * qty;
+  const subtotal = baseSubtotal + rushFee;
   const fabricTooHigh = fabricDeduction > 0 && rate > 0 && fabricDeduction > subtotal;
   const currentTotal = rate > 0
     ? Math.max(0, subtotal - fabricDeduction)
@@ -78,10 +74,6 @@ export default function Step4InvoicePayment({
 
   const remainingBalance = Math.max(0, currentTotal - currentDeposit);
 
-  // Cash handed over for what's paid now. Empty = exact amount, no change.
-  const tenderedValue = cashTendered.trim() === '' ? null : parseFloat(cashTendered) || 0;
-  const cashShort = tenderedValue !== null && currentDeposit > 0 && tenderedValue < currentDeposit;
-  const change = tenderedValue !== null && !cashShort ? tenderedValue - currentDeposit : 0;
   const money = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const handleRateChange = (newRate: string) => setItemRate(newRate);
@@ -334,42 +326,6 @@ export default function Step4InvoicePayment({
           </div>
         )}
 
-        {/* Cash tendered & change — for when the customer doesn't have the exact amount. */}
-        {currentDeposit > 0 && (
-          <div className="p-4 bg-canvas/40 border border-line rounded-xl space-y-3 max-w-lg">
-            <div className="flex items-baseline justify-between gap-3">
-              <label htmlFor="create-cash-tendered" className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
-                Cash Tendered (₱)
-              </label>
-              <span className="text-[11px] text-ink-muted">Due now <strong className="tabular-nums text-ink">{money(currentDeposit)}</strong></span>
-            </div>
-            <input
-              id="create-cash-tendered"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              value={cashTendered}
-              onChange={(e) => setCashTendered(e.target.value)}
-              placeholder={`Exact amount (${money(currentDeposit)})`}
-              aria-invalid={cashShort}
-              aria-describedby="create-cash-help"
-              className={`w-full h-11 px-3.5 bg-surface border rounded-xl text-xs sm:text-sm font-bold text-ink focus:outline-none focus:ring-1 shadow-2xs tabular-nums ${
-                cashShort ? 'border-danger focus:ring-danger focus:border-danger' : 'border-line focus:ring-taupe focus:border-taupe'
-              }`}
-            />
-            <div id="create-cash-help" className="flex items-center justify-between gap-3 text-xs">
-              {cashShort ? (
-                <p role="alert" className="font-semibold text-danger">Cash tendered can&apos;t be less than {money(currentDeposit)}.</p>
-              ) : (
-                <>
-                  <span className="text-ink-muted">{tenderedValue === null ? 'Leave empty if they paid the exact amount.' : 'Change to give back'}</span>
-                  <span className="font-bold tabular-nums text-emerald-700">{money(change)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* SUMMARY CARD */}
@@ -379,63 +335,69 @@ export default function Step4InvoicePayment({
           <h3 className="font-bold text-ink text-sm sm:text-base">Order Financial Summary</h3>
         </div>
 
-        <div className="space-y-2 text-xs sm:text-sm">
-          {fabricDeduction > 0 && (
-            <>
-              <div className="flex justify-between items-center text-ink-muted">
-                <span>Price{rushFee > 0 ? ' + rush fee' : ''}:</span>
-                <span className="tabular-nums">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex justify-between items-center text-ink-muted">
-                <span>Less customer&apos;s own fabric:</span>
-                <span className="tabular-nums">− ₱{fabricDeduction.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              {fabricTooHigh && (
-                <p role="alert" className="text-xs text-danger">The fabric deduction is more than the price. Go back and lower it.</p>
+        {/* Line by line, top to bottom, so staff can read the math back to the customer. */}
+        <dl className="space-y-2 text-xs sm:text-sm">
+          <div className="flex justify-between items-baseline gap-4">
+            <dt className="text-ink-muted">
+              Base subtotal
+              {rate > 0 && (
+                <span className="block sm:inline sm:ml-1.5 text-[11px] sm:text-xs tabular-nums text-ink-muted/80">
+                  ({money(rate)} × {qty} {qty === 1 ? 'pc' : 'pcs'})
+                </span>
               )}
-            </>
+            </dt>
+            <dd className="tabular-nums font-semibold text-ink">{rate > 0 ? money(baseSubtotal) : '—'}</dd>
+          </div>
+
+          {rushFee > 0 && (
+            <div className="flex justify-between items-baseline gap-4">
+              <dt className="text-ink-muted flex items-center gap-1">
+                <Zap size={12} className="text-amber-500 fill-amber-500" aria-hidden="true" /> Rush fee
+              </dt>
+              <dd className="tabular-nums font-semibold text-ink">+ {money(rushFee)}</dd>
+            </div>
+          )}
+
+          {fabricDeduction > 0 && (
+            <div className="flex justify-between items-baseline gap-4">
+              <dt className="text-ink-muted">Fabric / other materials deduction</dt>
+              <dd className="tabular-nums font-semibold text-ink">− {money(fabricDeduction)}</dd>
+            </div>
+          )}
+          {fabricTooHigh && (
+            <p role="alert" className="text-xs text-danger">The fabric / materials deduction is more than the price. Go back and lower it.</p>
           )}
 
           {/* Net Total */}
-          <div className="flex justify-between items-center text-ink-muted">
-            <span>Net Total Order Amount:</span>
-            <span className="text-sm sm:text-base font-bold text-ink">
-              ₱{currentTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
+          <div className="flex justify-between items-baseline gap-4 pt-2 border-t border-line">
+            <dt className="font-semibold text-ink">Net Total Order Amount</dt>
+            <dd className="text-sm sm:text-base font-bold text-ink tabular-nums">{money(currentTotal)}</dd>
           </div>
 
           {/* Amount Paid / Due Now */}
-          <div className="flex justify-between items-center text-emerald-800 font-semibold">
-            <span>Amount Paid / Due Now:</span>
-            <span className="text-sm sm:text-base font-bold text-emerald-700">
-              ₱{currentDeposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
+          <div className="flex justify-between items-baseline gap-4">
+            <dt className="text-emerald-800 font-semibold">
+              Paid now
+              <span className="block sm:inline sm:ml-1.5 text-[11px] sm:text-xs font-normal text-emerald-800/80">
+                {paymentTerm === 'full'
+                  ? '(Full payment)'
+                  : `(Downpayment / Deposit${currentTotal > 0 && currentDeposit > 0 ? `, ${Math.round((currentDeposit / currentTotal) * 100)}%` : ''})`}
+              </span>
+            </dt>
+            <dd className="text-sm sm:text-base font-bold text-emerald-700 tabular-nums">− {money(currentDeposit)}</dd>
           </div>
+        </dl>
 
-          {tenderedValue !== null && currentDeposit > 0 && !cashShort && (
-            <>
-              <div className="flex justify-between items-center text-ink-muted">
-                <span>Cash Tendered:</span>
-                <span className="tabular-nums">{money(tenderedValue)}</span>
-              </div>
-              <div className="flex justify-between items-center text-ink-muted">
-                <span>Change:</span>
-                <span className="tabular-nums font-semibold text-ink">{money(change)}</span>
-              </div>
-            </>
-          )}
-
+        <div className="space-y-2 text-xs sm:text-sm">
           {/* Remaining Balance */}
           <div className="flex justify-between items-center pt-2 border-t border-line font-bold">
-            <span className="text-ink">Remaining Balance Due:</span>
+            <span className="text-ink">Remaining Balance Due</span>
             <span
               className={`text-base sm:text-lg font-black ${
                 remainingBalance > 0 ? 'text-amber-700' : 'text-emerald-700'
               }`}
             >
-              {remainingBalance > 0
-                ? `₱${remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : 'Fully Settled (₱0.00)'}
+              {remainingBalance > 0 ? money(remainingBalance) : 'Fully Settled (₱0.00)'}
             </span>
           </div>
         </div>

@@ -36,7 +36,7 @@ export default function IdentityStep({ app }: { readonly app: StoreApplicationSt
         <TextField id="id-middle" label="Middle Name (optional)" autoComplete="additional-name" {...bind('middle_name')} />
         <TextField id="id-suffix" label="Suffix (optional)" placeholder="Jr., Sr., III" {...bind('suffix')} />
         <div className="sm:col-span-2">
-          <GenderPicker value={owner.gender} onChange={(gender) => setOwner({ ...owner, gender })} label="Gender" optional={false} />
+          <GenderPicker value={owner.gender ?? ''} onChange={(gender) => setOwner({ ...owner, gender })} label="Gender" optional={false} />
         </div>
         <TextField id="id-birthday" label="Birth Date" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} />
         <TextField id="id-phone" label="Phone Number" type="tel" required autoComplete="tel" placeholder="0905 123 4567" {...bind('contact_number')} />

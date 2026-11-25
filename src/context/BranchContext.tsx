@@ -33,7 +33,10 @@ export interface Branch {
 interface BranchContextValue {
   branches: Branch[];
   selectedBranchId: number | null; // null means "All Branches"
+  /** No-op unless the user is the store owner. */
   setSelectedBranchId: (id: number | null) => void;
+  /** Only the store owner can switch branches or use the consolidated view. */
+  canSwitchBranch: boolean;
   loadingBranches: boolean;
   refreshBranches: () => void;
 }
@@ -52,7 +55,13 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
   const canAccessBranches = isStoreOwner || isBranchManager || isStaff;
 
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [selectedBranchId, setSelectedBranchIdRaw] = useState<number | null>(null);
+  // Only the owner may change branch; for anyone else this is a no-op, so no
+  // page can move a manager or staff member off their assigned branch.
+  const canSwitchBranch = isStoreOwner;
+  const setSelectedBranchId = useCallback((id: number | null) => {
+    if (canSwitchBranch) setSelectedBranchIdRaw(id);
+  }, [canSwitchBranch]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   // Guards the localStorage-write effect below. Without it, that effect fires
   // on the very first render (storeId truthy, selectedBranchId still its
@@ -79,7 +88,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
     // refreshBranches itself changes identity when storeId changes.
     if (!storeId || !canAccessBranches) {
       setBranches([]);
-      setSelectedBranchId(null);
+      setSelectedBranchIdRaw(null);
       hasResolvedInitialRef.current = true;
       return;
     }
@@ -95,9 +104,10 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
         const list: Branch[] = Array.isArray(res.data?.data) ? res.data.data : [];
         setBranches(list);
 
-        // For regular artisans assigned to a specific branch, default to their branch
-        if (!isStoreOwner && !isBranchManager && staffProfile?.store_branch_id) {
-          setSelectedBranchId(staffProfile.store_branch_id);
+        // Branch managers and staff are locked to their own branch: only the
+        // store owner can switch branches (the API enforces the same pin).
+        if (!isStoreOwner && staffProfile?.store_branch_id) {
+          setSelectedBranchIdRaw(staffProfile.store_branch_id);
           setLoadingBranches(false);
           hasResolvedInitialRef.current = true;
           return;
@@ -108,7 +118,7 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
         if (cached) {
           const parsed = cached === 'all' ? null : Number.parseInt(cached, 10);
           if (parsed === null || list.some(b => b.id === parsed)) {
-            setSelectedBranchId(parsed);
+            setSelectedBranchIdRaw(parsed);
             setLoadingBranches(false);
             hasResolvedInitialRef.current = true;
             return;
@@ -118,11 +128,11 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
         // Fallback: main branch
         const main = list.find(b => b.is_main);
         if (main) {
-          setSelectedBranchId(main.id);
+          setSelectedBranchIdRaw(main.id);
         } else if (list.length > 0) {
-          setSelectedBranchId(list[0].id);
+          setSelectedBranchIdRaw(list[0].id);
         } else {
-          setSelectedBranchId(null);
+          setSelectedBranchIdRaw(null);
         }
       }
     } catch (err) {
@@ -149,15 +159,21 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
     branches,
     selectedBranchId,
     setSelectedBranchId,
+    canSwitchBranch,
     loadingBranches,
     refreshBranches,
-  }), [branches, selectedBranchId, loadingBranches, refreshBranches]);
+  }), [branches, selectedBranchId, setSelectedBranchId, canSwitchBranch, loadingBranches, refreshBranches]);
 
   return (
     <BranchContext.Provider value={contextValue}>
       {children}
     </BranchContext.Provider>
   );
+}
+
+/** Like useBranch(), but undefined outside the dashboard (no BranchProvider). */
+export function useOptionalBranch(): BranchContextValue | undefined {
+  return useContext(BranchContext);
 }
 
 export function useBranch(): BranchContextValue {

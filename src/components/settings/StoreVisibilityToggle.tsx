@@ -39,8 +39,8 @@ export default function StoreVisibilityToggle({ isFeatured, isHidden, onHiddenCh
   return (
     <div className="divide-y divide-line/60">
       <ToggleRow
-        label="Store Visible to Customers"
-        description={isHidden ? "Hidden — customers can't find or view your store right now." : 'Turn this off to temporarily take your store down without deleting anything.'}
+        label="Shop Visible to Customers"
+        description={isHidden ? "Hidden — customers can't find or view your shop right now." : 'Turn this off to temporarily take your shop down without deleting anything.'}
         checked={!isHidden}
         onChange={() => onHiddenChange(!isHidden)}
         badge={isHidden && (
@@ -51,7 +51,7 @@ export default function StoreVisibilityToggle({ isFeatured, isHidden, onHiddenCh
       />
       <div className="flex items-center justify-between gap-4 py-3">
         <div>
-          <div className="text-sm font-semibold text-ink flex items-center gap-2">Featured Store Placement</div>
+          <div className="text-sm font-semibold text-ink flex items-center gap-2">Featured Shop Placement</div>
           <p className="text-xs text-ink-muted mt-0.5 max-w-sm">
             {isFeatured
               ? 'Automatically on — Premium plans are pinned at the top of relevant customer search results.'

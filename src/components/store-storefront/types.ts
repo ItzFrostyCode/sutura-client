@@ -12,6 +12,7 @@ export interface StoreBranch {
   guide_image_url?: string | null;
   is_main?: boolean | number;
   landmark?: string | null;
+  landmark_image_url?: string | null;
   status?: string;
 }
 
@@ -28,10 +29,22 @@ export interface PublicService {
   service_types?: string[];
   base_price: string;
   sale_price?: string | number | null;
+  /** Services → Discount: the % off every price tier while the sale dates run. */
+  sale_percent?: number | null;
   sale_starts_at?: string | null;
   sale_ends_at?: string | null;
   estimated_days: number | null;
   estimated_days_max?: number | null;
+  min_order_qty?: number | null;
+  /** Per-piece amount off when the customer brings their own fabric (null = none set). */
+  own_fabric_deduction?: number | string | null;
+  /** What an online order asks of the customer: service setting, else the shop default. */
+  order_requirements?: {
+    measurement_requirement: 'none' | 'existing' | 'shop';
+    fitting_requirement: 'none' | 'optional' | 'required';
+    payment_policy: 'none' | 'full' | 'deposit' | 'custom';
+    payment_policy_percent: number;
+  };
   is_active: boolean;
   image_url?: string | null;
   reviews_count?: number | null;
@@ -47,6 +60,8 @@ export interface PublicService {
     user: { id: number; name: string; profile_picture: string | null } | null;
   }[];
   size_chart_image_url?: string | null;
+  /** Every Reference Chart image (size_chart_image_url is the first). */
+  size_chart_image_urls?: string[] | null;
   size_chart_columns?: string[] | null;
   size_chart_rows?: { size: string; values: string[] }[] | null;
   // Per-item/per-job-type pricing (e.g. Alteration -> Pants Hemming ₱150,
@@ -54,14 +69,6 @@ export interface PublicService {
   // replacement for it; base_price stays the "starting at" headline figure.
   /** Options of the service. `covers` and `sold_as` are what the option covers and what one ordered unit is (null = not configured). */
   pricing?: { id: number; label: string; amount: string | number; covers?: 'top' | 'bottom' | 'both' | null; sold_as?: 'garment' | 'set' | null }[];
-  min_order_qty?: number | null;
-  /** What an online order asks of the customer: service setting, else the shop default. */
-  order_requirements?: {
-    measurement_requirement: 'none' | 'existing' | 'shop';
-    fitting_requirement: 'none' | 'optional' | 'required';
-    payment_policy: 'none' | 'full' | 'deposit' | 'custom';
-    payment_policy_percent: number;
-  };
   /** Garments it works on (garmentTaxonomy slugs); empty on alterations / customization = any garment. */
   garment_types?: string[] | null;
   /** Tasks it offers (capability slugs of its service group). */
@@ -142,6 +149,10 @@ export interface StoreProfile {
   my_review?: { id?: number; rating: number } | null;
   district?: string;
   specializations?: string[];
+  /** The shop's own services, listed with the standard ones. */
+  custom_services?: string[] | null;
+  /** Other locations listed at registration — display only, not bookable branches. */
+  declared_branches?: { name: string; address: string }[] | null;
   business_type?: string | null;
   branches?: StoreBranch[];
   owner?: {

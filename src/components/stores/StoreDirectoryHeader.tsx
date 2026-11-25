@@ -37,7 +37,7 @@ export default function StoreDirectoryHeader({ q, setQ }: Readonly<StoreDirector
               the spacer below to balance the back button); left-aligned,
               fixed-width on sm+ so it doesn't fight the search bar for space. */}
           <h1 className="flex-1 sm:flex-none text-center sm:text-left mobile-h4 sm:text-lg font-semibold text-ink">
-            All Stores
+            All Shops
           </h1>
 
           <div className="w-12 shrink-0 sm:hidden" aria-hidden="true" />
@@ -47,7 +47,7 @@ export default function StoreDirectoryHeader({ q, setQ }: Readonly<StoreDirector
               id="stores-search-input-desktop"
               value={q}
               onChange={setQ}
-              placeholder="Search store name..."
+              placeholder="Search shop name..."
               className="w-full"
             />
           </div>
@@ -58,7 +58,7 @@ export default function StoreDirectoryHeader({ q, setQ }: Readonly<StoreDirector
             id="stores-search-input"
             value={q}
             onChange={setQ}
-            placeholder="Search store name..."
+            placeholder="Search shop name..."
             className="w-full"
           />
         </div>

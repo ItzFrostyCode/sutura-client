@@ -100,3 +100,27 @@ export function Segments<T extends string>({ label, value, onChange, options }: 
     </div>
   );
 }
+
+// From bongo/main (merge with Bongo's Sutura_Client).
+/** The highlighted phrase inside a FitTip. */
+export function Em({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <strong className="font-semibold text-blue-800">{children}</strong>;
+}
+
+// From bongo/main (merge with Bongo's Sutura_Client).
+/** Light-blue tip box (Sizing Guide, Measurement Tip, own fabric) shown above the fields it's about. */
+export function FitTip({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
+  return (
+    <div role="note" className="flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+      <Info size={22} className="shrink-0 text-blue-800" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-ink">{title}</p>
+        <p className="mt-0.5 text-sm leading-snug text-ink-body">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+// From bongo/main (merge with Bongo's Sutura_Client).
+/** Text field look for every step of the online order: white, rounded, light border. */
+export const FIELD = 'w-full h-12 rounded-lg border border-line bg-surface px-4 text-base text-ink placeholder:text-ink-faint transition-colors focus:outline-none focus:border-taupe focus:ring-2 focus:ring-taupe/15';

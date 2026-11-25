@@ -1,4 +1,5 @@
 import type { SavedLocation } from '@/lib/customerLocation';
+import { EMPTY_PSGC_ADDRESS, type PsgcAddress } from '@/lib/psgc';
 
 export type ApplicationStep = 1 | 2 | 3 | 4;
 export type BillingCycle = 'monthly' | 'yearly';
@@ -24,7 +25,6 @@ export interface PublicPlan {
 }
 
 export interface OwnerFields {
-  full_name: string;
   first_name: string;
   middle_name: string;
   last_name: string;
@@ -32,27 +32,42 @@ export interface OwnerFields {
   birthday: string;
   email: string;
   contact_number: string;
-  gender: 'male' | 'female' | '';
+
+  gender?: 'male' | 'female' | '';
 }
 
 export interface ShopFields {
   store_name: string;
+  /** Street line only: unit, building, street. */
   address: string;
-  barangay: string;
-  city: string;
-  province: string;
+  /** Province / City-Municipality / District / Barangay, picked from PSGC. */
+  area: PsgcAddress;
   specializations: string[];
+  /** "Add Service": services typed in that aren't in the list (max 5). */
+  custom_services: string[];
   location: SavedLocation | null;
+  /** "Branches (Optional)": other locations, display only (stores.declared_branches), any plan. */
+  branches: BranchDraft[];
+}
+
+export interface BranchDraft {
+  /** Client-only list key. */
+  key: string;
+  name: string;
+  /** Street line only. */
+  address: string;
+  area: PsgcAddress;
 }
 
 /** Keys match the API's multipart field names. */
-export type DocumentKey = 'landmark_image' | 'dti_registration' | 'tin_id' | 'brgy_clearance' | 'government_id' | 'payment_receipt';
+export type DocumentKey = 'landmark_image' | 'dti_registration' | 'tin_id' | 'brgy_clearance' | 'government_id' | 'selfie_with_id' | 'payment_receipt';
 
-export const REQUIRED_DOCUMENTS: { key: Exclude<DocumentKey, 'payment_receipt'>; label: string; hint: string; accept: string }[] = [
-  { key: 'dti_registration', label: 'DTI Business Name Registration', hint: 'Certificate photo or PDF', accept: 'image/*,.pdf' },
-  { key: 'tin_id', label: 'TIN ID or BIR Form 2303', hint: 'Photo or PDF', accept: 'image/*,.pdf' },
-  { key: 'brgy_clearance', label: 'Barangay Business Clearance', hint: 'Photo or PDF', accept: 'image/*,.pdf' },
-  { key: 'landmark_image', label: 'Shop Front Photo', hint: 'Helps customers find you — JPG, PNG, or WEBP', accept: 'image/*' },
+/** Upload documents in form order. "Recommended" ones can be skipped (the server agrees). */
+export const REQUIRED_DOCUMENTS: { key: Exclude<DocumentKey, 'payment_receipt' | 'selfie_with_id'>; label: string; hint: string; accept: string; requirement: 'Required' | 'Recommended' }[] = [
+  { key: 'dti_registration', label: 'DTI Business Name Registration', hint: 'Certificate photo or PDF', accept: 'image/*,.pdf', requirement: 'Required' },
+  { key: 'tin_id', label: 'TIN ID or BIR Form 2303', hint: 'Photo or PDF. Not BIR-registered yet? You can skip this; it just helps us approve you faster.', accept: 'image/*,.pdf', requirement: 'Recommended' },
+  { key: 'brgy_clearance', label: 'Barangay Business Clearance', hint: 'Photo or PDF', accept: 'image/*,.pdf', requirement: 'Required' },
+  { key: 'landmark_image', label: 'Shop Front Photo', hint: 'Your shop front or workspace, so customers can find you — JPG, PNG, or WEBP', accept: 'image/*', requirement: 'Required' },
 ];
 
 export const GOVERNMENT_ID_TYPES = [
@@ -66,13 +81,13 @@ export const GOVERNMENT_ID_TYPES = [
 ];
 
 export const EMPTY_OWNER: OwnerFields = {
-  full_name: '', first_name: '', middle_name: '', last_name: '', suffix: '', birthday: '',
-  email: '', contact_number: '', gender: '',
+  first_name: '', middle_name: '', last_name: '', suffix: '', birthday: '',
+  email: '', contact_number: '',
 };
 
 export const EMPTY_SHOP: ShopFields = {
-  store_name: '', address: '', barangay: '', city: 'Davao City', province: 'Davao del Sur',
-  specializations: [], location: null,
+  store_name: '', address: '', area: EMPTY_PSGC_ADDRESS,
+  specializations: [], custom_services: [], location: null, branches: [],
 };
 
 export function formatPeso(value: string | number): string {

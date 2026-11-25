@@ -9,16 +9,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import { useToast } from '@/context/ToastContext';
 import CatalogDeleteModal from '@/components/catalog/CatalogDeleteModal';
-import { DetailedCatalogItem, OtherCatalogOption, ConnectedOrder } from '@/components/catalog/detail/detailTypes';
+import { DetailedCatalogItem } from '@/components/catalog/detail/detailTypes';
 import CatalogItemHeader from '@/components/catalog/detail/CatalogItemHeader';
-import CatalogDetailTabsNav, { CatalogDetailTab } from '@/components/catalog/detail/CatalogDetailTabsNav';
 import { useCatalogSectionEdit } from '@/components/catalog/editable/useCatalogSectionEdit';
 import { useUnsavedChangesGuard } from '@/components/catalog/editable/useUnsavedChangesGuard';
 import UnsavedChangesModal from '@/components/catalog/editable/UnsavedChangesModal';
 import PauseDesignModal from '@/components/catalog/detail/PauseDesignModal';
 import CatalogOverviewTab from '@/components/catalog/detail/CatalogOverviewTab';
-import CatalogOrdersTab from '@/components/catalog/detail/CatalogOrdersTab';
-import CatalogReviewsTab from '@/components/catalog/detail/CatalogReviewsTab';
 import ApparelReviewNotice from '@/components/catalog/ApparelReviewNotice';
 
 // Same side padding the customer page gives its content blocks on phones
@@ -38,7 +35,6 @@ export default function CatalogItemDetailPage({
   const [loading, setLoading] = useState(true);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<CatalogDetailTab>('overview');
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
 
@@ -145,7 +141,7 @@ export default function CatalogItemDetailPage({
         <AlertCircle size={44} className="text-ink-muted mx-auto mb-3" />
         <h2 className="text-lg font-bold text-ink">Design Not Found</h2>
         <p className="text-xs text-ink-muted mt-1 mb-6">
-          This catalog item may have been removed or does not belong to your store.
+          This catalog item may have been removed or does not belong to your shop.
         </p>
         <Link
           href="/dashboard/catalog"
@@ -156,13 +152,6 @@ export default function CatalogItemDetailPage({
       </div>
     );
   }
-
-  const allOrders: ConnectedOrder[] = [
-    ...(item.catalog_orders || []).map(o => ({ ...o, type: 'Walk-in Order' })),
-    ...(item.job_orders || []).map(o => ({ ...o, type: 'Custom Job Order' })),
-  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-  const reviews = item.reviews || [];
 
   return (
     // -m-4 cancels the dashboard shell's own p-4, then the page takes the exact
@@ -179,30 +168,13 @@ export default function CatalogItemDetailPage({
         onToggleStatus={() => (item.is_active === false ? handleToggleStatus() : setIsPauseModalOpen(true))}
         onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
         onBack={() => guard(() => router.push('/dashboard/catalog'))}
-        showActions={activeTab === 'overview' && canManage}
+        showActions={canManage}
       />
       {item.apparel_review && <div className="mt-3"><ApparelReviewNotice review={item.apparel_review} /></div>}
       </div>
 
-      <div className={PAD}>
-      <CatalogDetailTabsNav
-        activeTab={activeTab}
-        onSelectTab={(tab) => guard(() => setActiveTab(tab))}
-        ordersCount={allOrders.length}
-        reviewsCount={reviews.length}
-      />
-      </div>
-
-      {activeTab === 'overview' && <CatalogOverviewTab item={item} edit={edit} />}
-
-      {activeTab === 'orders' && <div className={PAD}><CatalogOrdersTab allOrders={allOrders} /></div>}
-
-      {activeTab === 'reviews' && (
-        <div className={PAD}>
-          <CatalogReviewsTab item={item} />
-        </div>
-      )}
-
+      {/* Photos and description only: no Orders / Reviews tabs. */}
+      <CatalogOverviewTab item={item} edit={edit} />
       <UnsavedChangesModal
         open={pending !== null}
         saving={edit.saving}
@@ -220,6 +192,12 @@ export default function CatalogItemDetailPage({
             proceed?.();
           }
         }}
+      />
+      <CatalogDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        isSubmitting={isDeleting}
       />
       <PauseDesignModal
         open={isPauseModalOpen}

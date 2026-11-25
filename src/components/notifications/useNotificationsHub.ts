@@ -5,10 +5,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import type { AppNotification } from '@/lib/notificationHelpers';
 import type { PreferenceItem } from './notificationTypes';
+import { useOptionalBranch } from '@/context/BranchContext';
 
 export function useNotificationsHub() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  // Same branch scope as the bell (see NotificationBell).
+  const selectedBranchId = useOptionalBranch()?.selectedBranchId ?? null;
+  const branchParams = selectedBranchId === null ? undefined : { branch_id: selectedBranchId };
 
   const activeTab: 'list' | 'configure' = searchParams.get('tab') === 'configure' ? 'configure' : 'list';
 
@@ -42,6 +46,7 @@ export function useNotificationsHub() {
         params.set('page', String(page));
         params.set('per_page', String(perPage));
         if (search.trim()) params.set('search', search.trim());
+        if (selectedBranchId !== null) params.set('branch_id', String(selectedBranchId));
 
         const res = await api.get(`/notifications?${params.toString()}`);
         const items: AppNotification[] = Array.isArray(res.data?.data)
@@ -61,8 +66,10 @@ export function useNotificationsHub() {
         setLoading(false);
       }
     },
-    [perPage]
+    [perPage, selectedBranchId]
   );
+
+  useEffect(() => { setCurrentPage(1); }, [selectedBranchId]);
 
   useEffect(() => {
     if (activeTab === 'list') {
@@ -155,7 +162,7 @@ export function useNotificationsHub() {
   const handleClearAll = async () => {
     setClearBusy(true);
     try {
-      await api.delete('/notifications/clear-all');
+      await api.delete('/notifications/clear-all', { params: branchParams });
       setNotifications([]);
       setTotalCount(0);
       setUnreadCount(0);
@@ -170,7 +177,7 @@ export function useNotificationsHub() {
 
   const handleOpenDetailModal = (notif: AppNotification) => {
     if (!notif.read_at) {
-      void api.post(`/notifications/${notif.id}/read`);
+      void api.post(`/notifications/${notif.id}/read`, null, { params: branchParams });
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, read_at: new Date().toISOString() } : n))
       );

@@ -32,7 +32,7 @@ export default function CustomerStatsCards({ customers }: CustomerStatsCardsProp
 
       <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
         <div className="space-y-1">
-          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Active In-Pipeline Jobs</span>
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Active Orders</span>
           <div className="text-2xl font-black text-ink">{activeJobsTotal}</div>
           <div className="text-xs text-ink-muted">Across current custom production</div>
         </div>
@@ -43,7 +43,7 @@ export default function CustomerStatsCards({ customers }: CustomerStatsCardsProp
 
       <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 shadow-2xs flex items-center justify-between">
         <div className="space-y-1">
-          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Total Client Revenue</span>
+          <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Total Customer Revenue</span>
           <div className="text-2xl font-black font-mono text-ink">
             ₱{totalSpendAll.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </div>

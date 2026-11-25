@@ -78,7 +78,7 @@ export interface Job {
   notes?: string;
   deadline?: string;
   due_date?: string;
-  customer?: { name: string; id: number; email?: string | null; suki_tag?: string | null };
+  customer?: { name: string; id: number; email?: string | null; suki_tag?: string | null; contact_email?: string | null };
   service?: {
     name: string;
     id: number;
@@ -177,6 +177,10 @@ export interface Job {
     fabric_image_url?: string | null;
     images?: { id: number; image_url: string; is_primary: boolean }[];
   } | null;
+
+  measurement_source?: 'own' | 'saved' | 'shop' | null;
+  measurement_visit?: { id: number; scheduled_at: string; status: string; appointment_type: string } | null;
+  service_package?: { id: number; name: string; bundle_price?: string | null; service_category?: string | null; services?: { id: number; name: string }[] } | null;
 }
 
 export interface Staff {

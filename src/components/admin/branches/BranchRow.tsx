@@ -1,6 +1,7 @@
 import { Check, ExternalLink, X } from 'lucide-react';
 import Badge from '@/components/shared/Badge';
 import { formatDate } from '@/components/admin/useAdminList';
+import { formatAddress } from '@/lib/formatAddress';
 
 export interface PendingBranch {
   id: number;
@@ -30,7 +31,7 @@ interface BranchRowProps {
 }
 
 export default function BranchRow({ branch, onVerify, onReject }: BranchRowProps) {
-  const place = [branch.address, branch.barangay, branch.district, branch.city].filter(Boolean).join(', ');
+  const place = formatAddress(branch);
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
       <div className="min-w-0 flex-1 basis-64">

@@ -544,3 +544,6 @@ export function useJobCreateForm() {
     sectionTwoMeta,
   };
 }
+
+// From 38c0962 (merge with Bongo's Sutura_Client).
+export type JobCreateForm = ReturnType<typeof useJobCreateForm>;

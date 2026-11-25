@@ -48,7 +48,7 @@ export default function BookingSuccessState({
             </div>
             <h2 className="text-2xl font-bold mb-2">Appointment Request Sent</h2>
             <p className="text-ink-muted mb-6 text-sm">
-              Waiting for {storeName || 'the store'} to confirm your slot. You&apos;ll see the update in
+              Waiting for {storeName || 'the shop'} to confirm your slot. You&apos;ll see the update in
               My Appointments once they respond.
             </p>
           </div>

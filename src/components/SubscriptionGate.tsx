@@ -20,7 +20,7 @@ const FEATURE_LABELS: Record<GatedFeature, string> = {
   inquiry:            'Direct Customer Inquiries',
   boosted_visibility: 'Boosted Search Visibility',
   reports:            'Sales & Staff Reports',
-  featured_visibility:'Featured Store Visibility',
+  featured_visibility:'Featured Shop Visibility',
   custom_branding:    'Custom Branding',
   advanced_dashboard: 'Branch Comparison Reports',
 };
@@ -42,16 +42,16 @@ const REQUIRED_PLAN: Record<GatedFeature, 'Pro' | 'Premium'> = {
 
 // ── Feature descriptions shown below the lock title ──────────────────────────
 const FEATURE_DESC: Record<GatedFeature, string> = {
-  catalog:            "Showcase your work with a photo-rich catalog visible to customers browsing your store profile.",
-  portfolio:          "Showcase your work with a photo-rich catalog visible to customers browsing your store profile.",
+  catalog:            "Showcase your work with a photo-rich catalog visible to customers browsing your shop profile.",
+  portfolio:          "Showcase your work with a photo-rich catalog visible to customers browsing your shop profile.",
   staff:              "Add staff members, assign job stages, and manage your whole team from one place.",
-  analytics:          "Get a bird\u2019s-eye view of your store with visual charts for revenue, orders, and customers.",
+  analytics:          "Get a bird\u2019s-eye view of your shop with visual charts for revenue, orders, and customers.",
   notifications:      "Automatically send SMS or email updates to customers when their order status changes.",
-  inquiry:            "Let customers send direct messages to your store from your public profile.",
-  boosted_visibility: "Appear higher in search results than Basic stores for your garment specializations.",
+  inquiry:            "Let customers send direct messages to your shop from your public profile.",
+  boosted_visibility: "Appear higher in search results than Basic shops for your garment specializations.",
   reports:            "See monthly sales, outstanding balances and each staff member’s productivity in one place.",
-  featured_visibility:"Get pinned as a \u201cFeatured Store\u201d at the top of relevant search results.",
-  custom_branding:    "Apply your own store colors, logo, and identity across your public store profile.",
+  featured_visibility:"Get pinned as a \u201cFeatured Shop\u201d at the top of relevant search results.",
+  custom_branding:    "Apply your own shop colors, logo, and identity across your public shop profile.",
   advanced_dashboard: "Compare revenue, orders and workload across all of your branches side by side.",
 };
 

@@ -3,7 +3,7 @@ export interface Staff {
   /** Locked by the shop's plan (over its limit; never deleted). Server: PlanLimits. */
   plan_locked_at?: string | null;
   user_id?: number;
-  user: { id?: number; name: string; email: string; phone?: string; last_seen_at?: string | null; profile_picture?: string | null };
+  user: { id?: number; name: string; email: string; phone?: string; last_seen_at?: string | null; profile_picture?: string | null; gender?: 'male' | 'female' | null };
   role: string;
   additional_roles?: string[] | null;
   is_active: boolean;

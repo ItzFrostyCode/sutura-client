@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CatalogItem, CatalogItemReview } from './types';
+import { scrollToListTop } from '@/lib/scrollToListTop';
 
 interface CatalogRatingsSectionProps {
   item: CatalogItem;
@@ -165,6 +166,9 @@ export default function CatalogRatingsSection({
 }: CatalogRatingsSectionProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
+  // Changing page brings the section's top back into view.
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const goToPage = (n: number) => { setCurrentPage(n); scrollToListTop(sectionRef.current); };
 
   const avgRating = item.reviews_avg_rating ?? 0;
   const reviewsCount = item.reviews_count ?? 0;
@@ -189,7 +193,7 @@ export default function CatalogRatingsSection({
   };
 
   return (
-    <div className="border border-line bg-white">
+    <div ref={sectionRef} className="scroll-mt-24 border border-line bg-white">
       {/* Section header — no View All link */}
       <div className="px-4 py-3 border-b border-line">
         <span className="text-xs font-bold uppercase tracking-wider text-ink">
@@ -282,9 +286,9 @@ export default function CatalogRatingsSection({
       <Pagination
         currentPage={safePage}
         totalPages={totalPages}
-        onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-        onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        onGoTo={(p) => setCurrentPage(p)}
+        onPrev={() => goToPage(Math.max(1, safePage - 1))}
+        onNext={() => goToPage(Math.min(totalPages, safePage + 1))}
+        onGoTo={(p) => goToPage(p)}
       />
     </div>
   );

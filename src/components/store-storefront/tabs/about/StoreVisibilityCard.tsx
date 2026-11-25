@@ -20,7 +20,7 @@ export default function StoreVisibilityCard({
   return (
     <EditableCard
       icon={isHidden ? <EyeOff size={16} className="text-taupe" /> : <Eye size={16} className="text-taupe" />}
-      title="Store Visibility"
+      title="Shop Visibility"
       isEditing={isEditing}
       saving={saving}
       onEdit={onEdit}

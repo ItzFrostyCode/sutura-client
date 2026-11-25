@@ -16,8 +16,8 @@ export interface SmsOutbox {
 }
 
 export const MODES: { id: SmsMode; label: string; hint: string }[] = [
-  { id: 'review', label: 'Check first', hint: 'Texts wait here. You check the number and the words, then send. (Recommended)' },
-  { id: 'auto', label: 'Send automatically', hint: 'Texts go out right away. Numbers that look wrong are still held back.' },
+  { id: 'auto', label: 'Send automatically', hint: 'Texts go out right away. Numbers that look wrong are still held back. (Recommended)' },
+  { id: 'review', label: 'Check first', hint: 'Texts wait here. You check the number and the words, then send.' },
   { id: 'off', label: 'Off', hint: 'No texts are prepared at all.' },
 ];
 
