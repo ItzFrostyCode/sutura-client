@@ -336,6 +336,8 @@ export interface DiscoveryMapBranch {
   reviewsCount?: number;
   specializations?: string[];
   distanceKm?: number | null;
+  /** Road km from the server for the customer's location (map page). */
+  roadKm?: number | null;
 }
 
 interface DiscoveryMapProps {

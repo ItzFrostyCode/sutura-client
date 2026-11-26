@@ -64,7 +64,6 @@ export default function StaffOnline({ onlineStaff, offlineStaff = [], viewerName
         <div className="min-w-0">
           <h2 className="text-eyebrow-accent">Team</h2>
           <p className="text-display text-lg font-semibold text-ink mt-1">Online now</p>
-          <p className="text-xs text-ink-muted mt-0.5">Active in the last 5 minutes</p>
         </div>
         <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" aria-hidden="true" />

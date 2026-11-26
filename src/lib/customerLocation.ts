@@ -315,9 +315,11 @@ export interface StartupLocation {
  *   - permission blocked → fall back at once.
  * Fallback = the visitor's last saved real location, else Davao City centre.
  *
- * Normal accuracy (Wi-Fi / network position) — quick on a cold laptop and
- * plenty for "shops near you". The request itself stays alive for 30 s, so a
- * position that lands after the fallback still replaces it (banner updates).
+ * High accuracy: a phone uses its GPS, which is much closer than the Wi-Fi /
+ * network position (a laptop without GPS still answers from Wi-Fi). A reading
+ * at most 10 s old may be reused; older ones drift. GPS can take longer than
+ * `fixMs`, so the request stays alive for 30 s and a position that lands
+ * after the fallback still replaces it (banner updates).
  * `hasResolved` makes whichever path finishes first the only one that counts.
  */
 export function startStartupLocation({ fixMs = 8000 }: { fixMs?: number } = {}): StartupLocation {
@@ -363,7 +365,7 @@ export function startStartupLocation({ fixMs = 8000 }: { fixMs?: number } = {}):
       void toLocation(pos, 2500, true).then((loc) => finish(loc, saveLocationWithHistory));
     },
     () => fallBack(), // blocked, dismissed, unavailable
-    { enableHighAccuracy: false, timeout: 30_000, maximumAge: 60_000 },
+    { enableHighAccuracy: true, timeout: 30_000, maximumAge: 10_000 },
   );
 
   // Is the prompt up? Only then do we hold the countdown.

@@ -32,6 +32,8 @@ function storeToPins(store: StoreApiResult): DiscoveryMapBranch[] {
       address: b.address,
       city: b.city,
       district: (b as { district?: string | null }).district || null,
+      // Road km from the server (HeiGIT); null when it couldn't get one.
+      roadKm: (b as { road_km?: number | null }).road_km ?? null,
       landmark: b.landmark,
       latitude: Number(b.latitude),
       longitude: Number(b.longitude),
@@ -243,6 +245,7 @@ export function useMapPage() {
         params.lat = String(userLocation.lat);
         params.lng = String(userLocation.lng);
         params.sort_by = 'distance';
+        params.branch_km = '1'; // road km for every branch card
       }
 
       api
@@ -309,7 +312,8 @@ export function useMapPage() {
       })
       .map((b) => ({
         ...b,
-        distanceKm: userLocation ? haversineKm(userLocation.lat, userLocation.lng, b.latitude, b.longitude) : null,
+        // Road km when the server has it; straight line only as a fallback.
+        distanceKm: userLocation ? (b.roadKm ?? haversineKm(userLocation.lat, userLocation.lng, b.latitude, b.longitude)) : null,
       }));
     return userLocation ? list.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0)) : list;
   }, [branches, statusFilter, userLocation]);

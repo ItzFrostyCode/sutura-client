@@ -26,7 +26,11 @@ async function photonReverse(lat: number, lng: number): Promise<GeocodeResult | 
     const feature = data?.features?.[0]?.properties;
     if (!feature) return null;
     const parts: string[] = [];
-    const primary = feature.name || feature.street; // road or place name
+    // Street first: `name` is the nearest shop or landmark, which changes
+    // every few metres (Jollibee → BDO → a cinema) as the browser's reading
+    // drifts on each refresh, though the visitor hasn't moved. A road feature
+    // has no `street`, so its `name` (the road) is used then.
+    const primary = feature.street || feature.name;
     if (primary) parts.push(primary);
     if (feature.locality && !parts.includes(feature.locality)) parts.push(feature.locality); // barangay / suburb
     if (feature.district && !parts.includes(feature.district)) parts.push(feature.district); // Poblacion, Buhangin…
@@ -52,8 +56,13 @@ async function nominatimReverse(lat: number, lng: number): Promise<GeocodeResult
     if (!res.ok) return null;
     const data = await res.json();
     if (!data?.display_name) return null;
+    // Same rule as Photon: drop a leading shop/landmark name so the label
+    // starts with the street and doesn't change with small GPS drift.
+    const display: string = data.name && data.address?.road && data.display_name.startsWith(`${data.name}, `)
+      ? data.display_name.slice(data.name.length + 2)
+      : data.display_name;
     return {
-      address: data.display_name,
+      address: display,
       district:
         data?.address?.suburb ||
         data?.address?.neighbourhood ||

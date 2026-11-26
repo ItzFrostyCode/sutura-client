@@ -6,28 +6,15 @@ Capstone project, BSIT, STI College Davao. Team: Joshua Wayman A. Arabejo, Jossu
 
 This is the Next.js frontend. The backend lives in the sibling `sutura-server` repo (Laravel) — same thesis, separate git history.
 
-## Git workflow — branch per module, not direct commits to `main` (as of 2026-08-12)
+## Git workflow — commit directly to `main` (as of 2026-11-26)
 
-**Do not commit or push directly to `main` anymore.** Up through 2026-08-12 all of Joshua's Shop Owner Module work landed straight on `main` (that history stays as-is — don't rewrite it) — the team has since switched to a branch-per-module workflow so `main` stays stable while all four people work in this same repo concurrently. If you're an AI agent picking up work here, check which branch you're on (`git branch --show-current`) before committing:
+Jossua A. Bongo (leader) works on the whole system and commits **directly to `main`** in both `sutura-client` and `sutura-server`. Don't create, suggest or switch to feature branches, and don't sort changes by module for git purposes.
 
-| Branch | Module | Owner |
-|---|---|---|
-| `feature/customer-module` | Customer Module | Bulotano, Renalyn C. |
-| `feature/admin-module` | Administrative System Module | Bongo, Jossua A. |
-| `feature/shop-owner-module` | Shop Owner Module | Arabejo, Joshua Wayman A. |
-| `feature/staff-module` | Tailoring Staff Module | Masudog, Clareynz June A. |
+- Commit and push only when asked, straight to `main`.
+- The old `feature/customer-module`, `feature/admin-module`, `feature/shop-owner-module` and `feature/staff-module` branches (created 2026-08-12 for a branch-per-module workflow) are no longer the workflow. Leave them alone; don't merge them or delete them unless asked.
 
 > [!NOTE]
-> **Real task division vs. the formal table above:** the branch-per-module table reflects the formal/academic per-person accountability structure, not the actual hands-on development split. In practice, **Joshua Wayman A. Arabejo develops all three of Shop Owner, Customer Module, and Staff Module himself** (full-stack, AI-assisted) — Renalyn C. Bulotano's real role is documentation/wording for the thesis papers, and Clareynz June A. Masudog's real role is finance/logistics (Claude AI subscription costs, printing/bond-paper for defense materials), not module development. Jossua A. Bongo (leader) develops System Admin. When working across `customer-module` or `staff-module` content/code in this project, treat it as Joshua's own active scope — don't withhold edits on "this is a teammate's module" grounds.
-
-All four already exist on `origin` (both this repo and `sutura-server`), branched from `main` as of 2026-08-12. Workflow:
-1. `git checkout <your feature branch>` — never work directly on `main`.
-2. Commit normally as work progresses.
-3. `git push origin <your feature branch>` — never `git push origin main` directly.
-4. Merge into `main` via a Pull Request on GitHub once a module's work is ready for review, not by pushing straight to `main`.
-5. Periodically merge `main` into your branch (`git merge main`) to pick up other members' merged work and avoid a large stale diff later.
-
-If a task doesn't obviously belong to one of the four modules above, ask the user which branch to use rather than guessing or defaulting to `main`.
+> **Who does what:** **Jossua A. Bongo (leader) works on the whole system** — every module, frontend and backend. Joshua Wayman A. Arabejo also develops Shop Owner, Customer and Staff (full-stack, AI-assisted). Renalyn C. Bulotano's real role is documentation/wording for the thesis papers, and Clareynz June A. Masudog's real role is finance/logistics (Claude AI subscription costs, printing/bond-paper for defense materials), not module development. The formal module split (Shop Owner: Arabejo, Customer: Bulotano, Staff: Masudog, Admin: Bongo) is for the thesis papers only. Any module's code is in scope — don't withhold edits on "this is a teammate's module" grounds.
 
 ## What SUTURA actually is
 
@@ -267,7 +254,7 @@ The approved thesis ERD/class diagrams describe `customer_profile`, `tailoring_s
 
 ## Reference docs in this repo
 
-- **`TASK_DIVISION.md` and `REQUIREMENTS.md`** — team module ownership and the fuller functional spec. **Module 3, "Shop Owner Module," owned by Joshua Wayman A. Arabejo**, is the one that governs work in this repo's `/dashboard/*` (owner-facing) area — check it before assuming something belongs to (or is missing from) this scope rather than Customer (Renalyn)/Staff (Masudog)/Admin (Bongo) module work. Goes stale relative to shipped code fast — trust the actual routes/pages over it when they conflict, but check it first for *whose* scope something is.
+- **`TASK_DIVISION.md` and `REQUIREMENTS.md`** — formal module split and the fuller functional spec. `/dashboard/*` (owner-facing) is Module 3, Shop Owner; the others are Customer, Staff and Admin. Use it for the thesis's module split, not to limit who may edit what — the leader works across all modules. Goes stale relative to shipped code fast — trust the actual routes/pages over it when they conflict.
 - `BUILD_RULES.md` — an earlier, never-actually-adopted multi-agent build methodology (orchestrator/frontend-dev/backend-dev/qa/adversary roles, `DEFECTS.md`/`ADVERSARIAL_REVIEW.md` ledgers). No such role split or ledger has ever been used in this project's real history — treat as an unused planning artifact, not a live process to follow. Kept for provenance since it's paired with (and references) `REQUIREMENTS.md`.
 - `Title&Objectives.md`, `suturathesisapproved.txt` — the full approved capstone proposal: objectives, scope & limitations, RRL/RRS, methodology, use-case/BPMN/ERD narrative descriptions, and per-dashboard UI design intent (Admin, Shop Owner, Staff, Customer).
 - `Tailorshop,Sublimationshop,FashionShop.txt` — the polished, synthesized interview-derived business analysis (workflows, pain points, proposed tracking stages, ASCII dashboard mockups) covering 3 business types. Tailoring-shop findings are directly in scope; sublimation/fashion findings (incl. rental) are market-research context only, not adopted scope. `docs/research/Complete Business Tailor Shops.txt` is the earlier raw-data-extraction draft this was synthesized from — archived there, kept for provenance, not meant to be read as authoritative (it predates and is superseded by the file above).
