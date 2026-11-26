@@ -8,6 +8,8 @@ import { MapPin, Phone, Clock, ExternalLink, Pencil, CheckCircle2 } from 'lucide
 import { StoreBranch, StoreProfile } from '../types';
 import { getMediaUrl } from '@/lib/media';
 import { getMapUrl } from '@/components/branches/branchHelpers';
+import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 
 const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
   ssr: false,
@@ -40,6 +42,9 @@ export default function StoreLocationsTab({
   embedded = false,
   onSelectBranch,
 }: StoreLocationsTabProps) {
+  const { loading: tierLoading, isGated } = useSubscriptionTier();
+  const branchesGated = isOwnerViewingOwnStore && !tierLoading && isGated('multi_branch');
+
   if (!branches || branches.length === 0) {
     return (
       <div className="bg-surface border border-line rounded-none p-12 text-center text-ink-muted">
@@ -74,6 +79,7 @@ export default function StoreLocationsTab({
             className="min-h-11 shrink-0 text-xs font-semibold text-taupe hover:underline flex items-center gap-1.5 whitespace-nowrap self-start sm:self-auto"
           >
             <Pencil size={13} /> Manage Branches
+            {branchesGated && <PlanTierTag plan="Premium" />}
           </Link>
         )}
       </div>

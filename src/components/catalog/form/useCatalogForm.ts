@@ -31,7 +31,6 @@ export function useCatalogForm({
     measurement_guide: '',
     garment_type: '',
     sizes: [],
-    add_ons: [],
     external_gallery_url: '',
     is_active: true,
   });

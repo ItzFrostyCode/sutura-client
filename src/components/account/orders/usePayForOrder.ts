@@ -10,13 +10,10 @@ export interface ShopPaymentMethod {
   qr_path?: string | null; instructions?: string | null;
 }
 
-// The customer pays OUTSIDE SUTURA (GCash, Maya, bank), then sends proof here for the shop to verify.
-export function usePayForOrder(orderId: number, storeSlug: string | undefined, branchId: number | null | undefined, onSubmitted: () => void) {
-  const toast = useToast();
+/** Where this shop takes online payments (GCash only, per the thesis), for the order's branch. Shown on the quotation and on Pay for this order. */
+export function useShopPaymentMethods(storeSlug: string | undefined, branchId: number | null | undefined) {
   const [methods, setMethods] = useState<ShopPaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!storeSlug) {
@@ -33,6 +30,16 @@ export function usePayForOrder(orderId: number, storeSlug: string | undefined, b
       .catch(() => setMethods([]))
       .finally(() => setLoading(false));
   }, [storeSlug, branchId]);
+
+  return { methods, loading };
+}
+
+// The customer pays OUTSIDE SUTURA (GCash, Maya, bank), then sends proof here for the shop to verify.
+export function usePayForOrder(orderId: number, storeSlug: string | undefined, branchId: number | null | undefined, onSubmitted: () => void) {
+  const toast = useToast();
+  const { methods, loading } = useShopPaymentMethods(storeSlug, branchId);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const uploadProof = async (file: File): Promise<string | null> => {
     if (!storeSlug) return null;

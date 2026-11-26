@@ -84,6 +84,7 @@ export async function matchSelfieFaces(canvas: HTMLCanvasElement, timeoutMs = 25
 // a retaken selfie is a new File with its own result.
 const results = new WeakMap<File, FaceMatch>();
 export const rememberFaceMatch = (file: File, match: FaceMatch) => results.set(file, match);
+export const faceMatchOf = (file: File): FaceMatch | null => results.get(file) ?? null;
 
 /** Adds the selfie's face check (if any) to a form being sent. */
 export function appendFaceMatch(form: FormData, selfie: File | undefined | null): void {

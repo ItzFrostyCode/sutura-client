@@ -13,10 +13,13 @@ import type { ServiceData } from './types';
  */
 export default function MeasureGuide({ design, service }: Readonly<{ design: CatalogItem | null; service: ServiceData | undefined }>) {
   const guide = parseTextAndImage(typeof design?.measurement_guide === 'string' ? design.measurement_guide : null);
-  const chartSource = (design?.size_chart_columns?.length || design?.size_chart_image_url) ? design : service;
-  const chart = chartSource
-    ? ({ size_chart_columns: chartSource.size_chart_columns ?? [], size_chart_rows: chartSource.size_chart_rows ?? [], size_chart_image_url: chartSource.size_chart_image_url ?? '' } as unknown as PublicCatalogItem)
-    : null;
+  // The design's size chart when it has one; else the service's Reference Chart, which is an image only (no table).
+  const fromDesign = Boolean(design?.size_chart_columns?.length || design?.size_chart_image_url);
+  const chart = fromDesign && design
+    ? ({ size_chart_columns: design.size_chart_columns ?? [], size_chart_rows: design.size_chart_rows ?? [], size_chart_image_url: design.size_chart_image_url ?? '' } as unknown as PublicCatalogItem)
+    : service
+      ? ({ size_chart_columns: [], size_chart_rows: [], size_chart_image_url: service.size_chart_image_url ?? '' } as unknown as PublicCatalogItem)
+      : null;
   const hasChart = Boolean(chart && (chart.size_chart_columns?.length || chart.size_chart_image_url));
 
   return (

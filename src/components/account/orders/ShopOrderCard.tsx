@@ -10,17 +10,17 @@ function orderName(order: MyOrder): string {
   return order.catalog_item_name ?? order.service_name ?? order.garment_category ?? 'Garment';
 }
 
-/** One line of the card: the order's own page, where it stands, when it is due, and what it still owes. */
-function OrderRow({ order }: Readonly<{ order: MyOrder }>) {
+/**
+ * One line of the card: where the order stands, when it is due, and what it still owes. On a card with several orders
+ * each line is its own link to that order's page; on a single-order card the whole card is the link (`linked` false).
+ */
+function OrderRow({ order, linked = true }: Readonly<{ order: MyOrder; linked?: boolean }>) {
   const due = order.due_date
-    ? new Date(order.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+    ? new Date(order.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
 
-  return (
-    <Link
-      href={`/account/orders/${order.id}`}
-      className="flex min-h-[56px] flex-col justify-center gap-1 py-2 transition-opacity active:opacity-80"
-    >
+  const body = (
+    <>
       <div className="flex min-w-0 items-center justify-between gap-2">
         <p className="mobile-h4 min-w-0 truncate text-ink">
           {orderName(order)}
@@ -41,10 +41,25 @@ function OrderRow({ order }: Readonly<{ order: MyOrder }>) {
               Due {due}
             </span>
           )}
-          <span className="truncate">Placed {new Date(order.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
+          <span className="truncate">Placed {new Date(order.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </span>
-        <span className="mobile-body-sm shrink-0 font-semibold text-ink">{peso(order.balance)}</span>
+        {order.status === 'pending' && Number(order.total_amount || 0) <= 0 ? (
+          <span className="mobile-caption shrink-0 text-ink-muted">Waiting for price</span>
+        ) : (
+          <span className="mobile-body-sm shrink-0 font-semibold text-ink">{peso(order.balance)}</span>
+        )}
       </div>
+    </>
+  );
+
+  if (!linked) return <div className="flex min-h-[56px] flex-col justify-center gap-1 py-2">{body}</div>;
+
+  return (
+    <Link
+      href={`/account/orders/${order.id}`}
+      className="-mx-2 flex min-h-[56px] flex-col justify-center gap-1 rounded-lg px-2 py-2 transition-colors hover:bg-sunken active:opacity-80"
+    >
+      {body}
     </Link>
   );
 }
@@ -65,9 +80,10 @@ export default function ShopOrderCard({ orders }: Readonly<{ orders: MyOrder[] }
     <ShopCardShell
       order={orders[0]}
       caption={many ? (set ? `${orders.length} orders from one visit` : `One order in ${orders.length} batches`) : undefined}
+      href={many ? undefined : `/account/orders/${orders[0].id}`}
     >
       <div className="divide-y divide-line">
-        {orders.map((o) => <OrderRow key={o.id} order={o} />)}
+        {orders.map((o) => <OrderRow key={o.id} order={o} linked={many} />)}
         {many && (
           <div className="flex items-center justify-between gap-2 py-2">
             <span className="mobile-body-sm text-ink">

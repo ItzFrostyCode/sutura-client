@@ -21,13 +21,13 @@ function RegisterPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const leave = useLeaveAuth();
-  // Customers only. Shop owners sign up at /signup/shop; old ?as=store_owner links are forwarded there.
+  // Customers only. Shop owners apply at /register/store (the admin issues their login); old ?as=store_owner links are forwarded there.
   const wantsStore = searchParams.get('as') === 'store_owner';
   const redirect = safeRedirect(searchParams.get('redirect'));
   const [result, setResult] = useState<RegisterResult | null>(null);
   const { user, staffProfile, hydrated } = useAuthStore();
 
-  useEffect(() => { if (wantsStore) router.replace('/signup/shop'); }, [wantsStore, router]);
+  useEffect(() => { if (wantsStore) router.replace('/register/store'); }, [wantsStore, router]);
 
   // Already signed in (Back, or an old link): go on, and take this page out of the history.
   useEffect(() => {

@@ -22,7 +22,7 @@ const STATUS_BADGE: Record<string, BadgeVariant> = { pending: 'warning', approve
 
 export default function ApplicationDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
-  const { store, documents, missingDocuments, planPayment, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges } = useApplicationDetail(id);
+  const { store, documents, missingDocuments, planPayment, error, suggestedLogin, loginDomain, issuesLogin, changeItems, approve, reject, requestChanges } = useApplicationDetail(id);
   // Paid with GCash online: can't approve until the money is in; denying refunds it.
   const awaitingGcash = planPayment?.channel === 'online' && !planPayment.paid;
   const toast = useToast();
@@ -211,6 +211,8 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
         storeName={store.name}
         suggestedLogin={suggestedLogin}
         loginDomain={loginDomain}
+        issuesLogin={issuesLogin}
+        ownerEmail={store.owner?.email ?? ''}
         contactEmail={store.owner?.contact_email ?? store.email ?? ''}
         onClose={() => setApproveOpen(false)}
         onConfirm={handleApprove}

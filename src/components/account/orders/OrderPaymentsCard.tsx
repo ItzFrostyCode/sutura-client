@@ -22,7 +22,7 @@ const STATUS = {
 } as const;
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-const day = (iso: string) => new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const day = (iso: string) => new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 const methodLabel = (m: string | null) => (m ? m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).replace('Gcash', 'GCash') : 'Payment');
 const typeLabel = (t: string | undefined) => {
   if (!t) return null;

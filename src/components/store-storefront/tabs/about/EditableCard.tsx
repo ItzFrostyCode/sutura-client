@@ -1,6 +1,9 @@
 import React from 'react';
 import { Pencil, Loader2, Check, X } from 'lucide-react';
 
+/** Inside this provider every About card is read-only (the customer's About tab shows the owner's same cards). */
+export const AboutReadOnly = React.createContext(false);
+
 interface EditableCardProps {
   readonly icon: React.ReactNode;
   readonly title: string;
@@ -36,6 +39,8 @@ export default function EditableCard({
   editBody,
   className = '',
 }: EditableCardProps) {
+  const readOnly = React.useContext(AboutReadOnly);
+  const editable = canEdit && !readOnly;
   return (
     <div className={`bg-surface border border-line p-4 sm:p-5 ${className}`}>
       <div className="flex items-center justify-between mb-3 gap-2 shrink-0">
@@ -45,7 +50,7 @@ export default function EditableCard({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {headerExtra}
-          {canEdit && !isEditing && onEdit && (
+          {editable && !isEditing && onEdit && (
             <button
               type="button"
               onClick={onEdit}
@@ -59,7 +64,7 @@ export default function EditableCard({
         </div>
       </div>
 
-      {canEdit && isEditing && editBody ? (
+      {editable && isEditing && editBody ? (
         <div className="space-y-3.5 flex-1 flex flex-col">
           <div className="flex-1">{editBody}</div>
           <div className="flex items-center justify-end gap-2 pt-1 border-t border-line/60 mt-1 shrink-0">

@@ -168,7 +168,7 @@ export default function DesignPriceFields({ edit }: Readonly<{ edit: CatalogDraf
           {formData.pricing_mode === 'set' && (
             <div className="mt-3">
               <label htmlFor="edit-price" className={LABEL}>
-                Base price for this design (PHP) <span className="text-red-600">*</span>
+                Base price for this design (₱) <span className="text-red-600">*</span>
               </label>
               <input
                 id="edit-price"
@@ -189,7 +189,7 @@ export default function DesignPriceFields({ edit }: Readonly<{ edit: CatalogDraf
           {formData.pricing_mode === 'extra' && (
             <div className="mt-3">
               <label htmlFor="edit-extra" className={LABEL}>
-                Extra surcharge for this design (PHP) <span className="text-red-600">*</span>
+                Extra surcharge for this design (₱) <span className="text-red-600">*</span>
               </label>
               <input
                 id="edit-extra"
@@ -211,7 +211,7 @@ export default function DesignPriceFields({ edit }: Readonly<{ edit: CatalogDraf
         </fieldset>
       ) : (
         <div className="sm:col-span-2">
-          <label htmlFor="edit-price" className={LABEL}>Price (PHP) <span className="text-red-600">*</span></label>
+          <label htmlFor="edit-price" className={LABEL}>Price (₱) <span className="text-red-600">*</span></label>
           <input id="edit-price" name="price" type="number" min="0" value={formData.price} onChange={handleChange} className={FIELD} />
           <p className="text-[11px] text-ink-faint mt-1.5">Only for a design with no service. Pick a service above to use its price instead.</p>
         </div>

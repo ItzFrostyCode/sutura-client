@@ -15,7 +15,6 @@ export interface RequestedServiceItem {
   minQuantity: number;
   selectedColor?: string | null;
   selectedSize?: string | null;
-  addOns: string[];
   notes?: string | null;
   customDetails?: string | null;
 }
@@ -42,13 +41,6 @@ function normalizeKey(str?: string | null): string {
   return (str || '').trim().toLowerCase();
 }
 
-function arraysEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const sA = [...a].sort();
-  const sB = [...b].sort();
-  return sA.every((val, idx) => val === sB[idx]);
-}
-
 export const useRequestedItemsStore = create<RequestedItemsState>()(
   persist(
     (set, get) => ({
@@ -67,8 +59,7 @@ export const useRequestedItemsStore = create<RequestedItemsState>()(
               it.serviceId === newItem.serviceId &&
               it.catalogItemId === newItem.catalogItemId &&
               normalizeKey(it.selectedColor) === normalizeKey(newItem.selectedColor) &&
-              normalizeKey(it.selectedSize) === normalizeKey(newItem.selectedSize) &&
-              arraysEqual(it.addOns, newItem.addOns)
+              normalizeKey(it.selectedSize) === normalizeKey(newItem.selectedSize)
           );
 
           if (existingIndex > -1) {
@@ -87,7 +78,6 @@ export const useRequestedItemsStore = create<RequestedItemsState>()(
             storeId,
             minQuantity: minQty,
             quantity: initialQty,
-            addOns: newItem.addOns || [],
           };
 
           // One service (and optionally one of its designs) per booking: a different pick replaces the shop's earlier one.
@@ -127,7 +117,7 @@ export const useRequestedItemsStore = create<RequestedItemsState>()(
               catalogItemId: null,
               catalogItemName: null,
               name: parentName,
-              // Keep color/size/addons/quantity if applicable or reset
+              // Keep color/size/quantity if applicable or reset
             };
           }),
         }));

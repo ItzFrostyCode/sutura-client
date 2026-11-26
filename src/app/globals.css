@@ -989,6 +989,12 @@ body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); 
 /* One column width shared by the phone/tablet sheet, the map buttons and the floating bottom navigation. */
 :root { --col-w: 640px; }
 
+/* The dashboard's side margin: the header and the main panel use this one value, so a page's content lines up with
+   the logo and the header buttons above it. Phones 10px, tablets 16px, desktops 24px (= the breadcrumbs' inset). */
+:root { --dash-gutter: 10px; }
+@media (min-width: 600px) { :root { --dash-gutter: 16px; } }
+@media (min-width: 1024px) { :root { --dash-gutter: 24px; } }
+
 /* One-shot hop for the selected map pin (DiscoveryMap pinIcon). */
 .pin-bounce {
   transform-origin: 50% 100%;
@@ -1058,4 +1064,14 @@ body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); 
 .sutura-tour .driver-popover-arrow-side-bottom { border-top-color: transparent; border-left-color: transparent; border-right-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   .driver-fade .driver-overlay, .driver-fade .driver-popover { animation: none; }
+}
+
+/* Forms: the field that needs fixing, flashed when Continue brings it into view (revealFirstProblem). */
+@keyframes field-flash {
+  0%, 35% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-danger) 22%, transparent); background-color: color-mix(in srgb, var(--color-danger) 6%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; background-color: transparent; }
+}
+.field-flash { animation: field-flash 1.8s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .field-flash { animation: none; outline: 2px solid var(--color-danger); outline-offset: 4px; }
 }

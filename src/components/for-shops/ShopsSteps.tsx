@@ -2,10 +2,10 @@ import ShopsContainer from './ShopsContainer';
 import SectionHead from './SectionHead';
 
 const STEPS = [
-  { title: 'Create your account', body: 'Sign up with your shop’s email, set a password, and open the link we send to confirm it.', when: 'Today' },
-  { title: 'Apply', body: 'Tell us about you and your shop, pin its location, and upload your DTI, TIN, barangay clearance and a government ID. Then start the free trial, or choose a plan and upload your payment receipt.', when: 'Today' },
-  { title: 'We check your documents', body: 'The SUTURA team reviews the application. Nothing is public until they approve it, and we email you the result.', when: 'Review' },
-  { title: 'Go live', body: 'Add your services, branches and staff, and take your first booking. A free trial’s 14 days start on approval.', when: 'Approval' },
+  { title: 'Apply', body: 'Tell us about you and your shop, pin its location, and upload your DTI, TIN, barangay clearance and a government ID.', when: 'Today' },
+  { title: 'Choose a plan', body: 'Pick a plan and pay with GCash, or start with 14 days free.', when: 'Today' },
+  { title: 'We check your documents', body: 'The SUTURA team reviews the application. Nothing is public until they approve it.', when: 'Review' },
+  { title: 'Get your login and go live', body: 'We email your shop login and a temporary password. Choose your own password, add your services and staff, and take your first booking.', when: 'Approval' },
 ] as const;
 
 export default function ShopsSteps() {

@@ -3,13 +3,10 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { PublicService } from '@/components/store-storefront/types';
-import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart, type AlsoAlters } from './ServiceDetailBlocks';
-import { cardNumbers } from '@/components/services/detail/serviceSteps';
+import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart } from './ServiceDetailBlocks';
 
 interface ServiceAccordionSectionsProps {
   service: PublicService;
-  /** The same shop's alteration service that takes this garment, if any. */
-  alsoAlters?: AlsoAlters | null;
 }
 
 function SectionCard({ number, title, open, onToggle, children }: Readonly<{ number: number; title: string; open: boolean; onToggle: () => void; children: React.ReactNode }>) {
@@ -29,27 +26,25 @@ function SectionCard({ number, title, open, onToggle, children }: Readonly<{ num
 
 // Same numbered-card system as the Catalog Design page (1 Specification,
 // 2 Reference Chart when the shop added one, then Description).
-export default function ServiceAccordionSections({ service, alsoAlters }: ServiceAccordionSectionsProps) {
+export default function ServiceAccordionSections({ service }: ServiceAccordionSectionsProps) {
   const [showSpecs, setShowSpecs] = useState(true);
   const [showChart, setShowChart] = useState(true);
   const [showDesc, setShowDesc] = useState(true);
   const chart = hasServiceChart(service);
-  // The same numbers the shop sees on its own service page (one rule: serviceSteps.cardNumbers).
-  const num = cardNumbers(chart);
 
   return (
     <div className="mt-4 space-y-3">
-      <SectionCard number={num.workprices ?? 1} title="What they do & prices" open={showSpecs} onToggle={() => setShowSpecs((v) => !v)}>
-        <ServiceSpecBlock service={service} alsoAlters={alsoAlters} />
+      <SectionCard number={1} title="Specification" open={showSpecs} onToggle={() => setShowSpecs((v) => !v)}>
+        <ServiceSpecBlock service={service} />
       </SectionCard>
 
       {chart && (
-        <SectionCard number={num.chart ?? 2} title="Reference Chart" open={showChart} onToggle={() => setShowChart((v) => !v)}>
+        <SectionCard number={2} title="Reference Chart" open={showChart} onToggle={() => setShowChart((v) => !v)}>
           <ServiceChartBlock service={service} />
         </SectionCard>
       )}
 
-      <SectionCard number={num.description ?? 2} title="Description" open={showDesc} onToggle={() => setShowDesc((v) => !v)}>
+      <SectionCard number={chart ? 3 : 2} title="Description" open={showDesc} onToggle={() => setShowDesc((v) => !v)}>
         <ServiceDescriptionBlock service={service} />
       </SectionCard>
     </div>

@@ -15,6 +15,7 @@ import BranchListView from '@/components/branches/BranchListView';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import PageHeader from '@/components/shared/PageHeader';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 
 // Leaflet touches `window`, so load the map client-only.
 const BranchesMap = dynamic(() => import('@/components/branches/BranchesMap'), {
@@ -282,10 +283,11 @@ export default function BranchesPage() {
               <Link
                 href="/dashboard/billing"
                 title={`${limitText}. Upgrade to add more.`}
-                className="flex items-center gap-1.5 border border-line bg-surface hover:bg-sunken text-ink px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm transition-colors min-h-[38px]"
+                className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm transition-colors min-h-[38px]"
               >
                 <Lock size={15} />
-                Upgrade plan for more branches
+                <span>Upgrade plan for more branches</span>
+                <PlanTierTag plan="Premium" />
               </Link>
             ) : (
               <button

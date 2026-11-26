@@ -57,7 +57,7 @@ function LocationPageContent() {
                     <span className="pointer-events-none absolute inset-0 animate-spin rounded-full border-2 border-taupe-dark border-t-transparent" aria-hidden="true" />
                   </>
                 )}
-                <LocateFixed size={20} className={`relative z-10 transition-all ${l.locatingCurrent ? 'scale-90 animate-pulse text-taupe-dark' : 'text-ink'}`} />
+                <LocateFixed size={22} className={`relative z-10 transition-all ${l.locatingCurrent ? 'scale-90 animate-pulse text-taupe-dark' : ''}`} />
               </div>
             }
             title="Current location"

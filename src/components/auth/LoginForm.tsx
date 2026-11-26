@@ -124,8 +124,8 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
       )}
 
       <p className="mt-8 text-center text-sm text-ink-muted">{isShop ? 'New to SUTURA for shops?' : 'New to SUTURA?'}</p>
-      <Link href={isShop ? '/signup/shop' : registerHref} onClick={onDone} className={`${OUTLINE_BTN} mt-3`}>
-        {isShop ? 'Create a Shop Account' : 'Create an Account'}
+      <Link href={isShop ? '/register/store' : registerHref} onClick={onDone} className={`${OUTLINE_BTN} mt-3`}>
+        {isShop ? 'Apply to Open a Shop' : 'Create an Account'}
       </Link>
       {isShop && (
         <Link href="/for-shops" onClick={onDone} className="mt-2 flex min-h-11 items-center justify-center text-sm text-ink-muted underline underline-offset-2 hover:text-ink">

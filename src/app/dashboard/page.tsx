@@ -13,6 +13,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ActionQueue from '@/components/dashboard/ActionQueue';
 import NeedsDecisionCard from '@/components/dashboard/NeedsDecisionCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import SubscriptionGate from '@/components/SubscriptionGate';
 import StaffOnline from '@/components/dashboard/StaffOnline';
 import NewsView from '@/components/dashboard/NewsView';
 import WelcomeView from '@/components/dashboard/WelcomeView';
@@ -60,6 +61,8 @@ function DashboardPageContent() {
 
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
+  // How many staff the shop (or the picked branch) has at all: 0 shows "No staff yet", not "0 online".
+  const [staffTotal, setStaffTotal] = useState<number | null>(null);
 
   const storeId = store?.id;
 
@@ -75,6 +78,7 @@ function DashboardPageContent() {
         const raw: StaffPresence[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const FIVE_MIN = 5 * 60 * 1000;
         const now = Date.now();
+        setStaffTotal(raw.filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId).length);
         const online = raw
           // StaffController::index has no server-side branch_id filter (unlike
           // jobs/appointments/analytics), so this widget filters client-side —
@@ -149,24 +153,26 @@ function DashboardPageContent() {
   // The backend reads start_date/end_date, not a 'period' string — converting
   // client-side (same pattern as the Reports page) so the period buttons
   // actually re-scope the query instead of silently refetching this month.
+  // Local calendar day, not toISOString() — UTC shifts Manila midnight back a day.
+  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const getDateRangeForChartPeriod = (period: string): { start_date?: string; end_date?: string } => {
     const now = new Date();
     if (period === 'this_month') {
       return {
-        start_date: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-        end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+        start_date: ymd(new Date(now.getFullYear(), now.getMonth(), 1)),
+        end_date: ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
       };
     }
     if (period === 'last_3_months') {
       return {
-        start_date: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0],
-        end_date: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+        start_date: ymd(new Date(now.getFullYear(), now.getMonth() - 2, 1)),
+        end_date: ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
       };
     }
     if (period === 'this_year') {
       return {
-        start_date: new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0],
-        end_date: new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0],
+        start_date: ymd(new Date(now.getFullYear(), 0, 1)),
+        end_date: ymd(new Date(now.getFullYear(), 11, 31)),
       };
     }
     // 'all_time' — omit date params entirely so the query is unbounded.
@@ -267,14 +273,14 @@ function DashboardPageContent() {
       <section>
         <h2 className="text-eyebrow-accent mb-3">Financial Snapshot</h2>
 
-        {/* Four equal stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Four equal stat cards — 2 col on mobile & tablet, 4 col on desktop */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           {/* Outstanding Balance — hero card */}
-          <div className="bg-espresso rounded-xl p-5 text-white flex flex-col justify-between min-h-[120px]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
+          <div className="bg-espresso rounded-xl p-3.5 sm:p-5 text-white flex flex-col justify-between min-h-[104px] sm:min-h-[120px] min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] sm:tracking-[0.12em] text-white/70 leading-tight">
               Outstanding Balance
             </p>
-            <p className="text-figure text-2xl sm:text-3xl font-bold mt-3 break-words">
+            <p className="text-figure text-[17px] min-[375px]:text-xl sm:text-2xl lg:text-xl xl:text-3xl font-bold mt-2 sm:mt-3 break-words">
               {peso(data?.total_outstanding_balance)}
             </p>
           </div>
@@ -285,12 +291,12 @@ function DashboardPageContent() {
             { label: 'Active Orders', value: (data?.total_jobs ?? 0) - (data?.completed_jobs ?? 0), icon: Scissors },
             { label: "Today's Appointments", value: todayAppointments.length, icon: Calendar },
           ].map(stat => (
-            <div key={stat.label} className="bg-surface border border-line rounded-xl p-5 flex flex-col justify-between min-h-[120px]">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">{stat.label}</p>
+            <div key={stat.label} className="bg-surface border border-line rounded-xl p-3.5 sm:p-5 flex flex-col justify-between min-h-[104px] sm:min-h-[120px] min-w-0">
+              <div className="flex items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-ink-muted leading-tight min-w-0">{stat.label}</p>
                 <stat.icon size={15} className="text-ink-faint shrink-0" />
               </div>
-              <p className="text-figure text-2xl font-semibold text-ink mt-3 break-words">{stat.value}</p>
+              <p className="text-figure text-[17px] min-[375px]:text-xl sm:text-2xl lg:text-xl xl:text-2xl font-semibold text-ink mt-2 sm:mt-3 break-words">{stat.value}</p>
             </div>
           ))}
         </div>
@@ -379,16 +385,19 @@ function DashboardPageContent() {
 
         {/* Staff Online — 2 of 5 cols */}
         <div className="lg:col-span-2">
-          <StaffOnline onlineStaff={onlineStaff} />
+          <StaffOnline onlineStaff={onlineStaff} staffTotal={staffTotal} canAddStaff={canViewAnalytics} />
         </div>
       </div>
 
       {/* ── Section 5: Performance Charts (self-contained) ───────────────── */}
-      <DashboardCharts
-        data={data}
-        activePeriod={chartPeriod}
-        onPeriodChange={handleChartPeriod}
-      />
+      {/* Visual dashboard & analytics (charts) is a Pro feature: a lower plan sees the upgrade panel. */}
+      <SubscriptionGate feature="analytics">
+        <DashboardCharts
+          data={data}
+          activePeriod={chartPeriod}
+          onPeriodChange={handleChartPeriod}
+        />
+      </SubscriptionGate>
         </>
       )}
     </div>

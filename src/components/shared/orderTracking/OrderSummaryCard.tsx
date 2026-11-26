@@ -36,6 +36,10 @@ export default function OrderSummaryCard({ order }: Readonly<{ order: TrackedOrd
   const hasReferences =
     (order.reference_images && order.reference_images.length > 0) || !!order.design_link || !!order.reference_link;
 
+  // A request the shop has not priced yet (quotation-priced service): ₱0 here is "no price yet", not "free" or "unpaid".
+  // A ₱0 free fix starts Confirmed, so it is never caught by this.
+  const awaitingPrice = order.status === 'pending' && !order.quotation_flow?.quotation_status && Number(order.total_amount || 0) <= 0;
+
   return (
     <div className="card-soft p-4">
       <div className="flex items-start gap-3">
@@ -136,8 +140,17 @@ export default function OrderSummaryCard({ order }: Readonly<{ order: TrackedOrd
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-line pt-4 md:grid-cols-4">
-        <DataCell label="Total" value={peso(order.total_amount)} />
-        <DataCell label="Balance" value={peso(order.balance)} sub={String(order.payment_status).replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())} />
+        {awaitingPrice ? (
+          <>
+            <DataCell label="Total" value="Waiting for the shop's price" />
+            <DataCell label="Balance" value="—" sub="Nothing to pay yet" />
+          </>
+        ) : (
+          <>
+            <DataCell label="Total" value={peso(order.total_amount)} />
+            <DataCell label="Balance" value={peso(order.balance)} sub={String(order.payment_status).replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())} />
+          </>
+        )}
         <DataCell label="Placed" value={new Date(order.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })} sub={new Date(order.created_at).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })} />
         <DataCell
           label="Due"

@@ -65,7 +65,7 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
           <OrderTrackingView
             order={order}
             quotation={order.quotation_flow ? (
-              <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} />
+              <QuotationApprovalCard orderId={Number(id)} flow={order.quotation_flow} status={order.status} dueDate={order.due_date} onApproved={load} storeSlug={order.store?.slug} branchId={order.store_branch_id} />
             ) : order.garment_check ? (
               <GarmentCheckCard orderId={Number(id)} check={order.garment_check} dropOff={order.drop_off} onAnswered={load} />
             ) : null}
@@ -73,7 +73,8 @@ export default function MyOrderDetailPage({ params }: Readonly<{ params: Promise
                Payments (each payment and the shop's decision), then Report a problem on a completed order. */
             actions={
               <div className="space-y-4">
-                <OrderReceiptBreakdown order={order} />
+                {/* Nothing to summarise until the shop prices the request. */}
+                {Number(order.total_amount || 0) > 0 && <OrderReceiptBreakdown order={order} />}
                 {order.measurement_data && (
                   <OrderMeasurementsCard measurements={order.measurement_data} peopleCount={order.people_count} />
                 )}

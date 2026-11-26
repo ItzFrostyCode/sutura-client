@@ -10,6 +10,8 @@ export interface ServicePricing {
   service_id: number;
   label: string;
   amount: string;
+  covers?: OptionCovers | null;
+  sold_as?: OptionSoldAs | null;
 }
 
 export interface ServiceField {
@@ -148,7 +150,8 @@ export interface PricingTierInput {
  */
 export function deriveTiersFromService(service: Service): PricingTierInput[] {
   if (service.pricing && service.pricing.length > 0) {
-    return service.pricing.map(p => ({ label: p.label, amount: p.amount ? String(Number(p.amount)) : '' }));
+    // covers / sold_as ride along unchanged (not edited on the service page), so saving never clears them.
+    return service.pricing.map(p => ({ label: p.label, amount: p.amount ? String(Number(p.amount)) : '', covers: p.covers ?? '', sold_as: p.sold_as ?? '' }));
   }
   return (service.tags || []).map(tag => ({ label: tag, amount: '' }));
 }

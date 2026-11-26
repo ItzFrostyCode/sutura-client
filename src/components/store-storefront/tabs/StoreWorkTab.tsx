@@ -1,9 +1,12 @@
 import React from 'react';
+import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { PublicStorePost, StoreProfile } from '../types';
 import { Service } from '@/components/services/serviceHelpers';
 import StoreWorkPostCard from '../work/StoreWorkPostCard';
 import StoreWorkCreatePostForm from '../work/StoreWorkCreatePostForm';
+import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 
 interface StoreWorkTabProps {
   readonly posts: PublicStorePost[];
@@ -48,21 +51,33 @@ export default function StoreWorkTab({
   removePostImage,
   onOpenLightbox,
 }: StoreWorkTabProps) {
+  const { isGated } = useSubscriptionTier();
+  const portfolioGated = isOwnerViewingOwnStore && isGated('portfolio');
+
   if (posts.length === 0 && !isOwnerViewingOwnStore) return null;
 
   return (
     <section aria-labelledby="store-work-title" className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 id="store-work-title" className="mobile-h2 text-ink">
+          <h2 id="store-work-title" className="mobile-h2 text-ink flex items-center gap-2">
             Our Work
+            {portfolioGated && <PlanTierTag plan="Pro" />}
           </h2>
           <p className="mobile-body-sm text-ink-muted mt-1">
             A look at recent custom orders we&apos;ve completed for happy customers.
           </p>
         </div>
 
-        {isOwnerViewingOwnStore && !isAddingPost && (
+        {isOwnerViewingOwnStore && portfolioGated ? (
+          <Link
+            href="/dashboard/billing"
+            className="shrink-0 min-h-[44px] h-[48px] flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink text-sm font-semibold px-4 rounded-lg transition-colors whitespace-nowrap shadow-xs"
+          >
+            <PlanTierTag plan="Pro" />
+            <span>Upgrade to Post</span>
+          </Link>
+        ) : isOwnerViewingOwnStore && !isAddingPost && (
           <button
             type="button"
             onClick={() => setIsAddingPost(true)}
@@ -73,7 +88,7 @@ export default function StoreWorkTab({
         )}
       </div>
 
-      {isOwnerViewingOwnStore && isAddingPost && (
+      {isOwnerViewingOwnStore && !portfolioGated && isAddingPost && (
         <StoreWorkCreatePostForm
           postImageUrls={postImageUrls}
           postUploading={postUploading}

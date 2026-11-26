@@ -48,7 +48,7 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
       className={`group/svc flex min-w-0 flex-col overflow-hidden rounded-xl border bg-[#FAF7F4] transition-colors ${hovered ? 'border-taupe bg-sunken ring-2 ring-taupe/20' : 'border-line hover:border-line-strong'}`}
     >
       {/* The photo runs edge to edge: no margin at the top, left or right. */}
-      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-sunken lg:aspect-[2/1]">
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-sunken lg:aspect-[3/1]">
         {service.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={getMediaUrl(service.image_url)} alt={service.name} className="h-full w-full object-cover object-top" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -66,8 +66,8 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
       </div>
 
       {/* The details have the margin. */}
-      <div className="flex min-w-0 flex-col gap-1 p-2.5">
-        <h4 className="line-clamp-3 break-words text-xs font-semibold leading-snug lg:line-clamp-2 lg:min-h-[2lh] text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
+      <div className="flex min-w-0 flex-col gap-1 p-2.5 lg:gap-0.5 lg:p-2">
+        <h4 className="line-clamp-3 break-words text-xs font-semibold leading-snug lg:line-clamp-1 text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
         <p className="line-clamp-1 break-words text-xs font-medium text-taupe-dark" title={kind}>{kind}</p>
         {onSale ? (
           <p className="flex items-center gap-1.5">

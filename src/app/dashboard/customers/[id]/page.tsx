@@ -22,7 +22,7 @@ import CustomerTabNav, { CustomerTabType } from '@/components/customers/profile/
 
 // The screen's content column: matches the dashboard shell's header edges (pr-4 / lg:px-6), so the title row and
 // the main panel line up with the top bar instead of running deeper than it.
-const COL = 'mx-auto w-full max-w-[1600px] px-4 sm:px-6';
+const COL = 'mx-auto w-full max-w-[1600px] px-[var(--dash-gutter)]';
 
 export default function CustomerProfilePage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const resolvedParams = use(params);

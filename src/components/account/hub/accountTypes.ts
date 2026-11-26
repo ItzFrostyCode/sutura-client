@@ -69,6 +69,16 @@ export const GUEST_MENU_ITEMS = [
   { label: 'Settings', Icon: Settings },
 ];
 
+/** The calendar view of the hub's appointments: one month, with previous / next and a way back to this month. */
+export interface HubCalendar {
+  cells: CalendarCell[];
+  monthLabel: string;
+  isCurrentMonth: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+}
+
 export interface CalendarCell {
   key: string;
   num: number | null;

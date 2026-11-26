@@ -18,7 +18,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
   const [selectedVariation, setSelectedVariation] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [quantity, setQuantity] = useState<number>(1);
   // Set only by handleBulkOrder now — the plain made-to-order path that
   // used to also set this (and its own orderSubmitting/orderError
@@ -259,18 +258,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
       ? item.color.trim()
       : (isRealVariationLabel ? selectedVariation : (selectedImage ? colorFromFilename(selectedImage) : '')));
 
-  const handleToggleAddOn = () => {
-    // Add-ons are purely informational on catalog design detail pages
-  };
-
-  const basePrice = item?.pricing?.amount != null ? Number(item.pricing.amount) : (Number(item?.price) || 0);
-  const computedPrice = basePrice > 0 ? {
-    base: basePrice,
-    sizeExtra: 0,
-    addOnsTotal: 0,
-    total: basePrice,
-  } : null;
-
   // The design's worked price (its service's price, plus any extra charge) — never its old stored price.
   // A design that needs a quote sends none, so the booking shows no price for it.
   const refPriceParam = (it: CatalogItem) => {
@@ -300,9 +287,6 @@ export function useCatalogItemDetail(storeId: string, itemId: string) {
     colorOptions,
     selectedSize,
     setSelectedSize,
-    selectedAddOns,
-    handleToggleAddOn,
-    computedPrice,
     quantity,
     setQuantity,
     minQuantity,

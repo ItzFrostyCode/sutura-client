@@ -3,12 +3,10 @@ import { canonicalGarment } from '@/lib/garmentTaxonomy';
 import { emptySizeChart, type SizeChartValue } from '@/components/shared/SizeChartEditor';
 import { emptyRequirementsDraft, requirementsPayload, requirementsToDraft, validateRequirements, type RequirementsDraft } from '@/components/requirements/requirementsDraft';
 import type { PublicService } from '@/components/store-storefront/types';
-import { SET_NEEDS_BOTH } from '@/lib/orderUnits';
 
-// 'type' / 'garments' / 'capabilities' are the create steps for "what you do"; the detail page edits all three
-// together as 'work'. 'spec' is the prices & add-ons box (and where it shows on the shop page).
-// 'workprices' is card 1 of the customer page ("What they do & prices"): the work and the prices edited together.
-export type ServiceSection = 'photo' | 'info' | 'type' | 'garments' | 'capabilities' | 'work' | 'spec' | 'workprices' | 'chart' | 'description' | 'booking' | 'requirements';
+// The boxes of the service page, in Bongo's order: 1 Specification (Category, Service type, Pricing options),
+// 2 Reference Chart, 3 Description, 4 Booking Form, 5 Requirements — plus the photo and the name/price/time box.
+export type ServiceSection = 'photo' | 'info' | 'spec' | 'chart' | 'description' | 'booking' | 'requirements';
 
 /** Rush for this service and the own-fabric deduction, as typed. */
 export interface ServiceCharges {
@@ -58,8 +56,10 @@ export interface ServiceDraft {
   custom_fields: ServiceField[];
   roster_fields: ServiceField[];
   requirements: RequirementsDraft;
-
-  showcase_category?: string;
+  /** The storefront "Service Categories" chip it sits under (Specification → Category). */
+  showcase_category: string;
+  /** Specification → Service type (the uniform type for a uniform service). */
+  service_leaf_type: string;
 }
 
 function normalizeCustomFields(fields?: any[] | null): ServiceField[] {
@@ -120,10 +120,19 @@ export function toDraft(service: Service): ServiceDraft {
     custom_fields: normalizeCustomFields(service.custom_fields),
     roster_fields: normalizeRosterFields(service.roster_fields),
     requirements: requirementsToDraft(service),
+    showcase_category: service.showcase_category ?? SHOWCASE_FOR[service.service_category ?? ''] ?? '',
+    service_leaf_type: service.service_leaf_type ?? '',
   } satisfies ServiceDraft;
 }
 
-const ANY_GARMENT_GROUPS = ['alterations_repairs', 'garment_customization'];
+/** A service saved before it had a Category: the shop-page chip its kind of work belongs under. */
+const SHOWCASE_FOR: Record<string, string> = {
+  custom_tailoring: 'custom_tailoring',
+  alterations_repairs: 'alterations_repairs',
+  uniform_production: 'uniform',
+  printing_sublimation: 'sports',
+  garment_customization: 'embroidery',
+};
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '', description: '', base_price: '', price_display: 'starting', estimated_days: '', estimated_days_max: '', turnaround_depends: false, min_order_qty: '1',
@@ -131,11 +140,11 @@ export const emptyServiceDraft = (): ServiceDraft => ({
   tiers: [{ label: '', amount: '', covers: '', sold_as: '' }],
   charges: chargesFrom(null),
   image_url: '', sizeChart: emptySizeChart, custom_fields: [], roster_fields: [], requirements: emptyRequirementsDraft(),
+  showcase_category: '', service_leaf_type: '',
 });
 
 // Shared by the edit boxes and the create steps, so "required" means the same in both.
 export function validateSection(section: ServiceSection, d: ServiceDraft): string | null {
-  if (section === 'workprices') return validateSection('work', d) ?? validateSection('spec', d);
   if (section === 'info') {
     if (!d.name.trim()) return 'The service needs a name.';
     if (d.price_display === 'fixed' && !(Number(d.base_price) > 0)) return 'A fixed price needs the price. Choose "Starting price" or "Quotation required" if it varies.';
@@ -145,29 +154,12 @@ export function validateSection(section: ServiceSection, d: ServiceDraft): strin
       if (d.estimated_days_max !== '' && Number(d.estimated_days_max) <= from) return `The "to" days must be ${from + 1} or higher — or leave it blank.`;
     }
   }
-  if (section === 'type' || section === 'work') {
-    if (!d.service_category) return 'Pick the kind of work this service is.';
-  }
-  // Alterations and customization may take any garment; every other service must say which garments it works on.
-  if ((section === 'garments' || section === 'work') && d.service_category && !ANY_GARMENT_GROUPS.includes(d.service_category) && d.garment_types.length === 0) {
-    return 'Select at least one garment this service works on. Not in the list? Add it under “Other garments”.';
-  }
-  if ((section === 'capabilities' || section === 'work') && d.capabilities.includes('bulk_orders')) {
-    if (!d.min_order_qty || Number(d.min_order_qty) < 2) return 'Enter the group order minimum: 2 people or more.';
-  }
   if (section === 'spec') {
-    const hasTiers = d.tiers.some((t) => t.label.trim() !== '');
-    const halfFilled = d.tiers.some((t) => t.amount.trim() !== '' && t.label.trim() === '');
-    if (halfFilled) return 'Enter a label for every price or add-on you entered.';
-    if (d.tiers.some((t) => t.sold_as === 'set' && t.covers !== 'both')) return SET_NEEDS_BOTH;
-    const c = d.charges;
-    if (c.rush === 'custom' && c.rushMode === 'percent' && !(Number(c.rushPercent) >= 1 && Number(c.rushPercent) <= 200)) return 'Enter the rush percentage (1 to 200), or choose "Same as the shop".';
-    if (c.rush === 'custom' && c.rushMode === 'per_piece' && !(Number(c.rushPerPiece) >= 1)) return 'Enter the rush fee per piece, or choose "Same as the shop".';
-    if (c.ownFabric !== '' && !(Number(c.ownFabric) >= 0)) return 'The own-fabric deduction must be a peso amount.';
-    const priced = Number(d.base_price) > 0 || d.tiers.some((t) => t.label.trim() !== '' && Number(t.amount) > 0);
-    if (d.price_display !== 'quotation' && !priced && !hasTiers) {
-      return 'Add a price or a priced option, or choose "Quotation required" under Basics.';
-    }
+    if (!d.showcase_category || !d.service_category) return 'Pick a category.';
+    // Customers narrow Uniform by its type, so a uniform service needs one.
+    if (d.service_category === 'uniform_production' && !d.service_leaf_type) return 'Pick the uniform type.';
+    if (d.tiers.every((t) => t.label.trim() === '')) return 'Add at least one priced item.';
+    if (d.tiers.some((t) => t.amount.trim() !== '' && t.label.trim() === '')) return 'Enter a name for every price you entered.';
   }
   if (section === 'requirements') return validateRequirements(d.requirements);
   return null;
@@ -202,6 +194,8 @@ export function buildServicePayload(service: Service | null, draft: ServiceDraft
     // Worked out again on the server from the same three fields (Service::deriveOrderTypes).
     service_types: orderTypesOf(draft),
     service_category: draft.service_category || null,
+    showcase_category: draft.showcase_category || null,
+    service_leaf_type: draft.service_leaf_type || null,
     garment_types: draft.garment_types,
     capabilities: draft.capabilities,
     base_price: draft.base_price.trim() === '' || isNaN(Number(draft.base_price)) ? null : Number.parseFloat(draft.base_price),
@@ -238,12 +232,7 @@ export function chargesPayload(c: ServiceCharges) {
 const SECTION_FIELDS: Record<ServiceSection, (keyof ServiceDraft)[]> = {
   photo: ['image_url'],
   info: ['name', 'base_price', 'price_display', 'estimated_days', 'estimated_days_max', 'turnaround_depends'],
-  type: ['service_category'],
-  garments: ['garment_types'],
-  capabilities: ['capabilities', 'min_order_qty'],
-  work: ['service_category', 'garment_types', 'capabilities', 'min_order_qty'],
-  spec: ['tiers', 'charges'],
-  workprices: ['service_category', 'garment_types', 'capabilities', 'min_order_qty', 'tiers', 'charges'],
+  spec: ['showcase_category', 'service_category', 'service_leaf_type', 'service_types', 'tiers'],
   chart: ['sizeChart'],
   description: ['description'],
   booking: ['custom_fields', 'roster_fields'],

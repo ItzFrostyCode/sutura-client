@@ -63,6 +63,12 @@ export function formatClock(hhmm: string): string {
  * The line a person wants about the hours: "Closes 6:00 PM" while open, otherwise when it opens next
  * ("Opens 9:00 AM" later today, "Opens Tuesday 9:00 AM" on a later day). null when no hours are on file.
  */
+/** "Open now · Closes 6:00 PM" / "Closed · Opens tomorrow 8:30 AM" — the hours as one readable line, or null. */
+export function hoursSummary(operating_hours?: OperatingHours | string | null): { open: boolean; state: string; text: string } | null {
+  const l = hoursLine(operating_hours);
+  return l ? { open: l.open, state: l.open ? (l.soon ? 'Closes soon' : 'Open now') : 'Closed', text: l.text } : null;
+}
+
 export function hoursLine(operating_hours?: OperatingHours | string | null): { open: boolean; text: string; soon?: boolean } | null {
   if (!operating_hours) return null;
   let parsed: OperatingHours;

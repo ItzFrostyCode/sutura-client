@@ -65,8 +65,8 @@ export default function BillingPage() {
     return (
       <div className="space-y-6">
         <div>
-          <div className="h-7 w-48 bg-line rounded-md animate-pulse" />
-          <div className="h-4 w-96 bg-line rounded-md animate-pulse mt-2" />
+          <div className="h-7 w-48 max-w-full bg-line rounded-md animate-pulse" />
+          <div className="h-4 w-full max-w-96 bg-line rounded-md animate-pulse mt-2" />
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -149,6 +149,7 @@ export default function BillingPage() {
         upgradingTo={upgradingTo}
         hasPendingRequest={pendingRequest !== null || Boolean(scheduled?.scheduled_payment_id)}
         scheduledPlanId={scheduled?.scheduled_plan_id ?? null}
+        onTrial={currentSubscription?.status === 'trial'}
         onSubscribe={choosePlan}
       />
 

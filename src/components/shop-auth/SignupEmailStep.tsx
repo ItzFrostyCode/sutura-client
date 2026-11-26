@@ -8,6 +8,7 @@ import DisabledHint from './DisabledHint';
 import IntentChip, { useShopIntentLabel } from './IntentChip';
 import { EMAIL_INPUT_PROPS, FIELD, LABEL, PRIMARY_BTN, TITLE } from './AuthShell';
 import type { OwnerSignupState } from './useOwnerSignup';
+import { SHOP_EMAIL_TAKEN } from './useOwnerSignup';
 
 export default function SignupEmailStep({ s }: { readonly s: OwnerSignupState }) {
   const intent = useShopIntentLabel();
@@ -27,7 +28,8 @@ export default function SignupEmailStep({ s }: { readonly s: OwnerSignupState })
             value={s.email} onChange={(e) => s.setEmail(e.target.value)} className={`${FIELD} ${s.emailError ? 'border-danger' : ''}`} />
           {s.emailError ? (
             <p id="su-email-error" role="alert" className="mt-1.5 text-sm text-danger">
-              {s.emailError} Already your shop&apos;s account? <Link href="/login?as=store" className="font-bold underline underline-offset-2">Sign in</Link>.
+              {s.emailError}
+              {s.emailError === SHOP_EMAIL_TAKEN && <> Already your shop&apos;s account? <Link href="/login?as=store" className="font-bold underline underline-offset-2">Sign in</Link>.</>}
             </p>
           ) : (
             <p className="mt-1.5 text-xs text-ink-muted">Use your shop&apos;s own email, not one you use as a customer. We&apos;ll send a link to confirm it.</p>

@@ -13,7 +13,7 @@ interface SubscriptionGateProps {
 // ── Labels shown in the lock overlay ──────────────────────────────────────────
 const FEATURE_LABELS: Record<GatedFeature, string> = {
   catalog:            'Apparel Catalog Showcase',
-  portfolio:          'Apparel Catalog Showcase',
+  portfolio:          'Portfolio Work Showcase',
   staff:              'Staff Management',
   analytics:          'Visual Dashboard & Analytics',
   notifications:      'SMS/Email Notifications',
@@ -23,6 +23,7 @@ const FEATURE_LABELS: Record<GatedFeature, string> = {
   featured_visibility:'Featured Shop Visibility',
   custom_branding:    'Custom Branding',
   advanced_dashboard: 'Branch Comparison Reports',
+  multi_branch:       'Multi-Branch Management',
 };
 
 // ── Which plan unlocks each feature ──────────────────────────────────────────
@@ -38,12 +39,13 @@ const REQUIRED_PLAN: Record<GatedFeature, 'Pro' | 'Premium'> = {
   featured_visibility:'Premium',
   custom_branding:    'Premium',
   advanced_dashboard: 'Premium',
+  multi_branch:       'Premium',
 };
 
 // ── Feature descriptions shown below the lock title ──────────────────────────
 const FEATURE_DESC: Record<GatedFeature, string> = {
   catalog:            "Showcase your work with a photo-rich catalog visible to customers browsing your shop profile.",
-  portfolio:          "Showcase your work with a photo-rich catalog visible to customers browsing your shop profile.",
+  portfolio:          "Showcase completed orders with photos and captions on your public shop profile.",
   staff:              "Add staff members, assign job stages, and manage your whole team from one place.",
   analytics:          "Get a bird\u2019s-eye view of your shop with visual charts for revenue, orders, and customers.",
   notifications:      "Automatically send SMS or email updates to customers when their order status changes.",
@@ -53,6 +55,7 @@ const FEATURE_DESC: Record<GatedFeature, string> = {
   featured_visibility:"Get pinned as a \u201cFeatured Shop\u201d at the top of relevant search results.",
   custom_branding:    "Apply your own shop colors, logo, and identity across your public shop profile.",
   advanced_dashboard: "Compare revenue, orders and workload across all of your branches side by side.",
+  multi_branch:       "Open and manage multiple physical store branches across Davao City.",
 };
 
 export default function SubscriptionGate({ feature, children }: Readonly<SubscriptionGateProps>) {
@@ -69,14 +72,14 @@ export default function SubscriptionGate({ feature, children }: Readonly<Subscri
     const isPremiumGate = requiredPlan === 'Premium';
 
     return (
-      <div className="relative min-h-[450px] w-full rounded-3xl overflow-hidden flex items-center justify-center p-8 bg-canvas/30 border border-line">
+      <div className="relative min-h-[340px] sm:min-h-[450px] w-full rounded-2xl sm:rounded-3xl overflow-hidden flex items-center justify-center p-4 sm:p-8 bg-canvas/30 border border-line">
         {/* Blurred content ghost */}
         <div className="absolute inset-0 blur-[6px] opacity-10 select-none pointer-events-none">
           {children}
         </div>
 
         {/* Lock Overlay Card */}
-        <div className="relative z-10 max-w-sm w-full bg-surface border border-line rounded-2xl p-8 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="relative z-10 max-w-sm w-full bg-surface border border-line rounded-2xl p-5 sm:p-8 text-center animate-in fade-in zoom-in-95 duration-200">
           {/* Icon */}
           <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
             isPremiumGate

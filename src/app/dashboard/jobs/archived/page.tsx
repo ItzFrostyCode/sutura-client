@@ -25,7 +25,7 @@ export default function ArchivedOrdersPage() {
     if (user && !allowed) router.replace('/dashboard/jobs');
   }, [user, allowed, router]);
 
-  if (!allowed) return <ApplePage><div className="p-6"><TableSkeleton rows={4} cols={4} /></div></ApplePage>;
+  if (!allowed) return <ApplePage><div className="px-[var(--dash-gutter)] py-6"><TableSkeleton rows={4} cols={4} /></div></ApplePage>;
 
   return (
     <ApplePage>
@@ -39,7 +39,7 @@ export default function ArchivedOrdersPage() {
         </div>
       </AppleBar>
 
-      <div className="space-y-4 p-4 sm:p-6">
+      <div className="space-y-4 px-[var(--dash-gutter)] py-4 sm:py-6">
         <SearchInput value={a.search} onChange={a.setSearch} placeholder="Search order no., customer or item" onCanvasBackground className="max-w-md" />
 
         {a.loading ? (

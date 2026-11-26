@@ -35,8 +35,8 @@ export const TERMS: readonly LegalSectionData[] = [
   ] },
   { n: 4, title: 'Shop owners: plans and payment', audience: 'owners', blocks: [{ ul: [
     'Using SUTURA as a shop requires an active plan or the free trial. Each plan sets how many branches and staff accounts you may have and which features are included. Current plans and prices are on the For shops page.',
-    'A new shop gets a free trial of 14 days on the Basic plan. It starts when the SUTURA team approves your shop, not when you apply, and costs nothing.',
     'Plans are billed monthly or yearly, in advance, in Philippine pesos. SUTURA does not collect payment automatically: you pay by QR Ph (GCash or Maya) or bank transfer, upload your receipt, and the team checks it.',
+    'A new shop can try the plan it picks free for 14 days, once. The days start when the SUTURA team approves your shop, not when you apply, and it costs nothing.',
     'When a plan or the trial ends and is not renewed, your shop is hidden from customers until you renew. Your records stay.',
     'You may upgrade your plan. A downgrade is not allowed while your branches or staff accounts are over the new plan’s limits; reduce them first.',
     'Payments are not refunded, and a term is not cancelled for a refund of its unused part.',

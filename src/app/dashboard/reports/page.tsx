@@ -136,6 +136,12 @@ export default function ReportsPage() {
   const getDateRangeForPeriod = reportDateRange;
 
   useEffect(() => {
+    // Wait until the shop's plan resolves: Basic sees the upgrade panel and shouldn't fetch or export report data.
+    if (tierLoading) return;
+    if (!canLoadStaffReports) {
+      setTimeout(() => setLoading(false), 0);
+      return;
+    }
     // Matches the backend's role:store_owner,branch_manager gate on GET /analytics
     // — plain staff can't hit this endpoint, so skip the fetch rather than 403.
     if (!store?.id || !(isStoreOwner || user?.roles?.[0]?.name === 'branch_manager')) {
@@ -168,7 +174,7 @@ export default function ReportsPage() {
 
     fetchAnalytics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store?.id, period, user?.id, selectedBranchId, isStoreOwner]);
+  }, [store?.id, period, user?.id, selectedBranchId, isStoreOwner, tierLoading, canLoadStaffReports]);
 
   // Branch performance comparison — owner-only strategic view, only worth
   // fetching once there's actually more than one branch to compare.
@@ -380,6 +386,7 @@ export default function ReportsPage() {
         onExportExcel={() => void handleExportExcel()}
         exportingExcel={exportingExcel}
         onPrint={handlePrint}
+        locked={!tierLoading && isGated('reports')}
       />
 
       <SubscriptionGate feature="reports">
@@ -397,7 +404,9 @@ export default function ReportsPage() {
           />
 
           {isStoreOwner && branches.length > 1 && (
-            <BranchComparisonTable data={branchComparison} loading={branchComparisonLoading} />
+            <SubscriptionGate feature="advanced_dashboard">
+              <BranchComparisonTable data={branchComparison} loading={branchComparisonLoading} />
+            </SubscriptionGate>
           )}
 
           {isStoreOwner && (

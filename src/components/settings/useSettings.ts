@@ -83,6 +83,63 @@ const DEFAULT_HOURS = {
   sunday: { is_open: false, open: '09:00', close: '18:00' },
 };
 
+/** A store from the API as the About tab's fields (the owner's edit form and the customer's read-only view use the same). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function storeToSettings(s: any): StoreSettingsData {
+  return {
+    name: s.name || '',
+    description: s.description || '',
+    logo_path: s.logo_path || '',
+    banner_path: s.banner_path || '',
+    address: s.address || '',
+    landmark: s.landmark || '',
+    city: s.city || '',
+    province: s.province || '',
+    phone: s.phone || '',
+    email: s.email || '',
+    booking_policy: s.booking_policy || '',
+    booking_questions: Array.isArray(s.booking_questions) ? s.booking_questions : [],
+    max_appointments_per_day: s.max_appointments_per_day ?? null,
+    latitude: s.latitude || '',
+    longitude: s.longitude || '',
+    social_links: Array.isArray(s.social_links)
+      ? s.social_links
+      : (s.social_links && typeof s.social_links === 'object'
+        ? Object.entries(s.social_links).map(([k, v]) => ({ label: k.charAt(0).toUpperCase() + k.slice(1), url: v as string }))
+        : []),
+    gallery_images: Array.isArray(s.gallery_images) ? s.gallery_images : [],
+    business_type: s.business_type || 'tailoring_store',
+    operating_hours: s.operating_hours || DEFAULT_HOURS,
+    fitting_fee: s.fitting_fee ?? 0,
+    fitting_limit: s.fitting_limit ?? 3,
+    fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
+    fitting_visit_days: s.fitting_visit_days ?? 7,
+    fitting_message: s.fitting_message ?? '',
+    repair_requires_downpayment: !!s.repair_requires_downpayment,
+    rush_available: s.rush_available !== false && s.rush_available !== 0,
+    rush_fee_mode: s.rush_fee_mode === 'per_piece' ? 'per_piece' : 'percent',
+    rush_fee_percent: Number(s.rush_fee_percent ?? 30),
+    rush_fee_per_piece: Number(s.rush_fee_per_piece ?? 0),
+    cancellation_policy: s.cancellation_policy || '',
+    default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
+    default_measurement_unit: s.default_measurement_unit === 'cm' ? 'cm' : 'in',
+    default_fitting_requirement: s.default_fitting_requirement ?? 'optional',
+    default_payment_policy: s.default_payment_policy ?? 'deposit',
+    default_payment_percent: s.default_payment_percent ?? 50,
+    specializations: Array.isArray(s.specializations) ? s.specializations : [],
+    custom_services: Array.isArray(s.custom_services) ? s.custom_services : [],
+    is_featured: !!s.is_featured,
+    is_hidden: !!s.is_hidden,
+    gcash_number: s.gcash_number || '',
+    gcash_account_name: s.gcash_account_name || '',
+    bank_name: s.bank_name || '',
+    bank_account_number: s.bank_account_number || '',
+    bank_account_name: s.bank_account_name || '',
+    gcash_qr_path: s.gcash_qr_path || '',
+    bank_qr_path: s.bank_qr_path || '',
+  };
+}
+
 export function useSettings() {
   const { store, setAuth, user, token, staffProfile } = useAuthStore();
   const toast = useToast();
@@ -160,59 +217,7 @@ export function useSettings() {
       api
         .get(`/stores/${store.id}`)
         .then(res => {
-          const s = res.data.data;
-          const loaded: StoreSettingsData = {
-            name: s.name || '',
-            description: s.description || '',
-            logo_path: s.logo_path || '',
-            banner_path: s.banner_path || '',
-            address: s.address || '',
-            landmark: s.landmark || '',
-            city: s.city || '',
-            province: s.province || '',
-            phone: s.phone || '',
-            email: s.email || '',
-            booking_policy: s.booking_policy || '',
-            booking_questions: Array.isArray(s.booking_questions) ? s.booking_questions : [],
-            max_appointments_per_day: s.max_appointments_per_day ?? null,
-            latitude: s.latitude || '',
-            longitude: s.longitude || '',
-            social_links: Array.isArray(s.social_links)
-              ? s.social_links
-              : (s.social_links && typeof s.social_links === 'object'
-                ? Object.entries(s.social_links).map(([k, v]) => ({ label: k.charAt(0).toUpperCase() + k.slice(1), url: v as string }))
-                : []),
-            gallery_images: Array.isArray(s.gallery_images) ? s.gallery_images : [],
-            business_type: s.business_type || 'tailoring_store',
-            operating_hours: s.operating_hours || DEFAULT_HOURS,
-            fitting_fee: s.fitting_fee ?? 0,
-            fitting_limit: s.fitting_limit ?? 3,
-            fitting_limit_policy: s.fitting_limit_policy === 'block' ? 'block' : 'fee',
-            fitting_visit_days: s.fitting_visit_days ?? 7,
-            fitting_message: s.fitting_message ?? '',
-            repair_requires_downpayment: !!s.repair_requires_downpayment,
-            rush_available: s.rush_available !== false && s.rush_available !== 0,
-            rush_fee_mode: s.rush_fee_mode === 'per_piece' ? 'per_piece' : 'percent',
-            rush_fee_percent: Number(s.rush_fee_percent ?? 30),
-            rush_fee_per_piece: Number(s.rush_fee_per_piece ?? 0),
-            cancellation_policy: s.cancellation_policy || '',
-            default_measurement_requirement: s.default_measurement_requirement ?? 'shop',
-            default_measurement_unit: s.default_measurement_unit === 'cm' ? 'cm' : 'in',
-            default_fitting_requirement: s.default_fitting_requirement ?? 'optional',
-            default_payment_policy: s.default_payment_policy ?? 'deposit',
-            default_payment_percent: s.default_payment_percent ?? 50,
-            specializations: Array.isArray(s.specializations) ? s.specializations : [],
-            custom_services: Array.isArray(s.custom_services) ? s.custom_services : [],
-            is_featured: !!s.is_featured,
-            is_hidden: !!s.is_hidden,
-            gcash_number: s.gcash_number || '',
-            gcash_account_name: s.gcash_account_name || '',
-            bank_name: s.bank_name || '',
-            bank_account_number: s.bank_account_number || '',
-            bank_account_name: s.bank_account_name || '',
-            gcash_qr_path: s.gcash_qr_path || '',
-            bank_qr_path: s.bank_qr_path || '',
-          };
+          const loaded = storeToSettings(res.data.data);
           setFormData(loaded);
           savedDataRef.current = loaded;
           setLoading(false);
@@ -363,8 +368,8 @@ export function useSettings() {
         setAuth(user, token, res.data.data, staffProfile || undefined);
       }
       return true;
-    } catch {
-      toast.error('Failed to save settings. Please try again.');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to save settings. Please try again.'));
       return false;
     } finally {
       setSaving(false);
