@@ -43,7 +43,7 @@ export default function AppointmentDetailNotices({ appt, isPastDue }: { readonly
       )}
 
       {appt.previous_scheduled_at && appt.status !== 'pending' && !['cancelled', 'rejected'].includes(appt.status) && (
-        <p className="mobile-caption mt-3 text-ink-muted">Moved from {new Date(appt.previous_scheduled_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
+        <p className="mobile-caption mt-3 text-ink-muted">Moved from {new Date(appt.previous_scheduled_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
       )}
 
       {hasHandOff && (

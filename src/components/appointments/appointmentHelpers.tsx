@@ -127,7 +127,6 @@ export interface AppointmentItemData {
   unit_price?: number | null;
   selected_size?: string | null;
   selected_color?: string | null;
-  add_ons?: string[] | null;
   notes?: string | null;
   service?: {
     id: number;

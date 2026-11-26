@@ -23,6 +23,8 @@ import StoreApplicationGate from '@/components/dashboard/StoreApplicationGate';
 import ChangePasswordGate from '@/components/dashboard/ChangePasswordGate';
 import { withRedirect } from '@/lib/authRedirect';
 import { TrialBanner, useLatestSubscription } from '@/components/billing/TrialNotice';
+import { useSubscriptionTier, requiredPlanLabel, type GatedFeature } from '@/hooks/useSubscriptionTier';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 import ProductTourRunner from '@/components/tour/ProductTourRunner';
 
 const SIDEBAR_KEY = 'sutura.sidebar';
@@ -126,6 +128,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   const roleNames = user?.roles?.map(r => r.name) || [];
   const isStoreOwner = roleNames.includes('store_owner');
   const latestSubscription = useLatestSubscription(store?.id, isStoreOwner);
+  const { isGated } = useSubscriptionTier();
   const isBranchManager = roleNames.includes('branch_manager') || Boolean(staffProfile?.is_branch_manager);
   const isStaff = roleNames.includes('staff') || Boolean(staffProfile);
   const canViewAnalytics = isStoreOwner || isBranchManager;
@@ -165,7 +168,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   }
 
   // Grouped by how the shop is used: the day's work, then the shop's setup, then the reports.
-  const NAV_GROUPS: { title: string; collapsible?: boolean; items: { name: string; path: string; icon: React.ElementType }[] }[] = [
+  const NAV_GROUPS: { title: string; collapsible?: boolean; items: { name: string; path: string; icon: React.ElementType; gate?: GatedFeature }[] }[] = [
     {
       title: 'Daily Work',
       items: [
@@ -179,7 +182,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         // detail, appointment detail), never acting on it here.
         ...((isStoreOwner || isBranchManager) ? [{ name: 'Payments', path: '/dashboard/payments', icon: CreditCard }] : []),
         // Texts wait for the shop to check the number and wording before they are sent.
-        ...((isStoreOwner || isBranchManager) ? [{ name: 'SMS', path: '/dashboard/sms', icon: MessageSquare }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'SMS', path: '/dashboard/sms', icon: MessageSquare, gate: 'notifications' as const }] : []),
       ],
     },
     {
@@ -188,14 +191,14 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
       items: [
         ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Services', path: '/dashboard/services', icon: Package }] : []),
         ...((isStoreOwner || isBranchManager || isStaff) ? [{ name: 'Staffs', path: '/dashboard/staff', icon: UserCog }] : []),
-        ...((isStoreOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2 }] : []),
+        ...((isStoreOwner || isBranchManager) ? [{ name: 'Branches', path: '/dashboard/branches', icon: Building2, gate: 'multi_branch' as const }] : []),
       ],
     },
     {
       title: 'Reports & Activity',
       collapsible: true,
       items: [
-        ...(canViewAnalytics ? [{ name: 'Reports & Insights', path: '/dashboard/reports', icon: LayoutDashboard }] : []),
+        ...(canViewAnalytics ? [{ name: 'Reports & Insights', path: '/dashboard/reports', icon: LayoutDashboard, gate: 'reports' as const }] : []),
         ...(isStoreOwner ? [{ name: 'Audit Log', path: '/dashboard/audit-log', icon: ScrollText }] : []),
       ],
     },
@@ -210,22 +213,25 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
   /** One nav item, used by both the desktop rail and the mobile drawer.
    *  Collapsed mode drops the label and shows a tooltip instead — the
    *  active state stays legible as a taupe left rail + sunken fill. */
-  const renderNavItem = (item: { name: string; path: string; icon: React.ElementType }, showLabel: boolean) => {
+  const renderNavItem = (item: { name: string; path: string; icon: React.ElementType; gate?: GatedFeature }, showLabel: boolean) => {
     const active = isActivePath(item.path);
     const Icon = item.icon;
+    // Not on this shop's plan: a small "Pro"/"Premium" tag, so it's clear before opening (the page shows the upgrade panel).
+    const lockedTo = item.gate && isGated(item.gate) ? requiredPlanLabel(item.gate) : null;
     return (
       <Link
         href={item.path}
-        title={showLabel ? undefined : item.name}
+        title={showLabel ? undefined : (lockedTo ? `${item.name} (${lockedTo})` : item.name)}
         className={`group relative flex items-center gap-3 rounded-lg text-[14px] transition-colors min-h-[42px]
           ${showLabel ? 'px-3 mx-3' : 'justify-center mx-2 px-0'}
           ${active ? 'bg-sunken text-ink font-semibold' : 'text-ink-muted font-medium hover:bg-canvas hover:text-ink'}`}
       >
         <Icon size={18} className={`shrink-0 ${active ? 'text-taupe' : 'text-ink-muted group-hover:text-ink-body'}`} />
-        {showLabel && <span className="truncate">{item.name}</span>}
+        {showLabel && <span className="min-w-0 flex-1 truncate">{item.name}</span>}
+        {showLabel && lockedTo && <PlanTierTag plan={lockedTo} className="ml-auto" />}
         {!showLabel && (
           <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1.5 rounded-md bg-ink text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
-            {item.name}
+            {item.name}{lockedTo ? ` · ${lockedTo}` : ''}
           </span>
         )}
       </Link>
@@ -283,10 +289,10 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
     <div className="h-dvh bg-canvas flex flex-col overflow-hidden print:h-auto print:overflow-visible">
       {/* ── Header: Aligned 1:1 with desktop rail width ── */}
       <header className="print:hidden h-16 bg-surface border-b border-line flex items-center sticky top-0 z-50">
-        {/* Left Box: 100% matched to rail width (w-60 / w-16) with vertical border-r */}
+        {/* Left Box: 100% matched to rail width (w-[272px] / w-16) with vertical border-r */}
         <div
-          className={`h-full flex items-center px-3 sm:px-3.5 gap-2 min-w-0 flex-1 lg:flex-none lg:shrink-0 transition-[width] duration-200 ease-out lg:border-r border-line ${
-            railExpanded ? 'w-auto lg:w-60' : 'w-auto lg:w-16 lg:justify-center'
+          className={`h-full flex items-center pl-[var(--dash-gutter)] pr-2.5 sm:pr-3 lg:pl-3 gap-1.5 sm:gap-2 min-w-0 flex-1 lg:flex-none lg:shrink-0 transition-[width] duration-200 ease-out lg:border-r border-line ${
+            railExpanded ? 'w-auto lg:w-[272px]' : 'w-auto lg:w-16 lg:justify-center'
           }`}
         >
           {/* With the rail collapsed, pointing at the logo swaps it for the expand icon. */}
@@ -322,12 +328,12 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         </div>
 
         {/* Right Main Header Area: Breadcrumbs over main workspace, tools on right */}
-        <div className="h-full flex shrink-0 items-center justify-between gap-3 pr-3 sm:pr-4 lg:min-w-0 lg:flex-1 lg:px-6">
+        <div className="h-full flex min-w-0 shrink items-center justify-between gap-2 sm:gap-3 pr-[var(--dash-gutter)] lg:flex-1 lg:pl-[var(--dash-gutter)]">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <HeaderBreadcrumbs pathname={pathname} />
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* 3x3 Grid Navigation Launcher (left of Help) */}
             <button
               type="button"
@@ -376,7 +382,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           onMouseEnter={() => sidebarMode === 'hover' && setRailHovered(true)}
           onMouseLeave={() => sidebarMode === 'hover' && setRailHovered(false)}
           className={`print:hidden hidden lg:block shrink-0 bg-surface border-r border-line transition-[width] duration-200 ease-out ${
-            railExpanded ? 'w-60' : 'w-16'
+            railExpanded ? 'w-[272px]' : 'w-16'
           }`}
         >
           {renderNavColumn(railExpanded)}
@@ -386,7 +392,7 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
         {shopOpen && (
           <>
             <button type="button" aria-label="Close shop menu" onClick={closeShop} className="fixed inset-0 z-30 border-none bg-ink/30 p-0 lg:hidden" />
-            <div className="absolute inset-y-0 left-0 z-40 w-72 max-w-[85vw] border-r border-line bg-surface lg:w-60">
+            <div className="absolute inset-y-0 left-0 z-40 w-72 max-w-[85vw] border-r border-line bg-surface lg:w-[272px]">
               <StoreBranchPanel onClose={closeShop} />
             </div>
           </>
@@ -424,7 +430,8 @@ function DashboardLayoutContent({ children }: { readonly children: React.ReactNo
           {/* Keyed by branch: switching branches remounts the page, so every
               list, count and form starts empty and reloads for the new branch
               instead of briefly showing the previous branch's data. */}
-          <div key={selectedBranchId ?? 'all'} className="p-4 print:p-0">
+          {/* Side margin = the header's (--dash-gutter), so the page lines up with the logo, breadcrumbs and buttons. */}
+          <div key={selectedBranchId ?? 'all'} className="py-4 px-[var(--dash-gutter)] print:p-0">
             {isStoreOwner && !pathname?.startsWith('/dashboard/billing') && (
               <div className="mb-4 print:hidden"><TrialBanner sub={latestSubscription} /></div>
             )}

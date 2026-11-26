@@ -5,13 +5,13 @@ import { Check } from 'lucide-react';
 import AccountHeader from '@/components/account/AccountHeader';
 
 const STEPS = [
-  'Sign up with your shop’s email and confirm it',
-  'Tell us about your shop and send your business documents',
-  'The SUTURA team reviews them — your 14 free days start when your shop is approved',
+  'Fill in the application: you, your shop and your business documents',
+  'Choose a plan: pay with GCash, or start with 14 days free',
+  'The SUTURA team reviews it. Once approved, we email your shop login and a temporary password',
 ] as const;
 
-// Entry point into shop sign-up (/signup/shop: email first, then the application after signing in). A shop is its own
-// login, reviewed by the System Admin, so it can't reuse this customer account's email — the copy says so up front.
+// Entry point into the shop application (/register/store, same as the team lead's). The shop gets its own login
+// (…@sutura.shop) from the System Admin on approval, so this customer email can still receive it.
 export default function BecomeShopOwnerPage() {
   return (
     <div>
@@ -28,11 +28,11 @@ export default function BecomeShopOwnerPage() {
         </ol>
         <p className="mobile-body-sm mt-4 flex items-start gap-2 rounded-xl bg-sunken p-3 text-ink-body">
           <Check size={16} className="mt-0.5 shrink-0 text-taupe-dark" aria-hidden />
-          Use a different email from this customer account — your shop gets its own sign-in.
+          Your shop gets its own sign-in (like yourshop@sutura.shop). You can use this same email to receive it.
         </p>
       </div>
-      <Link href="/signup/shop" className="mt-6 flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-base font-semibold text-white transition-opacity active:opacity-80">
-        Start Shop Sign-Up
+      <Link href="/register/store" className="mt-6 flex h-[52px] w-full items-center justify-center rounded-full bg-ink text-base font-semibold text-white transition-opacity active:opacity-80">
+        Start Application
       </Link>
     </div>
   );

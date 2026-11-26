@@ -20,6 +20,9 @@ interface OpeningHoursCardProps {
   readonly onOpenHoursModal: () => void;
 }
 
+/** The anchor "Hours not set · Set hours" in the profile header scrolls to. */
+export const OPENING_HOURS_ANCHOR = 'store-opening-hours';
+
 // Hours already has its own working, immediately-reflecting edit flow (a
 // dedicated modal + a targeted local merge back into the storefront's
 // `store` state) — kept as-is rather than folded into the shared
@@ -30,8 +33,10 @@ export default function OpeningHoursCard({
   canEdit,
   onOpenHoursModal,
 }: OpeningHoursCardProps) {
+  // No hours on file yet: say so — never a week of "Closed" the shop never chose.
+  const hasHours = Boolean(operatingHours && Object.keys(operatingHours).length > 0);
   return (
-    <div className="bg-surface border border-line p-4 sm:p-5">
+    <div id={OPENING_HOURS_ANCHOR} className="scroll-mt-24 bg-surface border border-line p-4 sm:p-5 transition-shadow">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Clock size={16} className="text-taupe" />
@@ -39,14 +44,19 @@ export default function OpeningHoursCard({
         </div>
         <span
           className={`text-xs font-semibold px-3 py-1 border ${
-            isStoreCurrentlyOpen
+            hasHours && isStoreCurrentlyOpen
               ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
               : 'text-ink-muted bg-sunken border-line'
           }`}
         >
-          {isStoreCurrentlyOpen ? 'Open now' : 'Closed now'}
+          {!hasHours ? 'Hours not set' : isStoreCurrentlyOpen ? 'Open now' : 'Closed now'}
         </span>
       </div>
+      {!hasHours ? (
+        <p className="text-sm text-ink-muted">
+          {canEdit ? 'Add your opening hours so customers know when to visit and book.' : 'The shop has not added its opening hours yet.'}
+        </p>
+      ) : (
       <div className="space-y-1 text-sm">
         {DAYS.map(({ key, label }) => {
           const dayHours = operatingHours?.[key];
@@ -75,14 +85,25 @@ export default function OpeningHoursCard({
           );
         })}
       </div>
+      )}
       {canEdit && (
-        <button
-          type="button"
-          onClick={onOpenHoursModal}
-          className="mt-3 min-h-[44px] text-xs font-semibold text-taupe hover:underline flex items-center gap-1.5 cursor-pointer"
-        >
-          <Pencil size={13} /> Edit Hours
-        </button>
+        hasHours ? (
+          <button
+            type="button"
+            onClick={onOpenHoursModal}
+            className="mt-3 min-h-[44px] text-xs font-semibold text-taupe hover:underline flex items-center gap-1.5 cursor-pointer"
+          >
+            <Pencil size={13} /> Edit Hours
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenHoursModal}
+            className="mt-3 min-h-11 px-4 bg-ink text-white text-sm font-semibold hover:bg-black flex items-center gap-2 cursor-pointer"
+          >
+            <Clock size={15} /> Set opening hours
+          </button>
+        )
       )}
     </div>
   );

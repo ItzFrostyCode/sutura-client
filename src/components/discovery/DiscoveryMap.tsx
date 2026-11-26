@@ -31,8 +31,10 @@ export function buildStorePinIcon(
   isOpen?: boolean,
   selected = false,
   bounce = false,
+  /** A ring colour of the caller's own (the admin shops map colours it by plan). */
+  ring?: string,
 ): L.DivIcon {
-  const ringColor = selected ? '#9A8073' : '#2D2A26';
+  const ringColor = ring ?? (selected ? '#9A8073' : '#2D2A26');
   const statusColor = isOpen ? '#22c55e' : '#ef4444';
   const logoHtml = logoPath
     ? `<img src="${getMediaUrl(logoPath)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`

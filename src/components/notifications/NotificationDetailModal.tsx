@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   X,
   ChevronLeft,
@@ -42,6 +42,7 @@ export default function NotificationDetailModal({
   hasPrevious = false,
 }: NotificationDetailModalProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [deleting, setDeleting] = useState(false);
 
   if (!notif) return null;
@@ -49,15 +50,29 @@ export default function NotificationDetailModal({
   const sender = getSenderInfo(notif);
   const data = notif.data || {};
   const actionLabel = getActionLabel(notif);
-  const actionUrl = data.action_url;
+  const rawActionUrl = data.action_url;
+  const actionUrl = rawActionUrl === '/dashboard/settings' ? '/dashboard/account-settings' : rawActionUrl;
   const sentFormatted = formatDateTime(notif.created_at);
   const timeAgo = relativeHoursAgo(notif.created_at);
 
   const handleAction = () => {
     onClose();
-    if (actionUrl) {
-      router.push(actionUrl);
+    if (!actionUrl) return;
+    // "Shop Approved" (store_approved) sets action_url="/dashboard". When the
+    // owner is already on /dashboard, pushing "/dashboard" closes the modal and
+    // leaves the screen unchanged — send them to the Welcome Guide tab (or
+    // Store Profile if already on Welcome Guide) so "View Details" actually acts.
+    if (actionUrl === '/dashboard' && pathname === '/dashboard') {
+      const currentTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
+      router.push(currentTab === 'welcome' ? '/dashboard/profile' : '/dashboard?tab=welcome');
+      return;
     }
+    if (actionUrl === pathname) {
+      document.querySelector('main[data-scroll-root]')?.scrollTo({ top: 0, behavior: 'smooth' });
+      router.refresh();
+      return;
+    }
+    router.push(actionUrl);
   };
 
   const handleDelete = async () => {
@@ -110,16 +125,16 @@ export default function NotificationDetailModal({
         {/* Metadata Header (From / Subject) */}
         <div className="space-y-2.5 pb-3 border-b border-line">
           {/* From Line */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-ink-muted w-14 shrink-0">From:</span>
-            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="text-xs font-bold text-ink-muted w-14 shrink-0 pt-1 sm:pt-0">From:</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
               <div className="w-8 h-8 rounded-xl bg-canvas border border-line flex items-center justify-center text-xs font-black text-taupe shrink-0 shadow-2xs">
                 {sender.initial}
               </div>
-              <span className="text-sm font-semibold text-[#0B7D8C] hover:underline cursor-default truncate">
+              <span className="text-sm font-semibold text-[#0B7D8C] hover:underline cursor-default truncate max-w-full">
                 {sender.name}
               </span>
-              <span className="text-xs text-ink-muted">
+              <span className="text-xs text-ink-muted break-words">
                 @ {sentFormatted} ({timeAgo})
               </span>
             </div>
@@ -128,7 +143,7 @@ export default function NotificationDetailModal({
           {/* Subject Line */}
           <div className="flex items-start gap-3">
             <span className="text-xs font-bold text-ink-muted w-14 shrink-0 pt-0.5">Subject:</span>
-            <p className="text-sm font-semibold text-ink leading-snug">
+            <p className="text-sm font-semibold text-ink leading-snug min-w-0 flex-1 break-words">
               {data.title || 'Notification Update'}
             </p>
           </div>

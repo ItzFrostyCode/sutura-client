@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Loader2, MessageSquareText } from 'lucide-react';
+import { Loader2, MessageSquareText } from 'lucide-react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { useToast } from '@/context/ToastContext';
@@ -39,17 +39,6 @@ export default function NotificationSettingsPage() {
   return (
     <div>
       <AccountHeader title="Notification Settings" backHref="/account/settings" />
-
-      <section aria-labelledby="ch-app" className="card-soft mb-4 flex items-start gap-3 p-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sunken text-taupe-dark"><Bell size={20} aria-hidden /></span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="ch-app" className="mobile-h4 text-ink">In-app notifications</h2>
-            <span className="mobile-caption shrink-0 rounded-full bg-sage/10 px-2.5 py-1 font-semibold text-sage">Always on</span>
-          </div>
-          <p className="mobile-body-sm mt-1 text-ink-muted">Every update on your job orders and appointments — each production stage, from order received to ready for pickup.</p>
-        </div>
-      </section>
 
       <section aria-labelledby="ch-sms" className="card-soft space-y-5 p-4">
         <div className="flex items-start gap-3">

@@ -2,6 +2,7 @@ import React from 'react';
 import { Building2, Mail, MapPin, Phone } from 'lucide-react';
 import { StoreSettingsData } from '@/components/settings/useSettings';
 import EditableCard from './EditableCard';
+import { cleanAddress } from '@/lib/cleanAddress';
 
 interface ContactInfoCardProps {
   readonly formData: StoreSettingsData;
@@ -66,7 +67,7 @@ export default function ContactInfoCard({ formData, onChange, isEditing, saving,
       <div className="divide-y divide-line/60">
         <Row label={<><Mail size={12} className="mr-1" />Email</>} value={formData.email} />
         <Row label={<><Phone size={12} className="mr-1" />Phone</>} value={formData.phone} />
-        <Row label={<><MapPin size={12} className="mr-1" />Address</>} value={[formData.address, formData.landmark].filter(Boolean).join(', ')} />
+        <Row label={<><MapPin size={12} className="mr-1" />Address</>} value={cleanAddress(formData.address, formData.landmark)} />
         <Row label="City / Province" value={[formData.city, formData.province].filter(Boolean).join(', ')} />
       </div>
     </EditableCard>

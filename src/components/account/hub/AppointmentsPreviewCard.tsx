@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { ChevronRight, Info } from 'lucide-react';
-import type { MyAppointment, CalendarCell } from './accountTypes';
+import { ChevronRight } from 'lucide-react';
+import type { MyAppointment, HubCalendar } from './accountTypes';
 import ApptViewToggle from './ApptViewToggle';
 import AppointmentPreviewItem from './AppointmentPreviewItem';
 import AppointmentMiniCalendar from './AppointmentMiniCalendar';
@@ -9,18 +9,16 @@ interface AppointmentsPreviewCardProps {
   appointments: MyAppointment[] | null;
   apptView: 'list' | 'calendar';
   setApptView: (view: 'list' | 'calendar') => void;
-  hasActiveAppointment: boolean;
   previewAppt: MyAppointment | null;
-  calCells: CalendarCell[];
+  calendar: HubCalendar;
 }
 
 export default function AppointmentsPreviewCard({
   appointments,
   apptView,
   setApptView,
-  hasActiveAppointment,
   previewAppt,
-  calCells,
+  calendar,
 }: Readonly<AppointmentsPreviewCardProps>) {
   const hasAny = appointments !== null && appointments.length > 0;
 
@@ -31,21 +29,14 @@ export default function AppointmentsPreviewCard({
         <ApptViewToggle view={apptView} onChange={setApptView} />
       </div>
 
-      {hasActiveAppointment && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-sunken px-3 py-2.5">
-          <Info size={16} className="mt-0.5 shrink-0 text-ink-muted" />
-          <p className="mobile-caption text-ink-body">One active appointment per shop at a time — move it to a new time or cancel it to book something else.</p>
-        </div>
-      )}
-
       {appointments === null && <p className="mobile-body-sm py-3 text-ink-muted">Loading…</p>}
       {appointments !== null && appointments.length === 0 && <p className="mobile-body-sm py-3 text-ink-muted">No appointments yet.</p>}
 
       {hasAny && apptView === 'list' && previewAppt && <AppointmentPreviewItem appt={previewAppt} />}
-      {hasAny && apptView === 'calendar' && <AppointmentMiniCalendar cells={calCells} />}
+      {hasAny && apptView === 'calendar' && <AppointmentMiniCalendar calendar={calendar} />}
 
       {hasAny && (
-        <Link href="/account/appointments" className="mt-3 flex h-12 items-center justify-between rounded-2xl bg-sunken px-4 text-sm font-semibold text-ink transition-opacity active:opacity-70">
+        <Link href="/account/appointments" className="mt-3 flex h-12 items-center justify-between rounded-2xl border border-line bg-surface px-4 text-sm font-semibold text-ink transition-colors hover:bg-sunken active:opacity-70">
           See all appointments <ChevronRight size={18} className="text-ink-faint" />
         </Link>
       )}

@@ -20,6 +20,8 @@ export default function CurrentPlanSection({
   busy,
 }: CurrentPlanSectionProps) {
   const { cancelled } = planRunState(currentSubscription);
+  // A free trial of any plan: say so on the card, the price is ₱0 until it ends.
+  const onTrial = currentSubscription?.status === 'trial';
   const endsOn = currentSubscription?.ends_at
     ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
     : '';
@@ -42,13 +44,20 @@ export default function CurrentPlanSection({
             <PlanIcon size={22} />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-white/70 mb-0.5">Active Subscription</p>
+            <p className="text-xs text-white/70 mb-0.5">{onTrial ? 'Free trial' : 'Active Subscription'}</p>
             <h3 className="font-heading text-2xl font-bold">
               {currentSubscription?.plan?.name ?? 'No Active Plan'}
             </h3>
           </div>
           <div className="text-right flex flex-col items-end gap-2">
-            {currentSubscription?.plan?.price_monthly != null && (
+            {onTrial ? (
+              <p className="font-heading text-3xl font-bold">
+                Free
+                {currentSubscription?.plan?.price_monthly != null && (
+                  <span className="block text-right text-xs font-normal text-white/70">then ₱{currentSubscription.plan.price_monthly.toLocaleString()}/mo</span>
+                )}
+              </p>
+            ) : currentSubscription?.plan?.price_monthly != null && (
               <p className="font-heading text-3xl font-bold">
                 ₱{currentSubscription.plan.price_monthly.toLocaleString()}
                 <span className="text-sm font-normal text-white/70">/mo</span>
@@ -57,7 +66,7 @@ export default function CurrentPlanSection({
             {currentSubscription?.status && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/15">
                 {cancelled ? <XCircle size={12} /> : <CheckCircle size={12} />}
-                {cancelled ? 'CANCELLED' : currentSubscription.status.toUpperCase()}
+                {cancelled ? 'CANCELLED' : onTrial ? 'FREE TRIAL' : currentSubscription.status.toUpperCase()}
               </span>
             )}
           </div>
@@ -68,7 +77,7 @@ export default function CurrentPlanSection({
           <div className="p-5 flex items-start gap-3">
             <Calendar size={16} className="text-white/70 mt-0.5 shrink-0" />
             <div>
-              <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">{cancelled ? 'Access Until' : 'Renewal Date'}</p>
+              <p className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mb-0.5">{cancelled ? 'Access Until' : onTrial ? 'Trial Ends' : 'Renewal Date'}</p>
               <p className="text-sm font-semibold">
                 {currentSubscription?.ends_at
                   ? new Date(currentSubscription.ends_at).toLocaleDateString('en-PH', {

@@ -13,6 +13,8 @@ export function useInbox(enabled: boolean) {
   const router = useRouter();
   const [list, setList] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  // Notifications with no action_url open a detail modal instead of navigating.
+  const [detailNotif, setDetailNotif] = useState<AppNotification | null>(null);
 
   useEffect(() => {
     if (!enabled) {
@@ -36,13 +38,27 @@ export function useInbox(enabled: boolean) {
   }, [unreadCount, loading]);
   const readCount = list.length - unreadCount;
 
+  const markRead = useCallback((id: string) => {
+    setList((prev) => prev.map((x) => (x.id === id ? { ...x, read_at: new Date().toISOString() } : x)));
+    void api.post(`/notifications/${id}/read`).catch(() => {});
+  }, []);
+
   const open = useCallback((n: AppNotification) => {
-    if (!n.read_at) {
-      setList((prev) => prev.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)));
-      void api.post(`/notifications/${n.id}/read`).catch(() => {});
+    if (!n.read_at) markRead(n.id);
+    if (n.data?.action_url) {
+      router.push(n.data.action_url);
+    } else {
+      // No destination: show the detail modal so "View Details" does something.
+      setDetailNotif(n);
     }
-    if (n.data?.action_url) router.push(n.data.action_url);
-  }, [router]);
+  }, [router, markRead]);
+
+  const closeDetail = useCallback(() => setDetailNotif(null), []);
+
+  const deleteDetail = useCallback((id: string) => {
+    setList((prev) => prev.filter((n) => n.id !== id));
+    setDetailNotif(null);
+  }, []);
 
   const markAllRead = useCallback(() => {
     const now = new Date().toISOString();
@@ -57,5 +73,5 @@ export function useInbox(enabled: boolean) {
     void api.post('/notifications/bulk-delete', { ids }).catch(() => {});
   }, [list]);
 
-  return { list, loading, unreadCount, readCount, open, markAllRead, clearRead };
+  return { list, loading, unreadCount, readCount, open, markAllRead, clearRead, detailNotif, closeDetail, deleteDetail };
 }

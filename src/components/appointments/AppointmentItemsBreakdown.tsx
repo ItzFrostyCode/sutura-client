@@ -7,7 +7,7 @@ interface AppointmentItemsBreakdownProps {
   storeSlug?: string;
 }
 
-/** What was asked for, one row per item: its full name (it wraps, never cut), its size / colour / add-ons, and how many pieces. */
+/** What was asked for, one row per item: its full name (it wraps, never cut), its size / colour, and how many pieces. */
 export default function AppointmentItemsBreakdown({ items, storeSlug }: AppointmentItemsBreakdownProps) {
   if (!items || items.length === 0) return null;
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -36,7 +36,6 @@ export default function AppointmentItemsBreakdown({ items, storeSlug }: Appointm
                 {(item.selected_size || item.selected_color) && (
                   <p className="mt-0.5 text-xs text-ink-muted">{[item.selected_size && `Size ${item.selected_size}`, item.selected_color && `Color ${item.selected_color}`].filter(Boolean).join(' · ')}</p>
                 )}
-                {item.add_ons && item.add_ons.length > 0 && <p className="mt-0.5 text-xs text-ink-muted">Add-ons: {item.add_ons.join(', ')}</p>}
                 {item.notes && <p className="mt-0.5 text-xs text-ink-muted">Note: {item.notes}</p>}
               </div>
               <span className="shrink-0 rounded-md border border-line bg-white px-2 py-1 text-xs font-semibold tabular-nums text-ink">{item.quantity} {item.quantity === 1 ? 'pc' : 'pcs'}</span>

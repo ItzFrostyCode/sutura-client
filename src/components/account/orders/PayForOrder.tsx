@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Landmark, Smartphone, Wallet } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import PayMethodDialog from './PayMethodDialog';
+import ShopPayChannels from './ShopPayChannels';
 import { usePayForOrder, type ShopPaymentMethod } from './usePayForOrder';
 
 interface PayForOrderProps {
@@ -18,9 +19,7 @@ interface PayForOrderProps {
   readonly onSubmitted: () => void;
 }
 
-const ICON: Record<string, React.ElementType> = { gcash: Smartphone, maya: Smartphone, bank_transfer: Landmark, other: Wallet };
-
-// "Pay for this order": the shop's payment methods as cards; tap one to see where to pay and send proof.
+// "Pay for this order": the shop's account (same card as the About tab), then one clear button to send the proof.
 export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount, balance, pending, requiredDeposit = 0, depositLabel = 'Deposit', active, onSubmitted }: Readonly<PayForOrderProps>) {
   const pay = usePayForOrder(orderId, storeSlug, branchId, onSubmitted);
   const [chosen, setChosen] = useState<ShopPaymentMethod | null>(null);
@@ -49,28 +48,20 @@ export default function PayForOrder({ orderId, storeSlug, branchId, totalAmount,
   return (
     <section id="pay" className="card-soft p-4 mb-4 scroll-mt-20" aria-label="Pay for this order">
       <h2 className="mobile-h4 text-ink">Pay for this order</h2>
-      <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. Choose where to pay, then send your proof.</p>
+      <p className="mobile-body-sm mt-1 text-ink-muted">₱{outstanding.toLocaleString()} left to pay. Pay the shop in your app, then send your proof here.</p>
       {requiredDeposit > 0 && totalAmount - balance + 0.005 < requiredDeposit && (
         <p className="mobile-body-sm mt-1 text-ink">The shop needs {depositLabel.toLowerCase()} (₱{requiredDeposit.toLocaleString()}) before it starts making your order.</p>
       )}
-      <ul className="mt-3 grid grid-cols-1 gap-3">
-        {pay.methods.map((m) => {
-          const Icon = ICON[m.kind] ?? Wallet;
-          return (
-            <li key={m.id}>
-              <button type="button" onClick={() => setChosen(m)} className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-2xl bg-sunken p-3 text-left transition-opacity active:opacity-70">
-                <Icon size={20} className="text-taupe shrink-0" />
-                {/* Name, account name, and the number on its own line — never cut off, so it can be read and typed in full. */}
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-ink">{m.name}</span>
-                  <span className="block break-words text-xs text-ink-muted">{m.account_name}</span>
-                  <span className="mt-0.5 block break-all font-mono text-sm text-ink">{m.account_number || 'Scan the QR code'}</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-4">
+        <ShopPayChannels
+          methods={pay.methods}
+          action={(m) => (
+            <button type="button" onClick={() => setChosen(m)} className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-ink px-4 text-base font-semibold text-white transition-opacity hover:opacity-90 active:opacity-80">
+              <Upload size={18} /> I&apos;ve paid — send proof
+            </button>
+          )}
+        />
+      </div>
       <PayMethodDialog
         method={chosen}
         outstanding={outstanding}

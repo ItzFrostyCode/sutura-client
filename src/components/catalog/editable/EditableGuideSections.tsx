@@ -21,7 +21,7 @@ interface EditableGuideSectionsProps {
 // the same numbered cards the customer sees, each editable on its own.
 export default function EditableGuideSections({ edit, sf }: Readonly<EditableGuideSectionsProps>) {
   return (
-    <div className="space-y-4 px-4 min-[375px]:px-6 min-[600px]:px-0">
+    <div className="space-y-4 px-[var(--dash-gutter)] min-[600px]:px-0">
       <div className="bg-white border border-line">
         <div className="flex items-center gap-2.5 px-4 min-h-12 border-b border-line text-sm font-bold uppercase tracking-wider text-ink">
           <span className="w-5 h-5 rounded-full bg-taupe text-white text-[11px] font-bold flex items-center justify-center shrink-0">1</span>

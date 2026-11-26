@@ -25,6 +25,9 @@ export interface PublicService {
   category?: string;
   service_type?: string;
   service_category?: string | null;
+  /** Which "Service Categories" chip it sits under on this tab. */
+  showcase_category?: string | null;
+  service_leaf_type?: string | null;
   categories?: string[];
   service_types?: string[];
   base_price: string;

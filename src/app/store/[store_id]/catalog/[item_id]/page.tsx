@@ -11,7 +11,6 @@ import CatalogHeroGallery from '@/components/store-catalog-detail/CatalogHeroGal
 import CatalogProductInfo from '@/components/store-catalog-detail/CatalogProductInfo';
 import CatalogColorSelector from '@/components/store-catalog-detail/CatalogColorSelector';
 import CatalogSizeSelector from '@/components/store-catalog-detail/CatalogSizeSelector';
-import CatalogAddOnsSelector from '@/components/store-catalog-detail/CatalogAddOnsSelector';
 import CatalogAccordionSections from '@/components/store-catalog-detail/CatalogAccordionSections';
 import CatalogRatingsSection from '@/components/store-catalog-detail/CatalogRatingsSection';
 import CatalogStoreProfileCard from '@/components/store-catalog-detail/CatalogStoreProfileCard';
@@ -21,7 +20,6 @@ import { useEmbedded } from '@/hooks/useEmbedded';
 import { designPriceLabel } from '@/lib/designPricing';
 import CatalogDesktopActionButtons from '@/components/store-catalog-detail/CatalogDesktopActionButtons';
 import CatalogDetailBreadcrumb from '@/components/store-catalog-detail/CatalogDetailBreadcrumb';
-import { getSocialUrl, getMessengerUrl } from '@/components/store-storefront/storeStorefrontHelpers';
 import ItemQuantitySelector from '@/components/shared/ItemQuantitySelector';
 
 export default function PublicProductDetailPage({
@@ -44,9 +42,6 @@ export default function PublicProductDetailPage({
     colorOptions,
     selectedSize,
     setSelectedSize,
-    selectedAddOns,
-    handleToggleAddOn,
-    computedPrice,
     quantity,
     setQuantity,
     minQuantity,
@@ -90,8 +85,6 @@ export default function PublicProductDetailPage({
   // "Order online" opens this design's service with the design already picked as the style to follow.
   const designServiceId = item.service?.id ?? item.service_id;
   const orderHref = designServiceId ? gate(`/store/${storeId}/order?service_id=${designServiceId}&design_id=${item.id}`) : null;
-  const facebookUrl = getSocialUrl(item.store?.social_links ?? undefined, 'facebook');
-  const messageHref = facebookUrl ? getMessengerUrl(facebookUrl) : null;
 
   return (
     <div ref={pageRef} className="min-h-full flex flex-col bg-canvas">
@@ -142,7 +135,7 @@ export default function PublicProductDetailPage({
           buyZone={
           <div className="px-4 min-[375px]:px-6 min-[600px]:px-0">
             {/* Name → Rating → Price → Production Estimate → Service/Fabric */}
-            <CatalogProductInfo item={item} computedPrice={computedPrice} />
+            <CatalogProductInfo item={item} />
 
             {/* Color row — only rendered when the item actually has more
                 than one color; picking a swatch switches the hero gallery
@@ -171,12 +164,6 @@ export default function PublicProductDetailPage({
               onViewOrder={id => router.push(`/account/orders/${id}`)}
             />
 
-            {/* Add-ons row (Design and Service add-ons clearly separated) */}
-            <CatalogAddOnsSelector
-              designAddOns={item.add_ons}
-              serviceAddOns={item.service?.pricing}
-            />
-
             {/* Quantity Selector */}
             <ItemQuantitySelector
               quantity={quantity}
@@ -185,7 +172,7 @@ export default function PublicProductDetailPage({
             />
 
             {/* Order online (desktop/tablet inline button) */}
-            <CatalogDesktopActionButtons orderHref={orderHref} messageHref={messageHref} />
+            <CatalogDesktopActionButtons orderHref={orderHref} />
           </div>
           }
         />
@@ -237,7 +224,7 @@ export default function PublicProductDetailPage({
       </main>
 
       {/* Mobile sticky bottom action bar */}
-      <CatalogBottomActionBar orderHref={orderHref} messageHref={messageHref} />
+      <CatalogBottomActionBar orderHref={orderHref} />
     </div>
   );
 }

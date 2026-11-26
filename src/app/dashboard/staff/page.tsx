@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import PageHeader from '@/components/shared/PageHeader';
-import { Plus } from 'lucide-react';
+import { Lock, Plus } from 'lucide-react';
 import SubscriptionGate from '@/components/SubscriptionGate';
+import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 import { Staff } from '@/components/staff/staffHelpers';
 import StaffFormModal from '@/components/staff/StaffFormModal';
 import StaffDeleteModal from '@/components/staff/StaffDeleteModal';
@@ -204,6 +207,8 @@ export default function StaffPage() {
   const isStoreOwner = roleNames.includes('store_owner');
   const isBranchManager = roleNames.includes('branch_manager') || (user as { staff_profile?: { is_branch_manager?: boolean } })?.staff_profile?.is_branch_manager;
   const canManageStaff = isStoreOwner || isBranchManager;
+  const { tier, maxStaff, staffUsage, loading: tierLoading } = useSubscriptionTier();
+  const staffLimitReached = !tierLoading && maxStaff !== -1 && (staffUsage ? staffUsage.used >= maxStaff : false);
 
   // ?new=1 (Home → Quick Actions) opens the Add Staff form right away, then
   // drops the flag so a refresh doesn't reopen it. The form starts empty.
@@ -228,34 +233,46 @@ export default function StaffPage() {
         description="Manage your tailors, cutters, seamstresses, and branch managers."
         actions={
           canManageStaff ? (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  name: '',
-                  email: '',
-                  password: '',
-                  phone: '',
-                  gender: '',
-                  role: 'tailor',
-                  additional_roles: [],
-                  specialization: '',
-                  hired_at: new Date().toISOString().split('T')[0],
-                  is_active: true,
-                  store_branch_id: '',
-                  is_branch_manager: false,
-                  bio: '',
-                  is_available: true,
-                });
-                setShowModal(true);
-              }}
-              data-tour="staff-create"
-              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
-            >
-              <Plus size={16} />
-              <span>Add Staff Member</span>
-            </button>
+            staffLimitReached ? (
+              <Link
+                href="/dashboard/billing"
+                title={`Your plan allows up to ${maxStaff} staff ${maxStaff === 1 ? 'member' : 'members'}. Upgrade to add more.`}
+                className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-4 py-2.5 rounded-xl font-semibold text-xs transition-all min-h-11"
+              >
+                <Lock size={15} />
+                <span>Upgrade for more staff</span>
+                <PlanTierTag plan={tier === 'basic' ? 'Pro' : 'Premium'} />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({
+                    name: '',
+                    email: '',
+                    password: '',
+                    phone: '',
+                    gender: '',
+                    role: 'tailor',
+                    additional_roles: [],
+                    specialization: '',
+                    hired_at: new Date().toISOString().split('T')[0],
+                    is_active: true,
+                    store_branch_id: '',
+                    is_branch_manager: false,
+                    bio: '',
+                    is_available: true,
+                  });
+                  setShowModal(true);
+                }}
+                data-tour="staff-create"
+                className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer min-h-11"
+              >
+                <Plus size={16} />
+                <span>Add Staff Member</span>
+              </button>
+            )
           ) : null
         }
       />

@@ -1,14 +1,41 @@
 import React from 'react';
-import { UserCog } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, UserCog } from 'lucide-react';
 import { StaffPresence } from './dashboardHelpers';
 
 interface StaffOnlineProps {
   readonly onlineStaff: StaffPresence[];
+  /** Staff the shop (or branch) has at all; null while loading. */
+  readonly staffTotal?: number | null;
+  readonly canAddStaff?: boolean;
 }
 
 export default function StaffOnline({
   onlineStaff,
+  staffTotal = null,
+  canAddStaff = false,
 }: StaffOnlineProps) {
+  // A shop with no staff yet: "0 online" would read like something is wrong. Say what to do instead.
+  if (staffTotal === 0) {
+    return (
+      <div className="bg-surface rounded-2xl border border-line p-6 flex flex-col text-ink">
+        <h2 className="text-[15px] font-semibold text-ink">Staff</h2>
+        <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+          <div className="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center mb-3">
+            <UserCog size={20} className="text-ink-faint" />
+          </div>
+          <p className="text-sm text-ink font-medium">No staff yet</p>
+          <p className="text-xs text-ink-faint mt-1 max-w-56">Add your tailors and staff so they can sign in and update orders. You&apos;ll see here who is online.</p>
+          {canAddStaff && (
+            <Link href="/dashboard/staff/new" className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-ink/90">
+              <Plus size={15} aria-hidden="true" /> Add staff
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-surface rounded-2xl border border-line p-6 flex flex-col text-ink">
       <div className="flex justify-between items-center mb-5">

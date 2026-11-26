@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Loader2, RotateCcw } from 'lucide-react';
+import { ChevronDown, Loader2, RotateCcw, X } from 'lucide-react';
 import type { PsgcItem } from '@/lib/psgc';
+import { FIELD, FIELD_ERROR, FieldError, LABEL, Req } from './ApplicationFields';
 
 const MAX_SHOWN = 200;
 
@@ -74,7 +75,10 @@ export default function AddressSelect({
     if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, shown.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
     else if (e.key === 'Enter') {
-      if (open && shown[active]) { e.preventDefault(); pick(shown[active]); }
+      // Never presses Continue: picks the highlighted match, or opens the list.
+      e.preventDefault();
+      if (open && shown[active]) pick(shown[active]);
+      else setOpen(true);
     } else if (e.key === 'Escape') { if (open) { e.preventDefault(); close(); } }
   };
 
@@ -82,11 +86,10 @@ export default function AddressSelect({
   const tone = loadError || error ? 'text-danger' : 'text-ink-muted';
 
   return (
-    <div className="relative">
-      <label htmlFor={id} className="block text-sm text-ink mb-2">
-        {label}
-        {required && <span className="text-danger">*</span>}
-        {optional && <span className="text-ink-muted"> (optional)</span>}
+    <div className="relative" data-field={id}>
+      <label htmlFor={id} className={LABEL}>
+        <span>{label}{required && <Req />}</span>
+        {optional && !required && <span className="font-normal text-ink-faint">Optional</span>}
       </label>
       <div className="relative">
         <input
@@ -110,11 +113,18 @@ export default function AddressSelect({
           onClick={() => setOpen(true)}
           onBlur={() => setTimeout(close, 120)}
           onKeyDown={onKeyDown}
-          className={`w-full min-h-12 py-3 pl-3.5 pr-10 border bg-surface text-ink text-base placeholder:text-ink-faint focus:outline-none transition-colors disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted ${
-            error || loadError ? 'border-danger focus:border-danger' : 'border-line-strong focus:border-ink'
-          }`}
+          className={`${FIELD} ${value ? 'pr-16' : 'pr-10'} ${error || loadError ? FIELD_ERROR : ''}`}
         />
-        <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted">
+        {/* Clear the pick (e.g. no district, to search the barangays of the whole city again). */}
+        {value && !disabled && !loading && (
+          <button type="button" aria-label={`Clear ${label}`} tabIndex={-1}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => { onChange(null); setQuery(''); inputRef.current?.focus(); }}
+            className="absolute right-9 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-ink-muted hover:bg-sunken hover:text-ink">
+            <X size={15} aria-hidden="true" />
+          </button>
+        )}
+        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted">
           {loading ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
         </span>
 
@@ -124,10 +134,10 @@ export default function AddressSelect({
             id={listId}
             role="listbox"
             aria-label={label}
-            className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto border border-ink bg-surface shadow-lg"
+            className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl bg-surface p-1 shadow-[0_10px_30px_rgba(0,0,0,0.14)] ring-1 ring-line/80"
           >
             {shown.length === 0 ? (
-              <li className="px-3.5 py-3 text-sm text-ink-muted">No match. Check the spelling, or pick from the list.</li>
+              <li className="px-3 py-3 text-[15px] text-ink-muted">No match. Check the spelling, or pick from the list.</li>
             ) : (
               shown.map((item, i) => (
                 <li
@@ -138,23 +148,24 @@ export default function AddressSelect({
                   // mousedown, not click: runs before the input's blur closes the list.
                   onMouseDown={(e) => { e.preventDefault(); pick(item); }}
                   onMouseEnter={() => setActive(i)}
-                  className={`flex min-h-11 cursor-pointer items-center px-3.5 text-sm ${
+                  className={`flex min-h-11 cursor-pointer items-center rounded-lg px-3 text-[15px] ${
                     i === active ? 'bg-sunken text-ink' : 'text-ink'
                   } ${item.code === value ? 'font-semibold' : ''}`}
                 >
-                  {item.name}
+                  <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                  {item.district && <span className="ml-3 shrink-0 text-xs text-ink-muted">{item.district}</span>}
                 </li>
               ))
             )}
             {filtered.length > MAX_SHOWN && (
-              <li className="px-3.5 py-2 text-xs text-ink-muted">Showing {MAX_SHOWN} of {filtered.length}. Keep typing to narrow it down.</li>
+              <li className="px-3 py-2 text-[13px] text-ink-muted">Showing {MAX_SHOWN} of {filtered.length}. Keep typing to narrow it down.</li>
             )}
           </ul>
         )}
       </div>
 
-      {message && (
-        <p id={messageId} role={error || loadError ? 'alert' : undefined} className={`mt-1.5 flex flex-wrap items-center gap-x-2 text-xs ${tone}`}>
+      {error && !loadError ? <FieldError id={messageId} message={error} /> : message && (
+        <p id={messageId} role={loadError ? 'alert' : undefined} className={`mt-1.5 flex flex-wrap items-center gap-x-2 text-[13px] ${tone}`}>
           {message}
           {loadError && onRetry && (
             <button type="button" onClick={onRetry} className="inline-flex min-h-8 items-center gap-1 font-semibold text-ink underline underline-offset-2">

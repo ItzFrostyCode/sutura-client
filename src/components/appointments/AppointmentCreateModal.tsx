@@ -154,7 +154,6 @@ export default function AppointmentCreateModal({
           basePrice: it.unit_price ? Number(it.unit_price) : null,
           selectedSize: it.selected_size ?? null,
           selectedColor: it.selected_color ?? null,
-          addOns: it.add_ons || [],
           notes: it.notes ?? null,
         })));
       } else if (editingApt.service) {
@@ -167,7 +166,6 @@ export default function AppointmentCreateModal({
           quantity: 1,
           minQuantity: 1,
           basePrice: null,
-          addOns: [],
         }]);
       } else {
         setWalkInItems([]);
@@ -231,7 +229,6 @@ export default function AppointmentCreateModal({
       quantity: Math.max(service.min_order_qty || 1, quantity),
       minQuantity: service.min_order_qty || 1,
       basePrice: typeof service.base_price === 'number' ? service.base_price : Number(service.base_price) || null,
-      addOns: [],
       customDetails: customDetails || null,
       notes: customDetails || null,
     };
@@ -264,7 +261,6 @@ export default function AppointmentCreateModal({
       quantity: Math.max(1, options.quantity || 1),
       minQuantity: 1,
       basePrice: typeof item.price === 'number' ? item.price : Number(item.price) || null,
-      addOns: [],
       customDetails: options.customDetails || null,
       notes: options.customDetails || null,
     };
@@ -302,7 +298,6 @@ export default function AppointmentCreateModal({
       quantity: it.quantity,
       selected_size: it.selectedSize || null,
       selected_color: it.selectedColor || null,
-      add_ons: it.addOns || null,
       notes: it.notes || it.customDetails || null,
     }));
 

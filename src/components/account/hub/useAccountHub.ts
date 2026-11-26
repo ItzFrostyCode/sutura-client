@@ -14,6 +14,11 @@ export function useAccountHub(isAuthenticated: boolean) {
   const [appointments, setAppointments] = useState<MyAppointment[] | null>(null);
   const [measurementCount, setMeasurementCount] = useState<number | null>(null);
   const [apptView, setApptView] = useState<'list' | 'calendar'>('list');
+  // The month the calendar view shows (its first day); starts on this month.
+  const [calMonth, setCalMonth] = useState(() => {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), 1);
+  });
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -38,11 +43,6 @@ export function useAccountHub(isAuthenticated: boolean) {
       .then((res) => setMeasurementCount((res.data.data ?? []).length))
       .catch(() => setMeasurementCount(0));
   }, [isAuthenticated]);
-
-  const hasActiveAppointment = useMemo(
-    () => (appointments ?? []).some((a) => a.status === 'pending' || a.status === 'confirmed'),
-    [appointments],
-  );
 
   const previewAppt = useMemo(() => {
     const list = appointments ?? [];
@@ -83,16 +83,15 @@ export function useAccountHub(isAuthenticated: boolean) {
 
   const calCells = useMemo<CalendarCell[]>(() => {
     const today = new Date();
-    const calMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const firstWeekday = calMonthStart.getDay();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const firstWeekday = calMonth.getDay();
+    const daysInMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate();
     const cells: CalendarCell[] = [];
 
     for (let i = 0; i < firstWeekday; i++) {
       cells.push({ key: `lead-${i}`, num: null, isToday: false, isPast: false, hasAppt: false });
     }
     for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(today.getFullYear(), today.getMonth(), d);
+      const date = new Date(calMonth.getFullYear(), calMonth.getMonth(), d);
       const key = dayKey(date);
       cells.push({
         key,
@@ -103,7 +102,17 @@ export function useAccountHub(isAuthenticated: boolean) {
       });
     }
     return cells;
-  }, [countsByDay]);
+  }, [countsByDay, calMonth]);
+
+  const now = new Date();
+  const calendar = {
+    cells: calCells,
+    monthLabel: calMonth.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' }),
+    isCurrentMonth: calMonth.getFullYear() === now.getFullYear() && calMonth.getMonth() === now.getMonth(),
+    onPrev: () => setCalMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1)),
+    onNext: () => setCalMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1)),
+    onToday: () => setCalMonth(new Date(now.getFullYear(), now.getMonth(), 1)),
+  };
 
   // Same rules as the Job Orders tabs the tiles open, so a tile's number always matches its tab.
   // Server counts (uncapped) win when present; the capped-list derivation below is the fallback
@@ -124,10 +133,9 @@ export function useAccountHub(isAuthenticated: boolean) {
     measurementCount,
     apptView,
     setApptView,
-    hasActiveAppointment,
     previewAppt,
     previewOrder,
-    calCells,
+    calendar,
     inProduction,
     readyForPickup,
     completed,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TABS } from './dashboardHelpers';
 import StoreVisibilityPill from './StoreVisibilityPill';
+import CurrentPlanPill from './CurrentPlanPill';
 import ScrollNav from '@/components/shared/ScrollNav';
 
 interface DashboardHeaderProps {
@@ -30,7 +31,7 @@ export default function DashboardHeader({
   toggleVisibility,
   visibilityLoading,
 }: Readonly<DashboardHeaderProps>) {
-  const today = new Date().toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' });
+  const today = new Date().toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
     <header className="flex flex-col gap-4 pb-4 border-b border-line">
@@ -39,7 +40,11 @@ export default function DashboardHeader({
           <h1 className="text-display text-2xl sm:text-3xl font-semibold text-ink">
             {timeGreeting()}, {userName.split(' ')[0] || 'there'}.
           </h1>
-          <p className="text-eyebrow mt-1">{today}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <p className="text-eyebrow">{today}</p>
+            {/* Which plan the shop is on (a free trial says so), always in view on Home. */}
+            <CurrentPlanPill />
+          </div>
         </div>
         <StoreVisibilityPill
           storeVisible={storeVisible}

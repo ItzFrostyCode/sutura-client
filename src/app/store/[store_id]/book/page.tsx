@@ -186,7 +186,6 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
                 refPrice={b.refPrice}
                 refSize={b.refSize}
                 refColor={b.refColor}
-                refAddOns={b.refAddOns}
                 selectedService={b.selectedService}
                 appointmentType={b.appointmentType}
                 date={b.date}

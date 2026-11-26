@@ -11,28 +11,28 @@ export default function AppointmentPreviewItem({ appt }: { readonly appt: MyAppo
   const type = TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type;
 
   return (
-    <div className="mt-3 rounded-2xl bg-sunken p-3.5">
+    <div className="mt-3 rounded-2xl border border-line bg-surface p-3.5">
       <div className="flex items-center gap-2">
         <StoreLogoAvatar
           src={appt.store?.logo_path}
           name={appt.store?.name ?? 'Store'}
-          className="w-7 h-7 rounded-full border border-line-strong shadow-none"
-          textClassName="text-xs font-serif font-bold text-taupe-dark"
+          className="w-10 h-10 rounded-full border border-line-strong shadow-none"
+          textClassName="text-sm font-serif font-bold text-taupe-dark"
         />
-        <span className="mobile-caption min-w-0 flex-1 truncate text-ink-muted">{appt.store?.name ?? 'Store'}</span>
+        <span className="mobile-body-sm min-w-0 flex-1 truncate font-semibold text-ink">{appt.store?.name ?? 'Store'}</span>
         <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
           <StatusIcon size={12} /> {meta.label}
         </span>
       </div>
       <div className="mt-2 flex items-center gap-1.5">
-        <span className="mobile-caption rounded-full bg-surface px-2 py-0.5 text-ink-muted">{type}</span>
-        {appt.intake_channel === 'walk_in' && <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold text-ink-muted">WALK-IN</span>}
+        <span className="mobile-caption rounded-full bg-sunken px-2 py-0.5 text-ink-muted">{type}</span>
+        {appt.intake_channel === 'walk_in' && <span className="rounded-full bg-sunken px-2 py-0.5 text-[10px] font-semibold text-ink-muted">WALK-IN</span>}
       </div>
       <h3 className="mobile-h4 mt-1.5 text-ink">{appt.service_name ?? type}</h3>
       <div className="mobile-caption mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-muted">
         <span className="flex items-center gap-1">
           <CalendarDays size={13} />
-          {scheduled.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} · {scheduled.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}
+          {scheduled.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })} · {scheduled.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}
         </span>
         {appt.branch && <span>{appt.branch.name}</span>}
       </div>

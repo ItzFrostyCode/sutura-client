@@ -17,12 +17,14 @@ import UnsavedChangesModal from '@/components/catalog/editable/UnsavedChangesMod
 import PauseDesignModal from '@/components/catalog/detail/PauseDesignModal';
 import CatalogOverviewTab from '@/components/catalog/detail/CatalogOverviewTab';
 import ApparelReviewNotice from '@/components/catalog/ApparelReviewNotice';
+import SubscriptionGate from '@/components/SubscriptionGate';
+import type React from 'react';
 
 // Same side padding the customer page gives its content blocks on phones
 // (the hero photo alone runs edge-to-edge).
-const PAD = 'px-4 min-[375px]:px-6 min-[600px]:px-0';
+const PAD = 'px-[var(--dash-gutter)] min-[600px]:px-0';
 
-export default function CatalogItemDetailPage({
+function CatalogItemDetailPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const resolvedParams = use(params);
@@ -154,12 +156,10 @@ export default function CatalogItemDetailPage({
   }
 
   return (
-    // -m-4 cancels the dashboard shell's own p-4, then the page takes the exact
-    // container the customer's Catalog Design Detail uses at each width:
-    // edge-to-edge on phones (content px-4 → px-6 from 375px), 10px at 600px,
-    // 32px from md, capped at max-w-7xl.
-    <div className="-m-4 animate-in fade-in duration-300 text-ink">
-    <div className="w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10 space-y-4">
+    // Cancels the dashboard shell's padding so the photo can run edge to edge on phones (like the customer's page);
+    // every other block keeps the shell's side margin (--dash-gutter), so it lines up with the header.
+    <div className="-my-4 -mx-[var(--dash-gutter)] animate-in fade-in duration-300 text-ink">
+    <div className="w-full max-w-7xl px-0 min-[600px]:px-[var(--dash-gutter)] py-0 min-[600px]:py-4 pb-24 min-[600px]:pb-10 space-y-4">
       <div className={`${PAD} pt-3 min-[600px]:pt-0`}>
       <CatalogItemHeader
         item={item}
@@ -212,4 +212,9 @@ export default function CatalogItemDetailPage({
     </div>
     </div>
   );
+}
+
+/** Opening / editing a design is a Pro feature (the server refuses edits too). */
+export default function CatalogItemDetailPageGated(props: React.ComponentProps<typeof CatalogItemDetailPage>) {
+  return <SubscriptionGate feature="catalog"><CatalogItemDetailPage {...props} /></SubscriptionGate>;
 }

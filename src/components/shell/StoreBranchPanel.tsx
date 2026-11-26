@@ -6,6 +6,8 @@ import { Check, Search, Building2, MapPin, Settings, Star } from 'lucide-react';
 import { useBranch } from '@/context/BranchContext';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
+import { PLAN_TONE } from '@/components/admin/ui/PlanPill';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 
 /** The trigger in the header carries this attribute so a click on it is not treated as "outside". */
 export const SHOP_TRIGGER_ATTR = 'data-shop-trigger';
@@ -37,7 +39,8 @@ const Label = ({ children }: Readonly<{ children: React.ReactNode }>) => (
 export default function StoreBranchPanel({ onClose }: Readonly<{ onClose: () => void }>) {
   const { store } = useAuthStore();
   const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
-  const { tier, loading: tierLoading } = useSubscriptionTier();
+  const { tier, loading: tierLoading, isGated } = useSubscriptionTier();
+  const branchesGated = !tierLoading && isGated('multi_branch');
   const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
 
@@ -69,7 +72,7 @@ export default function StoreBranchPanel({ onClose }: Readonly<{ onClose: () => 
             <p className="text-xs text-ink-muted">Store locations &amp; branch network</p>
           </div>
           {!tierLoading && (
-            <span className="shrink-0 rounded-full bg-sunken px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-taupe-dark">{tier}</span>
+            <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${PLAN_TONE[tier] ?? PLAN_TONE.basic}`}>{tier}</span>
           )}
         </div>
       </div>
@@ -110,8 +113,9 @@ export default function StoreBranchPanel({ onClose }: Readonly<{ onClose: () => 
 
       <div className="border-t border-line p-2">
         <Link href="/dashboard/branches" onClick={onClose} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm text-ink-body transition-colors hover:bg-sunken hover:text-ink">
-          <Settings size={16} className="text-ink-muted" />
-          Manage branches &amp; satellites
+          <Settings size={16} className="shrink-0 text-ink-muted" />
+          <span className="min-w-0 flex-1 truncate">Manage branches &amp; satellites</span>
+          {branchesGated && <PlanTierTag plan="Premium" className="ml-auto" />}
         </Link>
       </div>
     </div>

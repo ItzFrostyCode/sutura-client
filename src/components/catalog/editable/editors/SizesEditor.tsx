@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { X, Plus, Sparkles } from 'lucide-react';
 import type { CatalogDraftEdit } from '../useCatalogSectionEdit';
 import { FIELD, LABEL } from './fieldStyles';
-import AddOnsEditor from './AddOnsEditor';
 import SizeRowItem from './SizeRowItem';
 import AddCustomSizeRow from './AddCustomSizeRow';
 
@@ -126,8 +125,6 @@ export function SizesEditor({ edit }: Readonly<{ edit: CatalogDraftEdit }>) {
         onAdd={addCustomSize}
       />
 
-      {/* Design Add-ons Section */}
-      <AddOnsEditor edit={edit} />
     </div>
   );
 }

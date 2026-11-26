@@ -9,15 +9,13 @@ import VerificationNotice from './VerificationNotice';
 const PARTS = {
   2: { title: 'Your shop', body: 'What customers will see, and where to find you.' },
   3: { title: 'Verification documents', body: 'The team checks these before your shop goes live.' },
-  4: { title: 'Start your trial or choose a plan', body: 'Try SUTURA free for 14 days, or pick a plan and upload your payment receipt.' },
+  4: { title: 'Choose a plan', body: 'Pick a plan and pay with GCash, or start with 14 days free.' },
 } as const;
 
-/** Step 2 of the wizard, in three short parts: the shop, its documents, and the plan (or free trial). */
+/** Step 2 of the wizard, in three short parts: the shop, its documents, and the plan. */
 export default function BusinessSteps({ app }: { readonly app: StoreApplicationState }) {
   const part = app.step as 2 | 3 | 4;
-  // The last part reads as what the owner picked there: a free trial, or a paid plan.
-  const copy = part === 4 && app.freeTrial ? { title: 'Your free trial', body: 'Check what the 14 free days include, then send your application.' }
-    : PARTS[part];
+  const copy = PARTS[part];
   return (
     <>
       <p className="mobile-overline text-taupe">Part {part - 1} of 3</p>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { LayoutDashboard, Scissors, CreditCard, CalendarDays, Ruler, History, MessageSquare } from 'lucide-react';
 import ScrollNav from '@/components/shared/ScrollNav';
+import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
+import PlanTierTag from '@/components/shared/PlanTierTag';
 
 export type CustomerTabType = 'overview' | 'orders' | 'payments' | 'appointments' | 'measurements' | 'activity' | 'texts';
 
@@ -16,6 +18,8 @@ interface CustomerTabNavProps {
 }
 
 export default function CustomerTabNav({ activeTab, setActiveTab, showTexts = false, balanceDue, ordersCount }: CustomerTabNavProps) {
+  const { isGated } = useSubscriptionTier();
+  const smsGated = isGated('notifications');
   const tabs: {
     id: CustomerTabType;
     label: string;
@@ -62,6 +66,7 @@ export default function CustomerTabNav({ activeTab, setActiveTab, showTexts = fa
             >
               <Icon size={16} className={isActive ? 'text-ink' : 'text-ink-faint'} />
               <span>{tab.label}</span>
+              {tab.id === 'texts' && smsGated && <PlanTierTag plan="Pro" />}
               {tab.chip && <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${tab.chipCls}`}>{tab.chip}</span>}
               {isActive && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-ink" />}
             </button>

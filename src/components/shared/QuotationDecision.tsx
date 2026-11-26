@@ -9,9 +9,14 @@ interface QuotationDecisionProps {
   readonly onDone: () => void;
 }
 
-type Mode = 'idle' | 'changes' | 'decline';
+type Mode = 'idle' | 'decline';
 
-/** The three answers to a price: approve it, ask the shop to change it, or decline it. */
+// Real buttons, the same shape as the order form's: solid ink for the main answer, an outline for the other.
+const BTN = 'flex h-[52px] flex-1 cursor-pointer items-center justify-center rounded-xl px-4 text-base font-semibold transition-opacity active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40';
+const PRIMARY = `${BTN} bg-ink text-white`;
+const OUTLINE = `${BTN} border border-line-strong bg-surface text-ink hover:bg-sunken`;
+
+/** The two answers to a price: approve it, or decline it. */
 export default function QuotationDecision({ orderId, expired, onDone }: QuotationDecisionProps) {
   const toast = useToast();
   const [accepted, setAccepted] = useState(false);
@@ -19,7 +24,7 @@ export default function QuotationDecision({ orderId, expired, onDone }: Quotatio
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const send = async (decision: 'accept' | 'changes' | 'decline') => {
+  const send = async (decision: 'accept' | 'decline') => {
     setSaving(true);
     try {
       const res = await api.post(`/my-orders/${orderId}/decision`, { decision, note: note.trim() || undefined, accepted_terms: decision === 'accept' ? true : undefined });
@@ -36,19 +41,14 @@ export default function QuotationDecision({ orderId, expired, onDone }: Quotatio
     return <p className="mobile-body-sm mt-4 rounded-xl bg-amber-50 p-3 font-normal text-amber-800">This price is no longer valid. Please ask the shop for a new one.</p>;
   }
 
-  if (mode !== 'idle') {
-    const isDecline = mode === 'decline';
+  if (mode === 'decline') {
     return (
       <div className="mt-4">
-        <label htmlFor="decision-note" className="mobile-body-sm font-semibold text-ink">
-          {isDecline ? 'Why are you declining? (optional)' : 'What would you like to change?'}
-        </label>
+        <label htmlFor="decision-note" className="mobile-body-sm font-semibold text-ink">Why are you declining? (optional)</label>
         <textarea id="decision-note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={500} className="mt-1.5 w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-3 text-base text-ink focus:border-taupe focus:outline-none" />
         <div className="mt-3 flex gap-3">
-          <button type="button" onClick={() => setMode('idle')} className="h-[52px] flex-1 rounded-full border border-line text-base font-medium text-ink">Back</button>
-          <button type="button" disabled={saving || (!isDecline && !note.trim())} onClick={() => send(isDecline ? 'decline' : 'changes')} className="h-[52px] flex-1 rounded-full bg-ink text-base font-semibold text-white disabled:opacity-50">
-            {saving ? 'Saving…' : isDecline ? 'Decline price' : 'Send to the shop'}
-          </button>
+          <button type="button" disabled={saving} onClick={() => setMode('idle')} className={OUTLINE}>Back</button>
+          <button type="button" disabled={saving} onClick={() => send('decline')} className={PRIMARY}>{saving ? 'Saving…' : 'Decline price'}</button>
         </div>
       </div>
     );
@@ -60,12 +60,9 @@ export default function QuotationDecision({ orderId, expired, onDone }: Quotatio
         <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-1 h-5 w-5 accent-taupe" />
         <span className="mobile-body-sm font-normal text-ink">I agree to the price, the payment terms, the date and the cancellation policy.</span>
       </label>
-      <button type="button" disabled={!accepted || saving} onClick={() => send('accept')} className="mt-3 h-[52px] w-full rounded-full bg-ink text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50">
-        {saving ? 'Saving…' : 'Approve price'}
-      </button>
-      <div className="mt-2 flex gap-3">
-        <button type="button" onClick={() => setMode('changes')} className="h-[48px] flex-1 rounded-full text-base font-medium text-taupe">Ask for changes</button>
-        <button type="button" onClick={() => setMode('decline')} className="h-[48px] flex-1 rounded-full text-base font-medium text-ink-muted">Decline</button>
+      <div className="mt-3 flex gap-3">
+        <button type="button" disabled={saving} onClick={() => setMode('decline')} className={OUTLINE}>Decline</button>
+        <button type="button" disabled={!accepted || saving} onClick={() => send('accept')} className={PRIMARY}>{saving ? 'Saving…' : 'Approve price'}</button>
       </div>
     </div>
   );

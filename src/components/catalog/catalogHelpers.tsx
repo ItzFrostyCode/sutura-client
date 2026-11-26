@@ -161,7 +161,6 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
     measurement_guide: measurementGuideText,
     garment_type: item.garment_type ?? '',
     sizes: Array.isArray(item.sizes) ? item.sizes : [],
-    add_ons: Array.isArray(item.add_ons) ? item.add_ons : [],
     external_gallery_url: item.external_gallery_url ?? '',
     is_active: item.is_active ?? true,
   };
@@ -298,9 +297,6 @@ export function buildSavePayload(
     service_id: formData.service_id ? Number(formData.service_id) : null,
     fabric_image_url: formData.fabric_image_url || null,
     sizes: formData.sizes,
-    add_ons: (formData.add_ons || [])
-      .filter((a) => a.name && a.name.trim() !== '')
-      .map((a) => ({ id: a.id, name: a.name.trim(), price: Math.max(0, Number(a.price) || 0) })),
     color: validColors.length > 0 ? JSON.stringify(validColors.map(c => c.name)) : null,
     features: {
       rows: featureRows,
