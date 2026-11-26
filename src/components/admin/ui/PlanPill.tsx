@@ -6,13 +6,6 @@ export const PLAN_TONE: Record<string, string> = {
   premium: 'bg-amber-50 text-amber-800 border-amber-200',
 };
 
-/** The same three plan hues as text only (the text-* token of each PLAN_TONE), e.g. for Overview's numbers. */
-export const PLAN_TEXT = {
-  basic: 'text-stone-700',
-  pro: 'text-blue-700',
-  premium: 'text-amber-800',
-} as const;
-
 export const PILL = 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap';
 
 export default function PlanPill({ plan }: { readonly plan: string | null | undefined }) {

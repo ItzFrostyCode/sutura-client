@@ -1,92 +1,164 @@
 import React from 'react';
-import { SERVICE_TYPE_LABELS, serviceCategoryPath } from '@/lib/canonicalTaxonomy';
-import { serviceGroupLabel } from '@/lib/garmentTaxonomy';
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import {
+  GARMENT_CATEGORIES,
+  GARMENTS,
+  SERVICE_GROUPS,
+  canonicalGarment,
+  serviceGroupLabel,
+  type ServiceGroup,
+  type ServiceGroupKey,
+} from '@/lib/garmentTaxonomy';
 import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
+import { SERVICE_INTENTS, customerTaskLabel, whoItIsFor } from '@/lib/customerTaxonomy';
 import { PublicService } from '@/components/store-storefront/types';
-import ChartImageViewer from '@/components/shared/ChartImageViewer';
-import { getActiveSale } from '@/lib/salePricing';
+import GuideImage from '@/components/shared/GuideImage';
+import { optionLine } from '@/lib/orderUnits';
 
 // The content of each numbered card on a service page, kept apart from the
 // accordion chrome so the owner's editable page can wrap the very same blocks
 // in its own boxes (as the Catalog Design page does).
 
-// All Reference Chart images (e.g. Men's and Women's sizing). Older records
-// only have the single size_chart_image_url.
-export function serviceChartImages(service: Pick<PublicService, 'size_chart_image_url' | 'size_chart_image_urls'>): string[] {
-  const list = (service.size_chart_image_urls ?? []).filter(Boolean);
-  if (list.length > 0) return list;
-  return service.size_chart_image_url ? [service.size_chart_image_url] : [];
-}
-
-// The Reference Chart is an image (no size table).
 export function hasServiceChart(service: PublicService): boolean {
-  return serviceChartImages(service).length > 0;
+  return Boolean(service.size_chart_image_url || (service.size_chart_columns && service.size_chart_columns.length > 0));
 }
 
-// Category is always the first row — the same trail the breadcrumb links through.
-export function ServiceSpecBlock({ service }: Readonly<{ service: PublicService }>) {
-  // Category stops at the service's category; its type has its own row below.
-  const group = serviceGroupLabel(service.service_category);
-  const categoryPath = serviceCategoryPath({ service_category: service.service_category }).length > 0
-    ? serviceCategoryPath({ service_category: service.service_category })
-    : group ? ['Services', group] : [];
-  const leaf = service.service_leaf_type ? SERVICE_TYPE_LABELS[service.service_leaf_type] ?? service.service_leaf_type : '';
-  const rawType = leaf || service.service_type || service.category || '';
-  const rows: [string, string][] = [];
-  if (categoryPath.length > 0) rows.push(['Category', categoryPath.join(' → ')]);
-  if (rawType) rows.push(['Service Type', rawType.replace(/_/g, ' ')]);
-  rows.push(['Estimated Completion', formatServiceTurnaround(service.estimated_days, service.estimated_days_max)]);
-  // A running discount takes the same % off every tier (server: Service::discountedAmount).
-  const sale = service.base_price != null
-    ? getActiveSale({ price: service.base_price, sale_price: service.sale_price, sale_starts_at: service.sale_starts_at, sale_ends_at: service.sale_ends_at })
+const ANY_GARMENT_GROUPS = ['alterations_repairs', 'garment_customization'];
+const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`;
+
+/** "Barong: Barong Tagalog, Short-Sleeve Barong · Formal Wear: Suit" — the service's garments by category. */
+export function garmentsByCategory(slugs: readonly string[]): string {
+  const byCat = new Map<string, string[]>();
+  for (const s of slugs) {
+    const c = canonicalGarment(s);
+    if (!c) continue;
+    const cat = GARMENT_CATEGORIES[GARMENTS[c].category].label;
+    byCat.set(cat, [...(byCat.get(cat) ?? []), GARMENTS[c].label]);
+  }
+  return Array.from(byCat.entries()).map(([cat, names]) => `${cat}: ${names.join(', ')}`).join(' · ');
+}
+
+export interface AlsoAlters {
+  readonly href: string;
+  readonly name: string;
+}
+
+/** What the service is: the kind of work, the garments, the tasks, the minimum order and the time it takes. */
+export function ServiceWorkBlock({ service }: Readonly<{ service: PublicService }>) {
+  const group = service.service_category && service.service_category in SERVICE_GROUPS
+    ? (SERVICE_GROUPS[service.service_category as ServiceGroupKey] as ServiceGroup)
     : null;
-  const percent = sale && service.sale_percent ? service.sale_percent : 0;
-  const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const garments = garmentsByCategory(service.garment_types ?? []);
+  // The customer's words (lib/customerTaxonomy), not the shop editor's ("Bulk / Batch Orders Accepted").
+  const caps = (service.capabilities ?? []).map((c) => customerTaskLabel(service.service_category, c));
+  const rows: [string, string][] = [];
+  const intent = service.service_category && service.service_category in SERVICE_INTENTS ? SERVICE_INTENTS[service.service_category as ServiceGroupKey].title : null;
+  const kind = intent ?? group?.label ?? serviceGroupLabel(service.service_category);
+  if (kind) rows.push(['Service', kind]);
+  if (garments) rows.push(['Works on', garments]);
+  else if (ANY_GARMENT_GROUPS.includes(service.service_category ?? '')) rows.push(['Works on', 'Any garment — bring it in or ask for a quotation']);
+  if (caps.length > 0) rows.push(['What they do', caps.join(' · ')]);
+  // The minimum is the group minimum (people), never a minimum for one person: say who can order instead.
+  if (!(service.service_types ?? []).includes('alteration_repair')) {
+    rows.push(["Who it's for", whoItIsFor(service.capabilities, service.service_types, service.min_order_qty)]);
+  }
+  rows.push(['Estimated Completion', formatServiceTurnaround(service.estimated_days, service.estimated_days_max)]);
 
   return (
-    <div className="space-y-4">
-      <table className="w-full mobile-body-sm">
-        <tbody>
-          {rows.map(([label, value]) => (
-            <tr key={label} className="border-b border-line last:border-0">
-              <td className="py-2 pr-4 text-ink-faint font-medium w-2/5 align-top">{label}</td>
-              <td className={label === 'Category' ? 'py-2 text-blue-900 font-normal' : 'py-2 text-ink-body font-normal'}>{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <table className="w-full mobile-body-sm">
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label} className="border-b border-line last:border-0">
+            <td className="py-2 pr-4 text-ink-faint font-medium w-2/5 align-top">{label}</td>
+            <td className="py-2 text-ink-body font-normal">{value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
-      {service.pricing && service.pricing.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider">Pricing Options</p>
-          <div className="border border-line divide-y divide-line">
-            {service.pricing.map((tier) => (
-              <div key={tier.id} className="flex items-center justify-between px-3 py-2.5 text-sm">
-                <span className="text-ink-body">{tier.label}</span>
-                {percent > 0 ? (
-                  <span className="flex items-baseline gap-2">
-                    <span className="text-xs text-ink-faint line-through tabular-nums">{peso(Number(tier.amount))}</span>
-                    <span className="font-semibold text-rose-600 tabular-nums">{peso(Math.round(Number(tier.amount) * (100 - percent)) / 100)}</span>
-                  </span>
-                ) : (
-                  <span className="font-semibold text-ink">
-                    ₱{Number.parseFloat(tier.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+/** Prices & add-ons. A row with no price depends on the job: the shop quotes it, or the customer walks in with the item. */
+export function ServicePricesBlock({ service }: Readonly<{ service: PublicService }>) {
+  const rows = service.pricing ?? [];
+  if (rows.length === 0) return <p className="text-sm text-ink-faint">No prices or add-ons listed yet.</p>;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider">Prices &amp; add-ons</p>
+      <div className="border border-line divide-y divide-line">
+        {rows.map((tier) => {
+          const amount = Number.parseFloat(String(tier.amount));
+          return (
+            <div key={tier.id} className="flex items-start justify-between gap-3 px-3 py-2.5 text-sm">
+              <span className="text-ink-body min-w-0">
+                {tier.label}
+                {optionLine(tier) && <span className="block text-xs text-ink-muted">{optionLine(tier)}</span>}
+              </span>
+              {amount > 0 ? (
+                <span className="font-semibold text-ink shrink-0">{peso(amount)}</span>
+              ) : (
+                <span className="text-ink-muted text-right text-xs max-w-[55%]">Depends — quotation, or walk in with the item</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-ink-faint">The shop confirms the final price before any work starts.</p>
+    </div>
+  );
+}
+
+// The customer's Specification card: what the service is, then its prices, then — when the same shop also
+// alters and repairs this kind of garment — a link to that service.
+export function ServiceSpecBlock({ service, alsoAlters }: Readonly<{ service: PublicService; alsoAlters?: AlsoAlters | null }>) {
+  return (
+    <div className="space-y-4">
+      <ServiceWorkBlock service={service} />
+      <ServicePricesBlock service={service} />
+      {alsoAlters && (
+        <Link href={alsoAlters.href} className="flex items-center justify-between gap-3 border-t border-line pt-3 group">
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-ink group-hover:text-taupe">This shop also alters &amp; repairs it</span>
+            <span className="block text-xs text-ink-muted truncate">{alsoAlters.name}</span>
+          </span>
+          <ChevronRight size={16} className="text-ink-faint shrink-0" />
+        </Link>
       )}
     </div>
   );
 }
 
-export function ServiceChartBlock({ service, compact = false }: Readonly<{ service: PublicService; compact?: boolean }>) {
-  const images = serviceChartImages(service);
+export function ServiceChartBlock({ service }: Readonly<{ service: PublicService }>) {
+  const columns = service.size_chart_columns ?? [];
   return (
     <div className="space-y-2">
-      <ChartImageViewer images={images} compact={compact} />
+      {service.size_chart_image_url && <GuideImage src={service.size_chart_image_url} alt="Reference chart" />}
+      {columns.length > 0 && (
+        <div className={`overflow-x-auto border border-line rounded-none ${service.size_chart_image_url ? 'mt-3' : ''}`}>
+          <table className="w-full mobile-body-sm">
+            <thead>
+              <tr className="bg-canvas">
+                <th className="sticky left-0 z-10 bg-canvas px-3 py-2 text-left font-semibold text-ink-body whitespace-nowrap">Size</th>
+                {columns.map((col) => (
+                  <th key={col} className="px-3 py-2 text-left font-semibold text-ink-body whitespace-nowrap">{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(service.size_chart_rows ?? []).map((row) => (
+                <tr key={row.size} className="border-t border-line">
+                  <td className="sticky left-0 z-10 bg-surface px-3 py-2 font-semibold text-ink whitespace-nowrap">{row.size}</td>
+                  {row.values.map((val, ci) => (
+                    <td key={`${row.size}-${ci}`} className="px-3 py-2 text-ink-body font-normal whitespace-nowrap">{val || '—'}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {columns.length > 3 && <p className="mt-1.5 text-[11px] text-ink-faint">Swipe to see more sizes →</p>}
     </div>
   );
 }

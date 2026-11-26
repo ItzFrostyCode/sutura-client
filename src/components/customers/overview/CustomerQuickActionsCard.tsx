@@ -5,8 +5,6 @@ import type { CustomerTabType } from '../profile/CustomerTabNav';
 import { peso } from '../customerMoney';
 import { printInPlace } from '@/lib/printInPlace';
 import { useShopRole } from '@/hooks/useShopRole';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 interface CustomerQuickActionsCardProps {
   readonly customerId?: number;
@@ -22,8 +20,6 @@ const ROW = 'group flex w-full cursor-pointer items-center justify-between round
 /** One-tap jumps into the other parts of the shop, each already knowing who the customer is. */
 export default function CustomerQuickActionsCard({ customerId, balance = 0, canCollect = false, canText = false, onOpenTab }: CustomerQuickActionsCardProps) {
   const { isOwnerOrManager } = useShopRole();
-  const { isGated } = useSubscriptionTier();
-  const smsGated = isGated('notifications');
   const chevron = <ChevronRight size={16} className="text-ink-faint group-hover:text-ink transition-colors shrink-0" />;
 
   return (
@@ -56,10 +52,7 @@ export default function CustomerQuickActionsCard({ customerId, balance = 0, canC
         {canText && (
           <button type="button" onClick={() => onOpenTab('texts')} className={ROW}>
             <span className="flex items-center gap-2.5"><MessageSquare size={17} className="text-taupe" /> Send Text</span>
-            <span className="flex items-center gap-1.5">
-              {smsGated && <PlanTierTag plan="Pro" />}
-              {chevron}
-            </span>
+            {chevron}
           </button>
         )}
         <button type="button" onClick={() => printInPlace(`/print/customers/${customerId}/statement`)} className={ROW}>

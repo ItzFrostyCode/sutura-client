@@ -70,7 +70,7 @@ export const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFrac
 
 /** Date with a time (when something was sent or decided). */
 export const claimDateTime = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  iso ? new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
 
 /** Plain calendar date; a "YYYY-MM-DD" value is read as that day, not shifted by the time zone. */
 export const claimDay = (iso: string | null) =>

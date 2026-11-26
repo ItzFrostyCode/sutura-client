@@ -9,11 +9,10 @@ import SmsSettingsPanel from '@/components/sms/SmsSettingsPanel';
 import { useSmsOutbox } from '@/components/sms/useSmsOutbox';
 import type { SmsTab } from '@/components/sms/smsHelpers';
 import ScrollNav from '@/components/shared/ScrollNav';
-import SubscriptionGate from '@/components/SubscriptionGate';
 
 const TABS: { id: SmsTab; label: string }[] = [{ id: 'draft', label: 'To check' }, { id: 'sent', label: 'Sent' }, { id: 'problems', label: 'Needs fixing' }];
 
-function SmsOutboxPage() {
+export default function SmsOutboxPage() {
   const s = useSmsOutbox();
   const { user } = useAuthStore();
   const isOwner = Boolean(user?.roles?.some((r) => r.name === 'store_owner'));
@@ -71,9 +70,4 @@ function SmsOutboxPage() {
       </div>
     </div>
   );
-}
-
-/** Text messages are a Pro feature: a lower plan sees the upgrade panel (the server refuses to turn them on too). */
-export default function SmsOutboxPageGated() {
-  return <SubscriptionGate feature="notifications"><SmsOutboxPage /></SubscriptionGate>;
 }

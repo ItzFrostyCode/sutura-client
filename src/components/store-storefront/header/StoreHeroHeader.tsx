@@ -30,8 +30,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import ScrollNav from '@/components/shared/ScrollNav';
-import StoreSocialLinks from './StoreSocialLinks';
-import { cleanAddress } from '@/lib/cleanAddress';
+import StoreSocialLinks, { DEFAULT_THREAD_NEEDLE_SOCIALS } from './StoreSocialLinks';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -58,14 +57,30 @@ interface StoreHeroHeaderProps {
   readonly onOpenMap?: () => void;
   /** Refreshes the storefront's own `store` state after the logo/banner is replaced. */
   readonly onImagesSaved?: () => void;
-  /** "Hours not set · Set hours" (owner): opens About and scrolls to the Opening hours card. */
-  readonly onGoToHours?: () => void;
 }
 
-// Every place named once ("Poblacion, Poblacion, Davao City" → "Poblacion, Davao City"), branch first when one is open.
+// Clean address deduplication to avoid repetitive "Poblacion, Poblacion, Davao City"
 function formatCleanAddress(branch?: StoreBranch | null, store?: StoreProfile | null): string {
-  const place = branch ? cleanAddress(branch.address, branch.district, branch.city) : cleanAddress(store?.address, store?.district, store?.city);
-  return place || 'Davao City';
+  if (branch) {
+    const parts: string[] = [];
+    if (branch.address) parts.push(branch.address);
+    if (branch.district && !branch.address?.toLowerCase().includes(branch.district.toLowerCase())) {
+      parts.push(branch.district);
+    }
+    if (branch.city && !branch.address?.toLowerCase().includes(branch.city.toLowerCase())) {
+      parts.push(branch.city);
+    }
+    return parts.length > 0 ? parts.join(', ') : 'Davao City';
+  }
+  const parts: string[] = [];
+  if (store?.address) parts.push(store.address);
+  if (store?.district && !store.address?.toLowerCase().includes(store.district.toLowerCase())) {
+    parts.push(store.district);
+  }
+  if (store?.city && !store.address?.toLowerCase().includes(store.city.toLowerCase())) {
+    parts.push(store.city);
+  }
+  return parts.length > 0 ? parts.join(', ') : 'Davao City';
 }
 
 interface PendingImageChange {
@@ -94,7 +109,6 @@ export default function StoreHeroHeader({
   onToggleBookmark,
   onOpenMap,
   onImagesSaved,
-  onGoToHours,
 }: StoreHeroHeaderProps) {
   const cleanAddress = formatCleanAddress(activeBranch, store);
   const router = useRouter();
@@ -453,26 +467,25 @@ export default function StoreHeroHeader({
         </div>
       )}
 
-      {/* 👤 2. Profile row, Facebook-style: the photo on the left over the cover, the name beside it, the actions at the
-          right (on a phone they stack: photo, name, then the actions full width). */}
+      {/* 👤 2. Profile Details Container (Centered Social Profile Layout) */}
       <div className="max-w-[960px] mx-auto w-full px-4 sm:px-8 lg:px-0">
-        {/* Hidden File Input for Logo */}
-        <input
-          ref={logoInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/jpg,image/webp"
-          className="hidden"
-          onChange={handleLogoFileChange}
-        />
+        <div className="relative flex flex-col items-center text-center pb-2">
+          {/* Hidden File Input for Logo */}
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+            className="hidden"
+            onChange={handleLogoFileChange}
+          />
 
-        <div className="relative flex flex-col md:flex-row md:items-end gap-3 md:gap-5">
-          {/* Photo overlapping the cover */}
-          <div className="-mt-14 sm:-mt-16 md:-mt-[72px] relative z-10 shrink-0 self-start">
+          {/* Centered Avatar Overlapping Cover Banner */}
+          <div className="-mt-14 sm:-mt-18 md:-mt-20 relative z-10 flex flex-col items-center">
             <div className="relative inline-block">
               <StoreLogoAvatar
                 src={effectiveLogoUrl}
                 name={store.name}
-                className="w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-lg overflow-hidden shrink-0"
+                className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
                 isOpen={isStoreCurrentlyOpen}
               />
               {isOwnerViewingOwnStore && !pendingLogo && (
@@ -488,7 +501,7 @@ export default function StoreHeroHeader({
                         <Camera size={14} />
                       </button>
                       {logoMenuOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-44 bg-surface border border-line rounded-xl shadow-xl overflow-hidden py-1 z-30 animate-in fade-in zoom-in-95 text-left">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 bg-surface border border-line rounded-xl shadow-xl overflow-hidden py-1 z-30 animate-in fade-in zoom-in-95 text-left">
                           <button
                             type="button"
                             onClick={() => {
@@ -524,198 +537,237 @@ export default function StoreHeroHeader({
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Name, then trust and rating (in the map sheet the sheet's own header carries the name) */}
-          {!embedded && (
-            <div className="min-w-0 flex-1 md:pb-3">
-              <h1 className="text-2xl sm:text-3xl md:text-[32px] font-serif font-bold text-ink tracking-tight leading-tight">
-                {store.name}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted mt-1">
-                {/* Trust first: only shops the SUTURA team approved (documents checked) have a public page. */}
-                {store.is_premium && <PremiumBadge />}
-                {activeBranch && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
-                    {/* The main branch is marked once, by " · Main HQ": a name that already says "(Main)" would show it twice. */}
-                    <MapPin size={11} /> {Boolean(activeBranch.is_main) ? activeBranch.name.replace(/\s*\(main\)\s*$/i, '') : activeBranch.name}
-                    {Boolean(activeBranch.is_main) ? ' · Main HQ' : ''}
-                  </span>
-                )}
-                {(activeBranch || store.is_premium) && <span className="text-ink-faint">·</span>}
-                {/* Always visible: jumps to the Ratings tab */}
+            {/* Logo Floating Save/Cancel Action Bar (shown when there are pending logo changes) */}
+            {isOwnerViewingOwnStore && pendingLogo && (
+              <div className="mt-2.5 flex items-center justify-center gap-2 bg-surface border border-line px-3 py-1.5 rounded-xl shadow-lg animate-in fade-in zoom-in-95">
+                <span className="text-xs font-medium text-ink-muted px-1">
+                  {pendingLogo.isRemove ? 'Remove logo?' : 'New logo preview'}
+                </span>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('reviews')}
-                  className="inline-flex items-center gap-1 font-semibold text-ink-body hover:text-taupe transition-colors cursor-pointer"
-                  title="View customer reviews and ratings"
+                  onClick={handleCancelLogo}
+                  disabled={savingLogo}
+                  className="min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold text-ink-body hover:text-ink bg-sunken hover:bg-line transition-colors cursor-pointer"
                 >
-                  <Star size={13} className="fill-amber-400 text-amber-500 shrink-0" />
-                  <span>{store.reviews_count && store.reviews_count > 0 ? Number(store.reviews_avg_rating ?? 0).toFixed(1) : 'New'}</span>
-                  <span className="text-ink-faint font-normal">
-                    {store.reviews_count && store.reviews_count > 0 ? `(${store.reviews_count})` : '(No reviews yet)'}
-                  </span>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveLogo}
+                  disabled={savingLogo}
+                  className="min-h-[34px] px-3.5 py-1 rounded-lg text-xs font-semibold text-white bg-taupe hover:bg-taupe transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-60"
+                >
+                  {savingLogo ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                  <span>{savingLogo ? 'Saving...' : 'Save Changes'}</span>
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* ⚡ 3. Actions (in the map sheet: Book Appointment and Directions are in the sheet's header) */}
-          {!embedded && (
-            <div className="flex items-center gap-2 w-full md:w-auto md:pb-3 shrink-0">
-              {isOwnerViewingOwnStore ? (
+          {/* Main Store Name (in the map sheet the sheet's own header carries it) */}
+          {!embedded && <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-ink mt-3 tracking-tight">
+            {store.name}
+          </h1>}
+
+          {/* Subtitle Metadata (Branch, Ratings, Services) */}
+          {!embedded && <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-ink-muted mt-1.5 font-normal">
+            {/* Trust first: only shops the SUTURA team approved (documents checked) have a public page. */}
+            {store.is_premium && <PremiumBadge />}
+            {activeBranch && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-taupe/15 text-taupe font-semibold text-xs">
+                {/* The main branch is marked once, by " · Main HQ": a name that already says "(Main)" would show it twice. */}
+                <MapPin size={11} /> {Boolean(activeBranch.is_main) ? activeBranch.name.replace(/\s*\(main\)\s*$/i, '') : activeBranch.name}
+                {Boolean(activeBranch.is_main) ? ' · Main HQ' : ''}
+              </span>
+            )}
+            {/* Always visible Rating button: jumps directly to the Reviews tab */}
+            {(activeBranch || store.is_premium) && <span className="text-ink-faint">·</span>}
+            <button
+              type="button"
+              onClick={() => setActiveTab('reviews')}
+              className="inline-flex items-center gap-1 font-semibold text-ink-body hover:text-taupe transition-colors cursor-pointer"
+              title="View customer reviews and ratings"
+            >
+              <Star size={13} className="fill-amber-400 text-amber-500 shrink-0" />
+              <span>{store.reviews_count && store.reviews_count > 0 ? Number(store.reviews_avg_rating ?? 0).toFixed(1) : 'New'}</span>
+              <span className="text-ink-faint font-normal">
+                {store.reviews_count && store.reviews_count > 0 ? `(${store.reviews_count})` : '(No reviews yet)'}
+              </span>
+            </button>
+
+          </div>}
+
+          {/* ⚡ 3. Centered Action Buttons Row (in the map sheet: Book Appointment and Directions are in the sheet's header) */}
+          {!embedded && <div className="flex items-center justify-center gap-2 mt-4 max-w-md sm:max-w-lg w-full">
+            {isOwnerViewingOwnStore ? (
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="min-h-[44px] px-6 py-2.5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer rounded-lg"
+              >
+                <Pencil size={15} />
+                <span>Edit Profile</span>
+              </button>
+            ) : isShopViewingOwnStore ? (
+              // Branch manager / staff: same way back as the owner, minus
+              // Edit (store settings are owner-only).
+              <Link
+                href="/dashboard"
+                className="flex-1 min-h-[46px] px-5 py-2.5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+              >
+                <LayoutDashboard size={16} />
+                <span>Dashboard</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href={activeBranch ? `/store/${storeId}/book?branch=${activeBranch.id}` : `/store/${storeId}/book`}
+                  className="flex-1 min-w-0 min-h-12 px-3 sm:px-6 py-2.5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap shadow-xs transition-colors cursor-pointer"
+                >
+                  <Calendar size={16} aria-hidden />
+                  {/* One line always: "Book" alone on the narrowest phones, beside the Rate / Save / Map icons. */}
+                  <span className="max-[359px]:hidden">Book Appointment</span><span className="min-[360px]:hidden">Book</span>
+                </Link>
+
                 <button
                   type="button"
-                  onClick={onEditProfile}
-                  className="flex-1 md:flex-none min-h-11 px-5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer rounded-lg"
+                  onClick={onOpenRatingModal}
+                  aria-label={myReview?.rating ? `Your rating: ${myReview.rating} stars. Edit` : 'Rate this shop'}
+                  title={myReview?.rating ? `Your rating: ${myReview.rating}★` : 'Rate this shop'}
+                  className="min-h-12 min-w-12 px-3 flex items-center justify-center gap-1.5 bg-sunken hover:bg-line text-sm font-medium text-ink border border-line transition-colors cursor-pointer shrink-0"
                 >
-                  <Pencil size={15} />
-                  <span>Edit Profile</span>
+                  <Star size={17} aria-hidden className={myReview?.rating ? 'fill-amber-400 text-amber-500' : ''} />
+                  {/* Named from 640px wide (the star and the bookmark looked alike); icon alone (with a spoken name) below that, so "Book Appointment" keeps one line. */}
+                  <span className="max-sm:sr-only">Rate</span>
                 </button>
-              ) : isShopViewingOwnStore ? (
-                // Branch manager / staff: same way back as the owner, minus Edit (store settings are owner-only).
-                <Link
-                  href="/dashboard"
-                  className="flex-1 md:flex-none min-h-11 px-5 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer rounded-lg"
+
+                <button
+                  type="button"
+                  onClick={onToggleBookmark}
+                  aria-pressed={isBookmarked}
+                  aria-label={isBookmarked ? 'Saved shop' : 'Save shop'}
+                  title={isBookmarked ? 'Saved' : 'Save shop'}
+                  className="min-h-12 min-w-12 px-3 flex items-center justify-center gap-1.5 bg-sunken hover:bg-line text-sm font-medium text-ink border border-line transition-colors cursor-pointer shrink-0"
                 >
-                  <LayoutDashboard size={16} />
-                  <span>Dashboard</span>
+                  <Bookmark size={17} aria-hidden className={isBookmarked ? 'fill-current text-taupe-dark' : ''} />
+                  <span className="max-sm:sr-only">{isBookmarked ? 'Saved' : 'Save'}</span>
+                </button>
+
+                {/* Back to the map with this shop open: where it is and directions (thesis: "access directions to selected branches"). */}
+                <Link
+                  href={`/search?tab=store&store=${encodeURIComponent(storeId)}`}
+                  aria-label="Show on map"
+                  title="Show on map"
+                  className="min-h-12 min-w-12 px-3 flex items-center justify-center gap-1.5 bg-sunken hover:bg-line text-sm font-medium text-ink border border-line transition-colors shrink-0"
+                >
+                  <MapPin size={17} aria-hidden />
+                  <span className="max-sm:sr-only">Map</span>
                 </Link>
-              ) : (
-                <>
-                  <Link
-                    href={activeBranch ? `/store/${storeId}/book?branch=${activeBranch.id}` : `/store/${storeId}/book`}
-                    className="flex-1 md:flex-none min-w-0 min-h-12 px-3 sm:px-6 bg-ink hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap shadow-xs transition-colors cursor-pointer"
-                  >
-                    <Calendar size={16} aria-hidden />
-                    {/* One line always: "Book" alone on the narrowest phones, beside the Rate / Save / Map icons. */}
-                    <span className="max-[359px]:hidden">Book Appointment</span><span className="min-[360px]:hidden">Book</span>
-                  </Link>
+              </>
+            )}
+          </div>}
 
-                  <button
-                    type="button"
-                    onClick={onOpenRatingModal}
-                    aria-label={myReview?.rating ? `Your rating: ${myReview.rating} stars. Edit` : 'Rate this shop'}
-                    title={myReview?.rating ? `Your rating: ${myReview.rating}★` : 'Rate this shop'}
-                    className="min-h-12 min-w-12 px-3 flex items-center justify-center gap-1.5 bg-sunken hover:bg-line text-sm font-medium text-ink border border-line transition-colors cursor-pointer shrink-0"
-                  >
-                    <Star size={17} aria-hidden className={myReview?.rating ? 'fill-amber-400 text-amber-500' : ''} />
-                    <span className="max-sm:sr-only">Rate</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={onToggleBookmark}
-                    aria-pressed={isBookmarked}
-                    aria-label={isBookmarked ? 'Saved shop' : 'Save shop'}
-                    title={isBookmarked ? 'Saved' : 'Save shop'}
-                    className="min-h-12 min-w-12 px-3 flex items-center justify-center gap-1.5 bg-sunken hover:bg-line text-sm font-medium text-ink border border-line transition-colors cursor-pointer shrink-0"
-                  >
-                    <Bookmark size={17} aria-hidden className={isBookmarked ? 'fill-current text-taupe-dark' : ''} />
-                    <span className="max-sm:sr-only">{isBookmarked ? 'Saved' : 'Save'}</span>
-                  </button>
-
-                  {/* Back to the map with this shop open: where it is and directions (thesis: "access directions to selected branches"). */}
-                  <Link
-                    href={`/search?tab=store&store=${encodeURIComponent(storeId)}`}
-                    aria-label="Show on map"
-                    title="Show on map"
-                    className="min-h-12 min-w-12 px-3 flex items-center justify-center gap-1.5 bg-sunken hover:bg-line text-sm font-medium text-ink border border-line transition-colors shrink-0"
-                  >
-                    <MapPin size={17} aria-hidden />
-                    <span className="max-sm:sr-only">Map</span>
-                  </Link>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Logo Save/Cancel bar (pending logo change) */}
-        {isOwnerViewingOwnStore && pendingLogo && (
-          <div className="mt-3 inline-flex items-center gap-2 bg-surface border border-line px-3 py-1.5 rounded-xl shadow-lg animate-in fade-in zoom-in-95">
-            <span className="text-xs font-medium text-ink-muted px-1">
-              {pendingLogo.isRemove ? 'Remove logo?' : 'New logo preview'}
-            </span>
-            <button
-              type="button"
-              onClick={handleCancelLogo}
-              disabled={savingLogo}
-              className="min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold text-ink-body hover:text-ink bg-sunken hover:bg-line transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveLogo}
-              disabled={savingLogo}
-              className="min-h-[34px] px-3.5 py-1 rounded-lg text-xs font-semibold text-white bg-taupe hover:bg-taupe transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-60"
-            >
-              {savingLogo ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-              <span>{savingLogo ? 'Saving...' : 'Save Changes'}</span>
-            </button>
-          </div>
-        )}
-
-        {/* 📝 4. Intro: the shop's own words, then where / when / how to call and its links — the same list as the shop
-            panel in Search / Map, so the shop reads the same wherever it is opened. */}
-        <div className="mt-4 max-w-2xl">
+          {/* 📝 4. Centered Bio / Description */}
           {store.description && (
-            <p className="mobile-body-sm sm:tablet-body-md text-ink-body font-normal leading-relaxed whitespace-pre-line mb-2">
+            <p className="mobile-body-sm sm:tablet-body-md text-ink-body text-center max-w-xl mx-auto mt-3 font-normal leading-relaxed">
               {store.description}
             </p>
           )}
-          <ShopQuickInfo
-            address={cleanAddress || null}
-            landmark={(activeBranch as { landmark?: string | null } | null)?.landmark || store.landmark || null}
-            hours={(activeBranch as { operating_hours?: OperatingHours | null } | null)?.operating_hours ?? store.operating_hours}
-            phone={(activeBranch as { contact_number?: string | null } | null)?.contact_number || store.phone}
-            coords={
-              activeBranch?.latitude && activeBranch?.longitude
-                ? { lat: Number(activeBranch.latitude), lng: Number(activeBranch.longitude) }
-                : (store.latitude && store.longitude ? { lat: Number(store.latitude), lng: Number(store.longitude) } : null)
-            }
-            storeName={store.name}
-            onHoursNotSet={isOwnerViewingOwnStore ? onGoToHours : undefined}
-          />
-          <StoreSocialLinks links={store.social_links || []} />
+
+          {/* In the Map's shop panel: where, when, how to call — INSIDE the scrolling page, so they scroll away with it. */}
+          {embedded && (
+            <div className="mt-2 w-full text-left">
+              <ShopQuickInfo
+                address={cleanAddress || null}
+                landmark={(activeBranch as { landmark?: string | null } | null)?.landmark || store.landmark || null}
+                hours={(activeBranch as { operating_hours?: OperatingHours | null } | null)?.operating_hours ?? store.operating_hours}
+                phone={(activeBranch as { contact_number?: string | null } | null)?.contact_number || store.phone}
+                coords={
+                  activeBranch?.latitude && activeBranch?.longitude
+                    ? { lat: Number(activeBranch.latitude), lng: Number(activeBranch.longitude) }
+                    : (store.latitude && store.longitude ? { lat: Number(store.latitude), lng: Number(store.longitude) } : null)
+                }
+                storeName={store.name}
+              />
+              <StoreSocialLinks
+                links={
+                  (store.social_links && store.social_links.length > 0)
+                    ? store.social_links
+                    : (store.slug === 'thread-needle' || store.name?.toLowerCase().includes('thread')
+                      ? DEFAULT_THREAD_NEEDLE_SOCIALS
+                      : (store.social_links || []))
+                }
+              />
+            </div>
+          )}
+
+          {/* 📌 5. Where, when, how to call — the same list as the shop panel in Search / Map, so the shop reads the same
+              wherever it is opened: address, open/closed with the next opening on its own line, then the phone. */}
+          {!embedded && (
+            <div className="mt-3 w-full max-w-md text-left">
+              <ShopQuickInfo
+                address={cleanAddress || null}
+                landmark={(activeBranch as { landmark?: string | null } | null)?.landmark || store.landmark || null}
+                hours={(activeBranch as { operating_hours?: OperatingHours | null } | null)?.operating_hours ?? store.operating_hours}
+                phone={(activeBranch as { contact_number?: string | null } | null)?.contact_number || store.phone}
+                coords={
+                  activeBranch?.latitude && activeBranch?.longitude
+                    ? { lat: Number(activeBranch.latitude), lng: Number(activeBranch.longitude) }
+                    : (store.latitude && store.longitude ? { lat: Number(store.latitude), lng: Number(store.longitude) } : null)
+                }
+                storeName={store.name}
+              />
+              <StoreSocialLinks
+                links={
+                  (store.social_links && store.social_links.length > 0)
+                    ? store.social_links
+                    : (store.slug === 'thread-needle' || store.name?.toLowerCase().includes('thread')
+                      ? DEFAULT_THREAD_NEEDLE_SOCIALS
+                      : (store.social_links || []))
+                }
+              />
+            </div>
+          )}
         </div>
+
       </div>
 
-      {/* 📑 5. Tabs, left-aligned like a Facebook profile (they scroll sideways on a narrow phone). */}
-      <div ref={tabBarRef} className="mt-4 border-b border-line bg-surface">
-        <div className="max-w-[960px] mx-auto w-full px-4 sm:px-8 lg:px-0">
-          <ScrollNav className="flex">
-            <div className="flex items-center gap-1 sm:gap-2">
-              {tabList.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      if (tab.id === 'services' && typeof window !== 'undefined') {
-                        const el = document.getElementById('service-group-title') || tabBarRef.current;
-                        if (el) {
-                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
+      {/* 📑 6. Navigation tabs (not pinned: only the Services search stays at the top while scrolling). */}
+        {/* Pinned while scrolling a long Services list, so About and Ratings are always one tap away. */}
+        <div ref={tabBarRef} className="mt-4 border-b border-line bg-surface">
+          <div className="max-w-[960px] mx-auto w-full px-4 sm:px-8 lg:px-0">
+          <ScrollNav className="flex justify-center">
+          <div className="flex items-center justify-center gap-1 sm:gap-6 min-w-full sm:min-w-0">
+            {tabList.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (tab.id === 'services' && typeof window !== 'undefined') {
+                      const el = document.getElementById('service-group-title') || tabBarRef.current;
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }
-                    }}
-                    className={`shrink-0 min-h-[46px] py-2.5 px-4 flex items-center justify-center text-center text-sm sm:text-base whitespace-nowrap transition-all border-b-[3px] -mb-px cursor-pointer ${
-                      isActive
-                        ? 'border-ink text-ink font-semibold'
-                        : 'border-transparent text-ink-muted hover:text-ink hover:bg-sunken/60 font-normal'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+                    }
+                  }}
+                  className={`flex-1 sm:flex-none min-w-0 min-h-[46px] py-2.5 px-3 sm:px-5 flex items-center justify-center text-center text-sm sm:text-base whitespace-nowrap transition-all border-b-2 -mb-px cursor-pointer ${
+                    isActive
+                      ? 'border-ink text-ink font-semibold'
+                      : 'border-transparent text-ink-muted hover:text-ink font-normal'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
           </ScrollNav>
+          </div>
         </div>
-      </div>
     </>
   );
 }

@@ -3,8 +3,6 @@
 import React from 'react';
 import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
 import ScrollNav from '@/components/shared/ScrollNav';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 export type ServiceTabId = 'services' | 'analytics';
 
@@ -39,8 +37,6 @@ export default function ServicesModuleTabs({
   className = '',
   isOwnerOrManager = false,
 }: ServicesModuleTabsProps) {
-  const { isGated } = useSubscriptionTier();
-  const analyticsLocked = isGated('analytics');
   const visibleTabs = SERVICE_TABS.filter(tab => tab.id !== 'analytics' || isOwnerOrManager);
   return (
     <nav className={`-mb-px min-w-0 ${className}`} aria-label="Services Catalog Navigation">
@@ -65,7 +61,6 @@ export default function ServicesModuleTabs({
           >
             <Icon size={15} className={active ? 'text-ink' : 'text-ink-muted'} />
             <span>{tab.label}</span>
-            {tab.id === 'analytics' && analyticsLocked && <PlanTierTag plan="Pro" />}
 
             {typeof count === 'number' && count > 0 && (
               <span

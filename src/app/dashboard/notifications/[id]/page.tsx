@@ -113,12 +113,7 @@ export default function NotificationDetailPage({
   const sender = getSenderInfo(notification);
   const data = notification.data || {};
   const actionLabel = getActionLabel(notification);
-  const rawActionUrl = data.action_url;
-  const actionUrl = rawActionUrl === '/dashboard/settings'
-    ? '/dashboard/account-settings'
-    : data.type === 'store_approved' && rawActionUrl === '/dashboard'
-      ? '/dashboard?tab=welcome'
-      : rawActionUrl;
+  const actionUrl = data.action_url;
   const sentFormatted = formatDateTime(notification.created_at);
   const timeAgo = relativeHoursAgo(notification.created_at);
 

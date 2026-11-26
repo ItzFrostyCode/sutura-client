@@ -9,38 +9,15 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use(async (config) => {
+api.interceptors.request.use((config) => {
   if (globalThis.window !== undefined) {
     const token = authToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    if (config.data instanceof FormData) config.data = await shrinkLargePhotos(config.data);
   }
   return config;
 });
-
-/**
- * Phone photos (3–8 MB) are over PHP's 2 MB upload limit and come back as "The file failed to upload". Every photo in an
- * upload that is over 1.8 MB is redrawn on the device as a smaller JPEG first (same as the shop application's photos),
- * so the logo, cover, GCash QR, post and design uploads all work. Smaller photos, PDFs and videos are sent as they are.
- */
-const PHP_SAFE_BYTES = 1.8 * 1024 * 1024;
-async function shrinkLargePhotos(data: FormData): Promise<FormData> {
-  const big = [...data.entries()].filter(([, v]) => v instanceof File && v.size > PHP_SAFE_BYTES && v.type.startsWith('image/') && v.type !== 'image/gif');
-  if (big.length === 0) return data;
-  const { prepareUpload } = await import('@/components/store-application/uploadPrep');
-  const out = new FormData();
-  for (const [key, value] of data.entries()) {
-    if (value instanceof File && big.some(([, v]) => v === value)) {
-      const prepared = await prepareUpload(value, { allowPdf: false });
-      out.append(key, prepared.file ?? value);
-    } else {
-      out.append(key, value);
-    }
-  }
-  return out;
-}
 
 api.interceptors.response.use(
   (response) => response,

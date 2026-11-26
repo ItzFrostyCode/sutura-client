@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import type { StaffFitting } from './useStaffOverview';
 
-const when = (iso: string) => new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const when = (iso: string) => new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const STATUS: Record<string, string> = { pending: 'Pending', confirmed: 'Pending', in_progress: 'In progress' };
 
 // Upcoming fitting sessions, soonest first.

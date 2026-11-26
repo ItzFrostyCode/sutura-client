@@ -170,7 +170,7 @@ export default function NewBranchPage() {
           </button>
         </AppleBar>
 
-        <div className="mx-auto max-w-xl px-[var(--dash-gutter)] py-8 space-y-5">
+        <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 space-y-5">
           {error && (
             <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
               {error}

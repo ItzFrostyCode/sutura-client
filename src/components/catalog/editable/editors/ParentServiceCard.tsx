@@ -8,6 +8,7 @@ const peso = (v: string | number | null | undefined) =>
 export default function ParentServiceCard({ service }: Readonly<{ service: StoreServiceOption }>) {
   const servicePrice = peso(service.base_price);
   const turnaround = formatTurnaround(service.estimated_days || null, service.estimated_days_max || null);
+  const tiers = service.pricing ?? [];
 
   return (
     <div className="p-4 bg-sunken/80 border border-line space-y-3 mt-2.5">
@@ -37,6 +38,24 @@ export default function ParentServiceCard({ service }: Readonly<{ service: Store
           </div>
         )}
       </div>
+
+      {tiers.length > 0 && (
+        <div className="pt-2 border-t border-line/60 text-xs">
+          <p className="font-semibold text-ink-muted uppercase tracking-wider text-[10px] mb-1.5">
+            Service-level add-ons (already included in service):
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {tiers.map((t) => (
+              <span key={t.id ?? t.label} className="px-2 py-0.5 bg-white border border-line text-ink text-[11px]">
+                {t.label} {peso(t.amount) ? `(${peso(t.amount)})` : '(Depends)'}
+              </span>
+            ))}
+          </div>
+          <p className="text-[11px] text-ink-muted mt-1.5 italic">
+            Note: These are already set on the service. Do not duplicate them in your design-specific add-ons.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

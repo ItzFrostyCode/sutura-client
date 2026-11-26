@@ -5,6 +5,16 @@ import { safeHref } from '@/lib/safeHref';
 import { SocialIcon, detectSocialPlatform, MAX_SOCIAL_LINKS } from '../tabs/about/SocialLinksCard';
 import { ExternalLink, Copy, Check, ChevronDown, Globe } from 'lucide-react';
 
+export const DEFAULT_THREAD_NEEDLE_SOCIALS = [
+  { label: 'Thread & Needle Tailoring', url: 'https://facebook.com/threadandneedle.davao' },
+  { label: '@threadandneedle.davao', url: 'https://instagram.com/threadandneedle.davao' },
+  { label: 'Thread & Needle TikTok', url: 'https://tiktok.com/@threadandneedle.davao' },
+  { label: 'Thread & Needle Tailoring Davao', url: 'https://youtube.com/@threadandneedledavao' },
+  { label: 'Thread & Needle Official Portfolio', url: 'https://pinterest.com/threadandneedledavao' },
+  { label: 'Thread & Needle Co.', url: 'https://linkedin.com/company/threadandneedle' },
+  { label: '@threadandneedle.davao', url: 'https://threads.net/@threadandneedle.davao' },
+  { label: 'threadandneedle.ph', url: 'https://threadandneedle.ph' },
+];
 
 function StoreSocialLinkRow({ link }: { readonly link: { label: string; url: string } }) {
   const [copied, setCopied] = useState(false);

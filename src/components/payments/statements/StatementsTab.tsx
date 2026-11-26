@@ -7,7 +7,6 @@ import StatementFilters from './StatementFilters';
 import StatementRow from './StatementRow';
 import { useStatements } from './useStatements';
 import { printInPlace } from '@/lib/printInPlace';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 const btn = 'h-12 px-4 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
@@ -43,15 +42,12 @@ export default function StatementsTab() {
       <div className="flex flex-col min-[700px]:flex-row gap-3">
         <button type="button" disabled={locked || s.selected.length === 0 || s.busy !== null} onClick={() => s.download('selected', 'zip')} className={`${btn} bg-espresso hover:bg-espresso/90 text-white`}>
           {s.busy === 'selected-zip' ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />} Download selected ({s.selected.length}) as ZIP
-          {locked && <PlanTierTag plan="Premium" className="border-white/30 bg-white/15 text-white" />}
         </button>
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'zip')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
           {s.busy === 'range-zip' ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />} All receipts in period (ZIP)
-          {locked && <PlanTierTag plan="Premium" />}
         </button>
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'csv')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
           {s.busy === 'range-csv' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (CSV / Excel)
-          {locked && <PlanTierTag plan="Premium" />}
         </button>
         <button type="button" onClick={() => printInPlace(s.printHref)} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}><FileText size={16} /> Print / save as PDF</button>
       </div>

@@ -8,7 +8,6 @@ import { formatPeso } from '@/components/store-application/applicationTypes';
 import SearchInput from '@/components/shared/SearchInput';
 import PlanPill from '@/components/admin/ui/PlanPill';
 import { PAGER_BTN } from '@/components/admin/ui/AdminPrimitives';
-import { scrollToListTop } from '@/lib/scrollToListTop';
 import { AXIS, BAR, BAR_STACK_BASE, CHART, LEGEND, compactPeso, rangeText, ReportCard, ReportStat, SectionHeading, TH, tooltipStyle, type ReportRange } from './reportUi';
 
 interface StoreRow {
@@ -116,8 +115,6 @@ export default function ShopRevenueReport({ report, range }: { readonly report: 
   useEffect(() => { setPage(1); }, [report]);
 
   const pagerBtn = PAGER_BTN;
-  const tableRef = useRef<HTMLDivElement>(null);
-  const goToPage = (n: number) => { setPage(n); scrollToListTop(tableRef.current); };
 
   return (
     <section className="space-y-5">
@@ -162,7 +159,7 @@ export default function ShopRevenueReport({ report, range }: { readonly report: 
           </div>
         )}
       >
-        <div ref={tableRef} className="scroll-mt-24 overflow-x-auto">
+        <div className="overflow-x-auto">
           {/* Fixed column widths and always 5 row slots, so searching never resizes the card. */}
           <table className="w-full min-w-208 table-fixed text-sm">
             <colgroup>
@@ -228,10 +225,10 @@ export default function ShopRevenueReport({ report, range }: { readonly report: 
             Page {current} of {lastPage} <span className="text-[#A8A19A]">· {matches.length} total</span>
           </p>
           <div className="flex gap-2">
-            <button type="button" aria-label="Previous page" disabled={current <= 1} onClick={() => goToPage(current - 1)} className={pagerBtn}>
+            <button type="button" aria-label="Previous page" disabled={current <= 1} onClick={() => setPage(current - 1)} className={pagerBtn}>
               <ChevronLeft size={17} />
             </button>
-            <button type="button" aria-label="Next page" disabled={current >= lastPage} onClick={() => goToPage(current + 1)} className={pagerBtn}>
+            <button type="button" aria-label="Next page" disabled={current >= lastPage} onClick={() => setPage(current + 1)} className={pagerBtn}>
               <ChevronRight size={17} />
             </button>
           </div>

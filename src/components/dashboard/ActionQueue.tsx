@@ -226,7 +226,7 @@ export default function ActionQueue({ data, unpaidJobs, pendingDpJobs, dueToday,
                         <p className="text-xs text-ink-faint truncate">
                           {j.order_number || `#${j.id}`}
                           {row.detailKind === 'deposit' && ` · ${peso(j.total_amount)} total`}
-                          {row.detailKind === 'deadline' && j.due_date && ` · Due ${new Date(j.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                          {row.detailKind === 'deadline' && j.due_date && ` · Due ${new Date(j.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`}
                         </p>
                       </div>
                       {(() => {

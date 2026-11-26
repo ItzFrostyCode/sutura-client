@@ -33,7 +33,7 @@ const STATUS_META: Record<TicketDetail['status'], { label: string; tone: string 
 };
 
 function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return new Date(dateStr).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 export default function SupportTicketDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {

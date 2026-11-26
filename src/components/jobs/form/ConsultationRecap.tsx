@@ -42,7 +42,7 @@ export default function ConsultationRecap({ appointment: a, defaultOpen = false 
                 <li key={it.id}>
                   <span className="font-medium">{it.quantity} × {it.item_name}</span>
                   {it.catalog_item && it.service && <span className="block text-xs text-ink-muted">Service: {it.service.name}</span>}
-                  <span className="block text-xs text-ink-muted">{[it.selected_size && `Size ${it.selected_size}`, it.selected_color && `Color ${it.selected_color}`].filter(Boolean).join(' · ')}</span>
+                  <span className="block text-xs text-ink-muted">{[it.selected_size && `Size ${it.selected_size}`, it.selected_color && `Color ${it.selected_color}`, ...(it.add_ons ?? [])].filter(Boolean).join(' · ')}</span>
                   {it.notes && <span className="block text-xs text-ink-muted">{it.notes}</span>}
                 </li>
               ))}

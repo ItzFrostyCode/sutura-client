@@ -41,15 +41,15 @@ export default function AppointmentCard({ appt, cancellingId, onCancel }: Readon
         <StoreLogoAvatar
           src={appt.store?.logo_path}
           name={appt.store?.name ?? 'Store'}
-          className="w-10 h-10 rounded-full border border-line-strong shadow-none"
-          textClassName="text-sm font-serif font-bold text-taupe-dark"
+          className="w-8 h-8 rounded-full border border-line-strong shadow-none"
+          textClassName="text-xs font-serif font-bold text-taupe-dark"
         />
         {appt.store?.slug ? (
-          <Link href={`/store/${appt.store.slug}`} onClick={(e) => e.stopPropagation()} className="mobile-body-sm min-w-0 flex-1 truncate font-semibold text-ink hover:text-taupe">
+          <Link href={`/store/${appt.store.slug}`} onClick={(e) => e.stopPropagation()} className="mobile-caption min-w-0 flex-1 truncate text-ink-muted hover:text-taupe">
             {appt.store.name}
           </Link>
         ) : (
-          <span className="mobile-body-sm min-w-0 flex-1 truncate font-semibold text-ink">Store</span>
+          <span className="mobile-caption min-w-0 flex-1 truncate text-ink-muted">Store</span>
         )}
         <span className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.tone}`}>
           <StatusIcon size={12} /> {meta.label}
@@ -60,7 +60,7 @@ export default function AppointmentCard({ appt, cancellingId, onCancel }: Readon
         {appt.kind && <span className={`${chip} font-semibold`}>{KIND_LABELS[appt.kind] ?? appt.kind}</span>}
         <span className={chip}>{appt.appointment_type === 'other' && appt.purpose_label ? `Other — ${appt.purpose_label}` : (TYPE_LABELS[appt.appointment_type] ?? appt.appointment_type)}</span>
         {appt.material_source === 'own' && <span className={chip}>✓ Bring fabric/sample</span>}
-        {appt.job_order && <span className={`${chip} font-semibold`}>#{appt.job_order.order_number}</span>}
+        {appt.job_order && <span className={`${chip} font-semibold`}>Order {appt.job_order.order_number}</span>}
         {appt.intake_channel === 'walk_in' && <span className={`${chip} text-[10px] font-semibold`}>Booked by the shop</span>}
         {appt.needs_new_time && appt.status === 'pending' && <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">Pick a new time</span>}
       </div>

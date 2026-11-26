@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { TRIAL_HREF } from './shopsLinks';
 import ShopsContainer from './ShopsContainer';
 import SectionHead from './SectionHead';
 import PlanCard from './PlanCard';
 import { useShopPlans } from './useShopPlans';
+import { TRIAL_HREF } from './shopsLinks';
 import type { BillingCycle } from '@/components/store-application/applicationTypes';
 
 const CYCLES: { value: BillingCycle; label: string }[] = [{ value: 'monthly', label: 'Monthly' }, { value: 'yearly', label: 'Yearly' }];
@@ -25,7 +25,7 @@ export default function ShopsPricing() {
             <p className="flex flex-wrap items-center gap-2 text-xl font-semibold text-ink">
               Free trial <span className="rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-700">₱0 for 14 days</span>
             </p>
-            <p className="mobile-body-md mt-1 max-w-xl text-ink-body">Any plan you pick, free for 14 days once your shop is approved. Nothing to pay and no receipt to upload.</p>
+            <p className="mobile-body-md mt-1 max-w-xl text-ink-body">Basic’s features, free for 14 days once your shop is approved. Nothing to pay and no receipt to upload.</p>
           </div>
           <Link href={TRIAL_HREF} className="btn-primary-mobile shrink-0 rounded-[10px] bg-ink px-6 text-white transition-transform hover:bg-espresso active:scale-[0.98]">Start free trial</Link>
         </div>

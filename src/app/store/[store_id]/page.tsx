@@ -22,7 +22,6 @@ import StoreLocationsTab from '@/components/store-storefront/tabs/StoreLocations
 import StoreWorkTab from '@/components/store-storefront/tabs/StoreWorkTab';
 import StoreReviewsTab from '@/components/store-storefront/tabs/StoreReviewsTab';
 import RatingModal from '@/components/store-storefront/modals/RatingModal';
-import { OPENING_HOURS_ANCHOR } from '@/components/store-storefront/tabs/about/OpeningHoursCard';
 
 
 
@@ -36,24 +35,6 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
   // customer header or back arrow — the hero's Dashboard button is their
   // way back, and ShopRouteGuard blocks the customer pages anyway.
   const isShopView = useShopViewingOwnStore(storeId);
-
-  // Opens About and brings a section into view (it renders once the shop's settings have loaded), briefly outlined so
-  // the eye finds it. Without a section: the top of About.
-  const openAbout = (anchorId?: string) => {
-    s.setActiveTab('about');
-    let tries = 0;
-    const find = () => {
-      const el = anchorId ? document.getElementById(anchorId) : s.tabBarRef.current;
-      if (!el && tries++ < 30) { window.setTimeout(find, 100); return; }
-      if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (anchorId) {
-        el.classList.add('ring-2', 'ring-taupe', 'ring-offset-2');
-        window.setTimeout(() => el.classList.remove('ring-2', 'ring-taupe', 'ring-offset-2'), 2000);
-      }
-    };
-    window.setTimeout(find, 50);
-  };
 
   if (s.loading) {
     return (
@@ -92,8 +73,7 @@ function PublicStoreProfileContent({ params }: Readonly<PublicStoreProfilePagePr
         isShopViewingOwnStore={isShopView}
         embedded={embedded}
         altersRepairs={s.services.some((svc) => svc.service_category === 'alterations_repairs')}
-        onEditProfile={() => openAbout()}
-        onGoToHours={() => openAbout(OPENING_HOURS_ANCHOR)}
+        onEditProfile={() => s.setActiveTab('about')}
         myReview={s.myReview}
         isBookmarked={s.isBookmarked}
         onToggleBookmark={s.toggleBookmark}

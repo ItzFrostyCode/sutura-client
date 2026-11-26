@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import ShopsContainer from './ShopsContainer';
 import OrderRecordMock from './OrderRecordMock';
-import { APPLY_HREF } from './shopsLinks';
+import { TRIAL_HREF } from './shopsLinks';
 
 export default function ShopsHero() {
   return (
@@ -17,14 +17,14 @@ export default function ShopsHero() {
             SUTURA keeps every order in one record: the booking, the measurements, the quote, the sewing and the payments. Your shop is listed for customers across Davao City.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href={APPLY_HREF} className="btn-primary-mobile inline-flex items-center justify-center gap-2 rounded-[10px] bg-ink px-6 text-white transition-transform hover:bg-espresso active:scale-[0.98]">
-              Register your shop <ArrowRight size={18} />
+            <Link href={TRIAL_HREF} className="btn-primary-mobile inline-flex items-center justify-center gap-2 rounded-[10px] bg-ink px-6 text-white transition-transform hover:bg-espresso active:scale-[0.98]">
+              Start free trial <ArrowRight size={18} />
             </Link>
             <a href="#pricing" className="btn-secondary-mobile inline-flex items-center justify-center rounded-[10px] border border-line-strong px-6 text-ink transition-colors hover:bg-sunken">
-              See the plans
+              Register with a plan
             </a>
           </div>
-          <p className="mobile-caption mt-4 max-w-md text-ink-muted">Try any plan free for 14 days, or register with a paid plan. Either way, your shop goes live once your documents are verified.</p>
+          <p className="mobile-caption mt-4 max-w-md text-ink-muted">Try it free for 14 days, or register with a paid plan. Either way, your shop goes live once your documents are verified.</p>
         </div>
         <OrderRecordMock />
       </ShopsContainer>

@@ -54,6 +54,7 @@ export interface CatalogItem {
   color?: string;
   garment_type?: string;
   sizes?: string[] | null;
+  add_ons?: { id?: string; name: string; price: number }[] | null;
   features?: string[] | { bullets: string[]; image_url: string };
   size_chart_image_url?: string | null;
   size_chart_columns?: string[] | null;

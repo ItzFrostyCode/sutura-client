@@ -9,7 +9,6 @@ import EmptyState from '@/components/account/EmptyState';
 import NotificationRow from './NotificationRow';
 import GuestInbox from './GuestInbox';
 import InboxMenu from './InboxMenu';
-import NotificationDetailModal from '@/components/notifications/NotificationDetailModal';
 import { sectionsOf, type AppNotification } from './inboxTypes';
 import { useInbox } from './useInbox';
 
@@ -34,10 +33,6 @@ export default function InboxPanel({ compact = false, onLeave }: InboxPanelProps
   const inbox = useInbox(hydrated && isAuthenticated);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [confirmClear, setConfirmClear] = useState(false);
-
-  // Notifications without an action_url open a detail modal here (the
-  // dashboard bell uses NotificationDetailModal directly; we do the same).
-  const { detailNotif, closeDetail, deleteDetail } = inbox;
 
   const shown = filter === 'unread' ? inbox.list.filter((n) => !n.read_at) : inbox.list;
   let sections = sectionsOf(shown);
@@ -101,16 +96,6 @@ export default function InboxPanel({ compact = false, onLeave }: InboxPanelProps
         message={`${inbox.readCount} notification${inbox.readCount === 1 ? '' : 's'} you have already read will be removed for good. Unread ones stay.`}
         confirmLabel="Clear"
         tone="danger"
-      />
-
-      {/* Detail modal for notifications that have no action_url — tapping
-          "View Details" on a SUTURA System notification would otherwise silently
-          do nothing. The modal reuses the same component the dashboard bell uses. */}
-      <NotificationDetailModal
-        notif={detailNotif}
-        isOpen={!!detailNotif}
-        onClose={closeDetail}
-        onDelete={deleteDetail}
       />
     </div>
   );

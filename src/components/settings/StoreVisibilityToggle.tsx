@@ -1,8 +1,8 @@
 import React from 'react';
-import { EyeOff } from 'lucide-react';
+import { EyeOff, Lock, Zap } from 'lucide-react';
+import Link from 'next/link';
 
 interface StoreVisibilityToggleProps {
-  /** Not shown here: featured placement follows the plan automatically (shown as a badge on the card). */
   readonly isFeatured: boolean;
   readonly isHidden: boolean;
   readonly onHiddenChange: (value: boolean) => void;
@@ -31,9 +31,11 @@ function ToggleRow({ label, description, checked, onChange, badge }: {
   );
 }
 
-// Featured placement is NOT a setting — it follows the shop's plan automatically (SubscriptionController::subscribe() /
-// ExpireSubscriptions on the backend), so nothing about it is asked here.
-export default function StoreVisibilityToggle({ isHidden, onHiddenChange }: StoreVisibilityToggleProps) {
+// Featured placement is NOT a toggle the owner controls here — it's kept
+// automatically in sync with the store's active subscription plan
+// (SubscriptionController::subscribe() / ExpireSubscriptions on the
+// backend). This just reports the current, system-decided status.
+export default function StoreVisibilityToggle({ isFeatured, isHidden, onHiddenChange }: StoreVisibilityToggleProps) {
   return (
     <div className="divide-y divide-line/60">
       <ToggleRow
@@ -47,6 +49,25 @@ export default function StoreVisibilityToggle({ isHidden, onHiddenChange }: Stor
           </span>
         )}
       />
+      <div className="flex items-center justify-between gap-4 py-3">
+        <div>
+          <div className="text-sm font-semibold text-ink flex items-center gap-2">Featured Shop Placement</div>
+          <p className="text-xs text-ink-muted mt-0.5 max-w-sm">
+            {isFeatured
+              ? 'Automatically on — Premium plans are pinned at the top of relevant customer search results.'
+              : 'Upgrade to Premium and this turns on automatically — no need to set it yourself.'}
+          </p>
+        </div>
+        {isFeatured ? (
+          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
+            <Zap size={10} /> Active
+          </span>
+        ) : (
+          <Link href="/dashboard/billing" className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors">
+            <Lock size={12} /> Upgrade
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

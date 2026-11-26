@@ -4,11 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { clearShopIntent, parseShopIntent, saveShopIntentFromUrl } from '@/lib/shopIntent';
-import { checkSignupEmail, suggestEmail } from '@/lib/checkEmail';
+import { isEmailTaken } from '@/lib/checkEmail';
 
 /** One email = one role: a customer's email can't also be a shop sign-in (shop accounts live in the dashboard), so say why. */
-export const SHOP_EMAIL_TAKEN = 'This email already has a SUTURA account. A shop needs its own email — use your business email.';
-const NO_SUCH_EMAIL = 'This email address does not exist. Check the spelling, or use another email.';
+const SHOP_EMAIL_TAKEN = 'This email already has a SUTURA account. A shop needs its own email — use your business email.';
 export type SignupStep = 'email' | 'password' | 'inbox';
 
 const KEY = 'sutura.ownerSignup';
@@ -89,14 +88,11 @@ export function useOwnerSignup() {
 
   /** Email step → password step, but only if the email can still sign up. */
   const continueFromEmail = async () => {
-    setEmailError('');
-    const typo = suggestEmail(email);
-    if (typo) { setEmailError(`Check the spelling. Did you mean ${typo}?`); return; }
     setChecking(true);
-    const check = await checkSignupEmail(email);
+    setEmailError('');
+    const taken = await isEmailTaken(email);
     setChecking(false);
-    if (check.taken) { setEmailError(SHOP_EMAIL_TAKEN); return; }
-    if (!check.deliverable) { setEmailError(NO_SUCH_EMAIL); return; }
+    if (taken) { setEmailError(SHOP_EMAIL_TAKEN); return; }
     goTo('password');
   };
 
@@ -113,9 +109,9 @@ export function useOwnerSignup() {
       try { sessionStorage.setItem(KEY, JSON.stringify({ email: email.trim(), pollToken: token })); } catch { /* optional */ }
       setStep('inbox');
     } catch (err) {
-      // The email was refused (taken since the email step, or not a real address): back to the email step, with the reason.
-      const why = (err as { response?: { status?: number; data?: { errors?: { email?: string[] } } } }).response?.data?.errors?.email?.[0];
-      if (why) { setEmailError(/already registered/i.test(why) ? SHOP_EMAIL_TAKEN : why); setStep('email'); return; }
+      // Taken between the email step and now (or the check could not run): back to the email step, with the reason.
+      const taken = (err as { response?: { status?: number; data?: { errors?: { email?: string[] } } } }).response?.data?.errors?.email;
+      if (taken) { setEmailError(SHOP_EMAIL_TAKEN); setStep('email'); return; }
       setError(getErrorMessage(err, 'Could not create your sign-up. Please try again.'));
     } finally {
       setBusy(false);

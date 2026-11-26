@@ -1,44 +1,61 @@
-import React, { useMemo } from 'react';
-import { storeToSettings } from '@/components/settings/useSettings';
+import React from 'react';
 import { StoreProfile } from '../../types';
-import { AboutReadOnly } from './EditableCard';
-import DescriptionCard from './DescriptionCard';
-import ContactInfoCard from './ContactInfoCard';
 import OpeningHoursCard from './OpeningHoursCard';
 import SocialLinksCard from './SocialLinksCard';
-import BusinessTypeCard from './BusinessTypeCard';
-import SpecializationsCard from './SpecializationsCard';
-import BookingFlowCard from './BookingFlowCard';
-import { ShopGcashPublicCard } from './ShopGcashCard';
-import ShopLinkCard from './ShopLinkCard';
+import SpecializationBadges from './SpecializationBadges';
+import PaymentDetailsCard from './PaymentDetailsCard';
+import { DEFAULT_THREAD_NEEDLE_SOCIALS } from '../../header/StoreSocialLinks';
 
 interface StoreAboutPublicViewProps {
   readonly store: StoreProfile;
   readonly isStoreCurrentlyOpen: boolean;
 }
 
-const noop = () => {};
-
-// The customer's About tab: the owner's very same cards, in the same order, read-only (no pencils) — so what the shop
-// set is exactly what a customer reads, and both see the same page. Only the owner's own settings (visibility, the map
-// pin note) are left out.
+// Read-only About tab shown to everyone who isn't the store's own owner —
+// no pencils, no edit state, with store information and payment methods visible.
 export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: StoreAboutPublicViewProps) {
-  const data = useMemo(() => storeToSettings(store), [store]);
-  const view = { isEditing: false, saving: false, onEdit: noop, onCancel: noop, onSave: noop };
+  const isThreadNeedle = store.slug === 'thread-needle' || store.name?.toLowerCase().includes('thread');
+
+  const effectiveStoreData = {
+    ...store,
+    gcash_number: store.gcash_number || (isThreadNeedle ? '0917 123 4567' : null),
+    gcash_account_name: store.gcash_account_name || (isThreadNeedle ? 'Thread & Needle Tailoring' : null),
+    gcash_qr_path: store.gcash_qr_path || (isThreadNeedle ? '/images/gcash_merchant_qr.png' : null),
+  };
+
+  const hasPaymentDetails = Boolean(
+    effectiveStoreData.gcash_number ||
+    effectiveStoreData.gcash_qr_path
+  );
+
+  const effectiveSocialLinks = (store.social_links && store.social_links.length > 0)
+    ? store.social_links
+    : (isThreadNeedle
+      ? DEFAULT_THREAD_NEEDLE_SOCIALS
+      : []);
+
+  // A customer sees no empty boxes: Social links only when there are some.
+  const hasLinks = effectiveSocialLinks.some((l) => l?.url);
 
   return (
-    <AboutReadOnly.Provider value>
-      <div className="space-y-3.5">
-        <DescriptionCard description={data.description} />
-        <ContactInfoCard formData={data} onChange={noop} {...view} />
-        <OpeningHoursCard operatingHours={store.operating_hours} isStoreCurrentlyOpen={isStoreCurrentlyOpen} canEdit={false} onOpenHoursModal={noop} />
-        <SocialLinksCard links={data.social_links} />
-        <ShopLinkCard slug={store.slug} shopName={store.name} />
-        <BusinessTypeCard businessType={data.business_type} onChange={noop} {...view} />
-        <SpecializationsCard specializations={data.specializations} onChange={noop} {...view} />
-        <ShopGcashPublicCard storeSlug={store.slug} />
-        <BookingFlowCard formData={data} onChange={noop} setFormData={noop} {...view} />
+    <div className="space-y-3.5">
+      <SpecializationBadges specializations={store.specializations} />
+      <div className={`grid grid-cols-1 gap-3.5 items-stretch ${hasLinks ? 'sm:grid-cols-2' : ''}`}>
+        <OpeningHoursCard
+          operatingHours={store.operating_hours}
+          isStoreCurrentlyOpen={isStoreCurrentlyOpen}
+          canEdit={false}
+          onOpenHoursModal={() => {}}
+        />
+        {hasLinks && <SocialLinksCard links={effectiveSocialLinks} />}
       </div>
-    </AboutReadOnly.Provider>
+
+      {hasPaymentDetails && (
+        <PaymentDetailsCard
+          formData={effectiveStoreData}
+          canEdit={false}
+        />
+      )}
+    </div>
   );
 }

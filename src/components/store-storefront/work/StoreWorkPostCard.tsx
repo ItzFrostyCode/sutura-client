@@ -1,8 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
-import { Trash2, ShoppingBag } from 'lucide-react';
+import { Trash2, MessageCircle, ShoppingBag } from 'lucide-react';
 import { PublicStorePost, StoreProfile } from '../types';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
+import { getSocialUrl, getMessengerUrl } from '../storeStorefrontHelpers';
 import { serviceOrderHref } from '@/lib/serviceOrderHref';
 
 interface StoreWorkPostCardProps {
@@ -100,6 +101,15 @@ export default function StoreWorkPostCard({
         <p className="text-sm text-ink-body font-normal leading-relaxed whitespace-pre-wrap">{post.caption}</p>
 
         <div className="pt-2 flex flex-col gap-2.5">
+          <a
+            href={getMessengerUrl(getSocialUrl(store.social_links, 'facebook'))}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full min-h-[48px] h-[52px] rounded-lg flex items-center justify-center gap-2 bg-ink hover:bg-taupe text-white text-sm font-semibold transition-colors shadow-xs active:scale-[0.99] cursor-pointer"
+          >
+            <MessageCircle size={16} /> Inquire About This
+          </a>
+
           {post.service && (
             <Link
               // A service is ordered online (a repair opens its own request form: the order page sends it there).

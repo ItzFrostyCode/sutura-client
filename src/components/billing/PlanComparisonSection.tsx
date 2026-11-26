@@ -49,7 +49,6 @@ export default function PlanComparisonSection({
             {/* Live limits from each plan (admin-editable on the Plans page). */}
             {([
               ['Staff Accounts', (p?: Plan) => p?.max_staff],
-              ['Services', (p?: Plan) => p?.max_services],
               // Branch Shops beyond the Main Shop (0 = main shop only).
               ['Branch Shops', (p?: Plan) => p?.max_branches ?? (p?.slug === 'premium' ? -1 : 0)],
             ] as const).map(([label, limitOf]) => (

@@ -2,8 +2,6 @@ import React from 'react';
 import { BadgeCheck, FileText, PackageOpen } from 'lucide-react';
 import type { QuotationFlow } from '@/components/shared/OrderTrackingView';
 import QuotationDecision from '@/components/shared/QuotationDecision';
-import { useShopPaymentMethods } from '@/components/account/orders/usePayForOrder';
-import ShopPayChannels from '@/components/account/orders/ShopPayChannels';
 
 interface QuotationApprovalCardProps {
   readonly orderId: number;
@@ -11,9 +9,6 @@ interface QuotationApprovalCardProps {
   readonly status: string;
   readonly dueDate: string | null;
   readonly onApproved: () => void;
-  /** The shop and branch, so the quotation can show where the deposit is paid. */
-  readonly storeSlug?: string;
-  readonly branchId?: number | null;
 }
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`;
@@ -22,9 +17,8 @@ const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDig
  * Before the shop starts: what the customer is being quoted, the date, the deposit and the
  * cancellation policy — and the one tap that approves all of it. Customer-safe data only.
  */
-export default function QuotationApprovalCard({ orderId, flow, status, dueDate, onApproved, storeSlug, branchId }: QuotationApprovalCardProps) {
+export default function QuotationApprovalCard({ orderId, flow, status, dueDate, onApproved }: QuotationApprovalCardProps) {
   const b = flow.breakdown;
-  const pay = useShopPaymentMethods(storeSlug, branchId);
 
   if (flow.waiting_for_materials) {
     return (
@@ -95,8 +89,6 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
         {dueDate && <div className="flex justify-between"><dt className="text-ink-muted">Expected completion</dt><dd>{new Date(dueDate).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</dd></div>}
       </dl>
 
-      <WhereToPay methods={pay.methods} loading={pay.loading} amount={flow.required_deposit} isFull={b.total > 0 && flow.required_deposit >= b.total} />
-
       {flow.terms_text && <p className="mobile-body-sm mt-3 rounded-xl bg-sunken p-3 font-normal text-ink">{flow.terms_text}</p>}
       {flow.valid_until && <p className="mobile-caption mt-2 text-ink-muted">This price is valid until {new Date(flow.valid_until).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}.</p>}
 
@@ -109,21 +101,5 @@ export default function QuotationApprovalCard({ orderId, flow, status, dueDate, 
 
       <QuotationDecision orderId={orderId} expired={Boolean(flow.expired)} onDone={onApproved} />
     </section>
-  );
-}
-
-/** Before approving: which of the shop's accounts the deposit goes to, so the customer knows how they will pay. */
-function WhereToPay({ methods, loading, amount, isFull }: Readonly<{ methods: ReturnType<typeof useShopPaymentMethods>['methods']; loading: boolean; amount: number; isFull: boolean }>) {
-  if (loading) return null;
-  const what = amount > 0 ? `${isFull ? 'the full' : 'the'} ${peso(amount)}${isFull ? '' : ' deposit'}` : 'your payment';
-  if (methods.length === 0) {
-    return <p className="mobile-body-sm mt-3 font-normal text-ink-muted">This shop takes payment in person. Pay {what} at the shop.</p>;
-  }
-  return (
-    <div className="mt-4">
-      <p className="mobile-body-sm font-semibold text-ink">Where to pay</p>
-      <p className="mobile-caption mb-2 text-ink-muted">After you approve, pay {what} here, then send your receipt on this page.</p>
-      <ShopPayChannels methods={methods} />
-    </div>
   );
 }

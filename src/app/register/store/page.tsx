@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertCircle } from 'lucide-react';
 import PublicNav from '@/components/shared/PublicNav';
 import ApplicationStepper from '@/components/store-application/ApplicationStepper';
 import OwnerStep from '@/components/store-application/OwnerStep';
@@ -23,8 +22,7 @@ const STEP_COPY = {
 // Submitting does NOT sign anyone in: on approval the System Admin issues a
 // shop login (…@sutura.shop) and temporary password, emailed to the owner.
 export default function StoreApplicationPage() {
-  // The answers survive a refresh; leaving the page starts it fresh next time.
-  const app = useStoreApplication({ keepDraft: true });
+  const app = useStoreApplication();
   const copy = STEP_COPY[app.step];
 
   return (
@@ -32,9 +30,9 @@ export default function StoreApplicationPage() {
       <PublicNav />
 
       <main className="flex-1 mobile-screen-margins py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-2xl">
-          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-taupe">Open a shop</p>
-          <h1 className="mt-1.5 text-[28px] font-bold leading-tight tracking-tight text-ink sm:text-[34px]">Register your tailoring shop</h1>
+        <div className="mx-auto w-full max-w-2xl sm:border sm:border-line sm:bg-surface sm:p-8">
+          <p className="mobile-overline text-taupe">Open a Shop</p>
+          <h1 className="mobile-h1 text-ink mt-2">Register your tailoring shop</h1>
 
           {app.submittedTo ? <ApplicationSubmitted email={app.submittedTo} freeTrial={app.freeTrial} /> : (
           <>
@@ -42,15 +40,14 @@ export default function StoreApplicationPage() {
             <ApplicationStepper current={app.step} />
           </div>
 
-          <div className="mt-8 mb-5">
-            <h2 className="text-[22px] font-bold tracking-tight text-ink">{copy.title}</h2>
-            <p className="mt-1 text-[15px] text-ink-muted">{copy.body}</p>
+          <div className="mt-8 mb-6">
+            <h2 className="mobile-h2 text-ink">{copy.title}</h2>
+            <p className="mobile-body-md text-ink-muted mt-2">{copy.body}</p>
           </div>
 
           {app.error && (
-            <div id="app-error" role="alert" className="mb-5 flex scroll-mt-24 items-start gap-2.5 rounded-2xl bg-danger/10 p-4 text-[15px] text-danger">
-              <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
-              <span>{app.error}</span>
+            <div role="alert" className="mb-6 border border-danger/30 bg-danger/5 p-3.5 text-sm text-danger">
+              {app.error}
             </div>
           )}
 
@@ -59,9 +56,9 @@ export default function StoreApplicationPage() {
           {app.step === 3 && <DocumentsStep app={app} />}
           {app.step === 4 && <PlanStep app={app} />}
 
-          <p className="mt-10 text-center text-[15px] text-ink-muted">
+          <p className="mt-8 text-center text-sm text-ink">
             Already approved?{' '}
-            <Link href="/login?as=store" className="font-semibold text-ink underline underline-offset-2">Sign in to your shop</Link>
+            <Link href="/login?as=store" className="font-bold underline underline-offset-2">Sign in to your shop</Link>
           </p>
           </>
           )}

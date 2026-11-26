@@ -194,8 +194,8 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             </div>
           )}
 
-          {/* Center card. Desktop (lg+): the photo (with the hover preview) on the left, the details on the right, at least 540px tall (fits a laptop screen with the title and arrows) so the arrows rarely move — but a MINIMUM, not a fixed height: when the services need more room the card grows, instead of the last row sliding under "Visit Shop". Tablet and phone: the details only, no photo. */}
-          <div className="w-full max-w-[960px] min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-xs lg:flex lg:min-h-[540px]">
+          {/* Center card. Desktop (lg+): the photo (with the hover preview) on the left, the details on the right, at least 650px tall so the arrows rarely move — but a MINIMUM, not a fixed height: when the services need more room the card grows, instead of the last row sliding under "Visit Shop". Tablet and phone: the details only, no photo. */}
+          <div className="w-full max-w-[960px] min-w-0 shrink-0 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-xs lg:flex lg:min-h-[650px]">
             {/* Left: Large Hero Image Area (desktop only) */}
             <div className="relative hidden min-w-0 flex-1 overflow-hidden bg-sunken lg:block">
               <Link href={heroHref} className="absolute inset-0 block group">
@@ -236,7 +236,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
             </div>
 
             {/* Details: shop, services, Visit Shop */}
-            <div className="flex w-full flex-col gap-3 bg-white p-4 sm:p-5 lg:gap-2.5 lg:p-4 lg:w-[420px] lg:shrink-0 lg:border-l lg:border-line">
+            <div className="flex w-full flex-col gap-3 bg-white p-4 sm:p-5 lg:w-[420px] lg:shrink-0 lg:border-l lg:border-line">
               {/* Header Info */}
               <div>
                 {/* Location row */}
@@ -262,12 +262,12 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
 
                   <div className="min-w-0 flex-1">
                     <Link href={gate(`/store/${storeSlug}`)} className="group/name block">
-                      <h3 className="text-base sm:text-lg font-semibold text-ink leading-tight line-clamp-2 lg:line-clamp-1 group-hover/name:text-taupe transition-colors">
+                      <h3 className="text-base sm:text-lg font-semibold text-ink leading-tight line-clamp-2 lg:min-h-[2lh] group-hover/name:text-taupe transition-colors">
                         {storeName}
                       </h3>
                     </Link>
                     {subtitle && (
-                      <p className="text-xs text-ink-muted line-clamp-2 mt-0.5 lg:line-clamp-1 lg:min-h-[1lh]">
+                      <p className="text-xs text-ink-muted line-clamp-2 mt-0.5 lg:min-h-[2lh]">
                         {subtitle}
                       </p>
                     )}
@@ -371,7 +371,7 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
       {/* Back / Next under the card, with the count ("1 of 2") in place of the dots. All shops stays alone on the
           right of the title, so the header lines up the same on a phone, a tablet and desktop. */}
       {isMulti && (
-        <div className="mt-4 flex items-center justify-center gap-3 lg:mt-2" role="group" aria-label="Featured shops">
+        <div className="mt-4 flex items-center justify-center gap-3" role="group" aria-label="Featured shops">
           <button type="button" onClick={() => move(-1)} aria-label="Previous featured shop" className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:border-ink">
             <ChevronLeft size={20} aria-hidden />
           </button>

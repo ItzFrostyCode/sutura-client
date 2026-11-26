@@ -37,7 +37,7 @@ export default function StoreVisibilityCard({
       <div className="flex items-center gap-2 flex-wrap text-sm">
         <span className="text-ink-body font-medium">{isHidden ? 'Hidden from customers' : 'Visible to customers'}</span>
         {isFeatured && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
             <Zap size={10} /> Featured
           </span>
         )}

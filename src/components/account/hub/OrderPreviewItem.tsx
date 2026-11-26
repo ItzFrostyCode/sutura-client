@@ -9,36 +9,43 @@ export default function OrderPreviewItem({ order }: { readonly order: MyOrder })
   const pending = order.pending_payment_amount ?? 0;
 
   return (
-    // The whole box opens the order (a big target, not just the "View order" text).
-    <Link href={`/account/orders/${order.id}`} className="mt-3 block rounded-2xl border border-line bg-surface p-3.5 transition-colors hover:bg-sunken active:opacity-80">
+    <div className="mt-3 rounded-2xl bg-sunken p-3.5">
       <div className="flex items-center gap-2">
         <StoreLogoAvatar
           src={order.store?.logo_path}
           name={order.store?.name ?? 'Store'}
-          className="w-10 h-10 rounded-full border border-line-strong shadow-none"
-          textClassName="text-sm font-serif font-bold text-taupe-dark"
+          className="w-7 h-7 rounded-full border border-line-strong shadow-none"
+          textClassName="text-xs font-serif font-bold text-taupe-dark"
         />
-        <span className="mobile-body-sm min-w-0 flex-1 truncate font-semibold text-ink">{order.store?.name ?? 'Store'}</span>
+        {order.store?.slug ? (
+          <Link href={`/store/${order.store.slug}`} className="mobile-caption min-w-0 flex-1 truncate text-ink-muted">
+            {order.store?.name ?? 'Store'}
+          </Link>
+        ) : (
+          <span className="mobile-caption min-w-0 flex-1 truncate text-ink-muted">{order.store?.name ?? 'Store'}</span>
+        )}
         <OrderStatusPill status={order.status} />
       </div>
       <h3 className="mobile-h4 mt-1.5 text-ink">{order.catalog_item_name ?? order.service_name ?? 'Job order'}</h3>
-      <p className="mobile-caption text-ink-muted">#{order.order_number}</p>
+      <p className="mobile-caption text-ink-muted">Order {order.order_number}</p>
       {order.progress && <p className="mobile-caption mt-1 text-ink-muted">{order.progress.headline}</p>}
       {(balance > 0 || pending > 0) && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {balance > 0 && (
-            <span className="mobile-caption rounded-full bg-sunken px-2 py-0.5 font-semibold text-ink">
+            <span className="mobile-caption rounded-full bg-surface px-2 py-0.5 font-semibold text-ink">
               ₱{balance.toLocaleString('en-PH')} left
             </span>
           )}
           {pending > 0 && (
-            <span className="mobile-caption rounded-full bg-sunken px-2 py-0.5 font-semibold text-ink">
+            <span className="mobile-caption rounded-full bg-surface px-2 py-0.5 font-semibold text-ink">
               ₱{pending.toLocaleString('en-PH')} pending approval
             </span>
           )}
         </div>
       )}
-      <span className="mobile-caption mt-2 inline-block font-semibold text-taupe">View order →</span>
-    </Link>
+      <Link href={`/account/orders/${order.id}`} className="mobile-caption mt-2 inline-block font-semibold text-taupe">
+        View order →
+      </Link>
+    </div>
   );
 }

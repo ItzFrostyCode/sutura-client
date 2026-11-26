@@ -35,45 +35,55 @@ export default function PayMethodDialog({ method, outstanding, depositDue, depos
   ];
 
   return (
-    <Modal isOpen={!!method} onClose={close} title={`Send your ${method?.name ?? ''} payment`} maxWidth="max-w-md">
+    <Modal isOpen={!!method} onClose={close} title={`Pay with ${method?.name ?? ''}`} maxWidth="max-w-md">
       {method && (
         <div className="space-y-4">
-          {/* Where it went, in one line (the full card with the QR is on the page behind this). */}
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3">
-            <div className="min-w-0">
-              <p className="mobile-caption text-ink-muted">Paid to {method.account_name}</p>
-              {/* A QR-only method has no number to show or copy. */}
-              <p className="break-all font-mono text-base font-semibold text-ink">{method.account_number || method.name}</p>
-            </div>
-            {method.account_number && (
-              <button type="button" onClick={copy} className="flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-semibold text-ink hover:bg-sunken"><Copy size={14} /> {copied ? 'Copied' : 'Copy'}</button>
+          <div className="space-y-3 rounded-2xl bg-sunken p-4">
+            {method.qr_path && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={getMediaUrl(method.qr_path)} alt={`${method.name} QR code`} className="mx-auto h-48 w-48 rounded-xl bg-white object-contain" />
             )}
+            <div>
+              <p className="mobile-overline text-ink-faint">Account name</p>
+              <p className="text-base text-ink">{method.account_name}</p>
+            </div>
+            {/* A QR-only method has no number to show or copy. */}
+            {method.account_number && (
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="mobile-overline text-ink-faint">{method.kind === 'bank_transfer' ? 'Account number' : 'Number'}</p>
+                  <p className="text-lg font-mono font-semibold text-ink break-all">{method.account_number}</p>
+                </div>
+                <button type="button" onClick={copy} className="flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-surface px-4 text-xs font-semibold shadow-[0_1px_3px_rgba(45,42,38,0.12)] active:opacity-70"><Copy size={14} /> {copied ? 'Copied' : 'Copy'}</button>
+              </div>
+            )}
+            {method.instructions && <p className="text-sm text-ink-body whitespace-pre-wrap">{method.instructions}</p>}
           </div>
 
           <div>
-            <label htmlFor="pay-amt" className="mobile-body-sm mb-1.5 block font-semibold text-ink">Amount you paid</label>
-            <input id="pay-amt" type="number" inputMode="decimal" min="1" max={outstanding} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={`Up to ₱${outstanding.toLocaleString()}`} className="h-12 w-full rounded-xl border border-line bg-surface px-4 text-base text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none focus:ring-4 focus:ring-ink/5" />
+            <label htmlFor="pay-amt" className="mobile-overline mb-2 block text-ink-faint">Amount you paid</label>
+            <input id="pay-amt" type="number" inputMode="decimal" min="1" max={outstanding} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={`Up to ₱${outstanding.toLocaleString()}`} className="h-12 w-full rounded-xl bg-sunken px-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-line-strong" />
             <div className="mt-2 flex flex-wrap gap-2">
-              {chips.map((c) => <button key={c.label} type="button" onClick={() => setAmount(String(c.v))} className="h-11 cursor-pointer rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-line-strong hover:bg-sunken active:opacity-70">{c.label} · ₱{c.v.toLocaleString()}</button>)}
+              {chips.map((c) => <button key={c.label} type="button" onClick={() => setAmount(String(c.v))} className="h-11 cursor-pointer rounded-full bg-sunken px-4 text-xs font-semibold text-ink active:opacity-70">{c.label} · ₱{c.v.toLocaleString()}</button>)}
             </div>
             {value > outstanding + 0.005 && <p className="text-xs text-danger mt-1.5">That is more than what is left (₱{outstanding.toLocaleString()}).</p>}
           </div>
 
           <div>
-            <label htmlFor="pay-ref" className="mobile-body-sm mb-1.5 block font-semibold text-ink">Reference number <span className="font-normal text-ink-faint">(optional)</span></label>
-            <input id="pay-ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="From your GCash receipt" className="h-12 w-full rounded-xl border border-line bg-surface px-4 text-base text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none focus:ring-4 focus:ring-ink/5 font-mono" />
+            <label htmlFor="pay-ref" className="mobile-overline mb-2 block text-ink-faint">Reference number <span className="normal-case font-normal text-ink-faint">(optional)</span></label>
+            <input id="pay-ref" value={reference} onChange={(e) => setReference(e.target.value)} className="h-12 w-full rounded-xl bg-sunken px-4 font-mono text-base text-ink focus:outline-none focus:ring-2 focus:ring-line-strong" />
           </div>
 
           <div>
-            <span className="mobile-body-sm mb-1.5 block font-semibold text-ink">Screenshot of your payment <span className="text-danger">*</span></span>
+            <span className="mobile-overline mb-2 block text-ink-faint">Screenshot of your payment <span className="text-red-600">*</span></span>
             {proof ? (
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={getMediaUrl(proof)} alt="Payment proof" className="h-16 w-16 rounded-xl border border-line object-cover" />
-                <button type="button" onClick={() => setProof('')} className="h-10 cursor-pointer rounded-lg border border-line bg-surface px-3 text-sm font-semibold text-danger hover:bg-sunken">Remove</button>
+                <img src={getMediaUrl(proof)} alt="Payment proof" className="h-16 w-16 rounded-xl object-cover" />
+                <button type="button" onClick={() => setProof('')} className="text-xs font-semibold text-danger cursor-pointer">Remove</button>
               </div>
             ) : (
-              <label className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface text-base font-medium text-ink hover:bg-sunken active:opacity-70">
+              <label className="flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-sunken text-sm text-ink-muted active:opacity-70">
                 {uploading ? <Loader2 size={16} className="animate-spin text-taupe" /> : <Upload size={16} />} {uploading ? 'Uploading…' : 'Attach screenshot'}
                 <input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) { const u = await onUpload(f); if (u) setProof(u); } }} />
               </label>
@@ -81,8 +91,8 @@ export default function PayMethodDialog({ method, outstanding, depositDue, depos
           </div>
 
           <p className="text-xs text-ink-muted">SUTURA never takes your payment. Pay in your {method.name} app first, then send the proof here.</p>
-          <button type="button" disabled={!ok || submitting} onClick={async () => { if (await onSubmit({ amount: value, reference: reference.trim(), receiptPath: proof })) close(); }} className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-ink text-base font-semibold text-white transition-opacity active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40">
-            {submitting && <Loader2 size={18} className="animate-spin" />} Send payment proof
+          <button type="button" disabled={!ok || submitting} onClick={async () => { if (await onSubmit({ amount: value, reference: reference.trim(), receiptPath: proof })) close(); }} className="flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-ink text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50">
+            {submitting && <Loader2 size={18} className="animate-spin" />} I have paid
           </button>
         </div>
       )}

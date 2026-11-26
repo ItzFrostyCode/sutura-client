@@ -127,24 +127,14 @@ export default function DashboardCharts({
   const today0 = new Date().toISOString().slice(0, 10);
   const visibleChartData = chartData.filter(d => !('date' in d) || !d.date || d.date <= today0);
 
-  // Jobs-by-status donut data (exclude zero-count statuses and merge aliases
-  // like cutting + mass_cutting so each label has one slice and unique key).
-  const pieMap = new Map<string, { name: string; value: number; color: string }>();
-  for (const s of asArray<{ status: string; count: number }>(data?.jobs_by_status)) {
-    if (!s || s.count <= 0) continue;
-    const name = STATUS_LABELS[s.status] ?? s.status;
-    const existing = pieMap.get(name);
-    if (existing) {
-      existing.value += s.count;
-    } else {
-      pieMap.set(name, {
-        name,
-        value: s.count,
-        color: STATUS_COLORS[s.status] ?? '#D1C7BD',
-      });
-    }
-  }
-  const pieData = Array.from(pieMap.values());
+  // Jobs-by-status donut data (exclude zero-count statuses)
+  const pieData = asArray<{ status: string; count: number }>(data?.jobs_by_status)
+    .filter(s => s && s.count > 0)
+    .map(s => ({
+      name: STATUS_LABELS[s.status] ?? s.status,
+      value: s.count,
+      color: STATUS_COLORS[s.status] ?? '#D1C7BD',
+    }));
 
   const totalJobsInPie = pieData.reduce((acc, s) => acc + s.value, 0);
 
@@ -185,7 +175,7 @@ export default function DashboardCharts({
   return (
     <section className="bg-surface border border-line rounded-xl overflow-hidden text-ink">
       {/* ── Section header (self-contained — no outer wrapper needed) ── */}
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-line">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
         <div className="min-w-0">
           <h2 className="text-eyebrow-accent">Performance</h2>
           <p className="text-display text-lg font-semibold text-ink mt-1">Business performance</p>
@@ -196,14 +186,14 @@ export default function DashboardCharts({
       </div>
 
       {/* ── Revenue chart ──────────────────────────────────────────── */}
-      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-6 border-b border-line">
+      <div className="px-6 pt-6 pb-6 border-b border-line">
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-          <div className="min-w-0">
+          <div>
             <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-0.5">
               Revenue
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-ink tracking-tight break-words">
+            <p className="text-3xl font-bold text-ink tracking-tight">
               ₱{data?.total_revenue
                 ? data.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })
                 : '0.00'}
@@ -240,8 +230,8 @@ export default function DashboardCharts({
         </div>
 
         {/* Chart */}
-        <div className="h-52 w-full min-w-0 overflow-hidden">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <div className="h-52 w-full">
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={visibleChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -283,7 +273,7 @@ export default function DashboardCharts({
       {/* ── Bottom row: Donut + Recent Orders ──────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2">
         {/* Jobs by status donut */}
-        <div className="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-line min-w-0">
+        <div className="p-6 border-b lg:border-b-0 lg:border-r border-line">
           <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-4">
             Jobs by Status
           </p>
@@ -294,8 +284,8 @@ export default function DashboardCharts({
                   minimum. This was h-44 (176px), 12px too short, so the
                   topmost slice's label rendered outside the container and
                   got clipped by the SVG boundary right under the card title. */}
-              <div className="relative h-56 w-full min-w-0 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <div className="relative h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -334,12 +324,12 @@ export default function DashboardCharts({
               </div>
 
               {/* Legend */}
-              <div className="mt-3 grid grid-cols-1 min-[360px]:grid-cols-2 gap-x-6 gap-y-1.5 w-full max-w-xs">
+              <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 w-full max-w-xs">
                 {pieData.slice(0, 8).map(s => (
-                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-ink-body min-w-0">
+                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-ink-body">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
                     <span className="truncate">{s.name}</span>
-                    <span className="ml-auto font-semibold text-ink shrink-0">{s.value}</span>
+                    <span className="ml-auto font-semibold text-ink">{s.value}</span>
                   </div>
                 ))}
               </div>
@@ -355,7 +345,7 @@ export default function DashboardCharts({
         </div>
 
         {/* Recent Orders */}
-        <div className="p-4 sm:p-6 flex flex-col min-w-0">
+        <div className="p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider">
               Recent Orders
@@ -379,7 +369,7 @@ export default function DashboardCharts({
                     <p className="text-xs text-ink-faint">
                       {order.order_number || `#${order.id}`}
                       {order.created_at && (
-                        <> · {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
+                        <> · {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
                       )}
                     </p>
                   </div>

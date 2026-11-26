@@ -50,7 +50,7 @@ export function designPriceDetail(pricing: DesignPricing, serviceName?: string |
     return { main, struck, note: `${peso(pricing.service_price)} for ${service} + ${peso(pricing.extra_charge ?? 0)} for this design. The shop confirms the final price.` };
   }
   if (pricing.mode === 'same') {
-    return { main, struck, note: `Same price as ${service}. It changes only for custom work, and you approve the final price.` };
+    return { main, struck, note: `Same price as ${service}. It changes only for custom work or add-ons, and you approve the final price.` };
   }
   return { main, struck, note: 'The shop confirms the final price before any work starts.' };
 }

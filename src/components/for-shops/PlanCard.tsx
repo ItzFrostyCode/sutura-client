@@ -19,7 +19,7 @@ export default function PlanCard({ plan, cycle, featured }: { readonly plan: Pub
       </p>
       <p className={`mobile-caption mt-1 min-h-4 ${featured ? 'text-amber-300' : 'text-taupe'}`}>{yearly && saved > 0 ? `Save ${formatPeso(saved)} a year` : ''}</p>
       <Link
-        href={`/register/store?plan=${plan.slug}&cycle=${cycle}`}
+        href={`/signup/shop?plan=${plan.slug}&cycle=${cycle}`}
         className={`btn-secondary-mobile mt-5 w-full rounded-[10px] border transition-transform active:scale-[0.98] ${featured ? 'border-amber-300 bg-amber-300 text-espresso hover:bg-amber-200' : 'border-line-strong text-ink hover:bg-sunken'}`}
       >
         Choose {plan.name}

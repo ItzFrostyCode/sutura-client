@@ -11,8 +11,6 @@ import { formatServiceTurnaround } from '@/lib/turnaroundHelper';
 import CatalogItemCard from '@/components/discovery/CatalogItemCard';
 import type { CatalogItemResult } from '@/types/publicCatalog';
 import { STATUS_LABEL, type Service } from './serviceHelpers';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 
@@ -35,8 +33,6 @@ export default function DashboardServiceCard({
 }: DashboardServiceCardProps) {
   const archived = service.status === 'archived';
   const router = useRouter();
-  const { isGated } = useSubscriptionTier();
-  const catalogGated = isGated('catalog');
   const designs = service.catalog_items ?? (service as any).catalogItems ?? [];
   const base = service.base_price ? Number(service.base_price) : 0;
   const href = `/dashboard/services/${service.id}`;
@@ -133,15 +129,14 @@ export default function DashboardServiceCard({
 
       <div className="mt-4 pt-3.5 border-t border-line">
         <div className="mb-2.5 flex items-center justify-between gap-3">
-          <p className="mobile-overline text-ink-faint font-bold tracking-wider flex items-center gap-2">
-            <span>SERVICE DESIGNS{designs.length ? ` · ${designs.length}` : ''}</span>
-            {catalogGated && <PlanTierTag plan="Pro" />}
+          <p className="mobile-overline text-ink-faint font-bold tracking-wider">
+            SERVICE DESIGNS{designs.length ? ` · ${designs.length}` : ''}
           </p>
           <div className="flex items-center gap-2">
             {canManage && (
               <Link
                 href={`/dashboard/catalog/new?service_id=${service.id}`}
-                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-ink hover:bg-taupe px-3 py-1 rounded-full transition-colors"
+                className="flex items-center gap-1 text-xs font-semibold text-white bg-ink hover:bg-taupe px-3 py-1 rounded-full transition-colors"
               >
                 <Plus size={13} /> Add Design
               </Link>
@@ -166,7 +161,6 @@ export default function DashboardServiceCard({
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-espresso hover:bg-espresso/90 px-3.5 py-1.5 rounded-full transition-colors"
               >
                 <Plus size={14} /> Add First Design
-                {catalogGated && <PlanTierTag plan="Pro" className="border-white/30 bg-white/15 text-white" />}
               </Link>
             )}
           </div>

@@ -24,7 +24,6 @@ export default function ShopQuickInfo({
   coords,
   mapUrl,
   storeName,
-  onHoursNotSet,
 }: {
   readonly address: string | null;
   readonly hours: OperatingHours | null | undefined;
@@ -33,8 +32,6 @@ export default function ShopQuickInfo({
   readonly coords?: { lat: number; lng: number } | null;
   readonly mapUrl?: string | null;
   readonly storeName?: string | null;
-  /** With no hours on file, "Hours not set" becomes a button that takes the viewer to the Opening hours section. */
-  readonly onHoursNotSet?: () => void;
 }) {
   const [hoursOpen, setHoursOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
@@ -156,14 +153,6 @@ export default function ShopQuickInfo({
                   </span>
                   <span className="text-ink-muted"> · {line.text}</span>
                 </span>
-              ) : onHoursNotSet ? (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onHoursNotSet(); }}
-                  className="inline-flex items-center gap-1 font-medium text-ink-muted underline decoration-dotted underline-offset-4 hover:text-taupe-dark cursor-pointer"
-                >
-                  Hours not set · <span className="font-semibold text-taupe-dark">Set hours</span>
-                </button>
               ) : (
                 <span className="text-ink-muted font-medium">Hours not set</span>
               )}

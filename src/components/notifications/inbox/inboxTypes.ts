@@ -4,15 +4,15 @@ import { Calendar, CreditCard, Info, MessageCircle, Package, Scissors, Star, Sto
 export interface Kind { readonly label: string; readonly Icon: LucideIcon; readonly tone: string; readonly action: string }
 
 export function kindOf(type?: string): Kind {
-  if (type?.startsWith('appointment_')) return { label: 'Appointment', Icon: Calendar, tone: 'bg-blue-600 text-white', action: 'View appointment' };
-  if (type === 'order_ready') return { label: 'Order ready', Icon: Package, tone: 'bg-sage text-white', action: 'View order' };
-  if (type?.startsWith('job_')) return { label: 'Order', Icon: Scissors, tone: 'bg-taupe text-white', action: 'View order' };
-  if (type === 'customer_payment_rejected') return { label: 'Payment', Icon: XCircle, tone: 'bg-danger text-white', action: 'View order' };
-  if (type?.includes('payment')) return { label: 'Payment', Icon: CreditCard, tone: 'bg-emerald-600 text-white', action: 'View payment' };
-  if (type === 'catalog_item_review_reply') return { label: 'Review reply', Icon: Star, tone: 'bg-amber-500 text-white', action: 'View design' };
-  if (type === 'support_ticket_reply') return { label: 'Support', Icon: MessageCircle, tone: 'bg-ink-muted text-white', action: 'View ticket' };
-  if (type?.startsWith('store_')) return { label: 'Store', Icon: Store, tone: 'bg-ink-muted text-white', action: 'View details' };
-  return { label: 'Update', Icon: Info, tone: 'bg-ink-muted text-white', action: 'View details' };
+  if (type?.startsWith('appointment_')) return { label: 'Appointment', Icon: Calendar, tone: 'bg-blue-50 text-blue-700', action: 'View appointment' };
+  if (type === 'order_ready') return { label: 'Order ready', Icon: Package, tone: 'bg-sage/10 text-sage', action: 'View order' };
+  if (type?.startsWith('job_')) return { label: 'Order', Icon: Scissors, tone: 'bg-taupe/10 text-taupe-dark', action: 'View order' };
+  if (type === 'customer_payment_rejected') return { label: 'Payment', Icon: XCircle, tone: 'bg-danger/10 text-danger', action: 'View order' };
+  if (type?.includes('payment')) return { label: 'Payment', Icon: CreditCard, tone: 'bg-emerald-50 text-emerald-700', action: 'View payment' };
+  if (type === 'catalog_item_review_reply') return { label: 'Review reply', Icon: Star, tone: 'bg-amber-50 text-amber-700', action: 'View design' };
+  if (type === 'support_ticket_reply') return { label: 'Support', Icon: MessageCircle, tone: 'bg-sunken text-ink-muted', action: 'View ticket' };
+  if (type?.startsWith('store_')) return { label: 'Store', Icon: Store, tone: 'bg-sunken text-ink-muted', action: 'View details' };
+  return { label: 'Update', Icon: Info, tone: 'bg-sunken text-ink-muted', action: 'View details' };
 }
 
 /** "Sat, Oct 4, 2026 · 11:35 AM" — a full date, so the reader never has to work out which day "in 3 days" was. */
@@ -29,7 +29,7 @@ export function sentAt(value: string): string {
   today.setHours(0, 0, 0, 0);
   if (d >= today) return time;
   if (d.getTime() >= today.getTime() - 86400000) return `Yesterday · ${time}`;
-  return `${d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })} · ${time}`;
+  return `${d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} · ${time}`;
 }
 
 export interface NotifData {
@@ -69,18 +69,14 @@ export function groupByDay(list: AppNotification[]): { label: string; items: App
   return groups.filter((g) => g.items.length > 0);
 }
 
-/** How long ago: seconds, minutes, hours, days, then months ("12 sec", "5 min", "3 hr", "2 days", "3 months"); never years. */
+/** Facebook-style age: "Just now", "5m", "3h", "2d", then the date. */
 export function ageOf(value: string): string {
-  const secs = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
-  if (secs < 60) return `${secs} sec`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days} ${days === 1 ? 'day' : 'days'}`;
-  const months = Math.floor(days / 30);
-  return `${months} ${months === 1 ? 'month' : 'months'}`;
+  const mins = Math.floor((Date.now() - new Date(value).getTime()) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m`;
+  if (mins < 60 * 24) return `${Math.floor(mins / 60)}h`;
+  if (mins < 60 * 24 * 7) return `${Math.floor(mins / (60 * 24))}d`;
+  return new Date(value).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
 }
 
 /** New (everything unread) first, then what was read, by day: Today / Yesterday / Earlier — as Facebook lists them. */

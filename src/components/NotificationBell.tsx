@@ -300,7 +300,7 @@ export default function NotificationBell({
         <div
           aria-label="Notifications panel"
           aria-modal="true"
-          className={`max-sm:fixed max-sm:inset-x-2 ${isNav ? 'max-sm:top-[60px]' : 'max-sm:top-[68px]'} max-sm:mt-0 max-sm:w-auto max-sm:max-w-none sm:absolute sm:right-0 sm:mt-2 sm:w-[380px] sm:max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
+          className={`${isNav ? 'max-sm:fixed max-sm:inset-x-2 max-sm:top-[60px] max-sm:mt-0 max-sm:w-auto ' : ''}absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
             animate-in fade-in slide-in-from-top-2 duration-150`}
         >
           {/* Header */}
@@ -416,7 +416,7 @@ export default function NotificationBell({
                       {/* 3-dot Dropdown Menu with icon on the left side of the text */}
                       {menuOpenFor === notif.id && (
                         <div
-                          className="absolute right-0 top-8 z-40 w-52 max-w-[calc(100vw-3rem)] bg-surface border border-line rounded-xl shadow-xl py-1 divide-y divide-line animate-in fade-in zoom-in-95 duration-100"
+                          className="absolute right-0 top-8 z-40 w-52 bg-surface border border-line rounded-xl shadow-xl py-1 divide-y divide-line animate-in fade-in zoom-in-95 duration-100"
                           onClick={e => e.stopPropagation()}
                         >
                           <button
@@ -452,7 +452,7 @@ export default function NotificationBell({
           </div>
 
           {/* Footer Toolbar (Screenshot 1 Reference: See all | Mark all read | Configure) */}
-          <div className="border-t border-[#D6CCC0] px-2 sm:px-3 py-2 sm:py-2.5 bg-[#EBE4DC] flex items-center justify-between gap-1 text-[11px] sm:text-xs">
+          <div className="border-t border-[#D6CCC0] px-3 py-2.5 bg-[#EBE4DC] flex items-center justify-between text-xs">
             {/* See All */}
             <button
               type="button"
@@ -460,9 +460,9 @@ export default function NotificationBell({
                 setOpen(false);
                 router.push(seeAllHref);
               }}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-ink hover:text-taupe hover:bg-white/70 active:bg-white transition-all whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink hover:text-taupe hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
-              <List size={14} className="stroke-[2.5] shrink-0" />
+              <List size={14} className="stroke-[2.5]" />
               <span>See all</span>
             </button>
 
@@ -470,9 +470,9 @@ export default function NotificationBell({
             <button
               type="button"
               onClick={markAllAsRead}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
-              <CheckCheck size={14} className="text-sage stroke-[2.5] shrink-0" />
+              <CheckCheck size={14} className="text-sage stroke-[2.5]" />
               <span>Mark all read</span>
             </button>
 
@@ -483,9 +483,9 @@ export default function NotificationBell({
                 setOpen(false);
                 router.push(configureHref);
               }}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
-              <Settings size={14} className="stroke-[2.5] shrink-0" />
+              <Settings size={14} className="stroke-[2.5]" />
               <span>Configure</span>
             </button>
           </div>

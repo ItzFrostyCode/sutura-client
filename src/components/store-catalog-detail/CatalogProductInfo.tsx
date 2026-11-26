@@ -10,9 +10,10 @@ interface CatalogProductInfoProps {
   isSaved?: boolean;
   /** Owner view: ratings and sold counts are customer activity, not part of the design itself. */
   hideStats?: boolean;
+  computedPrice?: { total: number; base: number; sizeExtra: number; addOnsTotal: number } | null;
 }
 
-export default function CatalogProductInfo({ item, hideStats }: CatalogProductInfoProps) {
+export default function CatalogProductInfo({ item, hideStats, computedPrice }: CatalogProductInfoProps) {
   const avgRating = item.reviews_avg_rating ?? 0;
   const reviewsCount = item.reviews_count ?? 0;
   // A design is priced by its service; the shop may add an extra charge or ask for a quote (lib/designPricing).

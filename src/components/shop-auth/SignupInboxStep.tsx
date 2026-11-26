@@ -22,18 +22,12 @@ export default function SignupInboxStep({ s }: { readonly s: OwnerSignupState })
       </p>
       {s.error && <div role="alert" className={`${ERROR_BOX} mt-4`}>{s.error}</div>}
 
-      <p className="mt-6 text-sm text-ink">
+      <Link href="/login?as=store" className={`${OUTLINE_BTN} mt-6`}>Go to Sign In</Link>
+      <p className="mt-5 text-sm text-ink">
         Didn&apos;t get it? Check spam, or{' '}
         {s.resendIn > 0
           ? <span className="text-ink-muted">resend in {s.resendIn}s</span>
           : <button type="button" onClick={s.resend} className="font-bold underline underline-offset-2">resend the link</button>}
-      </p>
-
-      {/* Typed the wrong email, or one with no inbox? Start again with another. Nothing was made for this one:
-          the account only exists once the link is opened. */}
-      <button type="button" onClick={s.changeEmail} className={`${OUTLINE_BTN} mt-5`}>Use a different email</button>
-      <p className="mt-4 text-sm text-ink-muted">
-        Already opened the link? <Link href="/login?as=store" className="font-bold text-ink underline underline-offset-2">Sign in</Link>
       </p>
     </div>
   );

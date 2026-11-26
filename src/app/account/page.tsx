@@ -16,9 +16,10 @@ export default function AccountHubPage() {
     measurementCount,
     apptView,
     setApptView,
+    hasActiveAppointment,
     previewAppt,
     previewOrder,
-    calendar,
+    calCells,
     inProduction,
     readyForPickup,
     completed,
@@ -46,8 +47,9 @@ export default function AccountHubPage() {
           appointments={appointments}
           apptView={apptView}
           setApptView={setApptView}
+          hasActiveAppointment={hasActiveAppointment}
           previewAppt={previewAppt}
-          calendar={calendar}
+          calCells={calCells}
         />
         <div className="flex flex-col gap-4">
           <AccountActivityGroups measurementCount={measurementCount} />

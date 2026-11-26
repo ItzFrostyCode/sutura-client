@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertTriangle, ArrowDown, ArrowUp, Download, FileSpreadsheet, Loader2, RefreshCw, Settings } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, Download, FileSpreadsheet, Loader2, Settings } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import SearchInput from '@/components/shared/SearchInput';
 import PlanPill from '@/components/admin/ui/PlanPill';
@@ -12,7 +12,7 @@ import { formatDate, useAdminList, useDebounced, useStableListHeight } from '@/c
 import PaymentReviewModal from '@/components/admin/payments/PaymentReviewModal';
 import GcashSettingsModal from '@/components/admin/payments/GcashSettingsModal';
 import {
-  methodLabel, peso, presetRange, REFUND_STATUS_LABEL, STATUS_BADGE, paymentStatusLabel, TYPE_CLASS, TYPE_LABEL,
+  methodLabel, peso, presetRange, REFUND_STATUS_LABEL, STATUS_BADGE, STATUS_LABEL, TYPE_CLASS, TYPE_LABEL,
   type DatePreset, type PaymentStats, type PlatformPayment,
 } from '@/components/admin/payments/paymentTypes';
 import adminApi from '@/lib/adminApi';
@@ -20,9 +20,9 @@ import { getErrorMessage } from '@/lib/apiError';
 import { useToast } from '@/context/ToastContext';
 
 const STATUSES = [
-  { value: 'pending', label: 'Pending' },
+  { value: 'pending', label: 'Pending verification' },
   { value: 'approved', label: 'Paid' },
-  { value: 'rejected', label: 'Failed / Rejected' },
+  { value: 'rejected', label: 'Rejected' },
   { value: '', label: 'All' },
 ];
 const DATE_PRESETS: { value: DatePreset; label: string }[] = [
@@ -75,8 +75,6 @@ function PaymentsPageContent() {
     .then((res) => setStats(res.data.data))
     .catch((err) => setStatsError(getErrorMessage(err, 'Could not load the totals.')));
   useEffect(() => { loadStats(); }, []);
-  // After a Re-sync or a decision: the row may have moved tabs, and the totals changed.
-  const refreshAll = () => { reload(); loadStats(); };
 
   const [plans, setPlans] = useState<{ id: number; name: string }[]>([]);
   useEffect(() => {
@@ -155,7 +153,7 @@ function PaymentsPageContent() {
   const hasFilters = Boolean(query || planId || type || range.from || range.to);
   const emptyText = s?.total === 0
     ? 'No payments yet. Payments will show up here once shops subscribe.'
-    : status === 'pending' && !hasFilters ? 'Nothing pending: no GCash checkout is processing and no receipt is waiting for review.' : 'No payments match these filters.';
+    : status === 'pending' && !hasFilters ? 'No payments are waiting for your check.' : 'No payments match these filters.';
 
   return (
     <div className="space-y-6">
@@ -171,12 +169,12 @@ function PaymentsPageContent() {
 
       {/* Same card + alignment rules as the Overview row. */}
       <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6" aria-busy={!s || undefined}>
-        <StatCard label="Pending" value={s ? s.to_verify : skeleton} hint="GCash processing, or a receipt to review" />
+        <StatCard label="To verify" value={s ? s.to_verify : skeleton} hint="Waiting for your check" />
         {/* Money: whole pesos, a size smaller, so it fits a narrow card (exact amount on hover). */}
         <StatCard label="Paid this month" value={s ? <Money value={s.paid_this_month} /> : skeleton} valueClassName="text-2xl" hint="Verified payments, after refunds" />
         <StatCard label="Total revenue" value={s ? <Money value={s.total_revenue} /> : skeleton} valueClassName="text-2xl"
           hint={s && s.refunded_total > 0 ? `All time, after ${peso(s.refunded_total)} refunded` : 'All time, verified only'} />
-        <StatCard label="Failed / Rejected" value={s ? s.rejected_open : skeleton} hint="Didn't go through" />
+        <StatCard label="Rejected" value={s ? s.rejected_open : skeleton} hint="Needs resubmission" />
         <StatCard label="Active subscriptions" value={s ? s.active_subscriptions : skeleton} hint="Paid or on trial" />
         <StatCard label="Payments" value={s ? s.total : skeleton} hint={s ? `${s.paid} paid, ${s.pending} pending` : undefined} />
       </div>
@@ -273,8 +271,8 @@ function PaymentsPageContent() {
                 <td className="px-3 py-3 text-right font-semibold tabular-nums text-ink">{peso(p.amount_due)}</td>
                 <td className="px-3 py-3 break-words text-ink">{p.sender_name ?? '—'}{p.sender_number && <span className="block text-xs tabular-nums text-ink-muted">{p.sender_number}</span>}</td>
                 <td className="px-3 py-3 tabular-nums text-ink-body">{formatDate(p.created_at)}<span className="block text-xs text-ink-muted">{timeOf(p.created_at)}</span></td>
-                <td className="px-3 py-3"><Badge variant={STATUS_BADGE[p.status]} className="whitespace-nowrap">{paymentStatusLabel(p, true)}</Badge><RefundNote payment={p} /></td>
-                <td className="px-3 py-3 text-right"><RowAction payment={p} onOpen={setReviewing} onSynced={refreshAll} /></td>
+                <td className="px-3 py-3"><Badge variant={STATUS_BADGE[p.status]} className="whitespace-nowrap">{STATUS_SHORT[p.status]}</Badge><RefundNote payment={p} /></td>
+                <td className="px-3 py-3 text-right"><RowAction payment={p} onOpen={setReviewing} /></td>
               </tr>
             ))}
           </tbody>
@@ -314,11 +312,11 @@ function PaymentsPageContent() {
               </dl>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={STATUS_BADGE[p.status]}>{paymentStatusLabel(p)}</Badge>
+                  <Badge variant={STATUS_BADGE[p.status]}>{STATUS_LABEL[p.status]}</Badge>
                   <RefundNote payment={p} />
                   <WarningNote count={p.warning_count} />
                 </div>
-                <RowAction payment={p} onOpen={setReviewing} onSynced={refreshAll} />
+                <RowAction payment={p} onOpen={setReviewing} />
               </div>
             </li>
           ))}
@@ -331,7 +329,7 @@ function PaymentsPageContent() {
         <Pager meta={meta} onPage={setPage} />
       </div>
 
-      <PaymentReviewModal paymentId={reviewing} onClose={() => setReviewing(null)} onDecided={refreshAll} />
+      <PaymentReviewModal paymentId={reviewing} onClose={() => setReviewing(null)} onDecided={() => { reload(); loadStats(); }} />
       <GcashSettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
@@ -345,6 +343,7 @@ function Money({ value }: { readonly value: number }) {
   return <span title={peso(value)}>{text}</span>;
 }
 
+const STATUS_SHORT ={ pending: 'Pending', approved: 'Paid', rejected: 'Rejected' } as const;
 const needsReview = (p: PlatformPayment) => p.status === 'pending' && p.type !== 'new_shop';
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
 
@@ -360,36 +359,9 @@ function WarningNote({ count }: { readonly count: number }) {
   return <span className="mt-1 flex items-center gap-1 font-sans text-xs text-amber-700"><AlertTriangle size={12} aria-hidden="true" /> {count} to check</span>;
 }
 
-function RowAction({ payment, onOpen, onSynced }: {
-  readonly payment: PlatformPayment; readonly onOpen: (id: number) => void; readonly onSynced: () => void;
-}) {
-  const toast = useToast();
-  const [syncing, setSyncing] = useState(false);
-  // Same box for every action, sized to stay inside its column; the filled one is the thing to do.
-  const base = 'inline-flex min-h-10 w-full max-w-24 items-center justify-center gap-1.5 border px-2 text-sm cursor-pointer';
-
-  // A GCash checkout still processing: nothing to review, only ask GCash again (a missed webhook).
-  if (payment.status === 'pending' && payment.channel === 'online') {
-    const resync = async () => {
-      setSyncing(true);
-      try {
-        await adminApi.post(`/admin/payments/${payment.id}/sync`);
-        toast.success('Checked with GCash.');
-        onSynced();
-      } catch (err) {
-        toast.error(getErrorMessage(err, 'GCash could not be reached. Try again in a moment.'));
-      } finally {
-        setSyncing(false);
-      }
-    };
-    return (
-      <button type="button" onClick={resync} disabled={syncing} title="Ask GCash for this payment's status"
-        className={`${base} max-w-28 whitespace-nowrap border-ink bg-ink font-semibold text-white hover:bg-ink/90 disabled:opacity-60`}>
-        {syncing ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <RefreshCw size={14} aria-hidden="true" />} Re-sync
-      </button>
-    );
-  }
-  // A receipt upload waiting (the plan step's "Upload a GCash receipt"): review it.
+function RowAction({ payment, onOpen }: { readonly payment: PlatformPayment; readonly onOpen: (id: number) => void }) {
+  // Same box for both, sized to stay inside its column; Review is filled so the queue stands out.
+  const base = 'inline-flex min-h-10 w-full max-w-24 items-center justify-center border px-2 text-sm cursor-pointer';
   return needsReview(payment) ? (
     <button type="button" onClick={() => onOpen(payment.id)} className={`${base} border-ink bg-ink font-semibold text-white hover:bg-ink/90`}>Review</button>
   ) : (

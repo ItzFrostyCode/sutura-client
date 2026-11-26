@@ -42,13 +42,7 @@ export default function CustomerTextsTab({ storeId, customerId, customerName }: 
   return (
     <div className="space-y-6 animate-fade-in">
       {blocker ? (
-        <p className="flex flex-wrap items-center gap-2 border-y border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
-          <Lock size={16} className="shrink-0" />
-          <span>{blocker}</span>
-          {!d.plan_allows && (
-            <Link href="/dashboard/billing" className="font-semibold underline">Upgrade to Pro</Link>
-          )}
-        </p>
+        <p className="flex items-start gap-2 border-y border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900"><Lock size={16} className="mt-0.5 shrink-0" />{blocker}</p>
       ) : (
         <form onSubmit={submit} className="space-y-2">
           <label htmlFor="customer-text" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted">New text to {customerName ?? 'the customer'}</label>

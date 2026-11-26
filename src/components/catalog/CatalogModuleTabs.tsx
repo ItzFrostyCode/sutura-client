@@ -4,8 +4,6 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
 import ScrollNav from '@/components/shared/ScrollNav';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 // Unified module tabs: Services, Designs, and Analytics
 export type CatalogTabId = 'services' | 'catalog' | 'analytics';
@@ -35,8 +33,6 @@ export default function CatalogModuleTabs({
   className = '',
 }: CatalogModuleTabsProps) {
   const pathname = usePathname();
-  const { isGated } = useSubscriptionTier();
-  const catalogLocked = isGated('catalog');
 
   const activeId: CatalogTabId = controlledTab ?? (
     pathname.includes('/analytics') || pathname.includes('/reviews')
@@ -69,7 +65,6 @@ export default function CatalogModuleTabs({
           >
             <Icon size={15} className={active ? 'text-ink' : 'text-ink-muted'} />
             <span>{tab.label}</span>
-            {tab.id === 'catalog' && catalogLocked && <PlanTierTag plan="Pro" />}
 
             {/* Bottom stroke line resting right on the header divider line */}
             {active && (

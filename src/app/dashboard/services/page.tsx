@@ -1,16 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Lock, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
-import SubscriptionGate from '@/components/SubscriptionGate';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 import { Service, deriveTiersFromService } from '@/components/services/serviceHelpers';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
@@ -18,7 +14,6 @@ import ServiceGridView from '@/components/services/ServiceGridView';
 import PageHeader from '@/components/shared/PageHeader';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
-import NewServiceModal from '@/components/services/create/NewServiceModal';
 import { confirmDialog } from '@/store/useConfirmStore';
 
 export default function ServicesPage() {
@@ -31,19 +26,13 @@ export default function ServicesPage() {
   const isOwnerOrManager = Boolean(
     user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
   );
-  const { tier, maxServices, loading: tierLoading } = useSubscriptionTier();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const serviceLimitReached = canManage && !loading && !tierLoading && maxServices !== -1 && services.length >= maxServices;
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // New service modal
-  const [newOpen, setNewOpen] = useState(false);
-  const [returnTo, setReturnTo] = useState<string | null>(null);
 
   type Tab = 'services' | 'analytics';
   const [activeTab, setActiveTabState] = useState<Tab>('services');
@@ -94,22 +83,12 @@ export default function ServicesPage() {
   useEffect(() => {
     if (!isOwnerOrManager) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('add') !== '1') return;
     const back = params.get('return');
+    if (params.get('add') !== '1') return;
     // Only ever return to a dashboard page — never an arbitrary URL.
     const safe = back?.startsWith('/dashboard/') && !back.startsWith('//') ? `?return=${encodeURIComponent(back)}` : '';
     router.replace(`/dashboard/services/new${safe}`);
-  }, [isOwnerOrManager, router]);
-
-  const handleServiceCreated = (id: number) => {
-    setNewOpen(false);
-    if (returnTo) {
-      router.push(`${returnTo}?linked_service=${id}`);
-      return;
-    }
-    setActiveTab('services');
-    fetchServices();
-  };
+  }, [isOwnerOrManager]);
 
   // Restoring brings an archived service back as Unpublished (S2); the owner publishes it when ready.
   const restoreService = async (id: number) => {
@@ -153,17 +132,7 @@ export default function ServicesPage() {
         inlineActions
         actions={
           !canManage ? null : activeTab === 'services' ? (
-            serviceLimitReached ? (
-              <Link
-                href="/dashboard/billing"
-                title={`Your plan allows up to ${maxServices} services. Upgrade to add more.`}
-                className="flex items-center gap-2 min-h-11 border border-line bg-surface hover:bg-sunken text-ink px-4 rounded-xl font-semibold text-sm transition-colors"
-              >
-                <Lock size={15} />
-                <span>Upgrade for more services</span>
-                <PlanTierTag plan={tier === 'basic' ? 'Pro' : 'Premium'} />
-              </Link>
-            ) : (
+            <>
               <button
                 onClick={() => router.push('/dashboard/services/new')}
                 className="flex items-center gap-1.5 min-h-11 bg-espresso hover:bg-espresso/90 text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
@@ -171,7 +140,7 @@ export default function ServicesPage() {
                 <Plus size={17} />
                 Create New
               </button>
-            )
+            </>
           ) : null
         }
       >
@@ -198,19 +167,8 @@ export default function ServicesPage() {
           onRestore={canManage ? restoreService : undefined}
         />
       ) : isOwnerOrManager ? (
-        <SubscriptionGate feature="analytics">
-          <ServiceAnalyticsView />
-        </SubscriptionGate>
+        <ServiceAnalyticsView />
       ) : null}
-
-      {store?.id && (
-        <NewServiceModal
-          isOpen={newOpen}
-          storeId={store.id}
-          onClose={() => { setNewOpen(false); setReturnTo(null); }}
-          onCreated={handleServiceCreated}
-        />
-      )}
 
       <ServiceDeleteModal
         archive

@@ -53,6 +53,7 @@ interface BookingStep3ReviewProps {
   readonly refPrice: string | null;
   readonly refSize: string | null;
   readonly refColor: string | null;
+  readonly refAddOns?: string | null;
   readonly selectedService: Service | null;
   readonly appointmentType: string;
   readonly purposeLabel?: string;
@@ -106,6 +107,7 @@ export default function BookingStep3Review({
   refPrice,
   refSize,
   refColor,
+  refAddOns,
   selectedService,
   appointmentType,
   purposeLabel,

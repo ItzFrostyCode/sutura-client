@@ -11,8 +11,6 @@ import { getMediaUrl } from '@/lib/media';
 import { roleLabel } from '@/components/staff/staffHelpers';
 import { useAccountSwitch } from '@/hooks/useAccountSwitch';
 import { isShopAccount } from '@/lib/savedAccounts';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import { PLAN_TONE } from '@/components/admin/ui/PlanPill';
 
 // The account-menu cluster (bell + profile dropdown) from the dashboard
 // header, extracted so the storefront page can show the exact same thing for
@@ -39,7 +37,6 @@ export default function AccountHeaderMenu() {
   const profileRef = useRef<HTMLDivElement>(null);
   // Accounts kept by "Log in as Shop Owner" (e.g. the owner's Gmail customer account): back in one tap.
   const { others, switchTo, switching } = useAccountSwitch();
-  const { tier, loading: tierLoading } = useSubscriptionTier();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -47,15 +44,8 @@ export default function AccountHeaderMenu() {
         setIsProfileOpen(false);
       }
     }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setIsProfileOpen(false);
-    }
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -70,21 +60,17 @@ export default function AccountHeaderMenu() {
   };
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+    <div className="flex items-center gap-2 md:gap-3">
       <NotificationBell />
 
       <div className="relative" ref={profileRef}>
         <button
-          type="button"
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          aria-expanded={isProfileOpen}
-          aria-haspopup="true"
-          aria-label="Account menu"
           className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors cursor-pointer"
         >
           {user?.profile_picture && !photoFailed ? (
             <div className="w-10 h-10 rounded-full overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={getMediaUrl(user.profile_picture)} alt={user.name ?? 'Profile'} onError={() => setPhotoFailed(true)} className="h-full w-full object-cover" />
             </div>
           ) : (
@@ -100,40 +86,25 @@ export default function AccountHeaderMenu() {
         </button>
 
         {isProfileOpen && (
-          <div className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-1rem)] bg-white rounded-xl border border-line py-2 z-50 shadow-lg">
+          <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl border border-line py-2 z-50 shadow-lg">
             <div className="px-4 py-3 border-b border-line mb-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="min-w-0 flex-1 text-sm font-semibold text-ink truncate">{user?.name}</p>
-                {store?.id && !tierLoading && (
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PLAN_TONE[tier] ?? PLAN_TONE.basic}`}>
-                    {tier}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-ink-muted truncate font-medium mt-0.5">{roleDisplay}</p>
+              <p className="text-sm font-semibold text-ink truncate">{user?.name}</p>
+              <p className="text-xs text-ink-muted truncate font-medium">{roleDisplay}</p>
             </div>
 
             {isOnStorefront ? (
               <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
-                <LayoutDashboard size={16} className="shrink-0" />
-                <span className="min-w-0 flex-1 truncate">My Management</span>
+                <LayoutDashboard size={16} /> My Management
               </Link>
             ) : (
               <Link href={store?.slug ? `/store/${store.slug}` : '/dashboard/profile'} className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
-                <Eye size={16} className="shrink-0" />
-                <span className="min-w-0 flex-1 truncate">My Store Profile</span>
+                <Eye size={16} /> My Store Profile
               </Link>
             )}
 
             {isStoreOwner && (
               <Link href="/dashboard/billing" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>
-                <Receipt size={16} className="shrink-0" />
-                <span className="min-w-0 flex-1 truncate">Billing &amp; Plans</span>
-                {!tierLoading && tier !== 'premium' && (
-                  <span className="shrink-0 rounded-full border border-taupe/30 bg-taupe/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-taupe-dark">
-                    Upgrade
-                  </span>
-                )}
+                <Receipt size={16} /> Billing & Plans
               </Link>
             )}
             <Link href="/dashboard/account-settings" className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-ink-body hover:bg-sunken hover:text-ink transition-colors" onClick={() => setIsProfileOpen(false)}>

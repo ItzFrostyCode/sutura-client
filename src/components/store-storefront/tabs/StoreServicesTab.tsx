@@ -7,8 +7,6 @@ import api from '@/lib/axios';
 import { groupsOf, groupsOfServices, inGroup } from '@/lib/storefrontGroups';
 import ServiceRow from '../services/ServiceRow';
 import ServiceCategoryPage from '../services/ServiceCategoryPage';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 interface StoreServicesTabProps {
   readonly services: PublicService[];
@@ -60,8 +58,6 @@ export default function StoreServicesTab({
 }: StoreServicesTabProps) {
   const router = useRouter();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const { isGated } = useSubscriptionTier();
-  const catalogGated = isOwnerViewingOwnStore && isGated('catalog');
 
   // expandedServiceId is still set by useStoreStorefront.ts's own ?service_id=/?service= deep-link effects — those open
   // the service's own page rather than rendering a detail view inside this tab.
@@ -242,10 +238,7 @@ export default function StoreServicesTab({
       {isOwnerViewingOwnStore && looseDesigns.length > 0 && (
         <div className="mobile-body-sm flex items-start justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-amber-900">
           <span>{looseDesigns.length} design{looseDesigns.length === 1 ? ' is' : 's are'} not filed under a service, so customers don&apos;t see {looseDesigns.length === 1 ? 'it' : 'them'}.</span>
-          <Link href="/dashboard/catalog" className="inline-flex shrink-0 items-center gap-1.5 font-semibold underline">
-            Fix these designs
-            {catalogGated && <PlanTierTag plan="Pro" />}
-          </Link>
+          <Link href="/dashboard/catalog" className="shrink-0 font-semibold underline">Fix these designs</Link>
         </div>
       )}
     </div>

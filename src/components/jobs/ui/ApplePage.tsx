@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
  * `plain` is kept for callers that pass it; both look the same now.
  */
 export default function ApplePage({ children, plain = false }: Readonly<{ children: ReactNode; plain?: boolean }>) {
-  return <div className={`-my-4 -mx-[var(--dash-gutter)] min-h-[calc(100dvh-4rem)] text-ink bg-canvas`}>{children}</div>;
+  return <div className={`-m-4 min-h-[calc(100dvh-4rem)] text-ink bg-canvas`}>{children}</div>;
 }
 
 /**
@@ -16,11 +16,11 @@ export default function ApplePage({ children, plain = false }: Readonly<{ childr
  */
 export function AppleBar({ children, stuck = false, flush = false }: Readonly<{ children: ReactNode; stuck?: boolean; flush?: boolean }>) {
   return stuck ? (
-    <div className="sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-3 border-b border-espresso/[0.08] bg-surface/85 px-[var(--dash-gutter)] py-2 backdrop-blur-xl">
+    <div className="sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-3 border-b border-espresso/[0.08] bg-surface/85 px-4 py-2 backdrop-blur-xl sm:px-6">
       {children}
     </div>
   ) : (
-    <div className={`flex min-h-14 flex-wrap items-center gap-3 pt-5 sm:pt-7 ${flush ? '' : 'px-[var(--dash-gutter)]'}`}>
+    <div className={`flex min-h-14 flex-wrap items-center gap-3 pt-5 sm:pt-7 ${flush ? '' : 'px-4 sm:px-6'}`}>
       {children}
     </div>
   );

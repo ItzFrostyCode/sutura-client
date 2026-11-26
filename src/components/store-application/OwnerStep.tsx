@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { cleanName, nameError as checkName, NAME_HINT } from '@/lib/nameRules';
 import { ageFrom } from '@/lib/age';
-import { enterMovesOn, Group, revealFirstProblem, StepActions, TextField, type FieldStatus } from './ApplicationFields';
+import { StepActions, TextField, type FieldStatus } from './ApplicationFields';
 import type { StoreApplicationState } from './useStoreApplication';
 import type { OwnerFields } from './applicationTypes';
 import { EMAIL_PATTERN, PH_MOBILE_PATTERN, useAvailabilityCheck, type AvailabilityState } from './useAvailabilityCheck';
@@ -71,97 +71,54 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
       status: note ? ({ tone: 'error', message: note } as FieldStatus) : null,
     };
   };
+  const namesValid = (['first_name', 'middle_name', 'last_name', 'suffix'] as NameKey[]).every((k) => !nameError(k, owner[k]));
 
   // Live "already registered?" checks (another shop already uses it).
   const email = useAvailabilityCheck('email', owner.email, isEmail);
   const phone = useAvailabilityCheck('contact_number', owner.contact_number, isMobile);
 
-  // Every problem on this step, keyed by the field's element id.
-  const ownerErrors = (): Record<string, string> => {
-    const e: Record<string, string> = {};
-    const ids: Record<NameKey, string> = { first_name: 'app-first', middle_name: 'app-middle', last_name: 'app-last', suffix: 'app-suffix' };
-    (Object.keys(ids) as NameKey[]).forEach((k) => {
-      const problem = nameError(k, owner[k]) || (REQUIRED_NAMES.includes(k) && !owner[k].trim() ? `Enter your ${k === 'first_name' ? 'first' : 'last'} name.` : '');
-      if (problem) e[ids[k]] = problem;
-    });
-    const age = ageStatus(owner.birthday);
-    if (!owner.birthday) e['app-birthday'] = 'Enter your date of birth.';
-    else if (age?.tone === 'error') e['app-birthday'] = age.message;
-    if (!isMobile(owner.contact_number.trim())) e['app-phone'] = 'Enter 11 digits starting with 09, e.g. 09663946888.';
-    else if (phone.state === 'taken') e['app-phone'] = 'This contact number is already registered to another shop.';
-    if (!isEmail(owner.email.trim())) e['app-email'] = 'Enter a valid email address, e.g. you@gmail.com.';
-    else if (email.state === 'taken') e['app-email'] = 'This email is already registered to another shop.';
-    return e;
-  };
-  const [tried, setTried] = useState(false);
-  const errors: Record<string, string> = { ...app.serverErrors, ...(tried ? ownerErrors() : {}) };
-
-  // Continue while a "registered already?" check is still running: wait for its answer, then go on.
-  const [waiting, setWaiting] = useState(false);
-  const waits = useRef(0);
-  const next = () => {
-    app.clearServerErrors();
-    setTried(true);
-    const problems = ownerErrors();
-    if (Object.keys(problems).length > 0) { setWaiting(false); revealFirstProblem(Object.keys(problems)); return; }
-    const pending = (s: AvailabilityState) => s === 'checking' || s === 'idle';
-    if ((pending(email.state) || pending(phone.state)) && waits.current < 3) {
-      waits.current += 1;
-      if (email.state === 'idle') email.checkNow();
-      if (phone.state === 'idle') phone.checkNow();
-      setWaiting(true);
-      return;
-    }
-    // A check that couldn't run ('error') doesn't block: the server checks again on submit.
-    waits.current = 0;
-    setWaiting(false);
-    goTo(2);
-  };
-  useEffect(() => {
-    if (waiting && email.state !== 'checking' && phone.state !== 'checking') next();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waiting, email.state, phone.state]);
+  // Can't continue while either is taken, badly formatted, or still being checked.
+  const blocked = (s: AvailabilityState) => s === 'taken' || s === 'checking' || s === 'invalid';
+  const canContinue = !blocked(email.state) && !blocked(phone.state);
 
   return (
     <form
-      noValidate
-      onKeyDown={enterMovesOn}
-      onSubmit={(e) => { e.preventDefault(); waits.current = 0; next(); }}
-      className="space-y-7"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!namesValid) return;
+        if (!isMobile(owner.contact_number.trim())) { phone.checkNow(); return; }
+        if (!isEmail(owner.email.trim())) { email.checkNow(); return; }
+        if (canContinue) goTo(2);
+      }}
+      className="space-y-5"
     >
-      <Group title="Personal details">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField id="app-first" label="First name" required autoComplete="given-name" maxLength={100} {...nameField('first_name')} error={errors['app-first']} />
-          <TextField id="app-middle" label="Middle name" optional autoComplete="additional-name" maxLength={100} {...nameField('middle_name')} error={errors['app-middle']} />
-          <TextField id="app-last" label="Last name" required autoComplete="family-name" maxLength={100} {...nameField('last_name')} error={errors['app-last']} />
-          <TextField id="app-suffix" label="Suffix" optional placeholder="Jr., Sr., III" maxLength={20} {...nameField('suffix')} error={errors['app-suffix']} />
-          <TextField id="app-birthday" label="Date of birth" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} status={ageStatus(owner.birthday)} error={errors['app-birthday']} />
-          <TextField
-            id="app-phone"
-            label="Mobile number"
-            type="tel"
-            inputMode="numeric"
-            required
-            maxLength={11}
-            placeholder="09XXXXXXXXX"
-            autoComplete="tel"
-            value={owner.contact_number}
-            // Digits only.
-            onChange={(e) => setOwner({ ...owner, contact_number: e.target.value.replace(/\D/g, '').slice(0, 11) })}
-            onBlur={phone.checkNow}
-            status={statusFor(phone.state, 'Contact number', 'Enter 11 digits starting with 09, e.g. 09663946888.')}
-            error={errors['app-phone']}
-          />
-        </div>
-      </Group>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <TextField id="app-first" label="First Name" required autoComplete="given-name" maxLength={100} {...nameField('first_name')} />
+        <TextField id="app-middle" label="Middle Name (optional)" autoComplete="additional-name" maxLength={100} {...nameField('middle_name')} />
+        <TextField id="app-last" label="Last Name" required autoComplete="family-name" maxLength={100} {...nameField('last_name')} />
+        <TextField id="app-suffix" label="Suffix (Jr., Sr.) (optional)" maxLength={20} {...nameField('suffix')} />
+        <TextField id="app-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} status={ageStatus(owner.birthday)} />
+        <TextField
+          id="app-phone"
+          label="Contact Number"
+          type="tel"
+          inputMode="numeric"
+          required
+          maxLength={11}
+          placeholder="09XXXXXXXXX"
+          autoComplete="tel"
+          value={owner.contact_number}
+          // Digits only.
+          onChange={(e) => setOwner({ ...owner, contact_number: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+          onBlur={phone.checkNow}
+          status={statusFor(phone.state, 'Contact number', 'Enter 11 digits starting with 09, e.g. 09663946888.')}
+        />
+      </div>
 
-      <Group
-        title="Email"
-        footer="Once your shop is approved, we’ll send your shop login and a temporary password here. It can be the same email you use as a customer."
-      >
+      <div className="border-t border-line pt-5 space-y-2">
         <TextField
           id="app-email"
-          label="Email address"
+          label="Your Email"
           type="email"
           required
           autoComplete="email"
@@ -169,12 +126,14 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
           {...bind('email')}
           onBlur={email.checkNow}
           status={statusFor(email.state, 'Email', 'Enter a valid email address, e.g. you@gmail.com.')}
-          error={errors['app-email']}
         />
-      </Group>
+        <p className="mobile-body-sm text-ink-muted">
+          Once your shop is approved, we&apos;ll send your shop login and a temporary password here. It can be the same
+          email you use as a customer.
+        </p>
+      </div>
 
-      {/* Never greyed out for a missing answer: pressing it shows what is left. */}
-      <StepActions nextLabel={waiting ? 'Checking…' : 'Continue'} busy={waiting} />
+      <StepActions nextLabel="Continue" busy={!canContinue || !namesValid} />
     </form>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import ServiceChargesEditor from './ServiceChargesEditor';
 import React from 'react';
 import { ImagePlus, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import api from '@/lib/axios';
@@ -9,14 +10,8 @@ import { useToast } from '@/context/ToastContext';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
 import ImageUploadField from './ImageUploadField';
 import type { ServiceSectionEdit } from './useServiceSectionEdit';
-import {
-  SERVICE_TYPE_LABELS,
-  serviceTypesFor,
-  type ServiceCategory,
-} from '@/lib/canonicalTaxonomy';
-import { searchCategoryFor, useShopCategories } from '../useShopCategories';
-import { guessUniformType } from '@/lib/uniformTypes';
-import { CATEGORY_HANDLING } from '../serviceHelpers';
+import type { PricingTierInput } from '../serviceHelpers';
+import { COVERS_FIELD, COVERS_LABEL, NOT_SET, SET_NEEDS_BOTH, SOLD_AS_FIELD, SOLD_AS_LABEL, type Covers, type SoldAs } from '@/lib/orderUnits';
 
 export type DraftEdit = Pick<ServiceSectionEdit, 'draft' | 'setDraft' | 'storeId'>;
 
@@ -62,7 +57,7 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
       </fieldset>
       {d.price_display !== 'quotation' && (
         <div className="sm:col-span-2">
-          <label htmlFor="svc-price" className={LABEL}>{d.price_display === 'fixed' ? 'Price (₱)' : 'Starting price (₱)'} {d.price_display === 'fixed' && <span className="text-red-600">*</span>}</label>
+          <label htmlFor="svc-price" className={LABEL}>{d.price_display === 'fixed' ? 'Price (PHP)' : 'Starting price (PHP)'} {d.price_display === 'fixed' && <span className="text-red-600">*</span>}</label>
           <input id="svc-price" type="number" min="0" value={d.base_price} onChange={e => patch({ base_price: e.target.value })} className={FIELD} />
           <p className="text-[11px] text-ink-faint mt-1.5">{d.price_display === 'fixed' ? 'The price the customer pays for this service.' : 'The lowest price. The quotation sets the actual total.'}</p>
         </div>
@@ -121,82 +116,61 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   );
 }
 
+// Prices & add-ons: one row per price — the service itself in a few versions ("Jusi barong") or an add-on
+// ("With collar + jacket"). A row with no price shows customers "Depends — quotation, or walk in with the item".
 export function ServiceSpecEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   const { d, patch } = useSet(edit);
-  const leafTypes = d.service_category ? serviceTypesFor(d.service_category as ServiceCategory) : [];
-  const freeLeaf = d.service_category === 'others';
-  const handling = CATEGORY_HANDLING[d.service_category];
-  // One Category (the services on the shop's profile); the search category follows it.
-  const { options: categories, loading: categoriesLoading } = useShopCategories(edit.storeId, d.showcase_category);
-  const pickCategory = (value: string) => {
-    const search = searchCategoryFor(value);
-    patch({
-      showcase_category: value,
-      service_category: search,
-      ...(search !== d.service_category ? {
-        // Uniform: suggest the kind from the name ("PNP Uniform" → PNP / Police).
-        service_leaf_type: search === 'uniform_production' ? guessUniformType(d.name) : '',
-        service_types: CATEGORY_HANDLING[search]?.types ?? [],
-      } : {}),
-    });
-  };
 
-  const setTier = (i: number, p: Partial<{ label: string; amount: string }>) =>
+  const setTier = (i: number, p: Partial<PricingTierInput>) =>
     patch({ tiers: d.tiers.map((t, idx) => (idx === i ? { ...t, ...p } : t)) });
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="svc-cat" className={LABEL}>Category <span className="text-red-600">*</span></label>
-          <select id="svc-cat" value={d.showcase_category} onChange={e => pickCategory(e.target.value)} className={FIELD}>
-            <option value="">{categoriesLoading ? 'Loading your services…' : 'Select a category…'}</option>
-            {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-          <p className="mt-1 text-xs text-ink-muted">
-            {!categoriesLoading && categories.length === 0
-              ? 'Your shop has no services listed yet. Add them on your shop page (About → Services) first.'
-              : 'From the services on your shop profile. Customers browse your shop page by these.'}
-          </p>
-        </div>
-        <div>
-          <label htmlFor="svc-leaf" className={LABEL}>
-            {d.service_category === 'uniform_production' ? <>Uniform type <span className="text-red-600">*</span></> : 'Service type'}
-          </label>
-          {freeLeaf ? (
-            <input id="svc-leaf" value={d.service_leaf_type} onChange={e => patch({ service_leaf_type: e.target.value })} placeholder="Describe it" className={FIELD} />
-          ) : (
-            <select id="svc-leaf" value={d.service_leaf_type} onChange={e => patch({ service_leaf_type: e.target.value })} disabled={!d.service_category} className={`${FIELD} disabled:opacity-50`}>
-              <option value="">{d.service_category ? 'Select a type…' : 'Pick a category first'}</option>
-              {leafTypes.map(t => <option key={t} value={t}>{SERVICE_TYPE_LABELS[t] ?? t}</option>)}
-            </select>
-          )}
-        </div>
-      </div>
-
-      {handling && (
-        <p className="text-xs text-ink-muted border-l-2 border-line-strong pl-3">{handling.note}</p>
-      )}
-
       <div>
-        <p className={LABEL}>Pricing options <span className="text-red-600">*</span></p>
+        <p className={LABEL}>Prices &amp; add-ons <span className="text-red-600">*</span></p>
+        <p className="text-xs text-ink-muted mb-2">
+          E.g. &quot;Jusi barong&quot; ₱4,500 or &quot;With collar + jacket&quot; ₱300. Leave the price empty when it depends —
+          customers see &quot;Depends — quotation, or walk in with the item&quot;. For a uniform sold as top only, bottom only or a set,
+          add one row for each and set Covers and Sold as: the price is per unit, the minimum order counts units, and a set is handed over as two garments.
+        </p>
         <div className="space-y-2">
           {d.tiers.map((t, i) => (
             <div key={i} className="flex items-start gap-2">
-              <div className="flex-1 grid grid-cols-[1fr_120px] gap-2 min-w-0">
-                <input value={t.label} onChange={e => setTier(i, { label: e.target.value })} aria-label="Item" placeholder="e.g. Pants hemming" className={FIELD} />
-                <input type="number" min="0" value={t.amount} onChange={e => setTier(i, { amount: e.target.value })} aria-label="Price" placeholder="₱" className={FIELD} />
+              <div className="flex-1 space-y-2 min-w-0">
+                <div className="grid grid-cols-[1fr_120px] gap-2">
+                  <input value={t.label} onChange={e => setTier(i, { label: e.target.value })} aria-label="Price or add-on" placeholder="e.g. Uniform set (top + bottom)" className={FIELD} />
+                  <input type="number" min="0" value={t.amount} onChange={e => setTier(i, { amount: e.target.value })} aria-label="Price" placeholder="₱ or empty" className={FIELD} />
+                </div>
+                {/* Two separate settings; the same words are shown on the service and on every order made from it. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-ink-muted">{COVERS_FIELD}</span>
+                    <select value={t.covers} onChange={e => setTier(i, { covers: e.target.value as PricingTierInput['covers'] })} aria-label={COVERS_FIELD} className={FIELD}>
+                      <option value="">{NOT_SET}</option>
+                      {(Object.keys(COVERS_LABEL) as Covers[]).map(c => <option key={c} value={c}>{COVERS_LABEL[c]}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-ink-muted">{SOLD_AS_FIELD}</span>
+                    <select value={t.sold_as} onChange={e => setTier(i, { sold_as: e.target.value as PricingTierInput['sold_as'] })} aria-label={SOLD_AS_FIELD} className={FIELD}>
+                      <option value="">{NOT_SET}</option>
+                      {(Object.keys(SOLD_AS_LABEL) as SoldAs[]).map(c => <option key={c} value={c}>{SOLD_AS_LABEL[c]}</option>)}
+                    </select>
+                  </label>
+                </div>
+                {t.sold_as === 'set' && t.covers !== 'both' && <p className="text-xs font-medium text-danger">{SET_NEEDS_BOTH}</p>}
               </div>
-              <button type="button" onClick={() => patch({ tiers: d.tiers.filter((_, idx) => idx !== i) })} aria-label="Remove item" className="w-11 h-12 shrink-0 flex items-center justify-center text-ink-faint hover:text-danger cursor-pointer">
+              <button type="button" onClick={() => patch({ tiers: d.tiers.filter((_, idx) => idx !== i) })} aria-label="Remove row" className="w-11 h-12 shrink-0 flex items-center justify-center text-ink-faint hover:text-danger cursor-pointer">
                 <X size={18} />
               </button>
             </div>
           ))}
         </div>
-        <button type="button" onClick={() => patch({ tiers: [...d.tiers, { label: '', amount: '' }] })} className="mt-2 h-11 px-3 text-taupe text-xs font-semibold flex items-center gap-1 cursor-pointer">
-          <Plus size={14} /> Add item
+        <button type="button" onClick={() => patch({ tiers: [...d.tiers, { label: '', amount: '', covers: '', sold_as: '' }] })} className="mt-2 h-11 px-3 text-taupe text-xs font-semibold flex items-center gap-1 cursor-pointer">
+          <Plus size={14} /> Add a price or add-on
         </button>
       </div>
+      <ServiceChargesEditor d={d} patch={patch} />
     </div>
   );
 }

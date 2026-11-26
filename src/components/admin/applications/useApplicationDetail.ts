@@ -93,7 +93,6 @@ export function useApplicationDetail(id: string) {
   const [error, setError] = useState('');
   const [suggestedLogin, setSuggestedLogin] = useState('');
   const [loginDomain, setLoginDomain] = useState('');
-  const [issuesLogin, setIssuesLogin] = useState(true);
   const [changeItems, setChangeItems] = useState<ChangeItem[]>([]);
 
   const load = useCallback(async () => {
@@ -106,7 +105,6 @@ export function useApplicationDetail(id: string) {
       setPlanPayment(res.data.data.plan_payment ?? null);
       setSuggestedLogin(res.data.data.suggested_login);
       setLoginDomain(res.data.data.login_domain);
-      setIssuesLogin(res.data.data.issues_login !== false);
     } catch (err) {
       setError(getErrorMessage(err, 'Could not load this application.'));
     }
@@ -116,7 +114,7 @@ export function useApplicationDetail(id: string) {
 
   /** Returns the one-time credentials (null for pre-application stores). */
   const approve = async (loginEmail: string) => {
-    const res = await adminApi.put(`/admin/store-applications/${id}/approve`, loginEmail ? { login_email: loginEmail } : {});
+    const res = await adminApi.put(`/admin/store-applications/${id}/approve`, { login_email: loginEmail });
     await load();
     return { message: res.data.message as string, credentials: res.data.credentials as IssuedCredentials | null };
   };
@@ -134,5 +132,5 @@ export function useApplicationDetail(id: string) {
     return { message: res.data.message as string, updateUrl: (res.data.update_url as string | null) ?? null };
   };
 
-  return { store, documents, missingDocuments, planPayment, error, suggestedLogin, loginDomain, issuesLogin, changeItems, approve, reject, requestChanges };
+  return { store, documents, missingDocuments, planPayment, error, suggestedLogin, loginDomain, changeItems, approve, reject, requestChanges };
 }

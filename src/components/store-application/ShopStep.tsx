@@ -4,57 +4,28 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AlertTriangle, Check, Plus, X } from 'lucide-react';
 import PinTools from '@/components/shared/PinTools';
-import { offeredSpecializations, STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
+import { STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 import type { SavedLocation } from '@/lib/customerLocation';
-import { areaCenter, displayAddress, EMPTY_PSGC_ADDRESS as EMPTY_AREA, pinOutsideCityWarning, type PsgcAddress } from '@/lib/psgc';
-import AddressFields, { addressErrors, DAVAO_AREA } from './AddressFields';
+import { areaCenter, displayAddress, EMPTY_PSGC_ADDRESS, pinOutsideCityWarning, type PsgcAddress } from '@/lib/psgc';
+import AddressFields, { addressErrors } from './AddressFields';
 
 // Registration asks only what services the shop offers (the apparel
 // departments come from its catalog later). Still saved as specializations[],
 // so search/map filtering works unchanged.
 const SERVICE_OPTIONS = STORE_SPECIALIZATIONS.filter((s) => s.group === 'Services');
-import { BTN_PILL, BTN_PRIMARY, enterMovesOn, FIELD, FieldError, Group, Req, revealFirstProblem, StepActions, TextField } from './ApplicationFields';
+import { StepActions, TextField } from './ApplicationFields';
 import type { StoreApplicationState } from './useStoreApplication';
 
 const LocationPicker = dynamic(() => import('@/components/discovery/LocationPicker'), { ssr: false });
 
 // Replaces sutura2's hardcoded Davao City coordinates with a real pin —
 // the map, distance sort, and branch directions all read these.
-// Every problem on this step, keyed by the element id it belongs to (page order is worked out when shown).
-function shopErrors(shop: StoreApplicationState['shop']): Record<string, string> {
-  const e: Record<string, string> = {};
-  if (!shop.store_name.trim()) e['app-store-name'] = 'Enter your shop’s name.';
-  if (shop.specializations.length === 0 && shop.custom_services.length === 0) e['app-services'] = 'Pick at least one service your shop offers.';
-  const area = addressErrors(shop.area);
-  if (area.city_code) e['app-area-city'] = area.city_code;
-  if (area.district_code) e['app-area-district'] = area.district_code;
-  if (area.barangay_code) e['app-area-barangay'] = area.barangay_code;
-  if (!shop.address.trim()) e['app-address'] = 'Enter the street address (unit, building, street).';
-  if (!shop.location) e['app-pin'] = 'Set your shop’s pin: use Current location or Choose on map.';
-  const seen = new Set<string>();
-  shop.branches.forEach((b) => {
-    const name = b.name.trim().toLowerCase();
-    if (!name) e[`app-branch-name-${b.key}`] = 'Enter the branch name.';
-    else if (seen.has(name)) e[`app-branch-name-${b.key}`] = 'Each branch needs its own name.';
-    seen.add(name);
-    const ba = addressErrors(b.area);
-    if (ba.district_code) e[`app-branch-${b.key}-district`] = ba.district_code;
-    if (ba.barangay_code) e[`app-branch-${b.key}-barangay`] = ba.barangay_code;
-    if (!b.address.trim()) e[`app-branch-address-${b.key}`] = 'Enter the branch’s street address.';
-  });
-  return e;
-}
-
 export default function ShopStep({ app }: { readonly app: StoreApplicationState }) {
   const { shop, setShop, goTo, setError } = app;
-  // After the first Continue, problems show (and clear) as the owner types.
-  const [tried, setTried] = useState(false);
-  const errors: Record<string, string> = { ...app.serverErrors, ...(tried ? shopErrors(shop) : {}) };
   const [pickerOpen, setPickerOpen] = useState(false);
   // "Add Service": a short typed-in service that isn't in the list.
   const [adding, setAdding] = useState(false);
   const [otherDraft, setOtherDraft] = useState('');
-  const [otherError, setOtherError] = useState('');
   const MAX_OTHER = 5;
 
   const toggle = (value: string) => {
@@ -69,13 +40,13 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
   const addOther = () => {
     const name = otherDraft.trim().replace(/\s+/g, ' ');
-    if (name.length < 2) return setOtherError('Type the service name (at least 2 letters).');
-    if (name.length > 40) return setOtherError('Keep the service name under 40 characters.');
+    if (name.length < 2) return setError('Type the service name (at least 2 letters).');
+    if (name.length > 40) return setError('Keep the service name under 40 characters.');
     const taken = [...shop.custom_services, ...SERVICE_OPTIONS.map((o) => o.label)]
       .some((s) => s.toLowerCase() === name.toLowerCase());
-    if (taken) return setOtherError(`"${name}" is already on your list.`);
-    if (shop.custom_services.length >= MAX_OTHER) return setOtherError(`You can add up to ${MAX_OTHER} services of your own.`);
-    setOtherError('');
+    if (taken) return setError(`"${name}" is already on your list.`);
+    if (shop.custom_services.length >= MAX_OTHER) return setError(`You can add up to ${MAX_OTHER} services of your own.`);
+    setError('');
     setShop({ ...shop, custom_services: [...shop.custom_services, name] });
     setOtherDraft('');
     setAdding(false);
@@ -84,23 +55,17 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
   // "Branches (Optional)": other locations, name + area + street each.
   const MAX_BRANCHES = 10;
-  // crypto.randomUUID needs https; a phone opening the site by its network address (http) doesn't have it.
-  const newKey = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
-  const addBranch = () => setShop({ ...shop, branches: [...shop.branches, { key: newKey(), name: '', address: '', area: { ...EMPTY_AREA, ...DAVAO_AREA } }] });
+  const addBranch = () => setShop({ ...shop, branches: [...shop.branches, { key: crypto.randomUUID(), name: '', address: '', area: EMPTY_PSGC_ADDRESS }] });
   const updateBranch = (key: string, patch: Partial<{ name: string; address: string; area: PsgcAddress }>) =>
     setShop({ ...shop, branches: shop.branches.map((b) => (b.key === key ? { ...b, ...patch } : b)) });
   const removeBranch = (key: string) => setShop({ ...shop, branches: shop.branches.filter((b) => b.key !== key) });
 
-  // A service the list no longer has can't stay picked out of sight (the server would refuse the whole application).
-  useEffect(() => {
-    const offered = offeredSpecializations(shop.specializations);
-    if (offered.length !== shop.specializations.length) setShop((s) => ({ ...s, specializations: offeredSpecializations(s.specializations) }));
-  }, [shop.specializations, setShop]);
-
-  // Stable handlers for the address pickers (they keep their lists in sync with the value).
-  const onArea = useCallback((area: PsgcAddress) => { setError(''); setShop((s) => ({ ...s, area })); }, [setError, setShop]);
-  const onBranchArea = useCallback((key: string, area: PsgcAddress) =>
-    setShop((s) => ({ ...s, branches: s.branches.map((b) => (b.key === key ? { ...b, area } : b)) })), [setShop]);
+  // Address picks: errors show once Continue was pressed. Manila-style cities need a district.
+  const [showAddressErrors, setShowAddressErrors] = useState(false);
+  const [districtRequired, setDistrictRequired] = useState(false);
+  const [branchDistrictRequired, setBranchDistrictRequired] = useState<Record<string, boolean>>({});
+  const onBranchDistrictRequired = useCallback((key: string, required: boolean) =>
+    setBranchDistrictRequired((m) => (m[key] === required ? m : { ...m, [key]: required })), []);
 
   // "Open map" starts at the chosen barangay (or city) until a pin is set.
   const [mapStart, setMapStart] = useState<SavedLocation | null>(null);
@@ -124,22 +89,28 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    app.clearServerErrors();
-    setTried(true);
-    const problems = shopErrors(shop);
-    if (Object.keys(problems).length > 0) { revealFirstProblem(Object.keys(problems)); return; }
+    setShowAddressErrors(true);
+    if (shop.specializations.length === 0 && shop.custom_services.length === 0) return setError('Pick at least one service your shop offers.');
+    if (Object.keys(addressErrors(shop.area, districtRequired)).length > 0) {
+      document.getElementById('app-area-province')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return setError('Choose your province, city or municipality, and barangay.');
+    }
+    if (!shop.location) return setError('Pin your shop on the map so customers can find it.');
+    if (shop.branches.some((b) => Object.keys(addressErrors(b.area, !!branchDistrictRequired[b.key])).length > 0)) {
+      return setError('Each branch needs its province, city or municipality, and barangay.');
+    }
+    const names = shop.branches.map((b) => b.name.trim().toLowerCase());
+    if (names.some((n, i) => names.indexOf(n) !== i)) return setError('Each branch needs its own name.');
     goTo(3);
   };
 
   return (
-    <form onSubmit={handleNext} onKeyDown={enterMovesOn} noValidate className="space-y-7">
-      <Group title="Shop">
-        <TextField id="app-store-name" label="Shop name" required placeholder="e.g. Dela Cruz Tailoring" value={shop.store_name}
-          error={errors['app-store-name']} onChange={(e) => setShop({ ...shop, store_name: e.target.value })} />
-      </Group>
+    <form onSubmit={handleNext} className="space-y-6">
+      <TextField id="app-store-name" label="Shop Name" required placeholder="e.g. Dela Cruz Tailoring" value={shop.store_name} onChange={(e) => setShop({ ...shop, store_name: e.target.value })} />
 
-      <Group id="app-services" title="Services" required invalid={!!errors['app-services']}
-        footer={errors['app-services'] ? <FieldError id="app-services-error" message={errors['app-services']} /> : 'What your shop offers. Customers filter shops by these on search and the map.'}>
+      <fieldset>
+        <legend className="text-sm text-ink mb-1">Services<span className="text-danger">*</span></legend>
+        <p className="mobile-caption text-ink-muted mb-3">What your shop offers. Customers filter shops by these on search and the map.</p>
         <div className="flex flex-wrap gap-2">
           {SERVICE_OPTIONS.map((spec) => {
             const on = shop.specializations.includes(spec.value);
@@ -149,19 +120,19 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(spec.value)}
-                className={`inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-[15px] transition-colors active:scale-[0.97] ${on ? 'bg-ink text-white' : 'bg-sunken text-ink hover:bg-line/70'}`}
+                className={`inline-flex min-h-11 items-center gap-1.5 border px-3.5 text-sm transition-colors ${on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink hover:border-ink'}`}
               >
-                {on && <Check size={15} strokeWidth={2.5} aria-hidden="true" />}
+                {on && <Check size={14} />}
                 {spec.label}
               </button>
             );
           })}
           {shop.custom_services.map((name) => (
-            <span key={name} className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink pl-4 pr-1.5 text-[15px] text-white">
-              <Check size={15} strokeWidth={2.5} aria-hidden="true" />
+            <span key={name} className="inline-flex min-h-11 items-center gap-1.5 border border-ink bg-ink pl-3.5 pr-1.5 text-sm text-white">
+              <Check size={14} aria-hidden="true" />
               {name}
               <button type="button" onClick={() => removeOther(name)} aria-label={`Remove ${name}`}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-white/75 hover:bg-white/15 hover:text-white">
+                className="ml-0.5 flex h-8 w-8 items-center justify-center text-white/70 hover:text-white cursor-pointer">
                 <X size={14} aria-hidden="true" />
               </button>
             </span>
@@ -169,105 +140,126 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
           {!adding && shop.custom_services.length < MAX_OTHER && (
             <button
               type="button"
-              onClick={() => { setAdding(true); setOtherError(''); }}
-              className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-line-strong px-4 text-[15px] text-ink hover:bg-sunken"
+              onClick={() => { setAdding(true); setError(''); }}
+              className="inline-flex min-h-11 items-center gap-1.5 border border-dashed border-ink/60 bg-surface px-3.5 text-sm text-ink transition-colors hover:border-ink cursor-pointer"
             >
-              <Plus size={15} aria-hidden="true" /> Add service
+              <Plus size={14} aria-hidden="true" /> Add Service
             </button>
           )}
         </div>
 
         {adding && (
-          <div>
-            <label htmlFor="app-other-service" className="mb-1.5 block text-[13px] font-medium text-ink-body">Can&rsquo;t find your service? Type it</label>
+          <div className="mt-3">
+            <label htmlFor="app-other-service" className="mb-1.5 block text-sm text-ink">Can&rsquo;t find your service? Type it below</label>
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                id="app-other-service"
-                autoFocus
-                value={otherDraft}
-                maxLength={40}
-                onChange={(e) => setOtherDraft(e.target.value)}
-                // Enter adds the service instead of submitting the whole step.
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOther(); } if (e.key === 'Escape') { setAdding(false); setOtherDraft(''); } }}
-                placeholder="e.g. Costume Design"
-                className={`${FIELD} min-w-0 flex-1 basis-56`}
-              />
-              <button type="button" onClick={() => { setAdding(false); setOtherDraft(''); setOtherError(''); }}
-                className="min-h-12 cursor-pointer rounded-xl px-4 text-[15px] font-semibold text-ink-muted hover:text-ink">
+              <div className="flex h-11 min-w-0 flex-1 basis-64 border border-line-strong bg-surface focus-within:border-ink">
+                <span className="flex items-center border-r border-line bg-sunken px-3 text-sm text-ink-muted" aria-hidden="true">Your Service</span>
+                <input
+                  id="app-other-service"
+                  autoFocus
+                  value={otherDraft}
+                  maxLength={40}
+                  onChange={(e) => setOtherDraft(e.target.value)}
+                  // Enter adds the service instead of submitting the whole step.
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOther(); } if (e.key === 'Escape') { setAdding(false); setOtherDraft(''); } }}
+                  placeholder="e.g., Costume Design"
+                  className="min-w-0 flex-1 bg-transparent px-3 text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+                />
+              </div>
+              <button type="button" onClick={() => { setAdding(false); setOtherDraft(''); setError(''); }}
+                className="min-h-11 px-3 text-sm text-ink-muted hover:text-ink cursor-pointer">
                 Cancel
               </button>
-              <button type="button" onClick={addOther} className={BTN_PRIMARY}>Add</button>
+              <button type="button" onClick={addOther}
+                className="min-h-11 bg-ink px-5 text-sm font-semibold text-white hover:bg-black cursor-pointer">
+                Add
+              </button>
             </div>
-            {otherError
-              ? <FieldError id="app-other-service-error" message={otherError} />
-              : <p className="mt-1.5 text-[13px] text-ink-muted">SUTURA reviews these with your application.</p>}
+            <p className="mt-1.5 mobile-caption text-ink-muted">Type it here to add it to your shop. SUTURA reviews these with your application.</p>
           </div>
         )}
-      </Group>
+      </fieldset>
 
-      <Group title="Location">
-        <AddressFields idPrefix="app-area" value={shop.area} onChange={onArea} showErrors={tried} />
-        <TextField id="app-address" label="Street address" required placeholder="Unit, building, street (e.g. Jasmin St)" value={shop.address}
-          error={errors['app-address']} onChange={(e) => setShop({ ...shop, address: e.target.value })} />
+      <div className="space-y-5 border-t border-line pt-5">
+        <AddressFields
+          idPrefix="app-area"
+          value={shop.area}
+          onChange={(area) => { setError(''); setShop({ ...shop, area }); }}
+          showErrors={showAddressErrors}
+          onDistrictRequiredChange={setDistrictRequired}
+        />
+        <TextField id="app-address" label="Street Address" required placeholder="Unit, building, street (e.g. Jasmin St)" value={shop.address} onChange={(e) => setShop({ ...shop, address: e.target.value })} />
+
+        <div>
+          <p className="text-sm text-ink mb-2">Map Pin<span className="text-danger">*</span></p>
+          <PinTools
+            variant="square"
+            current={shop.location}
+            onPickOnMap={() => setPickerOpen(true)}
+            onPin={(pin) => { setError(''); setShop({ ...shop, location: pin }); }}
+          />
+          {!shop.location && mapStart && (
+            <p className="mt-1.5 mobile-caption text-ink-muted">At your shop now? Use your current location. Otherwise the map opens at {shop.area.barangay_name || shop.area.city_name} — move the pin to your exact shop.</p>
+          )}
+          {pinWarning && (
+            <p role="status" className="mt-2 flex gap-2 border border-alert/40 bg-alert/5 px-3 py-2 text-xs text-ink">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0 text-alert" aria-hidden="true" />
+              {pinWarning}
+            </p>
+          )}
+        </div>
         {shop.area.barangay_code && shop.address.trim() && (
-          <p className="text-[13px] text-ink-muted">
+          <p className="mobile-caption text-ink-muted">
             Shown to customers as: <span className="text-ink">{displayAddress(shop.address, shop.area)}</span>
           </p>
         )}
-      </Group>
+      </div>
 
-      <section id="app-pin" data-field="app-pin" className="scroll-mt-24">
-        <h3 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">Map pin<Req /></h3>
-        <PinTools
-          variant="rounded"
-          current={shop.location}
-          onPickOnMap={() => setPickerOpen(true)}
-          onPin={(pin) => { setError(''); setShop({ ...shop, location: pin }); }}
-        />
-        <FieldError id="app-pin-error" message={errors['app-pin']} />
-        {!shop.location && mapStart && (
-          <p className="mt-2 px-1 text-[13px] text-ink-muted">At your shop now? Use your current location. Otherwise the map opens at {shop.area.barangay_name || shop.area.city_name}; move the pin to your exact shop.</p>
-        )}
-        {pinWarning && (
-          <p role="status" className="mt-2 flex gap-2 rounded-xl bg-alert/10 px-3 py-2.5 text-[13px] text-ink">
-            <AlertTriangle size={15} className="mt-0.5 shrink-0 text-alert" aria-hidden="true" />
-            {pinWarning}
-          </p>
-        )}
-      </section>
+      <fieldset className="border-t border-line pt-5">
+        <legend className="sr-only">Branches (Optional)</legend>
+        <p className="text-sm text-ink mb-1" aria-hidden="true">Branches <span className="text-ink-muted">(Optional)</span></p>
+        <p className="mobile-caption text-ink-muted mb-3">
+          Branches listed here are for display on your shop profile only. Upgrading to a Premium Plan is required to activate and set up individual branches.
+        </p>
 
-      <section id="app-branches" data-field="app-branches" className="scroll-mt-24">
-        <h3 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">Branches <span className="font-normal normal-case tracking-normal">· Optional</span></h3>
         {shop.branches.length > 0 && (
           <ul className="mb-3 space-y-3">
             {shop.branches.map((branch, i) => (
-              <li key={branch.key} className="space-y-5 rounded-2xl bg-surface p-4 ring-1 ring-line/80 sm:p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[15px] font-semibold text-ink">Branch {i + 1}</p>
+              <li key={branch.key} className="border border-line bg-surface p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-ink">Branch {i + 1}</p>
                   <button type="button" onClick={() => removeBranch(branch.key)} aria-label={`Remove branch ${i + 1}`}
-                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-ink-muted hover:bg-danger/10 hover:text-danger">
-                    <X size={17} aria-hidden="true" />
+                    className="flex h-9 w-9 items-center justify-center text-ink-muted hover:bg-danger/10 hover:text-danger cursor-pointer">
+                    <X size={16} aria-hidden="true" />
                   </button>
                 </div>
-                <TextField id={`app-branch-name-${branch.key}`} label="Branch name" required maxLength={191} placeholder="e.g. Downtown Branch"
-                  error={errors[`app-branch-name-${branch.key}`]} value={branch.name} onChange={(e) => updateBranch(branch.key, { name: e.target.value })} />
-                <BranchArea branchKey={branch.key} value={branch.area} onChange={onBranchArea} showErrors={tried} />
-                <TextField id={`app-branch-address-${branch.key}`} label="Street address" required maxLength={255} placeholder="Unit, building, street"
-                  error={errors[`app-branch-address-${branch.key}`]} value={branch.address} onChange={(e) => updateBranch(branch.key, { address: e.target.value })} />
+                <div className="space-y-4">
+                  <TextField id={`app-branch-name-${branch.key}`} label="Branch Name" required maxLength={191} placeholder="e.g. Downtown Branch"
+                    value={branch.name} onChange={(e) => updateBranch(branch.key, { name: e.target.value })} />
+                  <AddressFields
+                    idPrefix={`app-branch-${branch.key}`}
+                    value={branch.area}
+                    onChange={(area) => { setError(''); updateBranch(branch.key, { area }); }}
+                    showErrors={showAddressErrors}
+                    onDistrictRequiredChange={(required) => onBranchDistrictRequired(branch.key, required)}
+                  />
+                  <TextField id={`app-branch-address-${branch.key}`} label="Street Address" required maxLength={255} placeholder="Unit, building, street"
+                    value={branch.address} onChange={(e) => updateBranch(branch.key, { address: e.target.value })} />
+                </div>
               </li>
             ))}
           </ul>
         )}
+
         {shop.branches.length < MAX_BRANCHES && (
-          <button type="button" onClick={addBranch} className={BTN_PILL}>
-            <Plus size={15} aria-hidden="true" /> Add branch
+          <button
+            type="button"
+            onClick={addBranch}
+            className="inline-flex min-h-11 items-center gap-1.5 border border-dashed border-ink/60 bg-surface px-3.5 text-sm text-ink transition-colors hover:border-ink cursor-pointer"
+          >
+            <Plus size={14} aria-hidden="true" /> Add Branch
           </button>
-        )}
-        <FieldError id="app-branches-error" message={errors['app-branches']} />
-        <p className="mt-2 px-1 text-[13px] leading-relaxed text-ink-muted">
-          Branches listed here are for display on your shop profile only. Upgrading to a Premium Plan is required to activate and set up individual branches.
-        </p>
-      </section>
+        )}      </fieldset>
 
       <StepActions onBack={() => goTo(1)} nextLabel="Continue" />
 
@@ -286,12 +278,4 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
       )}
     </form>
   );
-}
-
-/** One branch's address pickers, with a change handler that stays the same between renders. */
-function BranchArea({ branchKey, value, onChange, showErrors }: Readonly<{
-  branchKey: string; value: PsgcAddress; onChange: (key: string, area: PsgcAddress) => void; showErrors: boolean;
-}>) {
-  const change = useCallback((area: PsgcAddress) => onChange(branchKey, area), [branchKey, onChange]);
-  return <AddressFields idPrefix={`app-branch-${branchKey}`} value={value} onChange={change} showErrors={showErrors} />;
 }

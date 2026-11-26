@@ -50,6 +50,7 @@ export interface DetailedCatalogItem extends RequirementFields {
   color?: string;
   fabric_image_url?: string | null;
   sizes?: string[] | null;
+  add_ons?: { id?: string; name: string; price: number }[] | null;
   description?: string | null;
   garment_type?: string | null;
   measurement_guide?: string | null;

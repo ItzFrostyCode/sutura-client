@@ -59,6 +59,7 @@ export function useBookingWizard(storeId: string) {
   const refImage = searchParams.get('ref_image');
   const refPrice = searchParams.get('ref_price');
   const refColor = searchParams.get('ref_color');
+  const refAddOns = searchParams.get('ref_addons');
   const branchSlugParam = searchParams.get('branch');
   const serviceIdParam = searchParams.get('service_id');
   const serviceNameParam = searchParams.get('service_name');
@@ -104,6 +105,20 @@ export function useBookingWizard(storeId: string) {
       const parsedQty = parseInt(refQtyParam || qtyParam || '1', 10) || minQ;
       const initialQty = Math.max(minQ, parsedQty);
 
+      let parsedAddOns: string[] = [];
+      if (refAddOns) {
+        try {
+          const parsed = JSON.parse(refAddOns);
+          if (Array.isArray(parsed)) {
+            parsedAddOns = parsed.map((x) => String(x));
+          } else if (typeof parsed === 'string') {
+            parsedAddOns = [parsed];
+          }
+        } catch {
+          parsedAddOns = refAddOns.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
+
       addItem({
         storeId,
         serviceId: serviceIdParam ? Number(serviceIdParam) : null,
@@ -117,6 +132,7 @@ export function useBookingWizard(storeId: string) {
         minQuantity: minQ,
         selectedColor: refColor || null,
         selectedSize: refSize || null,
+        addOns: parsedAddOns,
         notes: null,
         customDetails: null,
       });
@@ -124,7 +140,7 @@ export function useBookingWizard(storeId: string) {
       // Entry point 3: Normal Store Profile booking -> start with clean slate for general consultation
       clearStoreItems(storeId);
     }
-  }, [storeId, hasServiceContext, refItemId, serviceIdParam, refName, refImage, refPrice, refColor, refSize, refQtyParam, refMinQtyParam, qtyParam, addItem, getStoreItems, clearStoreItems, serviceNameParam]);
+  }, [storeId, hasServiceContext, refItemId, serviceIdParam, refName, refImage, refPrice, refColor, refSize, refAddOns, refQtyParam, refMinQtyParam, qtyParam, addItem, getStoreItems, clearStoreItems, serviceNameParam]);
 
   // Derive internal booking kind from actual requested items and entry point context:
   // - Store Profile with no requested items: general 'shop' visit
@@ -154,6 +170,7 @@ export function useBookingWizard(storeId: string) {
       basePrice: service.base_price != null ? Number(service.base_price) : null,
       quantity,
       minQuantity: minQ,
+      addOns: [],
       notes: customDetails || null,
       customDetails: customDetails || null,
     });
@@ -206,6 +223,7 @@ export function useBookingWizard(storeId: string) {
       minQuantity: minQ,
       selectedSize: options.size || null,
       selectedColor: options.color || null,
+      addOns: [],
       notes: options.customDetails || null,
       customDetails: options.customDetails || null,
     });
@@ -497,6 +515,7 @@ export function useBookingWizard(storeId: string) {
           quantity: item.quantity,
           selected_size: item.selectedSize ?? null,
           selected_color: item.selectedColor ?? null,
+          add_ons: item.addOns && item.addOns.length > 0 ? item.addOns : null,
           notes: item.notes ?? null,
         }))
       : undefined;
@@ -587,6 +606,7 @@ export function useBookingWizard(storeId: string) {
     refImage,
     refPrice,
     refColor,
+    refAddOns,
     serviceIdParam,
     serviceNameParam,
 

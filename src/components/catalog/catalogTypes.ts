@@ -22,6 +22,7 @@ export interface CatalogItemResponse {
   color?: string;
   fabric_image_url?: string;
   sizes?: string[] | null;
+  add_ons?: { id?: string; name: string; price: number }[] | null;
   description?: string;
   features?: string;
   size_chart_image_url?: string | null;
@@ -80,6 +81,7 @@ export interface CatalogFormData {
   measurement_guide: string;
   garment_type: string;
   sizes: string[];
+  add_ons: { id?: string; name: string; price: number }[];
   external_gallery_url: string;
   is_active: boolean;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
@@ -12,7 +12,11 @@ import type { Service } from '@/components/services/serviceHelpers';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import ServiceDetailHeader from '@/components/services/detail/ServiceDetailHeader';
 import ServiceEditableOverview from '@/components/services/detail/ServiceEditableOverview';
+import ServiceDesignsSection from '@/components/services/detail/ServiceDesignsSection';
 import { useServiceSectionEdit } from '@/components/services/detail/useServiceSectionEdit';
+import { useServiceGuide } from '@/components/services/detail/useServiceGuide';
+import ServiceGuideBar from '@/components/services/detail/ServiceGuideBar';
+import type { ServiceSection } from '@/components/services/detail/serviceEditing';
 import { buildServicePayload, toDraft, toPublicService } from '@/components/services/detail/serviceEditing';
 import CatalogDetailTabsNav, { type CatalogDetailTab } from '@/components/catalog/detail/CatalogDetailTabsNav';
 import PauseDesignModal from '@/components/catalog/detail/PauseDesignModal';
@@ -22,9 +26,9 @@ import { useUnsavedChangesGuard } from '@/components/catalog/editable/useUnsaved
 import ServiceRatingsSection from '@/components/store-service-detail/ServiceRatingsSection';
 import type { PublicService } from '@/components/store-storefront/types';
 
-// Phones: the photo alone runs edge to edge (like the customer page); every other block keeps the dashboard's side
-// margin, the same as the header's.
-const PAD = 'px-[var(--dash-gutter)] min-[600px]:px-0';
+// Same side padding the customer page gives its content blocks on phones
+// (the photo alone runs edge-to-edge).
+const PAD = 'px-4 min-[375px]:px-6 min-[600px]:px-0';
 
 export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -76,7 +80,16 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
   }, [reload]);
 
   const canManage = useCanManageOfferings();
-  const edit = useServiceSectionEdit(service, onSavedSection, canManage);
+  // The guided setup (?guide=1, right after Create New) walks the sections in the customer's order.
+  const sectionSavedRef = useRef<((s: ServiceSection) => void) | null>(null);
+  const edit = useServiceSectionEdit(service, onSavedSection, canManage, (s) => sectionSavedRef.current?.(s));
+  const guide = useServiceGuide(edit.open, edit.discard, Boolean(service) && canManage);
+  sectionSavedRef.current = guide.onSaved;
+  const finishGuide = (linked?: boolean) => {
+    guide.exit();
+    const back = new URLSearchParams(window.location.search).get('return');
+    if (linked && back?.startsWith('/dashboard/') && !back.startsWith('//') && service) router.push(`${back}?linked_service=${service.id}`);
+  };
   const { guard, pending, clearPending } = useUnsavedChangesGuard(edit.isDirty);
 
   // Ratings come from the service's own loaded reviews or public list fallback
@@ -148,10 +161,10 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
   }
 
   return (
-    // Cancels the dashboard shell's padding so the photo can run edge to edge on phones; from 600px the page keeps the
-    // shell's side margin (--dash-gutter), so it lines up with the header.
-    <div className="-my-4 -mx-[var(--dash-gutter)] animate-in fade-in duration-300 text-ink">
-      <div className="w-full max-w-7xl px-0 min-[600px]:px-[var(--dash-gutter)] py-0 min-[600px]:py-4 space-y-4 pb-24 min-[600px]:pb-10">
+    // -m-4 cancels the dashboard shell's p-4; then the page takes the exact
+    // container the customer's Service Detail uses at each width.
+    <div className="-m-4 animate-in fade-in duration-300 text-ink">
+      <div className={`w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 space-y-4 ${guide.active ? 'pb-56' : 'pb-24 min-[600px]:pb-10'}`}>
         <div className={`${PAD} pt-3 min-[600px]:pt-0`}>
           <ServiceDetailHeader
             isActive={service.is_active}
@@ -161,10 +174,23 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
             onBack={() => guard(() => router.push('/dashboard/services'))}
             onToggle={() => (service.status === 'published' || (!service.status && service.is_active)
               ? setPauseOpen(true)
-              : void saveWithActive(true))}
+              // Publishing from the header during the guided setup also ends the setup.
+              : void saveWithActive(true).then((ok) => { if (ok && guide.active) finishGuide(true); }))}
             onDelete={() => setDeleteOpen(true)}
           />
         </div>
+
+        {guide.active && (
+          <div className={PAD}>
+            <ServiceGuideBar
+              guide={guide}
+              editingCurrent={guide.current !== null && edit.editing === guide.current.section}
+              publishing={toggling}
+              onPublish={async () => { if (await saveWithActive(true)) finishGuide(true); }}
+              onFinishDraft={() => { toast.success('Kept as a draft. Publish it from this page when you are ready.'); finishGuide(true); }}
+            />
+          </div>
+        )}
 
         <div className={PAD}>
           <CatalogDetailTabsNav
@@ -177,7 +203,10 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         </div>
 
         {activeTab === 'overview' && (
-          <ServiceEditableOverview service={service} edit={edit} />
+          <>
+            <ServiceEditableOverview service={service} edit={edit} />
+            {store?.id && <ServiceDesignsSection storeId={store.id} serviceId={service.id} canManage={canManage} />}
+          </>
         )}
 
         {activeTab === 'reviews' && ratingsView && (

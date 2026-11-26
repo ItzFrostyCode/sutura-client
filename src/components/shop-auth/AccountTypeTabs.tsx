@@ -9,7 +9,7 @@ export default function AccountTypeTabs({ active }: { readonly active: LoginPort
   return (
     <LoginPortalSwitch
       value={active}
-      onChange={(next) => { if (next !== active) router.push(next === 'store' ? '/register/store' : '/register'); }}
+      onChange={(next) => { if (next !== active) router.push(next === 'store' ? '/signup/shop' : '/register'); }}
     />
   );
 }

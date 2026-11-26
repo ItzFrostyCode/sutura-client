@@ -2,14 +2,11 @@
 
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { PageMeta } from '../useAdminList';
-import { scrollToListTop } from '@/lib/scrollToListTop';
 
-export function StatCard({ label, value, hint, valueClassName = 'text-3xl', valueTone = 'text-[#1E1A17]' }: {
+export function StatCard({ label, value, hint, valueClassName = 'text-3xl' }: {
   readonly label: string; readonly value: React.ReactNode; readonly hint?: string;
   /** Size of the number; money uses a step smaller so it fits a narrow card. */
   readonly valueClassName?: string;
-  /** Colour of the number (replaces the default ink), e.g. a PLAN_TEXT hue on Overview. */
-  readonly valueTone?: string;
 }) {
   return (
     // Same three rows in every card, so they line up across a grid row:
@@ -19,7 +16,7 @@ export function StatCard({ label, value, hint, valueClassName = 'text-3xl', valu
     <div className="admin-card flex h-full flex-col gap-2 p-4 sm:p-5">
       <p className="min-h-[2lh] text-[11px] font-semibold uppercase leading-snug tracking-wider text-[#6E655F]">{label}</p>
       {/* Fixed row height (a 3xl line) so a smaller money value still lines up with the others. */}
-      <p className={`flex min-h-[1.875rem] min-w-0 items-end overflow-hidden whitespace-nowrap font-bold leading-none tabular-nums ${valueTone} ${valueClassName}`}>{value}</p>
+      <p className={`flex min-h-[1.875rem] min-w-0 items-end overflow-hidden whitespace-nowrap font-bold leading-none text-[#1E1A17] tabular-nums ${valueClassName}`}>{value}</p>
       <p className="mt-auto min-h-[2lh] pt-1 text-xs leading-relaxed text-[#6E655F]" aria-hidden={hint ? undefined : true}>{hint}</p>
     </div>
   );
@@ -33,21 +30,14 @@ export const ADMIN_TH = 'px-5 py-3 text-[11px] font-semibold uppercase tracking-
 
 export function Pager({ meta, onPage }: { readonly meta: PageMeta | null; readonly onPage: (page: number) => void }) {
   if (!meta || meta.last_page <= 1) return null;
-  // The pager sits at the foot of its list card: changing page brings that card's
-  // top back into view, clear of the sticky admin header (h-16 + a little air).
-  const go = (e: React.MouseEvent<HTMLButtonElement>, page: number) => {
-    const card = e.currentTarget.closest('[data-pager-root]')?.parentElement ?? null;
-    onPage(page);
-    scrollToListTop(card, 80);
-  };
   return (
-    <div data-pager-root className="flex items-center justify-between gap-3 border-t border-[#EAE3D9] px-5 py-3 text-sm">
+    <div className="flex items-center justify-between gap-3 border-t border-[#EAE3D9] px-5 py-3 text-sm">
       <span className="text-[#4A423C]">Page {meta.current_page} of {meta.last_page} <span className="text-[#A8A19A]">· {meta.total} total</span></span>
       <div className="flex gap-2">
-        <button type="button" aria-label="Previous page" disabled={meta.current_page <= 1} onClick={(e) => go(e, meta.current_page - 1)} className={PAGER_BTN}>
+        <button type="button" aria-label="Previous page" disabled={meta.current_page <= 1} onClick={() => onPage(meta.current_page - 1)} className={PAGER_BTN}>
           <ChevronLeft size={17} />
         </button>
-        <button type="button" aria-label="Next page" disabled={meta.current_page >= meta.last_page} onClick={(e) => go(e, meta.current_page + 1)} className={PAGER_BTN}>
+        <button type="button" aria-label="Next page" disabled={meta.current_page >= meta.last_page} onClick={() => onPage(meta.current_page + 1)} className={PAGER_BTN}>
           <ChevronRight size={17} />
         </button>
       </div>

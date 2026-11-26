@@ -58,6 +58,7 @@ export interface AppointmentDetailData {
     unit_price?: number | null;
     selected_size?: string | null;
     selected_color?: string | null;
+    add_ons?: string[] | null;
     notes?: string | null;
   }> | null;
 }
@@ -99,6 +100,9 @@ export default function AppointmentDetailContent({ appt, cancelling, onCancel, o
                     {it.selected_size && <span>Size: {it.selected_size}</span>}
                     {it.selected_size && it.selected_color && <span>•</span>}
                     {it.selected_color && <span>{it.selected_color}</span>}
+                    {it.add_ons && it.add_ons.length > 0 && (
+                      <span className="text-taupe font-medium">Add-ons: {it.add_ons.join(', ')}</span>
+                    )}
                   </div>
                 </div>
                 <span className="shrink-0 bg-surface border border-line text-ink font-bold px-2 py-0.5 rounded text-xs">

@@ -8,7 +8,7 @@ const STAGE: Record<string, string> = {
   final_adjustments: 'Adjustments', qc_ironing: 'Quality Check', qc_check: 'Quality Check', in_repair: 'In Repair', ready_for_fitting: 'Ready for Fitting',
   ready_for_pickup: 'Ready for Pickup', balance_handover: 'Balance & Handover',
 };
-const due = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No due date');
+const due = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : 'No due date');
 
 // "My Production Queue": the orders on the floor, mine first, urgent deadlines flagged.
 export default function StaffQueue({ jobs }: Readonly<{ jobs: StaffQueueJob[] }>) {

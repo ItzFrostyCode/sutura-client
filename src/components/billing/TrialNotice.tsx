@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { Clock, PauseCircle } from 'lucide-react';
 import api from '@/lib/axios';
 
-export interface Sub { status: string; ends_at: string | null; trial_ends_at?: string | null; cancelled_at?: string | null; plan?: { name?: string | null; slug?: string | null } | null }
+interface Sub { status: string; ends_at: string | null; trial_ends_at?: string | null }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
+const day = (iso: string) => new Date(iso).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', timeZone: 'Asia/Manila' });
 
 /** Whole days left until `iso` (0 on the last day). */
 export const daysLeft = (iso: string) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
@@ -27,11 +27,7 @@ export function TrialBanner({ sub, showLink = true }: { readonly sub: Sub | null
         <p className="flex items-start gap-2.5">
           <Clock size={18} className="mt-0.5 shrink-0 text-orange-800" aria-hidden="true" />
           <span>
-            {/* Says which plan is on trial (any plan can be tried), so the owner knows what they have. */}
-            <strong className="font-semibold">
-              Free trial{sub.plan?.name ? ` of ${sub.plan.name}` : ''}: {left === 0 ? 'last day' : `${left} day${left === 1 ? '' : 's'} left`}.
-            </strong>{' '}
-            {sub.plan?.name ? `You have every ${sub.plan.name} feature until ${day(sub.ends_at)}. ` : ''}
+            <strong className="font-semibold">Free trial: {left === 0 ? 'last day' : `${left} day${left === 1 ? '' : 's'} left`}.</strong>{' '}
             Choose a plan before {day(sub.ends_at)} to keep your shop open.
           </span>
         </p>

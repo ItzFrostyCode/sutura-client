@@ -19,7 +19,7 @@ interface DescriptionCardProps {
 
 function DescriptionView({ description }: { readonly description: string }) {
   return (
-    <p className="text-sm text-ink-body font-normal leading-relaxed whitespace-pre-line">
+    <p className="flex-1 flex items-center mobile-body-lg sm:text-lg text-ink-body font-normal leading-relaxed whitespace-pre-line">
       {description || 'No description provided yet.'}
     </p>
   );
@@ -28,7 +28,7 @@ function DescriptionView({ description }: { readonly description: string }) {
 export default function DescriptionCard({ description, edit }: DescriptionCardProps) {
   if (!edit) {
     return (
-      <div className="bg-surface border border-line p-4 sm:p-5">
+      <div className="bg-surface border border-line p-6 sm:p-8 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-3 shrink-0">
           <Info size={16} className="text-taupe" />
           <h3 className="mobile-h4 text-ink">Description</h3>
@@ -47,6 +47,7 @@ export default function DescriptionCard({ description, edit }: DescriptionCardPr
       onEdit={edit.onEdit}
       onCancel={edit.onCancel}
       onSave={edit.onSave}
+      className="h-full flex flex-col p-6 sm:p-8"
       editBody={
         <textarea
           value={edit.value}

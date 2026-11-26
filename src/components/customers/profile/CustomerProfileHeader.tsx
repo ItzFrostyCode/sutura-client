@@ -5,8 +5,6 @@ import { CustomerData } from '../customerTypes';
 import { isWalkInCustomer, isWalkInEmail } from '../customerHelpers';
 import { printInPlace } from '@/lib/printInPlace';
 import { useShopRole } from '@/hooks/useShopRole';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 const PRIMARY = 'flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-espresso px-4 text-[13px] font-medium text-white shadow-sm transition-opacity hover:opacity-95 sm:px-5';
 const SECONDARY = 'flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-line bg-white px-3.5 text-[13px] font-medium text-ink shadow-sm hover:bg-espresso/[0.03] sm:px-4';
@@ -32,8 +30,6 @@ export default function CustomerProfileHeader({
   readonly onText?: () => void;
 }>) {
   const { isOwnerOrManager } = useShopRole();
-  const { isGated } = useSubscriptionTier();
-  const smsGated = isGated('notifications');
   const sukiTagMap: Record<string, { label: string; badgeCls: string }> = {
     b2b_suki: { label: 'B2B Suki', badgeCls: 'bg-amber-50 text-amber-800 border-amber-200' },
     reseller: { label: 'Reseller', badgeCls: 'bg-purple-50 text-purple-800 border-purple-200' },
@@ -110,7 +106,6 @@ export default function CustomerProfileHeader({
         {onText && (
           <button type="button" onClick={onText} className={SECONDARY}>
             <MessageSquare size={15} /> Send Text
-            {smsGated && <PlanTierTag plan="Pro" />}
           </button>
         )}
         <button type="button" onClick={() => printInPlace(`/print/customers/${customer?.id}/statement`)} className={SECONDARY}>

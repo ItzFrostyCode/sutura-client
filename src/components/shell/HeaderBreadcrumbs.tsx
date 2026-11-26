@@ -6,7 +6,7 @@ import {
   Home, Calendar, CreditCard, Scissors, Users,
   Package, UserCog, LayoutDashboard,
   Building2, ScrollText, Settings, ChevronRight,
-  HelpCircle, Star, MessageSquare, type LucideIcon
+  HelpCircle, Star, type LucideIcon
 } from 'lucide-react';
 
 interface BreadcrumbSegment {
@@ -106,8 +106,6 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     segments.push({ label: 'Support Desk', href: '/dashboard/support', icon: HelpCircle });
   } else if (pathname.startsWith('/dashboard/reviews')) {
     segments.push({ label: 'Reviews', href: '/dashboard/reviews', icon: Star });
-  } else if (pathname.startsWith('/dashboard/sms')) {
-    segments.push({ label: 'SMS', href: '/dashboard/sms', icon: MessageSquare });
   } else {
     // Fallback for custom dashboard routes
     const slug = pathname.replace('/dashboard/', '').replaceAll('-', ' ');

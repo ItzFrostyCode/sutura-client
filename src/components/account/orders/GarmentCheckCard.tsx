@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { CheckCircle2, Loader2, MapPin } from 'lucide-react';
 import api from '@/lib/axios';
 import { peso } from '@/components/service-order/orderMath';
-import { hoursSummary } from '@/lib/storeStatus';
 
 export interface GarmentCheckInfo {
   state: 'waiting_for_garment' | 'as_described' | 'needs_answer' | 'accepted' | 'declined';
@@ -69,7 +68,7 @@ export default function GarmentCheckCard({ orderId, check, dropOff, onAnswered }
               <p className="font-semibold text-ink">{dropOff.name}</p>
               {dropOff.address && <p>{dropOff.address}</p>}
               {dropOff.landmark && <p className="text-ink-muted">Near {dropOff.landmark}</p>}
-              {hoursSummary(dropOff.operating_hours) && <p className="text-ink-muted">{hoursSummary(dropOff.operating_hours)!.state} · {hoursSummary(dropOff.operating_hours)!.text}</p>}
+              {dropOff.operating_hours && <p className="text-ink-muted">Open {dropOff.operating_hours}</p>}
               {dropOff.contact_number && <p className="text-ink-muted">{dropOff.contact_number}</p>}
             </div>
           </div>

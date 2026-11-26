@@ -19,9 +19,10 @@ interface OrderReceiptBreakdownProps {
 }
 
 /**
- * The order's payment summary: what was paid, what is left, and how the total is made (base price, rush fee,
- * discount), with the due dates. Not an official receipt: SUTURA records the payments made to the shop, it does not
- * issue BIR receipts. "Download" prints / saves this summary.
+ * Official Order Receipt & Financial Breakdown for an Order.
+ * Itemizes base quotation, rush priority fees, applied discounts,
+ * total paid so far, remaining balance, and payment deadlines.
+ * Provides a 1-click Download / Print official receipt feature.
  */
 export default function OrderReceiptBreakdown({ order }: OrderReceiptBreakdownProps) {
   const [showDetails, setShowDetails] = useState(true);
@@ -43,14 +44,17 @@ export default function OrderReceiptBreakdown({ order }: OrderReceiptBreakdownPr
   const basePrice = quotationBreakdown?.base_price ?? (total - rushFee + discount);
 
   return (
-    <section aria-label="Payment summary" className="card-soft overflow-hidden border border-line bg-surface p-0 shadow-sm print:border-none print:shadow-none">
+    <section aria-label="Official Order Receipt" className="card-soft overflow-hidden border border-line bg-surface p-0 shadow-sm print:border-none print:shadow-none">
       {/* Receipt Header Ribbon */}
       <div className="border-b border-dashed border-line bg-sunken/60 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="mobile-h3 font-bold tracking-tight text-ink sm:text-xl">Payment summary</h2>
+            <span className="mobile-overline text-ink-muted">Official Statement &amp; Receipt</span>
+            <h2 className="mobile-h3 font-mono font-bold tracking-tight text-ink sm:text-xl">
+              RECEIPT #{order.order_number}
+            </h2>
             <p className="mobile-caption mt-0.5 text-ink-muted">
-              #{order.order_number} · <span className="font-semibold text-ink">{order.store?.name ?? 'SUTURA Partner Store'}</span>
+              Issued by <strong className="font-semibold text-ink">{order.store?.name ?? 'SUTURA Partner Store'}</strong>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -58,10 +62,10 @@ export default function OrderReceiptBreakdown({ order }: OrderReceiptBreakdownPr
               type="button"
               onClick={handlePrint}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink shadow-sm transition-colors hover:bg-sunken active:opacity-75"
-              aria-label="Print or save this payment summary"
+              aria-label="Download receipt as PDF"
             >
               <Download size={15} className="text-ink-muted" />
-              <span>Download</span>
+              <span>Download Receipt</span>
             </button>
             <span
               className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${

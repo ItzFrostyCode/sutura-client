@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { MapPin, Navigation, Phone, Clock } from 'lucide-react';
 import type { DropOffInfo } from './GarmentCheckCard';
-import { hoursSummary } from '@/lib/storeStatus';
 
 interface OrderDestinationCardProps {
   readonly dropOff?: DropOffInfo | null;
@@ -21,7 +20,6 @@ export default function OrderDestinationCard({ dropOff, shopName, storeSlug }: O
   if (!dropOff) return null;
 
   const branchName = dropOff.name || shopName || 'Shop Branch';
-  const hours = hoursSummary(dropOff.operating_hours);
   const hasCoordinates = typeof dropOff.latitude === 'number' && typeof dropOff.longitude === 'number';
 
   // In-app search map directions URL (e.g. /search?sort_by=price_asc&view=list&store=slug&directions=1)
@@ -80,12 +78,10 @@ export default function OrderDestinationCard({ dropOff, shopName, storeSlug }: O
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-2.5 border-t border-line pt-3 sm:grid-cols-2">
-        {hours && (
+        {dropOff.operating_hours && (
           <div className="flex items-center gap-2 text-xs text-ink-muted">
             <Clock size={14} className="text-ink-faint shrink-0" />
-            <span className="min-w-0">
-              <span className={`font-semibold ${hours.open ? 'text-emerald-700' : 'text-danger'}`}>{hours.state}</span> · {hours.text}
-            </span>
+            <span className="truncate">Hours: {dropOff.operating_hours}</span>
           </div>
         )}
         {dropOff.contact_number && (

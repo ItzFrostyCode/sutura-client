@@ -18,7 +18,7 @@ import { EMAIL_INPUT_PROPS, ERROR_BOX, FIELD, LABEL, PRIMARY_BTN, TITLE } from '
 
 export interface RegisterResult { readonly email: string; readonly signedIn: boolean }
 
-/** Customer sign-up: Google in one tap, or name + email + password. Shop owners use the Shop tab (/register/store). */
+/** Customer sign-up: Google in one tap, or name + email + password. Shop owners use the Shop tab (/signup/shop). */
 export default function RegisterForm({ redirect, onRegistered }: { readonly redirect: string | null; readonly onRegistered: (r: RegisterResult) => void }) {
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState<Gender | ''>('');
