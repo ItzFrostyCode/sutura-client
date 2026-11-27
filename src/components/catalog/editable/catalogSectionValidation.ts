@@ -7,14 +7,7 @@ export function validateCatalogSection(section: CatalogSection, form: ReturnType
   const { formData, images, colorItems } = form;
   if (section === 'details' && !formData.name.trim()) return 'Enter the design name.';
   if (section === 'info') {
-    if (!formData.name.trim()) return 'Enter the design name.';
-    if (!formData.service_id && formData.price === '') return 'Pick the service this design is made under, or enter its own price.';
-    if (formData.service_id && formData.pricing_mode === 'set' && !(Number(formData.price) > 0)) return 'Enter the base price for this design.';
-    if (formData.service_id && formData.pricing_mode === 'extra' && !(Number(formData.extra_charge) > 0)) return 'Enter the extra charge for this design.';
-    const s = form.storeServices.find(svc => String(svc.id) === formData.service_id);
-    if (formData.service_id && (formData.pricing_mode === 'same' || formData.pricing_mode === 'extra') && !(Number(s?.base_price) > 0)) {
-      return 'The selected service has no base price. Choose "Set price for this design" or "Price on quotation".';
-    }
+    if (!formData.name.trim() || formData.price === '') return 'Design name and price are required.';
     if (!formData.estimated_days || Number(formData.estimated_days) < 1) return 'Enter the production time (from days).';
     const from = Number(formData.estimated_days);
     const to = Number(formData.estimated_days_max);

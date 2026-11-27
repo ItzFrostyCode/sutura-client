@@ -1,15 +1,14 @@
 import React from 'react';
 import Modal from '@/components/Modal';
 import { Loader2 } from 'lucide-react';
-import { type Gender } from '@/components/shared/GenderPicker';
-import CustomerFields from './CustomerFields';
+import { toPhMobileInput, PH_MOBILE_INPUT_PROPS } from './customerHelpers';
 
 interface CustomerAddEditModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly editingId: number | null;
-  readonly formData: { name: string; email: string; phone: string; gender: Gender | '' };
-  readonly setFormData: React.Dispatch<React.SetStateAction<{ name: string; email: string; phone: string; gender: Gender | '' }>>;
+  readonly formData: { name: string; email: string; phone: string };
+  readonly setFormData: React.Dispatch<React.SetStateAction<{ name: string; email: string; phone: string }>>;
   readonly onSubmit: (e: React.SyntheticEvent) => Promise<void>;
   readonly isSubmitting: boolean;
   readonly error: string;
@@ -38,7 +37,49 @@ export default function CustomerAddEditModal({
           </div>
         )}
 
-        <CustomerFields value={formData} onChange={setFormData} showEmail={editingId !== null} />
+        <div>
+          <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            Full Name <span className="text-danger">*</span>
+          </label>
+          <input
+            id="name"
+            type="text"
+            required
+            value={formData.name}
+            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+            className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink font-semibold focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
+            placeholder="e.g. Maria Clara"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            Email Address <span className="text-[10px] text-ink-faint font-normal lowercase">(optional for walk-ins)</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+            className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
+            placeholder="e.g. maria.clara@gmail.com"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="phone" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            Phone Number <span className="text-danger">*</span>
+          </label>
+          <input
+            id="phone"
+            {...PH_MOBILE_INPUT_PROPS}
+            required
+            value={formData.phone}
+            onChange={(e) => setFormData((prev) => ({ ...prev, phone: toPhMobileInput(e.target.value) }))}
+            className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2.5 text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
+          />
+          <p className="mt-1 text-[11px] text-ink-muted">11 digits, starting with 09.</p>
+        </div>
 
         <div className="pt-3 flex justify-end gap-2 border-t border-line">
           <button
@@ -51,7 +92,7 @@ export default function CustomerAddEditModal({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-espresso hover:bg-espresso/90 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
+            className="bg-taupe hover:bg-taupe-hover text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm cursor-pointer"
           >
             {isSubmitting && <Loader2 size={14} className="animate-spin" />}
             {editingId ? 'Save Changes' : 'Create Customer Record'}

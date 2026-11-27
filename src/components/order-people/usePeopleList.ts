@@ -12,11 +12,14 @@ import { EMPTY_BODY_MEASUREMENTS, hasAnyMeasurement, type BodyMeasurements } fro
 /** How one person is sized: their own body measurements, a standard size, or measured at the shop. */
 export type SizingMethod = 'body' | 'standard' | 'shop';
 
+/** Optional; '' = not given. Helps the shop cut men's vs women's patterns. */
 export type PersonGender = '' | 'male' | 'female';
+export const GENDER_LABELS: Record<Exclude<PersonGender, ''>, string> = { male: 'Male', female: 'Female' };
 
 export interface OrderPerson {
   id: number;
   name: string;
+  gender: PersonGender;
   method: SizingMethod;
   /** Standard size (only when method is 'standard'). */
   size: string;
@@ -26,13 +29,11 @@ export interface OrderPerson {
   /** Printed uniforms only (walk-in): name and number printed on the garment. */
   printName: string;
   number: string;
-
-  gender?: PersonGender;
 }
 export type PersonDraft = Omit<OrderPerson, 'id'>;
 
 export function blankDraft(method: SizingMethod = 'body', unit: 'in' | 'cm' = 'in'): PersonDraft {
-  return { name: '', method, size: '', values: { ...EMPTY_BODY_MEASUREMENTS, unit }, profileId: null, printName: '', number: '' };
+  return { name: '', gender: '', method, size: '', values: { ...EMPTY_BODY_MEASUREMENTS, unit }, profileId: null, printName: '', number: '' };
 }
 
 interface Options {
@@ -57,6 +58,7 @@ export function usePeopleList({ sizes, garmentType, hasSheets, max }: Options) {
   };
 
   const draftHasContent =
+    // Gender carries over to the next person, so on its own it isn't "unsaved".
     draft.name.trim() !== '' ||
     draft.printName.trim() !== '' ||
     draft.number.trim() !== '' ||
@@ -98,8 +100,9 @@ export function usePeopleList({ sizes, garmentType, hasSheets, max }: Options) {
     if (editingId !== null) setPersons((prev) => prev.map((p) => (p.id === editingId ? { ...entry, id: editingId } : p)));
     else setPersons((prev) => [...prev, { ...entry, id: Date.now() }]);
     setEditingId(null);
-    // The next person starts with the same method and unit.
-    setDraft(blankDraft(draft.method, draft.values.unit));
+    // The next person starts with the same gender, method and unit; name and
+    // size / measurements start empty so nothing is copied by accident.
+    setDraft({ ...blankDraft(draft.method, draft.values.unit), gender: draft.gender });
     return null;
   };
 
@@ -109,6 +112,7 @@ export function usePeopleList({ sizes, garmentType, hasSheets, max }: Options) {
     setEditingId(id);
     setDraft({
       name: target.name,
+      gender: target.gender,
       method: target.method,
       size: target.size,
       values: { ...target.values },

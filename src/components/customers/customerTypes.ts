@@ -1,16 +1,11 @@
 export interface CustomerData {
   id: number;
-  /** This shop's own count: 1 = its first customer. `id` is shared with every shop and account. */
-  shop_number?: number;
   name: string;
   email: string;
   phone: string;
-  gender?: 'male' | 'female' | null;
   profile_picture?: string;
   suki_tag?: string | null;
   store_notes?: string | null;
-  /** The owner or a branch manager marked this customer as trusted at this shop: new orders start with no deposit. */
-  is_trusted?: boolean;
   total_spend?: number;
   active_jobs?: number;
   completed_jobs?: number;
@@ -30,18 +25,6 @@ export interface MeasurementProfile {
   updated_at?: string;
 }
 
-/** One payment recorded on an order (counter, GCash, bank…). Pending = waiting for the shop to check it. */
-export interface OrderPayment {
-  id: number;
-  amount: string | number;
-  payment_method?: string | null;
-  verified_at?: string | null;
-  rejected_at?: string | null;
-  notes?: string | null;
-  created_at: string;
-  recorded_by?: { name: string } | null;
-}
-
 export interface JobOrder {
   id: number;
   order_number: string;
@@ -51,10 +34,8 @@ export interface JobOrder {
   payment_status: string;
   total_amount: string | number;
   balance: string | number;
-  discount_amount?: string | number | null;
   due_date: string | null;
   store_branch_id?: number | null;
-  payments?: OrderPayment[];
   service?: { name: string };
   customer?: { id: number; name: string };
   created_at?: string;

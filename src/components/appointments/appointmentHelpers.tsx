@@ -1,20 +1,8 @@
 import React from 'react';
-import { isWalkInEmail } from '@/components/customers/customerHelpers';
 import { MessageSquare, Ruler, ShirtIcon, Scissors, Package, Globe, Store, RefreshCw } from 'lucide-react';
 
 export const APPOINTMENT_TYPES = ['consultation', 'measurement', 'fitting', 'alteration', 'pickup', 'other'] as const;
 export type AppointmentType = typeof APPOINTMENT_TYPES[number];
-
-/** What a person can book or type in. Fitting and pickup only exist as system-made `production` visits. */
-export const BOOKABLE_TYPES = ['consultation', 'measurement', 'alteration', 'other'] as const;
-/** Service (for a service or design), Shop (a general visit), Production (made by a job order). */
-/** Service (for a specific service or design), Shop (a general visit), Production (made by a job order). */
-export type AppointmentKind = 'service' | 'shop' | 'production';
-export const KIND_LABELS: Record<AppointmentKind, string> = {
-  service: 'Specific Service',
-  shop: 'General Visit',
-  production: 'Order Visit',
-};
 
 /**
  * Default duration (minutes) per appointment type — the Schedule Appointment
@@ -31,13 +19,13 @@ export const TYPE_DEFAULT_DURATIONS: Record<AppointmentType, number> = {
 };
 
 /** Why a shop may decline a pending request — mirrors Appointment::REJECTION_REASONS on the server. */
-export const REJECTION_REASONS: { code: string; label: string; requiresService?: boolean }[] = [
+export const REJECTION_REASONS: { code: string; label: string }[] = [
   { code: 'schedule_unavailable', label: 'Schedule unavailable' },
-  { code: 'staff_unavailable', label: 'Staff / tailor unavailable' },
-  { code: 'service_unavailable', label: 'Service temporarily unavailable', requiresService: true },
-  { code: 'capacity_reached', label: 'Shop capacity reached for this day' },
+  { code: 'staff_unavailable', label: 'Staff unavailable' },
+  { code: 'service_unavailable', label: 'Service unavailable' },
+  { code: 'capacity_reached', label: 'Shop capacity reached' },
   { code: 'cannot_accommodate', label: 'Request cannot be accommodated' },
-  { code: 'other', label: 'Other reason' },
+  { code: 'other', label: 'Other' },
 ];
 
 export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show' | 'rejected';
@@ -47,28 +35,37 @@ export const TYPES_REQUIRING_SERVICE = new Set<AppointmentType>(['measurement', 
 export interface Appointment {
   id: number;
   appointment_type: AppointmentType;
-  kind?: AppointmentKind;
   intake_channel?: 'walk_in' | 'online';
-  customer: { id: number; name: string; email?: string; phone?: string | null; suki_tag?: boolean | null };
+  customer: { id: number; name: string; email?: string; phone?: string | null };
   service: {
     id: number;
     name: string;
     service_category?: string | null;
-    base_price?: number | string | null;
+    service_leaf_type?: string | null;
   } | null;
   // The catalog design this booking was made from (its page's "Book an
   // Appointment" button), with the size/color picked there.
   catalog_item?: {
     id: number;
     name: string;
+    department?: string | null;
+    subcategory?: string | null;
+    garment_structure?: string | null;
     garment_type?: string | null;
+  } | null;
+  // The combo package this booking came from, with what it includes.
+  service_package?: {
+    id: number;
+    name: string;
+    bundle_price?: string | null;
+    service_category?: string | null;
+    services?: { id: number; name: string; base_price?: string | null }[];
   } | null;
   selected_size?: string | null;
   selected_color?: string | null;
   purpose_label?: string | null;
   rejection_reason_code?: string | null;
   rejection_note?: string | null;
-  cancellation_reason?: string | null;
   branch: { id: number; name: string } | null;
   scheduled_at: string;
   duration_minutes: number;
@@ -86,66 +83,24 @@ export interface Appointment {
   early_arrival_decision?: 'waiting' | 'accommodated' | 'declined' | null;
   actual_service_start_at?: string | null;
   notes: string;
-  /** What the shop wrote about the visit (shop only): written during the consultation and carried onto the order. */
-  visit_notes?: string | null;
-  /** Where the design comes from, a link to the customer's file, and how many people the order is for. */
-  design_source?: import('@/lib/designSource').DesignSource | null;
-  design_link?: string | null;
-  people_count?: number | null;
-  /** How many pieces in all (the people, or more than one piece each). */
-  pieces_count?: number | null;
-  service_id?: number | null;
-  catalog_item_id?: number | null;
-  /** The time it was moved from, when it was moved. */
-  previous_scheduled_at?: string | null;
   reference_images?: string[] | null;
   reference_link?: string | null;
+  // What the shop shared back once the appointment was accepted.
+  shared_link?: string | null;
+  shared_images?: string[] | null;
   store_branch_id?: number | null;
   job_order_id?: number | null;
-  job_order?: { id: number; order_number: string; status?: string } | null;
+  job_order?: { id: number; order_number: string } | null;
   answers?: Record<string, string | number | boolean> | null;
-  /** Whose fabric: the shop's or the customer's own (with a short note). */
-  material_source?: 'shop' | 'own' | null;
-  material_note?: string | null;
-  outcome?: 'completed' | 'rescheduled' | 'no_show' | 'converted_to_job' | 'cancelled' | 'no_order' | null;
-  /** The booking deposit: how it was paid and whether the shop has confirmed it ('pending' | 'paid' | 'rejected'). No amount is stored. */
-  payment_method?: string | null;
-  payment_status?: 'pending' | 'paid' | 'rejected' | null;
+  outcome?: 'completed' | 'rescheduled' | 'no_show' | 'converted_to_job' | 'cancelled' | null;
   priority?: 'normal' | 'urgent' | 'rush';
-  garment_category?: 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
-  fitting_notes?: string | null;
-  items?: AppointmentItemData[] | null;
+  garment_category?: 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair' | null;
 }
 
-export interface AppointmentItemData {
-  id: number;
-  appointment_id: number;
-  service_id?: number | null;
-  catalog_item_id?: number | null;
-  item_name: string;
-  quantity: number;
-  unit_price?: number | null;
-  selected_size?: string | null;
-  selected_color?: string | null;
-  notes?: string | null;
-  service?: {
-    id: number;
-    name: string;
-    service_category?: string | null;
-    base_price?: number | string | null;
-  } | null;
-  catalog_item?: {
-    id: number;
-    name: string;
-    garment_type?: string | null;
-    price?: number | string | null;
-  } | null;
-}
-
-export interface ServiceData  { id: number; name: string; service_category?: string | null; image_url?: string | null; base_price?: string | number | null; reviews_avg_rating?: number | null; reviews_count?: number | null }
-export interface CustomerData { id: number; name: string; phone?: string | null; email?: string; profile_picture?: string | null }
+export interface ServiceData  { id: number; name: string }
+export interface CustomerData { id: number; name: string; phone?: string | null; email?: string }
 export interface BranchData   { id: number; name: string }
-export interface StaffData    { id: number; user_id: number; role?: string; additional_roles?: string[] | null; store_branch_id?: number | null; is_branch_manager?: boolean; branch?: { id: number; name: string } | null; user?: { id: number; name: string } }
+export interface StaffData    { id: number; user_id: number; role?: string; additional_roles?: string[] | null; branch?: { id: number; name: string } | null; user?: { id: number; name: string } }
 export interface JobOrderData { id: number; customer_id?: number; title?: string; order_number?: string; status?: string; customer?: { name: string } }
 
 export const TYPE_CONFIG: Record<AppointmentType, {
@@ -187,30 +142,20 @@ export const TYPE_CONFIG: Record<AppointmentType, {
 export const STATUS_CONFIG: Record<AppointmentStatus, {
   label: string; dot: string; badge: string; opacity: string; borderStyle: string;
 }> = {
-  pending:     { label: 'Waiting for approval', dot: 'bg-amber-500', badge: 'bg-amber-50/70 text-amber-900 border-amber-200', opacity: 'opacity-90', borderStyle: 'border-dashed' },
-  confirmed:   { label: 'Approved',       dot: 'bg-blue-600', badge: 'bg-blue-50/80 text-blue-900 border-blue-200', opacity: 'opacity-100', borderStyle: 'border-solid' },
-  in_progress: { label: 'In progress',    dot: 'bg-espresso', badge: 'bg-taupe/10 text-taupe border-taupe/30', opacity: 'opacity-100', borderStyle: 'border-solid' },
-  completed:   { label: 'Done',           dot: 'bg-emerald-600', badge: 'bg-emerald-50/80 text-emerald-900 border-emerald-200', opacity: 'opacity-70', borderStyle: 'border-solid' },
+  pending:     { label: 'Pending Review', dot: 'bg-amber-500', badge: 'bg-amber-50/70 text-amber-900 border-amber-200', opacity: 'opacity-90', borderStyle: 'border-dashed' },
+  confirmed:   { label: 'Confirmed',      dot: 'bg-blue-600', badge: 'bg-blue-50/80 text-blue-900 border-blue-200', opacity: 'opacity-100', borderStyle: 'border-solid' },
+  in_progress: { label: 'In Progress',    dot: 'bg-taupe', badge: 'bg-taupe/10 text-taupe border-taupe/30', opacity: 'opacity-100', borderStyle: 'border-solid' },
+  completed:   { label: 'Completed',      dot: 'bg-emerald-600', badge: 'bg-emerald-50/80 text-emerald-900 border-emerald-200', opacity: 'opacity-70', borderStyle: 'border-solid' },
   cancelled:   { label: 'Cancelled',      dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
-  rejected:    { label: 'Declined',       dot: 'bg-rose-700', badge: 'bg-rose-50 text-rose-800 border-rose-300', opacity: 'opacity-60', borderStyle: 'border-solid' },
-  no_show:     { label: 'No-show',        dot: 'bg-stone-400', badge: 'bg-stone-100 text-stone-600 border-stone-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
+  rejected:    { label: 'Rejected',       dot: 'bg-rose-700', badge: 'bg-rose-50 text-rose-800 border-rose-300', opacity: 'opacity-60', borderStyle: 'border-solid' },
+  no_show:     { label: 'No Show',        dot: 'bg-stone-400', badge: 'bg-stone-100 text-stone-600 border-stone-200', opacity: 'opacity-50', borderStyle: 'border-solid' },
 };
 
-export function TypeBadge({ type, label, kind }: { readonly type: AppointmentType; readonly label?: string | null; readonly kind?: AppointmentKind }) {
+export function TypeBadge({ type, label }: { readonly type: AppointmentType; readonly label?: string | null }) {
   const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.consultation;
-  let text = cfg.label;
-  if (type === 'other' && label) {
-    text = `Other — ${label}`;
-  } else if (type === 'alteration' && label) {
-    text = `Alteration · ${label}`;
-  } else if (kind === 'production') {
-    // Made by a job order (a fitting or a pick-up), not booked by anyone.
-    text = `Job order · ${cfg.label}`;
-  }
-  // A consultation is a consultation: what it is about (a service and design, or just a general visit) is shown on its own line.
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold border tracking-tight ${cfg.badgeBg} ${cfg.badgeBorder} ${cfg.badgeText}`}>
-      {cfg.icon} <span>{text}</span>
+      {cfg.icon} <span>{type === 'other' && label ? `Other — ${label}` : cfg.label}</span>
     </span>
   );
 }
@@ -223,7 +168,7 @@ export function TypeBadge({ type, label, kind }: { readonly type: AppointmentTyp
  * this owner hasn't made), it just makes an appointment that's silently
  * sitting unresolved actually visible in a scan of the list/calendar.
  */
-export function StatusBadge({ status, scheduledAt, outcome, jobOrderId, jobStatus, kind, type }: { readonly status: AppointmentStatus; readonly scheduledAt?: string; readonly outcome?: Appointment['outcome']; readonly jobOrderId?: number | null; readonly jobStatus?: string | null; readonly kind?: AppointmentKind; readonly type?: AppointmentType }) {
+export function StatusBadge({ status, scheduledAt, outcome }: { readonly status: AppointmentStatus; readonly scheduledAt?: string; readonly outcome?: Appointment['outcome'] }) {
   // A walk-in took this request's slot: it is still pending, but the customer has to pick another time.
   if (status === 'pending' && outcome === 'rescheduled') {
     return (
@@ -237,26 +182,19 @@ export function StatusBadge({ status, scheduledAt, outcome, jobOrderId, jobStatu
   const isOverdue = (status === 'pending' || status === 'confirmed') && !!scheduledAt && new Date(scheduledAt) < new Date();
 
   if (isOverdue) {
-    // Says what went wrong: a request nobody answered before its time, or an approved visit the customer has not come to.
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 bg-rose-50 text-rose-700 border-rose-200">
         <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-        <span>{status === 'pending' ? 'Not answered' : 'Not arrived'}</span>
+        <span>Overdue</span>
       </span>
     );
   }
 
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-  // "Done" says how the visit ended: with a job order, or as a consultation only.
-  const label = status === 'completed' && outcome === 'no_order'
-    ? 'No order'
-    : status === 'completed' && kind !== 'production'
-    ? (jobOrderId ? (jobStatus === 'cancelled' || jobStatus === 'rejected' ? 'Job order cancelled' : 'Job order made') : type && type !== 'consultation' ? 'Done' : 'Consultation done')
-    : cfg.label;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${cfg.badge}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      <span>{label}</span>
+      <span>{cfg.label}</span>
     </span>
   );
 }
@@ -288,12 +226,12 @@ export function ChannelBadge({ channel }: { readonly channel?: 'walk_in' | 'onli
   const isOnline = channel === 'online';
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase border ${
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase border whitespace-nowrap ${
         isOnline
           ? 'bg-sky-50 text-sky-700 border-sky-200'
           : 'bg-stone-50 text-stone-600 border-stone-200'
       }`}
-      title={isOnline ? 'Booked online by customer via store profile' : 'Walk-in booking entered by the shop'}
+      title={isOnline ? 'Booked online by customer via shop profile' : 'Walk-in booking entered in atelier'}
     >
       {isOnline ? <Globe size={11} className="text-sky-600 shrink-0" /> : <Store size={11} className="text-stone-500 shrink-0" />}
       <span>{isOnline ? 'Online Booking' : 'Walk-in'}</span>
@@ -397,63 +335,9 @@ export function getErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-/** Same words, ignoring case, spaces and closing punctuation ("Schedule unavailable." = "schedule unavailable"). */
-export const sameText = (a?: string | null, b?: string | null) => {
-  const norm = (v?: string | null) => (v ?? '').trim().replace(/[\s.!]+$/g, '').toLowerCase();
-  return norm(a) === norm(b);
-};
-
-/** The name nobody gave: an older walk-in made with no name. It is shown as "not given yet", never as a person. */
-export const PLACEHOLDER_NAME = 'Walk-in customer';
-export const hasName = (name?: string | null) => Boolean(name && name.trim() && name.trim() !== PLACEHOLDER_NAME);
-export const customerLabel = (name?: string | null) => (hasName(name) ? (name as string) : 'Name not given yet');
-
 export function getCustomerInitials(name?: string): string {
-  if (!name || !hasName(name)) return '?';
+  if (!name) return 'C';
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + (parts.at(-1)?.[0] ?? '')).toUpperCase();
 }
-
-/** The number staff and customers can quote: A-0042. */
-/** The email only when it is a real one: the placeholder login a walk-in gets is never shown. */
-export const realEmail = (email?: string | null) => (email && !isWalkInEmail(email) ? email : null);
-
-/** One line to reach the customer: their real email, else their number. */
-export const contactLine = (c?: { email?: string | null; phone?: string | null } | null) =>
-  realEmail(c?.email) || c?.phone?.trim() || 'No contact info';
-
-export function appointmentNo(id: number): string {
-  return `A-${String(id).padStart(4, '0')}`;
-}
-
-/** A complete date for a list: "Thu, Oct 16, 2026 · 2:30 PM". */
-export function fullDateTime(iso: string): { date: string; time: string } {
-  const d = new Date(iso);
-  return {
-    date: d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
-    time: d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }),
-  };
-}
-
-/** Strips legacy auto-generated consultation summary and redundant "Notes: " labels from customer notes. */
-export function cleanCustomerNotes(notes?: string | null): string {
-  return parseBookingNotes(notes).text;
-}
-
-/**
- * A booking's notes hold what the customer typed plus lines the booking form adds itself —
- * "[Requested Consultation: …]" and "[Material: …]". Splits them: the typed text, and what was said about the fabric.
- */
-export function parseBookingNotes(notes?: string | null): { text: string; material: 'store_supplied' | 'customer_supplied' | null; materialNote: string } {
-  const raw = notes ?? '';
-  const own = raw.match(/\[Material:\s*Customer will bring own fabric\/sample(?:\s*-\s*([^\]]+))?\]/i);
-  const shop = /\[Material:\s*Customer will use the shop's material\]/i.test(raw);
-  const text = raw
-    .replace(/\[Requested Consultation:[\s\S]*?\]\n?/gi, '')
-    .replace(/\[Material:[^\]]*\]\n?/gi, '')
-    .replace(/^Notes:\s*/i, '')
-    .trim();
-  return { text, material: own ? 'customer_supplied' : shop ? 'store_supplied' : null, materialNote: own?.[1]?.trim() ?? '' };
-}
-

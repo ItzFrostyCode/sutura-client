@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Home, Calendar, CreditCard, Scissors, Users,
-  Package, UserCog, LayoutDashboard,
+  ShoppingBag, Package, UserCog, LayoutDashboard,
   Building2, ScrollText, Settings, ChevronRight,
-  HelpCircle, Star, MessageSquare, type LucideIcon
+  HelpCircle, Star, Ruler, Sparkles, PackageCheck, type LucideIcon
 } from 'lucide-react';
 
 interface BreadcrumbSegment {
@@ -56,22 +56,24 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     segments.push({ label: 'Payments', href: '/dashboard/payments', icon: CreditCard });
   } else if (pathname.startsWith('/dashboard/jobs') || pathname.startsWith('/dashboard/orders')) {
     segments.push({ label: 'Orders', href: '/dashboard/jobs', icon: Scissors });
-    if (pathname.startsWith('/dashboard/orders') || (typeof window !== 'undefined' && window.location.search.includes('tab=showroom_sales'))) {
-      segments.push({ label: 'Design Orders' });
+    if (pathname === '/dashboard/jobs/new') {
+      segments.push({ label: 'New Job Order' });
+    } else if (pathname.match(/\/dashboard\/jobs\/\d+/)) {
+      segments.push({ label: 'Job Details' });
+    } else if (pathname.startsWith('/dashboard/orders') || (typeof window !== 'undefined' && window.location.search.includes('tab=showroom_sales'))) {
+      segments.push({ label: 'Showroom Orders' });
     } else {
-      // Same name as the page's own heading, with the screen you are on after it: Orders > Job Orders > New Job Order.
-      segments.push({ label: 'Job Orders', href: '/dashboard/jobs' });
-      if (pathname === '/dashboard/jobs/new') segments.push({ label: 'New Job Order' });
-      else if (pathname.startsWith('/dashboard/jobs/archived')) segments.push({ label: 'Archived' });
-      else if (pathname.match(/\/dashboard\/jobs\/\d+/)) segments.push({ label: 'Job Details' });
+      segments.push({ label: 'Custom Jobs' });
     }
+  } else if (pathname.startsWith('/dashboard/completed-orders')) {
+    segments.push({ label: 'Completed Orders', href: '/dashboard/completed-orders', icon: PackageCheck });
   } else if (pathname.startsWith('/dashboard/customers')) {
-    segments.push({ label: 'Client Book', href: '/dashboard/customers', icon: Users });
+    segments.push({ label: 'Customer Records', href: '/dashboard/customers', icon: Users });
     if (pathname.match(/\/dashboard\/customers\/\d+/)) {
       segments.push({ label: 'Customer Profile' });
     }
   } else if (pathname.startsWith('/dashboard/catalog')) {
-    segments.push({ label: 'Services', href: '/dashboard/services', icon: Package });
+    segments.push({ label: 'Catalog Designs', href: '/dashboard/catalog', icon: Sparkles });
     if (pathname === '/dashboard/catalog') {
       segments.push({ label: 'Designs' });
     } else if (pathname === '/dashboard/catalog/new') {
@@ -85,17 +87,20 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     } else if (pathname.match(/\/dashboard\/catalog\/\d+/)) {
       segments.push({ label: 'Item Details' });
     }
-  } else if (pathname.startsWith('/dashboard/services')) {
+  } else if (pathname.startsWith('/dashboard/services') || pathname.startsWith('/dashboard/service-packages')) {
     segments.push({ label: 'Services', href: '/dashboard/services', icon: Package });
+    if (pathname.startsWith('/dashboard/service-packages')) {
+      segments.push({ label: 'Packages' });
+    }
   } else if (pathname.startsWith('/dashboard/staff')) {
-    segments.push({ label: 'Staffs', href: '/dashboard/staff', icon: UserCog });
+    segments.push({ label: 'Staff', href: '/dashboard/staff', icon: UserCog });
     if (pathname.match(/\/dashboard\/staff\/\d+/)) {
       segments.push({ label: 'Staff Profile' });
     }
   } else if (pathname.startsWith('/dashboard/reports')) {
     segments.push({ label: 'Reports & Insights', href: '/dashboard/reports', icon: LayoutDashboard });
   } else if (pathname.startsWith('/dashboard/branches')) {
-    segments.push({ label: 'Store Branches', href: '/dashboard/branches', icon: Building2 });
+    segments.push({ label: 'Shop Branches', href: '/dashboard/branches', icon: Building2 });
   } else if (pathname.startsWith('/dashboard/audit-log')) {
     segments.push({ label: 'Audit Log', href: '/dashboard/audit-log', icon: ScrollText });
   } else if (pathname.startsWith('/dashboard/account-settings') || pathname.startsWith('/dashboard/profile')) {
@@ -106,8 +111,9 @@ export default function HeaderBreadcrumbs({ pathname: propPathname }: { readonly
     segments.push({ label: 'Support Desk', href: '/dashboard/support', icon: HelpCircle });
   } else if (pathname.startsWith('/dashboard/reviews')) {
     segments.push({ label: 'Reviews', href: '/dashboard/reviews', icon: Star });
-  } else if (pathname.startsWith('/dashboard/sms')) {
-    segments.push({ label: 'SMS', href: '/dashboard/sms', icon: MessageSquare });
+  } else if (pathname.startsWith('/dashboard/measurements')) {
+    segments.push({ label: 'Customer Records', href: '/dashboard/customers', icon: Users });
+    segments.push({ label: 'Measurements', icon: Ruler });
   } else {
     // Fallback for custom dashboard routes
     const slug = pathname.replace('/dashboard/', '').replaceAll('-', ' ');

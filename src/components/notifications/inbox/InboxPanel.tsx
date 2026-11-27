@@ -15,6 +15,8 @@ import { useInbox } from './useInbox';
 
 /** How many notifications the drop-down shows before "See previous notifications". */
 const PREVIEW = 8;
+/** The drop-down's title, ⋯ menu and All / Unread stay at the top while the list scrolls under them (the popover has 12px padding). */
+const STICKY_HEAD = 'sticky -top-3 z-10 -mx-3 -mt-3 bg-surface px-3 pt-3 pb-1';
 
 interface InboxPanelProps {
   /** The drop-down under the bell: fewer rows, "See all", "See previous notifications" and "Open Notifications" lead to the full page. */
@@ -52,11 +54,23 @@ export default function InboxPanel({ compact = false, onLeave }: InboxPanelProps
 
   return (
     <div>
+      <div className={compact ? STICKY_HEAD : undefined}>
       <div className="mb-2 flex items-center justify-between gap-3 px-2">
-        <TitleTag className={compact ? 'mobile-h2 text-ink' : 'mobile-h1 text-ink'}>Notifications</TitleTag>
+        <TitleTag className={compact ? 'text-lg font-semibold text-ink' : 'mobile-h1 text-ink'}>Notifications</TitleTag>
         {signedIn && (
           <InboxMenu canMarkAll={inbox.unreadCount > 0} canClear={inbox.readCount > 0} showOpenAll={compact} onMarkAll={inbox.markAllRead} onClear={() => setConfirmClear(true)} onLeave={onLeave} />
         )}
+      </div>
+
+      {signedIn && !inbox.loading && inbox.list.length > 0 && (
+        <div role="tablist" aria-label="Show" className="mb-1 flex gap-2 px-2">
+          {(['all', 'unread'] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`${compact ? 'h-8 px-3 text-[13px]' : 'h-9 px-4 text-sm'} rounded-full font-semibold transition-colors ${filter === k ? 'bg-taupe/15 text-taupe-dark' : 'text-ink hover:bg-sunken'}`}>
+              {k === 'all' ? 'All' : 'Unread'}
+            </button>
+          ))}
+        </div>
+      )}
       </div>
 
       {hydrated && !isAuthenticated && <GuestInbox />}
@@ -65,30 +79,25 @@ export default function InboxPanel({ compact = false, onLeave }: InboxPanelProps
 
       {signedIn && !inbox.loading && inbox.list.length > 0 && (
         <>
-          <div role="tablist" aria-label="Show" className="mb-1 flex gap-2 px-2">
-            {(['all', 'unread'] as const).map((k) => (
-              <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`h-9 rounded-full px-4 text-sm font-semibold transition-colors ${filter === k ? 'bg-taupe/15 text-taupe-dark' : 'text-ink hover:bg-sunken'}`}>
-                {k === 'all' ? 'All' : 'Unread'}
-              </button>
-            ))}
-          </div>
-
           {sections.length === 0 && <p className="mobile-body-sm py-10 text-center text-ink-muted">No unread notifications.</p>}
 
           {sections.map((g, i) => (
             <section key={g.label} className="mt-2">
               <div className="mb-1 flex items-center justify-between px-2">
-                <h3 className="mobile-h4 text-ink">{g.label}</h3>
+                <h3 className={compact ? 'text-sm font-semibold text-ink' : 'mobile-h4 text-ink'}>{g.label}</h3>
                 {compact && i === 0 && <Link href="/notifications" onClick={onLeave} className="text-sm text-taupe hover:underline">See all</Link>}
               </div>
-              {g.items.map((n) => <NotificationRow key={n.id} notif={n} onOpen={open} />)}
+              {g.items.map((n) => <NotificationRow key={n.id} notif={n} onOpen={open} compact={compact} />)}
             </section>
           ))}
 
+          {/* Pinned to the bottom of the drop-down, so it shows without scrolling (the list scrolls under it). */}
           {compact && hidden > 0 && (
-            <Link href="/notifications" onClick={onLeave} className="mt-2 flex h-11 items-center justify-center rounded-xl bg-sunken text-sm font-semibold text-ink transition-opacity active:opacity-70">
-              See previous notifications
-            </Link>
+            <div className="sticky -bottom-3 z-10 -mx-3 -mb-3 mt-2 border-t border-line bg-surface px-3 pb-3 pt-2">
+              <Link href="/notifications" onClick={onLeave} className="flex h-10 items-center justify-center rounded-xl bg-sunken text-[13px] font-semibold text-ink transition-opacity active:opacity-70">
+                See previous notifications
+              </Link>
+            </div>
           )}
         </>
       )}

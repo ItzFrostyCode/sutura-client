@@ -116,21 +116,21 @@ export default function ReportCharts({
   return (
     <div className="space-y-6">
       {/* Revenue Bar Chart */}
-      <div className="bg-surface border border-line rounded-2xl p-4 sm:p-6 min-w-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
-          <div className="min-w-0">
+      <div className="bg-surface border border-line rounded-2xl p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div>
             <h2 className="text-base font-semibold text-ink">Monthly Revenue</h2>
             <p className="text-sm text-ink-faint mt-0.5">Revenue collected per month across all orders</p>
           </div>
-          <span className="text-xl sm:text-2xl font-bold text-ink">
+          <span className="text-2xl font-bold text-ink">
             ₱
             {Number(data?.total_revenue || 0).toLocaleString('en-PH', {
               minimumFractionDigits: 2,
             })}
           </span>
         </div>
-        <div className="h-64 w-full min-w-0 overflow-hidden">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={revenueChartData}
               margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
@@ -158,11 +158,11 @@ export default function ReportCharts({
       {/* Bottom Row: Order Status Pie + Outstanding Balance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Order Status Distribution */}
-        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-6 min-w-0">
+        <div className="bg-surface border border-line rounded-2xl p-6">
           <h2 className="text-base font-semibold text-ink mb-1">Order Status Breakdown</h2>
           <p className="text-sm text-ink-faint mb-6">Distribution of orders across all production stages</p>
-          <div className="h-52 w-full min-w-0 overflow-hidden">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div className="h-52 w-full">
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={jobsStatusData}
                 layout="vertical"
@@ -188,15 +188,15 @@ export default function ReportCharts({
         </div>
 
         {/* Completion Rate + Balance Gauges */}
-        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-6 min-w-0">
+        <div className="bg-surface border border-line rounded-2xl p-6">
           <h2 className="text-base font-semibold text-ink mb-1">Performance Gauges</h2>
           <p className="text-sm text-ink-faint mb-4">Completion and collection rates at a glance</p>
 
-          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {/* Completion Rate Pie */}
-            <div className="flex flex-col items-center min-w-0">
-              <div className="h-36 w-full min-w-0 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="flex flex-col items-center">
+              <div className="h-36 w-full">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={completionPieData}
@@ -214,7 +214,7 @@ export default function ReportCharts({
                       y="47%"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      className="fill-ink text-xl font-bold"
+                      className="fill-[#2D2A26] text-xl font-bold"
                       style={{ fontSize: 18, fontWeight: 700, fill: '#2D2A26' }}
                     >
                       {completionRate}%
@@ -238,9 +238,9 @@ export default function ReportCharts({
             </div>
 
             {/* Balance Collection Pie */}
-            <div className="flex flex-col items-center min-w-0">
-              <div className="h-36 w-full min-w-0 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="flex flex-col items-center">
+              <div className="h-36 w-full">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={balancePieData}
@@ -282,10 +282,10 @@ export default function ReportCharts({
           </div>
 
           {/* Revenue Trend mini area */}
-          <div className="mt-4 pt-4 border-t border-line min-w-0">
+          <div className="mt-4 pt-4 border-t border-line">
             <p className="text-xs text-ink-faint mb-2 font-medium">Revenue Trend</p>
-            <div className="h-20 w-full min-w-0 overflow-hidden">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="h-20 w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueChartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
                   <defs>
                     <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
@@ -319,11 +319,11 @@ export default function ReportCharts({
           straight to the filtered Jobs board instead of leaving the owner
           with just a count they'd have to go hunt down themselves. */}
       {!!data?.garment_breakdown?.length && (
-        <div className="bg-surface border border-line rounded-2xl p-4 sm:p-6 min-w-0">
+        <div className="bg-surface border border-line rounded-2xl p-6">
           <h2 className="text-base font-semibold text-ink mb-1">Orders by Garment Category</h2>
           <p className="text-sm text-ink-faint mb-6">What kinds of garments customers are actually ordering — click a bar to see those jobs</p>
-          <div className="h-52 w-full min-w-0 overflow-hidden">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div className="h-52 w-full">
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={data.garment_breakdown}
                 layout="vertical"

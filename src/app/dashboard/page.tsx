@@ -10,13 +10,15 @@ import Link from 'next/link';
 
 import { AnalyticsData, JobItem, StaffPresence } from '@/components/dashboard/dashboardHelpers';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import QuickActions from '@/components/dashboard/QuickActions';
 import ActionQueue from '@/components/dashboard/ActionQueue';
 import NeedsDecisionCard from '@/components/dashboard/NeedsDecisionCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
-import SubscriptionGate from '@/components/SubscriptionGate';
 import StaffOnline from '@/components/dashboard/StaffOnline';
 import NewsView from '@/components/dashboard/NewsView';
 import WelcomeView from '@/components/dashboard/WelcomeView';
+import { markWelcomeSeen, shouldAutoOpenWelcome } from '@/components/tour/welcome';
+import { dismissWhatsNew } from '@/components/WhatsNewTour';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
   Calendar, Scissors, Users, CreditCard,
@@ -52,6 +54,17 @@ function DashboardPageContent() {
     }
   }, [tabParam]);
 
+  // A brand-new shop's owner lands on the Welcome Guide once (instead of the
+  // What's New pop-up, which the guide makes redundant for a new shop).
+  useEffect(() => {
+    if (tabParam || !isStoreOwner || !store?.id) return;
+    if (!shouldAutoOpenWelcome(store.id, store.created_at)) return;
+    markWelcomeSeen(store.id);
+    dismissWhatsNew();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveTab('welcome');
+  }, [tabParam, isStoreOwner, store?.id, store?.created_at]);
+
   // Visibility toggle
   const [storeVisible, setStoreVisible] = useState<boolean | null>(null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
@@ -61,8 +74,8 @@ function DashboardPageContent() {
 
   // Online staff
   const [onlineStaff, setOnlineStaff] = useState<StaffPresence[]>([]);
-  // How many staff the shop (or the picked branch) has at all: 0 shows "No staff yet", not "0 online".
-  const [staffTotal, setStaffTotal] = useState<number | null>(null);
+  const [offlineStaff, setOfflineStaff] = useState<StaffPresence[]>([]);
+  const [presenceCheckedAt, setPresenceCheckedAt] = useState(0);
 
   const storeId = store?.id;
 
@@ -78,20 +91,25 @@ function DashboardPageContent() {
         const raw: StaffPresence[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const FIVE_MIN = 5 * 60 * 1000;
         const now = Date.now();
-        setStaffTotal(raw.filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId).length);
-        const online = raw
-          // StaffController::index has no server-side branch_id filter (unlike
-          // jobs/appointments/analytics), so this widget filters client-side —
-          // otherwise selecting a branch left "Online Staff" silently showing
-          // every branch's staff.
-          .filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId)
-          .filter(s => {
-            if (!s.user?.last_seen_at) return false;
-            return now - new Date(s.user.last_seen_at).getTime() < FIVE_MIN;
-          })
-          .map(s => ({ ...s, _onlineSince: new Date(s.user.last_seen_at!).getTime() }))
+        const seen = (s: StaffPresence) => (s.user?.last_seen_at ? new Date(s.user.last_seen_at).getTime() : 0);
+        // StaffController::index has no server-side branch_id filter (unlike
+        // jobs/appointments/analytics), so this widget filters client-side —
+        // otherwise selecting a branch left "Online Staff" silently showing
+        // every branch's staff.
+        const inBranch = raw.filter(s => selectedBranchId === null || s.store_branch_id === selectedBranchId);
+        const online = inBranch
+          .filter(s => seen(s) > 0 && now - seen(s) < FIVE_MIN)
+          .map(s => ({ ...s, _onlineSince: seen(s) }))
           .sort((a, b) => a._onlineSince - b._onlineSince);
         setOnlineStaff(online);
+        setPresenceCheckedAt(now);
+        // Everyone else, most recently seen first, so the card still shows the team when nobody's on.
+        setOfflineStaff(
+          inBranch
+            .filter(s => !(seen(s) > 0 && now - seen(s) < FIVE_MIN))
+            .map(s => ({ ...s, _onlineSince: seen(s) }))
+            .sort((a, b) => b._onlineSince - a._onlineSince),
+        );
       })
       .catch(() => {});
   }, [storeId, canViewAnalytics, selectedBranchId]);
@@ -153,7 +171,9 @@ function DashboardPageContent() {
   // The backend reads start_date/end_date, not a 'period' string — converting
   // client-side (same pattern as the Reports page) so the period buttons
   // actually re-scope the query instead of silently refetching this month.
-  // Local calendar day, not toISOString() — UTC shifts Manila midnight back a day.
+  // Local calendar day, not toISOString() — that converts to UTC, and in
+  // Manila (UTC+8) every local midnight lands on the day before ("This Year"
+  // started on Dec 31).
   const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const getDateRangeForChartPeriod = (period: string): { start_date?: string; end_date?: string } => {
     const now = new Date();
@@ -179,10 +199,10 @@ function DashboardPageContent() {
     return {};
   };
 
-  const handleChartPeriod = (period: string) => {
+  const handleChartPeriod = (period: string, custom?: { start_date: string; end_date: string }) => {
     setChartPeriod(period);
     if (!store?.id || !canViewAnalytics) return;
-    const { start_date, end_date } = getDateRangeForChartPeriod(period);
+    const { start_date, end_date } = custom ?? getDateRangeForChartPeriod(period);
     const params: Record<string, string | number> = {};
     if (start_date && end_date) {
       params.start_date = start_date;
@@ -244,7 +264,7 @@ function DashboardPageContent() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* ── Header with tabs ──────────────────────────────────────────────── */}
       <DashboardHeader
         userName={user?.name || ''}
@@ -261,11 +281,17 @@ function DashboardPageContent() {
       {activeTab === 'dashboard' && !canViewAnalytics && (
         // Plain staff can't call GET /analytics (owner/manager only), so they get their own
         // Home built from the shop-floor endpoint — production numbers and queue, no financials.
-        <StaffHome storeId={storeId} name={user?.name} />
+        <>
+          <QuickActions storeId={storeId} />
+          <StaffHome storeId={storeId} name={user?.name} />
+        </>
       )}
 
       {activeTab === 'dashboard' && canViewAnalytics && (
         <>
+      {/* ── Section 1a: one tap into each create flow ─────────────────────── */}
+      <QuickActions storeId={storeId} />
+
       {/* ── Section 1b: what needs a decision before anything else ───────── */}
       <NeedsDecisionCard storeId={storeId} enabled={canViewAnalytics} />
 
@@ -273,16 +299,24 @@ function DashboardPageContent() {
       <section>
         <h2 className="text-eyebrow-accent mb-3">Financial Snapshot</h2>
 
-        {/* Four equal stat cards — 2 col on mobile & tablet, 4 col on desktop */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+        {/* Four equal stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Outstanding Balance — hero card */}
-          <div className="bg-espresso rounded-xl p-3.5 sm:p-5 text-white flex flex-col justify-between min-h-[104px] sm:min-h-[120px] min-w-0">
-            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.1em] sm:tracking-[0.12em] text-white/70 leading-tight">
+          <div className="bg-taupe rounded-xl p-5 text-white flex flex-col justify-between min-h-[120px]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
               Outstanding Balance
             </p>
-            <p className="text-figure text-[17px] min-[375px]:text-xl sm:text-2xl lg:text-xl xl:text-3xl font-bold mt-2 sm:mt-3 break-words">
-              {peso(data?.total_outstanding_balance)}
-            </p>
+            <div>
+              <p className="text-figure text-2xl sm:text-3xl font-bold mt-3 break-words">
+                {peso(data?.total_outstanding_balance)}
+              </p>
+              {/* Orders not approved yet may still be declined, so their balance isn't counted as owed. */}
+              {(data?.pending_approval_balance ?? 0) > 0 && (
+                <p className="mt-1 text-[11px] font-medium text-white/80">
+                  +{peso(data?.pending_approval_balance)} waiting for approval
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Secondary stats */}
@@ -291,12 +325,12 @@ function DashboardPageContent() {
             { label: 'Active Orders', value: (data?.total_jobs ?? 0) - (data?.completed_jobs ?? 0), icon: Scissors },
             { label: "Today's Appointments", value: todayAppointments.length, icon: Calendar },
           ].map(stat => (
-            <div key={stat.label} className="bg-surface border border-line rounded-xl p-3.5 sm:p-5 flex flex-col justify-between min-h-[104px] sm:min-h-[120px] min-w-0">
-              <div className="flex items-start sm:items-center justify-between gap-1.5 sm:gap-2">
-                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-ink-muted leading-tight min-w-0">{stat.label}</p>
+            <div key={stat.label} className="bg-surface border border-line rounded-xl p-5 flex flex-col justify-between min-h-[120px]">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">{stat.label}</p>
                 <stat.icon size={15} className="text-ink-faint shrink-0" />
               </div>
-              <p className="text-figure text-[17px] min-[375px]:text-xl sm:text-2xl lg:text-xl xl:text-2xl font-semibold text-ink mt-2 sm:mt-3 break-words">{stat.value}</p>
+              <p className="text-figure text-2xl font-semibold text-ink mt-3 break-words">{stat.value}</p>
             </div>
           ))}
         </div>
@@ -329,7 +363,7 @@ function DashboardPageContent() {
       />
 
       {/* ── Section 4: Today's Agenda + Staff Online ─────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
         {/* Appointments — 3 of 5 cols */}
         <section className="lg:col-span-3 bg-surface border border-line rounded-xl overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
@@ -355,26 +389,36 @@ function DashboardPageContent() {
           ) : (
             <div className="divide-y divide-line">
               {todayAppointments.map(apt => {
-                const time = new Date(apt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+                // Manila time, e.g. "10:30 AM"; a missing/bad date shows a dash, never "Invalid Date".
+                const at = apt.scheduled_at ? new Date(apt.scheduled_at) : null;
+                const time = at && !Number.isNaN(at.getTime())
+                  ? at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })
+                  : '—';
                 const tone =
-                  apt.status === 'completed' ? 'bg-sage/10 text-sage border-sage/20'
-                  : apt.status === 'confirmed' ? 'bg-taupe/10 text-taupe border-taupe/20'
+                  apt.status === 'completed' ? 'bg-sage/10 text-sage border-sage/25'
+                  : apt.status === 'confirmed' ? 'bg-taupe/10 text-taupe-dark border-taupe/25'
+                  : apt.status === 'in_progress' ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : apt.status === 'pending' ? 'bg-rose-50 text-rose-700 border-rose-200'
                   : 'bg-sunken text-ink-muted border-line';
+                const statusLabel = apt.status.charAt(0).toUpperCase() + apt.status.slice(1).replace(/_/g, ' ');
+                const type = apt.appointment_type
+                  ? apt.appointment_type.charAt(0).toUpperCase() + apt.appointment_type.slice(1).replace(/_/g, ' ')
+                  : 'Appointment';
                 return (
                   <Link
                     key={apt.id}
                     href="/dashboard/appointments"
                     className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-canvas transition-colors min-h-[44px]"
                   >
-                    <span className="text-figure text-sm font-bold text-ink tabular-nums shrink-0 w-[68px]">{time}</span>
+                    <span className="text-figure text-sm font-bold text-ink tabular-nums shrink-0 w-18 whitespace-nowrap">{time}</span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm font-semibold text-ink truncate">{apt.customer?.name ?? 'Walk-in'}</span>
                       <span className="block text-xs text-ink-muted truncate">
-                        {apt.appointment_type?.replace(/_/g, ' ')}{apt.service ? ` · ${apt.service.name}` : ''}
+                        {type}{apt.service ? ` · ${apt.service.name}` : ''}
                       </span>
                     </span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 capitalize ${tone}`}>
-                      {apt.status}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${tone}`}>
+                      {statusLabel}
                     </span>
                   </Link>
                 );
@@ -384,20 +428,18 @@ function DashboardPageContent() {
         </section>
 
         {/* Staff Online — 2 of 5 cols */}
-        <div className="lg:col-span-2">
-          <StaffOnline onlineStaff={onlineStaff} staffTotal={staffTotal} canAddStaff={canViewAnalytics} />
+        <div className="lg:col-span-2 flex">
+          <StaffOnline onlineStaff={onlineStaff} offlineStaff={offlineStaff} viewerName={user?.name ?? ''} checkedAt={presenceCheckedAt} />
         </div>
       </div>
 
       {/* ── Section 5: Performance Charts (self-contained) ───────────────── */}
-      {/* Visual dashboard & analytics (charts) is a Pro feature: a lower plan sees the upgrade panel. */}
-      <SubscriptionGate feature="analytics">
-        <DashboardCharts
-          data={data}
-          activePeriod={chartPeriod}
-          onPeriodChange={handleChartPeriod}
-        />
-      </SubscriptionGate>
+      <DashboardCharts
+        data={data}
+        activePeriod={chartPeriod}
+        onPeriodChange={handleChartPeriod}
+        onCustomRange={(start_date, end_date) => handleChartPeriod('custom', { start_date, end_date })}
+      />
         </>
       )}
     </div>

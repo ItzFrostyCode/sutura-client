@@ -67,6 +67,11 @@ export interface RelatedStore {
 }
 
 export interface SearchServiceResult {
+  /** The team lead's finer service type (Specification block). */
+  service_leaf_type?: string | null;
+  /** The sale's own dates (Manila days), when a discount is set. */
+  sale_starts_at?: string | null;
+  sale_ends_at?: string | null;
     /** Fixed price, Starting price or Quotation required (B6-O11). */
     price_display?: 'fixed' | 'starting' | 'quotation' | null;
   id: number;

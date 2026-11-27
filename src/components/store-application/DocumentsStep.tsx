@@ -53,7 +53,7 @@ export default function DocumentsStep({ app }: { readonly app: StoreApplicationS
         if (Object.keys(problems).length > 0) { revealFirstProblem(Object.keys(problems)); return; }
         goTo(4);
       }}
-      className="space-y-7"
+      className="space-y-7 sm:space-y-5 short:space-y-4"
     >
       <p className="flex items-start gap-3 rounded-2xl bg-surface p-4 text-[15px] text-ink-body ring-1 ring-line/80 sm:p-5">
         <Lock size={18} className="mt-0.5 shrink-0 text-taupe" aria-hidden="true" />

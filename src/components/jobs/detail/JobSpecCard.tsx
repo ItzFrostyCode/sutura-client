@@ -6,6 +6,7 @@ import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
 import { MEASUREMENT_LABELS } from '@/lib/garmentMeasurements';
 import MeasureAtShopCallout from './MeasureAtShopCallout';
+import { customerEmail } from '@/components/customers/customerHelpers';
 
 interface JobSpecCardProps {
   job: Job;
@@ -17,8 +18,13 @@ interface JobSpecCardProps {
 
 // Friendlier names for keys stored on the order (others show as their key with spaces).
 const SPEC_LABELS: Record<string, string> = {
-  own_fabric_deduction: 'Own fabric deduction (₱)',
-  own_fabric_deduction_after: 'Fabric deduction added later (₱)',
+  own_fabric_deduction: 'Fabric / other materials deduction (₱)',
+  own_fabric_deduction_after: 'Fabric / materials deduction added later (₱)',
+  rush_fee_on_balance: 'Rush fee added to balance (₱)',
+  alteration_garment: 'Garment to alter / repair',
+  alteration_tasks: 'Alteration work',
+  alteration_instructions: 'Alteration instructions',
+  pre_existing_damage_notes: 'Condition at intake',
 };
 
 export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementChanged }: JobSpecCardProps) {
@@ -73,8 +79,9 @@ export default function JobSpecCard({ job, onScheduleMeasurement, onMeasurementC
               </span>
             )}
           </div>
-          {job.customer?.email && (
-            <p className="text-xs text-ink-muted">{job.customer.email}</p>
+          {/* customerEmail hides the walk-in placeholder login (walkin_…@sutura.com). */}
+          {customerEmail(job.customer) && (
+            <p className="text-xs text-ink-muted">{customerEmail(job.customer)}</p>
           )}
         </div>
 

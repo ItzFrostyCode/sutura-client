@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Filter, Download, Printer, FileSpreadsheet, Loader2 } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 import { customPeriod, parseCustomPeriod } from './reportExport';
 
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -14,8 +13,6 @@ interface ReportFiltersProps {
   readonly onExportExcel?: () => void;
   readonly exportingExcel?: boolean;
   readonly onPrint: () => void;
-  /** True on Basic plan: hides export/print/filter controls because the report below is locked. */
-  readonly locked?: boolean;
 }
 
 export default function ReportFilters({
@@ -25,7 +22,6 @@ export default function ReportFilters({
   onExportExcel,
   exportingExcel = false,
   onPrint,
-  locked = false,
 }: ReportFiltersProps) {
   // "Custom range" shows two date boxes; the report switches once both are picked and in order.
   const current = parseCustomPeriod(period);
@@ -54,10 +50,7 @@ export default function ReportFilters({
         title="Reports & Insights"
         description="Revenue, production trends, and business performance at a glance."
         actions={
-          locked ? (
-            <PlanTierTag plan="Pro" />
-          ) : (
-            <>
+          <>
             <div className="flex items-center gap-2 bg-surface border border-line rounded-lg px-3 py-2 filter-bar min-h-[44px]">
               <Filter size={15} className="text-ink-faint shrink-0" />
               <select
@@ -106,8 +99,7 @@ export default function ReportFilters({
             >
               <Printer size={14} /> Print<span className="hidden sm:inline"> Report</span>
             </button>
-            </>
-          )
+          </>
         }
       />
     </div>

@@ -1,22 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Receipt, CreditCard, ShoppingBag, Wallet, FileDown } from 'lucide-react';
+import { Receipt, CreditCard, Wallet, FileDown, Banknote } from 'lucide-react';
 import { Tab } from './usePayments';
-import ScrollNav from '@/components/shared/ScrollNav';
 
 interface PaymentTabsNavProps {
   activeTab: Tab;
   onSelectTab: (tab: Tab) => void;
   pendingCount: number;
-  /** Walk-in catalog orders can no longer be created, so the tab only shows for shops that still have old ones. */
-  showCatalogOrders?: boolean;
 }
 
 const TAB_DEFS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'receipts', label: 'Digital Receipts', icon: Receipt },
   { id: 'job_balances', label: 'Job Balances', icon: CreditCard },
-  { id: 'catalog_orders', label: 'Catalog Orders', icon: ShoppingBag },
+  { id: 'cash', label: 'Cash', icon: Banknote },
   { id: 'methods', label: 'Payment Methods', icon: Wallet },
   { id: 'statements', label: 'Statements', icon: FileDown },
 ];
@@ -25,7 +22,6 @@ export default function PaymentTabsNav({
   activeTab,
   onSelectTab,
   pendingCount,
-  showCatalogOrders = false,
 }: PaymentTabsNavProps) {
   return (
     // overflow-x-auto + shrink-0/whitespace-nowrap on each tab — same fix
@@ -34,14 +30,15 @@ export default function PaymentTabsNav({
     // Receipts" + "Job Balances" + "Catalog Orders" together are wider than
     // a phone screen, and this bar had no wrap or scroll fallback at all,
     // so the third tab was pushed off-screen with no way to reach it.
-    <ScrollNav wrapperClassName="border-b border-line" className="flex items-center gap-2 px-1">
-      {TAB_DEFS.filter(t => t.id !== 'catalog_orders' || showCatalogOrders || activeTab === 'catalog_orders').map(t => {
+    <div className="flex items-center gap-2 border-b border-line px-1 overflow-x-auto hide-scrollbar">
+      {TAB_DEFS.map(t => {
         const Icon = t.icon;
         const active = activeTab === t.id;
         return (
           <button
             key={t.id}
             type="button"
+            data-tour={`tab-${t.id}`}
             onClick={() => onSelectTab(t.id)}
             className={`flex items-center gap-2 pb-3 pt-1 px-3 text-xs font-bold transition-all relative border-b-2 -mb-px shrink-0 whitespace-nowrap ${
               active
@@ -57,6 +54,6 @@ export default function PaymentTabsNav({
           </button>
         );
       })}
-    </ScrollNav>
+    </div>
   );
 }

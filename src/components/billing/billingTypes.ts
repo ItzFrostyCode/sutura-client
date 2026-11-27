@@ -89,22 +89,22 @@ export const BRANCH_LIMITS: Record<string, number | null> = {
 };
 
 // Every row must match what the server actually enforces — this table is a
-// promise to the shop. Staff Accounts, Services, and Branch Shops are rendered
-// separately from each plan's live max_staff / max_services / max_branches
-// (PlanComparisonSection). Sources: catalog — CatalogController (pro);
-// dashboard charts & analytics — SubscriptionGate (pro); sales & staff reports —
+// promise to the shop. Staff Accounts and Branches are rendered separately
+// from each plan's live max_staff / max_branches (PlanComparisonSection).
+// Sources: sales & staff reports —
 // AnalyticsController::staffProductivity (pro); branch comparison —
 // AnalyticsController::branchComparison (premium); export —
-// ReceiptExportController (premium); SMS — SmsController / SmsOutbox (pro);
-// featured — SubscriptionSwitcher / StoreController (premium).
+// ReceiptExportController (premium); SMS — SmsOutbox (pro); featured —
+// SubscriptionSwitcher / StoreController (premium).
 export const COMPARE_ROWS = [
-  { label: 'Catalog Designs & Gallery Photos', basic: '—', pro: 'Unlimited', premium: 'Unlimited' },
-  { label: 'Visual Dashboard & Analytics', basic: '—', pro: 'Included', premium: 'Included' },
+  { label: 'Catalog Designs & Gallery Photos', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Services & Combo Packages', basic: 'Unlimited', pro: 'Unlimited', premium: 'Unlimited' },
+  { label: 'Dashboard Analytics', basic: 'Included', pro: 'Included', premium: 'Included' },
   { label: 'Sales & Staff Reports', basic: '—', pro: 'Included', premium: 'Included' },
   { label: 'Branch Comparison Reports', basic: '—', pro: '—', premium: 'Included' },
   { label: 'Receipt & Statement Export (CSV/ZIP)', basic: '—', pro: '—', premium: 'Included' },
   { label: 'SMS Notifications to Customers', basic: '—', pro: 'Included', premium: 'Included' },
-  { label: 'Featured Store Visibility', basic: '—', pro: '—', premium: 'Included' },
+  { label: 'Featured Visibility (Top Placement)', basic: '—', pro: '—', premium: 'Included' },
 ];
 
 export interface UpgradeRequest {

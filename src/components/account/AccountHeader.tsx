@@ -45,7 +45,7 @@ export default function AccountHeader({ title, backHref, action, backOnDesktop =
   };
 
   return (
-    <div className={`sticky top-[var(--topbar-h,0px)] z-40 -mx-4 -mt-4 px-4 pb-2 pt-4 transition-[box-shadow,background-color,border-color] duration-200 min-[481px]:-mx-6 min-[481px]:px-6 min-[600px]:-mx-8 min-[600px]:px-8 md:-mx-12 md:px-12 lg:static lg:mx-0 lg:mt-0 lg:border-0 lg:bg-transparent lg:px-0 lg:pb-5 lg:pt-0 lg:shadow-none ${scrolled ? 'border-b border-line bg-canvas/90 shadow-[0_6px_16px_-10px_rgba(45,42,38,0.25)] backdrop-blur-md' : 'border-b border-transparent bg-canvas'}`}>
+    <div className={`sticky top-[var(--topbar-h,0px)] z-40 -mx-4 -mt-4 px-4 pb-2 pt-4 transition-[box-shadow,background-color,border-color] duration-200 min-[481px]:-mx-6 min-[481px]:px-6 md:-mx-8 md:px-8 lg:static lg:mx-0 lg:mt-0 lg:border-0 lg:bg-transparent lg:px-0 lg:pb-5 lg:pt-0 lg:shadow-none ${scrolled ? 'border-b border-line bg-canvas/90 shadow-[0_6px_16px_-10px_rgba(45,42,38,0.25)] backdrop-blur-md' : 'border-b border-transparent bg-canvas'}`}>
       <div className="flex min-h-8 items-center gap-1 lg:min-h-11">
         <button
           type="button"

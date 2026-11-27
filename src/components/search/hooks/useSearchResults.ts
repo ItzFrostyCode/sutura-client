@@ -21,6 +21,9 @@ export interface SearchCriteria {
   minPrice: string;
   maxPrice: string;
   minRating: string;
+  /** PSGC codes: a Davao province, then a city or municipality in it. */
+  province: string;
+  city: string;
   district: string;
   barangay: string;
   area: string;
@@ -35,6 +38,8 @@ export interface SearchCriteria {
 function sharedParams(c: SearchCriteria, params: Params) {
   if (c.minPrice) params.min_price = c.minPrice;
   if (c.maxPrice) params.max_price = c.maxPrice;
+  if (c.province) params.province_code = c.province;
+  if (c.city) params.city_code = c.city;
   if (c.district) params.district = c.district;
   if (c.barangay) params.barangay = c.barangay;
   if (c.area) params.area = c.area;
@@ -46,7 +51,7 @@ function withWords(q: string, words?: string): string {
 
 /** Designs, shops and services for the current search, each from its own public endpoint. */
 export function useSearchResults(c: SearchCriteria) {
-  const { q, garmentType, serviceCategory, serviceType, minPrice, maxPrice, minRating, district, barangay, area, sortBy, radiusKm, openStatus, userCoords, page } = c;
+  const { q, garmentType, serviceCategory, serviceType, minPrice, maxPrice, minRating, province, city, district, barangay, area, sortBy, radiusKm, openStatus, userCoords, page } = c;
 
   const [items, setItems] = useState<CatalogItemResult[]>([]);
   const [total, setTotal] = useState(0);
@@ -90,7 +95,7 @@ export function useSearchResults(c: SearchCriteria) {
     }, 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, garmentType, minPrice, maxPrice, minRating, district, barangay, area, sortBy, page, userCoords, radiusKm]);
+  }, [q, garmentType, minPrice, maxPrice, minRating, province, city, district, barangay, area, sortBy, page, userCoords, radiusKm]);
 
   // Shops
   useEffect(() => {
@@ -138,7 +143,7 @@ export function useSearchResults(c: SearchCriteria) {
     }, 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, district, barangay, area, garmentType, serviceCategory, userCoords, minPrice, maxPrice, radiusKm, openStatus]);
+  }, [q, province, city, district, barangay, area, garmentType, serviceCategory, userCoords, minPrice, maxPrice, radiusKm, openStatus]);
 
   // Services
   useEffect(() => {
@@ -167,7 +172,7 @@ export function useSearchResults(c: SearchCriteria) {
     }, 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, district, barangay, area, garmentType, serviceCategory, serviceType, userCoords, sortBy, minPrice, maxPrice]);
+  }, [q, province, city, district, barangay, area, garmentType, serviceCategory, serviceType, userCoords, sortBy, minPrice, maxPrice]);
 
   return { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading };
 }

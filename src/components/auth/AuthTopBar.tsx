@@ -19,7 +19,7 @@ const CLOSE = 'flex h-12 w-12 items-center justify-center rounded-full text-ink 
  */
 export default function AuthTopBar({ back, close }: { readonly back?: AuthNav; readonly close?: AuthNav }) {
   return (
-    <div className="-mx-2 mb-2 flex h-12 items-center justify-between">
+    <div className="-mx-2 mb-2 flex h-12 items-center justify-between sm:pointer-events-none sm:absolute sm:inset-x-3 sm:top-3 sm:z-10 sm:mx-0 sm:mb-0 [&>*]:pointer-events-auto">
       {back ? (
         back.href ? (
           <Link href={back.href} className={BACK}><ArrowLeft size={20} aria-hidden /> {back.label}</Link>

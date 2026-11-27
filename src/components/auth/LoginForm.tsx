@@ -84,7 +84,7 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
 
   return (
     <>
-      <h1 id={titleId} className={`${TITLE} mb-6`}>Sign In</h1>
+      <h1 id={titleId} className={`${TITLE} mb-6 sm:mb-4`}>Sign In</h1>
 
       <LoginPortalSwitch value={portal} onChange={(next) => { setPortal(next); setError(''); onPortalChange?.(next); }} />
       {isShop && <p className="-mt-3 mb-5 text-sm text-ink-muted">For shop owners, branch managers and staff.</p>}
@@ -96,7 +96,7 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
 
       {error && <div role="alert" className={ERROR_BOX}>{error}</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-4">
         <div>
           <label htmlFor="login-email" className={LABEL}>Email<span className="text-danger">*</span></label>
           <input id="login-email" {...EMAIL_INPUT_PROPS} autoComplete="username" placeholder="e.g. maria@gmail.com"
@@ -107,7 +107,7 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
           <PasswordField id="login-password" label="Password" value={password} onChange={setPassword}
             shown={showPassword} onToggle={() => setShowPassword((s) => !s)} autoComplete="current-password" />
           <div className="mt-1 flex justify-end">
-            <Link href="/forgot-password" onClick={onDone} className={`${TEXT_LINK} text-sm font-medium`}>Forgot password?</Link>
+            <Link href="/forgot-password" onClick={onDone} className={`${TEXT_LINK} text-sm font-medium sm:min-h-8`}>Forgot password?</Link>
           </div>
         </div>
 
@@ -123,8 +123,8 @@ export default function LoginForm({ customerRedirect, staffRedirect = '/dashboar
         </>
       )}
 
-      <p className="mt-8 text-center text-sm text-ink-muted">{isShop ? 'New to SUTURA for shops?' : 'New to SUTURA?'}</p>
-      <Link href={isShop ? '/register/store' : registerHref} onClick={onDone} className={`${OUTLINE_BTN} mt-3`}>
+      <p className="mt-8 text-center text-sm text-ink-muted sm:mt-5">{isShop ? 'New to SUTURA for shops?' : 'New to SUTURA?'}</p>
+      <Link href={isShop ? '/register/store' : registerHref} onClick={onDone} className={`${OUTLINE_BTN} mt-3 sm:mt-2`}>
         {isShop ? 'Apply to Open a Shop' : 'Create an Account'}
       </Link>
       {isShop && (

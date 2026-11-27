@@ -1,11 +1,11 @@
-import type { Gender } from '@/components/shared/GenderPicker';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
+import { useBranch } from '@/context/BranchContext';
 import { CustomerData } from './customerTypes';
-import { customerFormProblem, isWalkInCustomer, isWalkInEmail } from './customerHelpers';
+import { isWalkInCustomer, isWalkInEmail, customerEmail, toPhMobileInput } from './customerHelpers';
 
 export { type CustomerData };
 
@@ -23,11 +23,12 @@ export function useCustomers() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<{ name: string; email: string; phone: string; gender: Gender | '' }>({ name: '', email: '', phone: '', gender: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [error, setError] = useState('');
   // "My customers": only those with an appointment assigned to me or a job I'm on (staff).
   const [mineOnly, setMineOnly] = useState(false);
   const roleNames = user?.roles?.map((r) => r.name) ?? [];
+  const { selectedBranchId } = useBranch();
   const isPlainStaff = roleNames.includes('staff') && !roleNames.some((r) => ['store_owner', 'branch_manager'].includes(r));
   const [filterType, setFilterType] = useState<'all' | 'online' | 'walkin' | 'b2b_suki' | 'reseller' | 'walk_in_retail'>('all');
 
@@ -38,7 +39,9 @@ export function useCustomers() {
     }
 
     let active = true;
-    api.get(`/stores/${store.id}/customers`, { params: mineOnly ? { mine: 1 } : {} })
+    // Only the selected branch's customers (none = All Branches).
+    const params = { ...(mineOnly ? { mine: 1 } : {}), ...(selectedBranchId !== null ? { branch_id: selectedBranchId } : {}) };
+    api.get(`/stores/${store.id}/customers`, { params })
       .then(res => {
         if (active) {
           setCustomers(res.data.data);
@@ -55,23 +58,19 @@ export function useCustomers() {
     return () => {
       active = false;
     };
-  }, [store, user, mineOnly]);
+  }, [store, user, mineOnly, selectedBranchId]);
 
   const handleAddCustomer = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!store) return;
-
-    const missing = customerFormProblem(formData);
-    if (missing) { setError(missing); return; }
-
+    
     setIsSubmitting(true);
     setError('');
-
+    
     const payload = {
-      name: formData.name.trim(),
+      name: formData.name,
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
-      gender: formData.gender || null,
     };
     
     try {
@@ -80,8 +79,7 @@ export function useCustomers() {
         setCustomers(prev => prev.map(c => c.id === editingId ? { ...c, ...res.data.data } : c));
         toast.success('Customer updated successfully.');
       } else {
-        // Added here, on the Customers page: they go on the list now (from a visit or an order form they join it with their first order).
-        const res = await api.post(`/stores/${store.id}/customers`, { ...payload, add_to_list: true });
+        const res = await api.post(`/stores/${store.id}/customers`, payload);
         const returnedId = res.data.data.id;
         const alreadyListed = customers.some(c => c.id === returnedId);
         setCustomers(prev => {
@@ -94,7 +92,7 @@ export function useCustomers() {
       }
       setIsModalOpen(false);
       setEditingId(null);
-      setFormData({ name: '', email: '', phone: '', gender: '' });
+      setFormData({ name: '', email: '', phone: '' });
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { message?: string } } };
       setError(errorResponse.response?.data?.message || 'Failed to save customer');
@@ -108,9 +106,8 @@ export function useCustomers() {
     setEditingId(customer.id);
     setFormData({
       name: customer.name,
-      email: isWalkInEmail(customer.email) ? '' : customer.email,
-      phone: customer.phone || '',
-      gender: customer.gender ?? '',
+      email: customerEmail(customer),
+      phone: toPhMobileInput(customer.phone || '')
     });
     setIsModalOpen(true);
   };
@@ -138,16 +135,16 @@ export function useCustomers() {
     }
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData({ name: '', email: '', phone: '', gender: '' });
+    setFormData({ name: '', email: '', phone: '' });
     setError('');
-  };
+  }, []);
 
   const filtered = customers.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email && !isWalkInEmail(c.email) && c.email.toLowerCase().includes(search.toLowerCase())) ||
+      (customerEmail(c) && customerEmail(c).toLowerCase().includes(search.toLowerCase())) ||
       (c.phone && c.phone.replace(/\s+/g, '').includes(search.replace(/\s+/g, '')));
 
     if (!matchesSearch) return false;

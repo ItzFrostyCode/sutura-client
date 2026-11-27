@@ -1,22 +1,16 @@
 import React from 'react';
 import { depositFraction, type PaymentPolicy } from './requirements';
-import { Store, ShoppingBag, Scissors, Pause, Clock, Wrench, ShieldCheck, Sparkles, Check, Factory } from 'lucide-react';
+import { Store, ShoppingBag, Scissors, Pause, Clock, Wrench, ShieldCheck, Sparkles, Check } from 'lucide-react';
 
 /**
- * The 7 Streamlined Production Order Stages (aligned with Bongo's JobOrder::STATUSES):
+ * The 7 Streamlined Production Order Stages requested for SUTURA:
  * 1. pending
  * 2. production
- * 3. quality_check (matches backend enum; shown as "Quality Check")
+ * 3. quality_check
  * 4. ready_for_fitting
  * 5. adjustments
  * 6. ready_for_pickup
  * 7. completed
- *
- * Sub-stages (normalized into the 7 columns via normalizeJobStatus()):
- * - production lane: design → pattern_making → cutting → sewing → (qc_ironing)
- * - bulk order override: mass_cutting (backend enum; shown as "Cutting" only)
- * - repair/alteration override: queued → in_repair → qc_check
- * - ready_for_pickup loops back to adjustments on revision/alteration
  */
 export const PRODUCTION_COLUMNS = [
   { id: 'pending',           title: 'Pending',            color: 'bg-amber-50/50',   border: 'border-amber-200/70' },
@@ -49,8 +43,6 @@ export const STAGE_STYLE: Record<string, { chip: string; dot: string; accent: st
 /**
  * Where a card can go next from each stage (the board's one-click actions).
  * Used to preview the destination column while hovering an action button.
- * Repair override: qc_check → ready_for_pickup (skips fitting)
- * Ready for Pickup can loop back to adjustments on revision/alteration.
  */
 export const NEXT_STAGES: Record<string, readonly string[]> = {
   pending: ['production'],
@@ -58,7 +50,7 @@ export const NEXT_STAGES: Record<string, readonly string[]> = {
   quality_check: ['ready_for_fitting'],
   ready_for_fitting: ['adjustments', 'ready_for_pickup'],
   adjustments: ['quality_check'],
-  ready_for_pickup: ['completed', 'adjustments'], // revision/alteration loops back
+  ready_for_pickup: ['completed'],
 };
 
 export const nextStagesFor = (status: string): readonly string[] => NEXT_STAGES[normalizeJobStatus(status)] ?? [];
@@ -67,12 +59,6 @@ export const nextStagesFor = (status: string): readonly string[] => NEXT_STAGES[
  * Normalizes any legacy or sub-stage status into one of the 7 primary production stages.
  * This guarantees backwards compatibility with existing database rows while presenting
  * a clean, frictionless 7-column workflow to staff and shop owners.
- *
- * Aligned with Bongo's JobOrder::STATUSES enum (23 statuses):
- * - production lane: design → pattern_making → cutting → sewing → qc_ironing
- * - bulk order override: mass_cutting (shown as "Cutting" only)
- * - repair/alteration override: queued → in_repair → qc_check
- * - ready_for_pickup loops back to adjustments on revision/alteration
  */
 export function normalizeJobStatus(status: string): string {
   switch (status) {
@@ -81,7 +67,7 @@ export function normalizeJobStatus(status: string): string {
     case 'production':
     case 'design':
     case 'pattern_making':
-    case 'mass_cutting':
+    case 'mass_cutting_printing':
     case 'cutting':
     case 'sewing':
     case 'queued':
@@ -112,21 +98,19 @@ export const ON_HOLD_COLUMN = { id: 'on_hold', title: 'On Hold', color: 'bg-ambe
 /**
  * "No DP, No Layout, No Cut": a job cannot enter any of these production
  * stages until downpayment has been logged.
- * Mirrors JobOrder::STAGES_REQUIRING_DOWNPAYMENT on the backend exactly.
  */
 export const STAGES_REQUIRING_DOWNPAYMENT = new Set([
   'production', 'quality_check', 'ready_for_fitting', 'adjustments', 'ready_for_pickup',
-  // legacy/sub-stage keys preserved (all granular stages from backend)
-  'design', 'pattern_making', 'mass_cutting', 'cutting', 'sewing',
-  'qc_ironing', 'final_adjustments', 'in_repair', 'qc_check',
-  'queued',
+  // legacy/sub-stage keys preserved
+  'pattern_making', 'mass_cutting_printing', 'cutting', 'sewing',
+  'final_adjustments', 'qc_ironing', 'in_repair', 'qc_check',
 ]);
 
 /**
  * Assignable Multi-Stage Staff Assignment stages — mirrors
  * JobOrder::STAFF_STAGES on the backend. Deliberately excludes 'fitting'
  * (happens front-of-house with the master cutter/owner, not a backroom
- * stage) and 'mass_cutting'/other non-staffed statuses.
+ * stage) and 'mass_cutting_printing'/other non-staffed statuses.
  */
 export const STAFF_STAGES = ['design', 'pattern_making', 'cutting', 'sewing', 'qc_ironing'] as const;
 export type StaffStage = typeof STAFF_STAGES[number];
@@ -136,13 +120,13 @@ export const STAFF_STAGE_LABELS: Record<StaffStage, string> = {
   pattern_making: 'Pattern Making',
   cutting: 'Cutting',
   sewing: 'Sewing',
-  qc_ironing: 'Finishing / Quality Check / Ironing',
+  qc_ironing: 'Finishing / QC',
 };
 
 // Mirrors JobOrder::isBulkOrder() on the backend exactly: a Team Roster /
 // Size Sheet was submitted, OR the linked service is itself typed as bulk
 // sublimation (a job can be bulk by service type alone, with no roster yet).
-export function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
+function isBulkOrder(job: Pick<Job, 'custom_order_data' | 'service'>): boolean {
   const data = job.custom_order_data as { team_roster?: unknown[]; size_breakdown?: Record<string, number> } | null | undefined;
   const roster = data?.team_roster;
   if (Array.isArray(roster) && roster.length > 0) return true;
@@ -187,20 +171,14 @@ export function requiresDownpayment(
 }
 
 /**
- * Kanban stage columns — shows the relevant production pipeline based on job types:
- * - Standard custom tailoring: design → pattern_making → cutting → sewing → qc_ironing (all normalize to 'production')
- * - Bulk orders (team_roster/size_breakdown/bulk_sublimation): mass_cutting → cutting → sewing → qc_ironing (shown as "Cutting" only)
- * - Repair/alteration (garment_category=alteration_repair): queued → in_repair → qc_check (separate lane)
- *
- * Hides irrelevant columns (pattern_making vs mass_cutting) and
- * hides the Repair Override lane unless a repair job is actually on the board.
+ * Kanban stage columns — hides whichever of Pattern Making / Mass Cutting &
+ * Printing isn't relevant to the jobs actually on the board (most stores
+ * only ever use one of the two paths), and hides the Repair Override lane
+ * (Queued for Repair / In Repair / QC Check) unless a repair job is
+ * actually on the board — same reasoning, applied to a second alternate
+ * pipeline instead of a single swapped column.
  */
-export function columnsForJobs(jobs: Job[] = []) {
-  const hasBulk = jobs.some(isBulkOrder);
-  const hasRepair = jobs.some(isRepairOnly);
-
-  // For now, return standard 7 columns since sub-stages are shown within the Production column
-  // The detailed sub-stage tracking happens inside JobKanbanBoard/JobProductionTimeline
+export function columnsForJobs(_jobs: Job[] = []) {
   return [...PRODUCTION_COLUMNS];
 }
 
@@ -213,97 +191,54 @@ export function needsMeasuring(job: { measurement_source?: string | null; measur
 }
 
 export interface Job {
-  /** This order's own copy of the measuring rule (design → service → shop default at creation). */
-  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   id: number;
   order_number?: string;
+  /** The branch the order belongs to (staff of other branches can't take it). */
+  store_branch_id?: number | null;
+  /** Online order: how the customer said they'd be measured (shop = "have the shop measure me"). */
+  measurement_source?: 'own' | 'saved' | 'shop' | null;
+  measurement_id?: number | null;
   intake_channel: 'walk_in' | 'online';
   fulfillment_type: 'pickup' | 'shipping' | 'delivery';
   status: string;
   payment_status: string;
   balance: number | string;
-  /** Sent to plain staff instead of the amounts: only whether something is still owed. */
-  has_balance?: boolean;
   downpayment?: number | string;
   total_amount?: number | string;
   quantity?: number;
   discount_amount?: number | string | null;
   payment_policy?: PaymentPolicy | null;
   payment_policy_percent?: number | null;
-  customer?: { name: string; suki_tag?: string | null; id?: number; phone?: string | null; email?: string | null } | null;
-  service?: { id?: number; name: string; service_type?: string | null; service_types?: string[] | null; min_order_qty?: number | null; base_price?: number | string | null; estimated_days?: number | null } | null;
-  assigned_staff?: { name: string; id?: number; email?: string } | null;
+  customer?: { id?: number; name: string; suki_tag?: string | null; phone?: string | null; email?: string | null } | null;
+  service?: { name: string; service_type?: string | null; service_types?: string[] | null; estimated_days?: number | null } | null;
+  service_package?: { id: number; name: string } | null;
+  assigned_staff_id?: number | null;
+  assigned_to?: number | null;
+  assigned_staff?: { id?: number; name: string; email?: string } | null;
+  assignedStaff?: { id?: number; name: string; email?: string } | null;
+  assignedTo?: { id?: number; name: string; email?: string } | null;
   due_date?: string | null;
   updated_at?: string;
+  design_origin?: string | null;
   custom_order_data?: Record<string, unknown> | null;
   hold_reason?: string | null;
   garment_category?: string | null;
   catalog_item_id?: number | null;
-  tracking_code?: string | null;
-  is_rush?: boolean;
-  // Ordering flow (server-derived). Orders created before the flow have uses_confirmation_flow = false.
-  uses_confirmation_flow?: boolean;
-  shop_accepted_at?: string | null;
-  fitting_requirement?: 'none' | 'optional' | 'required' | null;
-  customer_decision?: 'accepted' | 'changes_requested' | 'declined' | null;
-  created_at?: string;
-  quotation_status?: 'estimate' | 'final' | null;
-  /** Garments went out before the balance was paid (released by the owner or a branch manager). */
-  released_with_balance_at?: string | null;
-  balance_due_by?: string | null;
-  batch_no?: number | null;
-  group_kind?: 'batch' | 'set' | null;
-  specs_approved_at?: string | null;
-  customer_approved_at?: string | null;
-  confirmed_at?: string | null;
-  production_started_at?: string | null;
-  /** The Confirmed column's checks, straight from the list: materials marked ready, how the customer's own fabric was judged, tailors planned. */
-  material_source?: 'store_supplied' | 'customer_supplied' | null;
-  materials_verified_at?: string | null;
-  customer_items_assessment?: 'suitable' | 'not_suitable' | null;
-  assignees_count?: number;
-  /** The list names the tailors (lead first) so the Being made card can show who has it. */
-  assignees?: { role: string; user?: { name: string } | null }[];
-  qc_passed_at?: string | null;
-  /** The Ready card's facts: when the customer was told, whether the fitting was passed, and how many pieces / people have been handed over. */
-  ready_for_pickup_at?: string | null;
-  fitting_passed_at?: string | null;
-  handed_over_count?: number | string | null;
-  /** The Done card's "Handed over Oct 22": the latest handover (the list sends it with the order). */
-  last_handover_at?: string | null;
-  /** Orders made as a follow-up to this one (a free fix is flagged); sent with the order page. */
-  follow_ups?: { id: number; order_number: string; status: string; free_fix: boolean }[];
-  status_before_hold?: string | null;
   catalog_item?: {
     id: number;
     name: string;
     category?: string | null;
     garment_type?: string | null;
     price?: number | string | null;
-    /** The service this design is a style of, and what one piece of it costs (set by the server for the order page). */
-    service_id?: number | string | null;
-    pricing?: import('@/lib/designPricing').DesignPricing | null;
     fabric_image_url?: string | null;
     images?: Array<{ id?: number; image_url: string; is_primary?: boolean | number }>;
   } | null;
   reference_images?: string[] | null;
-  /** The group this order belongs to (a set from one consultation, or a split by who pays). */
-  batch?: import('./batches/batchTypes').BatchSummary | null;
-  // From the other side of the merge with Bongo's Sutura_Client:
-  /** The branch the order belongs to (staff of other branches can't take it). */
-  store_branch_id?: number | null;
-  /** Online order: how the customer said they'd be measured (shop = "have the shop measure me"). */
-  measurement_source?: 'own' | 'saved' | 'shop' | null;
-  measurement_id?: number | null;
-  service_package?: { id: number; name: string } | null;
-  assigned_staff_id?: number | null;
-  assigned_to?: number | null;
-  assignedStaff?: { id?: number; name: string; email?: string } | null;
-  assignedTo?: { id?: number; name: string; email?: string } | null;
-  design_origin?: string | null;
   reference_link?: string | null;
+  is_rush?: boolean;
   rush_fee?: number | string;
   notes?: string;
+  material_source?: 'store_supplied' | 'customer_supplied' | null;
 }
 
 export type Tab = 'all' | 'walk_in' | 'online';
@@ -410,17 +345,3 @@ export function ColumnIcon({ id }: { readonly id: string }) {
       return null;
   }
 }
-
-// From 38c0962 (merge with Bongo's Sutura_Client).
-/** The garments went out before the balance was paid, and the date the customer promised to pay by has passed. */
-export function isLateBalance(job: Pick<Job, 'balance' | 'released_with_balance_at' | 'balance_due_by'>): boolean {
-  if (!job.released_with_balance_at || !job.balance_due_by) return false;
-  if ((Number.parseFloat(String(job.balance)) || 0) <= 0.005) return false;
-  const today = new Date();
-  const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  return job.balance_due_by.slice(0, 10) < key;
-}
-
-// From 38c0962 (merge with Bongo's Sutura_Client).
-/** The order is being made, or is closed: its sizes and specifications are only shown from then on. */
-export const detailsLocked = (job: { status: string }) => STAGES_REQUIRING_DOWNPAYMENT.has(job.status) || ['completed', 'cancelled', 'rejected'].includes(job.status);

@@ -1,6 +1,6 @@
 // Measurement / final-fitting / payment requirements. Mirrors
 // App\Support\OrderRequirements on the server. Precedence on the server:
-// design -> its linked service -> store default.
+// design -> its linked service -> store default (a combo: own, else store).
 
 export type MeasurementRequirement = 'none' | 'existing' | 'shop';
 export type FittingRequirement = 'none' | 'optional' | 'required';
@@ -26,8 +26,10 @@ export const FITTING_OPTIONS: { value: FittingRequirement; label: string; hint: 
 ];
 
 export const PAYMENT_OPTIONS: { value: PaymentPolicy; label: string; hint: string }[] = [
-  { value: 'deposit', label: 'Deposit', hint: 'The customer pays at least 50% before production starts, the rest at pick-up.' },
-  { value: 'full', label: 'Full payment', hint: '100% paid in full before production starts.' },
+  { value: 'none', label: 'No payment first', hint: 'Production can start without a payment.' },
+  { value: 'full', label: 'Full payment', hint: 'Paid in full before production.' },
+  { value: 'deposit', label: 'Deposit', hint: 'A deposit before production (default 50%).' },
+  { value: 'custom', label: 'Custom percent', hint: 'You choose the percent required first.' },
 ];
 
 const labelOf = <T extends string>(list: { value: T; label: string }[], v: T | null | undefined) =>
@@ -36,13 +38,7 @@ const labelOf = <T extends string>(list: { value: T; label: string }[], v: T | n
 export const measurementLabel = (v?: MeasurementRequirement | null) => labelOf(MEASUREMENT_OPTIONS, v);
 export const fittingLabel = (v?: FittingRequirement | null) => labelOf(FITTING_OPTIONS, v);
 
-/** Shop rule: a made-to-order job never starts production on less than this share paid (same as the server). */
-export const MIN_DEPOSIT_PERCENT = 50;
-
-/** A typed deposit percent kept between the minimum and 100. */
-export const clampDeposit = (n: number) => Math.min(100, Math.max(MIN_DEPOSIT_PERCENT, Math.round(Number.isFinite(n) ? n : MIN_DEPOSIT_PERCENT)));
-
-/** Share of the amount due that must be paid before production. "none" is only left on repairs (paid at pick-up). */
+/** Share of the amount due that must be paid before production. */
 export function depositFraction(policy?: PaymentPolicy | null, percent?: number | null): number {
   if (policy === 'none') return 0;
   if (policy === 'full') return 1;
@@ -67,7 +63,7 @@ export function depositBase(job: {
 }
 
 export function paymentPolicyLabel(policy?: PaymentPolicy | null, percent?: number | null): string {
-  if (policy === 'none') return 'Pay at pick-up';
+  if (policy === 'none') return 'No payment first';
   if (policy === 'full') return 'Full payment';
   return `${Math.round(depositFraction(policy, percent) * 100)}% deposit`;
 }

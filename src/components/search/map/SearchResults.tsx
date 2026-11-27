@@ -34,7 +34,7 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           <span>No shop is open right now. The shops are there; they are closed at this hour.</span>
           <button
             type="button"
-            onClick={() => s.applyAllFilters({ radiusKm: s.radiusKm, status: 'all', minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy })}
+            onClick={() => s.applyAllFilters({ radiusKm: s.radiusKm, status: 'all', minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, province: s.province, city: s.city, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy })}
             className="h-10 shrink-0 cursor-pointer rounded-full border border-line bg-white px-4 text-sm font-medium text-ink hover:border-ink"
           >
             Show all shops
@@ -58,7 +58,7 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           inPanel
           district={s.district}
           onSuggest={(term) => s.setQ(term)}
-          onShowEverything={() => { s.setQ(''); s.setCategoryLabel(''); s.applyAllFilters({ radiusKm: null, status: 'all', minPrice: '', maxPrice: '', minRating: '', district: '', barangay: '', area: '', sortBy: s.sortBy }); }}
+          onShowEverything={() => { s.setQ(''); s.setCategoryLabel(''); s.applyAllFilters({ radiusKm: null, status: 'all', minPrice: '', maxPrice: '', minRating: '', province: '', city: '', district: '', barangay: '', area: '', sortBy: s.sortBy }); }}
         />
       )}
       {s.activeTab === 'showroom' && (

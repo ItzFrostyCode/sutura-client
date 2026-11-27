@@ -301,7 +301,8 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
                     <p className="mobile-body-sm mt-1 text-ink-muted">Visit the shop to ask about custom work.</p>
                   </div>
                 )}
-                <div className="grid grid-cols-2 content-start gap-2 max-sm:[&>*:nth-child(n+3)]:hidden sm:grid-cols-4 lg:grid-cols-2">
+                {/* Two per row on every screen (phone: the first two; tablet and desktop: all four, 2 × 2), so a card is never squeezed. */}
+                <div className="grid grid-cols-2 content-start gap-2 max-sm:[&>*:nth-child(n+3)]:hidden">
                   {services.map((svc) => (
                     <FeaturedServiceCard
                       key={svc.id}
@@ -313,9 +314,9 @@ export default function HomeFeaturedSpotlight({ stores }: HomeFeaturedSpotlightP
                       onToggleSave={() => toggleSaveService(svc.id)}
                     />
                   ))}
-                  {/* Desktop: fill the empty slots invisibly, so a shop with fewer than 4 services is as tall as one with 4 (no jump on Next). */}
+                  {/* Tablet and desktop: fill the empty slots invisibly, so a shop with fewer than 4 services is as tall as one with 4 (no jump on Next). */}
                   {Array.from({ length: 4 - services.length }, (_, i) => (
-                    <div key={`slot-${i}`} aria-hidden inert className="invisible hidden lg:grid">
+                    <div key={`slot-${i}`} aria-hidden inert className="invisible hidden sm:grid">
                       <FeaturedServiceCard service={services[0] ?? SLOT_FILLER} href="#" hovered={false} saved={false} onHoverChange={() => {}} onToggleSave={() => {}} />
                     </div>
                   ))}

@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Loader2 } from 'lucide-react';
 
-// Review management (delete) moved to the storefront's Reviews tab, so it's
-// the same list and the same actions whether a customer or the owner is
-// looking at it — this route just forwards there now.
+// Review management (reply/feature/delete) moved to the storefront's Reviews
+// tab, so it's the same list and the same actions whether a customer or the
+// owner is looking at it — this route just forwards there now.
 export default function DashboardReviewsRedirect() {
   const { store } = useAuthStore();
   const router = useRouter();

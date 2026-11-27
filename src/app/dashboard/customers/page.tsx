@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import { useCustomers } from '@/components/customers/useCustomers';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import CustomersModuleTabs from '@/components/customers/CustomersModuleTabs';
 import CustomerStatsCards from '@/components/customers/CustomerStatsCards';
 import CustomerFilterBar from '@/components/customers/CustomerFilterBar';
 import CustomerTable from '@/components/customers/CustomerTable';
@@ -11,6 +12,7 @@ import CustomerMobileCards from '@/components/customers/CustomerMobileCards';
 import CustomerAddEditModal from '@/components/customers/CustomerAddEditModal';
 import CustomerDeleteModal from '@/components/customers/CustomerDeleteModal';
 import { isWalkInCustomer } from '@/components/customers/customerHelpers';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
 export default function CustomersPage() {
   const {
@@ -49,45 +51,46 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Client Book"
-        description="Manage your customer directory, loyalty suki tiers, and lifetime value. Measurement profiles live on each client's own page."
+        title="Customer Records"
+        description="Manage your customer directory, loyalty suki tiers, and customer profiles."
         actions={
-          <>
+          <ReadOnlyLock>
             <button
               onClick={() => {
                 setEditingId(null);
-                setFormData({ name: '', email: '', phone: '', gender: '' });
+                setFormData({ name: '', email: '', phone: '' });
                 setError('');
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 bg-espresso hover:bg-espresso/90 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 bg-taupe hover:bg-taupe-hover text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all min-h-10.5 shadow-sm active:scale-95 cursor-pointer"
             >
               <Plus size={16} />
               Add Customer
             </button>
-          </>
+          </ReadOnlyLock>
         }
-      />
+      >
+        <CustomersModuleTabs activeTab="customers" />
+      </PageHeader>
 
       {/* Top CRM KPI Metric Cards */}
       <CustomerStatsCards customers={customers} />
 
-      {/* Channel tabs + search sit on the canvas above the table card, like Appointments and Job Orders */}
-      <CustomerFilterBar
-        filterType={filterType as 'all' | 'online' | 'walkin'}
-        setFilterType={(val) => setFilterType(val)}
-        search={search}
-        setSearch={setSearch}
-        totalCount={customers.length}
-        onlineCount={onlineCount}
-        walkinCount={walkinCount}
-        showMineToggle={isPlainStaff}
-        mineOnly={mineOnly}
-        setMineOnly={setMineOnly}
-      />
-
       {/* Main Client Book Container */}
       <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden">
+        <CustomerFilterBar
+          filterType={filterType as 'all' | 'online' | 'walkin'}
+          setFilterType={(val) => setFilterType(val)}
+          search={search}
+          setSearch={setSearch}
+          totalCount={customers.length}
+          onlineCount={onlineCount}
+          walkinCount={walkinCount}
+          showMineToggle={isPlainStaff}
+          mineOnly={mineOnly}
+          setMineOnly={setMineOnly}
+        />
+
         {loading ? (
           <div className="p-4">
             <TableSkeleton rows={8} cols={5} />

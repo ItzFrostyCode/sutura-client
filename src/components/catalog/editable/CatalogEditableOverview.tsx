@@ -1,117 +1,71 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import CatalogColorSelector from '@/components/store-catalog-detail/CatalogColorSelector';
+import { useMemo, useState } from 'react';
 import CatalogHeroGallery from '@/components/store-catalog-detail/CatalogHeroGallery';
-import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGrid';
-import { getItemColorOptions, isAngleLabel, type CatalogColorOption } from '@/lib/fabricHelper';
 import type { DetailedCatalogItem } from '../detail/detailTypes';
 import { toStorefrontItem } from './catalogItemMappers';
 import type { CatalogSectionEdit } from './useCatalogSectionEdit';
 import EditableBox from './EditableBox';
 import GalleryEditor from './editors/GalleryEditor';
-import EditableBuyZone from './EditableBuyZone';
-import EditableGuideSections from './EditableGuideSections';
+import { FIELD, LABEL } from './editors/fieldStyles';
 
 interface CatalogEditableOverviewProps {
   readonly item: DetailedCatalogItem;
   readonly edit: CatalogSectionEdit;
 }
 
-// The owner's Catalog Design page: the customer's Design Detail page, laid
-// out with the very same grid and components, where every section is a box
-// with a pencil instead of a separate edit form.
+// The owner's design page, photos and description only: the photo gallery,
+// then the name and full description. No price, ratings, views, colors,
+// sizes or specification breakdowns. Each box has a pencil to edit it.
 export default function CatalogEditableOverview({ item, edit }: Readonly<CatalogEditableOverviewProps>) {
   const sf = useMemo(() => toStorefrontItem(item), [item]);
-
-  const colorOptions = useMemo(() => {
-    const all = getItemColorOptions(sf);
-    return all.length > 1 ? all : [];
-  }, [sf]);
-
-  // Same defaults as the customer page: swatch #1 is the color, and the first
-  // angle photo (not a color photo) is the main image. A stale pick from
-  // before a save falls back to the default instead of pointing at a photo
-  // that no longer exists.
-  const defaultImage = useMemo(() => {
-    return (sf.images.find(i => i.is_primary) ?? sf.images[0])?.image_url ?? '';
-  }, [sf.images]);
+  const defaultImage = (sf.images.find(i => i.is_primary) ?? sf.images[0])?.image_url ?? '';
   const [pickedImage, setPickedImage] = useState('');
-  const [pickedColor, setPickedColor] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
-
   const selectedImage = sf.images.some(i => i.image_url === pickedImage) ? pickedImage : defaultImage;
-  const selectedColor = colorOptions.some(c => c.name === pickedColor) ? pickedColor : (colorOptions[0]?.name ?? '');
-
-  const handleSelectImage = (url: string) => {
-    setPickedImage(url);
-    const matched = colorOptions.find(c => c.modelImage === url);
-    if (matched) {
-      setPickedColor(matched.name);
-    }
-  };
-
-  const pickColor = (opt: CatalogColorOption) => {
-    setPickedColor(opt.name);
-    if (opt.modelImage) {
-      setPickedImage(opt.modelImage);
-    }
-  };
+  const f = edit.form;
 
   return (
-    <div className="space-y-4">
-      <CatalogDetailGrid
-        gallery={
-          <EditableBox
-            control={edit.control('gallery')}
-            className="max-[599px]:border-x-0"
-            label="photos, colors and title"
-            view={
-              <div>
-                <div className="pb-3">
-                <CatalogHeroGallery
-                  item={sf}
-                  selectedImage={selectedImage}
-                  setSelectedImage={handleSelectImage}
-                  selectedVariation={selectedColor}
-                  setSelectedVariation={() => {}}
-                  storeId=""
-                  itemId={String(item.id)}
-                  colorOptions={colorOptions}
-                  disableZoom
-                  hideActions
-                />
-                </div>
-                {/* Colors sit right under the thumbnails, in the same box */}
-                <div className="border-t border-line p-4 pr-14">
-                  {colorOptions.length > 1 ? (
-                    <div className="flex items-start">
-                      <span className="w-[110px] shrink-0 text-sm text-ink-muted">Color</span>
-                      <div className="flex-1 min-w-0">
-                        <CatalogColorSelector options={colorOptions} selectedColor={selectedColor} onSelectColor={pickColor} />
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-ink-faint">No colors yet — tap the pencil to add them.</p>
-                  )}
-                </div>
-              </div>
-            }
-          >
-            <GalleryEditor edit={edit} />
-          </EditableBox>
-        }
-        buyZone={
-          <EditableBuyZone
-            edit={edit}
-            sf={sf}
-            selectedSize={selectedSize}
-            onPickSize={setSelectedSize}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
+      <EditableBox control={edit.control('gallery')} className="max-[599px]:border-x-0" label="photos" view={
+        <div className="pb-3">
+          <CatalogHeroGallery
+            item={sf}
+            selectedImage={selectedImage}
+            setSelectedImage={setPickedImage}
+            selectedVariation=""
+            setSelectedVariation={() => {}}
+            storeId=""
+            itemId={String(item.id)}
+            colorOptions={[]}
+            disableZoom
+            hideActions
           />
-        }
-      />
+        </div>
+      }>
+        <GalleryEditor edit={edit} showColors={false} />
+      </EditableBox>
 
-      <EditableGuideSections edit={edit} sf={sf} />
+      <EditableBox control={edit.control('details')} className="max-[599px]:border-x-0" label="name and description" title="Description" view={
+        <div className="space-y-3">
+          <h1 className="text-2xl font-bold text-ink leading-tight">{item.name}</h1>
+          {item.description?.trim() ? (
+            <p className="text-sm text-ink-body leading-relaxed whitespace-pre-line">{item.description}</p>
+          ) : (
+            <p className="text-sm text-ink-faint">No description yet — tap the pencil to add one.</p>
+          )}
+        </div>
+      }>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="design-name" className={LABEL}>Design name <span className="text-red-600">*</span></label>
+            <input id="design-name" name="name" value={f.formData.name} onChange={f.handleChange} maxLength={255} className={FIELD} />
+          </div>
+          <div>
+            <label htmlFor="design-desc" className={LABEL}>Description</label>
+            <textarea id="design-desc" name="description" rows={8} value={f.formData.description} onChange={f.handleChange} className={FIELD} />
+          </div>
+        </div>
+      </EditableBox>
     </div>
   );
 }

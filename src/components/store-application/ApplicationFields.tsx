@@ -14,16 +14,16 @@ import { prepareUpload } from './uploadPrep';
 export const INPUT_CLASS =
   'w-full min-h-12 px-3.5 py-3 border border-line-strong bg-surface text-ink text-base focus:outline-none focus:border-ink transition-colors';
 
-/** A text field: 48px tall, 16px text (no zoom on iPhone), rounded, soft ring on focus. */
+/** A text field: 48px tall on a phone (44px from 640px), 16px text (no zoom on iPhone), rounded, soft ring on focus. */
 export const FIELD =
-  'block w-full min-h-12 rounded-xl border border-line-strong/80 bg-surface px-4 py-3 text-base text-ink placeholder:text-ink-faint outline-none transition-[border-color,box-shadow] focus:border-ink/50 focus:ring-4 focus:ring-ink/[0.07] disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted';
+  'block w-full min-h-12 rounded-xl border border-line-strong/80 bg-surface px-4 py-3 sm:min-h-11 sm:py-2.5 text-base text-ink placeholder:text-ink-faint outline-none transition-[border-color,box-shadow] focus:border-ink/50 focus:ring-4 focus:ring-ink/[0.07] disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted';
 export const FIELD_ERROR = 'border-danger! focus:border-danger! focus:ring-danger/10!';
 export const LABEL = 'mb-1.5 flex items-baseline justify-between gap-2 text-[13px] font-medium text-ink-body';
 const PRESS = 'transition-[background-color,transform,opacity] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100';
 /** The one main button of a screen. */
-export const BTN_PRIMARY = `inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-ink px-6 text-[15px] font-semibold text-white hover:bg-ink/90 ${PRESS}`;
+export const BTN_PRIMARY = `inline-flex min-h-12 sm:min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-ink px-6 text-[15px] font-semibold text-white hover:bg-ink/90 ${PRESS}`;
 /** A quiet button (Back, Cancel): grey fill, no outline. */
-export const BTN_SECONDARY = `inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-sunken px-6 text-[15px] font-semibold text-ink hover:bg-line/70 ${PRESS}`;
+export const BTN_SECONDARY = `inline-flex min-h-12 sm:min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-sunken px-6 text-[15px] font-semibold text-ink hover:bg-line/70 ${PRESS}`;
 /** A small rounded button inside a row (Add, Replace, Retake). */
 export const BTN_PILL = `inline-flex min-h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sunken px-4 text-[13px] font-semibold text-ink hover:bg-line/70 ${PRESS}`;
 
@@ -108,7 +108,7 @@ export function Group({ id, title, footer, children, flush = false, invalid = fa
   return (
     <section id={id} data-field={id} className="scroll-mt-24">
       {title && <h3 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">{title}{required && <Req />}</h3>}
-      <div className={`rounded-2xl bg-surface ring-1 ${invalid ? 'ring-danger/70' : 'ring-line/80'} ${flush ? 'divide-y divide-line/80 overflow-hidden' : 'space-y-5 p-4 sm:p-5'}`}>
+      <div className={`rounded-2xl bg-surface ring-1 ${invalid ? 'ring-danger/70' : 'ring-line/80'} ${flush ? 'divide-y divide-line/80 overflow-hidden' : 'space-y-5 p-4 sm:space-y-4 sm:p-4 short:space-y-3'}`}>
         {children}
       </div>
       {footer && <div className="mt-2 px-1 text-[13px] leading-relaxed text-ink-muted">{footer}</div>}
@@ -347,12 +347,13 @@ export function FileField({ id, label, hint, accept, file, onChange, required = 
   return <div className={`overflow-hidden rounded-2xl bg-surface ring-1 ${message ? 'ring-danger/70' : 'ring-line/80'}`}>{row}</div>;
 }
 
-export function StepActions({ onBack, nextLabel, busy = false }: { readonly onBack?: () => void; readonly nextLabel: string; readonly busy?: boolean }) {
+/** `aside`: shown on the left when there is no Back (step 1), e.g. "Already approved? Sign in". */
+export function StepActions({ onBack, nextLabel, busy = false, aside }: { readonly onBack?: () => void; readonly nextLabel: string; readonly busy?: boolean; readonly aside?: React.ReactNode }) {
   return (
     <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
       {onBack ? (
         <button type="button" onClick={onBack} className={`${BTN_SECONDARY} w-full sm:w-auto sm:min-w-32`}>Back</button>
-      ) : <span className="hidden sm:block" />}
+      ) : aside ?? <span className="hidden sm:block" />}
       <button type="submit" disabled={busy} className={`${BTN_PRIMARY} w-full sm:w-auto sm:min-w-44`}>
         {busy && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
         {nextLabel}

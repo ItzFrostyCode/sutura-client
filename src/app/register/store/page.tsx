@@ -31,18 +31,19 @@ export default function StoreApplicationPage() {
     <div className="min-h-dvh flex flex-col bg-canvas">
       <PublicNav />
 
-      <main className="flex-1 mobile-screen-margins py-8 sm:py-12">
+      <main className="flex-1 mobile-screen-margins py-8 sm:py-6 short:py-4">
         <div className="mx-auto w-full max-w-2xl">
-          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-taupe">Open a shop</p>
-          <h1 className="mt-1.5 text-[28px] font-bold leading-tight tracking-tight text-ink sm:text-[34px]">Register your tailoring shop</h1>
+          {/* On a short screen (1366×768, a tablet on its side) the eyebrow goes, so step 1 fits unscrolled. */}
+          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-taupe short:hidden">Open a shop</p>
+          <h1 className="mt-1.5 short:mt-0 text-[28px] font-bold leading-tight tracking-tight text-ink sm:text-[30px] short:text-[26px]">Register your tailoring shop</h1>
 
           {app.submittedTo ? <ApplicationSubmitted email={app.submittedTo} freeTrial={app.freeTrial} /> : (
           <>
-          <div className="mt-6">
+          <div className="mt-6 sm:mt-4">
             <ApplicationStepper current={app.step} />
           </div>
 
-          <div className="mt-8 mb-5">
+          <div className="mt-8 mb-5 sm:mt-5 sm:mb-4 short:mt-4 short:mb-3">
             <h2 className="text-[22px] font-bold tracking-tight text-ink">{copy.title}</h2>
             <p className="mt-1 text-[15px] text-ink-muted">{copy.body}</p>
           </div>
@@ -59,10 +60,13 @@ export default function StoreApplicationPage() {
           {app.step === 3 && <DocumentsStep app={app} />}
           {app.step === 4 && <PlanStep app={app} />}
 
-          <p className="mt-10 text-center text-[15px] text-ink-muted">
+          {/* Step 1 shows this beside Continue instead. */}
+          {app.step !== 1 && (
+          <p className="mt-10 text-center text-[15px] text-ink-muted sm:mt-6">
             Already approved?{' '}
             <Link href="/login?as=store" className="font-semibold text-ink underline underline-offset-2">Sign in to your shop</Link>
           </p>
+          )}
           </>
           )}
         </div>

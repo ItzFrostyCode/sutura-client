@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Pencil, Plus, QrCode, Trash2 } from 'lucide-react';
+import { Pencil, Plus, QrCode, Smartphone, Trash2 } from 'lucide-react';
 import { useBranch } from '@/context/BranchContext';
 import { useAuthStore } from '@/store/useAuthStore';
 import PaymentMethodForm from './PaymentMethodForm';
@@ -42,10 +42,15 @@ export default function PaymentMethodsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    // Own padding: the Payments page puts every tab inside one card with none.
+    <div className="space-y-4 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-ink-muted max-w-xl">The accounts customers see when they pay. SUTURA never handles the money — they pay you directly and send proof for you to verify.</p>
-        {!form && <button type="button" onClick={() => open()} className="h-11 px-4 bg-taupe hover:bg-taupe-hover text-white text-sm font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"><Plus size={16} /> Add</button>}
+        {/* No width cap: the explanation reads on one line beside "Add" (it wraps only when the screen is too narrow). */}
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-semibold text-ink">Payment methods</h2>
+          <p className="mt-0.5 text-sm text-ink-muted">The accounts customers see when they pay. SUTURA never handles the money: they pay you directly and send proof for you to check.</p>
+        </div>
+        {!form && <button type="button" onClick={() => open()} className="flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-black"><Plus size={16} /> Add</button>}
       </div>
 
       {form && (
@@ -65,24 +70,26 @@ export default function PaymentMethodsTab() {
       {loading ? (
         <p className="py-10 text-center text-sm text-ink-faint animate-pulse">Loading…</p>
       ) : methods.length === 0 && !form ? (
-        <div className="bg-surface border border-line p-10 text-center">
-          <p className="text-sm font-medium text-ink">No payment methods yet</p>
-          <p className="text-xs text-ink-muted mt-1">Add your GCash account so customers know where to pay.</p>
+        <div className="flex flex-col items-center rounded-2xl border border-dashed border-line-strong bg-canvas px-6 py-10 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-taupe shadow-sm"><Smartphone size={22} aria-hidden /></span>
+          <p className="mt-3 text-sm font-semibold text-ink">No payment methods yet</p>
+          <p className="mt-1 text-xs text-ink-muted">Add your GCash account so customers know where to pay.</p>
+          <button type="button" onClick={() => open()} className="mt-4 flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-black"><Plus size={16} /> Add GCash</button>
         </div>
       ) : (
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {methods.map((m) => (
-            <li key={m.id} className={`bg-white border p-4 flex gap-4 ${m.is_active ? 'border-line' : 'border-line opacity-60'}`}>
-              <div className="w-16 h-16 border border-line bg-sunken flex items-center justify-center shrink-0 text-ink-faint">{m.qr_path ? <QrCode size={26} className="text-taupe" /> : <span className="text-[10px] font-bold uppercase">{KIND_LABELS[m.kind]?.slice(0, 4)}</span>}</div>
+            <li key={m.id} className={`flex gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgba(45,42,38,0.04)] ${m.is_active ? '' : 'opacity-60'}`}>
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-line bg-sunken text-ink-faint">{m.qr_path ? <QrCode size={26} className="text-taupe" /> : <span className="text-[10px] font-bold uppercase">{KIND_LABELS[m.kind]?.slice(0, 4)}</span>}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-ink truncate">{m.name} <span className="text-[11px] font-medium text-ink-muted">· {KIND_LABELS[m.kind] ?? m.kind}</span></p>
                 <p className="text-sm text-ink-body truncate">{m.account_name}</p>
                 <p className="text-sm font-mono text-ink truncate">{m.account_number}</p>
                 <p className="text-[11px] text-ink-faint mt-1">{m.branch ? `${m.branch.name} only` : 'Entire shop'}{m.is_active ? '' : ' · Inactive'}</p>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <button type="button" onClick={() => open(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink flex items-center gap-1.5 cursor-pointer hover:bg-sunken"><Pencil size={13} /> Edit</button>
-                  <button type="button" onClick={() => toggle(m)} className="h-11 px-3 border border-line-strong text-xs font-semibold text-ink cursor-pointer hover:bg-sunken">{m.is_active ? 'Pause' : 'Activate'}</button>
-                  <button type="button" onClick={() => askRemove(m)} aria-label={`Remove ${m.name}`} className="h-11 w-11 border border-line-strong text-danger flex items-center justify-center cursor-pointer hover:bg-danger/5"><Trash2 size={15} /></button>
+                  <button type="button" onClick={() => open(m)} className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-line-strong px-3 text-xs font-semibold text-ink hover:bg-sunken"><Pencil size={13} /> Edit</button>
+                  <button type="button" onClick={() => toggle(m)} className="h-9 cursor-pointer rounded-full border border-line-strong px-3 text-xs font-semibold text-ink hover:bg-sunken">{m.is_active ? 'Pause' : 'Activate'}</button>
+                  <button type="button" onClick={() => askRemove(m)} aria-label={`Remove ${m.name}`} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-line-strong text-danger hover:bg-danger/5"><Trash2 size={15} /></button>
                 </div>
               </div>
             </li>

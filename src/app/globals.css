@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* `short:` — a tablet or laptop screen 820px tall or less (1366×768, a tablet on its side): the sign-in and sign-up
+   screens tighten a little more there so they fit without scrolling. Phones (under 640px wide) never match. */
+@custom-variant short (@media (min-width: 40rem) and (max-height: 820px));
+
 /* ────────────────────────────────────────────────────────────────────────────
    SUTURA design tokens — the locked warm-monochrome palette, fully tokenized.
    Every color the app is allowed to use has a semantic name here; new markup
@@ -970,8 +974,13 @@ textarea:-webkit-autofill:focus {
 /* PublicBottomNav is fixed to the bottom edge; this keeps the end of the page reachable.
    From 1024px the bar is hidden (the header has the links), so no room is kept. */
 body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); } /* 64px bar + 12px gap + room */
+/* A normal page keeps that room INSIDE its full-height frame (border-box), so a page shorter than the screen no longer
+   scrolls 88px for nothing; a long page still ends above the bar. The full-screen Map / Search frame is unchanged. */
+body.has-bottom-nav:not(:has([data-fullscreen="true"])) { padding-bottom: 0; }
+body.has-bottom-nav:not(:has([data-fullscreen="true"])) #mobile-frame-container { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 @media (min-width: 1024px) {
   body.has-bottom-nav { padding-bottom: 0; }
+  body.has-bottom-nav:not(:has([data-fullscreen="true"])) #mobile-frame-container { padding-bottom: 0; }
 }
 
 /* Landing "soft card": white, hairline edge, a very light lift and a generous radius. No gradients. */
@@ -1074,4 +1083,45 @@ body.has-bottom-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); 
 .field-flash { animation: field-flash 1.8s ease-out; }
 @media (prefers-reduced-motion: reduce) {
   .field-flash { animation: none; outline: 2px solid var(--color-danger); outline-offset: 4px; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Dashboard design layer (data-ui="apple" on the dashboard's <main>), 2026-11-28.
+   The shop dashboard pages are the team lead's own files (kept byte-close so his
+   merges don't conflict); this gives them the Apple-like look in one place:
+   soft rounded cards, buttons and fields, a light shadow, a calm focus ring.
+   Only elements without their own `rounded*` class are touched, so anything
+   already designed (pills, avatars, chips) keeps its shape. Dividers (border-b /
+   border-t), table cells and tab underlines are left alone: only full `border`
+   boxes count as cards. Print is untouched.
+   ──────────────────────────────────────────────────────────────────────────── */
+@media screen {
+  /* Cards and boxed sections */
+  [data-ui="apple"] :where([class~="border"]):not([class*="rounded"]):not(td):not(th):not(tr):not(table):not(hr):not(input):not(select):not(textarea):not(button) {
+    border-radius: 14px;
+  }
+  [data-ui="apple"] :where([class~="border"][class*="bg-surface"], [class~="border"][class*="bg-white"]):not([class*="shadow"]):not([class*="rounded-full"]) {
+    box-shadow: 0 1px 2px rgba(45, 42, 38, 0.04), 0 4px 16px rgba(45, 42, 38, 0.04);
+  }
+  /* Buttons and button-like links */
+  [data-ui="apple"] :where(button, a[class*="bg-ink"], a[class*="bg-taupe"], a[class~="border"], label[class*="cursor-pointer"][class~="border"]):not([class*="rounded"]):not([role="tab"]):not([role="switch"]):not([class*="border-b"]) {
+    border-radius: 10px;
+  }
+  /* Tabs (a button or link drawn with a bottom stroke): one straight line, never rounded, label on one line. */
+  [data-ui="apple"] :where(button, a)[class*="border-b"],
+  [data-ui="apple"] [role="tab"] {
+    border-radius: 0 !important;
+    white-space: nowrap;
+  }
+  /* Text fields */
+  [data-ui="apple"] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea):not([class*="rounded"]) {
+    border-radius: 10px;
+  }
+  [data-ui="apple"] :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(45, 42, 38, 0.08);
+  }
+  /* Tables: a rounded frame around the whole table (cells stay square) */
+  [data-ui="apple"] :where(table) { border-collapse: separate; border-spacing: 0; }
+  [data-ui="apple"] :where([class~="overflow-x-auto"]):has(> table) { border-radius: 14px; }
 }

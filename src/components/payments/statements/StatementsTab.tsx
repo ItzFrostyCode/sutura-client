@@ -6,8 +6,6 @@ import { FileSpreadsheet, FileText, Loader2, Lock, Package } from 'lucide-react'
 import StatementFilters from './StatementFilters';
 import StatementRow from './StatementRow';
 import { useStatements } from './useStatements';
-import { printInPlace } from '@/lib/printInPlace';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 const btn = 'h-12 px-4 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
@@ -36,30 +34,30 @@ export default function StatementsTab() {
       {locked && (
         <div className="flex items-start gap-3 border border-amber-200 bg-amber-50 p-4">
           <Lock size={18} className="text-amber-700 shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-900">Bulk download (ZIP, CSV) is part of the <strong>Premium</strong> plan. You can still download receipts one at a time and print the statement. <Link href="/dashboard/billing" className="font-semibold underline">See plans</Link></p>
+          <p className="text-sm text-amber-900">Bulk download (ZIP, CSV, Excel) is part of the <strong>Premium</strong> plan. You can still download receipts one at a time and print the statement. <Link href="/dashboard/billing" className="font-semibold underline">See plans</Link></p>
         </div>
       )}
 
       <div className="flex flex-col min-[700px]:flex-row gap-3">
-        <button type="button" disabled={locked || s.selected.length === 0 || s.busy !== null} onClick={() => s.download('selected', 'zip')} className={`${btn} bg-espresso hover:bg-espresso/90 text-white`}>
+        <button type="button" disabled={locked || s.selected.length === 0 || s.busy !== null} onClick={() => s.download('selected', 'zip')} className={`${btn} bg-taupe hover:bg-taupe-hover text-white`}>
           {s.busy === 'selected-zip' ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />} Download selected ({s.selected.length}) as ZIP
-          {locked && <PlanTierTag plan="Premium" className="border-white/30 bg-white/15 text-white" />}
         </button>
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'zip')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
           {s.busy === 'range-zip' ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />} All receipts in period (ZIP)
-          {locked && <PlanTierTag plan="Premium" />}
         </button>
         <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => s.download('range', 'csv')} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
-          {s.busy === 'range-csv' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (CSV / Excel)
-          {locked && <PlanTierTag plan="Premium" />}
+          {s.busy === 'range-csv' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (CSV)
         </button>
-        <button type="button" onClick={() => printInPlace(s.printHref)} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}><FileText size={16} /> Print / save as PDF</button>
+        <button type="button" disabled={locked || !d?.totals.records || s.busy !== null} onClick={() => void s.downloadExcel()} className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}>
+          {s.busy === 'range-xlsx' ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />} Statement (Excel)
+        </button>
+        <Link href={s.printHref} target="_blank" className={`${btn} border border-line-strong bg-white hover:bg-sunken text-ink`}><FileText size={16} /> Print / save as PDF</Link>
       </div>
 
       <div className="border border-line bg-surface">
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-line">
           <label className="flex items-center gap-3 text-sm text-ink cursor-pointer min-h-11">
-            <input type="checkbox" checked={s.selectableKeys.length > 0 && s.selected.length === s.selectableKeys.length} onChange={s.toggleAll} disabled={s.selectableKeys.length === 0} className="w-5 h-5 accent-taupe-dark" />
+            <input type="checkbox" checked={s.selectableKeys.length > 0 && s.selected.length === s.selectableKeys.length} onChange={s.toggleAll} disabled={s.selectableKeys.length === 0} className="w-5 h-5 accent-[#6B5346]" />
             Select all with a receipt image
           </label>
           {s.loading && <Loader2 size={16} className="animate-spin text-taupe" />}

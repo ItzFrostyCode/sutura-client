@@ -7,13 +7,17 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 
-export type Tab = 'receipts' | 'job_balances' | 'catalog_orders' | 'methods' | 'statements';
+export type Tab = 'receipts' | 'job_balances' | 'cash' | 'methods' | 'statements';
 
 export interface PaymentAccount { id: number; kind: string; name: string; account_name: string; account_number: string; qr_path?: string | null; instructions?: string | null; is_active: boolean; store_branch_id?: number | null; branch?: { id: number; name: string } | null }
 
 export interface ReceiptItem {
   id: number;
-  type: 'appointment' | 'catalog_order';
+  type: 'appointment' | 'catalog_order' | 'job_payment';
+  /** job_payment only: the order the payment belongs to (verify/reject go through it). */
+  job_order_id?: number;
+  /** job_payment only: what the payment was for (labels the card). */
+  payment_type?: 'deposit' | 'partial' | 'full' | 'balance' | null;
   customer_name: string;
   customer_email: string;
   itemName: string;
@@ -39,41 +43,19 @@ export interface JobBalanceItem {
   payment_policy_percent?: number | null;
 }
 
-export interface CatalogOrderItem {
+/** GET /stores/{id}/job-payments row (non-cash job-order payment). */
+interface JobPaymentReceiptSource {
   id: number;
-  customer: { id: number; name: string } | null;
-  catalog_item: { name: string } | null;
-  total_amount: number;
-  payment_status: string;
+  job_order_id: number;
+  order_number?: string | null;
+  payment_type?: 'deposit' | 'partial' | 'full' | 'balance' | null;
+  customer?: { name: string; email?: string | null } | null;
+  amount: string | number;
   payment_method: string;
-  status: string;
+  reference?: string | null;
+  receipt_path?: string | null;
   created_at: string;
-}
-
-interface AppointmentReceiptSource {
-  id: number;
-  payment_method?: string;
-  payment_status: string;
-  customer?: { name?: string; email?: string } | null;
-  appointment_type?: string;
-  service?: { name?: string; base_price?: string | number } | null;
-  payment_reference?: string;
-  payment_receipt_path?: string;
-  scheduled_at: string;
-  status: string;
-}
-
-interface OrderReceiptSource {
-  id: number;
-  payment_method?: string;
-  payment_status: string;
-  customer?: { name?: string; email?: string } | null;
-  catalog_item?: { name?: string } | null;
-  payment_reference?: string;
-  payment_receipt_path?: string;
-  total_amount: string | number;
-  created_at: string;
-  status: string;
+  payment_status: 'pending' | 'paid' | 'rejected';
 }
 
 interface RawJobData {
@@ -87,7 +69,19 @@ interface RawJobData {
   status: string;
 }
 
-const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'catalog_orders', 'methods', 'statements'];
+/** What a receipt is for, shown on its card: never call an order payment an appointment deposit. */
+export function receiptKindLabel(item: Pick<ReceiptItem, 'type' | 'payment_type'>): string {
+  if (item.type === 'catalog_order') return 'Catalog Order';
+  if (item.type === 'appointment') return 'Appointment Deposit';
+  switch (item.payment_type) {
+    case 'deposit': return 'Order Deposit';
+    case 'balance': return 'Order Balance';
+    case 'full': return 'Order Full Payment';
+    default: return 'Order Payment';
+  }
+}
+
+const VALID_TABS: Tab[] = ['receipts', 'job_balances', 'cash', 'methods', 'statements'];
 
 export function usePayments() {
   const { store } = useAuthStore();
@@ -107,12 +101,10 @@ export function usePayments() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [receiptsLoading, setReceiptsLoading] = useState(true);
 
-  // Job Balances tab. The search box can be prefilled from the URL (?q=) —
-  // the customer detail page's "All balances" deep-links with that customer's
-  // name, so the list lands on their balances instead of the whole store's.
+  // Job Balances tab
   const [jobBalances, setJobBalances] = useState<JobBalanceItem[]>([]);
   const [balancesLoading, setBalancesLoading] = useState(true);
-  const [balanceSearch, setBalanceSearch] = useState(() => searchParams.get('q') ?? '');
+  const [balanceSearch, setBalanceSearch] = useState('');
   const [logPaymentJob, setLogPaymentJob] = useState<JobBalanceItem | null>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
@@ -130,59 +122,32 @@ export function usePayments() {
   // actually submits.
   const [payReviewing, setPayReviewing] = useState(false);
 
-  // Catalog Orders tab
-  const [catalogOrders, setCatalogOrders] = useState<CatalogOrderItem[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(true);
-
   // Fetch receipts queue
   const fetchReceipts = useCallback(async () => {
     if (!store) return;
     setReceiptsLoading(true);
     try {
       const branchParams = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
-      const [aptRes, ordRes] = await Promise.all([
-        api.get(`/stores/${store.id}/appointments`, { params: branchParams }),
-        api.get(`/stores/${store.id}/catalog-orders`, { params: branchParams }),
-      ]);
+      // Order payments only: GCash logged on job orders (Cashier Desk, online-order
+      // deposits, balance payments). Appointment deposits and catalog orders were
+      // taken off the Payments page.
+      const jobPayRes = await api.get(`/stores/${store.id}/job-payments`, { params: branchParams }).catch(() => ({ data: { data: [] } }));
       const items: ReceiptItem[] = [];
-      if (aptRes.data.success) {
-        aptRes.data.data.forEach((app: AppointmentReceiptSource) => {
-          if (app.payment_method && app.payment_method !== 'cash') {
-            items.push({
-              id: app.id, type: 'appointment',
-              customer_name: app.customer?.name || 'Guest',
-              customer_email: app.customer?.email || '',
-              itemName: `${app.appointment_type?.toUpperCase()} – ${app.service?.name || 'Consultation'}`,
-              payment_method: app.payment_method,
-              payment_reference: app.payment_reference || 'N/A',
-              payment_receipt_path: app.payment_receipt_path || '',
-              amount: app.service?.base_price || '0.00',
-              date: app.scheduled_at,
-              status: app.status,
-              payment_status: app.payment_status,
-            });
-          }
+      (jobPayRes.data?.data ?? []).forEach((p: JobPaymentReceiptSource) => {
+        items.push({
+          id: p.id, type: 'job_payment', job_order_id: p.job_order_id, payment_type: p.payment_type ?? null,
+          customer_name: p.customer?.name || 'Walk-in Customer',
+          customer_email: p.customer?.email || '',
+          itemName: `Order ${p.order_number ?? `#${p.job_order_id}`}`,
+          payment_method: p.payment_method,
+          payment_reference: p.reference || 'N/A',
+          payment_receipt_path: p.receipt_path || '',
+          amount: p.amount,
+          date: p.created_at,
+          status: p.payment_status,
+          payment_status: p.payment_status,
         });
-      }
-      if (ordRes.data.data) {
-        ordRes.data.data.forEach((ord: OrderReceiptSource) => {
-          if (ord.payment_method && ord.payment_method !== 'cash') {
-            items.push({
-              id: ord.id, type: 'catalog_order',
-              customer_name: ord.customer?.name || 'Guest',
-              customer_email: ord.customer?.email || '',
-              itemName: ord.catalog_item?.name || 'Catalog Purchase',
-              payment_method: ord.payment_method,
-              payment_reference: ord.payment_reference || 'N/A',
-              payment_receipt_path: ord.payment_receipt_path || '',
-              amount: ord.total_amount,
-              date: ord.created_at,
-              status: ord.status,
-              payment_status: ord.payment_status,
-            });
-          }
-        });
-      }
+      });
       setReceipts(items);
     } catch (err) {
       console.error(err);
@@ -226,33 +191,46 @@ export function usePayments() {
     }
   }, [store, selectedBranchId]);
 
-  // Fetch catalog orders
-  const fetchCatalogOrders = useCallback(async () => {
+  // Job Balances → "Paid": orders settled in full. Loaded only when that filter is
+  // opened, and kept apart from jobBalances so the outstanding totals never include them.
+  const [paidJobs, setPaidJobs] = useState<JobBalanceItem[]>([]);
+  const [paidJobsLoading, setPaidJobsLoading] = useState(false);
+  const fetchPaidJobs = useCallback(async () => {
     if (!store) return;
-    setCatalogLoading(true);
+    setPaidJobsLoading(true);
     try {
-      const params = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
-      const res = await api.get(`/stores/${store.id}/catalog-orders`, { params });
-      setCatalogOrders(res.data.data || []);
+      const params: Record<string, number> = { per_page: 100, paid_only: 1 };
+      if (selectedBranchId !== null) params.branch_id = selectedBranchId;
+      const res = await api.get(`/stores/${store.id}/jobs`, { params });
+      const raw = res.data.data;
+      const jobs: RawJobData[] = Array.isArray(raw) ? raw : (raw?.data || []);
+      setPaidJobs(jobs.map(j => ({
+        id: j.id,
+        order_number: j.order_number || `#${j.id}`,
+        customer: j.customer || null,
+        total_amount: Number.parseFloat(String(j.total_amount)),
+        balance: Number.parseFloat(String(j.balance)),
+        discount_amount: Number.parseFloat(String(j.discount_amount || 0)),
+        payment_status: j.payment_status,
+        status: j.status,
+      })));
     } catch (err) {
       console.error(err);
     } finally {
-      setCatalogLoading(false);
+      setPaidJobsLoading(false);
     }
   }, [store, selectedBranchId]);
 
-  // All three fetch on mount regardless of which tab is active — the tab
-  // pills show live counts (e.g. "Outstanding Balances 2"), so the counts
-  // have to be right immediately, not just after the owner clicks over.
+  // Both fetch on mount regardless of which tab is active — the summary cards
+  // and the pending dot need the numbers right away.
   useEffect(() => {
     if (!store) return;
     const timer = setTimeout(() => {
       fetchReceipts();
       fetchJobBalances();
-      fetchCatalogOrders();
     }, 0);
     return () => clearTimeout(timer);
-  }, [store, fetchReceipts, fetchJobBalances, fetchCatalogOrders]);
+  }, [store, fetchReceipts, fetchJobBalances]);
 
   // The shop's own payment accounts (for the walk-in dialog's "which account" picker).
   useEffect(() => {
@@ -261,10 +239,25 @@ export function usePayments() {
   }, [store]);
 
   // Verify receipt
-  const handleVerify = async (item: ReceiptItem, status: 'paid' | 'pending' | 'rejected') => {
+  const handleVerify = async (item: ReceiptItem, status: 'paid' | 'pending' | 'rejected', reason?: string) => {
     if (!store) return;
     setProcessingId(item.id);
     try {
+      // Job-order payments use the order's own Verify / Reject (same as the order page),
+      // so the order's balance updates the same way.
+      if (item.type === 'job_payment' && item.job_order_id) {
+        const base = `/stores/${store.id}/jobs/${item.job_order_id}/payments/${item.id}`;
+        if (status === 'rejected') {
+          await api.post(`${base}/reject`, { reason: reason?.trim() || 'Receipt could not be confirmed.' });
+        } else if (status === 'paid') {
+          await api.post(`${base}/verify`);
+        }
+        toast.success(status === 'rejected' ? 'Receipt rejected.' : 'Payment verified successfully!');
+        setSelectedReceipt(null);
+        fetchReceipts();
+        fetchJobBalances(); // the order's balance changes once a payment is verified
+        return;
+      }
       const endpoint = item.type === 'appointment'
         ? `/stores/${store.id}/appointments/${item.id}/verify-payment`
         : `/stores/${store.id}/catalog-orders/${item.id}/verify-payment`;
@@ -345,11 +338,11 @@ export function usePayments() {
     }
   };
 
-  const filteredBalances = jobBalances.filter(j => {
-    if (!balanceSearch) return true;
-    return j.order_number.toLowerCase().includes(balanceSearch.toLowerCase())
-      || (j.customer?.name || '').toLowerCase().includes(balanceSearch.toLowerCase());
-  });
+  const matchesSearch = (j: JobBalanceItem) => !balanceSearch
+    || j.order_number.toLowerCase().includes(balanceSearch.toLowerCase())
+    || (j.customer?.name || '').toLowerCase().includes(balanceSearch.toLowerCase());
+  const filteredBalances = jobBalances.filter(matchesSearch);
+  const filteredPaidJobs = paidJobs.filter(matchesSearch);
 
   return {
     store,
@@ -388,10 +381,11 @@ export function usePayments() {
     payReviewing,
     setPayReviewing,
     paySubmitting,
-    catalogOrders,
-    catalogLoading,
     handleVerify,
     handleLogPayment,
     filteredBalances,
+    filteredPaidJobs,
+    paidJobsLoading,
+    fetchPaidJobs,
   };
 }

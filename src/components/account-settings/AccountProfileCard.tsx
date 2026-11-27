@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Loader2, User as UserIcon } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 
 interface AccountProfileCardProps {
   user: { name?: string; email?: string; profile_picture?: string | null } | null;
@@ -27,7 +27,7 @@ export default function AccountProfileCard({
       {/* Avatar + Identity Card */}
       <div className="bg-surface border border-line rounded-2xl p-6 flex items-center gap-5">
         <div className="relative shrink-0">
-          <div className="w-16 h-16 rounded-full overflow-hidden">
+          <div className="w-16 h-16 rounded-full bg-linear-to-br from-[#9A8073] to-[#B26959] flex items-center justify-center text-white text-2xl font-bold select-none overflow-hidden">
             {user?.profile_picture ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -36,10 +36,7 @@ export default function AccountProfileCard({
                 className="w-full h-full object-cover"
               />
             ) : (
-              // No photo yet: the same sunken avatar treatment as the /account sidebar — a person icon, not a text initial.
-              <div className="w-full h-full rounded-full bg-sunken border border-line-strong flex items-center justify-center">
-                <UserIcon size={24} className="text-ink-faint" />
-              </div>
+              user?.name?.charAt(0)?.toUpperCase() || 'U'
             )}
           </div>
           <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-surface border border-line flex items-center justify-center cursor-pointer hover:bg-sunken transition-colors">

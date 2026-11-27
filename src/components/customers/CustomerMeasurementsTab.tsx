@@ -1,24 +1,50 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Plus, Ruler, Scissors } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import api from '@/lib/axios';
+import { Plus, Loader2 } from 'lucide-react';
+import Modal from '@/components/Modal';
 import { MeasurementProfile } from './customerTypes';
 import { MeasurementRecord } from '@/components/measurements/measurementTypes';
-import { useShopRole } from '@/hooks/useShopRole';
+import MeasurementFormModal from '@/components/measurements/MeasurementFormModal';
 import MeasurementList from '@/components/measurements/MeasurementList';
+import { emptyForm } from '@/components/measurements/measurementHelpers';
 
 interface CustomerMeasurementsTabProps {
   readonly customerId: number;
   readonly customerName: string;
+  readonly storeId: number;
   readonly measurements: MeasurementProfile[];
+  readonly onReload: () => Promise<void>;
+  readonly triggerOpenModal?: boolean;
+  readonly onModalOpened?: () => void;
 }
 
-// Look-up only: measurements are taken on a job order (Take measurements now), so there is one place to record them.
-export default function CustomerMeasurementsTab({ customerId, customerName, measurements }: CustomerMeasurementsTabProps) {
-  const { isOwnerOrManager } = useShopRole();
+// This tab used to run its own separate "Custom Specs" form alongside the
+// shared MeasurementFormModal ("Body Measurements") — two different flows
+// for what's now one unified, flexible-field system. Consolidated onto the
+// same components the main Measurements page uses so both stay in sync
+// (same edit-a-past-version guard, same Preview step, same versioning).
+export default function CustomerMeasurementsTab({
+  customerId,
+  customerName,
+  storeId,
+  measurements,
+  onReload,
+  triggerOpenModal,
+  onModalOpened,
+}: CustomerMeasurementsTabProps) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [selectedVersionIds, setSelectedVersionIds] = useState<Record<string, number>>({});
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm());
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const toggleExpand = (id: number) => {
     setExpandedIds(prev => {
@@ -29,64 +55,197 @@ export default function CustomerMeasurementsTab({ customerId, customerName, meas
     });
   };
 
+  const openAdd = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm(), customer_id: customerId.toString() });
+    setError('');
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    if (triggerOpenModal) {
+      openAdd();
+      onModalOpened?.();
+    }
+  }, [triggerOpenModal]);
+
+  useEffect(() => {
+    if (measurements.length > 0) {
+      setExpandedIds(prev => {
+        const next = new Set(prev);
+        for (const m of measurements) {
+          next.add(m.id);
+        }
+        return next;
+      });
+    }
+  }, [measurements]);
+
+  const openEdit = (rec: MeasurementRecord) => {
+    setEditingId(rec.id);
+    setForm({
+      customer_id: customerId.toString(),
+      source: rec.source ?? 'store_owner',
+      profile_name: rec.profile_name,
+      metrics: rec.metrics,
+      photo_urls: rec.photo_urls ?? [],
+      status: rec.status ?? 'finalized',
+      notes: rec.notes || '',
+    });
+    setError('');
+    setIsModalOpen(true);
+  };
+
+  const openClone = (rec: MeasurementRecord) => {
+    setEditingId(null);
+    setForm({
+      customer_id: customerId.toString(),
+      source: rec.source ?? 'store_owner',
+      profile_name: rec.profile_name,
+      metrics: rec.metrics,
+      photo_urls: rec.photo_urls ?? [],
+      status: rec.status ?? 'finalized',
+      notes: rec.notes || '',
+    });
+    setError('');
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setForm(emptyForm());
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    const cleanMetrics: Record<string, string> = {};
+    for (const [k, v] of Object.entries(form.metrics)) {
+      if (v && v.trim() !== '') cleanMetrics[k] = v.trim();
+    }
+    const payload = {
+      customer_id: form.customer_id,
+      source: form.source,
+      profile_name: form.profile_name,
+      metrics: cleanMetrics,
+      photo_urls: form.photo_urls,
+      status: form.status,
+      notes: form.notes || null,
+    };
+
+    try {
+      if (editingId) {
+        await api.put(`/stores/${storeId}/measurements/${editingId}`, payload);
+      } else {
+        await api.post(`/stores/${storeId}/measurements`, payload);
+      }
+      await onReload();
+      closeModal();
+    } catch (err: unknown) {
+      const ex = err as { response?: { data?: { message?: string } } };
+      setError(ex.response?.data?.message || 'Failed to save measurement profile.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+    setIsSubmitting(true);
+    try {
+      await api.delete(`/stores/${storeId}/measurements/${deletingId}`);
+      await onReload();
+      setIsDeleteOpen(false);
+      setDeletingId(null);
+    } catch {
+      setError('Failed to delete measurement profile.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const grouped = { [customerName]: measurements as unknown as MeasurementRecord[] };
-  const newOrder = `/dashboard/jobs/new?customer_id=${customerId}`;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-surface border border-line rounded-2xl shadow-2xs overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-5 sm:p-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-sunken flex items-center justify-center text-ink-muted shrink-0">
-              <Ruler size={15} />
-            </div>
-            <div>
-              <h2 className="text-[11px] font-bold uppercase tracking-wider text-ink">Measurements &amp; Specs</h2>
-              <p className="text-xs text-ink-muted">Saved from this client&apos;s job orders. To take new ones, start a job order and choose Take measurements now.</p>
-            </div>
-          </div>
-          {isOwnerOrManager && (
-            <Link
-              href={newOrder}
-              className="inline-flex items-center gap-2 rounded-lg bg-espresso px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:opacity-95 transition-opacity cursor-pointer"
-            >
-              <Scissors size={14} /> New Job Order
-            </Link>
-          )}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-base font-bold text-ink">Measurement Profiles</h2>
+          <p className="text-xs text-ink-muted mt-0.5">Store different versions of body dimensions for this client — all values in inches (″).</p>
         </div>
-
-        {measurements.length === 0 ? (
-          <div className="m-5 sm:m-6 border border-dashed border-line rounded-xl bg-canvas/40 p-10 text-center">
-            <div className="w-9 h-9 rounded-full bg-surface border border-line flex items-center justify-center text-ink-muted mx-auto mb-2 shadow-2xs">
-              <Ruler size={15} />
-            </div>
-            <span className="text-xs font-bold text-ink">No measurements recorded for this client yet.</span>
-            <p className="text-[11px] text-ink-muted mt-0.5 mb-3.5">
-              {isOwnerOrManager
-                ? 'Start a job order and choose Take measurements now to record them.'
-                : 'They are recorded on a job order.'}
-            </p>
-            {isOwnerOrManager && (
-              <Link
-                href={newOrder}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-espresso hover:bg-espresso/90 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
-              >
-                <Plus size={13} /> New Job Order
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="p-5 sm:p-6">
-            <MeasurementList
-              grouped={grouped}
-              expandedIds={expandedIds}
-              toggleExpand={toggleExpand}
-              selectedVersionIds={selectedVersionIds}
-              setSelectedVersionIds={setSelectedVersionIds}
-            />
-          </div>
-        )}
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-1.5 bg-taupe hover:bg-taupe/90 text-white px-3.5 py-2 rounded-lg font-medium text-xs transition-colors cursor-pointer"
+        >
+          <Plus size={14} /> New Profile
+        </button>
       </div>
+
+      {measurements.length === 0 ? (
+        <div className="bg-canvas/50 border border-line border-dashed rounded-xl p-12 text-center space-y-3">
+          <p className="text-sm text-ink-faint">No measurements recorded for this client yet.</p>
+          <button
+            type="button"
+            onClick={openAdd}
+            className="inline-flex items-center gap-1.5 text-xs font-bold bg-taupe text-white px-4 py-2 rounded-xl hover:bg-taupe-hover transition-colors cursor-pointer shadow-2xs"
+          >
+            <Plus size={14} /> Add First Profile
+          </button>
+        </div>
+      ) : (
+        <MeasurementList
+          grouped={grouped}
+          expandedIds={expandedIds}
+          toggleExpand={toggleExpand}
+          selectedVersionIds={selectedVersionIds}
+          setSelectedVersionIds={setSelectedVersionIds}
+          openClone={openClone}
+          openEdit={openEdit}
+          openDelete={(id) => { setDeletingId(id); setIsDeleteOpen(true); }}
+        />
+      )}
+
+      <MeasurementFormModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        editingId={editingId}
+        form={form}
+        setForm={setForm}
+        customers={[{ id: customerId, name: customerName }]}
+        error={error}
+        isSubmitting={isSubmitting}
+        onSubmit={handleSubmit}
+      />
+
+      <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Delete Measurement Profile">
+        <div className="space-y-4">
+          <p className="text-sm text-ink-body">
+            Are you sure you want to delete this measurement profile? This action cannot be undone.
+            Existing job orders that reference this profile will not be affected.
+          </p>
+          <div className="pt-2 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-ink-body hover:bg-sunken transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={isSubmitting}
+              className="bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting && <Loader2 size={15} className="animate-spin" />}
+              Yes, Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

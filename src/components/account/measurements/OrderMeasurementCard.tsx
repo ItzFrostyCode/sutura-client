@@ -1,15 +1,25 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { MeasurementStatusBadge } from '@/components/measurements/MeasurementStatus';
 import { getPhaseMeta } from '@/components/account/orders/ordersTypes';
 import MeasurementSheet from './MeasurementSheet';
+import VersionPicker from './VersionPicker';
 import type { MeasurementOrder, MyMeasurement } from './measurementAccountTypes';
 
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
-/** One job order and the measurements the shop recorded for it: the order on top (opens it), then the sizes. */
-export default function OrderMeasurementCard({ order, measurement }: { readonly order: MeasurementOrder; readonly measurement: MyMeasurement }) {
+/**
+ * One job order and the measurements the shop recorded for it: the order on top (opens it), then the version (the one
+ * this order was made with is tagged; the latest version shows first, and any other version can be opened), then the sizes.
+ */
+export default function OrderMeasurementCard({ order, measurement, versions = [measurement] }: { readonly order: MeasurementOrder; readonly measurement: MyMeasurement; readonly versions?: MyMeasurement[] }) {
+  // Latest first; the version this order used is one tap away (VersionPicker's link).
+  const [selectedId, setSelectedId] = useState(versions.at(-1)?.id ?? measurement.id);
+  const shown = versions.find((v) => v.id === selectedId) ?? measurement;
   const meta = getPhaseMeta(order.status);
   const item = order.catalog_item?.name ?? order.service?.name ?? order.garment_category ?? 'Job order';
 
@@ -30,15 +40,16 @@ export default function OrderMeasurementCard({ order, measurement }: { readonly 
         <ChevronRight size={18} className="shrink-0 text-ink-faint" aria-hidden />
       </Link>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3">
-        <MeasurementStatusBadge status={measurement.status} />
-        <span className="mobile-caption text-ink-muted">
-          Recorded {day(measurement.updated_at)}{(measurement.version ?? 1) > 1 ? ` · Version ${measurement.version}` : ''}
-        </span>
+      <div className="mt-3 space-y-2 border-t border-line pt-3">
+        <VersionPicker versions={versions} selectedId={shown.id} onSelect={setSelectedId} usedId={measurement.id} />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <MeasurementStatusBadge status={shown.status} />
+          <span className="mobile-caption text-ink-muted">Recorded {day(shown.updated_at)}</span>
+        </div>
       </div>
 
       <div className="mt-3">
-        <MeasurementSheet record={measurement} />
+        <MeasurementSheet record={shown} />
       </div>
     </article>
   );

@@ -22,9 +22,9 @@ import { useUnsavedChangesGuard } from '@/components/catalog/editable/useUnsaved
 import ServiceRatingsSection from '@/components/store-service-detail/ServiceRatingsSection';
 import type { PublicService } from '@/components/store-storefront/types';
 
-// Phones: the photo alone runs edge to edge (like the customer page); every other block keeps the dashboard's side
-// margin, the same as the header's.
-const PAD = 'px-[var(--dash-gutter)] min-[600px]:px-0';
+// Same side padding the customer page gives its content blocks on phones
+// (the photo alone runs edge-to-edge).
+const PAD = 'px-4 min-[375px]:px-6 min-[600px]:px-0';
 
 export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -46,15 +46,11 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
   const reload = useCallback(async () => {
     if (!store?.id) return;
     try {
-      const [ownRes, pub] = await Promise.all([
-        api.get(`/stores/${store.id}/services/${id}`).catch(async () => {
-          const list = await api.get(`/stores/${store.id}/services`);
-          const matched = ((list.data.data ?? []) as Service[]).find((s) => s.id === Number(id)) ?? null;
-          return { data: { data: matched } };
-        }),
+      const [own, pub] = await Promise.all([
+        api.get(`/stores/${store.id}/services`),
         api.get(`/public/stores/${store.slug}/services`).catch(() => ({ data: { data: [] } })),
       ]);
-      const found = (ownRes.data.data ?? null) as Service | null;
+      const found = ((own.data.data ?? []) as Service[]).find((s) => s.id === Number(id)) ?? null;
       setService(found);
       setPublicView(((pub.data.data ?? []) as PublicService[]).find((s) => s.id === Number(id)) ?? null);
     } catch {
@@ -64,48 +60,36 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     }
   }, [store?.id, store?.slug, id, toast]);
 
-  const onSavedSection = useCallback(async (updated?: Service) => {
-    if (updated) {
-      setService(updated);
-    }
-    await reload();
-  }, [reload]);
-
   useEffect(() => {
     reload();
   }, [reload]);
 
   const canManage = useCanManageOfferings();
-  const edit = useServiceSectionEdit(service, onSavedSection, canManage);
+  const edit = useServiceSectionEdit(service, reload, canManage);
   const { guard, pending, clearPending } = useUnsavedChangesGuard(edit.isDirty);
 
-  // Ratings come from the service's own loaded reviews or public list fallback
+  // Ratings come from the public list (it carries each rating); the owner's
+  // own list carries the rest.
   const ratingsView = useMemo<PublicService | null>(() => {
     if (!service) return null;
-    return {
-      ...toPublicService(service),
-      reviews: service.reviews ?? publicView?.reviews ?? [],
-      reviews_count: service.reviews_count ?? publicView?.reviews_count ?? 0,
-      reviews_avg_rating: service.reviews_avg_rating ?? publicView?.reviews_avg_rating ?? null,
-    };
+    return { ...toPublicService(service), reviews: publicView?.reviews ?? [], reviews_count: publicView?.reviews_count ?? service.reviews_count ?? 0, reviews_avg_rating: publicView?.reviews_avg_rating ?? service.reviews_avg_rating ?? null };
   }, [service, publicView]);
 
-  // Lifecycle move (S2). Publishing runs the server's publish check (S3); its reasons are shown as they are.
-  const saveWithActive = async (isActive: boolean): Promise<boolean> => {
-    if (!store?.id || !service) return false;
+  // A combo needs 2+ orderable services; the server pauses any that fall short and says which.
+  const notePausedPackages = (names?: string[]) => {
+    if (names?.length) toast.info(`Paused ${names.length === 1 ? 'the combo' : 'these combos'} because fewer than 2 services are left: ${names.join(', ')}.`);
+  };
+
+  const saveWithActive = async (isActive: boolean) => {
+    if (!store?.id || !service) return;
     setToggling(true);
     try {
-      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive, isActive ? 'published' : 'unpublished'));
-      toast.success(isActive ? 'Service published. Customers can see it and book.' : 'Service unpublished. Existing bookings and orders are not affected.');
-      if (res.data?.data) {
-        setService(res.data.data);
-      }
+      const res = await api.put(`/stores/${store.id}/services/${service.id}`, buildServicePayload(service, toDraft(service), isActive));
+      toast.success(isActive ? 'Service is live again.' : 'Service paused.');
+      notePausedPackages(res.data?.paused_packages);
       await reload();
-      return true;
     } catch (err) {
-      const reasons = (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
-      toast.error(reasons ? `To publish: ${Object.values(reasons).flat().join(' ')}` : getErrorMessage(err, 'Could not change the service status.'));
-      return false;
+      toast.error(getErrorMessage(err, 'Could not change the service status.'));
     } finally {
       setToggling(false);
     }
@@ -115,11 +99,12 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
     if (!store?.id || !service) return;
     setModalBusy(true);
     try {
-      await api.delete(`/stores/${store.id}/services/${service.id}`);
-      toast.success('Service archived. Restore it any time from Services › Archived.');
+      const res = await api.delete(`/stores/${store.id}/services/${service.id}`);
+      toast.success('Service deleted.');
+      notePausedPackages(res.data?.paused_packages);
       router.push('/dashboard/services');
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to archive service.'));
+      toast.error(getErrorMessage(err, 'Failed to delete service.'));
       setModalBusy(false);
       setDeleteOpen(false);
     }
@@ -139,8 +124,8 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
       <div className="bg-white border border-line p-12 text-center max-w-lg mx-auto my-12">
         <AlertCircle size={44} className="text-ink-muted mx-auto mb-3" />
         <h2 className="text-lg font-bold text-ink">Service not found</h2>
-        <p className="text-xs text-ink-muted mt-1 mb-6">It may have been removed or does not belong to your store.</p>
-        <Link href="/dashboard/services" className="px-5 py-2.5 bg-espresso text-white text-xs font-bold hover:bg-taupe transition-colors inline-flex items-center gap-2">
+        <p className="text-xs text-ink-muted mt-1 mb-6">It may have been removed or does not belong to your shop.</p>
+        <Link href="/dashboard/services" className="px-5 py-2.5 bg-taupe text-white text-xs font-bold hover:bg-[#8A7063] transition-colors inline-flex items-center gap-2">
           <ArrowLeft size={16} /> Back to Services
         </Link>
       </div>
@@ -148,20 +133,17 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
   }
 
   return (
-    // Cancels the dashboard shell's padding so the photo can run edge to edge on phones; from 600px the page keeps the
-    // shell's side margin (--dash-gutter), so it lines up with the header.
-    <div className="-my-4 -mx-[var(--dash-gutter)] animate-in fade-in duration-300 text-ink">
-      <div className="w-full max-w-7xl px-0 min-[600px]:px-[var(--dash-gutter)] py-0 min-[600px]:py-4 space-y-4 pb-24 min-[600px]:pb-10">
+    // -m-4 cancels the dashboard shell's p-4; then the page takes the exact
+    // container the customer's Service Detail uses at each width.
+    <div className="-m-4 animate-in fade-in duration-300 text-ink">
+      <div className="w-full max-w-7xl mx-auto px-0 min-[600px]:px-[10px] md:px-8 py-0 min-[600px]:py-[10px] md:py-6 pb-24 min-[600px]:pb-10 space-y-4">
         <div className={`${PAD} pt-3 min-[600px]:pt-0`}>
           <ServiceDetailHeader
             isActive={service.is_active}
-            status={service.status ?? (service.is_active ? 'published' : 'unpublished')}
             toggling={toggling}
             showActions={activeTab === 'overview' && canManage}
             onBack={() => guard(() => router.push('/dashboard/services'))}
-            onToggle={() => (service.status === 'published' || (!service.status && service.is_active)
-              ? setPauseOpen(true)
-              : void saveWithActive(true))}
+            onToggle={() => (service.is_active ? setPauseOpen(true) : saveWithActive(true))}
             onDelete={() => setDeleteOpen(true)}
           />
         </div>
@@ -191,7 +173,6 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         open={pauseOpen}
         designName={service.name}
         noun="service"
-        verb="Unpublish"
         pausing={toggling}
         onCancel={() => setPauseOpen(false)}
         onConfirm={async () => {
@@ -200,7 +181,7 @@ export default function ServiceDetailOwnerPage({ params }: Readonly<{ params: Pr
         }}
       />
 
-      <ServiceDeleteModal archive isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} onConfirm={confirmDelete} isSubmitting={modalBusy} />
+      <ServiceDeleteModal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} onConfirm={confirmDelete} isSubmitting={modalBusy} />
 
 
       <UnsavedChangesModal

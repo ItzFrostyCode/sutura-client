@@ -10,8 +10,6 @@ interface PlanCardsSectionProps {
   hasPendingRequest?: boolean;
   /** The plan queued for when the current period ends. */
   scheduledPlanId?: number | null;
-  /** The current plan is a free trial (badge "Free trial", button "Keep this plan"). */
-  onTrial?: boolean;
   onSubscribe: (planId: number) => void;
 }
 
@@ -22,13 +20,12 @@ export default function PlanCardsSection({
   upgradingTo,
   hasPendingRequest = false,
   scheduledPlanId = null,
-  onTrial = false,
   onSubscribe,
 }: PlanCardsSectionProps) {
   const getButtonContent = (plan: Plan) => {
     if (upgradingTo === plan.id) return <Loader2 className="w-5 h-5 animate-spin" />;
     // Renewing early adds to the time left (it doesn't restart the period).
-    if (activePlanId === plan.id) return onTrial ? 'Keep this plan' : 'Renew';
+    if (activePlanId === plan.id) return 'Renew';
     if (scheduledPlanId === plan.id) return <><Check size={15} /> Scheduled</>;
     if (plan.price_monthly > currentPrice) return 'Upgrade';
     if (plan.price_monthly < currentPrice) return 'Downgrade';
@@ -74,7 +71,7 @@ export default function PlanCardsSection({
               )}
               {isActive && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-taupe text-white flex items-center gap-1">
-                  <Check size={11} /> {onTrial ? 'Free trial' : 'Active'}
+                  <Check size={11} /> Active
                 </div>
               )}
 

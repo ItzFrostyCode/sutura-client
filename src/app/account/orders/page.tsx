@@ -1,13 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Package, Loader2 } from 'lucide-react';
+import { Package, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '@/lib/axios';
 import AccountHeader from '@/components/account/AccountHeader';
-import FilterChips from '@/components/account/FilterChips';
-import EmptyState from '@/components/account/EmptyState';
-import ShopOrderCard from '@/components/account/orders/ShopOrderCard';
+import OrderCard from '@/components/account/orders/OrderCard';
 import { type MyOrder, TABS } from '@/components/account/orders/ordersTypes';
 
 export default function MyOrdersPage() {
@@ -27,88 +26,116 @@ export default function MyOrdersPage() {
 function MyOrdersPageContent() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<MyOrder[]>([]);
-  // Uncapped counts from the server, preferred over deriving from the capped
-  // list; an older server sends neither, so the chips fall back to the
-  // per_page=100 derivation.
-  const [total, setTotal] = useState<number | null>(null);
-  const [statusCounts, setStatusCounts] = useState<{ inProduction?: number; readyForPickup?: number; completed?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') ?? 'all');
+  // The customer's shop ratings (by shop slug), for the stars on completed orders.
+  const [ratings, setRatings] = useState<Record<string, number>>({});
 
   useEffect(() => {
     setLoading(true);
     api.get('/my-orders', { params: { per_page: 100 } })
-      .then((res) => {
-        setOrders(res.data.data ?? []);
-        setTotal(typeof res.data.total === 'number' ? res.data.total : null);
-        setStatusCounts(res.data.status_counts && typeof res.data.status_counts === 'object' ? res.data.status_counts : null);
-      })
-      .catch(() => { setOrders([]); setTotal(null); setStatusCounts(null); })
+      .then((res) => setOrders(res.data.data ?? []))
+      .catch(() => setOrders([]))
       .finally(() => setLoading(false));
+    api.get('/my-store-reviews')
+      .then((res) => setRatings(Object.fromEntries((res.data.data ?? []).map((r: { slug: string; rating: number }) => [r.slug, r.rating]))))
+      .catch(() => setRatings({}));
   }, []);
+
+  // Phones only fit about three tabs: show an arrow (and a fade) on the side that still has tabs, tap to scroll.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const update = () => setEdge({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => { el.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
+  }, [loading]);
+  const scrollTabs = (dir: 1 | -1) => tabsRef.current?.scrollBy({ left: dir * 160, behavior: 'smooth' });
 
   const activeMatch = TABS.find((t) => t.key === activeTab)?.match ?? TABS[0].match;
   const filteredOrders = useMemo(
-    () => orders.filter((o) => activeMatch(o)),
+    () => orders.filter((o) => activeMatch(o.status)),
     [orders, activeMatch],
   );
-
-  // Tab badge: server number when the server knows it, capped-list derivation otherwise.
-  // (Cancelled has no server bucket yet, so it always derives.)
-  const tabCount = (tab: (typeof TABS)[number]): number | undefined => {
-    if (loading) return undefined;
-    const serverCount =
-      tab.key === 'all' ? total
-      : tab.key === 'production' ? statusCounts?.inProduction
-      : tab.key === 'pickup' ? statusCounts?.readyForPickup
-      : tab.key === 'completed' ? statusCounts?.completed
-      : undefined;
-    return serverCount ?? orders.filter((o) => tab.match(o)).length;
-  };
-
-  // Linked orders (batches or a set of services) are shown together, in the order of the first one.
-  const entries = useMemo(() => {
-    const seen = new Set<number>();
-    const list: { key: string; orders: MyOrder[] }[] = [];
-    for (const o of filteredOrders) {
-      const root = o.parent_order_id ?? o.id;
-      if (seen.has(root)) continue;
-      seen.add(root);
-      const family = filteredOrders.filter((x) => (x.parent_order_id ?? x.id) === root).sort((a, b) => (a.batch_no ?? 1) - (b.batch_no ?? 1));
-      list.push({ key: String(root), orders: family });
-    }
-    return list;
-  }, [filteredOrders]);
 
   return (
     <div className="w-full">
       <AccountHeader title="My Job Orders" backHref="/account" />
 
-      <FilterChips
-        label="Order status"
-        active={activeTab}
-        onChange={setActiveTab}
-        options={TABS.map((tab) => ({ key: tab.key, label: tab.label, count: tabCount(tab) }))}
-      />
+      {/* Tabs Row */}
+      <div className="relative mb-4">
+      <div ref={tabsRef} className="flex items-center gap-1 border-b border-line overflow-x-auto hide-scrollbar">
+        {TABS.map((tab) => {
+          const count = orders.filter((o) => tab.match(o.status)).length;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={(e) => { setActiveTab(tab.key); e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }}
+              className={`touch-target-44 shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                activeTab === tab.key
+                  ? 'border-taupe text-taupe'
+                  : 'border-transparent text-ink-muted hover:text-ink'
+              }`}
+            >
+              {tab.label} {!loading && <span className="text-ink-faint font-normal">({count})</span>}
+            </button>
+          );
+        })}
+      </div>
+      {edge.left && (
+        <button type="button" onClick={() => scrollTabs(-1)} aria-label="Show earlier tabs" className="absolute bottom-px left-0 top-0 flex w-12 items-center justify-start bg-gradient-to-r from-canvas from-40% to-transparent text-ink">
+          <ChevronLeft size={20} />
+        </button>
+      )}
+      {edge.right && (
+        <button type="button" onClick={() => scrollTabs(1)} aria-label="Show more tabs" className="absolute bottom-px right-0 top-0 flex w-12 items-center justify-end bg-gradient-to-l from-canvas from-40% to-transparent text-ink">
+          <ChevronRight size={20} />
+        </button>
+      )}
+      </div>
 
-      {loading && <div className="py-16 text-center mobile-body-sm text-ink-muted">Loading your orders…</div>}
+      {loading && (
+        <div className="text-center py-16 mobile-body-sm text-ink-muted">Loading your orders…</div>
+      )}
 
       {!loading && filteredOrders.length === 0 && (
-        <div className="mt-3">
-          <EmptyState
-            Icon={Package}
-            title={orders.length === 0 ? 'No orders yet' : 'Nothing in this tab yet'}
-            message={orders.length === 0 ? 'Once you book a fitting or place an order, it’ll show up here.' : 'Try a different tab.'}
-            action={orders.length === 0 ? { href: '/search', label: 'Find a Shop' } : undefined}
-          />
+        <div className="bg-surface border border-line p-8 text-center">
+          <Package size={28} className="text-ink-faint mx-auto mb-3" />
+          <h2 className="mobile-h3 font-semibold text-ink mb-1">
+            {orders.length === 0 ? 'No orders yet' : 'Nothing in this tab yet'}
+          </h2>
+          <p className="mobile-body-sm text-ink-muted mb-6 font-normal space-headline-para">
+            {orders.length === 0
+              ? 'Once you book a fitting or place an order, it’ll show up here.'
+              : 'Try a different tab.'}
+          </p>
+          {orders.length === 0 && (
+            <Link
+              href="/map"
+              className="btn-primary-mobile bg-taupe hover:bg-taupe-hover text-white max-w-[180px] mx-auto"
+            >
+              Browse Shops →
+            </Link>
+          )}
         </div>
       )}
 
       {!loading && filteredOrders.length > 0 && (
-        // One column at every width, one card shape: a solo order is a one-line card, a group is the same card
-        // with more lines — the list never mixes two layouts.
-        <div className="mt-3 space-y-3">
-          {entries.map((e) => <ShopOrderCard key={e.key} orders={e.orders} />)}
+        // One order per row (like a shop app's order list), so the garment name and the money are never cut off.
+        <div className="flex flex-col gap-3">
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              shopRating={order.store?.slug ? ratings[order.store.slug] ?? 0 : 0}
+              onRated={(slug, r) => setRatings((prev) => ({ ...prev, [slug]: r }))}
+            />
+          ))}
         </div>
       )}
     </div>

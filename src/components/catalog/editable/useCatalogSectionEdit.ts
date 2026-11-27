@@ -32,7 +32,7 @@ const SECTION_KEYS: Record<CatalogSection, string[]> = {
   sizes: ['sizes'],
   sizeChart: ['size_chart_image_url', 'size_chart_columns', 'size_chart_rows'],
   measurement: ['measurement_guide'],
-  spec: ['garment_type', 'service_id', 'material', 'fabric_image_url', 'features'],
+  spec: ['department', 'subcategory', 'garment_structure', 'garment_type', 'service_id', 'material', 'fabric_image_url', 'features'],
   description: ['description', 'care_instructions'],
   // The simplified design page: just the name and the description text.
   details: ['name', 'description'],
@@ -145,6 +145,4 @@ export function useCatalogSectionEdit(loadedItem: DetailedCatalogItem | null, on
 export type CatalogSectionEdit = ReturnType<typeof useCatalogSectionEdit>;
 
 /** What the field editors actually need — the create steps supply the same three. */
-export type CatalogDraftEdit = Pick<CatalogSectionEdit, 'form' | 'storeId' | 'itemId'> & {
-  fromServiceId?: string | null;
-};
+export type CatalogDraftEdit = Pick<CatalogSectionEdit, 'form' | 'storeId' | 'itemId'>;

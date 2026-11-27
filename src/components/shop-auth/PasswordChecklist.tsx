@@ -4,7 +4,7 @@ import { PASSWORD_RULES } from '@/lib/passwordRules';
 /** The same live rule list as Create Account. */
 export default function PasswordChecklist({ password }: { readonly password: string }) {
   return (
-    <ul className="mt-3 space-y-1.5" aria-live="polite">
+    <ul className="mt-3 space-y-1.5 sm:mt-2 sm:space-y-1" aria-live="polite">
       {PASSWORD_RULES.map((rule) => {
         const met = rule.test(password);
         return (

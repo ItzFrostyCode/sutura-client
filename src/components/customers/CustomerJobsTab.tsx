@@ -20,8 +20,7 @@ export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
   const branchName = (id?: number | null) => branches.find(b => b.id === id)?.name;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden animate-fade-in">
       <div className="p-4 border-b border-line bg-canvas/30">
         <h2 className="text-sm font-bold text-ink">Garment Job Orders</h2>
       </div>
@@ -65,7 +64,7 @@ export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
                 job.payment_status === 'paid' ? 'bg-sage/15 text-sage border-sage/20' :
-                job.payment_status === 'partial' ? 'bg-ink-faint/15 text-ink-faint border-ink-faint/20' :
+                job.payment_status === 'partial' ? 'bg-[#BCA89F]/15 text-[#BCA89F] border-[#BCA89F]/20' :
                 'bg-danger/15 text-danger border-danger/20'
               }`}>
                 {job.payment_status}
@@ -118,7 +117,7 @@ export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
                 <td className="p-4 text-center">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
                     job.payment_status === 'paid' ? 'bg-sage/15 text-sage border-sage/20' :
-                    job.payment_status === 'partial' ? 'bg-ink-faint/15 text-ink-faint border-ink-faint/20' :
+                    job.payment_status === 'partial' ? 'bg-[#BCA89F]/15 text-[#BCA89F] border-[#BCA89F]/20' :
                     'bg-danger/15 text-danger border-danger/20'
                   }`}>
                     {job.payment_status}
@@ -149,7 +148,6 @@ export default function CustomerJobsTab({ jobs }: CustomerJobsTabProps) {
             )}
           </tbody>
         </table>
-      </div>
       </div>
     </div>
   );

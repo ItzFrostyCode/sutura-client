@@ -9,6 +9,8 @@ function Opener() {
   const open = useLoginModalStore((s) => s.open);
   const signin = params.get('signin');
   const redirect = params.get('redirect');
+  const asStore = params.get('as') === 'store';
+  const add = params.get('add') === '1';
 
   // Runs on every navigation, not just the first load: "Book an Appointment" reaches this page
   // by a client-side redirect, and the layout (which holds this) is never remounted for that.
@@ -17,9 +19,11 @@ function Opener() {
     const url = new URL(window.location.href);
     url.searchParams.delete('signin');
     url.searchParams.delete('redirect');
+    url.searchParams.delete('as');
+    url.searchParams.delete('add');
     window.history.replaceState(null, '', url.pathname + url.search);
-    if (window.innerWidth >= 600) open(redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : null);
-  }, [signin, redirect, open]);
+    if (window.innerWidth >= 600) open(redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : null, { portal: asStore ? 'store' : 'customer', addAccount: add });
+  }, [signin, redirect, asStore, add, open]);
   return null;
 }
 

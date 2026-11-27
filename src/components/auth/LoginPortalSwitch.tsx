@@ -10,15 +10,16 @@ const OPTIONS: { value: LoginPortal; label: string }[] = [
 interface LoginPortalSwitchProps {
   readonly value: LoginPortal;
   readonly onChange: (portal: LoginPortal) => void;
+  readonly className?: string;
 }
 
 // The Customer / Shop switch on Sign In (Shop = owners, branch managers, staff). Both tabs hit the same
 // /auth/login; the server uses `portal` only to point someone at the tab
 // their account actually belongs to. System Admin is deliberately not a
 // third tab — it has its own unlinked portal at /admin/login.
-export default function LoginPortalSwitch({ value, onChange }: LoginPortalSwitchProps) {
+export default function LoginPortalSwitch({ value, onChange, className = 'mb-6 sm:mb-4' }: LoginPortalSwitchProps) {
   return (
-    <div role="tablist" aria-label="Account type" className="mb-6 grid grid-cols-2 overflow-hidden rounded-xl border border-line-strong">
+    <div role="tablist" aria-label="Account type" className={`grid grid-cols-2 overflow-hidden rounded-xl border border-line-strong ${className}`}>
       {OPTIONS.map((option) => {
         const active = option.value === value;
         return (
@@ -28,7 +29,7 @@ export default function LoginPortalSwitch({ value, onChange }: LoginPortalSwitch
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.value)}
-            className={`min-h-12 text-sm font-semibold transition-colors ${
+            className={`min-h-12 text-sm font-semibold transition-colors sm:min-h-10 ${
               active ? 'bg-ink text-white' : 'bg-surface text-ink-muted hover:text-ink'
             }`}
           >

@@ -82,7 +82,9 @@ export default function AccountLayout({ children }: { readonly children: React.R
   return (
     <div className="flex flex-1 flex-col bg-canvas">
 
-      <main className="flex-1 mx-auto w-full max-w-[960px] px-4 min-[481px]:px-6 min-[600px]:px-8 md:px-12 lg:px-0 py-4 md:py-6">
+      {/* Wider than the 960px site column and one fixed 32px side margin from tablet up (same on tablet and desktop),
+          so account pages use the screen instead of leaving wide empty sides. */}
+      <main className="flex-1 mx-auto w-full max-w-[1200px] px-4 min-[481px]:px-6 md:px-8 py-4 md:py-6">
 
         {showSidebar ? (
           <div className="flex flex-col lg:flex-row lg:items-start lg:gap-4">

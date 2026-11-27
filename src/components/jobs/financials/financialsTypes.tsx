@@ -1,20 +1,18 @@
 import React from 'react';
 import { CreditCard, Banknote, Smartphone } from 'lucide-react';
 import { Job, Payment } from '../jobTypes';
-import { depositFraction, paymentPolicyLabel } from '../requirements';
+import { depositBase, depositFraction, paymentPolicyLabel } from '../requirements';
 
 export interface JobFinancialsCardProps {
   readonly job: Job;
   readonly saving: boolean;
   readonly isOwnerOrManager: boolean;
-  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string, cashTendered?: number) => Promise<number | void>;
-  readonly onApplyDiscount: (amount: number, reason: string) => Promise<void>;
-  readonly onRemoveDiscount: () => Promise<void>;
+  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string, cashTendered?: number) => Promise<void>;
+  /** kind 'fabric' = the customer's own fabric (recorded and labelled as a fabric deduction). */
+  readonly onApplyDiscount: (amount: number, reason: string, kind?: 'discount' | 'fabric') => Promise<void>;
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;
   readonly onRejectPayment: (paymentId: number, reason: string) => Promise<void>;
   readonly onVerifyPayment: (paymentId: number) => Promise<void>;
-  /** Reloads the job after a change made outside these handlers (the downpayment waiver). */
-  readonly onRefresh?: () => Promise<void>;
 }
 
 export const METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode; badgeCls: string }> = {
@@ -68,7 +66,7 @@ export function computeFinancials(job: Job): ComputedFinancials {
   const jobIsCancelled = job.status === 'cancelled';
   const percentCollected = totalAmount > 0 ? Math.min(100, Math.round(((amountPaid + discountApplied) / totalAmount) * 100)) : 0;
   const depositShare = depositFraction(job.payment_policy, job.payment_policy_percent);
-  const requiredDeposit = totalAmount * depositShare;
+  const requiredDeposit = depositBase(job) * depositShare;
   const isDownpaymentMet = totalAmount > 0 && amountPaid + 0.005 >= requiredDeposit;
 
   const paymentStatus = job.payment_status;

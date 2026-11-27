@@ -8,7 +8,6 @@ import OpeningHoursCard from './OpeningHoursCard';
 import SocialLinksCard from './SocialLinksCard';
 import BusinessTypeCard from './BusinessTypeCard';
 import SpecializationsCard from './SpecializationsCard';
-import BookingFlowCard from './BookingFlowCard';
 import { ShopGcashPublicCard } from './ShopGcashCard';
 import ShopLinkCard from './ShopLinkCard';
 
@@ -37,7 +36,6 @@ export default function StoreAboutPublicView({ store, isStoreCurrentlyOpen }: St
         <BusinessTypeCard businessType={data.business_type} onChange={noop} {...view} />
         <SpecializationsCard specializations={data.specializations} onChange={noop} {...view} />
         <ShopGcashPublicCard storeSlug={store.slug} />
-        <BookingFlowCard formData={data} onChange={noop} setFormData={noop} {...view} />
       </div>
     </AboutReadOnly.Provider>
   );

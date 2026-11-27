@@ -18,10 +18,13 @@ export interface BranchManager {
 
 export interface StoreBranch {
   id: number;
+  /** Locked by the shop's plan (over its limit; never deleted). Server: PlanLimits. */
+  plan_locked_at?: string | null;
   slug?: string;
   name: string;
   address: string;
   landmark?: string | null;
+  landmark_image_url?: string | null;
   barangay?: string | null;
   city: string;
   district?: string | null;
@@ -40,10 +43,13 @@ export interface StoreBranch {
   manager_id?: number | null;
 }
 
+export const DAVAO_DISTRICTS = ['Poblacion', 'Talomo', 'Buhangin', 'Agdao', 'Toril', 'Bunawan', 'Calinan', 'Tugbok'];
+
 export interface BranchFormData {
   name: string;
   address: string;
   landmark: string;
+  landmark_image_url: string;
   barangay: string;
   city: string;
   district: string;
@@ -53,24 +59,39 @@ export interface BranchFormData {
   operating_hours: string;
   status: string;
   guide_image_url: string;
-  /** Shown only while editing: who manages the branch now. */
-  manager_current: string;
-  /** 'new' = create a login, 'pick' = promote existing staff, 'none' = no manager yet. */
-  manager_mode: 'new' | 'pick' | 'none';
-  /** Staff profile id when manager_mode === 'pick'. */
-  manager_staff_id: string;
-  /** A new branch manager's login, made right here by the owner. */
-  manager_name: string;
-  manager_email: string;
-  manager_phone: string;
-  manager_password: string;
-  manager_password_confirmation: string;
+  /** A staff id, '' for none, or NEW_MANAGER to create a staff account. */
+  manager_id: string | number;
+  new_manager_name: string;
+  new_manager_phone: string;
+  new_manager_role: string;
+}
+
+/** manager_id value for "Create new staff for this branch". */
+export const NEW_MANAGER = 'new';
+
+/** What the API takes: hours stay on the store profile, and a new manager goes as new_manager. */
+export function branchPayload(form: BranchFormData) {
+  const { operating_hours: _hours, new_manager_name, new_manager_phone, new_manager_role, ...rest } = form;
+  if (form.manager_id !== NEW_MANAGER) return rest;
+  return {
+    ...rest,
+    manager_id: undefined,
+    new_manager: { name: new_manager_name.trim(), phone: new_manager_phone.trim() || null, role: new_manager_role },
+  };
+}
+
+/** Returned once when a branch is added with a new manager (shown, then gone). */
+export interface BranchManagerCredentials {
+  name: string;
+  login_email: string;
+  temporary_password: string;
 }
 
 export const EMPTY_FORM: BranchFormData = {
   name: '',
   address: '',
   landmark: '',
+  landmark_image_url: '',
   barangay: '',
   city: '',
   district: '',
@@ -80,14 +101,10 @@ export const EMPTY_FORM: BranchFormData = {
   operating_hours: '',
   status: 'active',
   guide_image_url: '',
-  manager_current: '',
-  manager_mode: 'none',
-  manager_staff_id: '',
-  manager_name: '',
-  manager_email: '',
-  manager_phone: '',
-  manager_password: '',
-  manager_password_confirmation: '',
+  manager_id: '',
+  new_manager_name: '',
+  new_manager_phone: '',
+  new_manager_role: 'tailor',
 };
 
 export function StatusBadge({ status }: Readonly<{ status?: string }>) {

@@ -4,15 +4,6 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { Payment } from '../jobTypes';
 import { JobFinancialsCardProps, ComputedFinancials } from './financialsTypes';
-import { noticeDialog } from '@/store/useConfirmStore';
-
-export interface RecordedPayment {
-  paymentId: number | null;
-  amount: number;
-  method: string;
-  cashTendered?: number;
-  change: number;
-}
 
 export function useJobFinancials(
   job: JobFinancialsCardProps['job'],
@@ -42,8 +33,6 @@ export function useJobFinancials(
   // Pending Verification, not applied yet), then confirm. Nothing is sent
   // to the server until the review step is confirmed.
   const [reviewingCharge, setReviewingCharge] = useState(false);
-  // Shown after a successful charge, so the cashier can print the receipt right away.
-  const [recorded, setRecorded] = useState<RecordedPayment | null>(null);
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null);
 
   // Discount State
@@ -77,7 +66,7 @@ export function useJobFinancials(
       });
       onDone(res.data?.data?.url || res.data?.url || '');
     } catch (err) {
-      void noticeDialog(getErrorMessage(err, 'Failed to upload receipt image.'));
+      alert(getErrorMessage(err, 'Failed to upload receipt image.'));
     } finally {
       setUploading(false);
     }
@@ -146,8 +135,7 @@ export function useJobFinancials(
     setCharging(true);
     try {
       const tendered = method === 'cash' ? Number.parseFloat(cashTendered) : undefined;
-      const paymentId = await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined, tendered);
-      setRecorded({ paymentId: typeof paymentId === 'number' ? paymentId : null, amount: amt, method, cashTendered: tendered, change: tendered == null ? 0 : Math.max(0, tendered - amt) });
+      await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined, tendered);
       setAmount('');
       setReference('');
       setNotes('');
@@ -160,7 +148,6 @@ export function useJobFinancials(
   };
 
   const cancelChargeReview = () => setReviewingCharge(false);
-  const dismissRecorded = () => setRecorded(null);
 
   const handleVerifyPayment = async (paymentId: number) => {
     setVerifyingPaymentId(paymentId);
@@ -203,8 +190,6 @@ export function useJobFinancials(
     reviewingCharge,
     confirmCharge,
     cancelChargeReview,
-    recorded,
-    dismissRecorded,
     verifyingPaymentId,
     handleVerifyPayment,
 

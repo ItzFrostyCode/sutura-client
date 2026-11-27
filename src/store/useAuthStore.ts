@@ -43,6 +43,8 @@ export interface Store {
   owner_id?: number;
   owner?: { id: number; name: string; email?: string } | null;
   name: string;
+  /** When the shop was created (the team lead's dashboard Home shows the shop's age / first-day tips). */
+  created_at?: string;
   slug: string;
   store_code?: string;
   /** The unit the shop measures in (inches or centimeters). */

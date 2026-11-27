@@ -42,8 +42,9 @@ export default function StoreLocationsTab({
   embedded = false,
   onSelectBranch,
 }: StoreLocationsTabProps) {
-  const { loading: tierLoading, isGated } = useSubscriptionTier();
-  const branchesGated = isOwnerViewingOwnStore && !tierLoading && isGated('multi_branch');
+  const { loading: tierLoading, maxBranches } = useSubscriptionTier();
+  // More than one branch is a plan feature: the plan's branch limit (-1 = unlimited) decides.
+  const branchesGated = isOwnerViewingOwnStore && !tierLoading && maxBranches !== -1 && maxBranches <= 1;
 
   if (!branches || branches.length === 0) {
     return (

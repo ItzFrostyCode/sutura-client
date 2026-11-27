@@ -244,3 +244,16 @@ export const PORTFOLIO_COLOR_OPTIONS = [
   { label: 'Brown', hex: '#78350F' },
   { label: 'Bronze', hex: '#CD7F32' },
 ];
+
+/** A shop's combo package as the public API returns it (restored 2026-11-28, the team lead's combo packages). */
+export interface PublicServicePackage {
+  id: number;
+  name: string;
+  description: string | null;
+  bundle_price: string | null;
+  image_url?: string | null;
+  service_category?: string | null;
+  reviews_count?: number;
+  reviews_avg_rating?: number | null;
+  services: { id: number; name: string; base_price: string | null }[];
+}

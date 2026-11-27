@@ -12,9 +12,6 @@ export interface CatalogItemResponse {
   id: number;
   name: string;
   price: number;
-  /** How the design is priced against its service (lib/designPricing); null = same as the service. */
-  pricing_mode?: 'same' | 'set' | 'extra' | 'quote' | null;
-  extra_charge?: string | number | null;
   service_id?: number | null;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
@@ -30,6 +27,9 @@ export interface CatalogItemResponse {
   measurement_guide?: string;
   care_instructions?: string;
   garment_type?: string;
+  department?: string | null;
+  subcategory?: string | null;
+  garment_structure?: string | null;
   images: { id: number; image_url: string; view_angle?: string; is_primary: number }[];
   external_gallery_url?: string;
   is_active?: boolean;
@@ -66,10 +66,7 @@ export interface ColorItem {
 
 export interface CatalogFormData {
   name: string;
-  /** Only used by a design with no service. */
   price: string;
-  pricing_mode: 'same' | 'set' | 'extra' | 'quote';
-  extra_charge: string;
   service_id: string;
   estimated_days: string;
   estimated_days_max: string;
@@ -79,6 +76,9 @@ export interface CatalogFormData {
   care_instructions: string;
   measurement_guide: string;
   garment_type: string;
+  department: string;
+  subcategory: string;
+  garment_structure: string;
   sizes: string[];
   external_gallery_url: string;
   is_active: boolean;

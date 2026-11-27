@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
-import { FITTING_OPTIONS, MEASUREMENT_OPTIONS, MIN_DEPOSIT_PERCENT, PAYMENT_OPTIONS, clampDeposit } from '@/components/jobs/requirements';
+import { FITTING_OPTIONS, MEASUREMENT_OPTIONS, PAYMENT_OPTIONS } from '@/components/jobs/requirements';
+import { MIN_DEPOSIT_PERCENT, clampDeposit } from './deposit';
 import type { RequirementsDraft } from './requirementsDraft';
 
 interface RequirementsEditorProps {

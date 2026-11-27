@@ -72,8 +72,8 @@ export default function SupportDetailView({
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   }, [selected.replies.length]);
 
-  const typeConfig = TYPE_LABELS[selected.type];
-  const priorityConfig = PRIORITY_LABELS[selected.priority];
+  const typeConfig = TYPE_LABELS[selected.type] ?? TYPE_LABELS.general;
+  const priorityConfig = PRIORITY_LABELS[selected.priority] ?? PRIORITY_LABELS.medium;
   const statusConfig = STATUS_CONFIG[selected.status];
   const isClosed = selected.status === 'closed' || selected.status === 'resolved';
 

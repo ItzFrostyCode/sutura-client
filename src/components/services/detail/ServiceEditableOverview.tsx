@@ -6,7 +6,7 @@ import CatalogDetailGrid from '@/components/store-catalog-detail/CatalogDetailGr
 import ServiceProductInfo from '@/components/store-service-detail/ServiceProductInfo';
 import { ServiceSpecBlock, ServiceChartBlock, ServiceDescriptionBlock, hasServiceChart } from '@/components/store-service-detail/ServiceDetailBlocks';
 import EditableBox from '@/components/catalog/editable/EditableBox';
-import ImageUploadField from './ImageUploadField';
+import SizeChartEditor from '@/components/shared/SizeChartEditor';
 import { getMediaUrl } from '@/lib/media';
 import type { Service } from '../serviceHelpers';
 import { toPublicService } from './serviceEditing';
@@ -16,8 +16,7 @@ import RequirementsEditor from '@/components/requirements/RequirementsEditor';
 import RequirementsView from '@/components/requirements/RequirementsView';
 import type { ServiceSectionEdit } from './useServiceSectionEdit';
 
-// Phones: the photo runs edge to edge; every other block keeps the dashboard's side margin (= the header's).
-const PAD = 'px-[var(--dash-gutter)] min-[600px]:px-0';
+const PAD = 'px-4 min-[375px]:px-6 min-[600px]:px-0';
 
 interface ServiceEditableOverviewProps {
   readonly service: Service;
@@ -81,15 +80,15 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
           badge={2}
           view={chart ? <ServiceChartBlock service={ps} /> : <p className="text-sm text-ink-faint">Not added yet — a size or measurement chart customers can check.</p>}
         >
-          {/* An image only (no size table), shown as large as the photo, like the Add Service form. */}
           {edit.draft && (
-            <ImageUploadField
-              value={edit.draft.sizeChart.image_url ?? ''}
-              onChange={(url) => edit.setDraft(d => (d ? { ...d, sizeChart: { ...d.sizeChart, image_url: url || null, columns: [], rows: [] } } : d))}
+            <SizeChartEditor
+              mode="table"
+              value={edit.draft.sizeChart}
+              onChange={(sizeChart) => edit.setDraft(d => (d ? { ...d, sizeChart } : d))}
               storeId={edit.storeId}
-              hint="A size or measurement chart customers can check. JPG, PNG or WebP."
-              alt="Reference chart"
-              emptyLabel="Attach a size or reference chart"
+              title="Reference chart"
+              description="Upload your own chart images and/or build a size & measurement table."
+              multipleImages
             />
           )}
         </EditableBox>

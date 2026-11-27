@@ -1,13 +1,11 @@
 import { depositFraction, paymentPolicyLabel } from './requirements';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { logUnexpectedError } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
-import { confirmDialog } from '@/store/useConfirmStore';
-import { getErrorMessage } from '@/lib/apiError';
-import { useShopRole } from '@/hooks/useShopRole';
-import { Job, GarmentSpecTable, CustomizationInstruction } from './jobTypes';
+import { Job } from './jobTypes';
 
 // Local (not UTC) YYYY-MM-DDTHH:mm for a <input type="datetime-local">,
 // same timezone-drift avoidance as appointmentHelpers' getLocalDateString.
@@ -24,16 +22,18 @@ export function useJobDetail(jobId: string) {
   const { store } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
-  const { isOwnerOrManager } = useShopRole();
   
   const [job, setJob] = useState<Job | null>(null);
-  // The job as last rendered, so a refresh can tell an untouched form field from a draft the person typed.
-  const jobRef = useRef<Job | null>(null);
-  jobRef.current = job;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   // Editable fields
+  const [status, setStatus] = useState('');
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [holdReason, setHoldReason] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [balance, setBalance] = useState<string | number>('');
   const [notes, setNotes] = useState('');
@@ -50,6 +50,7 @@ export function useJobDetail(jobId: string) {
         .then(res => {
           const data = res.data.data;
           setJob(data);
+          setStatus(data.status);
           setPaymentStatus(data.payment_status);
           setBalance(data.balance);
           setNotes(data.notes || '');
@@ -80,13 +81,7 @@ export function useJobDetail(jobId: string) {
     if (!store) return;
     try {
       const res = await api.get(`/stores/${store.id}/jobs/${jobId}`);
-      const fresh = res.data.data;
-      const prev = jobRef.current;
-      setJob(fresh);
-      // The status is never a draft: it moves only through the instant actions (Next, Back, Hold...), so it always follows the server.
-      // Payment status and balance follow it too, unless the person has an unsaved draft of that field.
-      setPaymentStatus((cur) => (prev && cur !== prev.payment_status ? cur : fresh.payment_status));
-      setBalance((cur) => (prev && String(cur) !== String(prev.balance) ? cur : fresh.balance));
+      setJob(res.data.data);
     } catch (err) {
       console.error('Failed to refresh job', err);
     }
@@ -97,6 +92,7 @@ export function useJobDetail(jobId: string) {
     overview: Boolean(job && notes !== (job.notes || '')),
     production: Boolean(
       job && (
+        status !== job.status ||
         notes !== (job.notes || '') ||
         completionPhotoUrl !== (job.completion_photo_url || '') ||
         estimatedReadyAt !== toDatetimeLocal(job.estimated_ready_at) ||
@@ -111,6 +107,7 @@ export function useJobDetail(jobId: string) {
 
   const handleResetChanges = () => {
     if (!job) return;
+    setStatus(job.status);
     setPaymentStatus(job.payment_status);
     setBalance(job.balance);
     setNotes(job.notes || '');
@@ -125,23 +122,26 @@ export function useJobDetail(jobId: string) {
     setSaving(true);
 
     try {
-      // Persist the drafts: notes, completion photo, ETA, customer material status. The status is not one of them.
-      // Plain staff save only production notes and the completion photo; the server refuses anything else.
-      await api.put(`/stores/${store.id}/jobs/${jobId}`, isOwnerOrManager ? {
+      // Persist core job updates (Production, Notes, QC, Status). Whoever
+      // moves the status forward is auto-recorded server-side as having
+      // worked that production stage (JobOrderController::update()) — no
+      // separate staff-assignment step needed here anymore.
+      await api.put(`/stores/${store.id}/jobs/${jobId}`, {
+        status,
         payment_status: paymentStatus,
         balance: Number.parseFloat(String(balance || 0)),
         notes,
         completion_photo_url: completionPhotoUrl || null,
         estimated_ready_at: estimatedReadyAt || null,
         customer_material_status: customerMaterialStatus || null,
-      } : {
-        notes,
-        completion_photo_url: completionPhotoUrl || null,
+        cancellation_reason: status === 'cancelled' ? cancellationReason : undefined,
+        hold_reason: status === 'on_hold' ? holdReason : undefined,
       });
 
       const res = await api.get(`/stores/${store.id}/jobs/${jobId}`);
       const data = res.data.data;
       setJob(data);
+      setStatus(data.status);
       setPaymentStatus(data.payment_status);
       setNotes(data.notes || '');
       setCompletionPhotoUrl(data.completion_photo_url || '');
@@ -150,17 +150,20 @@ export function useJobDetail(jobId: string) {
 
       toast.success('All changes saved successfully.');
     } catch (err: unknown) {
-      console.error('Failed to update', err);
+      logUnexpectedError('Failed to update', err);
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to update details.');
-      if (job) setPaymentStatus(job.payment_status);
+      if (job) {
+        setStatus(job.status);
+        setPaymentStatus(job.payment_status);
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string, cashTendered?: number): Promise<number | undefined> => {
-    if (!store || !job) return undefined;
+  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string, cashTendered?: number) => {
+    if (!store || !job) return;
     setSaving(true);
     try {
       const payRes = await api.post(`/stores/${store.id}/jobs/${job.id}/pay`, {
@@ -201,9 +204,6 @@ export function useJobDetail(jobId: string) {
       if (payRes.data?.warning) {
         toast.info(payRes.data.warning);
       }
-      // The newest payment on the refreshed job is the one just recorded (used to print its receipt).
-      const ids = ((updatedJob.payments ?? []) as { id: number }[]).map((p) => p.id);
-      return ids.length > 0 ? Math.max(...ids) : undefined;
     } catch(err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Payment failed');
@@ -235,41 +235,24 @@ export function useJobDetail(jobId: string) {
 
   // One-time, in-the-moment discount (e.g. a repeat customer) — reduces the
   // remaining balance directly and is logged to the audit trail server-side.
-  const handleRemoveDiscount = async () => {
-    if (!store || !job) return;
-    setSaving(true);
-    try {
-      await api.delete(`/stores/${store.id}/jobs/${job.id}/discount`);
-      const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
-      const updatedJob = res.data.data;
-      setJob(updatedJob);
-      setBalance(updatedJob.balance);
-      setPaymentStatus(updatedJob.payment_status);
-      toast.success('Discount removed.');
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to remove the discount.'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleApplyDiscount = async (amount: number, reason: string) => {
+  const handleApplyDiscount = async (amount: number, reason: string, kind: 'discount' | 'fabric' = 'discount') => {
     if (!store || !job) return;
     setSaving(true);
     try {
       await api.post(`/stores/${store.id}/jobs/${job.id}/discount`, {
         amount,
         reason: reason || undefined,
+        kind,
       });
       const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
       const updatedJob = res.data.data;
       setJob(updatedJob);
       setBalance(updatedJob.balance);
       setPaymentStatus(updatedJob.payment_status);
-      toast.success(`₱${amount.toFixed(2)} discount applied successfully.`);
+      toast.success(kind === 'fabric' ? `₱${amount.toFixed(2)} fabric / materials deduction applied.` : `₱${amount.toFixed(2)} discount applied successfully.`);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to apply discount.');
+      toast.error(error.response?.data?.message || (kind === 'fabric' ? 'Failed to apply the fabric / materials deduction.' : 'Failed to apply discount.'));
       throw err;
     } finally {
       setSaving(false);
@@ -336,6 +319,7 @@ export function useJobDetail(jobId: string) {
       const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
       const updatedJob = res.data.data;
       setJob(updatedJob);
+      setStatus(updatedJob.status);
       toast.success('Job order rejected.');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -379,85 +363,17 @@ export function useJobDetail(jobId: string) {
     }
   };
 
-  const handleSaveSpecTable = async (specTable: GarmentSpecTable) => {
+  const handleDelete = async () => {
     if (!store || !job) return;
-    setSaving(true);
-    try {
-      // A group order's table IS its team list: every person's row is written back whole, so their pieces, profile link
-      // and extra columns are kept. A one-person order has no team list, and saving its table never makes one.
-      const isTeam = Array.isArray(job.custom_order_data?.team_roster) && job.custom_order_data.team_roster.length > 0;
-      const teamRoster = isTeam
-        ? specTable.rows.map((row) => {
-          const rest: Record<string, unknown> = { ...row };
-          delete rest.id;
-          delete rest.player_name;
-          return { ...rest, name: String(row.player_name ?? row.name ?? ''), completed: Boolean(row.completed) };
-        })
-        : undefined;
-
-      const res = await api.put(`/stores/${store.id}/jobs/${job.id}`, {
-        custom_order_data: {
-          spec_table: specTable,
-          ...(teamRoster && teamRoster.length > 0 ? { team_roster: teamRoster } : {}),
-        },
-      });
-
-      const updatedJob = res.data?.data || (await api.get(`/stores/${store.id}/jobs/${job.id}`)).data?.data;
-      if (updatedJob) {
-        setJob(updatedJob);
-      }
-      toast.success('Garment specifications updated successfully.');
-    } catch (err: unknown) {
-      console.error('Failed to save spec table', err);
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to save specification table.');
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveCustomizationInstructions = async (instructions: CustomizationInstruction[]) => {
-    if (!store || !job) return;
-    setSaving(true);
-    try {
-      const res = await api.put(`/stores/${store.id}/jobs/${job.id}`, {
-        custom_order_data: {
-          customization_instructions: instructions,
-        },
-      });
-
-      const updatedJob = res.data?.data || (await api.get(`/stores/${store.id}/jobs/${job.id}`)).data?.data;
-      if (updatedJob) {
-        setJob(updatedJob);
-      }
-      toast.success('Customization instructions saved successfully.');
-    } catch (err: unknown) {
-      console.error('Failed to save customization instructions', err);
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to save customization instructions.');
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Archive = the server's soft delete; the order can be restored (or deleted for good) from the Archived page.
-  const handleArchive = async () => {
-    if (!store || !job) return;
-    const ok = await confirmDialog({
-      title: `Archive ${job.order_number ?? 'this order'}?`,
-      message: 'It leaves the board and the lists. You can restore it from Archived.',
-      confirmLabel: 'Archive',
-    });
-    if (!ok) return;
+    setIsDeleting(true);
     try {
       await api.delete(`/stores/${store.id}/jobs/${job.id}`);
-      toast.success('Order archived.');
+      toast.success('Job order deleted successfully.');
       router.push('/dashboard/jobs');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Could not archive this order.');
+      toast.error(error.response?.data?.message || 'Failed to delete job order.');
+      setIsDeleting(false);
     }
   };
 
@@ -467,6 +383,11 @@ export function useJobDetail(jobId: string) {
     job,
     loading,
     saving,
+    isDeleteModalOpen,
+    setIsDeleteModalOpen,
+    isDeleting,
+    status,
+    setStatus,
     paymentStatus,
     setPaymentStatus,
     balance,
@@ -483,16 +404,17 @@ export function useJobDetail(jobId: string) {
     handleChargePayment,
     handleVerifyPayment,
     handleApplyDiscount,
-    handleRemoveDiscount,
     handleUpdatePayment,
     handleRejectPayment,
     handleRejectOrder,
     handleUseCurrentMeasurement,
     handleToggleRosterItem,
-    handleSaveSpecTable,
-    handleSaveCustomizationInstructions,
+    cancellationReason,
+    setCancellationReason,
+    holdReason,
+    setHoldReason,
     refreshJob,
-    handleArchive,
+    handleDelete,
     hasUnsavedChanges,
     dirtyTabs,
     handleResetChanges,

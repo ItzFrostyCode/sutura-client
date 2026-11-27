@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
-import { serviceGroupLabel } from '@/lib/garmentTaxonomy';
-import type { Service } from './serviceHelpers';
+import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
+import type { Service, ServicePackage } from './serviceHelpers';
 
 // Fixed order, same palette as the catalog's Revenue by Category so the two tabs read alike.
 const COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#8a5fd0', '#9A8073'];
@@ -17,14 +17,15 @@ function PieLabel({ cx = 0, cy = 0, midAngle = 0, outerRadius = 0, percent = 0 }
   );
 }
 
-export default function ServiceRevenueByCategoryChart({ services }: Readonly<{ services: Service[] }>) {
+export default function ServiceRevenueByCategoryChart({ services, packages = [] }: Readonly<{ services: Service[]; packages?: ServicePackage[] }>) {
   const data = useMemo(() => {
     const by = new Map<string, number>();
     services.forEach((s) => by.set(s.service_category || 'other', (by.get(s.service_category || 'other') ?? 0) + Number(s.total_revenue || 0)));
+    packages.forEach((p) => by.set(p.service_category || 'other', (by.get(p.service_category || 'other') ?? 0) + Number(p.total_revenue || 0)));
     return Array.from(by.entries())
       .filter(([, v]) => v > 0)
-      .map(([k, value], i) => ({ name: serviceGroupLabel(k) ?? 'Other', value, color: COLORS[i % COLORS.length] }));
-  }, [services]);
+      .map(([k, value], i) => ({ name: SERVICE_CATEGORY_LABELS[k as ServiceCategory] ?? 'Other', value, color: COLORS[i % COLORS.length] }));
+  }, [services, packages]);
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (

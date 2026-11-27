@@ -1,8 +1,7 @@
 import React from 'react';
-import { History, Receipt } from 'lucide-react';
+import { FileText, Receipt } from 'lucide-react';
 import { Job, Payment } from '../jobTypes';
 import { ComputedFinancials } from './financialsTypes';
-import SectionHeader from '../ui/SectionHeader';
 import { PaymentItemRow } from './PaymentItemRow';
 
 interface PaymentAuditLedgerProps {
@@ -62,21 +61,24 @@ export function PaymentAuditLedger({
   const payments = job.payments || [];
 
   return (
-    <section className="rounded-2xl border border-line bg-surface shadow-2xs" aria-label="Payment history and audit ledger">
-      <div className="border-b border-line px-5 py-4 sm:px-6">
-        <SectionHeader
-          icon={History}
-          title="Payment History & Audit Ledger"
-          as="h3"
-          badge={<span className="rounded-full bg-sunken px-2.5 py-0.5 text-xs font-medium text-ink-muted">{payments.length}</span>}
-          actions={jobIsCompleted ? (
-            <span className="rounded-full bg-sunken px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Ledger Locked</span>
-          ) : undefined}
-        />
+    <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between border-b border-line pb-3">
+        <div className="flex items-center gap-2">
+          <FileText size={16} className="text-taupe" />
+          <h3 className="text-sm font-bold text-ink">Payment History & Audit Ledger</h3>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-canvas text-ink-muted border border-line">
+            {payments.length}
+          </span>
+        </div>
+        {jobIsCompleted && (
+          <span className="text-[10px] font-bold uppercase tracking-wider bg-sunken text-ink-muted px-2 py-0.5 rounded-full border border-line">
+            Ledger Locked
+          </span>
+        )}
       </div>
 
       {payments.length > 0 ? (
-        <div className="divide-y divide-line px-5 sm:px-6">
+        <div className="space-y-3">
           {payments.map(payment => (
             <PaymentItemRow
               key={payment.id}
@@ -120,12 +122,12 @@ export function PaymentAuditLedger({
           ))}
         </div>
       ) : (
-        <div className="m-5 rounded-xl bg-sunken/70 py-8 sm:m-6 text-center text-ink-faint">
-          <Receipt size={24} className="mx-auto mb-1.5 opacity-50" />
-          <p className="text-sm font-medium text-ink-muted">No payments recorded yet</p>
-          <p className="text-xs text-ink-faint">Use the cashier desk on the right to log downpayment.</p>
+        <div className="text-center py-8 text-ink-faint border border-dashed border-line rounded-xl bg-canvas/40">
+          <Receipt size={24} className="mx-auto mb-1.5 opacity-40" />
+          <p className="text-xs font-medium">No payments recorded yet</p>
+          <p className="text-[10px] text-ink-faint">Use the cashier desk on the right to log downpayment.</p>
         </div>
       )}
-    </section>
+    </div>
   );
 }

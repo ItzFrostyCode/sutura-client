@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { cleanName, nameError as checkName, NAME_HINT } from '@/lib/nameRules';
 import { ageFrom } from '@/lib/age';
 import { enterMovesOn, Group, revealFirstProblem, StepActions, TextField, type FieldStatus } from './ApplicationFields';
@@ -127,10 +128,10 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
       noValidate
       onKeyDown={enterMovesOn}
       onSubmit={(e) => { e.preventDefault(); waits.current = 0; next(); }}
-      className="space-y-7"
+      className="space-y-7 sm:space-y-5 short:space-y-4"
     >
       <Group title="Personal details">
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 sm:gap-4 short:gap-3">
           <TextField id="app-first" label="First name" required autoComplete="given-name" maxLength={100} {...nameField('first_name')} error={errors['app-first']} />
           <TextField id="app-middle" label="Middle name" optional autoComplete="additional-name" maxLength={100} {...nameField('middle_name')} error={errors['app-middle']} />
           <TextField id="app-last" label="Last name" required autoComplete="family-name" maxLength={100} {...nameField('last_name')} error={errors['app-last']} />
@@ -174,7 +175,12 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
       </Group>
 
       {/* Never greyed out for a missing answer: pressing it shows what is left. */}
-      <StepActions nextLabel={waiting ? 'Checking…' : 'Continue'} busy={waiting} />
+      <StepActions nextLabel={waiting ? 'Checking…' : 'Continue'} busy={waiting} aside={
+        <p className="text-center text-[15px] text-ink-muted sm:text-left">
+          Already approved?{' '}
+          <Link href="/login?as=store" className="font-semibold text-ink underline underline-offset-2">Sign in to your shop</Link>
+        </p>
+      } />
     </form>
   );
 }

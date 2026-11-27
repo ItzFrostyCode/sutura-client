@@ -1,14 +1,16 @@
+import { CatalogItem } from '@/components/catalog/catalogHelpers';
+
 export interface CustomerData {
   id: number;
   name: string;
   email?: string;
   phone?: string;
-  profile_picture?: string | null;
-  is_trusted?: boolean;
-
-  active_jobs?: number;
-  intake_channel?: string;
   is_walk_in?: boolean;
+  intake_channel?: string;
+  active_jobs?: number;
+  completed_jobs?: number;
+  total_spend?: number;
+  suki_tag?: string | null;
 }
 
 export interface ServiceField {
@@ -17,15 +19,6 @@ export interface ServiceField {
   type: 'text' | 'number' | 'select' | 'radio' | 'checkbox';
   required: boolean;
   options?: string[];
-}
-
-/** A pricing option of a service: what it covers and what one ordered unit is are set by the shop (null = not configured, as before). */
-export interface ServiceOption {
-  id: number;
-  label: string;
-  amount: string | number | null;
-  covers?: 'top' | 'bottom' | 'both' | null;
-  sold_as?: 'garment' | 'set' | null;
 }
 
 export interface ServiceData {
@@ -39,31 +32,13 @@ export interface ServiceData {
   // never-since-edited row. See jobHelpers.tsx's serviceHasType().
   service_type?: 'custom_tailoring' | 'bulk_sublimation' | 'fashion_bridal' | 'alteration_repair' | null;
   service_types?: string[] | null;
-  /** One of the 4 approved service groups (lib/garmentTaxonomy SERVICE_GROUPS). */
-  service_category?: string | null;
-  /** Garments it works on; empty = any garment. */
-  garment_types?: string[] | null;
-  /** Tasks it offers (capability slugs of its group). */
-  capabilities?: string[] | null;
   base_price?: string | number;
-  image_url?: string | null;
-  reviews_avg_rating?: number | string | null;
-  reviews_count?: number | null;
-  orders_count?: number | null;
-  saves_count?: number | null;
   min_order_qty?: number;
-  pricing?: ServiceOption[];
-  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   custom_fields?: ServiceField[] | null;
-  /** Asked per person on a team order, next to name and size (e.g. a position). */
-  roster_fields?: ServiceField[] | null;
-  /** The sizes on the service's size chart, when it has one. */
-  size_chart_columns?: string[] | null;
-  size_chart_rows?: { size: string; values: string[] }[] | null;
-  size_chart_image_url?: string | null;
   tags?: string[];
   estimated_days?: number | null;
-  estimated_days_max?: number | null;
+  /** The service's price list ("Pricing options"); the order picks one. */
+  pricing?: { id: number; label: string; amount: string | number | null }[];
 }
 
 export interface StaffData {
@@ -84,43 +59,14 @@ export interface CustomerMeasurement {
   notes?: string | null;
   superseded_at?: string | null;
   version?: number;
-  appointment_id?: number | null;
-  service_id?: number | null;
-  catalog_item_id?: number | null;
-  service?: { id: number; name: string } | null;
-  catalog_item?: { id: number; name: string } | null;
-  photo_urls?: string[] | null;
-  status?: 'finalized' | 'pending_fitting';
 }
 
-export type MeasurementSourceMode = 'existing' | 'record_now' | 'standard_size' | 'none';
-
-export interface InlineMeasurementData {
-  id?: string;
-  profile_name: string;
-  /** What the person gets: top, bottom or both. '' until chosen; it is asked first, before any size. */
-  measurement_area: 'top' | 'bottom' | 'both' | '';
-  metrics: Record<string, string>;
-  top_columns: string[];
-  bottom_columns: string[];
-  notes: string;
-  photo_urls: string[];
-}
-
-/** One person on a team order. Values are keyed by the team table's column keys (player_name, print_name, number, size, …). */
 export interface RosterMember {
   id: string;
-  [key: string]: string;
-}
-
-/** Another service the customer asked for at the same visit: it becomes its own linked order. */
-export interface ExtraService {
-  key: string;
-  service_id: string;
-  catalog_item_id: string;
-  quantity: string;
-  /** Typed price; empty = the service's own price × quantity. */
-  price: string;
+  name: string;
+  print_name: string;
+  number: string;
+  size: string;
 }
 
 export interface JobCreateFormData {
@@ -142,17 +88,4 @@ export interface JobCreateFormData {
   garment_category: '' | 'top' | 'bottom' | 'full_set' | 'gown_dress' | 'outerwear' | 'others' | 'barong' | 'gown' | 'suit' | 'filipiniana' | 'uniform' | 'lab_gown' | 'scrub_suit' | 'corporate_wear' | 'alteration_repair';
   discount_amount?: string;
   discount_reason?: string;
-  // From the other side of the merge with Bongo's Sutura_Client:
-  /** Price before rush fee and discount. null until the owner types one; then the suggestion from the service / design is used. */
-  price?: string | null;
-  /** Price of ONE piece, typed by the owner (e.g. a top only). null = the design's or service's own price. The total is this × pieces. */
-  unit_price?: string | null;
-  /** Garment slug (lib/garmentTaxonomy) or a typed-in name for "Other garment". */
-  garment_type?: string;
-  discount_mode?: 'fixed' | 'percent';
-  discount_value?: string;
-  /** Where the design comes from, a link to the customer's file, and what was said in the consultation. */
-  design_source?: import('@/lib/designSource').DesignSource | null;
-  design_link?: string;
-  consultation_notes?: string;
 }

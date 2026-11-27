@@ -3,7 +3,7 @@ import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { CustomerData, MeasurementProfile, JobOrder, Appointment } from '../customerTypes';
-import { type Gender } from '@/components/shared/GenderPicker';
+import { customerEmail, toPhMobileInput } from '../customerHelpers';
 
 export function useCustomerProfile(id: string) {
   const { store } = useAuthStore();
@@ -18,11 +18,10 @@ export function useCustomerProfile(id: string) {
   // Profile edit state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editGender, setEditGender] = useState<Gender | ''>('');
+  const [editNotes, setEditNotes] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!store || !id) return;
@@ -33,9 +32,21 @@ export function useCustomerProfile(id: string) {
       if (data?.customer) {
         setCustomer(data.customer);
         setEditName(data.customer.name || '');
-        setEditPhone(data.customer.phone || '');
-        setEditGender((data.customer.gender as Gender) || '');
-        setMeasurements(data.measurements || []);
+        setEditEmail(customerEmail(data.customer));
+        setEditPhone(toPhMobileInput(data.customer.phone || ''));
+        setEditNotes(data.customer.store_notes || '');
+        let loadedMeasurements = data.measurements || [];
+        if (loadedMeasurements.length === 0) {
+          try {
+            const measRes = await api.get(`/stores/${store.id}/measurements?customer_id=${id}`);
+            if (measRes.data?.data && Array.isArray(measRes.data.data) && measRes.data.data.length > 0) {
+              loadedMeasurements = measRes.data.data;
+            }
+          } catch {
+            // fallback fetch ignored
+          }
+        }
+        setMeasurements(loadedMeasurements);
         setJobs(data.jobs || []);
         setAppointments(data.appointments || []);
       } else {
@@ -70,9 +81,10 @@ export function useCustomerProfile(id: string) {
     setSavingProfile(true);
     try {
       await api.put(`/stores/${store.id}/customers/${customer.id}`, {
-        name: editName.trim(),
+        name: editName,
+        email: editEmail.trim() || null,
         phone: editPhone.trim() || null,
-        gender: editGender || null,
+        notes: editNotes.trim() || null,
       });
       setIsEditingProfile(false);
       toast.success('Profile updated successfully.');
@@ -82,23 +94,6 @@ export function useCustomerProfile(id: string) {
       toast.error('Failed to update profile info. Please ensure email is valid and unique.');
     } finally {
       setSavingProfile(false);
-    }
-  };
-
-  /** Takes the customer off the Client Book. The server refuses (and says why) when they have orders. */
-  const deleteCustomer = async (): Promise<boolean> => {
-    if (!store || !customer) return false;
-    setDeleting(true);
-    try {
-      await api.delete(`/stores/${store.id}/customers/${customer.id}`);
-      toast.success('Customer removed successfully.');
-      return true;
-    } catch (err) {
-      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-      toast.error(message || 'Failed to remove customer.');
-      return false;
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -117,15 +112,13 @@ export function useCustomerProfile(id: string) {
     setIsEditingProfile,
     editName,
     setEditName,
+    editEmail,
+    setEditEmail,
     editPhone,
     setEditPhone,
-    editGender,
-    setEditGender,
+    editNotes,
+    setEditNotes,
     savingProfile,
-    isDeleteOpen,
-    setIsDeleteOpen,
-    deleting,
-    deleteCustomer,
     handleUpdateProfile,
     totalSpend,
     activeJobsCount,

@@ -62,16 +62,19 @@ export default function RegisterForm({ redirect, onRegistered }: { readonly redi
 
   return (
     <>
-      <AccountTypeTabs active="customer" />
-      <h1 className={`${TITLE} mb-2`}>Create Account</h1>
-      <p className="mb-6 text-base text-ink-muted">Book appointments and follow your orders from any shop.</p>
+      <div className="flex flex-col-reverse md:mb-1 md:flex-row md:items-center md:justify-between md:gap-6">
+        <h1 className={`${TITLE} mb-2 md:mb-0`}>Create Account</h1>
+        <AccountTypeTabs active="customer" className="mb-6 sm:mb-4 md:mb-0 md:w-56 md:shrink-0" />
+      </div>
+      <p className="mb-6 text-base text-ink-muted sm:mb-4 short:mb-3">Book appointments and follow your orders from any shop.</p>
 
       <GoogleSignInButton redirectTo={redirect} />
       <OrDivider />
 
       {error && <div role="alert" className={ERROR_BOX}>{error}</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-4 short:space-y-3">
+        <div className="grid gap-5 sm:gap-4 md:grid-cols-2">
         <div>
           <label htmlFor="register-full-name" className={LABEL}>Full name<span className="text-danger">*</span></label>
           <input id="register-full-name" type="text" autoComplete="name" autoCapitalize="words" placeholder="e.g. Maria Santos"
@@ -93,22 +96,27 @@ export default function RegisterForm({ redirect, onRegistered }: { readonly redi
             </p>
           )}
         </div>
+        </div>
 
+        <div className="grid gap-5 sm:gap-4 md:grid-cols-2 md:items-start">
         <PasswordField id="register-password" label="Password" value={password} onChange={setPassword}
           shown={shown} onToggle={() => setShown((s) => !s)} autoComplete="new-password" disabled={emailTaken} withRules />
         <PasswordField id="register-password-confirm" label="Confirm password" value={confirm} onChange={setConfirm}
           shown={shown} autoComplete="new-password" disabled={emailTaken} matchWith={password} />
+        </div>
 
-        <GenderPicker value={gender} onChange={setGender} />
-
-        <TermsConsent agreed={agreed} onChange={setAgreed} audience="customers" />
+        {/* Gender and the terms share a row from 768px. */}
+        <div className="grid gap-5 sm:gap-4 md:grid-cols-2 md:items-end">
+          <GenderPicker value={gender} onChange={setGender} />
+          <TermsConsent agreed={agreed} onChange={setAgreed} audience="customers" />
+        </div>
         <button type="submit" disabled={!ready || loading} aria-describedby={hint ? 'register-hint' : undefined} className={PRIMARY_BTN}>
           {loading ? 'Creating account…' : 'Create Account'}
         </button>
         {hint && !loading && !emailTaken && <DisabledHint id="register-hint">{hint}</DisabledHint>}
       </form>
 
-      <p className="mt-8 text-center text-sm text-ink">
+      <p className="mt-8 text-center text-sm text-ink sm:mt-4 short:mt-3">
         Already have an account?{' '}
         <Link href={withRedirect('/login', redirect)} className="font-semibold underline underline-offset-2">Sign in</Link>
       </p>

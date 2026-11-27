@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import { MeasurementStatusBadge } from '@/components/measurements/MeasurementStatus';
 import MeasurementPurpose from '@/components/measurements/MeasurementPurpose';
 import MeasurementSheet from './MeasurementSheet';
+import VersionPicker from './VersionPicker';
 import type { ProfileGroup } from './measurementAccountTypes';
 
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -28,19 +28,12 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line pt-3">
-        <MeasurementStatusBadge status={active.status} />
-        <span className="mobile-caption text-ink-muted">Recorded {day(active.updated_at)}</span>
-        {group.versions.length > 1 && (
-          <div className="relative ml-auto">
-            <label htmlFor={`ver-${group.storeId}-${group.profileName}`} className="sr-only">Version</label>
-            <select id={`ver-${group.storeId}-${group.profileName}`} value={selectedId} onChange={(e) => setSelectedId(Number(e.target.value))}
-              className="h-11 appearance-none rounded-full bg-sunken pl-4 pr-9 text-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-line-strong">
-              {group.versions.map((v, i) => <option key={v.id} value={v.id}>Version {i + 1} of {group.versions.length}</option>)}
-            </select>
-            <ChevronDown size={14} aria-hidden className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-          </div>
-        )}
+      <div className="mt-3 space-y-2 border-t border-line pt-3">
+        <VersionPicker versions={group.versions} selectedId={active.id} onSelect={setSelectedId} />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <MeasurementStatusBadge status={active.status} />
+          <span className="mobile-caption text-ink-muted">Recorded {day(active.updated_at)}</span>
+        </div>
       </div>
       <MeasurementPurpose record={active} className="mt-2" />
 

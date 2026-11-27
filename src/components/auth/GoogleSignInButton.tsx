@@ -46,7 +46,7 @@ export default function GoogleSignInButton({ redirectTo }: { readonly redirectTo
 /** "or" between the email form and the Google button. */
 export function OrDivider() {
   return (
-    <div className="my-6 flex items-center gap-3" role="separator" aria-label="or">
+    <div className="my-6 flex items-center gap-3 sm:my-4 short:my-3" role="separator" aria-label="or">
       <span className="h-px flex-1 bg-line" />
       <span className="text-sm text-ink-muted">or</span>
       <span className="h-px flex-1 bg-line" />

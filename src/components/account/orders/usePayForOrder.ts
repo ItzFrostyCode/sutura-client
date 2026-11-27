@@ -10,10 +10,13 @@ export interface ShopPaymentMethod {
   qr_path?: string | null; instructions?: string | null;
 }
 
-/** Where this shop takes online payments (GCash only, per the thesis), for the order's branch. Shown on the quotation and on Pay for this order. */
-export function useShopPaymentMethods(storeSlug: string | undefined, branchId: number | null | undefined) {
+// The customer pays OUTSIDE SUTURA (GCash, Maya, bank), then sends proof here for the shop to verify.
+export function usePayForOrder(orderId: number, storeSlug: string | undefined, branchId: number | null | undefined, onSubmitted: () => void) {
+  const toast = useToast();
   const [methods, setMethods] = useState<ShopPaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!storeSlug) {
@@ -21,25 +24,10 @@ export function useShopPaymentMethods(storeSlug: string | undefined, branchId: n
       return;
     }
     api.get(`/public/stores/${storeSlug}/payment-methods`, { params: branchId ? { branch_id: branchId } : {} })
-      .then((r) => {
-        const all: ShopPaymentMethod[] = r.data?.data ?? [];
-        // Locked to GCash only per validated thesis requirement
-        const gcash = all.filter((m) => m.kind.toLowerCase() === 'gcash' || m.name.toLowerCase().includes('gcash'));
-        setMethods(gcash.length > 0 ? gcash : all);
-      })
+      .then((r) => setMethods(r.data?.data ?? []))
       .catch(() => setMethods([]))
       .finally(() => setLoading(false));
   }, [storeSlug, branchId]);
-
-  return { methods, loading };
-}
-
-// The customer pays OUTSIDE SUTURA (GCash, Maya, bank), then sends proof here for the shop to verify.
-export function usePayForOrder(orderId: number, storeSlug: string | undefined, branchId: number | null | undefined, onSubmitted: () => void) {
-  const toast = useToast();
-  const { methods, loading } = useShopPaymentMethods(storeSlug, branchId);
-  const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const uploadProof = async (file: File): Promise<string | null> => {
     if (!storeSlug) return null;

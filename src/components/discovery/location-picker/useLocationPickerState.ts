@@ -1,32 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
-import { getRecentLocations, addRecentLocation, requestCurrentLocation, type SavedLocation, type RecentLocation } from '@/lib/customerLocation';
-import { parseCoordsFromMapsLink, cleanLocationQuery } from '@/lib/parseLocationInput';
+import type { SavedLocation, RecentLocation } from '@/lib/customerLocation';
+import { getRecentLocations, addRecentLocation } from '@/lib/customerLocation';
+import { parseCoordsFromMapsLink, cleanLocationQuery, isGoogleMapsLink } from '@/lib/parseLocationInput';
+import api from '@/lib/axios';
+import { focusOn } from '@/lib/mapFocus';
 import { DAVAO_CENTER } from './locationPickerTypes';
 import { reverseGeocodeCoords, searchPlacesAroundDavao } from '@/lib/geocoding';
-import { focusOn } from '@/lib/mapFocus';
+import { rankAddressHits } from './addressMatch';
 
-/** "A. Pichon St" vs "A. Pichon Street": same place once abbreviations and punctuation are evened out. */
-function normalizePlaceName(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[.,'’]/g, ' ')
-    .replace(/\bst\b/g, 'street')
-    .replace(/\bave?\b/g, 'avenue')
-    .replace(/\bblvd\b/g, 'boulevard')
-    .replace(/\brd\b/g, 'road')
-    .replace(/\bext\b/g, 'extension')
-    .replace(/\bbrgy\b/g, 'barangay')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function samePlaceName(resultName: string, typed: string): boolean {
-  // Spaces dropped too, so initials match however they're written ("J.P." / "JP").
-  const a = normalizePlaceName(resultName).replace(/ /g, '');
-  const b = normalizePlaceName(typed).replace(/ /g, '');
-  return a.length > 0 && b.length > 0 && a === b;
-}
 
 export function useLocationPickerState(
   initial: SavedLocation | null,
@@ -101,69 +83,37 @@ export function useLocationPickerState(
   }
 
   function handleUseCurrentLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setError('Your browser does not support location access.');
+      return;
+    }
     setLocating(true);
     setError('');
     setShowSuggestions(false);
-    requestCurrentLocation(
-      (loc) => {
-        jumpTo(loc.lat, loc.lng);
-        setAddress(loc.address);
-        setDistrict(loc.district);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        jumpTo(latitude, longitude);
+        reverseGeocode(latitude, longitude);
         setLocating(false);
       },
       () => {
         setError('Could not get your location. Check your browser’s location permission and try again.');
         setLocating(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 
-  // Live autocomplete suggestions while typing (debounced 250ms)
-  useEffect(() => {
-    const text = query.trim();
-    if (!text) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
-
-    if (parseCoordsFromMapsLink(text)) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
-
-    if (text.length < 2) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
-
-    setSearching(true);
-    setShowSuggestions(true);
-    const timer = setTimeout(async () => {
-      try {
-        const cleaned = cleanLocationQuery(text);
-        let places = await searchPlacesAroundDavao(cleaned);
-        if (places.length === 0 && cleaned !== text) {
-          places = await searchPlacesAroundDavao(text);
-        }
-        setSearchResults(places.slice(0, 8));
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  async function handleSearchSubmit() {
-    const text = query.trim();
+  // `override`: search for this text right away (a popular-place chip) instead of the box.
+  async function handleSearchSubmit(override?: string) {
+    const text = (override ?? query).trim();
     if (!text) return;
+    if (override) setQuery(override);
     setError('');
+    setSearchResults([]);
 
+    // 1–2. Raw "lat, lng" or a full Google Maps link with coordinates in it.
     const parsed = parseCoordsFromMapsLink(text);
     if (parsed) {
       jumpTo(parsed.lat, parsed.lng);
@@ -172,29 +122,60 @@ export function useLocationPickerState(
       return;
     }
 
-    if (searchResults.length > 0) {
-      handlePickSearchResult(searchResults[0]);
+    // 3. A short link (maps.app.goo.gl) or a Google link without coordinates:
+    // the server follows the redirect (the browser can't, cross-origin).
+    if (isGoogleMapsLink(text)) {
+      setSearching(true);
+      setShowSuggestions(false);
+      try {
+        const url = /^https?:\/\//i.test(text) ? text : `https://${text}`;
+        const res = await api.post('/public/resolve-map-url', { url });
+        if (res.data?.success) {
+          const { lat, lng } = res.data as { lat: number; lng: number };
+          jumpTo(lat, lng);
+          reverseGeocode(lat, lng);
+        } else {
+          setError("Couldn't read a location from that link. Open it in Google Maps, tap Share, and paste the link again, or type the address.");
+        }
+      } catch {
+        setError("Couldn't open that link right now. Please try again, or type the address.");
+      } finally {
+        setSearching(false);
+      }
       return;
     }
+
+    // 4. Plain text: geocode the address.
 
     const cleaned = cleanLocationQuery(text);
 
     setSearching(true);
     try {
-      let data = await searchPlacesAroundDavao(cleaned);
-      if (data.length === 0 && cleaned !== text) {
-        data = await searchPlacesAroundDavao(text);
-      }
+      // Two searches, side by side. The street / place part alone: with the
+      // whole address ("A. Pichon St, Poblacion District, Davao City") the
+      // geocoder can latch onto "Davao City" and return City Hall offices.
+      // And the whole address: a long street ("San Pedro Street") is split
+      // by barangay in the map data, and only the full text finds the right
+      // piece. rankAddressHits then prefers hits in the barangay/district
+      // that was typed, so the pin lands where the address says.
+      const firstSegment = cleaned.split(',')[0].trim();
+      const [streetHits, fullHits] = await Promise.all([
+        firstSegment && firstSegment !== cleaned ? searchPlacesAroundDavao(firstSegment) : Promise.resolve([]),
+        searchPlacesAroundDavao(cleaned),
+      ]);
+      const { ranked: data, confident } = rankAddressHits([...streetHits, ...fullHits], cleaned);
 
       if (data.length === 0) {
-        setError("Couldn't find that place. Try typing a street name or landmark (e.g. Pichon St, Almendras Gym).");
+        setError("Couldn't find that place. Try pasting the full Google Maps link, or a more specific address.");
         setShowSuggestions(false);
-      } else {
+      } else if (data.length === 1 || confident) {
         const { lat, lng, display_name } = data[0];
         jumpTo(lat, lng, true);
         setAddress(display_name ?? cleaned);
-        setSearchResults(data);
         setShowSuggestions(false);
+      } else {
+        setSearchResults(data.slice(0, 8));
+        setShowSuggestions(true);
       }
     } catch {
       setError('Something went wrong searching that. Please try again.');
@@ -225,7 +206,7 @@ export function useLocationPickerState(
   }
 
   function handleInputBlur() {
-    blurTimeout.current = setTimeout(() => setShowSuggestions(false), 200);
+    blurTimeout.current = setTimeout(() => setShowSuggestions(false), 150);
   }
 
   function handleInputFocus() {
@@ -233,9 +214,13 @@ export function useLocationPickerState(
     setShowSuggestions(true);
   }
 
-  const suggestionsVisible =
-    showSuggestions &&
-    (searching || searchResults.length > 0 || (query.trim().length >= 2) || (!query.trim() && recents.length > 0));
+  // An empty box shows recents and popular places; results show once a search has run.
+  const suggestionsVisible = showSuggestions && (searchResults.length > 0 || !query.trim());
+
+  function zoomBy(delta: number) {
+    const map = mapRef.current;
+    if (map) map.setZoom(map.getZoom() + delta);
+  }
 
   return {
     query,
@@ -250,6 +235,7 @@ export function useLocationPickerState(
     error,
     mapRef,
     suggestionsVisible,
+    zoomBy,
     handleMapMoveEnd,
     handleUseCurrentLocation,
     handleSearchSubmit,

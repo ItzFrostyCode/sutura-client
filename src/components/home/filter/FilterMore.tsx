@@ -1,5 +1,5 @@
 import type { MoreFilters } from '../homeFilters';
-import DistrictChips from './DistrictChips';
+import LocationChips from './LocationChips';
 
 interface FilterMoreProps {
   readonly value: MoreFilters;
@@ -10,16 +10,19 @@ const field = 'h-12 w-full min-w-0 rounded-2xl bg-sunken px-4 text-base text-ink
 const label = 'mb-1.5 block text-xs text-ink-muted';
 const title = 'mobile-h4 mb-3 text-ink';
 
-/** District, price (range and sort order) and rating. */
+/** Province and district, price (range and sort order) and rating. */
 export default function FilterMore({ value, onChange }: FilterMoreProps) {
   const set = (patch: Partial<MoreFilters>) => onChange({ ...value, ...patch });
 
   return (
     <>
       <section className="mt-6">
-        <h3 className={title}>District</h3>
-        {/* A new district drops the barangay / street picked inside the old one. */}
-        <DistrictChips value={value.district} onChange={(district) => set({ district, barangay: '', area: '' })} />
+        {/* Province first, then that province's districts. A new place drops the barangay / street picked inside the old one. */}
+        <LocationChips
+          titleClass={title}
+          value={{ province: value.province, city: value.city, district: value.district }}
+          onChange={(place) => set({ ...place, barangay: '', area: '' })}
+        />
       </section>
 
       <section className="mt-6">

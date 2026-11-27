@@ -10,7 +10,6 @@ import DescriptionCard from './DescriptionCard';
 import ContactInfoCard from './ContactInfoCard';
 import { ShopGcashOwnerCard } from './ShopGcashCard';
 import ShopLinkCard from './ShopLinkCard';
-import BookingFlowCard from './BookingFlowCard';
 import MapLocationInfoCard from './MapLocationInfoCard';
 import BusinessTypeCard from './BusinessTypeCard';
 import SpecializationsCard from './SpecializationsCard';
@@ -18,7 +17,7 @@ import StoreVisibilityCard from './StoreVisibilityCard';
 
 type SectionKey =
   | 'social_links' | 'description' | 'contact_info' | 'payment_details'
-  | 'booking_flow' | 'business_type' | 'specializations' | 'visibility';
+  | 'business_type' | 'specializations' | 'visibility';
 
 interface StoreAboutOwnerViewProps {
   readonly store: StoreProfile;
@@ -119,7 +118,6 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
         onDone={() => { setEditingSection(null); onProfileSaved(); }}
       />
 
-      <BookingFlowCard formData={formData} onChange={handleChange} setFormData={setFormDataWithDirty} {...sectionProps('booking_flow')} />
 
       <StoreVisibilityCard
         isFeatured={formData.is_featured}

@@ -7,7 +7,6 @@ import DirectorySearchBar from '@/components/shared/DirectorySearchBar';
 import HomeFooter from '@/components/home/HomeFooter';
 import CategoriesVisualGrid from '@/components/categories/CategoriesVisualGrid';
 import CategoriesAlphabetDirectory from '@/components/categories/CategoriesAlphabetDirectory';
-import CategoriesServiceIntents from '@/components/categories/CategoriesServiceIntents';
 
 export default function CategoriesPage() {
   const router = useRouter();
@@ -34,12 +33,9 @@ export default function CategoriesPage() {
         <div className="mb-6">
           <h1 className="mobile-h1 sm:tablet-h1 text-ink mb-2">All Categories</h1>
           <p className="mobile-body-md text-ink-muted max-w-2xl">
-            Find a tailoring shop in Davao City by the work you need, or by the garment.
+            Find a tailoring shop in Davao by the garment you need.
           </p>
         </div>
-
-        {/* Two questions a customer asks, kept apart: the work they need, and the garment. */}
-        <CategoriesServiceIntents />
 
         <section aria-labelledby="garments-title">
           <h2 id="garments-title" className="mobile-h2 sm:tablet-h2 text-ink">Browse by garment</h2>

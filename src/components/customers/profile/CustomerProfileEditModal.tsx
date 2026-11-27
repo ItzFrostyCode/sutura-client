@@ -1,16 +1,18 @@
 import React from 'react';
 import { X, Loader2 } from 'lucide-react';
-import GenderPicker, { type Gender } from '@/components/shared/GenderPicker';
+import { toPhMobileInput, PH_MOBILE_INPUT_PROPS } from '../customerHelpers';
 
 interface CustomerProfileEditModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly editName: string;
   readonly setEditName: (v: string) => void;
+  readonly editEmail: string;
+  readonly setEditEmail: (v: string) => void;
   readonly editPhone: string;
   readonly setEditPhone: (v: string) => void;
-  readonly editGender: Gender | '';
-  readonly setEditGender: (g: Gender | '') => void;
+  readonly editNotes: string;
+  readonly setEditNotes: (v: string) => void;
   readonly savingProfile: boolean;
   readonly onSubmit: (e: React.SyntheticEvent) => Promise<void>;
 }
@@ -20,17 +22,19 @@ export default function CustomerProfileEditModal({
   onClose,
   editName,
   setEditName,
+  editEmail,
+  setEditEmail,
   editPhone,
   setEditPhone,
-  editGender,
-  setEditGender,
+  editNotes,
+  setEditNotes,
   savingProfile,
   onSubmit,
 }: CustomerProfileEditModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-ink/60 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-[#2D2A26]/60 z-50 flex items-center justify-center p-4">
       <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
         <div className="flex justify-between items-center border-b border-line pb-3 mb-4">
           <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Edit Customer Profile</h3>
@@ -57,21 +61,45 @@ export default function CustomerProfileEditModal({
             />
           </div>
           <div>
+            <label htmlFor="customer-edit-email" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+              Email Address <span className="text-[10px] text-ink-faint font-normal lowercase">(Optional for walk-ins)</span>
+            </label>
+            <input
+              id="customer-edit-email"
+              type="email"
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
+            />
+          </div>
+          <div>
             <label htmlFor="customer-edit-phone" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
               Phone Number <span className="text-rose-500">*</span>
             </label>
             <input
               id="customer-edit-phone"
-              type="tel"
-              inputMode="tel"
+              {...PH_MOBILE_INPUT_PROPS}
               required
               value={editPhone}
-              onChange={(e) => setEditPhone(e.target.value)}
-              placeholder="0917 123 4567"
+              onChange={(e) => setEditPhone(toPhMobileInput(e.target.value))}
               className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink font-mono focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs"
             />
+            <p className="mt-1 text-[11px] text-ink-muted">11 digits, starting with 09.</p>
           </div>
-          <GenderPicker value={editGender} onChange={setEditGender} optional={false} />
+          <div>
+            <label htmlFor="customer-edit-notes" className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+              Private Shop Notes <span className="text-[10px] text-ink-faint font-normal lowercase">(Internal atelier reference)</span>
+            </label>
+            <textarea
+              id="customer-edit-notes"
+              rows={3}
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              maxLength={2000}
+              placeholder="e.g. Prefers snug waist fit, allergic to synthetic wool, uses cocoon silk for barongs..."
+              className="w-full px-3.5 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe resize-none shadow-2xs"
+            />
+          </div>
           <div className="flex justify-end gap-2 pt-3 border-t border-line">
             <button
               type="button"
@@ -83,7 +111,7 @@ export default function CustomerProfileEditModal({
             <button
               type="submit"
               disabled={savingProfile}
-              className="px-5 py-2.5 bg-espresso hover:bg-espresso/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
+              className="px-5 py-2.5 bg-taupe hover:bg-taupe-hover text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
             >
               {savingProfile && <Loader2 size={14} className="animate-spin" />}
               Save Changes

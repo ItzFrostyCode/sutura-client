@@ -62,7 +62,7 @@ export default function TableReceiptList({
                   <button
                     type="button"
                     onClick={() => onInspect(idx)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-taupe hover:underline bg-taupe/10 px-2.5 py-1 rounded-md"
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-line-strong bg-surface px-3 text-xs font-semibold text-ink hover:bg-sunken"
                   >
                     <Eye size={12} /> Inspect
                   </button>
@@ -72,7 +72,7 @@ export default function TableReceiptList({
                         type="button"
                         onClick={() => onVerify(item, 'paid')}
                         disabled={processingId !== null}
-                        className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1 rounded-full bg-ink px-3.5 text-xs font-semibold text-white transition-colors hover:bg-black disabled:opacity-50"
                       >
                         {processingId === item.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                         <span>Approve</span>
@@ -81,7 +81,7 @@ export default function TableReceiptList({
                         type="button"
                         onClick={() => onOpenRejectModal(item)}
                         disabled={processingId !== null}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-line text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1 rounded-full border border-line-strong bg-surface px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
                       >
                         <X size={12} /> Reject
                       </button>
@@ -91,13 +91,13 @@ export default function TableReceiptList({
                       type="button"
                       onClick={() => onVerify(item, 'paid')}
                       disabled={processingId !== null}
-                      className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1 rounded-full bg-ink px-3.5 text-xs font-semibold text-white transition-colors hover:bg-black disabled:opacity-50"
                     >
                       {processingId === item.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                       <span>Re-Approve</span>
                     </button>
                   ) : (
-                    <span className="text-xs font-bold text-emerald-700 px-2.5 py-1 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="inline-flex h-8 items-center rounded-full bg-emerald-50 px-3 text-xs font-semibold text-emerald-700">
                       ✓ Verified
                     </span>
                   )}

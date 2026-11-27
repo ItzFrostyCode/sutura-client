@@ -2,21 +2,19 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { GARMENT_CATEGORIES, GARMENTS, type GarmentCategory } from '@/lib/garmentTaxonomy';
+import { DEPARTMENTS, DEPARTMENT_LABELS, GARMENT_TYPE_LABELS, type Department } from '@/lib/canonicalTaxonomy';
 import { PRICE_SORTS, DEFAULT_CATALOG_SORT, isPriceSort, type CatalogSortOption } from './catalogSort';
 
+function humanizeGarmentType(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export interface CatalogFilterState {
-  /** Garment categories that have at least one of the shop's designs. */
-  readonly categoryOptions: GarmentCategory[];
-  readonly categoryFilter: '' | GarmentCategory;
-  readonly setCategoryFilter: (v: '' | GarmentCategory) => void;
-  /** Garments (current slugs) of the chosen category that the shop has designs for. */
+  readonly departmentFilter: '' | Department;
+  readonly setDepartmentFilter: (v: '' | Department) => void;
   readonly garmentTypeFilter: string;
   readonly setGarmentTypeFilter: (v: string) => void;
   readonly garmentTypeOptions: string[];
-  readonly serviceOptions?: { id: number; name: string }[];
-  readonly serviceFilter?: string;
-  readonly setServiceFilter?: (v: string) => void;
   readonly sortOrder: CatalogSortOption;
   readonly setSortOrder: (v: CatalogSortOption) => void;
 }
@@ -59,15 +57,11 @@ export function FilterSection({ title, children }: Readonly<{ title: string; chi
 // Price sorting lives here (it's a one-off choice); the everyday rankings
 // are the chips next to the search box.
 export default function CatalogFilterBody({
-  categoryOptions,
-  categoryFilter,
-  setCategoryFilter,
+  departmentFilter,
+  setDepartmentFilter,
   garmentTypeFilter,
   setGarmentTypeFilter,
   garmentTypeOptions,
-  serviceOptions,
-  serviceFilter,
-  setServiceFilter,
   sortOrder,
   setSortOrder,
 }: Readonly<CatalogFilterState>) {
@@ -85,41 +79,24 @@ export default function CatalogFilterBody({
         ))}
       </FilterSection>
 
-      {serviceOptions && serviceOptions.length > 0 && setServiceFilter && (
-        <FilterSection title="Parent Service">
-          <FilterOption selected={!serviceFilter} onClick={() => setServiceFilter('')}>
-            All services
-          </FilterOption>
-          {serviceOptions.map(svc => (
-            <FilterOption
-              key={svc.id}
-              selected={serviceFilter === String(svc.id)}
-              onClick={() => setServiceFilter(serviceFilter === String(svc.id) ? '' : String(svc.id))}
-            >
-              {svc.name}
-            </FilterOption>
-          ))}
-        </FilterSection>
-      )}
-
-      <FilterSection title="Garment category">
-        <FilterOption selected={!categoryFilter} onClick={() => { setCategoryFilter(''); setGarmentTypeFilter(''); }}>
-          All categories
+      <FilterSection title="Department">
+        <FilterOption selected={!departmentFilter} onClick={() => { setDepartmentFilter(''); setGarmentTypeFilter(''); }}>
+          All Departments
         </FilterOption>
-        {categoryOptions.map(cat => (
-          <FilterOption key={cat} selected={categoryFilter === cat} onClick={() => { setCategoryFilter(cat); setGarmentTypeFilter(''); }}>
-            {GARMENT_CATEGORIES[cat].label}
+        {DEPARTMENTS.map(dept => (
+          <FilterOption key={dept} selected={departmentFilter === dept} onClick={() => { setDepartmentFilter(dept); setGarmentTypeFilter(''); }}>
+            {DEPARTMENT_LABELS[dept]}
           </FilterOption>
         ))}
       </FilterSection>
 
-      {categoryFilter && garmentTypeOptions.length > 0 && (
-        <FilterSection title="Garment">
+      {garmentTypeOptions.length > 0 && (
+        <FilterSection title="Narrow by Category">
           <div className="divide-y divide-line/60">
-            <FilterOption selected={!garmentTypeFilter} onClick={() => setGarmentTypeFilter('')}>All garments</FilterOption>
+            <FilterOption selected={!garmentTypeFilter} onClick={() => setGarmentTypeFilter('')}>All Categories</FilterOption>
             {garmentTypeOptions.map(gt => (
               <FilterOption key={gt} selected={garmentTypeFilter === gt} onClick={() => setGarmentTypeFilter(gt)}>
-                {GARMENTS[gt]?.label ?? gt}
+                {GARMENT_TYPE_LABELS[gt] ?? humanizeGarmentType(gt)}
               </FilterOption>
             ))}
           </div>

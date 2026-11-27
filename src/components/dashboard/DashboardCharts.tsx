@@ -4,55 +4,62 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import Link from 'next/link';
-import { Package, TrendingUp } from 'lucide-react';
+import { CalendarRange, Package, TrendingUp } from 'lucide-react';
 import { AnalyticsData } from './dashboardHelpers';
-import ScrollNav from '@/components/shared/ScrollNav';
 
 interface DashboardChartsProps {
   readonly data: AnalyticsData | null;
   readonly onPeriodChange?: (period: string) => void;
+  /** Custom range picked by the owner (YYYY-MM-DD, inclusive). */
+  readonly onCustomRange?: (start: string, end: string) => void;
   readonly activePeriod?: string;
 }
+
+/** YYYY-MM-DD in the viewer's own (Manila) day, not UTC. */
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const prettyDay = (s: string) => new Date(`${s}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
 const PERIODS = [
   { id: 'this_month', label: 'This Month' },
   { id: 'last_3_months', label: '3 Months' },
   { id: 'this_year', label: 'This Year' },
   { id: 'all_time', label: 'All Time' },
+  { id: 'custom', label: 'Custom' },
 ];
 
 // Status colours matching the production pipeline
 const STATUS_COLORS: Record<string, string> = {
-  pending:               '#F59E0B',
-  confirmed:             '#3B82F6',
-  design:                '#8B5CF6',
-  pattern_making:        '#EC4899',
-  mass_cutting:          '#F97316',
-  cutting:               '#06B6D4',
-  sewing:                '#10B981',
-  ready_for_fitting:     '#84CC16',
-  balance_handover:      '#14B8A6',
-  final_adjustments:     '#F43F5E',
-  qc_ironing:            '#A78BFA',
-  completed:             '#22C55E',
-  cancelled:             '#EF4444',
+  pending:                  '#F59E0B',
+  confirmed:                '#3B82F6',
+  design:                   '#8B5CF6',
+  pattern_making:           '#EC4899',
+  mass_cutting_printing:    '#F97316',
+  cutting:                  '#06B6D4',
+  sewing:                   '#10B981',
+  ready_for_fitting:        '#84CC16',
+  final_adjustments:        '#F43F5E',
+  qc_ironing:               '#A78BFA',
+  completed:                '#22C55E',
+  cancelled:                '#EF4444',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending:               'Pending',
-  confirmed:             'Confirmed',
-  design:                'Design',
-  pattern_making:        'Pattern Making',
-  mass_cutting:          'Cutting',
-  cutting:               'Cutting',
-  sewing:                'Sewing',
-  ready_for_fitting:     'Ready for Fitting',
-  balance_handover:      'Handover',
-  final_adjustments:     'Adjustments',
-  qc_ironing:            'Quality Check',
-  qc_check:              'Quality Check',
-  completed:             'Completed',
-  cancelled:             'Cancelled',
+  pending:                  'Pending',
+  confirmed:                'Confirmed',
+  design:                   'Design',
+  pattern_making:           'Pattern Making',
+  mass_cutting_printing:    'Mass Cutting',
+  cutting:                  'Cutting',
+  sewing:                   'Sewing',
+  ready_for_fitting:        'Fitting',
+  final_adjustments:        'Adjustments',
+  qc_ironing:               'QC/Ironing',
+  ready_for_pickup:         'Ready for Pickup',
+  quality_check:            'QC/Ironing', // older orders' name for the QC stage
+  on_hold:                  'On Hold',
+  rejected:                 'Rejected',
+  completed:                'Completed',
+  cancelled:                'Cancelled',
 };
 
 // Custom tooltip for the area chart
@@ -91,13 +98,29 @@ function PieLabel({ cx = 0, cy = 0, midAngle = 0, outerRadius = 0, percent = 0 }
 export default function DashboardCharts({
   data,
   onPeriodChange,
+  onCustomRange,
   activePeriod = 'this_month',
 }: DashboardChartsProps) {
   const [localPeriod, setLocalPeriod] = useState(activePeriod);
+  // Custom range: edited in the From/To fields, sent only on Apply.
+  const [customFrom, setCustomFrom] = useState(() => { const n = new Date(); return ymd(new Date(n.getFullYear(), n.getMonth(), 1)); });
+  const [customTo, setCustomTo] = useState(() => ymd(new Date()));
+  const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
+  const customError = !customFrom || !customTo
+    ? 'Pick both dates.'
+    : customFrom > customTo ? 'The start date must be on or before the end date.' : null;
 
   const handlePeriod = (id: string) => {
     setLocalPeriod(id);
+    if (id === 'custom') return; // wait for Apply
+    setAppliedRange(null);
     onPeriodChange?.(id);
+  };
+
+  const applyCustom = () => {
+    if (customError) return;
+    setAppliedRange({ from: customFrom, to: customTo });
+    onCustomRange?.(customFrom, customTo);
   };
 
   const asArray = <T,>(val: unknown): T[] => {
@@ -124,27 +147,17 @@ export default function DashboardCharts({
   // week hasn't happened yet." Unlike the trend calculation, the chart
   // should still show today's own in-progress bucket (a real, if partial,
   // data point) — only buckets that haven't started at all get dropped.
-  const today0 = new Date().toISOString().slice(0, 10);
+  const today0 = ymd(new Date());
   const visibleChartData = chartData.filter(d => !('date' in d) || !d.date || d.date <= today0);
 
-  // Jobs-by-status donut data (exclude zero-count statuses and merge aliases
-  // like cutting + mass_cutting so each label has one slice and unique key).
-  const pieMap = new Map<string, { name: string; value: number; color: string }>();
-  for (const s of asArray<{ status: string; count: number }>(data?.jobs_by_status)) {
-    if (!s || s.count <= 0) continue;
-    const name = STATUS_LABELS[s.status] ?? s.status;
-    const existing = pieMap.get(name);
-    if (existing) {
-      existing.value += s.count;
-    } else {
-      pieMap.set(name, {
-        name,
-        value: s.count,
-        color: STATUS_COLORS[s.status] ?? '#D1C7BD',
-      });
-    }
-  }
-  const pieData = Array.from(pieMap.values());
+  // Jobs-by-status donut data (exclude zero-count statuses)
+  const pieData = asArray<{ status: string; count: number }>(data?.jobs_by_status)
+    .filter(s => s && s.count > 0)
+    .map(s => ({
+      name: STATUS_LABELS[s.status] ?? s.status.charAt(0).toUpperCase() + s.status.slice(1).replaceAll('_', ' '),
+      value: s.count,
+      color: STATUS_COLORS[s.status] ?? '#D1C7BD',
+    }));
 
   const totalJobsInPie = pieData.reduce((acc, s) => acc + s.value, 0);
 
@@ -185,7 +198,7 @@ export default function DashboardCharts({
   return (
     <section className="bg-surface border border-line rounded-xl overflow-hidden text-ink">
       {/* ── Section header (self-contained — no outer wrapper needed) ── */}
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-line">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
         <div className="min-w-0">
           <h2 className="text-eyebrow-accent">Performance</h2>
           <p className="text-display text-lg font-semibold text-ink mt-1">Business performance</p>
@@ -196,14 +209,14 @@ export default function DashboardCharts({
       </div>
 
       {/* ── Revenue chart ──────────────────────────────────────────── */}
-      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-6 border-b border-line">
+      <div className="px-6 pt-6 pb-6 border-b border-line">
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-          <div className="min-w-0">
+          <div>
             <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-0.5">
               Revenue
             </p>
-            <p className="text-2xl sm:text-3xl font-bold text-ink tracking-tight break-words">
+            <p className="text-3xl font-bold text-ink tracking-tight">
               ₱{data?.total_revenue
                 ? data.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })
                 : '0.00'}
@@ -214,6 +227,11 @@ export default function DashboardCharts({
                 {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% vs previous period
               </p>
             )}
+            {localPeriod === 'custom' && appliedRange && (
+              <p className="text-xs mt-1 text-ink-muted">
+                {prettyDay(appliedRange.from)} – {prettyDay(appliedRange.to)}
+              </p>
+            )}
           </div>
 
           {/* Period pills — overflow-x-auto, not just flex, since the
@@ -221,7 +239,7 @@ export default function DashboardCharts({
               wider than a real phone screen, so without a scroll wrapper
               "All Time" was getting clipped off the edge instead of just
               wrapping or scrolling into view. */}
-          <ScrollNav wrapperClassName="self-start max-w-full" className="flex gap-1 bg-sunken p-1 rounded-xl">
+          <div className="flex gap-1 bg-sunken p-1 rounded-xl self-start max-w-full overflow-x-auto hide-scrollbar">
             {PERIODS.map(p => (
               <button
                 key={p.id}
@@ -233,15 +251,54 @@ export default function DashboardCharts({
                     : 'text-ink-muted hover:text-ink-body border-transparent'
                 }`}
               >
+                {p.id === 'custom' && <CalendarRange size={12} className="inline -mt-0.5 mr-1" aria-hidden="true" />}
                 {p.label}
               </button>
             ))}
-          </ScrollNav>
+          </div>
         </div>
 
+        {localPeriod === 'custom' && (
+          <form
+            onSubmit={(e) => { e.preventDefault(); applyCustom(); }}
+            className="-mt-2 mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-canvas/60 p-3"
+          >
+            <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              From
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="h-9 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold normal-case tracking-normal text-ink focus:border-taupe focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+              To
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="h-9 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold normal-case tracking-normal text-ink focus:border-taupe focus:outline-none"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!!customError}
+              className="h-9 rounded-lg bg-ink px-4 text-xs font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+            >
+              Apply
+            </button>
+            {customError && customFrom && customTo && (
+              <p className="basis-full text-[11px] text-danger" role="alert">{customError}</p>
+            )}
+          </form>
+        )}
+
         {/* Chart */}
-        <div className="h-52 w-full min-w-0 overflow-hidden">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <div className="h-52 w-full">
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={visibleChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -283,7 +340,7 @@ export default function DashboardCharts({
       {/* ── Bottom row: Donut + Recent Orders ──────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2">
         {/* Jobs by status donut */}
-        <div className="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-line min-w-0">
+        <div className="p-6 border-b lg:border-b-0 lg:border-r border-line">
           <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-4">
             Jobs by Status
           </p>
@@ -294,8 +351,8 @@ export default function DashboardCharts({
                   minimum. This was h-44 (176px), 12px too short, so the
                   topmost slice's label rendered outside the container and
                   got clipped by the SVG boundary right under the card title. */}
-              <div className="relative h-56 w-full min-w-0 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <div className="relative h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -334,12 +391,12 @@ export default function DashboardCharts({
               </div>
 
               {/* Legend */}
-              <div className="mt-3 grid grid-cols-1 min-[360px]:grid-cols-2 gap-x-6 gap-y-1.5 w-full max-w-xs">
+              <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 w-full max-w-xs">
                 {pieData.slice(0, 8).map(s => (
-                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-ink-body min-w-0">
+                  <div key={s.name} className="flex items-center gap-1.5 text-xs text-ink-body">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
                     <span className="truncate">{s.name}</span>
-                    <span className="ml-auto font-semibold text-ink shrink-0">{s.value}</span>
+                    <span className="ml-auto font-semibold text-ink">{s.value}</span>
                   </div>
                 ))}
               </div>
@@ -355,7 +412,7 @@ export default function DashboardCharts({
         </div>
 
         {/* Recent Orders */}
-        <div className="p-4 sm:p-6 flex flex-col min-w-0">
+        <div className="p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-semibold text-ink-faint uppercase tracking-wider">
               Recent Orders
@@ -374,17 +431,20 @@ export default function DashboardCharts({
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-ink truncate">
-                      {order.customer?.name || 'Walk-in Customer'}
+                      {order.customer?.name || 'Walk-in customer'}
+                      {order.service?.name && <span className="font-normal text-ink-muted"> · {order.service.name}</span>}
                     </p>
-                    <p className="text-xs text-ink-faint">
-                      {order.order_number || `#${order.id}`}
-                      {order.created_at && (
-                        <> · {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</>
+                    <p className="text-xs text-ink-faint tabular-nums">
+                      {order.order_number || (order.id ? `#${order.id}` : 'New order')}
+                      {order.created_at && !Number.isNaN(new Date(order.created_at).getTime()) && (
+                        <> · {new Date(order.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}</>
                       )}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-ink shrink-0 ml-3">
-                    ₱{(Number(order.total_amount) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  <span className="text-sm font-bold text-ink shrink-0 ml-3 tabular-nums">
+                    {Number(order.total_amount) > 0
+                      ? `₱${Number(order.total_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+                      : <span className="text-xs font-medium text-ink-muted">To be quoted</span>}
                   </span>
                 </div>
               ))
@@ -393,7 +453,14 @@ export default function DashboardCharts({
                 <div className="w-10 h-10 bg-canvas rounded-full flex items-center justify-center mb-2">
                   <Package size={18} className="text-ink-faint" />
                 </div>
-                <p className="text-sm text-ink-faint">No recent orders yet.</p>
+                <p className="text-sm font-medium text-ink">No orders yet</p>
+                <p className="text-xs text-ink-muted mt-1 max-w-60">New walk-in and online orders show here as they come in.</p>
+                <Link
+                  href="/dashboard/jobs/new"
+                  className="mt-4 inline-flex items-center h-9 px-4 rounded-lg bg-taupe hover:bg-taupe-hover text-white text-xs font-semibold transition-colors"
+                >
+                  Create a job order
+                </Link>
               </div>
             )}
           </div>

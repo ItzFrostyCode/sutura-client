@@ -16,8 +16,9 @@ interface Summary {
   totals: { records: number; with_receipt: number; amount: number; verified_amount: number };
 }
 export type Kind = 'job' | 'appointment' | 'catalog';
+// Order payments only: appointment deposits and catalog orders were taken off the Payments page.
 export const KIND_OPTIONS: { id: Kind; label: string }[] = [
-  { id: 'job', label: 'Order payments' }, { id: 'appointment', label: 'Appointment deposits' }, { id: 'catalog', label: 'Catalog orders' },
+  { id: 'job', label: 'Order payments' },
 ];
 
 // A blob error body is JSON text — read the server's message out of it.
@@ -35,7 +36,7 @@ export function useStatements() {
   const toast = useToast();
   const [period, setPeriod] = useState<PeriodId>('this_month');
   const [custom, setCustom] = useState<[string, string]>(() => rangeFor('this_month', null));
-  const [kinds, setKinds] = useState<Kind[]>(['job', 'appointment', 'catalog']);
+  const [kinds, setKinds] = useState<Kind[]>(['job']);
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
@@ -74,6 +75,42 @@ export function useStatements() {
     } catch (err) { toast.error(await errorText(err, 'Could not prepare the download.')); } finally { setBusy(null); }
   };
 
+  // Branded .xlsx of the whole period: built from the same (Premium) CSV export so it holds
+  // exactly the same records, then laid out with the shop's logo and SUTURA colours.
+  const downloadExcel = async () => {
+    if (!store?.id) return;
+    setBusy('range-xlsx');
+    try {
+      const res = await api.get(`/stores/${store.id}/receipts/export`, { params: { ...params, format: 'csv' }, responseType: 'blob' });
+      const { parseCsv, downloadBrandedXlsx, shopOrSuturaLogo } = await import('@/lib/brandedExport');
+      const lines = parseCsv(await (res.data as Blob).text());
+      const headerAt = lines.findIndex((l) => l[0] === 'Date');
+      if (headerAt < 0) throw new Error('Unexpected statement format');
+      const preamble = Object.fromEntries(lines.slice(0, headerAt).filter((l) => l[0]).map((l) => [l[0], l.slice(1)]));
+      // Drop the "Receipt file" column: it only means something inside the ZIP download.
+      const keep = lines[headerAt].map((h, i) => [h, i] as const).filter(([h]) => h !== 'Receipt file').map(([, i]) => i);
+      const columns = keep.map((i) => lines[headerAt][i]);
+      const rows = lines.slice(headerAt + 1).filter((l) => l.some((v) => v !== '')).map((l) => keep.map((i) => l[i] ?? ''));
+      const amountCol = columns.indexOf('Amount (PHP)');
+      const records = preamble['Records']?.[0] ?? String(rows.length);
+      const total = preamble['Records']?.[2] ?? '';
+      await downloadBrandedXlsx({
+        fileName: `statement_${from}_to_${to}.xlsx`,
+        sheetName: 'Statement',
+        org: store.name ?? 'SUTURA',
+        title: 'Payment statement',
+        subtitle: `${preamble['Period']?.[0] ?? `${from} to ${to}`} · generated ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`,
+        meta: [['Records', Number(records)], ['Total (excluding rejected)', total]],
+        tables: [{
+          columns,
+          rows,
+          money: amountCol >= 0 ? [amountCol] : [],
+          total: amountCol >= 0 ? columns.map((_, i) => (i === 0 ? 'TOTAL (excluding rejected)' : i === amountCol ? total : null)) : undefined,
+        }],
+      }, await shopOrSuturaLogo(store.id));
+    } catch (err) { toast.error(await errorText(err, "The Excel file couldn't be created. Try again, or use the CSV.")); } finally { setBusy(null); }
+  };
+
   const downloadOne = async (key: string) => {
     if (!store?.id) return;
     setBusy(key);
@@ -90,5 +127,5 @@ export function useStatements() {
 
   const printHref = `/print/payments?${new URLSearchParams({ from, to, kinds: kinds.join(','), ...(selectedBranchId ? { branch_id: String(selectedBranchId) } : {}) }).toString()}`;
 
-  return { period, setPeriod, custom, setCustom, from, to, kinds, toggleKind, data, loading, selected, toggleRow, toggleAll, selectableKeys, busy, download, downloadOne, printHref };
+  return { period, setPeriod, custom, setCustom, from, to, kinds, toggleKind, data, loading, selected, toggleRow, toggleAll, selectableKeys, busy, download, downloadExcel, downloadOne, printHref };
 }

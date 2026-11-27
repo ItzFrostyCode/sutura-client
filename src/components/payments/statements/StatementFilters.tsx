@@ -45,11 +45,14 @@ export default function StatementFilters({ period, onPeriod, from, to, onCustom,
         {prettyDate(from)} to {prettyDate(to)}{firstRecord ? ` · your records start ${prettyDate(firstRecord)}` : ''}
       </p>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Record types">
-        {KIND_OPTIONS.map((k) => (
-          <button key={k.id} type="button" onClick={() => onKind(k.id)} aria-pressed={kinds.includes(k.id)} className={chip(kinds.includes(k.id))}>{k.label}</button>
-        ))}
-      </div>
+      {/* Only shown when there's more than one record type to pick from. */}
+      {KIND_OPTIONS.length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Record types">
+          {KIND_OPTIONS.map((k) => (
+            <button key={k.id} type="button" onClick={() => onKind(k.id)} aria-pressed={kinds.includes(k.id)} className={chip(kinds.includes(k.id))}>{k.label}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

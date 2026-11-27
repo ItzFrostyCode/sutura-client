@@ -5,7 +5,7 @@ import {
   Check, X, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2,
   Copy, CheckCheck, Eye, Receipt, RotateCcw, Loader2
 } from 'lucide-react';
-import { ReceiptItem } from '../usePayments';
+import { receiptKindLabel, ReceiptItem } from '../usePayments';
 import { getMethodBadge } from '../paymentHelpers';
 
 interface DeckReceiptViewerProps {
@@ -80,7 +80,7 @@ export default function DeckReceiptViewer({
       {(receipt.payment_status === 'paid' || receipt.payment_status === 'approved') && (
         <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800 font-semibold">
           <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-          <span>Payment verified and approved. Recorded in store accounting ledger.</span>
+          <span>Payment verified and approved. Recorded in shop accounting ledger.</span>
         </div>
       )}
 
@@ -90,7 +90,7 @@ export default function DeckReceiptViewer({
         <div className="bg-canvas/30 border border-line rounded-xl p-4 space-y-3">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-surface border border-line text-taupe inline-block mb-1">
-              {receipt.type === 'catalog_order' ? 'Catalog Order' : 'Appointment Deposit'}
+              {receiptKindLabel(receipt)}
             </span>
             <h2 className="text-sm sm:text-base font-bold text-ink">{receipt.itemName}</h2>
           </div>

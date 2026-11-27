@@ -7,7 +7,7 @@ import PinTools from '@/components/shared/PinTools';
 import { offeredSpecializations, STORE_SPECIALIZATIONS } from '@/lib/storeSpecializations';
 import type { SavedLocation } from '@/lib/customerLocation';
 import { areaCenter, displayAddress, EMPTY_PSGC_ADDRESS as EMPTY_AREA, pinOutsideCityWarning, type PsgcAddress } from '@/lib/psgc';
-import AddressFields, { addressErrors, DAVAO_AREA } from './AddressFields';
+import AddressFields, { addressErrors } from './AddressFields';
 
 // Registration asks only what services the shop offers (the apparel
 // departments come from its catalog later). Still saved as specializations[],
@@ -26,6 +26,7 @@ function shopErrors(shop: StoreApplicationState['shop']): Record<string, string>
   if (!shop.store_name.trim()) e['app-store-name'] = 'Enter your shop’s name.';
   if (shop.specializations.length === 0 && shop.custom_services.length === 0) e['app-services'] = 'Pick at least one service your shop offers.';
   const area = addressErrors(shop.area);
+  if (area.province_code) e['app-area-province'] = area.province_code;
   if (area.city_code) e['app-area-city'] = area.city_code;
   if (area.district_code) e['app-area-district'] = area.district_code;
   if (area.barangay_code) e['app-area-barangay'] = area.barangay_code;
@@ -38,6 +39,8 @@ function shopErrors(shop: StoreApplicationState['shop']): Record<string, string>
     else if (seen.has(name)) e[`app-branch-name-${b.key}`] = 'Each branch needs its own name.';
     seen.add(name);
     const ba = addressErrors(b.area);
+    if (ba.province_code) e[`app-branch-${b.key}-province`] = ba.province_code;
+    if (ba.city_code) e[`app-branch-${b.key}-city`] = ba.city_code;
     if (ba.district_code) e[`app-branch-${b.key}-district`] = ba.district_code;
     if (ba.barangay_code) e[`app-branch-${b.key}-barangay`] = ba.barangay_code;
     if (!b.address.trim()) e[`app-branch-address-${b.key}`] = 'Enter the branch’s street address.';
@@ -86,7 +89,7 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
   const MAX_BRANCHES = 10;
   // crypto.randomUUID needs https; a phone opening the site by its network address (http) doesn't have it.
   const newKey = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
-  const addBranch = () => setShop({ ...shop, branches: [...shop.branches, { key: newKey(), name: '', address: '', area: { ...EMPTY_AREA, ...DAVAO_AREA } }] });
+  const addBranch = () => setShop({ ...shop, branches: [...shop.branches, { key: newKey(), name: '', address: '', area: { ...EMPTY_AREA, province_code: shop.area.province_code, province_name: shop.area.province_name, city_code: shop.area.city_code, city_name: shop.area.city_name } }] });
   const updateBranch = (key: string, patch: Partial<{ name: string; address: string; area: PsgcAddress }>) =>
     setShop({ ...shop, branches: shop.branches.map((b) => (b.key === key ? { ...b, ...patch } : b)) });
   const removeBranch = (key: string) => setShop({ ...shop, branches: shop.branches.filter((b) => b.key !== key) });
@@ -132,7 +135,7 @@ export default function ShopStep({ app }: { readonly app: StoreApplicationState 
   };
 
   return (
-    <form onSubmit={handleNext} onKeyDown={enterMovesOn} noValidate className="space-y-7">
+    <form onSubmit={handleNext} onKeyDown={enterMovesOn} noValidate className="space-y-7 sm:space-y-5 short:space-y-4">
       <Group title="Shop">
         <TextField id="app-store-name" label="Shop name" required placeholder="e.g. Dela Cruz Tailoring" value={shop.store_name}
           error={errors['app-store-name']} onChange={(e) => setShop({ ...shop, store_name: e.target.value })} />

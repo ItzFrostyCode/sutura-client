@@ -1,5 +1,4 @@
 import React from 'react';
-import { unitOfMetrics, withUnit } from '@/lib/measurementUnit';
 import { Ruler } from 'lucide-react';
 import { MeasurementProfile } from '../customerTypes';
 
@@ -27,54 +26,53 @@ const KNOWN_LABELS: Record<string, string> = {
   back_length: 'Back Length',
 };
 
-/** A quick look at the client's recorded measurement profiles; the Measurements & Specs tab holds all of them. */
-export default function CustomerMeasurementsCard({ measurements, onManage }: CustomerMeasurementsCardProps) {
+export default function CustomerMeasurementsCard({
+  measurements,
+  onManage,
+}: CustomerMeasurementsCardProps) {
   return (
-    <div className="bg-surface border border-line rounded-2xl p-5 shadow-2xs space-y-4">
-      <div className="flex items-center justify-between border-b border-line pb-2.5">
-        <div className="flex items-center gap-2.5">
-          <Ruler size={17} className="text-taupe shrink-0" />
+    <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-5">
+      <div className="flex justify-between items-center border-b border-line pb-4 min-h-12">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-canvas border border-line flex items-center justify-center text-taupe shrink-0 shadow-2xs">
+            <Ruler size={15} />
+          </div>
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink">Body Measurements</h3>
-            <p className="text-[11px] text-ink-muted">Anatomical specs recorded for this client</p>
+            <h3 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wider">Body Measurements</h3>
+            <p className="text-[11px] text-ink-muted">All values in inches (″)</p>
           </div>
         </div>
         <button
           type="button"
           onClick={onManage}
-          className="text-xs font-bold text-taupe hover:text-ink transition-colors cursor-pointer"
+          className="text-xs font-bold text-taupe hover:underline cursor-pointer"
         >
-          {measurements.length > 0 ? 'Manage →' : 'Add +'}
+          {measurements.length > 0 ? 'Manage →' : 'Add →'}
         </button>
       </div>
 
       {measurements.length === 0 ? (
-        <div className="p-5 rounded-xl bg-canvas/40 border border-dashed border-line flex flex-col items-center justify-center text-center">
-          <div className="w-9 h-9 rounded-full bg-surface border border-line flex items-center justify-center text-ink-muted mb-2 shadow-2xs">
-            <Ruler size={15} />
-          </div>
-          <span className="text-xs font-bold text-ink">No measurements recorded yet.</span>
-          <p className="text-[11px] text-ink-muted max-w-[240px] mt-0.5 mb-3.5">
-            Chest, sleeve length, shoulder, waist, and inseam specs are recorded on a job order.
-          </p>
+        <div className="text-center py-6 border border-dashed border-line rounded-xl bg-canvas/40 space-y-2">
+          <Ruler size={22} className="mx-auto text-ink-faint opacity-40" />
+          <p className="text-xs text-ink-faint">No measurements recorded yet.</p>
           <button
             type="button"
             onClick={onManage}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-espresso hover:bg-espresso/90 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold bg-taupe text-white px-3.5 py-2 rounded-xl hover:bg-taupe-hover transition-colors cursor-pointer shadow-2xs"
           >
-            <Ruler size={13} /> Record Specs
+            <Ruler size={12} /> Record Specs
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {measurements.slice(0, 2).map((m) => {
-            const entries = Object.entries(m.metrics || {}).filter(([k, v]) => Boolean(v) && !k.startsWith('_'));
+            const entries = Object.entries(m.metrics || {});
             return (
-              <div key={m.id} className="p-3.5 bg-canvas border border-line rounded-xl space-y-3">
+              <div key={m.id} className="p-3.5 bg-canvas border border-line rounded-xl space-y-3 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-ink uppercase tracking-wider">{m.profile_name}</span>
-                  <span className="text-[10px] font-bold text-ink-muted bg-sunken px-2 py-0.5 rounded border border-line uppercase tracking-wider">
-                    {entries.length} spec{entries.length === 1 ? '' : 's'}
+                  <span className="text-[9px] font-bold text-taupe bg-taupe/10 px-2 py-0.5 rounded border border-taupe/20 uppercase tracking-wider">
+                    Profile #{m.id}
                   </span>
                 </div>
 
@@ -84,8 +82,9 @@ export default function CustomerMeasurementsCard({ measurements, onManage }: Cus
                       <p className="text-[9px] text-ink-muted font-bold uppercase tracking-wider truncate">
                         {KNOWN_LABELS[k] ?? k.replace(/_/g, ' ')}
                       </p>
-                      <p className="text-xs font-black font-mono text-ink mt-0.5 tabular-nums">
-                        {withUnit(v, unitOfMetrics(m.metrics))}
+                      <p className="text-xs font-black font-mono text-ink mt-0.5">
+                        {String(v)}
+                        <span className="text-[9px] font-normal text-ink-faint ml-0.5">″</span>
                       </p>
                     </div>
                   ))}
@@ -104,7 +103,7 @@ export default function CustomerMeasurementsCard({ measurements, onManage }: Cus
             <button
               type="button"
               onClick={onManage}
-              className="w-full py-2.5 text-center text-xs text-taupe font-bold hover:text-ink cursor-pointer border border-line rounded-xl bg-canvas hover:bg-sunken transition-colors"
+              className="w-full py-2.5 text-center text-xs text-taupe font-bold hover:underline cursor-pointer border border-line rounded-xl bg-canvas hover:bg-surface transition-colors shadow-2xs"
             >
               View all {measurements.length} profiles →
             </button>

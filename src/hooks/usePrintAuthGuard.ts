@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/axios';
-import { withRedirect } from '@/lib/authRedirect';
 
 /**
  * Print pages live outside the dashboard route tree (so they render with a
@@ -18,10 +17,12 @@ export function usePrintAuthGuard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Wait for AuthHydrator (root layout) to read sessionStorage; before that, `isAuthenticated` is always false.
+    // AuthHydrator (root layout) restores the tab's login in an effect that runs *after*
+    // this page's effects. Without waiting, a signed-in tab looked signed out on the first
+    // render and got sent to /login (which then bounced to the dashboard), so print never showed.
     if (!hydrated) return;
     if (!isAuthenticated) {
-      router.replace(withRedirect('/login', typeof window !== 'undefined' ? window.location.pathname : null, 'as=store'));
+      router.push('/login');
     } else if (!store && token) {
       api.get('/auth/me')
         .then(res => {
@@ -36,7 +37,7 @@ export function usePrintAuthGuard() {
         })
         .catch(() => {
           logout();
-          router.replace(withRedirect('/login', typeof window !== 'undefined' ? window.location.pathname : null, 'as=store'));
+          router.push('/login');
         });
     }
   }, [hydrated, isAuthenticated, user, store, token, router, setAuth, logout]);

@@ -9,8 +9,6 @@ export interface StepperStage {
    *  a date/time line under the label (vertical layout only). Null/absent
    *  stages just show the label alone, never a guessed date. */
   timestamp?: string | null;
-  /** A shorter label for the horizontal layout, where space is tight. The full label stays in the tooltip and the vertical layout. */
-  short?: string;
 }
 
 function formatStageTimestamp(iso: string): string {
@@ -45,18 +43,18 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
           const isCurrent = idx === currentIdx;
           const isDone = idx < currentIdx || (isCurrent && idx === stages.length - 1);
 
-          let iconClass = 'bg-sunken text-ink-faint';
+          let iconClass = 'bg-sunken border-line text-ink-faint';
           if (isDone) {
-            iconClass = 'bg-sage text-white';
+            iconClass = 'bg-sage border-sage text-white';
           } else if (isCurrent) {
-            iconClass = 'bg-taupe text-white ring-4 ring-taupe/15';
+            iconClass = 'bg-taupe border-taupe text-white ring-2 ring-taupe/25';
           }
 
           let labelColor = 'text-ink-faint';
           if (isCurrent) {
-            labelColor = 'text-taupe-dark font-semibold';
+            labelColor = 'text-taupe font-bold';
           } else if (isDone) {
-            labelColor = 'text-sage';
+            labelColor = 'text-sage font-semibold';
           }
 
           const StageIcon = isDone ? Check : stage.Icon;
@@ -66,7 +64,7 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
           return (
             <div key={stage.key} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors shrink-0 ${iconClass}`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors border-2 shrink-0 ${iconClass}`}>
                   <StageIcon size={15} strokeWidth={2.4} />
                 </div>
                 {!isLast && <div className={`w-0.5 flex-1 min-h-[20px] ${idx < currentIdx ? 'bg-sage' : 'bg-line'}`} />}
@@ -89,11 +87,9 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
     );
   }
 
-  const isCompactStages = stages.length <= 4;
-
   return (
-    <div className={`${isCompactStages ? 'w-full' : 'overflow-x-auto pb-2 -mb-2 hide-scrollbar touch-pan-x'}`}>
-      <div className={`flex items-start ${isCompactStages ? 'w-full min-w-0' : 'min-w-[680px] sm:min-w-full'}`}>
+    <div className="overflow-x-auto pb-2 -mb-2 hide-scrollbar touch-pan-x">
+      <div className="flex items-start min-w-[680px] sm:min-w-full">
         {stages.map((stage, idx) => {
           const isCurrent = idx === currentIdx;
           const isDone = idx < currentIdx || (isCurrent && idx === stages.length - 1);
@@ -134,7 +130,7 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
                 {/* Top-aligned Label Container: handles 1-line and 2-line labels without shifting circle position */}
                 <div className="h-8 flex items-start justify-center w-full mt-1.5 px-0.5">
                   <span className={`text-[10px] leading-tight text-center ${labelColor}`}>
-                    {stage.short ?? stage.label}
+                    {stage.label}
                   </span>
                 </div>
               </button>

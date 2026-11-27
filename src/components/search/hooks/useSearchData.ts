@@ -50,6 +50,9 @@ export function useSearchData() {
   const radiusKm = parseRadiusKm(searchParams.get('radius_km'));
   const barangay = searchParams.get('barangay') ?? '';
   const area = searchParams.get('area') ?? '';
+  // Province, then a city or municipality in it (PSGC codes); `district` is one of Davao City's.
+  const province = searchParams.get('province') ?? '';
+  const city = searchParams.get('city') ?? '';
   const openStatus = parseStatusFilter(searchParams.get('open'));
 
   const [activeTab, setActiveTab] = useState<SearchActiveTab>(() => resolveTab(searchParams));
@@ -232,7 +235,7 @@ export function useSearchData() {
   // Reset to page 1 on filter changes
   useEffect(() => {
     setPage(1);
-  }, [effectiveQ, specialization, garmentType, minPrice, maxPrice, minRating, district, barangay, area, sortBy, radiusKm, openStatus]);
+  }, [effectiveQ, specialization, garmentType, minPrice, maxPrice, minRating, province, city, district, barangay, area, sortBy, radiusKm, openStatus]);
 
   // Use the extracted results hook
   const { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading } = useSearchResults({
@@ -243,6 +246,8 @@ export function useSearchData() {
     minPrice,
     maxPrice,
     minRating,
+    province,
+    city,
     district,
     barangay,
     area,
@@ -268,6 +273,8 @@ export function useSearchData() {
       ['minPrice', next.minPrice],
       ['maxPrice', next.maxPrice],
       ['minRating', next.minRating],
+      ['province', next.province],
+      ['city', next.city],
       ['district', next.district],
       ['barangay', next.district ? next.barangay : ''],
       ['area', next.district ? next.area : ''],
@@ -293,7 +300,7 @@ export function useSearchData() {
 
   const activeFilterCount = [
     specialization, garmentType, subcategory, structure, serviceCategory, serviceType,
-    minPrice || maxPrice, minRating, district || barangay || area,
+    minPrice || maxPrice, minRating, province || city || district || barangay || area,
   ].filter(Boolean).length;
 
   return {
@@ -328,6 +335,8 @@ export function useSearchData() {
     setMaxPrice,
     minRating,
     setMinRating,
+    province,
+    city,
     district,
     setDistrict,
     barangay,

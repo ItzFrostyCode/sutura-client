@@ -101,7 +101,7 @@ export default function NotificationDetailPage({
           <button
             type="button"
             onClick={() => router.push('/dashboard/notifications')}
-            className="mt-5 px-4 py-2 text-xs font-bold bg-espresso hover:bg-espresso/90 text-white rounded-xl transition-colors"
+            className="mt-5 px-4 py-2 text-xs font-bold bg-taupe hover:bg-taupe-hover text-white rounded-xl transition-colors"
           >
             Go to Notifications Hub
           </button>
@@ -113,12 +113,7 @@ export default function NotificationDetailPage({
   const sender = getSenderInfo(notification);
   const data = notification.data || {};
   const actionLabel = getActionLabel(notification);
-  const rawActionUrl = data.action_url;
-  const actionUrl = rawActionUrl === '/dashboard/settings'
-    ? '/dashboard/account-settings'
-    : data.type === 'store_approved' && rawActionUrl === '/dashboard'
-      ? '/dashboard?tab=welcome'
-      : rawActionUrl;
+  const actionUrl = data.action_url;
   const sentFormatted = formatDateTime(notification.created_at);
   const timeAgo = relativeHoursAgo(notification.created_at);
 
@@ -150,7 +145,7 @@ export default function NotificationDetailPage({
             </div>
             <div className="text-sm font-semibold text-ink-body">
               <span>From </span>
-              <span className="text-taupe">{sender.name}</span>
+              <span className="text-[#0B7D8C]">{sender.name}</span>
               <span className="text-xs text-ink-muted font-normal ml-2">
                 @ {sentFormatted} ({timeAgo})
               </span>

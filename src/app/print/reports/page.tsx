@@ -9,7 +9,6 @@ import type { AnalyticsData } from '@/components/reports/reportHelpers';
 import { periodLabel, reportDateRange, reportSummary, reportTables } from '@/components/reports/reportExport';
 import { toNumber } from '@/lib/brandedExport';
 import PrintDocument, { PrintSummary } from '@/components/print/PrintDocument';
-import SubscriptionGate from '@/components/SubscriptionGate';
 
 const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -92,9 +91,5 @@ function Report() {
 }
 
 export default function PrintReportsPage() {
-  return (
-    <SubscriptionGate feature="reports">
-      <Suspense fallback={<p className="p-8 text-sm">Preparing report…</p>}><Report /></Suspense>
-    </SubscriptionGate>
-  );
+  return <Suspense fallback={<p className="p-8 text-sm">Preparing report…</p>}><Report /></Suspense>;
 }

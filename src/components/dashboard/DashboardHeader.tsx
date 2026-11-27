@@ -1,8 +1,6 @@
 import React from 'react';
 import { TABS } from './dashboardHelpers';
 import StoreVisibilityPill from './StoreVisibilityPill';
-import CurrentPlanPill from './CurrentPlanPill';
-import ScrollNav from '@/components/shared/ScrollNav';
 
 interface DashboardHeaderProps {
   readonly userName: string;
@@ -31,7 +29,7 @@ export default function DashboardHeader({
   toggleVisibility,
   visibilityLoading,
 }: Readonly<DashboardHeaderProps>) {
-  const today = new Date().toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const today = new Date().toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
     <header className="flex flex-col gap-4 pb-4 border-b border-line">
@@ -40,11 +38,7 @@ export default function DashboardHeader({
           <h1 className="text-display text-2xl sm:text-3xl font-semibold text-ink">
             {timeGreeting()}, {userName.split(' ')[0] || 'there'}.
           </h1>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <p className="text-eyebrow">{today}</p>
-            {/* Which plan the shop is on (a free trial says so), always in view on Home. */}
-            <CurrentPlanPill />
-          </div>
+          <p className="text-eyebrow mt-1">{today}</p>
         </div>
         <StoreVisibilityPill
           storeVisible={storeVisible}
@@ -55,8 +49,10 @@ export default function DashboardHeader({
 
       {/* Underline tabs — scrolls cleanly on narrow screens, active rule
           sits flush with the header's bottom border. */}
-      <nav className="-mb-4 min-w-0 shrink-0" aria-label="Dashboard views">
-        <ScrollNav className="flex items-center gap-1">
+      <nav
+        className="flex items-center gap-1 -mb-4 overflow-x-auto hide-scrollbar shrink-0"
+        aria-label="Dashboard views"
+      >
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -77,7 +73,6 @@ export default function DashboardHeader({
             </button>
           );
         })}
-      </ScrollNav>
       </nav>
     </header>
   );

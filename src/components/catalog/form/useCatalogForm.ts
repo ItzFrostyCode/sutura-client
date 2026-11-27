@@ -6,22 +6,18 @@ import { BulletItem, ImageItem, ColorItem, CatalogFormData } from '../catalogTyp
 import { uploadSectionImage, buildSavePayload } from '../catalogHelpers';
 import { SizeChartValue, emptySizeChart } from '@/components/shared/SizeChartEditor';
 import { CatalogFormProps, StoreServiceOption } from './formTypes';
-import { noticeDialog } from '@/store/useConfirmStore';
 
 export function useCatalogForm({
   initialData,
-  initialServiceId,
   onSubmit,
   submitting,
-}: Pick<CatalogFormProps, 'initialData' | 'onSubmit' | 'submitting'> & { initialServiceId?: string }) {
+}: Pick<CatalogFormProps, 'initialData' | 'onSubmit' | 'submitting'>) {
   const { store } = useAuthStore();
 
   const [formData, setFormData] = useState<CatalogFormData>({
     name: '',
     price: '',
-    pricing_mode: 'same',
-    extra_charge: '',
-    service_id: initialServiceId ?? '',
+    service_id: '',
     estimated_days: '',
     estimated_days_max: '',
     material: '',
@@ -30,6 +26,9 @@ export function useCatalogForm({
     care_instructions: '',
     measurement_guide: '',
     garment_type: '',
+    department: '',
+    subcategory: '',
+    garment_structure: '',
     sizes: [],
     external_gallery_url: '',
     is_active: true,
@@ -129,14 +128,13 @@ export function useCatalogForm({
       const url = res.data?.data?.url || res.data?.url || '';
       setFormData(prev => ({ ...prev, fabric_image_url: url }));
     } catch (err) {
-      void noticeDialog(getErrorMessage(err, 'Failed to upload fabric image.'));
+      alert(getErrorMessage(err, 'Failed to upload fabric image.'));
     } finally {
       setFabricImageUploading(false);
     }
   };
 
-  // A design under a service takes its price from it; only a design with no service needs its own.
-  const saveDisabled = submitting || !formData.name || (!formData.service_id && !formData.price) || images.every(i => !i.url) || images.some(i => i.uploading);
+  const saveDisabled = submitting || !formData.name || !formData.price || images.every(i => !i.url) || images.some(i => i.uploading);
 
   const handleFormSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();

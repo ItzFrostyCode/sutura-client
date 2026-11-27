@@ -7,7 +7,7 @@ import { useOrderData } from './useOrderData';
 import { useOrderForm } from './useOrderForm';
 import { orderMoney } from './orderMath';
 import { partOptions, priceLines } from './orderLines';
-import { clampDeposit } from '@/components/jobs/requirements';
+import { clampDeposit } from '@/components/requirements/deposit';
 import { isPhoneValid, pointsFor, type Area } from './orderPoints';
 import { stepProblem } from './orderRules';
 import { submitOrder, type PlacedOrder } from './orderSubmit';

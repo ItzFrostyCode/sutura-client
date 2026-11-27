@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Check, X, Loader2, Lock, Pause, Clock, Scissors, MoreHorizontal } from 'lucide-react';
 import { Job as JobItem, columnsForJobs, ON_HOLD_COLUMN, PRODUCTION_COLUMNS, STAGE_STYLE, normalizeJobStatus, GARMENT_CATEGORY_LABELS, needsMeasuring } from './jobHelpers';
 import { useAuthStore } from '@/store/useAuthStore';
+import { READ_ONLY_HINT, useShopReadOnly } from '@/hooks/useShopReadOnly';
 import CancellationReasonModal from './CancellationReasonModal';
 import HoldReasonModal from './HoldReasonModal';
 import JobQuickViewModal from './JobQuickViewModal';
-import { depositFraction } from './requirements';
+import { depositBase, depositFraction } from './requirements';
 import { requiresDownpayment } from './jobHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
 import { staffForBranch, staffOptionLabel } from '@/components/staff/staffHelpers';
@@ -127,6 +128,9 @@ export default function JobKanbanBoard({
     user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
   );
   const isStaff = Boolean(user?.roles?.some((r) => r.name === 'staff')) && !isOwnerOrManager;
+  // Plan ended: the server refuses every stage move (CheckRole), so the controls are disabled, not offered.
+  const { readOnly } = useShopReadOnly(useAuthStore((s) => s.store?.id));
+  const readOnlyHint = READ_ONLY_HINT;
   // The board view's sideways-scrolling container (absent in list view).
   const boardRef = useRef<HTMLDivElement>(null);
   useWheelToHorizontal(boardRef, viewMode !== 'list');
@@ -189,7 +193,7 @@ export default function JobKanbanBoard({
     const discount = Number.parseFloat(String(job.discount_amount ?? '0'));
     const amountDue = total - discount;
     const paidSoFar = total - balance - discount;
-    const noDownpayment = amountDue > 0 && paidSoFar + 0.005 < amountDue * depositFraction(job.payment_policy, job.payment_policy_percent);
+    const noDownpayment = amountDue > 0 && paidSoFar + 0.005 < depositBase(job) * depositFraction(job.payment_policy, job.payment_policy_percent);
 
     if (requiresDownpayment(job, newStatus, repairRequiresDownpayment) && noDownpayment) {
       setDpGateJobId(job.id);
@@ -242,7 +246,9 @@ export default function JobKanbanBoard({
         type="button"
         {...previewTarget(to)}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStatusChange(job, to); }}
-        className={`${cls} ${compact ? '' : 'flex-1'}`}
+        disabled={readOnly}
+        title={readOnly ? readOnlyHint : undefined}
+        className={`${cls} ${compact ? '' : 'flex-1'} disabled:cursor-not-allowed disabled:opacity-50`}
       >
         {label}
       </button>
@@ -262,23 +268,26 @@ export default function JobKanbanBoard({
             type="button"
             {...previewTarget('production')}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleApprove(job); }}
-            className={`${btn} bg-emerald-700 hover:bg-emerald-800 text-white ${compact ? '' : 'flex-1'}`}
+            disabled={readOnly}
+            title={readOnly ? readOnlyHint : undefined}
+            className={`${btn} bg-emerald-700 hover:bg-emerald-800 text-white ${compact ? '' : 'flex-1'} disabled:cursor-not-allowed disabled:opacity-50`}
           >
             <Check size={14} aria-hidden="true" /> Approve
           </button>
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onReject(job.id); }}
+            disabled={readOnly}
             aria-label={compact ? `Reject ${job.order_number || `order ${job.id}`}` : undefined}
-            title={compact ? 'Reject' : undefined}
-            className={`${btn} border border-rose-200 text-rose-700 hover:bg-rose-50 ${compact ? 'w-9 px-0' : ''}`}
+            title={readOnly ? readOnlyHint : compact ? 'Reject' : undefined}
+            className={`${btn} border border-rose-200 text-rose-700 hover:bg-rose-50 ${compact ? 'w-9 px-0' : ''} disabled:cursor-not-allowed disabled:opacity-50`}
           >
             <X size={14} aria-hidden="true" />{!compact && ' Reject'}
           </button>
         </>
       );
     }
-    if (norm === 'production') return go('quality_check', <>{compact ? 'To Quality Check' : 'To Quality Check'} →</>);
+    if (norm === 'production') return go('quality_check', <>{compact ? 'To QC' : 'To quality check'} →</>);
     if (norm === 'quality_check') return go('ready_for_fitting', <>{compact ? 'To fitting' : 'Ready for fitting'} →</>);
     // The list view has room for one button; Adjustments stays in the "…" menu there.
     if (norm === 'ready_for_fitting' && compact) return go('ready_for_pickup', <>Fitting OK →</>);
@@ -290,7 +299,7 @@ export default function JobKanbanBoard({
         </>
       );
     }
-    if (norm === 'adjustments') return go('quality_check', <>Back to Quality Check →</>);
+    if (norm === 'adjustments') return go('quality_check', <>Back to QC →</>);
     if (norm === 'ready_for_pickup') return go('completed', <><Check size={13} aria-hidden="true" /> Claimed</>, `${btn} bg-emerald-700 hover:bg-emerald-800 text-white`);
     if (norm === 'on_hold') return go('production', <>Resume →</>);
     return null;
@@ -302,15 +311,16 @@ export default function JobKanbanBoard({
     if (norm === 'pending' || norm === 'completed') return null;
     // A native select (keyboard + screen reader friendly) under a "…" icon.
     return (
-      <span className="relative h-9 w-9 shrink-0 rounded-lg border border-line bg-surface text-ink-body inline-flex items-center justify-center hover:border-line-strong focus-within:ring-2 focus-within:ring-taupe/40">
+      <span className={`relative h-9 w-9 shrink-0 rounded-lg border border-line bg-surface text-ink-body inline-flex items-center justify-center hover:border-line-strong focus-within:ring-2 focus-within:ring-taupe/40 ${readOnly ? 'opacity-50' : ''}`}>
         <MoreHorizontal size={16} aria-hidden="true" />
         <select
           value={norm}
           onChange={(e) => handleStatusChange(job, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           aria-label={`Move ${job.order_number || `order ${job.id}`} to another stage`}
-          title="Move to another stage"
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          disabled={readOnly}
+          title={readOnly ? readOnlyHint : 'Move to another stage'}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         >
           {(isStaff
             ? PRODUCTION_COLUMNS.filter((c) => ['production', 'quality_check', 'ready_for_fitting', 'adjustments', 'ready_for_pickup'].includes(c.id))
@@ -352,7 +362,9 @@ export default function JobKanbanBoard({
         <select
           value={id ? String(id) : ''}
           onChange={(e) => onAssignStaff?.(job.id, e.target.value ? Number(e.target.value) : null)}
-          className={`min-w-0 w-full bg-transparent text-xs font-semibold truncate cursor-pointer focus:outline-none ${name ? 'text-ink-body' : 'text-ink-muted'}`}
+          disabled={readOnly}
+          title={readOnly ? readOnlyHint : undefined}
+          className={`min-w-0 w-full bg-transparent text-xs font-semibold truncate cursor-pointer focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${name ? 'text-ink-body' : 'text-ink-muted'}`}
         >
           <option value="">Assign tailor</option>
           {staffForBranch(staffList, job.store_branch_id, id).map((s) => {

@@ -25,6 +25,8 @@ export default function PublicNav({
   readonly className?: string;
   /** Width and side padding of the header's content; the landing page passes its 960px column so the logo lines up with the sections. */
   readonly innerClassName?: string;
+  /** Passed by the team lead's /track pages; this header always shows Discover / Map / Track, so it changes nothing here. */
+  readonly featureNav?: boolean;
 } = {}) {
   const {
     unreadCount,

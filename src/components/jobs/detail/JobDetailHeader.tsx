@@ -1,13 +1,8 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Loader2, Check } from 'lucide-react';
-import JobMoreMenu from './JobMoreMenu';
+import { ArrowLeft, Loader2, Save, Trash2, ShoppingBag, Store, Printer, Zap, Mail, Check, CalendarPlus } from 'lucide-react';
 import { Job } from '../jobTypes';
-import { appointmentNo } from '@/components/appointments/appointmentHelpers';
-import JobHeaderChips from './JobHeaderChips';
-import { BTN, BTN_PRIMARY } from '@/components/shared/plainForm';
 
 interface JobDetailHeaderProps {
   job: Job;
@@ -15,20 +10,12 @@ interface JobDetailHeaderProps {
   saving: boolean;
   onBack: () => void;
   onResetChanges: () => void;
-  onOpenMessageModal?: () => void;
+  onOpenMessageModal: () => void;
   onOpenFollowUpModal: () => void;
   onPrint: () => void;
-  onArchive: () => void;
+  onOpenDeleteModal: () => void;
   onUpdate: () => void;
-  canArchive: boolean;
-  /** Owner / branch manager on an ongoing order: shows "Cancel this order" in the menu. */
-  onCancel?: () => void;
-  /** Owner / branch manager on a completed order: shows "New follow-up order" in the menu. */
-  onFollowUpOrder?: () => void;
-  /** A completed order is read only: no Save / Discard / "Saved" in the header. */
-  readOnly?: boolean;
-  /** Extra actions for the More menu (owner / branch manager only). */
-  moreActions?: { label: string; icon: React.ReactNode; onClick: () => void }[];
+  canDelete: boolean;
 }
 
 export default function JobDetailHeader({
@@ -40,67 +27,127 @@ export default function JobDetailHeader({
   onOpenMessageModal,
   onOpenFollowUpModal,
   onPrint,
-  onArchive,
+  onOpenDeleteModal,
   onUpdate,
-  canArchive,
-  onCancel,
-  onFollowUpOrder,
-  readOnly,
-  moreActions,
+  canDelete,
 }: JobDetailHeaderProps) {
   return (
-    <div className="flex flex-col justify-between gap-4 pt-1 sm:flex-row sm:items-center">
-      <div className="flex items-start gap-3.5">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+      <div className="flex items-center gap-3.5">
         <button
           onClick={onBack}
-          className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-line bg-surface text-ink-body hover:bg-sunken"
+          className="p-2.5 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors shadow-2xs shrink-0"
           type="button"
           title="Go back"
-          aria-label="Go back"
         >
           <ArrowLeft size={18} />
         </button>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 className="text-[28px] font-semibold tracking-tight text-ink sm:text-[32px]">{job.order_number}</h1>
-            <JobHeaderChips job={job} />
-          </div>
-          <p className="mt-1 text-sm text-ink-muted">
-            {[job.customer?.name, job.catalog_item?.name ?? job.service?.name].filter(Boolean).join(' · ') || 'Job order'}
-            {job.appointment_id && (
-              <span className="ml-2">
-                • From consultation{' '}
-                <Link href={`/dashboard/appointments?open=${job.appointment_id}`} className="font-semibold text-taupe hover:underline">{appointmentNo(job.appointment_id)}</Link>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink tracking-tight flex items-center flex-wrap gap-2">
+            {job.order_number}
+            {job.intake_channel === 'online' ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200">
+                <ShoppingBag size={11} /> Online
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-sunken text-ink-muted px-2.5 py-0.5 rounded-full border border-line">
+                <Store size={11} /> Walk-in
               </span>
             )}
+            <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <Store size={11} /> {job.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup'}
+            </span>
+            {job.is_rush && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-300">
+                <Zap size={11} /> Rush Order
+              </span>
+            )}
+          </h1>
+          <p className="text-xs text-ink-muted mt-0.5">
+            Manage lifecycle, specifications, and financials
             {job.tracking_code && (
-              <span className="ml-2">
-                • Tracking: <strong className="select-all font-semibold tracking-wide text-ink">{job.tracking_code}</strong>
+              <span className="ml-2 text-ink-faint">
+                • Tracking: <strong className="font-mono text-ink-body select-all">{job.tracking_code}</strong>
               </span>
             )}
           </p>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        {readOnly ? null : hasUnsavedChanges ? (
-          <>
-            <span className="hidden items-center gap-1.5 text-[13px] font-medium text-amber-700 md:inline-flex">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> Unsaved changes
-            </span>
-            <button onClick={onResetChanges} type="button" className={BTN}>Discard</button>
-            <button onClick={onUpdate} disabled={saving} type="button" className={BTN_PRIMARY}>
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Save Changes
-            </button>
-          </>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-sm text-ink-muted"><Check size={14} className="text-sage" /> Saved</span>
+      <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+        {hasUnsavedChanges && (
+          <span className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full animate-in fade-in">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Unsaved changes
+          </span>
         )}
-        <JobMoreMenu
-          onPrint={onPrint} onMessage={onOpenMessageModal} onFollowUpVisit={onOpenFollowUpModal}
-          onFollowUpOrder={onFollowUpOrder}
-          onArchive={canArchive ? onArchive : undefined} onCancel={onCancel} extra={moreActions}
-        />
+
+        {hasUnsavedChanges && (
+          <button
+            onClick={onResetChanges}
+            type="button"
+            className="h-9 px-3 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors text-xs font-semibold shadow-2xs active:scale-95"
+            title="Discard draft changes"
+          >
+            Discard
+          </button>
+        )}
+
+        <button
+          onClick={onOpenMessageModal}
+          className="h-9 w-9 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors flex items-center justify-center shadow-2xs active:scale-95"
+          title="Message Customer"
+          type="button"
+        >
+          <Mail size={15} />
+        </button>
+        <button
+          onClick={onOpenFollowUpModal}
+          className="h-9 w-9 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors flex items-center justify-center shadow-2xs active:scale-95"
+          title="Schedule Follow-Up Visit"
+          type="button"
+        >
+          <CalendarPlus size={15} />
+        </button>
+        <button
+          onClick={onPrint}
+          className="h-9 w-9 rounded-xl bg-surface hover:bg-canvas border border-line text-ink-muted hover:text-ink transition-colors flex items-center justify-center shadow-2xs active:scale-95"
+          title="Print Physical Work Ticket"
+          type="button"
+        >
+          <Printer size={15} />
+        </button>
+        {canDelete && (
+          <button
+            onClick={onOpenDeleteModal}
+            className="h-9 w-9 rounded-xl bg-surface hover:bg-rose-50 border border-line hover:border-rose-200 text-ink-faint hover:text-rose-600 transition-colors flex items-center justify-center shadow-2xs active:scale-95"
+            title="Delete Job Order"
+            type="button"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
+
+        <button
+          onClick={onUpdate}
+          disabled={saving || !hasUnsavedChanges}
+          className={`h-9 px-4 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 active:scale-95 ${
+            hasUnsavedChanges
+              ? 'bg-taupe hover:bg-taupe-hover text-white ring-2 ring-taupe/30 shadow-md cursor-pointer'
+              : 'bg-surface border border-line text-ink-muted/70 font-semibold cursor-default hover:bg-surface opacity-80'
+          }`}
+          type="button"
+          title={hasUnsavedChanges ? 'Click to save all pending changes' : 'All changes are saved'}
+        >
+          {saving ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : hasUnsavedChanges ? (
+            <Save size={14} />
+          ) : (
+            <Check size={14} className="text-sage" />
+          )}
+          <span>{hasUnsavedChanges ? 'Save Changes' : 'Saved'}</span>
+        </button>
       </div>
     </div>
   );

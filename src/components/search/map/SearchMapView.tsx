@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import HomeFilterSheet from '@/components/home/HomeFilterSheet';
 import { useHomeLocation } from '@/components/home/useHomeLocation';
 import type { AllFilters } from '@/components/home/homeFilters';
+import { DAVAO_CITY_CODE } from '@/components/home/filter/LocationChips';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { enableCompass } from '@/hooks/useCompassHeading';
 import { useSearchData } from '../hooks/useSearchData';
@@ -79,9 +80,13 @@ export default function SearchMapView() {
     prevDistrict.current = s.district;
   }, [s.district]);
 
+  // Davao City's outline and district highlight only fit when the place is Davao City (or nothing is picked). Another
+  // province or city: the map fits that place's shops instead.
+  const inDavaoCity = s.city === DAVAO_CITY_CODE || (!s.province && !s.city);
+
   const filters = useMemo<AllFilters>(
-    () => ({ radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy }),
-    [s.radiusKm, s.openStatus, s.minPrice, s.maxPrice, s.minRating, s.district, s.barangay, s.area, s.sortBy],
+    () => ({ radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, province: s.province, city: s.city, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy }),
+    [s.radiusKm, s.openStatus, s.minPrice, s.maxPrice, s.minRating, s.province, s.city, s.district, s.barangay, s.area, s.sortBy],
   );
   const openFilter = () => setFilterOpen(true);
   const sheetPx = nav.route ? SUMMARY_PX : mobileSheet ? sheet.height : 0;
@@ -308,8 +313,8 @@ export default function SearchMapView() {
           disableFitBounds={focusMe || (nav.following && nav.position !== null) || mapBlocked}
           interactive={!mapBlocked}
           highlightDistrict={s.district || null}
-          showCity
-          fitCity={cityView && !map.selected}
+          showCity={inDavaoCity}
+          fitCity={cityView && !map.selected && inDavaoCity}
         />
       </div>
 

@@ -6,9 +6,6 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { getMediaUrl } from '@/lib/media';
 import { useToast } from '@/context/ToastContext';
-import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
-import ImageUploadField from './ImageUploadField';
-import type { ServiceSectionEdit } from './useServiceSectionEdit';
 import {
   SERVICE_TYPE_LABELS,
   serviceTypesFor,
@@ -16,7 +13,10 @@ import {
 } from '@/lib/canonicalTaxonomy';
 import { searchCategoryFor, useShopCategories } from '../useShopCategories';
 import { guessUniformType } from '@/lib/uniformTypes';
+import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
+import ImageUploadField from './ImageUploadField';
 import { CATEGORY_HANDLING } from '../serviceHelpers';
+import type { ServiceSectionEdit } from './useServiceSectionEdit';
 
 export type DraftEdit = Pick<ServiceSectionEdit, 'draft' | 'setDraft' | 'storeId'>;
 
@@ -30,15 +30,9 @@ export function ServicePhotoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   return <ImageUploadField value={d.image_url} onChange={url => patch({ image_url: url })} storeId={edit.storeId} hint="The photo customers see first on this service." alt="Service" />;
 }
 
-/** B6-O11: three ways to show a price; no range. Extras, rush fees and discounts belong in the quotation. */
-const PRICE_CHOICES: ['fixed' | 'starting' | 'quotation', string, string][] = [
-  ['fixed', 'Fixed price', 'One set price'],
-  ['starting', 'Starting price', 'From this amount'],
-  ['quotation', 'Quotation required', 'Priced after assessment'],
-];
-
 export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
   const { d, patch } = useSet(edit);
+  const bulk = d.service_types.includes('bulk_sublimation');
   const from = Number(d.estimated_days);
   const hasFrom = d.estimated_days !== '' && from >= 1;
   const belowFrom = hasFrom && d.estimated_days_max !== '' && Number(d.estimated_days_max) <= from;
@@ -48,30 +42,13 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
         <label htmlFor="svc-name" className={LABEL}>Service name <span className="text-red-600">*</span></label>
         <input id="svc-name" value={d.name} onChange={e => patch({ name: e.target.value })} className={FIELD} />
       </div>
-      <fieldset className="sm:col-span-2">
-        <legend className={LABEL}>How customers see the price</legend>
-        <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-2" role="radiogroup">
-          {PRICE_CHOICES.map(([value, title, sub]) => (
-            <label key={value} className={`min-h-12 border px-3 py-2.5 cursor-pointer transition-colors ${d.price_display === value ? 'border-espresso bg-sunken' : 'border-line bg-white hover:bg-sunken'}`}>
-              <input type="radio" name="svc-price-display" value={value} checked={d.price_display === value} onChange={() => patch({ price_display: value })} className="sr-only" />
-              <span className="block text-sm font-semibold text-ink">{title}</span>
-              <span className="block text-[12px] text-ink-muted leading-snug">{sub}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      {d.price_display !== 'quotation' && (
-        <div className="sm:col-span-2">
-          <label htmlFor="svc-price" className={LABEL}>{d.price_display === 'fixed' ? 'Price (₱)' : 'Starting price (₱)'} {d.price_display === 'fixed' && <span className="text-red-600">*</span>}</label>
-          <input id="svc-price" type="number" min="0" value={d.base_price} onChange={e => patch({ base_price: e.target.value })} className={FIELD} />
-          <p className="text-[11px] text-ink-faint mt-1.5">{d.price_display === 'fixed' ? 'The price the customer pays for this service.' : 'The lowest price. The quotation sets the actual total.'}</p>
-        </div>
-      )}
+      <div>
+        <label htmlFor="svc-price" className={LABEL}>Starting price (PHP)</label>
+        <input id="svc-price" type="number" min="0" value={d.base_price} onChange={e => patch({ base_price: e.target.value })} placeholder="Leave empty for a custom quote" className={FIELD} />
+      </div>
       <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="svc-days" className={`${LABEL} sm:min-h-[2.5rem] flex items-end`}>
-            <span>Production time — from (days) {!d.turnaround_depends && <span className="text-red-600">*</span>}</span>
-          </label>
+          <label htmlFor="svc-days" className={LABEL}>Production time — from (days) {!d.turnaround_depends && <span className="text-red-600">*</span>}</label>
           <input
             id="svc-days"
             type="number"
@@ -82,14 +59,10 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
             placeholder="e.g. 5"
             className={`${FIELD} disabled:bg-sunken disabled:cursor-not-allowed`}
           />
-          <p className="text-[11px] text-ink-faint mt-1.5">
-            {d.turnaround_depends ? 'Not needed.' : hasFrom ? 'Minimum days needed.' : 'Type this first.'}
-          </p>
+          <p className="text-[11px] text-ink-faint mt-1.5">Type this first.</p>
         </div>
         <div>
-          <label htmlFor="svc-days-max" className={`${LABEL} sm:min-h-[2.5rem] flex items-end`}>
-            <span>To (days)</span>
-          </label>
+          <label htmlFor="svc-days-max" className={LABEL}>to (days)</label>
           <input
             id="svc-days-max"
             type="number"
@@ -109,13 +82,38 @@ export function ServiceInfoEditor({ edit }: Readonly<{ edit: DraftEdit }>) {
             type="checkbox"
             checked={d.turnaround_depends}
             onChange={e => patch(e.target.checked ? { turnaround_depends: true, estimated_days: '', estimated_days_max: '' } : { turnaround_depends: false })}
-            className="mt-1 w-4 h-4 accent-taupe-dark"
+            className="mt-1 w-4 h-4 accent-[#6B5346]"
           />
           <span>
             <span className="block text-sm font-semibold text-ink">It depends</span>
             <span className="block text-xs text-ink-muted">No fixed time — you tell each customer once you know what they need.</span>
           </span>
         </label>
+      </div>
+      {bulk && (
+        <div className="sm:col-span-2">
+          <label htmlFor="svc-minqty" className={LABEL}>Minimum order (pieces)</label>
+          <input id="svc-minqty" type="number" min="1" value={d.min_order_qty} onChange={e => patch({ min_order_qty: e.target.value })} className={FIELD} />
+        </div>
+      )}
+      <div className="sm:col-span-2">
+        <label htmlFor="svc-fabric" className={LABEL}>
+          Less if customer brings own fabric <span className="font-normal text-ink-faint">(optional, ₱ per piece)</span>
+        </label>
+        <input
+          id="svc-fabric"
+          type="number"
+          min="0"
+          step="1"
+          inputMode="decimal"
+          value={d.own_fabric_deduction}
+          onChange={e => patch({ own_fabric_deduction: e.target.value })}
+          placeholder="e.g. 150"
+          className={FIELD}
+        />
+        <p className="text-[11px] text-ink-faint mt-1.5">
+          Taken off the price on online orders when the customer chooses to bring their own fabric. Leave blank to adjust it on each order instead.
+        </p>
       </div>
     </div>
   );

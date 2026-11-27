@@ -1,12 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Scissors, ShoppingBag, BarChart3 } from 'lucide-react';
-import ScrollNav from '@/components/shared/ScrollNav';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
+import { Scissors, Layers, BarChart3 } from 'lucide-react';
 
-export type ServiceTabId = 'services' | 'analytics';
+export type ServiceTabId = 'services' | 'packages' | 'analytics';
 
 export interface ServiceTabItem {
   id: ServiceTabId;
@@ -15,7 +12,8 @@ export interface ServiceTabItem {
 }
 
 export const SERVICE_TABS: readonly ServiceTabItem[] = [
-  { id: 'services', label: 'Services', icon: Scissors },
+  { id: 'services', label: 'Individual Services', icon: Scissors },
+  { id: 'packages', label: 'Combo Packages', icon: Layers },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ] as const;
 
@@ -23,6 +21,7 @@ interface ServicesModuleTabsProps {
   readonly activeTab: ServiceTabId;
   readonly onTabChange: (tabId: ServiceTabId) => void;
   readonly serviceCount?: number;
+  readonly packageCount?: number;
   readonly className?: string;
   // Analytics shows revenue-ranked figures (total_revenue is embedded in
   // every service returned by the staff-accessible GET /services) — the role
@@ -36,19 +35,20 @@ export default function ServicesModuleTabs({
   activeTab,
   onTabChange,
   serviceCount,
+  packageCount,
   className = '',
   isOwnerOrManager = false,
 }: ServicesModuleTabsProps) {
-  const { isGated } = useSubscriptionTier();
-  const analyticsLocked = isGated('analytics');
   const visibleTabs = SERVICE_TABS.filter(tab => tab.id !== 'analytics' || isOwnerOrManager);
   return (
-    <nav className={`-mb-px min-w-0 ${className}`} aria-label="Services Catalog Navigation">
-      <ScrollNav className="flex items-center gap-3 sm:gap-6 whitespace-nowrap">
+    <nav
+      className={`flex items-center gap-3 sm:gap-6 overflow-x-auto hide-scrollbar whitespace-nowrap -mb-px ${className}`}
+      aria-label="Services Catalog Navigation"
+    >
       {visibleTabs.map(tab => {
         const active = tab.id === activeTab;
         const Icon = tab.icon;
-        const count = tab.id === 'services' ? serviceCount : undefined;
+        const count = tab.id === 'services' ? serviceCount : packageCount;
 
         return (
           <button
@@ -65,7 +65,6 @@ export default function ServicesModuleTabs({
           >
             <Icon size={15} className={active ? 'text-ink' : 'text-ink-muted'} />
             <span>{tab.label}</span>
-            {tab.id === 'analytics' && analyticsLocked && <PlanTierTag plan="Pro" />}
 
             {typeof count === 'number' && count > 0 && (
               <span
@@ -81,12 +80,11 @@ export default function ServicesModuleTabs({
 
             {/* Bottom stroke line resting right on the header divider line */}
             {active && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-espresso" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-taupe" />
             )}
           </button>
         );
       })}
-    </ScrollNav>
     </nav>
   );
 }

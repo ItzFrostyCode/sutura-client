@@ -1,14 +1,11 @@
 'use client';
 
-import { unitOfMetrics } from '@/lib/measurementUnit';
 import { MeasurementStatusBadge } from './MeasurementStatus';
 import React from 'react';
-import { ChevronDown, ChevronUp, StickyNote, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Pencil, Trash2, StickyNote, RefreshCw } from 'lucide-react';
 import { MeasurementRecord } from './measurementTypes';
 import { getMediaUrl } from '@/lib/media';
 import { MetricPill, CustomerInitial, humanizeMetricKey } from './measurementHelpers';
-import MeasurementPurpose from './MeasurementPurpose';
-import { isInternalMetricKey } from '@/components/measurements/measurementAreas';
 
 interface MeasurementListProps {
   readonly grouped: Record<string, MeasurementRecord[]>;
@@ -16,6 +13,9 @@ interface MeasurementListProps {
   readonly toggleExpand: (id: number) => void;
   readonly selectedVersionIds: Record<string, number>;
   readonly setSelectedVersionIds: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  readonly openClone: (rec: MeasurementRecord) => void;
+  readonly openEdit: (rec: MeasurementRecord) => void;
+  readonly openDelete: (id: number) => void;
 }
 
 export default function MeasurementList({
@@ -24,6 +24,9 @@ export default function MeasurementList({
   toggleExpand,
   selectedVersionIds,
   setSelectedVersionIds,
+  openClone,
+  openEdit,
+  openDelete,
 }: MeasurementListProps) {
   const handleVersionChange = (rKey: string, activeRecId: number, newVerId: number) => {
     setSelectedVersionIds(prev => ({ ...prev, [rKey]: newVerId }));
@@ -70,7 +73,7 @@ export default function MeasurementList({
                 const activeIndex = versions.indexOf(activeRec);
 
                 const isExpanded = expandedIds.has(activeRec.id);
-                const filledCount = Object.entries(activeRec.metrics || {}).filter(([k, v]) => Boolean(v) && !isInternalMetricKey(k)).length;
+                const filledCount = Object.values(activeRec.metrics || {}).filter(Boolean).length;
 
                 return (
                   <div key={groupKey}>
@@ -110,7 +113,6 @@ export default function MeasurementList({
                               </select>
                             )}
                           </div>
-                          <MeasurementPurpose record={activeRec} className="mt-1" />
                           <p className="text-xs text-ink-faint mt-0.5 flex items-center gap-1">
                             <RefreshCw size={10} />
                             Updated {new Date(activeRec.updated_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -123,6 +125,31 @@ export default function MeasurementList({
                         </div>
                         {isExpanded ? <ChevronUp size={16} className="text-ink-faint shrink-0" /> : <ChevronDown size={16} className="text-ink-faint shrink-0" />}
                       </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => openClone(activeRec)}
+                          className="p-1.5 text-ink-faint hover:text-ink hover:bg-sunken rounded-lg transition-colors cursor-pointer"
+                          title="Create new version"
+                        >
+                          <Copy size={15} />
+                        </button>
+                        {activeIndex === versions.length - 1 && (
+                          <button
+                            onClick={() => openEdit(activeRec)}
+                            className="p-1.5 text-ink-faint hover:text-ink hover:bg-sunken rounded-lg transition-colors cursor-pointer"
+                            title="Edit"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => openDelete(activeRec.id)}
+                          className="p-1.5 text-ink-faint hover:text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Expanded Metrics */}
@@ -132,11 +159,11 @@ export default function MeasurementList({
                           <p className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider mb-2">Measurements</p>
                           <div className="flex flex-wrap gap-1.5">
                             {Object.entries(activeRec.metrics || {})
-                              .filter(([k, v]) => Boolean(v) && !isInternalMetricKey(k))
+                              .filter(([, v]) => v)
                               .map(([key, value]) => (
-                                <MetricPill key={key} label={humanizeMetricKey(key)} value={value} unit={unitOfMetrics(activeRec.metrics)} />
+                                <MetricPill key={key} label={humanizeMetricKey(key)} value={value} />
                               ))}
-                            {Object.entries(activeRec.metrics || {}).filter(([k, v]) => Boolean(v) && !isInternalMetricKey(k)).length === 0 && (
+                            {Object.values(activeRec.metrics || {}).every(v => !v) && (
                               <p className="text-xs text-ink-faint italic">No measurements recorded.</p>
                             )}
                           </div>

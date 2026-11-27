@@ -36,7 +36,8 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
     : (service.service_category ?? 'Tailoring Service').replace(/_/g, ' ');
   const hasPrice = service.base_price !== null && service.base_price !== undefined && service.base_price !== '';
   const onSale = hasPrice && service.sale_price != null && Number(service.sale_price) < Number(service.base_price);
-  const rating = Number(service.reviews_avg_rating) > 0 ? Number(service.reviews_avg_rating).toFixed(1) : '0.0';
+  // No reviews yet reads "New" (like the shop's own "New (0 reviews)"), not a 0.0 that looks like a bad score.
+  const rating = Number(service.reviews_avg_rating) > 0 ? Number(service.reviews_avg_rating).toFixed(1) : 'New';
   const turnaround = (service.estimated_days ? 'Est. ' : '') + formatServiceTurnaround(service.estimated_days, service.estimated_days_max);
   const saves = (service.saves_count ?? 0) + (saved ? 1 : 0);
 
@@ -48,10 +49,10 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
       className={`group/svc flex min-w-0 flex-col overflow-hidden rounded-xl border bg-[#FAF7F4] transition-colors ${hovered ? 'border-taupe bg-sunken ring-2 ring-taupe/20' : 'border-line hover:border-line-strong'}`}
     >
       {/* The photo runs edge to edge: no margin at the top, left or right. */}
-      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-sunken lg:aspect-[3/1]">
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-sunken lg:aspect-[2/1]">
         {service.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={getMediaUrl(service.image_url)} alt={service.name} className="h-full w-full object-cover object-top" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          <img src={getMediaUrl(service.image_url)} alt={service.name} className="h-full w-full object-cover object-center" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         ) : (
           <div className="flex h-full w-full items-center justify-center"><Scissors size={18} className="text-taupe/40" /></div>
         )}
@@ -67,7 +68,8 @@ export default function FeaturedServiceCard({ service, href, hovered, saved, onH
 
       {/* The details have the margin. */}
       <div className="flex min-w-0 flex-col gap-1 p-2.5 lg:gap-0.5 lg:p-2">
-        <h4 className="line-clamp-3 break-words text-xs font-semibold leading-snug lg:line-clamp-1 text-ink transition-colors group-hover/svc:text-taupe">{service.name}</h4>
+        {/* Up to two lines, always the height of two, so the cards in a row line up. */}
+        <h4 className="line-clamp-2 min-h-[2.75em] break-words text-xs font-semibold leading-snug text-ink transition-colors group-hover/svc:text-taupe" title={service.name}>{service.name}</h4>
         <p className="line-clamp-1 break-words text-xs font-medium text-taupe-dark" title={kind}>{kind}</p>
         {onSale ? (
           <p className="flex items-center gap-1.5">

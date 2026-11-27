@@ -44,5 +44,5 @@ export const REJECT_PRESET_REASONS = [
   'Screenshot is blurry or unreadable',
   'Amount sent is incorrect or incomplete',
   'Duplicate or invalid transaction proof',
-  'Payment not reflected in store merchant account',
+  'Payment not reflected in shop merchant account',
 ];

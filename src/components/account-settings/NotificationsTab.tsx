@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Save, Bell, MessageSquare, Mail, BarChart2 } from 'lucide-react';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
 const NOTIF_STORAGE_KEY = 'sutura_notif_prefs';
 
@@ -24,12 +21,10 @@ function Toggle({
   checked,
   onChange,
   id,
-  disabled = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   id: string;
-  disabled?: boolean;
 }) {
   return (
     <button
@@ -37,10 +32,9 @@ function Toggle({
       type="button"
       role="switch"
       aria-checked={checked}
-      disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-        disabled ? 'cursor-not-allowed opacity-50 bg-line' : checked ? 'cursor-pointer bg-taupe' : 'cursor-pointer bg-line'
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+        checked ? 'bg-taupe' : 'bg-line'
       }`}
     >
       <span
@@ -55,8 +49,6 @@ function Toggle({
 export default function NotificationsTab() {
   const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
-  const { isGated } = useSubscriptionTier();
-  const smsGated = isGated('notifications');
 
   useEffect(() => {
     try {
@@ -122,33 +114,20 @@ export default function NotificationsTab() {
       </div>
 
       <div className="space-y-5">
-        {rows.map(({ key, label, desc, icon: Icon }) => {
-          const locked = key === 'sms' && smsGated;
-          return (
-            <div key={key} className="flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-canvas flex items-center justify-center shrink-0 mt-0.5">
-                  <Icon size={15} className="text-taupe" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-ink flex items-center gap-2">
-                    <span>{label}</span>
-                    {locked && <PlanTierTag plan="Pro" />}
-                  </p>
-                  <p className="text-xs text-ink-faint mt-0.5">
-                    {desc}{' '}
-                    {locked && (
-                      <Link href="/dashboard/billing" className="font-semibold text-taupe underline">
-                        Upgrade to Pro
-                      </Link>
-                    )}
-                  </p>
-                </div>
+        {rows.map(({ key, label, desc, icon: Icon }) => (
+          <div key={key} className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-canvas flex items-center justify-center shrink-0 mt-0.5">
+                <Icon size={15} className="text-taupe" />
               </div>
-              <Toggle id={`notif-${key}`} checked={locked ? false : prefs[key]} disabled={locked} onChange={update(key)} />
+              <div>
+                <p className="text-sm font-medium text-ink">{label}</p>
+                <p className="text-xs text-ink-faint mt-0.5">{desc}</p>
+              </div>
             </div>
-          );
-        })}
+            <Toggle id={`notif-${key}`} checked={prefs[key]} onChange={update(key)} />
+          </div>
+        ))}
       </div>
 
       <div className="pt-5 border-t border-line flex items-center justify-between mt-6">

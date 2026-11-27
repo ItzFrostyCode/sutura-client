@@ -3,29 +3,20 @@ import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
 import { BulletItem, ImageItem, ColorItem, CatalogFormData, CatalogItemResponse, type ApparelReview } from './catalogTypes';
 import type { SizeChartValue } from '@/components/shared/SizeChartEditor';
-import type { DesignPricing } from '@/lib/designPricing';
-import { parseColorNames } from '@/lib/fabricHelper';
-import { noticeDialog } from '@/store/useConfirmStore';
 
 export interface CatalogItem {
   id: number;
   name: string;
   price: string;
-  /** Server-worked price (lib/designPricing). */
-  pricing?: DesignPricing;
   estimated_days?: number | null;
   estimated_days_max?: number | null;
-  /** This design's own measuring rule; null = follow its service. */
-  measurement_requirement?: 'none' | 'existing' | 'shop' | null;
   material: string;
   color?: string;
   fabric_image_url?: string;
   sizes?: string[] | null;
   description?: string;
   garment_type?: string;
-  /** The service this design is a style of. */
-  service_id?: number | string | null;
-  service?: { id: number; name: string } | null;
+  department?: string;
   category?: string;
   images: { id: number; image_url: string; is_primary: boolean }[];
   views_count: number;
@@ -131,12 +122,12 @@ export function parseCareInstructions(careInstructionsInput?: unknown): { text: 
 // genuinely empty for an item with no color set, unlike getItemColorOptions
 // (which always returns a "Default" fallback for the customer-facing view).
 export function parseColorItems(item: CatalogItemResponse): ColorItem[] {
-  const names = parseColorNames(item.color);
-  if (names.length === 0) return [];
+  const raw = (item.color ?? '').trim();
+  if (!raw) return [];
+  const names = raw.split(',').map(c => c.trim()).filter(Boolean);
   return names.map((name, i) => {
-    const match = (item.images || []).find(img => img.view_angle?.trim().toLowerCase() === name.trim().toLowerCase())
-      ?? (item.images && item.images.length === names.length ? item.images[i] : undefined);
-    return { id: `color-${i}`, name, image_url: i === 0 ? '' : (match?.image_url ?? '') };
+    const match = (item.images || []).find(img => img.view_angle?.toLowerCase() === name.toLowerCase());
+    return { id: `color-${i}`, name, image_url: match?.image_url ?? '' };
   });
 }
 
@@ -148,9 +139,7 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
 
   const form = {
     name: item.name,
-    price: item.price != null ? item.price.toString() : '',
-    pricing_mode: item.pricing_mode ?? 'same',
-    extra_charge: item.extra_charge != null ? String(item.extra_charge) : '',
+    price: item.price.toString(),
     service_id: item.service_id != null ? String(item.service_id) : '',
     estimated_days: item.estimated_days != null ? String(item.estimated_days) : '',
     estimated_days_max: item.estimated_days_max != null ? String(item.estimated_days_max) : '',
@@ -160,6 +149,9 @@ export function mapCatalogItemToState(item: CatalogItemResponse) {
     care_instructions: careText,
     measurement_guide: measurementGuideText,
     garment_type: item.garment_type ?? '',
+    department: item.department ?? '',
+    subcategory: item.subcategory ?? '',
+    garment_structure: item.garment_structure ?? '',
     sizes: Array.isArray(item.sizes) ? item.sizes : [],
     external_gallery_url: item.external_gallery_url ?? '',
     is_active: item.is_active ?? true,
@@ -224,7 +216,7 @@ export async function uploadSectionImage({
     else if (section === 'measurement_guide') setMeasurementGuideImage(url);
   } catch (err) {
     console.error(`${section} image upload failed`, err);
-    void noticeDialog(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
+    alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
   } finally {
     setUploadingSection(null);
   }
@@ -258,7 +250,7 @@ export async function uploadCatalogImage({
     setImages(prev => prev.map(img => (img.id === imageId ? { ...img, url, uploading: false } : img)));
   } catch (err) {
     console.error('Upload failed', err);
-    void noticeDialog(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
+    alert(getErrorMessage(err, 'Failed to upload image. File may be too large.'));
     setImages(prev => prev.map(img => (img.id === imageId ? { ...img, uploading: false } : img)));
   }
 }
@@ -288,16 +280,10 @@ export function buildSavePayload(
 
   return {
     ...formData,
-    price: formData.pricing_mode === 'set' || !formData.service_id
-      ? (formData.price ? Number(formData.price) : 0)
-      : null,
-    extra_charge: formData.pricing_mode === 'extra' && formData.extra_charge
-      ? Number(formData.extra_charge)
-      : null,
     service_id: formData.service_id ? Number(formData.service_id) : null,
     fabric_image_url: formData.fabric_image_url || null,
     sizes: formData.sizes,
-    color: validColors.length > 0 ? JSON.stringify(validColors.map(c => c.name)) : null,
+    color: validColors.length > 0 ? validColors.map(c => c.name).join(', ') : null,
     features: {
       rows: featureRows,
       image_url: featuresImage,

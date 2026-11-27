@@ -39,6 +39,10 @@ export interface StoreBranch {
 }
 
 export interface CatalogItem {
+  /** men / women / wedding / office (the team lead's catalog form sets it). */
+  department?: string | null;
+  subcategory?: string | null;
+  garment_structure?: string | null;
   id: number;
   name: string;
   price: string | number;

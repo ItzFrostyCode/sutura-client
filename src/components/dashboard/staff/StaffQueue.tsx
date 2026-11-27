@@ -3,14 +3,15 @@ import Link from 'next/link';
 import type { StaffQueueJob } from './useStaffOverview';
 
 const STAGE: Record<string, string> = {
-  confirmed: 'Ready to start', awaiting_materials: 'Waiting for materials',
-  design: 'Design', pattern_making: 'Pattern making', mass_cutting: 'Cutting', cutting: 'Cutting', sewing: 'Sewing',
-  final_adjustments: 'Adjustments', qc_ironing: 'Quality Check', qc_check: 'Quality Check', in_repair: 'In Repair', ready_for_fitting: 'Ready for Fitting',
-  ready_for_pickup: 'Ready for Pickup', balance_handover: 'Balance & Handover',
+  pending: 'Not started', on_hold: 'On hold', design: 'Design', production: 'In production', pattern_making: 'Pattern making', mass_cutting_printing: 'Cutting & printing', cutting: 'Cutting', sewing: 'Sewing',
+  adjustments: 'Adjustments', final_adjustments: 'Final adjustments', quality_check: 'Quality check', qc_ironing: 'QC / ironing', qc_check: 'QC check',
+  in_repair: 'In repair', ready_for_fitting: 'Ready for fitting',
 };
-const due = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No due date');
+// Any stage not listed above: "some_stage" → "Some stage", never the raw code.
+const stageLabel = (s: string) => STAGE[s] ?? (s.charAt(0).toUpperCase() + s.slice(1)).replace(/_/g, ' ');
+const due = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : 'No due date');
 
-// "My Production Queue": the orders on the floor, mine first, urgent deadlines flagged.
+// "My Production Queue": the active orders assigned to me (the ones I can open), urgent deadlines flagged.
 export default function StaffQueue({ jobs }: Readonly<{ jobs: StaffQueueJob[] }>) {
   return (
     <section className="bg-surface border border-line" aria-label="My production queue">
@@ -19,7 +20,7 @@ export default function StaffQueue({ jobs }: Readonly<{ jobs: StaffQueueJob[] }>
         <Link href="/dashboard/jobs" className="text-xs font-semibold text-taupe min-h-11 flex items-center">All orders</Link>
       </div>
       {jobs.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-ink-muted">Nothing in production right now.</p>
+        <p className="px-4 py-6 text-sm text-ink-muted">No orders are assigned to you right now.</p>
       ) : (
         <ul className="divide-y divide-line">
           {jobs.map((j) => (
@@ -27,7 +28,7 @@ export default function StaffQueue({ jobs }: Readonly<{ jobs: StaffQueueJob[] }>
               <Link href={`/dashboard/jobs/${j.id}`} className="flex items-center gap-3 px-4 py-3 min-h-14 hover:bg-canvas">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-ink truncate">{j.order_number} · {j.customer ?? 'Customer'}</p>
-                  <p className="text-xs text-ink-muted truncate">{j.what ? `${j.what} · ` : ''}{STAGE[j.status] ?? j.status}{j.is_mine ? ' · Mine' : ''}</p>
+                  <p className="text-xs text-ink-muted truncate">{j.what ? `${j.what} · ` : ''}{stageLabel(j.status)}</p>
                 </div>
                 <div className="text-right shrink-0">
                   {j.urgent && <span className="block text-[11px] font-bold uppercase tracking-wider text-rose-700">Urgent{j.is_rush ? ' · Rush' : ''}</span>}

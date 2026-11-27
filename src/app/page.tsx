@@ -43,6 +43,8 @@ export default function HomePage() {
     if (filters.minPrice) params.set('min_price', filters.minPrice);
     if (filters.maxPrice) params.set('max_price', filters.maxPrice);
     if (filters.minRating) params.set('min_rating', filters.minRating);
+    if (filters.province) { params.set('province', filters.province); params.set('tab', 'store'); }
+    if (filters.city) params.set('city', filters.city);
     if (filters.district) { params.set('district', filters.district); params.set('tab', 'store'); }
     if (filters.sortBy) params.set('sort_by', filters.sortBy);
     // A search from Discover opens the LIST of results straight away (the Map's List view), not the map.

@@ -26,7 +26,7 @@ interface SearchPanelTopProps {
 
 /** One full-width search bar with the filter icon inside it (Open / Closed is in the filter pop-up), and the category the person arrived with. */
 export default function SearchPanelTop({ s, onOpenFilter, inputRef, showTabs = true, trailing, onSearch, onFocus }: SearchPanelTopProps) {
-  const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy };
+  const all: AllFilters = { radiusKm: s.radiusKm, status: s.openStatus, minPrice: s.minPrice, maxPrice: s.maxPrice, minRating: s.minRating, province: s.province, city: s.city, district: s.district, barangay: s.barangay, area: s.area, sortBy: s.sortBy };
 
   return (
     <div>

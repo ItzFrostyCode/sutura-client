@@ -45,8 +45,9 @@ export default function SupportListView({
     return (
       <div className="bg-surface border border-line rounded-xl overflow-hidden">
         {tickets.map((ticket, idx) => {
-          const typeConfig = TYPE_LABELS[ticket.type];
-          const priorityConfig = PRIORITY_LABELS[ticket.priority];
+          // Unknown values (older tickets) fall back instead of crashing the list.
+          const typeConfig = TYPE_LABELS[ticket.type] ?? TYPE_LABELS.general;
+          const priorityConfig = PRIORITY_LABELS[ticket.priority] ?? PRIORITY_LABELS.medium;
           const statusConfig = STATUS_CONFIG[ticket.status];
           
           let dotColor = 'bg-sage';

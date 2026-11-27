@@ -2,7 +2,7 @@ import { FileImage } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { convertValue, splitMeasure, unitMark, unitOfMetrics, type MeasureUnit } from '@/lib/measurementUnit';
 import { humanizeMetricKey } from '@/components/measurements/measurementHelpers';
-import { splitByArea } from '@/components/measurements/measurementAreas';
+import { groupByBodyPart } from '@/components/measurements/measurementAreas';
 import type { MeasurementRecord } from '@/components/measurements/measurementTypes';
 
 /**
@@ -39,24 +39,23 @@ function AreaList({ title, rows, unit }: { readonly title: string; readonly rows
 }
 
 /**
- * The sizes exactly as the shop recorded them on the job order: Top and Bottom, each value in the unit the shop typed
- * it in (with the other unit beside it), then the shop's notes and the photos of the paper sheet. Read-only — the shop is the one who records and corrects measurements.
+ * The sizes exactly as the shop recorded them on the job order, by body part (upper body, arms, lower body, lengths and
+ * the shop's own fields), each value in the unit the shop typed it in (with the other unit beside it), then the shop's notes and the photos of the paper sheet. Read-only — the shop is the one who records and corrects measurements.
  */
 export default function MeasurementSheet({ record }: { readonly record: MeasurementRecord }) {
   const unit = unitOfMetrics(record.metrics);
-  const { top, bottom } = splitByArea(record.metrics);
+  const parts = groupByBodyPart(record.metrics);
   const photos = record.photo_urls ?? [];
 
-  if (top.length === 0 && bottom.length === 0 && photos.length === 0 && !record.notes) {
+  if (parts.length === 0 && photos.length === 0 && !record.notes) {
     return <p className="mobile-body-sm text-ink-muted">The shop hasn&apos;t typed in any sizes for this yet.</p>;
   }
 
   return (
     <div className="space-y-4">
-      {(top.length > 0 || bottom.length > 0) && (
-        <div className={`grid gap-4 ${top.length > 0 && bottom.length > 0 ? 'sm:grid-cols-2' : ''}`}>
-          {top.length > 0 && <AreaList title="Top" rows={top} unit={unit} />}
-          {bottom.length > 0 && <AreaList title="Bottom" rows={bottom} unit={unit} />}
+      {parts.length > 0 && (
+        <div className={`grid gap-x-6 gap-y-4 ${parts.length > 1 ? 'sm:grid-cols-2' : ''}`}>
+          {parts.map((p) => <AreaList key={p.part} title={p.part} rows={p.rows} unit={unit} />)}
         </div>
       )}
 

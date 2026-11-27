@@ -32,6 +32,12 @@ function LoginPageContent() {
     if (hydrated && user && !addAccount) router.replace(destinationFor(user, !!staffProfile, redirectPath));
   }, [hydrated, user, staffProfile, redirectPath, router, addAccount]);
 
+  // "Log in as Shop Owner" (a signed-in customer adding a shop account) on tablet/desktop: the modal over the Me hub.
+  useEffect(() => {
+    if (!addAccount || !hydrated || !user || window.innerWidth < 600) return;
+    router.replace('/account?signin=1&as=store&add=1');
+  }, [addAccount, hydrated, user, router]);
+
   // Tablet/desktop customers sent here to book get the Sign In modal over the page they came from instead.
   useEffect(() => {
     if (!redirectPath || initialPortal === 'store' || window.innerWidth < 768) return;

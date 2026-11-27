@@ -526,10 +526,13 @@ export default function StoreHeroHeader({
             </div>
           </div>
 
+          {/* Name, rating, then the buttons UNDER the name on every size (desktop too): the name keeps one line instead
+              of being squeezed by the buttons beside it. */}
+          <div className="flex min-w-0 flex-1 flex-col gap-3 md:pb-3">
           {/* Name, then trust and rating (in the map sheet the sheet's own header carries the name) */}
           {!embedded && (
-            <div className="min-w-0 flex-1 md:pb-3">
-              <h1 className="text-2xl sm:text-3xl md:text-[32px] font-serif font-bold text-ink tracking-tight leading-tight">
+            <div className="min-w-0">
+              <h1 title={store.name} className="text-2xl sm:text-3xl md:text-[32px] font-serif font-bold text-ink tracking-tight leading-tight md:truncate">
                 {store.name}
               </h1>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted mt-1">
@@ -562,7 +565,7 @@ export default function StoreHeroHeader({
 
           {/* ⚡ 3. Actions (in the map sheet: Book Appointment and Directions are in the sheet's header) */}
           {!embedded && (
-            <div className="flex items-center gap-2 w-full md:w-auto md:pb-3 shrink-0">
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
               {isOwnerViewingOwnStore ? (
                 <button
                   type="button"
@@ -629,6 +632,7 @@ export default function StoreHeroHeader({
               )}
             </div>
           )}
+          </div>
         </div>
 
         {/* Logo Save/Cancel bar (pending logo change) */}
@@ -659,7 +663,8 @@ export default function StoreHeroHeader({
 
         {/* 📝 4. Intro: the shop's own words, then where / when / how to call and its links — the same list as the shop
             panel in Search / Map, so the shop reads the same wherever it is opened. */}
-        <div className="mt-4 max-w-2xl">
+        {/* Full width of the page column (same edges as the cover photo). */}
+        <div className="mt-4">
           {store.description && (
             <p className="mobile-body-sm sm:tablet-body-md text-ink-body font-normal leading-relaxed whitespace-pre-line mb-2">
               {store.description}

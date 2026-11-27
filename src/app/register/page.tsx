@@ -41,7 +41,7 @@ function RegisterPageContent() {
   };
 
   return (
-    <AuthPage close={{ onClick: leave, label: 'Close create account' }}>
+    <AuthPage close={{ onClick: leave, label: 'Close create account' }} wide={!result}>
       {result ? <RegisterSuccess result={result} redirect={redirect} /> : <RegisterForm redirect={redirect} onRegistered={onRegistered} />}
     </AuthPage>
   );

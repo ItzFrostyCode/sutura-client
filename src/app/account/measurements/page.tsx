@@ -29,6 +29,9 @@ export default function MyMeasurementsPage() {
   // Read order by order (what each order is being made with); measurements no order has used yet are listed after them.
   const byOrder = useMemo(() => ordersWithMeasurements(records), [records]);
   const groups = useMemo(() => groupMeasurements(records.filter((r) => !(r.job_orders?.length))), [records]);
+  // Every version of each profile (same shop + profile name), so an order's card can show the others too.
+  const allGroups = useMemo(() => groupMeasurements(records), [records]);
+  const versionsOf = (m: MyMeasurement) => allGroups.find((g) => g.versions.some((v) => v.id === m.id))?.versions ?? [m];
 
   const q = search.trim().toLowerCase();
   const filteredOrders = byOrder.filter(({ order, measurement }) => !q || [measurement.profile_name, measurement.service?.name, measurement.catalog_item?.name, order.order_number, order.catalog_item?.name, order.service?.name, order.garment_category, measurement.store?.name].some((t) => t?.toLowerCase().includes(q)));
@@ -82,7 +85,7 @@ export default function MyMeasurementsPage() {
         <section className="mb-5">
           <h2 className="mobile-overline mb-2 text-ink-muted">For your job orders</h2>
           <div className="space-y-4">
-            {filteredOrders.map(({ order, measurement }) => <OrderMeasurementCard key={order.id} order={order} measurement={measurement} />)}
+            {filteredOrders.map(({ order, measurement }) => <OrderMeasurementCard key={order.id} order={order} measurement={measurement} versions={versionsOf(measurement)} />)}
           </div>
         </section>
       )}

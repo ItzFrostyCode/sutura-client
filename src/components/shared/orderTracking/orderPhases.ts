@@ -125,14 +125,14 @@ export function buildStages(status: string, timestamps?: Record<string, string |
     { key: 'pending', label: 'Pending', Icon: Clock },
     { key: 'design', label: 'Design', Icon: Palette },
     bulk
-      ? { key: 'cutting', label: 'Cutting', short: 'Cutting', Icon: Scissors }
-      : { key: 'pattern_making', label: 'Pattern Making', short: 'Pattern', Icon: Ruler },
-    { key: 'sewing', label: 'Sewing / Assembly', short: 'Sewing', Icon: Shirt },
-    { key: 'ready_for_fitting', label: 'Ready for Fitting', short: 'Fitting', Icon: Ruler },
-    { key: 'final_adjustments', label: 'Final Adjustments', short: 'Adjust', Icon: Wrench },
-    { key: 'qc_ironing', label: 'Quality Check', short: 'Quality', Icon: Sparkles },
-    { key: 'ready_for_pickup', label: 'Ready for Pickup', short: 'Ready', Icon: Package },
-    { key: 'completed', label: 'Completed', short: 'Done', Icon: Flag },
+      ? { key: 'cutting', label: 'Cutting', Icon: Scissors }
+      : { key: 'pattern_making', label: 'Pattern Making', Icon: Ruler },
+    { key: 'sewing', label: 'Sewing / Assembly', Icon: Shirt },
+    { key: 'ready_for_fitting', label: 'Ready for Fitting', Icon: Ruler },
+    { key: 'final_adjustments', label: 'Final Adjustments', Icon: Wrench },
+    { key: 'qc_ironing', label: 'Quality Check', Icon: Sparkles },
+    { key: 'ready_for_pickup', label: 'Ready for Pickup', Icon: Package },
+    { key: 'completed', label: 'Completed', Icon: Flag },
   ];
   // A bulk order (team set, uniforms) has no fitting unless it is actually in one.
   return withTimes(pipeline === 'bulk' && !FITTING_STATUSES.has(status) ? stages.filter((s) => !FITTING_STATUSES.has(s.key)) : stages);

@@ -1,8 +1,8 @@
-// After-sale claims ("Report a problem"). Same shapes as the server's OrderClaim, so this works on either server.
+// After-sale claims ("Report a problem") — mirrors App\Models\OrderClaim on the server.
 
 export type ClaimType = 'repair' | 'refund';
 export type ClaimReason = 'poor_stitching' | 'wrong_fit' | 'damaged' | 'other';
-export type ClaimStatus = 'submitted' | 'repair_offered' | 'repairing' | 'resolved' | 'declined' | 'awaiting_return' | 'refunded';
+export type ClaimStatus = 'submitted' | 'repair_offered' | 'declined' | 'repairing' | 'resolved' | 'awaiting_return' | 'refunded';
 
 export interface OrderClaim {
   id: number;
@@ -14,7 +14,7 @@ export interface OrderClaim {
   status: ClaimStatus;
   decline_reason: string | null;
   escalated_ticket_id: number | null;
-  /** Set when the shop offered a free repair instead of a refund. */
+  /** Set when the shop offered a free repair on a refund claim. */
   repair_offer: { due_date: string | null; note: string | null; offered_at: string; declined_at: string | null } | null;
   decided_at: string | null;
   repair_order: { id: number; order_number: string; tracking_code: string; status: string; due_date: string | null } | null;
@@ -26,6 +26,8 @@ export interface OrderClaim {
   refunded_at: string | null;
   resolved_at: string | null;
   created_at: string;
+  filed_by?: string | null;
+  decided_by?: string | null;
 }
 
 export interface ClaimsPayload {
@@ -44,34 +46,30 @@ export interface NewClaim {
   photos: string[];
 }
 
-export const MAX_CLAIM_PHOTOS = 5;
-
 export const CLAIM_REASONS: { value: ClaimReason; label: string }[] = [
   { value: 'poor_stitching', label: 'Poor stitching' },
   { value: 'wrong_fit', label: 'Wrong fit' },
   { value: 'damaged', label: 'Damaged' },
-  { value: 'other', label: 'Something else' },
+  { value: 'other', label: 'Other' },
 ];
 
 export const reasonLabel = (r: ClaimReason) => CLAIM_REASONS.find((x) => x.value === r)?.label ?? r;
 
-/** Status words and pill colours, written for the customer. */
+/** Status words and tones, from the customer's point of view and the shop's. */
 export const CLAIM_STATUS: Record<ClaimStatus, { label: string; tone: string }> = {
-  submitted: { label: 'Waiting for the shop', tone: 'bg-amber-50 text-amber-800' },
-  repair_offered: { label: 'Shop offered a free repair', tone: 'bg-blue-50 text-blue-700' },
-  repairing: { label: 'Being repaired', tone: 'bg-blue-50 text-blue-700' },
-  resolved: { label: 'Repaired', tone: 'bg-sage/10 text-sage' },
-  declined: { label: 'Declined', tone: 'bg-danger/10 text-danger' },
-  awaiting_return: { label: 'Return the garment', tone: 'bg-amber-50 text-amber-800' },
-  refunded: { label: 'Refunded', tone: 'bg-sage/10 text-sage' },
+  submitted: { label: 'Waiting for the shop', tone: 'bg-amber-50 text-amber-800 border-amber-200' },
+  repair_offered: { label: 'Repair offered', tone: 'bg-blue-50 text-blue-800 border-blue-200' },
+  declined: { label: 'Declined', tone: 'bg-rose-50 text-rose-800 border-rose-200' },
+  repairing: { label: 'Being repaired', tone: 'bg-blue-50 text-blue-800 border-blue-200' },
+  resolved: { label: 'Repaired', tone: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  awaiting_return: { label: 'Return the garment', tone: 'bg-amber-50 text-amber-800 border-amber-200' },
+  refunded: { label: 'Refunded', tone: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
 };
 
-export const peso = (n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+export const shortDate = (d: string | null) =>
+  d ? new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
-/** Date with a time (when something was sent or decided). */
-export const claimDateTime = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+export const peso =(n: number) => `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-/** Plain calendar date; a "YYYY-MM-DD" value is read as that day, not shifted by the time zone. */
-export const claimDay = (iso: string | null) =>
-  iso ? new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+export const claimDate = (d: string | null) =>
+  d ? new Date(d).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';

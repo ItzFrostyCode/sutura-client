@@ -1,53 +1,54 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Lock, Plus } from 'lucide-react';
+import { Plus, Tag } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
-import SubscriptionGate from '@/components/SubscriptionGate';
-import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
-import PlanTierTag from '@/components/shared/PlanTierTag';
 
-import { Service, deriveTiersFromService } from '@/components/services/serviceHelpers';
+import { Service, ServicePackage, deriveTiersFromService } from '@/components/services/serviceHelpers';
 import ServiceDeleteModal from '@/components/services/ServiceDeleteModal';
 import ServiceGridView from '@/components/services/ServiceGridView';
+import PackageGridView from '@/components/services/packages/PackageGridView';
 import PageHeader from '@/components/shared/PageHeader';
 import ServicesModuleTabs from '@/components/services/ServicesModuleTabs';
 import ServiceAnalyticsView from '@/components/services/ServiceAnalyticsView';
 import NewServiceModal from '@/components/services/create/NewServiceModal';
-import { confirmDialog } from '@/store/useConfirmStore';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
+import ServiceDiscountModal from '@/components/services/ServiceDiscountModal';
 
 export default function ServicesPage() {
   const { store, user } = useAuthStore();
   const toast = useToast();
   const router = useRouter();
-  // POST/PUT/DELETE on services are role:store_owner-only in routes/api.php. Branch managers and staff can read the
-  // list (they pick a service on a job/appointment), and a manager also sees the analytics tab.
-  const canManage = useCanManageOfferings();
+  // POST/PUT/DELETE on services, service-packages, and restore are all
+  // role:store_owner,branch_manager-only in routes/api.php, but the Services
+  // nav (with the Packages tab) is shown to plain staff too since they need
+  // read access to pick a service on a job/appointment.
   const isOwnerOrManager = Boolean(
     user?.roles?.some((r) => ['store_owner', 'branch_manager', 'super_admin'].includes(r.name))
   );
-  const { tier, maxServices, loading: tierLoading } = useSubscriptionTier();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const serviceLimitReached = canManage && !loading && !tierLoading && maxServices !== -1 && services.length >= maxServices;
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
 
-  // Delete modal state
+  // Modals state
+  // Set when the owner arrived from a design's "+" (?add=1&return=/dashboard/catalog/12):
+  // the add form opens right away, and saving it sends them back to that design.
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // New service modal
-  const [newOpen, setNewOpen] = useState(false);
-  const [returnTo, setReturnTo] = useState<string | null>(null);
 
-  type Tab = 'services' | 'analytics';
+  // Packages tab
+  type Tab = 'services' | 'packages' | 'analytics';
   const [activeTab, setActiveTabState] = useState<Tab>('services');
-  // The tab lives in the URL (?tab=analytics) so coming back lands on the same tab.
+  // The tab lives in the URL (?tab=packages) so coming back from a package page lands on the same tab.
   const setActiveTab = (tab: Tab) => {
     setActiveTabState(tab);
     window.history.replaceState(null, '', tab === 'services' ? window.location.pathname : `?tab=${tab}`);
@@ -55,28 +56,17 @@ export default function ServicesPage() {
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (t === 'analytics') setActiveTabState(t);
+    if (t === 'packages' || t === 'analytics') setActiveTabState(t);
   }, []);
-
-  const handleDeleteDesign = async (designId: number) => {
-    if (!store?.id) return;
-    if (!(await confirmDialog({ title: 'Delete this service design?', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
-    try {
-      await api.delete(`/stores/${store.id}/catalog/${designId}`);
-      toast.success('Service design deleted.');
-      fetchServices();
-    } catch {
-      toast.error('Failed to delete service design.');
-    }
-  };
+  const [packages, setPackages] = useState<ServicePackage[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
 
   const fetchServices = useCallback(() => {
     if (!store?.id) {
       if (user?.id) setTimeout(() => setLoading(false), 0);
       return;
     }
-    // The owner also gets archived services (Services › Archived filter) so they can be restored.
-    api.get(`/stores/${store.id}/services${canManage ? '?include_archived=1' : ''}`)
+    api.get(`/stores/${store.id}/services`)
       .then(res => {
         setServices(res.data.data);
         setLoading(false);
@@ -85,21 +75,47 @@ export default function ServicesPage() {
         console.error(err);
         setLoading(false);
       });
-  }, [store, user, canManage]);
+  }, [store, user]);
 
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
 
+  const fetchPackages = useCallback(() => {
+    if (!store?.id) {
+      if (user?.id) setTimeout(() => setPackagesLoading(false), 0);
+      return;
+    }
+    api.get(`/stores/${store.id}/service-packages`)
+      .then(res => {
+        setPackages(res.data.data);
+        setPackagesLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setPackagesLoading(false);
+      });
+  }, [store, user]);
+
+  useEffect(() => {
+    fetchPackages();
+  }, [fetchPackages]);
+
+  // "New service" modal. Opened by Create New, or by ?add=1 links (the old
+  // /dashboard/services/new page, a catalog design's "create a service").
+  // With ?return=, a created service goes back there to be linked.
+  const [newOpen, setNewOpen] = useState(false);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
   useEffect(() => {
     if (!isOwnerOrManager) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('add') !== '1') return;
     const back = params.get('return');
     // Only ever return to a dashboard page — never an arbitrary URL.
-    const safe = back?.startsWith('/dashboard/') && !back.startsWith('//') ? `?return=${encodeURIComponent(back)}` : '';
-    router.replace(`/dashboard/services/new${safe}`);
-  }, [isOwnerOrManager, router]);
+    setReturnTo(back?.startsWith('/dashboard/') && !back.startsWith('//') ? back : null);
+    setNewOpen(true);
+    router.replace('/dashboard/services');
+  }, [isOwnerOrManager]);
 
   const handleServiceCreated = (id: number) => {
     setNewOpen(false);
@@ -111,37 +127,41 @@ export default function ServicesPage() {
     fetchServices();
   };
 
-  // Restoring brings an archived service back as Unpublished (S2); the owner publishes it when ready.
-  const restoreService = async (id: number) => {
-    if (!store?.id) return;
-    try {
-      await api.post(`/stores/${store.id}/services/${id}/restore`);
-      toast.success('Service restored as unpublished. Open it and publish when ready.');
-      fetchServices();
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Could not restore this service.');
-    }
-  };
-
   const confirmDelete = async () => {
     if (!store || !deletingId) return;
     setIsSubmitting(true);
     try {
       await api.delete(`/stores/${store.id}/services/${deletingId}`);
-      setServices(prev => prev.map(s => (s.id === deletingId ? { ...s, status: 'archived', is_active: false } : s)));
+      setServices(prev => prev.filter(s => s.id !== deletingId));
       setIsDeleteModalOpen(false);
       setDeletingId(null);
-      toast.success('Service archived. Find it under Filter › Archived to restore it.');
+      toast.success('Service deleted.');
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to archive service.');
+      toast.error(error.response?.data?.message || 'Failed to delete service.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Editing happens on the service's own page now (every section has a pencil);
+  // the modal stays for adding a new service.
+  const handleEditClick = (service: Service) => {
+    router.push(`/dashboard/services/${service.id}`);
+  };
 
+  const handleDeleteClick = (id: number) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const categoriesList = ['All', ...Array.from(new Set(services.flatMap(s => s.categories || [])))];
+
+  const filtered = services.filter(s => {
+    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || (s.categories || []).some(c => c.toLowerCase().includes(search.toLowerCase()));
+    const matchCategory = categoryFilter === 'All' || (s.categories || []).includes(categoryFilter);
+    return matchSearch && matchCategory;
+  });
 
 
 
@@ -149,29 +169,46 @@ export default function ServicesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Services"
-        description="Your tailoring services and how long they take."
+        description="Your tailoring services, turnaround times, and combo packages."
         inlineActions
         actions={
-          !canManage ? null : activeTab === 'services' ? (
-            serviceLimitReached ? (
-              <Link
-                href="/dashboard/billing"
-                title={`Your plan allows up to ${maxServices} services. Upgrade to add more.`}
-                className="flex items-center gap-2 min-h-11 border border-line bg-surface hover:bg-sunken text-ink px-4 rounded-xl font-semibold text-sm transition-colors"
-              >
-                <Lock size={15} />
-                <span>Upgrade for more services</span>
-                <PlanTierTag plan={tier === 'basic' ? 'Pro' : 'Premium'} />
-              </Link>
-            ) : (
+          !isOwnerOrManager ? null : activeTab === 'services' ? (
+            <>
+              {/* % off a service for a set of days (badge + struck-out price on every card). */}
+              <ReadOnlyLock>
+                <button
+                  type="button"
+                  onClick={() => setDiscountOpen(true)}
+                  disabled={services.length === 0}
+                  className="flex items-center gap-1.5 min-h-11 border border-line-strong bg-surface hover:bg-sunken text-ink px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Tag size={16} />
+                  Discount
+                </button>
+              </ReadOnlyLock>
+              <ReadOnlyLock>
+                <button
+                  data-tour="services-create"
+                  onClick={() => { setReturnTo(null); setNewOpen(true); }}
+                  className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
+                >
+                  <Plus size={17} />
+                  Create New
+                </button>
+              </ReadOnlyLock>
+            </>
+          ) : activeTab === 'packages' ? (
+            <ReadOnlyLock>
               <button
-                onClick={() => router.push('/dashboard/services/new')}
-                className="flex items-center gap-1.5 min-h-11 bg-espresso hover:bg-espresso/90 text-white px-4 rounded-xl font-semibold text-sm transition-colors cursor-pointer"
+                onClick={() => router.push('/dashboard/services/packages/new')}
+                disabled={services.length < 2}
+                title={services.length < 2 ? 'Add at least 2 services first' : undefined}
+                className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <Plus size={17} />
                 Create New
               </button>
-            )
+            </ReadOnlyLock>
           ) : null
         }
       >
@@ -179,28 +216,20 @@ export default function ServicesPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           serviceCount={services.length}
+          packageCount={packages.length}
           isOwnerOrManager={isOwnerOrManager}
         />
       </PageHeader>
 
       {activeTab === 'services' ? (
-        <ServiceGridView
-          services={services}
-          loading={loading}
-          canManage={canManage}
-          storeSlug={store?.slug}
-          onEdit={(id) => router.push(`/dashboard/services/${id}`)}
-          onDelete={(id) => {
-            setDeletingId(id);
-            setIsDeleteModalOpen(true);
-          }}
-          onDeleteDesign={handleDeleteDesign}
-          onRestore={canManage ? restoreService : undefined}
-        />
+        <div data-tour="services-list">
+          <ServiceDiscountModal isOpen={discountOpen} onClose={() => setDiscountOpen(false)} services={services} storeId={store?.id} onSaved={fetchServices} />
+          <ServiceGridView services={services} loading={loading} canManage={isOwnerOrManager} storeSlug={store?.slug} onPlanLockChange={() => { fetchServices(); fetchPackages(); }} />
+        </div>
+      ) : activeTab === 'packages' ? (
+        <PackageGridView packages={packages} loading={packagesLoading} />
       ) : isOwnerOrManager ? (
-        <SubscriptionGate feature="analytics">
-          <ServiceAnalyticsView />
-        </SubscriptionGate>
+        <ServiceAnalyticsView />
       ) : null}
 
       {store?.id && (
@@ -213,7 +242,6 @@ export default function ServicesPage() {
       )}
 
       <ServiceDeleteModal
-        archive
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);

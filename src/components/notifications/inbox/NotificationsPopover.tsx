@@ -43,7 +43,8 @@ export default function NotificationsPopover({ unreadCount, title, size = 'sm' }
       const vw = document.documentElement.clientWidth;
       const width = Math.min(MAX_W, vw - EDGE * 2);
       const left = Math.min(Math.max(b.right - width, EDGE), vw - EDGE - width);
-      const top = b.bottom + 8;
+      // A clear gap under the bell, so the panel doesn't touch the header.
+      const top = b.bottom + 16;
       setPlace({ top, left, width, maxHeight: `calc(100dvh - ${top}px - var(--bottom-nav-space, 0px) - ${EDGE}px)` });
     };
     measure();
@@ -72,7 +73,7 @@ export default function NotificationsPopover({ unreadCount, title, size = 'sm' }
       </button>
 
       {open && place && (
-        <div style={place} className="card-soft fixed z-[60] overflow-y-auto p-3 shadow-[0_12px_40px_rgba(45,42,38,0.18)]">
+        <div style={place} className="card-soft fixed z-[60] overflow-y-auto p-3 shadow-[0_2px_6px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.22)]!">
           <InboxPanel compact onLeave={() => setOpen(false)} />
         </div>
       )}

@@ -12,7 +12,7 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 // Tablet/desktop (600px+) Sign In: the same form as /login, floating over the page the customer was on so they stay
 // in context. It is a dialog, so it CLOSES (X, Escape, or a click on the dimmed page) — there is no "Back".
 export default function LoginModal() {
-  const { isOpen, close, redirectTo } = useLoginModalStore();
+  const { isOpen, close, redirectTo, portal, addAccount } = useLoginModalStore();
   const pathname = usePathname();
   useScrollLock(isOpen);
 
@@ -34,16 +34,18 @@ export default function LoginModal() {
       <div className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-white sm:bg-transparent">
         <button type="button" aria-label="Close sign in" tabIndex={-1} onClick={close}
           className="fixed inset-0 hidden cursor-default bg-ink/40 animate-fade-in sm:block" />
-        <div className="relative flex min-h-full justify-center sm:items-center sm:p-8">
+        <div className="relative flex min-h-full justify-center sm:items-center sm:p-6">
           <div role="dialog" aria-modal="true" aria-labelledby="login-modal-title"
-            className="relative w-full bg-white px-4 pb-10 pt-2 sm:max-w-md sm:rounded-2xl sm:border sm:border-line sm:p-8 sm:pt-4 sm:shadow-xl sm:animate-scale-up">
+            className="relative w-full bg-white px-4 pb-10 pt-2 sm:max-w-md sm:rounded-2xl sm:border sm:border-line sm:px-8 sm:py-6 sm:shadow-xl sm:animate-scale-up">
             <AuthTopBar close={{ onClick: close, label: 'Close sign in' }} />
-            <AuthBrand className="mb-6 sm:mb-8" />
+            <AuthBrand className="mb-6 sm:mb-4" />
             <LoginForm
               customerRedirect={redirectTo}
               registerHref={`/register?redirect=${encodeURIComponent(redirectTo || pathname || '/')}`}
               onDone={close}
               titleId="login-modal-title"
+              initialPortal={portal}
+              addAccount={addAccount}
             />
           </div>
         </div>

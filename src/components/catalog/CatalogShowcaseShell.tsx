@@ -1,107 +1,59 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 
-import { useRouter } from 'next/navigation';
-
-import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
 import PageHeader from '@/components/shared/PageHeader';
-import CatalogModuleTabs, { CatalogTabId } from '@/components/catalog/CatalogModuleTabs';
 import CatalogGridView from '@/components/catalog/CatalogGridView';
-import CatalogAnalyticsView from '@/components/catalog/CatalogAnalyticsView';
+import CatalogCreateModal from '@/components/catalog/create/CatalogCreateModal';
+import { useCanManageOfferings } from '@/hooks/useCanManageOfferings';
+import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
 
-interface CatalogShowcaseShellProps {
-  readonly initialTab?: CatalogTabId;
-}
-
-function resolveTabFromPath(): CatalogTabId {
-  if (typeof window === 'undefined') return 'catalog';
-  const pathname = window.location.pathname;
-  if (pathname.includes('/analytics') || pathname.includes('/reviews')) {
-    return 'analytics';
-  }
-  return 'catalog';
-}
-
-function CatalogShowcaseShellContent({ initialTab = 'catalog' }: CatalogShowcaseShellProps) {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<CatalogTabId>(() => {
-    if (typeof window !== 'undefined') {
-      const fromPath = resolveTabFromPath();
-      if (fromPath !== 'catalog') return fromPath;
-    }
-    return initialTab;
-  });
-
-  // Sync tab with browser back/forward history navigation
-  useEffect(() => {
-    const handlePopState = () => {
-      setActiveTab(resolveTabFromPath());
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Seamless in-page tab switching without whole-panel unmount or reload
-  const handleTabChange = useCallback((tabId: CatalogTabId, href: string) => {
-    if (tabId === 'services' || href.startsWith('/dashboard/services')) {
-      router.push(href);
-      return;
-    }
-    setActiveTab(tabId);
-    if (typeof window !== 'undefined' && window.location.pathname !== href) {
-      window.history.pushState(null, '', href);
-      window.dispatchEvent(new Event('sutura-tab-change'));
-    }
-  }, [router]);
-
+// Catalog Designs is photos and descriptions only: no Analytics tab and no
+// metric cards. "+ Create New" opens the create form in a modal.
+export default function CatalogShowcaseShell() {
   const canManage = useCanManageOfferings();
-  const headerActions = !canManage ? null : (
-    <Link
-      href="/dashboard/catalog/new"
-      data-tour="catalog-create"
-      className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
-    >
-      <Plus size={15} />
-      <span>Create New</span>
-    </Link>
-  );
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // /dashboard/catalog/new (and old links to it) land here with ?new=1.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('new') === '1') {
+      setCreateOpen(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
-        title="Service Designs"
-        description="Curated garment designs filed under your tailoring services."
-        actions={headerActions}
+        title="Catalog Designs"
+        description="Your garment designs: photos and descriptions customers can browse."
+        actions={canManage ? (
+          <ReadOnlyLock>
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              data-tour="catalog-create"
+              className="flex items-center gap-1.5 min-h-11 bg-taupe hover:bg-taupe-hover text-white px-4 rounded-xl font-semibold text-sm transition-colors shadow-2xs cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Create New</span>
+            </button>
+          </ReadOnlyLock>
+        ) : undefined}
         inlineActions
-      >
-        <CatalogModuleTabs activeTab={activeTab} onTabChange={handleTabChange} />
-      </PageHeader>
-
-      {/* 
-        Content below the tabs: ONLY this sub-panel switches when changing tabs.
-        The header, title, and tabs stay completely stable without reloading!
-      */}
-      <div className="tab-content-panel" data-tour="catalog-grid">
-        {activeTab === 'catalog' && <CatalogGridView />}
-        {activeTab === 'analytics' && <CatalogAnalyticsView />}
+      />
+      <div data-tour="catalog-grid">
+        <CatalogGridView key={refreshKey} onCreate={canManage ? () => setCreateOpen(true) : undefined} />
       </div>
+      {createOpen && (
+        <CatalogCreateModal
+          isOpen
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => setRefreshKey(k => k + 1)}
+        />
+      )}
     </div>
-  );
-}
-
-export default function CatalogShowcaseShell({ initialTab = 'catalog' }: CatalogShowcaseShellProps) {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex h-64 items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-taupe" />
-        </div>
-      }
-    >
-      <CatalogShowcaseShellContent initialTab={initialTab} />
-    </Suspense>
   );
 }

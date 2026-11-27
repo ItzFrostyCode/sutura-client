@@ -29,6 +29,8 @@ export const TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode;
   problem:        { label: 'Problem / Bug',     icon: <AlertTriangle size={14} />, color: 'text-red-500 bg-red-50 border-red-200' },
   update_request: { label: 'Update Request',    icon: <RefreshCw size={14} />,     color: 'text-blue-500 bg-blue-50 border-blue-200' },
   general:        { label: 'General Inquiry',   icon: <Info size={14} />,          color: 'text-ink-muted bg-sunken border-line' },
+  // Reports about a listing filed from the customer side (older tickets on this system).
+  product_report: { label: 'Product Report',    icon: <AlertTriangle size={14} />, color: 'text-amber-600 bg-amber-50 border-amber-200' },
   billing:        { label: 'Billing Issue',     icon: <CreditCard size={14} />,    color: 'text-violet-500 bg-violet-50 border-violet-200' },
 };
 

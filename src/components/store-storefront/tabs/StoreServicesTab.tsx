@@ -7,6 +7,7 @@ import api from '@/lib/axios';
 import { groupsOf, groupsOfServices, inGroup } from '@/lib/storefrontGroups';
 import ServiceRow from '../services/ServiceRow';
 import ServiceCategoryPage from '../services/ServiceCategoryPage';
+import StorePackages from '../services/StorePackages';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import PlanTierTag from '@/components/shared/PlanTierTag';
 
@@ -170,6 +171,9 @@ export default function StoreServicesTab({
           </button>
         </div>
       )}
+
+      {/* Combo packages first (one price for a set), hidden while searching services. */}
+      {!serviceSearch.trim() && <StorePackages storeSlug={storeId} />}
 
       {services.length > 0 && (
         <section id="shop-services" aria-labelledby="service-list-title" className="scroll-mt-2">

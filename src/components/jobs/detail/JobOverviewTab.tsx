@@ -1,124 +1,117 @@
 'use client';
 
 import JobRequirementsCard from './JobRequirementsCard';
-import React, { useState } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
-import { Job, GarmentSpecTable, CustomizationInstruction } from '../jobTypes';
-import { detailsLocked } from '../jobHelpers';
-import CancelledNotice from './CancelledNotice';
-import GarmentCheckPanel from './GarmentCheckPanel';
+import { Job } from '../jobTypes';
+import { CANCELLATION_REASON_LABELS } from '../jobHelpers';
+import JobOverviewKPIStrip from './JobOverviewKPIStrip';
 import JobSpecCard from './JobSpecCard';
-import JobConsultationCard from './JobConsultationCard';
 import JobCutSheetCard from './JobCutSheetCard';
 import JobMeasurementCard from './JobMeasurementCard';
 import JobRosterCard from './JobRosterCard';
-import JobGarmentSpecTableCard from './spec/JobGarmentSpecTableCard';
-import JobCustomizationInstructionsCard from './spec/JobCustomizationInstructionsCard';
-import { InstructionsReadOnly, SpecTableReadOnly } from './spec/SpecReadOnly';
+import JobOverviewSidebar from './JobOverviewSidebar';
+import JobScheduleCard from './JobScheduleCard';
+import JobClaimsCard from './JobClaimsCard';
 
 interface JobOverviewTabProps {
   job: Job;
   notes: string;
   setNotes: (notes: string) => void;
+  jobPaidSoFar: number;
+  requiredDownpayment: number;
   downpaymentShortfall: number;
+  showDownpaymentGate: boolean;
   onUseCurrentMeasurement: (versionId: number) => void;
   onToggleRosterItem: (index: number) => void;
-  onSaveSpecTable?: (table: GarmentSpecTable) => Promise<void>;
-  onSaveInstructions?: (instructions: CustomizationInstruction[]) => Promise<void>;
-  storeId?: number;
-  onRefreshJob?: () => Promise<void>;
-  /** A completed order: tables, notes and lists read as plain text; nothing can be added, saved or ticked. */
-  readOnly?: boolean;
-  /** Plain staff read the sizes and instructions; only the owner and branch managers edit them (default true). */
-  canEditDetails?: boolean;
+  onGoToFinancials: () => void;
+  onGoToProduction: () => void;
+  // Financials is Owner/Branch-Manager-exclusive (PAYMENT-WORKFLOW.md Part
+  // B) — Staff sees this same Financial Breakdown card read-only, without
+  // the "Full Ledger" / "Log Payment" links into the gated tab.
+  isOwnerOrManager: boolean;
+  /** Reloads the order after the Due Date & Staff card saves. */
+  onScheduleSaved?: () => void | Promise<void>;
+  /** Opens the follow-up form set to a Measurement visit ("have the shop measure me"). */
+  onScheduleMeasurement?: () => void;
+  /** Reloads the order after measurements are recorded or attached. */
+  onMeasurementChanged?: () => void;
 }
 
-const GroupLabel = ({ children }: Readonly<{ children: React.ReactNode }>) => (
-  <p className="pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">{children}</p>
-);
-
-/** The order's details: what is being made, the sizes, the references and the requirements. Money lives in Payments. */
 export default function JobOverviewTab({
   job,
   notes,
   setNotes,
+  jobPaidSoFar,
+  requiredDownpayment,
   downpaymentShortfall,
+  showDownpaymentGate,
   onUseCurrentMeasurement,
   onToggleRosterItem,
-  onSaveSpecTable,
-  onSaveInstructions,
-  storeId,
-  onRefreshJob,
-  readOnly,
-  canEditDetails = true,
+  onGoToFinancials,
+  onGoToProduction,
+  isOwnerOrManager,
+  onScheduleSaved,
+  onScheduleMeasurement,
+  onMeasurementChanged,
 }: JobOverviewTabProps) {
-  const locked = readOnly || !canEditDetails;
-  // A group order shows its people once (Team list); "Edit team list" opens the editor in its place until the order is being made.
-  const isTeam = Array.isArray(job.custom_order_data?.team_roster) && job.custom_order_data.team_roster.length > 0;
-  const canEditTeam = isTeam && !locked && !detailsLocked(job) && Boolean(onSaveSpecTable);
-  const [editingTeam, setEditingTeam] = useState(false);
   return (
-    <div className="space-y-4">
-      <CancelledNotice job={job} />
-      {storeId && !readOnly && <GarmentCheckPanel job={job} storeId={storeId} onDone={onRefreshJob} />}
+    <div className="space-y-5">
+      {/* Cancellation Notice */}
+      {job.status === 'cancelled' && job.cancellation_reason && (
+        <div className="bg-danger/10 border border-danger/25 rounded-2xl p-4 flex items-start gap-3">
+          <X size={16} className="text-danger shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <p className="text-[#9A5C4F] font-bold">This order was cancelled</p>
+            <p className="text-[#9A5C4F]/80 mt-0.5">
+              Reason: {CANCELLATION_REASON_LABELS[job.cancellation_reason] ?? job.cancellation_reason}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Rejection Notice */}
       {job.status === 'rejected' && job.rejection_reason && (
         <div className="bg-danger/10 border border-danger/25 rounded-2xl p-4 flex items-start gap-3">
           <X size={16} className="text-danger shrink-0 mt-0.5" />
           <div className="text-xs">
-            <p className="text-danger font-bold">This order was rejected</p>
-            <p className="text-danger/80 mt-0.5">Reason: {job.rejection_reason}</p>
+            <p className="text-[#9A5C4F] font-bold">This order was rejected</p>
+            <p className="text-[#9A5C4F]/80 mt-0.5">Reason: {job.rejection_reason}</p>
           </div>
         </div>
       )}
 
-      {/* The order itself and what it needs, side by side. */}
-      <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
-        <div className="lg:col-span-2">
-          <JobSpecCard job={job} />
+      <div className="space-y-6">
+        {/* KPI Strip */}
+        <JobOverviewKPIStrip job={job} />
+
+        {/* Main 2-Column Responsive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            <JobSpecCard job={job} onScheduleMeasurement={onScheduleMeasurement} onMeasurementChanged={onMeasurementChanged} />
+            <JobCutSheetCard job={job} notes={notes} setNotes={setNotes} />
+            <JobMeasurementCard job={job} onUseCurrentMeasurement={onUseCurrentMeasurement} />
+            <JobRosterCard job={job} onToggleRosterItem={onToggleRosterItem} />
+          </div>
+
+          {/* Right Column (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            <JobClaimsCard jobId={job.id} jobStatus={job.status} branchId={job.store_branch_id} isOwnerOrManager={isOwnerOrManager} />
+            {isOwnerOrManager && onScheduleSaved && <JobScheduleCard job={job} onSaved={onScheduleSaved} />}
+            <JobRequirementsCard job={job} paymentMet={downpaymentShortfall <= 0} />
+            <JobOverviewSidebar
+              job={job}
+              jobPaidSoFar={jobPaidSoFar}
+              requiredDownpayment={requiredDownpayment}
+              downpaymentShortfall={downpaymentShortfall}
+              showDownpaymentGate={showDownpaymentGate}
+              onGoToFinancials={onGoToFinancials}
+              onGoToProduction={onGoToProduction}
+              isOwnerOrManager={isOwnerOrManager}
+            />
+          </div>
         </div>
-        <JobRequirementsCard job={job} paymentMet={downpaymentShortfall <= 0} onChanged={onRefreshJob} />
-      </div>
-
-      <div className="space-y-4">
-        <GroupLabel>Sizes and measurements</GroupLabel>
-        {isTeam ? (
-          editingTeam && canEditTeam && onSaveSpecTable ? (
-            <JobGarmentSpecTableCard
-              job={job} onSaveSpecTable={onSaveSpecTable} onClose={() => setEditingTeam(false)}
-              title="Edit team list" subtitle="Change names, sizes and pieces, then save. People and pieces can change until the order is confirmed."
-            />
-          ) : (
-            <JobRosterCard
-              job={job} onToggleRosterItem={onToggleRosterItem} readOnly={readOnly}
-              action={canEditTeam ? <button type="button" onClick={() => setEditingTeam(true)} className="h-10 rounded-xl border border-line bg-surface px-4 text-[13px] font-semibold text-ink hover:bg-sunken">Edit team list</button> : undefined}
-            />
-          )
-        ) : (
-          <>
-            {locked ? <SpecTableReadOnly job={job} /> : onSaveSpecTable && <JobGarmentSpecTableCard job={job} onSaveSpecTable={onSaveSpecTable} />}
-            <JobRosterCard job={job} onToggleRosterItem={onToggleRosterItem} readOnly={readOnly} />
-          </>
-        )}
-        {/* A group order is sized per person in its team list; the one-wearer measurement card would only say "needed". */}
-        {(!isTeam || job.measurement) && (
-          <JobMeasurementCard
-            job={job}
-            onUseCurrentMeasurement={onUseCurrentMeasurement}
-            storeId={storeId}
-            onRefreshJob={onRefreshJob}
-          />
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <GroupLabel>How to make it</GroupLabel>
-        <JobConsultationCard job={job} />
-        {locked ? <InstructionsReadOnly job={job} /> : onSaveInstructions && (
-          <JobCustomizationInstructionsCard job={job} onSaveInstructions={onSaveInstructions} storeId={storeId} />
-        )}
-        <JobCutSheetCard job={job} notes={notes} setNotes={setNotes} readOnly={readOnly} />
       </div>
     </div>
   );

@@ -51,7 +51,7 @@ export default function PlanStep({ app }: { readonly app: StoreApplicationState 
         if (Object.keys(problems).length > 0) { revealFirstProblem(Object.keys(problems)); return; }
         void submit();
       }}
-      className="space-y-7"
+      className="space-y-7 sm:space-y-5 short:space-y-4"
     >
       <section id="app-plans" data-field="app-plans" className="scroll-mt-24">
         <div className="mb-3 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">

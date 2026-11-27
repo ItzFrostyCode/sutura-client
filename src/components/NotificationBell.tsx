@@ -2,27 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Bell,
-  Check,
-  CheckCheck,
-  X,
-  List,
-  Settings,
-  MoreVertical,
-  Trash2,
-} from 'lucide-react';
+import { Bell, CheckCheck, List, MoreHorizontal, Settings } from 'lucide-react';
+import { ageOf, kindOf } from '@/components/notifications/inbox/inboxTypes';
 import api from '@/lib/axios';
 import { bindNotificationSoundUnlock, playNotificationSound } from '@/lib/notificationSound';
 import {
   AppNotification,
   getSenderInfo,
-  formatDateTime,
-  relativeTime,
 } from '@/lib/notificationHelpers';
 import NotificationDetailModal from '@/components/notifications/NotificationDetailModal';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
 import { useOptionalBranch } from '@/context/BranchContext';
+
+/** How many notifications the drop-down shows before "See previous notifications" (same as the customer's). */
+const PREVIEW = 8;
 
 interface NotificationBellProps {
   /** "See all" in the panel footer. */
@@ -60,6 +53,9 @@ export default function NotificationBell({
   const [dismissing, setDismissing] = useState<string | null>(null);
   const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  // Same controls as the customer's bell: All / Unread, and the ⋯ menu in the header.
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [headMenu, setHeadMenu] = useState(false);
   // New unread notifications since the page loaded, shown as toasts.
   const [toasts, setToasts] = useState<AppNotification[]>([]);
   // Bumped whenever the unread count goes up, to replay the badge/bell motion.
@@ -270,7 +266,7 @@ export default function NotificationBell({
       <button
         id="notification-bell-btn"
         aria-label={bellLabel}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => { setOpen(o => !o); setHeadMenu(false); }}
         aria-expanded={open}
         aria-haspopup="dialog"
         title={bellLabel}
@@ -295,200 +291,108 @@ export default function NotificationBell({
         )}
       </button>
 
-      {/* ── Dropdown Panel (Screenshot 1 Reference) ── */}
+      {/* ── Dropdown: the same design as the customer's bell (InboxPanel compact): a sticky header with the title, a ⋯ menu
+          and All / Unread; compact rows (picture, kind badge, two lines, time, unread dot) grouped New / Earlier; and
+          "See previous notifications" pinned at the bottom. The data, branch filter, chime and toasts are this bell's own. */}
       {open && (
         <div
           aria-label="Notifications panel"
-          aria-modal="true"
-          className={`max-sm:fixed max-sm:inset-x-2 ${isNav ? 'max-sm:top-[60px]' : 'max-sm:top-[68px]'} max-sm:mt-0 max-sm:w-auto max-sm:max-w-none sm:absolute sm:right-0 sm:mt-2 sm:w-[380px] sm:max-w-[calc(100vw-1rem)] bg-surface border border-line rounded-2xl overflow-hidden z-50 shadow-xl
-            animate-in fade-in slide-in-from-top-2 duration-150`}
+          className={`max-sm:fixed max-sm:inset-x-2 ${isNav ? 'max-sm:top-[60px]' : 'max-sm:top-[72px]'} sm:absolute sm:right-0 sm:mt-4 sm:w-[400px] sm:max-w-[calc(100vw-1rem)] z-50 max-h-[min(640px,calc(100dvh-96px))] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-3 shadow-[0_2px_6px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.22)] animate-in fade-in slide-in-from-top-2 duration-150`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-surface">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-ink text-sm">Notifications</span>
-              {count > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#E41E3F] text-white rounded-full">
-                  {count}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-sunken text-ink-muted hover:text-ink transition-colors"
-                aria-label="Close notifications"
-              >
-                <X size={15} />
-              </button>
-            </div>
-          </div>
-
-          {/* List */}
-          <div className="max-h-[380px] overflow-y-auto overscroll-contain divide-y divide-line">
-            {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-sunken flex items-center justify-center mb-3">
-                  <Bell size={20} className="text-ink-muted" />
-                </div>
-                <p className="text-sm font-semibold text-ink">All caught up!</p>
-                <p className="text-xs text-ink-muted mt-0.5">No new notifications</p>
-              </div>
-            ) : (
-              notifications.map(notif => {
-                const sender = getSenderInfo(notif);
-                const isDismissing = dismissing === notif.id;
-                const isRead = !!notif.read_at;
-
-                return (
-                  <div
-                    key={notif.id}
-                    className={`relative w-full group flex items-start gap-3 px-4 py-3 hover:bg-[#FAF6F3] transition-colors cursor-pointer ${
-                      isDismissing ? 'opacity-40' : ''
-                    } ${!isRead ? 'bg-amber-50/25' : ''}`}
-                    onClick={() => handleItemClick(notif)}
-                  >
-                    {/* Sender Avatar — identical to SUTURA Client Profile style */}
-                    <div className="relative shrink-0 mt-0.5">
-                      <div className="w-10 h-10 rounded-xl bg-canvas border border-line flex items-center justify-center shadow-2xs">
-                        <span className="text-sm font-black text-taupe">{sender.initial}</span>
-                      </div>
-                      {!isRead && (
-                        <span
-                          className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#E41E3F] rounded-full border-2 border-white"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
-
-                    {/* Content Column */}
-                    <div className="flex-1 min-w-0 pr-1">
-                      {/* Sender Name */}
-                      <p className="text-[13px] font-bold text-ink truncate leading-tight">
-                        {sender.name}
-                      </p>
-
-                      {/* Subject/Action line */}
-                      <p className="text-[12px] text-ink-body font-medium leading-snug mt-0.5 line-clamp-2">
-                        {notif.data?.title || notif.data?.message || 'New update'}
-                      </p>
-
-                      {/* Timestamp */}
-                      <p className="text-[11px] text-ink-muted mt-1 font-normal">
-                        {formatDateTime(notif.created_at)}
-                      </p>
-                    </div>
-
-                    {/* Actions on the right: 3-dot (to the left of ✕) and ✕ button */}
-                    <div className="flex items-center gap-0.5 shrink-0 relative" data-menu-container>
-                      {/* 3-dot small button on the left of ✕ */}
-                      <button
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation();
-                          setMenuOpenFor(prev => (prev === notif.id ? null : notif.id));
-                        }}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          menuOpenFor === notif.id
-                            ? 'bg-sunken text-ink'
-                            : 'text-ink-muted hover:text-ink hover:bg-sunken'
-                        }`}
-                        title="More options"
-                        aria-label="More options"
-                      >
-                        <MoreVertical size={14} />
-                      </button>
-
-                      {/* Quick Dismiss ✕ button (Screenshot 1 Reference) */}
-                      <button
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation();
-                          void removeNotification(notif.id);
-                        }}
-                        className="p-1.5 rounded-lg text-ink-muted hover:text-danger hover:bg-sunken transition-colors"
-                        title="Dismiss notification"
-                        aria-label="Dismiss notification"
-                      >
-                        <X size={15} />
-                      </button>
-
-                      {/* 3-dot Dropdown Menu with icon on the left side of the text */}
-                      {menuOpenFor === notif.id && (
-                        <div
-                          className="absolute right-0 top-8 z-40 w-52 max-w-[calc(100vw-3rem)] bg-surface border border-line rounded-xl shadow-xl py-1 divide-y divide-line animate-in fade-in zoom-in-95 duration-100"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMenuOpenFor(null);
-                              void (isRead ? markAsUnread(notif.id) : markAsRead(notif.id));
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-ink-body hover:text-ink hover:bg-[#FAF6F3] transition-colors text-left"
-                          >
-                            <Check size={14} className={isRead ? 'text-ink-muted' : 'text-sage stroke-[2.5]'} />
-                            <span>{isRead ? 'Mark as unread' : 'Mark as read'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMenuOpenFor(null);
-                              void removeNotification(notif.id);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-danger hover:bg-danger/10 transition-colors text-left"
-                          >
-                            <Trash2 size={14} className="text-danger stroke-[2]" />
-                            <span>Delete this notification</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
+          <div className="sticky -top-3 z-10 -mx-3 -mt-3 bg-surface px-3 pb-1 pt-3">
+            <div className="mb-2 flex items-center justify-between gap-3 px-2">
+              <h2 className="text-lg font-semibold text-ink">Notifications</h2>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setHeadMenu((v) => !v)}
+                  aria-label="Notification options"
+                  aria-expanded={headMenu}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-sunken text-ink hover:bg-line"
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+                {headMenu && (
+                  <div className="absolute right-0 top-11 z-20 w-60 rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
+                    <button type="button" disabled={count === 0} onClick={() => { setHeadMenu(false); void markAllAsRead(); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-ink hover:bg-sunken disabled:opacity-40">
+                      <CheckCheck size={16} className="text-sage" /> Mark all as read
+                    </button>
+                    <button type="button" onClick={() => { setHeadMenu(false); setOpen(false); router.push(seeAllHref); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-ink hover:bg-sunken">
+                      <List size={16} /> Open Notifications
+                    </button>
+                    <button type="button" onClick={() => { setHeadMenu(false); setOpen(false); router.push(configureHref); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-ink hover:bg-sunken">
+                      <Settings size={16} /> Notification settings
+                    </button>
                   </div>
-                );
-              })
+                )}
+              </div>
+            </div>
+            {notifications.length > 0 && (
+              <div role="tablist" aria-label="Show" className="mb-1 flex gap-2 px-2">
+                {(['all', 'unread'] as const).map((k) => (
+                  <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`h-8 rounded-full px-3 text-[13px] font-semibold transition-colors ${filter === k ? 'bg-taupe/15 text-taupe-dark' : 'text-ink hover:bg-sunken'}`}>
+                    {k === 'all' ? 'All' : 'Unread'}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Footer Toolbar (Screenshot 1 Reference: See all | Mark all read | Configure) */}
-          <div className="border-t border-[#D6CCC0] px-2 sm:px-3 py-2 sm:py-2.5 bg-[#EBE4DC] flex items-center justify-between gap-1 text-[11px] sm:text-xs">
-            {/* See All */}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                router.push(seeAllHref);
-              }}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-ink hover:text-taupe hover:bg-white/70 active:bg-white transition-all whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-            >
-              <List size={14} className="stroke-[2.5] shrink-0" />
-              <span>See all</span>
-            </button>
-
-            {/* Mark all read */}
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-            >
-              <CheckCheck size={14} className="text-sage stroke-[2.5] shrink-0" />
-              <span>Mark all read</span>
-            </button>
-
-            {/* Configure */}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                router.push(configureHref);
-              }}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-ink-body hover:text-ink hover:bg-white/70 active:bg-white transition-all whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-            >
-              <Settings size={14} className="stroke-[2.5] shrink-0" />
-              <span>Configure</span>
-            </button>
-          </div>
+          {notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sunken"><Bell size={20} className="text-ink-muted" /></div>
+              <p className="text-sm font-semibold text-ink">All caught up</p>
+              <p className="mt-0.5 text-xs text-ink-muted">New orders, appointments and payments show up here.</p>
+            </div>
+          ) : (() => {
+            const shown = filter === 'unread' ? notifications.filter((n) => !n.read_at) : notifications;
+            const preview = shown.slice(0, PREVIEW);
+            const groups = [
+              { label: 'New', items: preview.filter((n) => !n.read_at) },
+              { label: 'Earlier', items: preview.filter((n) => n.read_at) },
+            ].filter((g) => g.items.length > 0);
+            return (
+              <>
+                {groups.length === 0 && <p className="py-10 text-center text-sm text-ink-muted">No unread notifications.</p>}
+                {groups.map((g, gi) => (
+                  <section key={g.label} className="mt-2">
+                    <div className="mb-1 flex items-center justify-between px-2">
+                      <h3 className="text-sm font-semibold text-ink">{g.label}</h3>
+                      {gi === 0 && <button type="button" onClick={() => { setOpen(false); router.push(seeAllHref); }} className="text-sm text-taupe hover:underline">See all</button>}
+                    </div>
+                    {g.items.map((notif) => {
+                      const sender = getSenderInfo(notif);
+                      const unread = !notif.read_at;
+                      const kind = kindOf(notif.data?.type);
+                      const sentence = notif.data?.message || notif.data?.title || 'New update';
+                      return (
+                        <button key={notif.id} type="button" onClick={() => handleItemClick(notif)} className="flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-sunken active:bg-sunken">
+                          <span className="relative shrink-0">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-line-strong bg-canvas font-serif text-base font-bold text-taupe-dark">{sender.initial}</span>
+                            <span className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface ${kind.tone}`}><kind.Icon size={10} /></span>
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={`line-clamp-2 min-h-[2lh] text-[13px] leading-snug ${unread ? 'font-medium text-ink' : 'text-ink-body'}`}>
+                              <span className="font-semibold text-ink">{sender.name} </span>{sentence}
+                            </span>
+                            <span className={`mt-0.5 block text-[11px] ${unread ? 'font-semibold text-taupe' : 'text-ink-faint'}`}>{ageOf(notif.created_at)}</span>
+                          </span>
+                          <span aria-label={unread ? 'Unread' : undefined} className={`h-2.5 w-2.5 shrink-0 rounded-full ${unread ? 'bg-taupe' : 'bg-transparent'}`} />
+                        </button>
+                      );
+                    })}
+                  </section>
+                ))}
+                {shown.length > PREVIEW && (
+                  <div className="sticky -bottom-3 z-10 -mx-3 -mb-3 mt-2 border-t border-line bg-surface px-3 pb-3 pt-2">
+                    <button type="button" onClick={() => { setOpen(false); router.push(seeAllHref); }} className="flex h-10 w-full items-center justify-center rounded-xl bg-sunken text-[13px] font-semibold text-ink active:opacity-70">
+                      See previous notifications
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 

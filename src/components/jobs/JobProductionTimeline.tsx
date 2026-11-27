@@ -1,77 +1,406 @@
-import React from 'react';
-import { AlertTriangle, Loader2, StickyNote } from 'lucide-react';
-import { BTN_SM, PLAIN_FIELD } from '@/components/shared/plainForm';
+import { safeHref } from '@/lib/safeHref';
+import React, { useState } from 'react';
+import {
+  AlertTriangle,
+  Ban,
+  Camera,
+  Clock,
+  Flag,
+  Loader2,
+  Package,
+  Palette,
+  Pause,
+  Printer,
+  RotateCcw,
+  Ruler,
+  Scissors,
+  Shirt,
+  Sparkles,
+  Wrench,
+  Hourglass,
+  ShieldCheck,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import { Job } from './jobTypes';
-import type { Job as StageJob } from './jobHelpers';
-import { stepLabel } from './detail/production/stages';
-import TimelinePanel from './detail/production/TimelinePanel';
-import ReferenceSection from './detail/production/ReferenceSection';
-import ProgressPhotos from './detail/production/ProgressPhotos';
-import CompletionPhoto from './detail/production/CompletionPhoto';
-import SectionHeading from './detail/production/SectionHeading';
-import type { OrderReadinessApi } from './readiness/useOrderReadiness';
+import { isRepairOnly, serviceHasType, normalizeJobStatus } from './jobHelpers';
+import { useAuthStore } from '@/store/useAuthStore';
+import api from '@/lib/axios';
+import { getErrorMessage } from '@/lib/apiError';
+import CancellationReasonModal from './CancellationReasonModal';
+import HoldReasonModal from './HoldReasonModal';
+import StatusStepper from '@/components/shared/StatusStepper';
 
 interface JobProductionTimelineProps {
   readonly job: Job;
-  /** The order's steps and actions: Next / Back / Hold / Resume and the quality check go through it, instantly. */
-  readonly rd: OrderReadinessApi;
+  readonly status: string;
+  readonly setStatus: (status: string) => void;
   readonly notes: string;
   readonly setNotes: (notes: string) => void;
   readonly completionPhotoUrl: string;
   readonly setCompletionPhotoUrl: (url: string) => void;
+  readonly setCancellationReason: (reason: string) => void;
+  readonly setHoldReason: (reason: string) => void;
+  readonly collectedAmount: number;
   readonly onProgressPhotoAdded: () => void;
-  readonly onSave?: () => void;
-  readonly saving?: boolean;
-  readonly dirty?: boolean;
-  /** A completed order: notes read as text; photos can be viewed, not added or removed. */
-  readonly readOnly?: boolean;
 }
 
-const FROM_QC = ['qc_ironing', 'qc_check', 'final_adjustments', 'ready_for_pickup', 'ready_for_fitting', 'balance_handover', 'completed'];
-
-/** The production controls: the line, reference, photos and notes. Notes and photos are a draft saved with Save. It sits inside the page's "Work stage" section, so it draws no outer card. */
 export default function JobProductionTimeline({
-  job, rd, notes, setNotes, completionPhotoUrl, setCompletionPhotoUrl, onProgressPhotoAdded, onSave, saving, dirty, readOnly,
+  job,
+  status,
+  setStatus,
+  notes,
+  setNotes,
+  completionPhotoUrl,
+  setCompletionPhotoUrl,
+  setCancellationReason,
+  setHoldReason,
+  collectedAmount,
+  onProgressPhotoAdded,
 }: JobProductionTimelineProps) {
-  const atOrPastQC = FROM_QC.includes(job.status);
+  const { store } = useAuthStore();
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState(false);
+  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showHoldModal, setShowHoldModal] = useState(false);
+
+  const handlePhotoUpload = async (file: File | undefined) => {
+    if (!file || !store) return;
+    setUploadingPhoto(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await api.post(`/stores/${store.id}/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setCompletionPhotoUrl(res.data?.data?.url || res.data?.url || '');
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload completion photo.'));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleProgressPhotoUpload = async (file: File | undefined) => {
+    if (!file || !store) return;
+    setUploadingProgressPhoto(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const uploadRes = await api.post(`/stores/${store.id}/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = uploadRes.data?.data?.url || uploadRes.data?.url;
+      if (!url) throw new Error('No URL returned from upload');
+      await api.post(`/stores/${store.id}/jobs/${job.id}/progress-photos`, { url });
+      onProgressPhotoAdded();
+    } catch (err) {
+      alert(getErrorMessage(err, 'Failed to upload progress photo.'));
+    } finally {
+      setUploadingProgressPhoto(false);
+    }
+  };
+
+  const handleDeleteProgressPhoto = async (url: string) => {
+    if (!store || deletingPhotoUrl) return;
+    setDeletingPhotoUrl(url);
+    try {
+      await api.delete(`/stores/${store.id}/jobs/${job.id}/progress-photos`, {
+        data: { url },
+      });
+      onProgressPhotoAdded();
+    } catch {
+      alert('Failed to remove progress photo.');
+    } finally {
+      setDeletingPhotoUrl(null);
+    }
+  };
+
+  const customData = job.custom_order_data as { team_roster?: unknown[]; size_breakdown?: Record<string, number> } | null | undefined;
+  const roster = customData?.team_roster;
+  const isBulkOrder = (Array.isArray(roster) && roster.length > 0) ||
+    (customData?.size_breakdown && typeof customData.size_breakdown === 'object' && Object.keys(customData.size_breakdown).length > 0) ||
+    serviceHasType(job.service, 'bulk_sublimation');
+  const isRepair = isRepairOnly(job);
+
+  // Repair Override short pipeline — mirrors JobOrder::isRepairOnly() on the
+  // backend (docs/REPAIR-WORKFLOW.md §5): a repair job skips the full
+  // custom-tailoring pipeline entirely instead of running through it.
+  const STAGES: Array<{ key: string; label: string; Icon: LucideIcon }> = [
+    { key: 'pending',           label: 'Pending',            Icon: Clock },
+    { key: 'production',        label: 'Production',         Icon: Scissors },
+    { key: 'quality_check',     label: 'Quality Check',      Icon: ShieldCheck },
+    { key: 'ready_for_fitting', label: 'Ready for Fitting',  Icon: Sparkles },
+    { key: 'adjustments',       label: 'Adjustments',        Icon: Wrench },
+    { key: 'ready_for_pickup',  label: 'Ready for Pickup',   Icon: Package },
+    { key: 'completed',         label: 'Completed',          Icon: Flag },
+  ];
+
+  const normalizedStatus = normalizeJobStatus(status);
+  const cancelled = status === 'cancelled';
+  const onHold = status === 'on_hold';
+  const currentIdx = STAGES.findIndex(s => s.key === normalizedStatus);
+  const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : null;
+  const qcIdx = STAGES.findIndex(s => s.key === 'quality_check');
+  const atOrPastQC = currentIdx >= qcIdx;
 
   return (
-    <div className="space-y-6">
-      <TimelinePanel job={job as unknown as StageJob} rd={rd} />
+    <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-ink">Production Timeline</h2>
+        {!cancelled && !onHold && (
+          <span className="text-xs font-semibold text-taupe px-2.5 py-0.5 rounded-full bg-taupe/10 border border-taupe/20">
+            {STAGES.find(s => s.key === status)?.label ?? status}
+          </span>
+        )}
+      </div>
 
-      {job.material_source === 'customer_supplied' && (
-        <div className="flex items-center gap-2 rounded-xl bg-amber-500/[0.08] px-3.5 py-3 text-[13px] text-amber-800">
-          <AlertTriangle size={16} className="shrink-0" />
-          <p>Customer-supplied fabric/garment — keep it separate from the shop&apos;s own fabric</p>
-        </div>
-      )}
-
-      <ReferenceSection job={job} />
-      <ProgressPhotos job={job} stageLabel={stepLabel} onProgressPhotoAdded={onProgressPhotoAdded} readOnly={readOnly} />
-
-      <section className="space-y-2 border-t border-line pt-6">
-        <SectionHeading icon={StickyNote} title="Notes / Remarks" htmlFor="notes-remarks" />
-        {readOnly ? (
-          <p className="whitespace-pre-wrap text-sm text-ink-body">{notes.trim() || 'No notes.'}</p>
+      <div className="mb-2">
+        {cancelled ? (
+          <div className="flex items-center justify-center gap-3 py-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700">
+            <Ban size={18} />
+            <span className="text-sm font-semibold">Order Cancelled</span>
+          </div>
+        ) : onHold ? (
+          <div className="py-4 px-5 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <Pause size={18} className="text-amber-700" />
+              <span className="text-sm font-semibold text-amber-800">Production On Hold</span>
+            </div>
+            {job.hold_reason && (
+              <p className="text-xs text-amber-700/80 mt-1.5 ml-7">{job.hold_reason}</p>
+            )}
+          </div>
         ) : (
+          <StatusStepper stages={STAGES} currentKey={status} onStageClick={setStatus} />
+        )}
+      </div>
+
+      <div className="space-y-4 pt-2 border-t border-line">
+        <div className="space-y-1.5">
+          <label htmlFor="update-production-phase" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+            Update Production Phase
+          </label>
+          <div className="flex items-center gap-2">
+            {prevStage && (
+              <button
+                type="button"
+                onClick={() => setStatus(prevStage.key)}
+                title={`Revert to Previous Stage (${prevStage.label})`}
+                className="h-10 w-10 shrink-0 bg-canvas hover:bg-surface text-ink-muted hover:text-ink border border-line rounded-xl transition-all flex items-center justify-center shadow-2xs active:scale-95"
+              >
+                <RotateCcw size={15} />
+              </button>
+            )}
+            <select
+              id="update-production-phase"
+              value={normalizedStatus}
+              onChange={(e) => {
+                if (e.target.value === 'cancelled') {
+                  setShowCancelModal(true);
+                } else if (e.target.value === 'on_hold') {
+                  setShowHoldModal(true);
+                } else {
+                  setStatus(e.target.value);
+                }
+              }}
+              className="flex-1 h-10 px-4 bg-canvas border border-line rounded-xl text-xs font-medium text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs cursor-pointer"
+            >
+              <option value="pending">Pending</option>
+              <option value="production">Production</option>
+              <option value="quality_check">Quality Check</option>
+              <option value="ready_for_fitting">Ready for Fitting</option>
+              <option value="adjustments">Adjustments</option>
+              <option value="ready_for_pickup">Ready for Pickup</option>
+              <option value="completed">Completed</option>
+              <option value="on_hold">On Hold</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        {job.material_source === 'customer_supplied' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-amber-900">
+            <AlertTriangle size={16} className="text-amber-700 shrink-0" />
+            <p className="text-xs font-bold uppercase tracking-wide">
+              Customer-supplied fabric/garment — do not cut from shop stock
+            </p>
+          </div>
+        )}
+
+        {((job.reference_images && job.reference_images.length > 0) || job.reference_link) && (
+          <div className="space-y-1.5 border-t border-line pt-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
+              <Camera size={14} className="text-taupe" />
+              Design Reference
+            </span>
+            <p className="text-[11px] text-ink-faint">
+              What the customer wants — attached at booking, or by the shop for a walk-in custom order.
+            </p>
+            {job.reference_images && job.reference_images.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {job.reference_images.map((url) => (
+                  <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="Design reference" className="h-20 w-20 object-cover rounded-lg border border-line hover:opacity-80 transition-opacity" />
+                  </a>
+                ))}
+              </div>
+            )}
+            {job.reference_link && (
+              <a
+                href={safeHref(job.reference_link)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-xs text-taupe hover:underline mt-1 truncate max-w-full"
+              >
+                {job.reference_link}
+              </a>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-2 border-t border-line pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
+                <Camera size={14} className="text-sage" />
+                Progress Photos <span className="text-[11px] font-normal text-ink-faint lowercase">(optional)</span>
+              </span>
+              <p className="text-[11px] text-ink-faint mt-0.5">
+                Proof of real progress at whatever stage the job is currently in — builds customer trust and doubles as a production log. Each upload is tagged with the current stage automatically.
+              </p>
+            </div>
+          </div>
+
+          {job.progress_photos && job.progress_photos.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {job.progress_photos.map((photo) => (
+                <div key={photo.url + photo.uploaded_at} className="relative group/photo">
+                  <a
+                    href={photo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url}
+                      alt={`Progress at ${photo.stage}`}
+                      className="h-20 w-20 object-cover rounded-lg border border-line hover:opacity-80 transition-opacity"
+                    />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-semibold text-center py-0.5 rounded-b-lg capitalize">
+                      {STAGES.find(s => s.key === photo.stage)?.label ?? photo.stage.replaceAll('_', ' ')}
+                    </span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to remove this progress photo?')) {
+                        handleDeleteProgressPhoto(photo.url);
+                      }
+                    }}
+                    disabled={deletingPhotoUrl === photo.url}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-surface border border-line text-ink-muted hover:text-danger hover:border-danger/30 rounded-full flex items-center justify-center shadow-xs transition-colors"
+                    title="Remove progress photo"
+                  >
+                    {deletingPhotoUrl === photo.url ? (
+                      <Loader2 size={10} className="animate-spin text-danger" />
+                    ) : (
+                      <X size={11} />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-sage hover:text-[#6B7C67] bg-sage/5 hover:bg-sage/10 border border-sage/20 px-3 py-1.5 rounded-lg transition-colors mt-1">
+            {uploadingProgressPhoto ? <Loader2 size={14} className="animate-spin text-sage" /> : <Camera size={14} />}
+            <span>{uploadingProgressPhoto ? 'Uploading...' : 'Add a progress photo'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploadingProgressPhoto}
+              onChange={e => handleProgressPhotoUpload(e.target.files?.[0])}
+            />
+          </label>
+        </div>
+
+        <div className="space-y-1 border-t border-line pt-4">
+          <label htmlFor="notes-remarks" className="text-xs font-bold uppercase tracking-wider text-ink-muted">Notes / Remarks</label>
           <textarea
             id="notes-remarks"
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-            className={`${PLAIN_FIELD} h-auto min-h-28 resize-y py-3`}
+            onChange={e => setNotes(e.target.value)}
+            rows={3}
+            className="w-full px-4 py-2.5 bg-canvas border border-line rounded-xl text-xs text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe shadow-2xs leading-relaxed"
             placeholder="e.g. Needs adjustments on the sleeves..."
           />
+        </div>
+
+        {(atOrPastQC || completionPhotoUrl) && (
+          <div className="space-y-1.5 border-t pt-4 border-line">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
+              <Camera size={14} className="text-sage" />
+              Completion Photo{' '}
+              <span className="text-[11px] font-normal text-ink-faint lowercase">(optional)</span>
+            </span>
+            <p className="text-[11px] text-ink-faint">
+              A quick photo of the finished garment — doubles as proof-of-completion, QC evidence, and builds your portfolio.
+            </p>
+            {completionPhotoUrl ? (
+              <div className="relative inline-block mt-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={completionPhotoUrl} alt="Completed garment" className="h-28 w-28 object-cover rounded-lg border border-line" />
+                <button
+                  type="button"
+                  onClick={() => setCompletionPhotoUrl('')}
+                  className="absolute -top-2 -right-2 bg-surface border border-line text-ink-muted hover:text-danger rounded-full p-1"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink-muted hover:text-sage transition-colors mt-1">
+                {uploadingPhoto ? <Loader2 size={14} className="animate-spin text-sage" /> : <Camera size={14} />}
+                <span>{uploadingPhoto ? 'Uploading...' : 'Upload a photo'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingPhoto}
+                  onChange={e => handlePhotoUpload(e.target.files?.[0])}
+                />
+              </label>
+            )}
+          </div>
         )}
-      </section>
+      </div>
 
-      {(atOrPastQC || completionPhotoUrl) && <CompletionPhoto url={completionPhotoUrl} setUrl={setCompletionPhotoUrl} readOnly={readOnly} />}
+      <CancellationReasonModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        collectedAmount={collectedAmount}
+        onConfirm={(reason) => {
+          setCancellationReason(reason);
+          setStatus('cancelled');
+          setShowCancelModal(false);
+        }}
+      />
 
-      {!readOnly && onSave && dirty && (
-        <button type="button" disabled={saving} onClick={onSave} className={BTN_SM}>
-          {saving && <Loader2 size={15} className="animate-spin" />} Save changes
-        </button>
-      )}
+      <HoldReasonModal
+        isOpen={showHoldModal}
+        onClose={() => setShowHoldModal(false)}
+        onConfirm={(reason) => {
+          setHoldReason(reason);
+          setStatus('on_hold');
+          setShowHoldModal(false);
+        }}
+      />
     </div>
   );
 }

@@ -16,7 +16,6 @@ export function useAccountSettings() {
   const [personalForm, setPersonalForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
-    gender: (user?.gender as 'male' | 'female' | '') || '',
   });
   const [personalErrors, setPersonalErrors] = useState<{ name?: string; phone?: string }>({});
 
@@ -46,7 +45,6 @@ export function useAccountSettings() {
     setPersonalForm({
       name: user?.name || '',
       phone: user?.phone || '',
-      gender: (user?.gender as 'male' | 'female' | '') || '',
     });
   }
 
@@ -106,7 +104,6 @@ export function useAccountSettings() {
       const res = await api.put('/profile/personal', {
         name: personalForm.name,
         phone: personalForm.phone,
-        gender: personalForm.gender || null,
       });
       toast.success('Personal details updated successfully.');
       if (user && token) {
