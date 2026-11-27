@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { revealField } from '@/lib/revealField';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import api from '@/lib/axios';
@@ -84,6 +85,7 @@ function RegisterPageContent() {
     if (password !== passwordConfirmation) {
       setError('Passwords do not match');
       setLoading(false);
+      revealField('register-password-confirm');
       return;
     }
 
@@ -99,8 +101,12 @@ function RegisterPageContent() {
         router.push(redirectParam || '/');
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
+      const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       setError(error.response?.data?.message || 'Registration failed. Please try again.');
+      // A field the server refused (e.g. email already used): take the person there.
+      const bad = Object.keys(error.response?.data?.errors ?? {})[0];
+      const FIELD_IDS: Record<string, string> = { name: 'register-first-name', email: 'register-email', password: 'register-password' };
+      if (bad && FIELD_IDS[bad]) revealField(FIELD_IDS[bad]);
     } finally {
       setLoading(false);
     }

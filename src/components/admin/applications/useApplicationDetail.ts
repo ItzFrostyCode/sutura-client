@@ -57,6 +57,15 @@ export interface ApplicationDetail {
     resubmitted_at: string | null;
     update_token_expires_at: string | null;
     change_requester: { name: string } | null;
+    /** One entry per Request Changes round; `changes` = owner/shop text fields that changed (old → new). */
+    change_history?: {
+      items: string[] | null;
+      note: string | null;
+      requested_at: string | null;
+      requested_by: string | null;
+      resubmitted_at: string | null;
+      changes?: { section: 'owner' | 'shop'; label: string; before: string | null; after: string | null }[];
+    }[] | null;
   } | null;
 }
 

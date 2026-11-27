@@ -8,17 +8,12 @@ import OpeningHoursCard from './OpeningHoursCard';
 import SocialLinksCard from './SocialLinksCard';
 import DescriptionCard from './DescriptionCard';
 import ContactInfoCard from './ContactInfoCard';
-import PaymentDetailsCard from './PaymentDetailsCard';
 import FittingNoticeCard from './FittingNoticeCard';
-import MapLocationInfoCard from './MapLocationInfoCard';
-import BusinessTypeCard from './BusinessTypeCard';
 import SpecializationsCard from './SpecializationsCard';
-import StoreVisibilityCard from './StoreVisibilityCard';
 import DeclaredBranchesCard from './DeclaredBranchesCard';
 
 type SectionKey =
-  | 'social_links' | 'description' | 'contact_info' | 'payment_details'
-  | 'fitting_notice' | 'business_type' | 'specializations' | 'visibility';
+  | 'social_links' | 'description' | 'contact_info' | 'fitting_notice' | 'specializations';
 
 interface StoreAboutOwnerViewProps {
   readonly store: StoreProfile;
@@ -40,8 +35,6 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
     setFormDataWithDirty,
     handleChange,
     handleSocialChange,
-    handleBusinessTypeChange,
-    handleGcashQrUpload,
     handleSave,
     handleDiscard,
   } = useSettings();
@@ -101,28 +94,9 @@ export default function StoreAboutOwnerView({ store, isStoreCurrentlyOpen, onOpe
 
       <ContactInfoCard formData={formData} onChange={handleChange} {...sectionProps('contact_info')} />
 
-      <PaymentDetailsCard
-        formData={formData}
-        onChange={handleChange}
-        {...sectionProps('payment_details')}
-        onGcashQrUpload={handleGcashQrUpload}
-      />
-
       <FittingNoticeCard formData={formData} setFormData={setFormDataWithDirty} {...sectionProps('fitting_notice')} />
 
-      <MapLocationInfoCard />
-
       <DeclaredBranchesCard branches={store.declared_branches} isOwner />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
-        <BusinessTypeCard businessType={formData.business_type} onChange={handleBusinessTypeChange} {...sectionProps('business_type')} />
-        <StoreVisibilityCard
-          isFeatured={formData.is_featured}
-          isHidden={formData.is_hidden}
-          onHiddenChange={(is_hidden) => setFormDataWithDirty((prev) => ({ ...prev, is_hidden }))}
-          {...sectionProps('visibility')}
-        />
-      </div>
 
       <SpecializationsCard
         specializations={formData.specializations}

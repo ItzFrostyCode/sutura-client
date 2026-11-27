@@ -21,6 +21,7 @@ import { StoreProfile, StoreBranch, StorefrontTab } from '../types';
 import { getMediaUrl } from '@/lib/media';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
 import StoreImageEditModal from './StoreImageEditModal';
+import ImageViewerModal from '@/components/shared/ImageViewerModal';
 
 interface StoreHeroHeaderProps {
   readonly store: StoreProfile;
@@ -90,6 +91,9 @@ export default function StoreHeroHeader({
   const cleanAddress = formatCleanAddress(activeBranch, store);
   const router = useRouter();
   const [editingImage, setEditingImage] = useState<'logo' | 'banner' | null>(null);
+  // Full-size view of the cover or the logo (anyone can open it; owners still change them with the camera buttons).
+  const [viewing, setViewing] = useState<{ src: string; title: string; fileName: string } | null>(null);
+  const coverSrc = activeBranch?.guide_image_url || store.banner_path || null;
 
   return (
     <>
@@ -132,6 +136,14 @@ export default function StoreHeroHeader({
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/30" />
+          {coverSrc && (
+            <button
+              type="button"
+              onClick={() => setViewing({ src: coverSrc, title: activeBranch?.name ? `${store.name} - ${activeBranch.name}` : `${store.name} cover photo`, fileName: `${store.slug ?? 'shop'}-cover` })}
+              aria-label="View cover photo"
+              className="absolute inset-0 z-10 cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white"
+            />
+          )}
 
           {/* Banner only ever shows the store's own image when no branch is
               selected — a branch's guide_image_url takes over otherwise, so
@@ -179,12 +191,28 @@ export default function StoreHeroHeader({
           {/* Centered Avatar Overlapping Cover Banner */}
           <div className="-mt-14 sm:-mt-18 md:-mt-20 relative z-10 flex justify-center">
             <div className="relative inline-block">
-              <StoreLogoAvatar
-                src={store.logo_path}
-                name={store.name}
-                className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
-                isOpen={isStoreCurrentlyOpen}
-              />
+              {store.logo_path ? (
+                <button
+                  type="button"
+                  onClick={() => setViewing({ src: store.logo_path!, title: `${store.name} logo`, fileName: `${store.slug ?? 'shop'}-logo` })}
+                  aria-label="View shop logo"
+                  className="block cursor-zoom-in rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  <StoreLogoAvatar
+                    src={store.logo_path}
+                    name={store.name}
+                    className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
+                    isOpen={isStoreCurrentlyOpen}
+                  />
+                </button>
+              ) : (
+                <StoreLogoAvatar
+                  src={store.logo_path}
+                  name={store.name}
+                  className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full border-4 border-surface bg-surface shadow-xl overflow-hidden shrink-0"
+                  isOpen={isStoreCurrentlyOpen}
+                />
+              )}
               {isOwnerViewingOwnStore && (
                 <button
                   type="button"
@@ -383,6 +411,13 @@ export default function StoreHeroHeader({
           onSaved={() => onImagesSaved?.()}
         />
       )}
+
+      <ImageViewerModal
+        src={viewing?.src ?? null}
+        title={viewing?.title}
+        fileName={viewing?.fileName}
+        onClose={() => setViewing(null)}
+      />
     </>
   );
 }

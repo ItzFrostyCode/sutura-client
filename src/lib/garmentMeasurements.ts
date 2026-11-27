@@ -84,6 +84,25 @@ export function measurementsFromMetrics(metrics: Record<string, string | undefin
   return out;
 }
 
+/** Every key a saved profile may use for one of the standard measurements (older names included). */
+const STANDARD_ALIASES = new Set([
+  'chest', 'bust', 'waist', 'hips', 'shoulders', 'shoulder', 'neck', 'sleeve', 'sleeve_length',
+  'top_length', 'length', 'shirt_length', 'pants_length', 'trouser_length', 'outseam', 'inseam',
+]);
+
+/**
+ * A profile's own extra measurements (armhole, cuff…): everything that isn't one
+ * of the standard boxes, the unit or the garment it was made for.
+ */
+export function extraMeasurementsFromMetrics(metrics: Record<string, string | number | null | undefined> | null | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(metrics ?? {})) {
+    if (k === 'unit' || k === 'garment' || STANDARD_ALIASES.has(k)) continue;
+    if (v !== null && v !== undefined && String(v).trim() !== '') out[k] = String(v);
+  }
+  return out;
+}
+
 /** Display names for every key an order or profile may hold (incl. the old "length"). */
 export const MEASUREMENT_LABELS: Record<string, string> = {
   ...Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f.key, f.label])),

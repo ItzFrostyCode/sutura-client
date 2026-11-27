@@ -6,7 +6,11 @@ import { BookOpen, Store, Building2, Tag, ShoppingBag, UserCog, Calendar, Scisso
 import { useAuthStore } from '@/store/useAuthStore';
 import { doneTours, type TourId } from '@/components/tour/tours';
 
+/** One key per Welcome Guide step. */
+type SetupKey = 'profile' | 'branches' | 'services' | 'catalog' | 'staff' | 'appointments' | 'jobs' | 'payments';
+
 interface OnboardingStep {
+  key: SetupKey;
   step: string;
   title: string;
   desc: string;
@@ -24,6 +28,7 @@ interface OnboardingStep {
 // day-to-day ops → money tracking.
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
+    key: 'profile',
     step: 'Step 1',
     title: 'Set Up Your Shop Profile',
     desc: 'Open your Shop Profile to add your logo, banner, description and social links, and set your map location and operating hours. This is what customers see when they find you.',
@@ -32,6 +37,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'profile',
   },
   {
+    key: 'branches',
     step: 'Step 2',
     title: 'Add Your Branches',
     desc: 'If you operate from more than one location, add each branch here — address, contact number, and a guide photo customers can use to find it. Every branch-scoped view in the dashboard (Jobs, Appointments, Payments, Reports) can be filtered per branch from the header selector.',
@@ -40,6 +46,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'branches',
   },
   {
+    key: 'services',
     step: 'Step 3',
     title: 'List Your Services & Pricing',
     desc: 'Declare what you offer — Barong, Gown, School Uniforms, Jerseys, Alterations, or custom services — with pricing tiers, estimated turnaround, and minimum order quantities for bulk work. You can bundle related services into Packages at a combo price too.',
@@ -48,6 +55,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'services',
   },
   {
+    key: 'catalog',
     step: 'Step 4',
     title: 'Build Your Catalog',
     desc: 'Add photos of past work and craftsmanship samples customers can browse and request fittings for — bespoke tailoring works, not off-the-shelf inventory. Each catalog item showcases your atelier craftsmanship.',
@@ -56,6 +64,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'catalog',
   },
   {
+    key: 'staff',
     step: 'Step 5',
     title: 'Add Your Staff',
     desc: 'Bring on tailors, cutters, designers, and other roles, assign each to a branch, and set their specializations. Staff get their own profile with bio, workload, and job assignment history — visible to you only, never to customers.',
@@ -64,6 +73,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'staff',
   },
   {
+    key: 'appointments',
     step: 'Step 6',
     title: 'Manage Appointments',
     desc: 'Book fittings, consultations, and measurement sessions for walk-in or online customers. Each appointment auto-calculates duration by type, and a fitting can convert straight into a Job Order once measurements are confirmed.',
@@ -72,6 +82,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'appointments',
   },
   {
+    key: 'jobs',
     step: 'Step 7',
     title: 'Track Production in Jobs',
     desc: 'Every order moves through the production stages: Design, Pattern Making, Cutting, Sewing, Fitting, Final Adjustments, QC and Ready for Pickup. Cutting waits until the required deposit is paid, and whoever moves an order to a stage is recorded on it. Bulk orders (a team’s jersey set, a school’s uniform batch) are counted by size.',
@@ -80,6 +91,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     tour: 'jobs',
   },
   {
+    key: 'payments',
     step: 'Step 8',
     title: 'Take Payments & Review Reports',
     desc: 'Log cash payments, verify customers’ GCash receipts as they come in, and reject a bad receipt with a reason. Reports rolls it all up: revenue, staff productivity, branch comparisons, and alerts for unclaimed pickups or orders on hold.',
@@ -91,7 +103,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 
 export default function WelcomeView() {
   const { user } = useAuthStore();
-  // Tours finished (or skipped) in this browser, read after mount (localStorage).
+  // Tours finished in this browser, read after mount (localStorage).
   const [done, setDone] = useState<TourId[]>([]);
   useEffect(() => {
     const read = () => setDone(doneTours(user?.id));
@@ -99,6 +111,12 @@ export default function WelcomeView() {
     window.addEventListener('sutura-tours-changed', read);
     return () => window.removeEventListener('sutura-tours-changed', read);
   }, [user?.id]);
+
+  // A step is done once its tour is finished (it's a guide to the app, not a setup check).
+  const stepDone = (s: OnboardingStep) => !!s.tour && done.includes(s.tour);
+  const setupCount = ONBOARDING_STEPS.filter(stepDone).length;
+  // The first step whose tour isn't finished yet is the one to do next.
+  const nextKey = ONBOARDING_STEPS.find((s) => !stepDone(s))?.key ?? null;
 
   return (
     <div className="bg-surface border border-line rounded-3xl p-8 max-w-5xl mx-auto space-y-8 animate-fade-in text-ink">
@@ -108,25 +126,62 @@ export default function WelcomeView() {
         </div>
         <h2 className="text-2xl font-heading font-semibold text-ink">Welcome to SUTURA Tailoring Tracker</h2>
         <p className="text-ink-muted text-sm max-w-lg mx-auto">A complete guide to setting up and running your shop on SUTURA, from your first shop profile edit to tracking a finished order.</p>
+        {(
+          <div className="max-w-xs mx-auto pt-2">
+            <p className="text-sm font-semibold text-ink tabular-nums">
+              {setupCount === ONBOARDING_STEPS.length
+                ? 'All steps done. You’ve finished every tour.'
+                : `${setupCount} of ${ONBOARDING_STEPS.length} steps done`}
+            </p>
+            <div
+              className="mt-2 h-1.5 rounded-full bg-canvas overflow-hidden"
+              role="progressbar"
+              aria-label="Guide progress"
+              aria-valuemin={0}
+              aria-valuemax={ONBOARDING_STEPS.length}
+              aria-valuenow={setupCount}
+            >
+              <div
+                className="h-full rounded-full bg-sage transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                style={{ width: `${(setupCount / ONBOARDING_STEPS.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {ONBOARDING_STEPS.map((item) => {
           const Icon = item.icon;
-          const isDone = !!item.tour && done.includes(item.tour);
-          const href = item.tour ? `${item.href}?tour=${item.tour}` : item.href;
+          // Tour finished in this browser: the checkmark, and the link becomes "Replay tour".
+          const isDone = stepDone(item);
+          const isSetUp = isDone;
+          const isNext = item.key === nextKey;
+          // "Configure now" runs this step's tour and then carries on to the next steps (chain);
+          // "Replay tour" runs just this one again.
+          const href = item.tour ? `${item.href}?tour=${item.tour}${isDone ? '' : '&chain=1'}` : item.href;
           return (
-            <div key={item.title} className="bg-canvas border border-line rounded-2xl p-6 flex gap-4 transition-all hover:border-line-strong">
-              <div className="bg-surface border border-line w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-taupe">
-                <Icon size={22} />
+            <div
+              key={item.title}
+              className={`bg-canvas border rounded-2xl p-6 flex gap-4 transition-colors hover:border-line-strong ${isNext ? 'border-taupe' : 'border-line'}`}
+            >
+              <div
+                className={`border w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  isSetUp ? 'bg-sage/15 border-sage/30 text-sage' : 'bg-surface border-line text-taupe'
+                }`}
+              >
+                {isSetUp ? <Check size={22} aria-hidden="true" /> : <Icon size={22} aria-hidden="true" />}
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold text-taupe uppercase tracking-wider">{item.step}</span>
-                  {isDone && (
+                  {isSetUp && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-sage/15 px-2 py-0.5 text-[10px] font-bold text-sage">
                       <Check size={11} aria-hidden="true" /> Done
                     </span>
+                  )}
+                  {isNext && (
+                    <span className="rounded-full bg-taupe/10 px-2 py-0.5 text-[10px] font-bold text-taupe">Next</span>
                   )}
                 </div>
                 <h4 className="font-semibold text-sm text-ink">{item.title}</h4>

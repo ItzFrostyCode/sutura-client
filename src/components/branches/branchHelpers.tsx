@@ -118,7 +118,7 @@ export function StatusBadge({ status }: Readonly<{ status?: string }>) {
   if (status === 'inactive') {
     return (
       <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 border border-zinc-200">
-        <XCircle size={11} /> Inactive
+        <XCircle size={11} /> Hidden
       </span>
     );
   }

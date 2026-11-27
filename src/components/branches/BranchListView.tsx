@@ -1,6 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
-import { Building2, CheckCircle, Lock, MapPin, Plus, Star, Compass } from 'lucide-react';
+import { Building2, CheckCircle, MapPin, Plus, Star, Compass } from 'lucide-react';
 import { StoreBranch } from './branchHelpers';
 import BranchCard from './BranchCard';
 import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
@@ -16,6 +15,7 @@ interface BranchListViewProps {
   readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete?: (id: number) => void;
   readonly onSetMain?: (branch: StoreBranch) => void;
+  readonly onToggleHidden?: (branch: StoreBranch) => void;
   /** Reload after a branch shop is unlocked/swapped (plan limits). */
   readonly onPlanLockChange?: () => void;
 }
@@ -28,6 +28,7 @@ export default function BranchListView({
   onEdit,
   onDelete,
   onSetMain,
+  onToggleHidden,
   onPlanLockChange,
 }: BranchListViewProps) {
   const safeBranches = Array.isArray(branches) ? branches : [];
@@ -145,14 +146,7 @@ export default function BranchListView({
             </div>
           </div>
 
-          {onAddClick && (addLocked ? (
-            <Link
-              href="/dashboard/billing"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-sunken transition-colors"
-            >
-              <Lock size={13} /> Upgrade for more
-            </Link>
-          ) : (
+          {onAddClick && !addLocked && (
             <ReadOnlyLock>
               <button
                 type="button"
@@ -162,7 +156,7 @@ export default function BranchListView({
                 <Plus size={14} /> Add Branch Shop
               </button>
             </ReadOnlyLock>
-          ))}
+          )}
         </div>
 
         {satelliteBranches.length > 0 ? (
@@ -174,6 +168,7 @@ export default function BranchListView({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onSetMain={branch.plan_locked_at ? undefined : onSetMain}
+                onToggleHidden={onToggleHidden}
                 openBranches={openBranches}
                 onPlanLockChange={onPlanLockChange}
               />
@@ -184,17 +179,9 @@ export default function BranchListView({
             <p className="text-sm font-medium text-ink mb-1">No Branch Shops Yet</p>
             <p className="text-xs text-ink-muted max-w-md mx-auto mb-4">
               Expand your business across multiple locations (e.g. Lanang, Matina, downtown). Each branch gets its own staff roster, job queue, and booking calendar.
-              {addLocked && ` ${lockedText} Upgrade your plan to add more.`}
+              {addLocked && ` ${lockedText}`}
             </p>
-            {onAddClick && (addLocked ? (
-              <Link
-                href="/dashboard/billing"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-ink hover:bg-ink/85 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Lock size={14} />
-                Upgrade your plan
-              </Link>
-            ) : (
+            {onAddClick && !addLocked && (
               <button
                 type="button"
                 onClick={onAddClick}
@@ -203,7 +190,7 @@ export default function BranchListView({
                 <Plus size={15} />
                 Add Branch Shop
               </button>
-            ))}
+            )}
           </div>
         )}
       </div>

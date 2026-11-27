@@ -7,7 +7,7 @@ export interface JobFinancialsCardProps {
   readonly job: Job;
   readonly saving: boolean;
   readonly isOwnerOrManager: boolean;
-  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string, cashTendered?: number) => Promise<void>;
+  readonly onCharge: (amount: number, method: string, notes: string, reference?: string, receiptPath?: string) => Promise<void>;
   /** kind 'fabric' = the customer's own fabric (recorded and labelled as a fabric deduction). */
   readonly onApplyDiscount: (amount: number, reason: string, kind?: 'discount' | 'fabric') => Promise<void>;
   readonly onUpdatePayment: (paymentId: number, fields: { payment_method: string; reference?: string; notes?: string; receipt_path?: string }) => Promise<void>;

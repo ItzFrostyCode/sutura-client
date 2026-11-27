@@ -2,6 +2,7 @@ import { depositFraction, paymentPolicyLabel, type PaymentPolicy } from '@/compo
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { getErrorMessage } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
@@ -116,16 +117,15 @@ export function usePayments() {
   const [payReference, setPayReference] = useState('');
   const [payReceiptPath, setPayReceiptPath] = useState('');
   const [payReceiptUploading, setPayReceiptUploading] = useState(false);
-  const [payCashTendered, setPayCashTendered] = useState('');
   const [paySubmitting, setPaySubmitting] = useState(false);
   // Same two-step process as the Job Detail cashier desk: review before it
   // actually submits.
   const [payReviewing, setPayReviewing] = useState(false);
 
   // Fetch receipts queue
-  const fetchReceipts = useCallback(async () => {
+  const fetchReceipts = useCallback(async (opts?: { silent?: boolean }) => {
     if (!store) return;
-    setReceiptsLoading(true);
+    if (!opts?.silent) setReceiptsLoading(true);
     try {
       const branchParams = selectedBranchId !== null ? { branch_id: selectedBranchId } : {};
       // Order payments only: GCash logged on job orders (Cashier Desk, online-order
@@ -163,9 +163,9 @@ export function usePayments() {
   // older still-unpaid one silently drop out — same undercounting shape as
   // the other capped-array bugs fixed this session. Filtering server-side
   // also means the response only ever contains genuinely-relevant rows.
-  const fetchJobBalances = useCallback(async () => {
+  const fetchJobBalances = useCallback(async (opts?: { silent?: boolean }) => {
     if (!store) return;
-    setBalancesLoading(true);
+    if (!opts?.silent) setBalancesLoading(true);
     try {
       const params: Record<string, number> = { per_page: 500, unpaid_only: 1 };
       if (selectedBranchId !== null) params.branch_id = selectedBranchId;
@@ -232,6 +232,12 @@ export function usePayments() {
     return () => clearTimeout(timer);
   }, [store, fetchReceipts, fetchJobBalances]);
 
+  // New receipts and payments show up without a refresh (no loading state).
+  useLiveRefresh(['payments', 'jobs'], () => {
+    void fetchReceipts({ silent: true });
+    void fetchJobBalances({ silent: true });
+  }, { enabled: !!store });
+
   // The shop's own payment accounts (for the walk-in dialog's "which account" picker).
   useEffect(() => {
     if (!store) return;
@@ -292,7 +298,6 @@ export function usePayments() {
     if (!store || !logPaymentJob) return;
     const amt = Number.parseFloat(payAmount);
     if (!amt || amt <= 0) return;
-    if (payMethod === 'cash' && (!payCashTendered || Number.parseFloat(payCashTendered) < amt)) return;
     if (payMethod !== 'cash' && !payReceiptPath) return;
     setPaySubmitting(true);
     try {
@@ -305,7 +310,6 @@ export function usePayments() {
         reference: payReference || undefined,
         notes: payNotes || undefined,
         receipt_path: payReceiptPath || undefined,
-        cash_tendered: payMethod === 'cash' ? Number.parseFloat(payCashTendered) : undefined,
       });
       if (payMethod !== 'cash') {
         toast.success(`₱${amt.toFixed(2)} payment submitted for ${logPaymentJob.order_number} — pending verification before it applies to the balance.`);
@@ -327,7 +331,6 @@ export function usePayments() {
       setPayNotes('');
       setPayReference('');
       setPayReceiptPath('');
-      setPayCashTendered('');
       setPayReviewing(false);
       fetchJobBalances();
     } catch (err: unknown) {
@@ -376,8 +379,6 @@ export function usePayments() {
     setPayReceiptPath,
     payReceiptUploading,
     handlePayReceiptUpload,
-    payCashTendered,
-    setPayCashTendered,
     payReviewing,
     setPayReviewing,
     paySubmitting,

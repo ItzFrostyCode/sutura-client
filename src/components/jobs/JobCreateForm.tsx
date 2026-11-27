@@ -14,12 +14,14 @@ import Step2Measurements, { IndividualMeasurements } from './wizard/Step2Measure
 import Step3OrderSpecs from './wizard/Step3OrderSpecs';
 import Step4InvoicePayment from './wizard/Step4InvoicePayment';
 import type { CustomerData } from './form/types';
-import { EMPTY_BODY_MEASUREMENTS, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
+import { EMPTY_BODY_MEASUREMENTS, extraMeasurementsFromMetrics, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
+import { GARMENT_TYPE_OPTIONS } from './jobHelpers';
 import type { CatalogItem } from '@/components/catalog/catalogHelpers';
 import type { Staff } from '@/components/staff/staffHelpers';
 import { usePeopleList, type OrderPerson } from '@/components/order-people/usePeopleList';
 import { CUSTOM_SIZE } from '@/components/store-catalog-detail/BulkOrderSheet';
 import { customerEmail } from '@/components/customers/customerHelpers';
+import { revealField } from '@/lib/revealField';
 
 const WALK_IN_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 /** Same cap as an online order (the server caps a job at 500 pieces). */
@@ -95,6 +97,15 @@ export default function JobCreateForm() {
 
   // Step 2: Measurements
   const [measurements, setMeasurements] = useState<IndividualMeasurements>(EMPTY_BODY_MEASUREMENTS);
+  // A saved profile's own extra measurements (armhole, cuff…), shown and saved with the order.
+  const [extraMeasurements, setExtraMeasurements] = useState<Record<string, string>>({});
+  // A profile carries what it was made for; use it when the order hasn't picked one yet.
+  const applyProfileGarment = (metrics: Record<string, unknown> | null | undefined) => {
+    const g = typeof metrics?.garment === 'string' ? metrics.garment : '';
+    if (g && GARMENT_TYPE_OPTIONS.some((o) => o.value === g)) {
+      setFormData((prev) => (prev.garment_category ? prev : { ...prev, garment_category: g as typeof prev.garment_category }));
+    }
+  };
   const [selectedMeasurementProfileId, setSelectedMeasurementProfileId] = useState<string>('');
   const [measurementSheets, setMeasurementSheets] = useState<string[]>([]);
   const [uploadingSheet, setUploadingSheet] = useState<boolean>(false);
@@ -230,7 +241,12 @@ export default function JobCreateForm() {
     setFormData((prev) => ({ ...prev, measurement_id: profileId }));
     const profile = customerMeasurements.find((m) => m.id.toString() === profileId);
     if (profile?.metrics) {
-      setMeasurements((prev) => ({ ...EMPTY_BODY_MEASUREMENTS, unit: prev.unit, ...measurementsFromMetrics(profile.metrics) }));
+      const savedUnit = profile.metrics.unit === 'cm' ? 'cm' : profile.metrics.unit === 'in' ? 'in' : null;
+      setMeasurements((prev) => ({ ...EMPTY_BODY_MEASUREMENTS, unit: savedUnit ?? prev.unit, ...measurementsFromMetrics(profile.metrics) }));
+      setExtraMeasurements(extraMeasurementsFromMetrics(profile.metrics));
+      applyProfileGarment(profile.metrics);
+    } else {
+      setExtraMeasurements({});
     }
   };
 
@@ -245,7 +261,10 @@ export default function JobCreateForm() {
         setSelectedMeasurementProfileId(latest.id.toString());
         setFormData((prev) => ({ ...prev, measurement_id: latest.id.toString() }));
         if (latest.metrics) {
-          setMeasurements((prev) => ({ ...prev, ...measurementsFromMetrics(latest.metrics) }));
+          const savedUnit = latest.metrics.unit === 'cm' ? 'cm' : latest.metrics.unit === 'in' ? 'in' : null;
+          setMeasurements((prev) => ({ ...prev, ...(savedUnit ? { unit: savedUnit } : {}), ...measurementsFromMetrics(latest.metrics) }));
+          setExtraMeasurements(extraMeasurementsFromMetrics(latest.metrics));
+          applyProfileGarment(latest.metrics);
         }
       }
     }
@@ -316,42 +335,35 @@ export default function JobCreateForm() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Show the problem and take the person to the field (lib/revealField). The
+  // banner is at the top; the button they pressed is at the bottom.
+  const stopAt = (message: string, field: string) => {
+    setWizardError(message);
+    revealField(field);
+  };
+
   const handleStep1Proceed = () => {
-    if (!fullName.trim()) {
-      setWizardError('Please enter the customer\'s name.');
-      return;
-    }
+    if (!fullName.trim()) return stopAt('Please enter the customer\'s name.', 'job-customer-name');
     setWizardError('');
     setMaxCompletedStep((prev) => Math.max(prev, 1));
     goToStep(2);
   };
 
   const handleStep2Proceed = () => {
-    if (isBulkOrder && people.persons.length === 0) {
-      setWizardError('Add at least one person to the list for a bulk order.');
-      return;
-    }
+    if (isBulkOrder && people.persons.length === 0) return stopAt('Add at least one person to the list for a bulk order.', 'job-people');
     setWizardError('');
     setMaxCompletedStep((prev) => Math.max(prev, 2));
     goToStep(3);
   };
 
   const handleStep3Proceed = () => {
-    if (!formData.service_id) {
-      setWizardError('Please select a Type of Service before proceeding.');
-      return;
-    }
+    if (!formData.service_id) return stopAt('Please select a Type of Service before proceeding.', 'job-service');
     if (!isAlteration && formData.material_source === 'customer_supplied' && fabricDeduction !== '' && !(Number(fabricDeduction) >= 0)) {
-      setWizardError('Enter a valid amount for the customer\'s fabric, or leave it empty.');
-      return;
+      return stopAt('Enter a valid amount for the customer\'s fabric, or leave it empty.', 'fabric-deduction');
     }
-    if (isAlteration && !alterationGarment) {
-      setWizardError('Pick the garment the customer brought in to alter or repair.');
-      return;
-    }
+    if (isAlteration && !alterationGarment) return stopAt('Pick the garment the customer brought in to alter or repair.', 'alteration-garment');
     if (isAlteration && !preExistingDamageNotes.trim()) {
-      setWizardError('Write down the garment\'s current condition (stains, tears, wear) before intake.');
-      return;
+      return stopAt('Write down the garment\'s current condition (stains, tears, wear) before intake.', 'alteration-damage');
     }
     setWizardError('');
     setMaxCompletedStep((prev) => Math.max(prev, 3));
@@ -367,21 +379,18 @@ export default function JobCreateForm() {
     const fabricLess = !isAlteration && formData.material_source === 'customer_supplied' ? Number(fabricDeduction) || 0 : 0;
     const priceBeforeFabric = (parseFloat(itemRate) || 0) * (isBulkOrder ? Math.max(1, parseInt(formData.quantity, 10) || 1) : 1)
       + (formData.is_rush ? parseFloat(formData.rush_fee) || 0 : 0);
+    // A problem on an earlier step: go back to that step, then to the field.
     if (fabricLess > 0 && priceBeforeFabric > 0 && fabricLess > priceBeforeFabric) {
-      setWizardError("The fabric / materials deduction is more than the price. Lower it on the Order Specs step.");
-      return;
+      setCurrentStep(3);
+      return stopAt('The fabric / materials deduction is more than the price. Lower it here.', 'fabric-deduction');
     }
 
     if (!fullName.trim()) {
-      setWizardError('Customer name is required.');
-      goToStep(1);
-      return;
+      setCurrentStep(1);
+      return stopAt('Customer name is required.', 'job-customer-name');
     }
 
-    if (!formData.due_date) {
-      setWizardError('Please specify a production due date.');
-      return;
-    }
+    if (!formData.due_date) return stopAt('Please specify a production due date.', 'job-due-date');
 
     setSubmitting(true);
     setWizardError('');
@@ -434,7 +443,12 @@ export default function JobCreateForm() {
         custom_order_data: {
           ...customFieldValues,
           // Only the measurements asked for this Garment Type.
-          individual_measurements: !isBulkOrder ? pickMeasurements(measurements, formData.garment_category) : null,
+          individual_measurements: !isBulkOrder
+            ? {
+                ...pickMeasurements(measurements, formData.garment_category),
+                ...Object.fromEntries(Object.entries(extraMeasurements).filter(([, v]) => v.trim() !== '')),
+              }
+            : null,
           size_breakdown: isBulkOrder ? bulkSizeBreakdown(people.persons) : null,
           measurement_sheets: measurementSheets.length > 0 ? measurementSheets : null,
           team_name: isBulkOrder ? teamName || null : null,
@@ -568,6 +582,8 @@ export default function JobCreateForm() {
           setGarmentCategory={(cat) => setFormData((prev) => ({ ...prev, garment_category: cat as typeof prev.garment_category }))}
           measurements={measurements}
           setMeasurements={setMeasurements}
+          extraMeasurements={extraMeasurements}
+          setExtraMeasurements={setExtraMeasurements}
           customerMeasurements={customerMeasurements}
           selectedMeasurementProfileId={selectedMeasurementProfileId}
           onSelectSavedProfile={handleSelectSavedProfile}

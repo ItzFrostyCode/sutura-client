@@ -30,9 +30,9 @@ export default function StoreApplicationPage() {
       <PublicNav />
 
       <main className="flex-1 mobile-screen-margins py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-2xl sm:border sm:border-line sm:bg-surface sm:p-8">
-          <p className="mobile-overline text-taupe">Open a Shop</p>
-          <h1 className="mobile-h1 text-ink mt-2">Register your tailoring shop</h1>
+        <div className="mx-auto w-full max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-taupe">Open a Shop</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Register your tailoring shop</h1>
 
           {app.submittedTo ? <ApplicationSubmitted email={app.submittedTo} freeTrial={app.freeTrial} /> : (
           <>
@@ -40,13 +40,13 @@ export default function StoreApplicationPage() {
             <ApplicationStepper current={app.step} />
           </div>
 
-          <div className="mt-8 mb-6">
-            <h2 className="mobile-h2 text-ink">{copy.title}</h2>
-            <p className="mobile-body-md text-ink-muted mt-2">{copy.body}</p>
+          <div className="mt-10 mb-6">
+            <h2 className="text-xl font-bold text-ink">{copy.title}</h2>
+            <p className="mt-1.5 text-sm text-ink-muted">{copy.body}</p>
           </div>
 
           {app.error && (
-            <div role="alert" className="mb-6 border border-danger/30 bg-danger/5 p-3.5 text-sm text-danger">
+            <div role="alert" className="mb-6 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
               {app.error}
             </div>
           )}
@@ -56,9 +56,9 @@ export default function StoreApplicationPage() {
           {app.step === 3 && <DocumentsStep app={app} />}
           {app.step === 4 && <PlanStep app={app} />}
 
-          <p className="mt-8 text-center text-sm text-ink">
+          <p className="mt-10 text-center text-sm text-ink-muted">
             Already approved?{' '}
-            <Link href="/login?as=store" className="font-bold underline underline-offset-2">Sign in to your shop</Link>
+            <Link href="/login?as=store" className="font-semibold text-ink underline underline-offset-2">Sign in to your shop</Link>
           </p>
           </>
           )}

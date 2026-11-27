@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
@@ -8,6 +9,44 @@ import {
   Appointment, ServiceData, CustomerData, BranchData, StaffData,
   AppointmentStatus, AppointmentType, getErrorMessage, getLocalDateString, minTimeForDate
 } from './appointmentHelpers';
+
+export type AppointmentDateFilter = 'any' | 'today' | 'tomorrow' | 'this_week' | 'next_7' | 'this_month' | 'past';
+
+export const DATE_FILTER_OPTIONS: [AppointmentDateFilter, string][] = [
+  ['any', 'Any date'],
+  ['today', 'Today'],
+  ['tomorrow', 'Tomorrow'],
+  ['this_week', 'This week'],
+  ['next_7', 'Next 7 days'],
+  ['this_month', 'This month'],
+  ['past', 'Past'],
+];
+
+/**
+ * Whether a booking's day falls in the picked range. Compares local calendar
+ * days ("2026-11-28"), the same way the page's Today count does, so a booking
+ * late at night never slips into the next or previous day.
+ */
+function inDateRange(scheduledAt: string | null | undefined, range: AppointmentDateFilter): boolean {
+  if (range === 'any') return true;
+  if (!scheduledAt) return false;
+  const day = scheduledAt.split('T')[0].split(' ')[0];
+  const now = new Date();
+  const shift = (days: number) => { const d = new Date(now); d.setDate(d.getDate() + days); return getLocalDateString(d); };
+  const today = getLocalDateString(now);
+  switch (range) {
+    case 'today': return day === today;
+    case 'tomorrow': return day === shift(1);
+    case 'next_7': return day >= today && day <= shift(6);
+    case 'this_week': {
+      // Monday to Sunday.
+      const back = (now.getDay() + 6) % 7;
+      return day >= shift(-back) && day <= shift(6 - back);
+    }
+    case 'this_month': return day.slice(0, 7) === today.slice(0, 7);
+    case 'past': return day < today;
+  }
+}
 
 export function useAppointments() {
   const { store, user } = useAuthStore();
@@ -22,8 +61,11 @@ export function useAppointments() {
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
   const [typeFilter, setTypeFilter]     = useState<AppointmentType | 'all'>('all');
   const [search, setSearch]             = useState('');
+  const [dateFilter, setDateFilter]     = useState<AppointmentDateFilter>('any');
   // Plain staff start on "assigned to me" — their own work first; anyone can flip it.
   const [assignedToMe, setAssignedToMe]  = useState<boolean | null>(null);
+  // Owners and managers: whose appointments to show ('everyone', 'unassigned' or a staff user id).
+  const [assigneeFilter, setAssigneeFilter] = useState<'everyone' | 'unassigned' | number>('everyone');
   const [currentDate, setCurrentDate]   = useState(new Date());
   const [selectedDay, setSelectedDay]   = useState<Date | null>(null);
   const [hoveredAptId, setHoveredAptId] = useState<number | null>(null);
@@ -62,9 +104,10 @@ export function useAppointments() {
 
   const minTimeFor = (dateStr: string): string => minTimeForDate(dateStr, todayStr);
 
-  const fetchAppointments = useCallback(() => {
+  // `silent`: a background re-sync keeps the list on screen (no skeleton).
+  const fetchAppointments = useCallback(({ silent = false }: { silent?: boolean } = {}) => {
     if (!store?.id) return;
-    const timer = setTimeout(() => setLoading(true), 0);
+    const timer = silent ? undefined : setTimeout(() => setLoading(true), 0);
     const params: Record<string, string | number> = {};
     if (selectedBranchId !== null) {
       params.branch_id = selectedBranchId;
@@ -76,10 +119,13 @@ export function useAppointments() {
       })
       .catch((err) => {
         setLoading(false);
-        toast.error(getErrorMessage(err, 'Failed to load appointments.'));
+        if (!silent) toast.error(getErrorMessage(err, 'Failed to load appointments.'));
       });
     return () => clearTimeout(timer);
   }, [store, selectedBranchId, toast]);
+
+  // New bookings, cancellations and new times show up without a refresh.
+  useLiveRefresh(['appointments'], () => { fetchAppointments({ silent: true }); }, { enabled: !!store?.id });
 
   useEffect(() => {
     const cleanup = fetchAppointments();
@@ -352,9 +398,16 @@ export function useAppointments() {
     return appointments.filter(a => {
       const matchStatus = statusFilter === 'all' || a.status === statusFilter;
       const matchType   = typeFilter   === 'all' || a.appointment_type === typeFilter;
-      const mineOnly = assignedToMe ?? isPlainStaff;
-      if (mineOnly && a.assigned_staff_id !== user?.id) return false;
+      if (isPlainStaff) {
+        // Staff: the "Assigned to me" toggle (on by default).
+        if ((assignedToMe ?? true) && a.assigned_staff_id !== user?.id) return false;
+      } else if (assigneeFilter === 'unassigned') {
+        if (a.assigned_staff_id) return false;
+      } else if (assigneeFilter !== 'everyone' && a.assigned_staff_id !== assigneeFilter) {
+        return false;
+      }
       if (!matchStatus || !matchType) return false;
+      if (!inDateRange(a.scheduled_at, dateFilter)) return false;
       if (!q) return true;
 
       return (
@@ -371,7 +424,7 @@ export function useAppointments() {
     })
       // Requests whose slot a walk-in took go to the top so they are not missed (stable: the rest keep their order).
       .sort((x, y) => Number(needsNewTime(y)) - Number(needsNewTime(x)));
-  }, [appointments, statusFilter, typeFilter, search, assignedToMe, isPlainStaff, user?.id]);
+  }, [appointments, statusFilter, typeFilter, dateFilter, search, assignedToMe, assigneeFilter, isPlainStaff, user?.id]);
 
   // Operational metrics
   const stats = useMemo(() => {
@@ -424,6 +477,8 @@ export function useAppointments() {
     setStatusFilter,
     typeFilter,
     setTypeFilter,
+    dateFilter,
+    setDateFilter,
     search,
     setSearch,
     currentDate,
@@ -473,6 +528,8 @@ export function useAppointments() {
     isOwnerOrManager,
     isPlainStaff,
     assignedToMe,
+    assigneeFilter,
+    setAssigneeFilter,
     setAssignedToMe,
     handleConfirmReview,
     handleRejectReview,

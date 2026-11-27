@@ -11,6 +11,7 @@ import { searchCategoryFor, useShopCategories } from '../useShopCategories';
 import { UNIFORM_TYPES, guessUniformType } from '@/lib/uniformTypes';
 import { useImageUpload } from '../detail/ImageUploadField';
 import { buildServicePayload, emptyServiceDraft, validateSection, type ServiceDraft } from '../detail/serviceEditing';
+import { revealField } from '@/lib/revealField';
 
 const LABEL = 'mb-1.5 block text-sm font-medium text-ink';
 const INPUT = 'h-11 w-full border border-line-strong bg-white px-3 text-sm text-ink placeholder:text-ink-faint focus:border-taupe focus:outline-none focus:ring-2 focus:ring-taupe/20 disabled:bg-sunken disabled:text-ink-faint';
@@ -49,7 +50,16 @@ export default function NewServiceModal({ isOpen, storeId, onClose, onCreated }:
     const problem = validateSection('info', d)
       ?? (d.showcase_category ? null : 'Pick a category.')
       ?? (d.showcase_category === 'uniform' && !d.service_leaf_type ? 'Pick the uniform type.' : null);
-    if (problem) return toast.error(problem);
+    if (problem) {
+      // Take the owner to the field the check is about (same order as validateSection).
+      const field = !d.name.trim() ? 'svc-name'
+        : !d.turnaround_depends && (!d.estimated_days || Number(d.estimated_days) < 1) ? 'svc-days'
+        : !d.turnaround_depends && d.estimated_days_max !== '' ? 'svc-days-max'
+        : !d.showcase_category ? 'svc-category'
+        : 'svc-uniform-type';
+      revealField(field);
+      return toast.error(problem);
+    }
 
     // The API needs at least one priced row: the service itself at its starting price.
     const payload = buildServicePayload(null, { ...d, tiers: [{ label: d.name.trim(), amount: d.base_price.trim() }] });

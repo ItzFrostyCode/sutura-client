@@ -30,7 +30,7 @@ export default function BookingBranchSelector({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-field="booking-branch">
       <p className="mobile-h4 text-ink">Branch</p>
 
       <div className="p-3.5 bg-surface border border-line rounded-none flex items-start gap-2.5 min-h-[56px]">

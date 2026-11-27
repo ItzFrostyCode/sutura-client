@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertCircle, Check, Crosshair, ExternalLink, Loader2, MapPinned } from 'lucide-react';
+import { AlertCircle, Check, ChevronRight, Crosshair, ExternalLink, Loader2, Map as MapIcon, MapPinned } from 'lucide-react';
 import { reverseGeocodeCoords } from '@/lib/geocoding';
 
 export interface PinPoint {
@@ -16,8 +16,11 @@ interface PinToolsProps {
   readonly current: { lat: number; lng: number; address?: string } | null;
   readonly onPin: (pin: PinPoint) => void;
   readonly onPickOnMap: () => void;
-  /** 'square' for the shop application (sharp corners), 'rounded' for the dashboard forms. */
-  readonly variant?: 'square' | 'rounded';
+  /**
+   * 'list' for the shop application (two tappable rows in a card), 'rounded'
+   * for the dashboard forms, 'square' for sharp-cornered buttons.
+   */
+  readonly variant?: 'square' | 'rounded' | 'list';
 }
 
 export const googleMapsHref = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
@@ -30,7 +33,8 @@ export const googleMapsHref = (lat: number, lng: number) => `https://www.google.
 export default function PinTools({ current, onPin, onPickOnMap, variant = 'rounded' }: PinToolsProps) {
   const [locating, setLocating] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
-  const round = variant === 'rounded' ? 'rounded-lg' : '';
+  const list = variant === 'list';
+  const round = variant === 'rounded' ? 'rounded-lg' : list ? 'rounded-xl' : '';
 
   const useGps = () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -70,8 +74,30 @@ export default function PinTools({ current, onPin, onPickOnMap, variant = 'round
 
   const button = `flex min-h-11 flex-1 items-center justify-center gap-2 border border-ink px-3 text-sm font-semibold text-ink transition-colors hover:bg-sunken disabled:opacity-50 ${round}`;
 
+  const row = 'flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-sunken/60 disabled:opacity-60 sm:px-5';
+
   return (
     <div className="space-y-2.5">
+      {list ? (
+        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(45,42,38,0.04)]">
+          <button type="button" onClick={useGps} disabled={locating} className={row}>
+            {locating ? <Loader2 size={18} className="shrink-0 animate-spin text-ink-muted" /> : <Crosshair size={18} className="shrink-0 text-ink-muted" />}
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm text-ink">{locating ? 'Finding you…' : 'Current location'}</span>
+              <span className="block text-xs text-ink-muted">Use your device GPS while you&apos;re at the shop</span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-ink-faint" aria-hidden="true" />
+          </button>
+          <button type="button" onClick={onPickOnMap} className={row}>
+            <MapIcon size={18} className="shrink-0 text-ink-muted" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm text-ink">{current ? 'Change on map' : 'Pick on map'}</span>
+              <span className="block text-xs text-ink-muted">Pin the exact place on the map</span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-ink-faint" aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2">
         <button type="button" onClick={useGps} disabled={locating} className={button}>
           {locating ? <Loader2 size={16} className="animate-spin" /> : <Crosshair size={16} />}
@@ -81,6 +107,7 @@ export default function PinTools({ current, onPin, onPickOnMap, variant = 'round
           <MapPinned size={16} /> {current ? 'Change on map' : 'Pick on map'}
         </button>
       </div>
+      )}
 
       {note && (
         <p role="status" className={`flex items-start gap-2 border px-3 py-2 text-xs ${round} ${note.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
@@ -90,7 +117,7 @@ export default function PinTools({ current, onPin, onPickOnMap, variant = 'round
       )}
 
       {current && (
-        <div className={`flex items-start gap-3 border border-sage bg-sage/5 px-3 py-2.5 ${round}`}>
+        <div className={`flex items-start gap-3 ${list ? 'bg-sunken px-4 py-3.5' : 'border border-sage bg-sage/5 px-3 py-2.5'} ${round}`}>
           <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sage text-white">
             <Check size={13} strokeWidth={3} />
           </span>

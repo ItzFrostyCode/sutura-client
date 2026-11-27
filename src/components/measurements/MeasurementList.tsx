@@ -1,11 +1,10 @@
 'use client';
 
-import { MeasurementStatusBadge } from './MeasurementStatus';
 import React from 'react';
 import { ChevronDown, ChevronUp, Copy, Pencil, Trash2, StickyNote, RefreshCw } from 'lucide-react';
 import { MeasurementRecord } from './measurementTypes';
 import { getMediaUrl } from '@/lib/media';
-import { MetricPill, CustomerInitial, humanizeMetricKey } from './measurementHelpers';
+import { MetricPill, CustomerInitial, humanizeMetricKey, profileMeasurements } from './measurementHelpers';
 
 interface MeasurementListProps {
   readonly grouped: Record<string, MeasurementRecord[]>;
@@ -73,7 +72,8 @@ export default function MeasurementList({
                 const activeIndex = versions.indexOf(activeRec);
 
                 const isExpanded = expandedIds.has(activeRec.id);
-                const filledCount = Object.values(activeRec.metrics || {}).filter(Boolean).length;
+                const shown = profileMeasurements(activeRec.metrics);
+                const filledCount = shown.entries.length;
 
                 return (
                   <div key={groupKey}>
@@ -91,7 +91,6 @@ export default function MeasurementList({
                             ) : (
                               <span className="text-[10px] bg-sage/10 text-sage border border-sage/20 px-2 py-0.5 rounded-full font-medium">Shop Owner</span>
                             )}
-                            <MeasurementStatusBadge status={activeRec.status} />
                             <span className="text-[10px] bg-taupe/10 text-taupe border border-taupe/20 px-2 py-0.5 rounded-full font-medium">
                               {filledCount} field{filledCount === 1 ? '' : 's'}
                             </span>
@@ -158,12 +157,10 @@ export default function MeasurementList({
                         <div className="mt-3">
                           <p className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider mb-2">Measurements</p>
                           <div className="flex flex-wrap gap-1.5">
-                            {Object.entries(activeRec.metrics || {})
-                              .filter(([, v]) => v)
-                              .map(([key, value]) => (
-                                <MetricPill key={key} label={humanizeMetricKey(key)} value={value} />
-                              ))}
-                            {Object.values(activeRec.metrics || {}).every(v => !v) && (
+                            {shown.entries.map(([key, value]) => (
+                              <MetricPill key={key} label={humanizeMetricKey(key)} value={value} unit={shown.unit} />
+                            ))}
+                            {shown.entries.length === 0 && (
                               <p className="text-xs text-ink-faint italic">No measurements recorded.</p>
                             )}
                           </div>

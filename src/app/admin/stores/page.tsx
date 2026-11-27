@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, List, Map as MapIcon } from 'lucide-react';
 import { FilterTabs, ListState, PAGER_BTN } from '@/components/admin/ui/AdminPrimitives';
 import ReasonModal from '@/components/admin/ui/ReasonModal';
 import StoreRow, { type DirectoryStore } from '@/components/admin/stores/StoreRow';
+import StoreDetailsModal from '@/components/admin/stores/StoreDetailsModal';
 import { useAdminList, useDebounced, useStableListHeight } from '@/components/admin/useAdminList';
 import { PLAN_RING, type ShopPin } from '@/components/admin/stores/shopPins';
 
@@ -60,6 +61,7 @@ export default function AdminStoresPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hiding, setHiding] = useState<DirectoryStore | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
   const [view, setView] = useState<'list' | 'map'>('list');
   const [pins, setPins] = useState<ShopPin[]>([]);
   const [pinsLoading, setPinsLoading] = useState(false);
@@ -211,7 +213,7 @@ export default function AdminStoresPage() {
         )}
         {!loading && !error && items.length > 0 && (
           <ul className="space-y-3">
-            {items.map((store) => <StoreRow key={store.id} store={store} onHide={setHiding} onRestore={restore} />)}
+            {items.map((store) => <StoreRow key={store.id} store={store} onHide={setHiding} onRestore={restore} onOpen={(s) => setOpenId(s.id)} />)}
           </ul>
         )}
       </div>}
@@ -232,6 +234,8 @@ export default function AdminStoresPage() {
           </div>
         </nav>
       )}
+
+      <StoreDetailsModal storeId={openId} onClose={() => setOpenId(null)} />
 
       <ReasonModal
         isOpen={hiding !== null}

@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   List, LayoutGrid, Calendar as CalendarIcon, AlertCircle,
-  Plus, Clock, CheckCircle2, Scissors, Building2, SlidersHorizontal,
+  Plus, Clock, CheckCircle2, Scissors, Building2,
   RotateCcw, CalendarPlus
 } from 'lucide-react';
 import SearchInput from '@/components/shared/SearchInput';
 import PageHeader from '@/components/shared/PageHeader';
-import { useAppointments } from '@/components/appointments/useAppointments';
+import { useAppointments, DATE_FILTER_OPTIONS, type AppointmentDateFilter } from '@/components/appointments/useAppointments';
 import AppointmentCreateModal from '@/components/appointments/AppointmentCreateModal';
 import AppointmentActionModals from '@/components/appointments/AppointmentActionModals';
 import AppointmentCalendarView from '@/components/appointments/AppointmentCalendarView';
@@ -17,6 +17,9 @@ import FollowUpAppointmentModal from '@/components/appointments/FollowUpAppointm
 import { APPOINTMENT_TYPES, TYPE_CONFIG, STATUS_CONFIG, AppointmentType } from '@/components/appointments/appointmentHelpers';
 import { useBranch } from '@/context/BranchContext';
 import ReadOnlyLock from '@/components/billing/ReadOnlyLock';
+
+// Same height and look as the search box and buttons in the toolbar.
+const TOOLBAR_SELECT = 'h-[38px] pl-3 pr-8 bg-surface border border-line rounded-lg text-xs font-semibold text-ink-body focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe/30 cursor-pointer max-w-full';
 
 export default function AppointmentsPage() {
   const {
@@ -29,6 +32,8 @@ export default function AppointmentsPage() {
     setStatusFilter,
     typeFilter,
     setTypeFilter,
+    dateFilter,
+    setDateFilter,
     search,
     setSearch,
     currentDate,
@@ -83,6 +88,8 @@ export default function AppointmentsPage() {
     isPlainStaff,
     assignedToMe,
     setAssignedToMe,
+    assigneeFilter,
+    setAssigneeFilter,
     updateStatus,
     handleCheckIn,
     handleAccommodateEarly,
@@ -112,14 +119,57 @@ export default function AppointmentsPage() {
   const { selectedBranchId, branches: branchList } = useBranch();
   const currentBranch = branchList.find(b => b.id === selectedBranchId);
 
-  // Mobile / Collapsible Filter State
-  const [showFilters, setShowFilters] = useState(false);
+  const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (dateFilter !== 'any' ? 1 : 0)
+    + (!isPlainStaff && assigneeFilter !== 'everyone' ? 1 : 0) + (search ? 1 : 0);
 
-  const activeFiltersCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (search ? 1 : 0);
+  // "Assigned to" choices for owners/managers: the staff of the branch being viewed
+  // (plus anyone not tied to a branch). With All Branches, everyone, labelled by branch.
+  const assigneeOptions = Array.from(
+    new Map(
+      staff
+        .filter((s) => selectedBranchId === null || !s.branch || s.branch.id === selectedBranchId)
+        .map((s) => {
+          const name = s.user?.name || `Staff #${s.user_id}`;
+          return [s.user_id, selectedBranchId === null && s.branch ? `${name} · ${s.branch.name}` : name] as const;
+        })
+    ).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
+
+  // A person from another branch can't stay picked after switching branches.
+  useEffect(() => {
+    if (typeof assigneeFilter === 'number' && !assigneeOptions.some(([id]) => id === assigneeFilter)) {
+      setAssigneeFilter('everyone');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranchId, staff]);
+
+  // The status dropdown's choices, with how many bookings each has.
+  const STATUS_OPTIONS: [typeof statusFilter, string][] = [
+    ['all', 'All statuses'],
+    ['pending', STATUS_CONFIG.pending?.label ?? 'Pending'],
+    ['confirmed', STATUS_CONFIG.confirmed?.label ?? 'Confirmed'],
+    ['in_progress', 'In Progress'],
+    ['completed', STATUS_CONFIG.completed?.label ?? 'Completed'],
+    ['cancelled', STATUS_CONFIG.cancelled?.label ?? 'Cancelled'],
+    ['rejected', STATUS_CONFIG.rejected?.label ?? 'Rejected'],
+    ['no_show', 'No Show'],
+  ];
+  const statusCount = (s: typeof statusFilter): number => ({
+    all: stats.totalCount,
+    pending: stats.pendingCount,
+    confirmed: stats.confirmedCount,
+    in_progress: stats.inProgressCount,
+    completed: stats.completedCount,
+    cancelled: stats.cancelledCount,
+    rejected: stats.rejectedCount,
+    no_show: stats.noShowCount,
+  } as Record<string, number>)[s] ?? 0;
 
   const clearAllFilters = () => {
     setStatusFilter('all');
     setTypeFilter('all');
+    setDateFilter('any');
+    setAssigneeFilter('everyone');
     setSearch('');
   };
 
@@ -278,176 +328,100 @@ export default function AppointmentsPage() {
 
       {/* ── Main Container Card ──────────────────────────────────────────── */}
       <div data-tour="appts-list" className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xs">
-        {/* Table & Cards Filter & View Switcher Bar (Always Single Full Row) */}
+        {/* One row of plain controls: search, status, visit type, "Assigned to me", view.
+            Wraps onto two lines on narrow screens instead of hiding anything. */}
         <div data-tour="appts-toolbar" className="p-3.5 sm:p-4 border-b border-line bg-canvas/30">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left Controls: Search + Filter Button (or Type Select on huge screens) */}
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              {/* flex-1 min-w-0 instead of a fixed w-48 shrink-0 — at real
-                  narrow-phone widths (320-375px) the search box's old fixed
-                  192px plus the Filter button plus the view-switcher pill on
-                  the right added up to more than the available row width,
-                  and with nothing allowed to shrink the pill got clipped by
-                  this card's own overflow-hidden. Letting the search input
-                  compress (while Filter/pill stay fixed-size) is what
-                  actually keeps this a single row at every real width,
-                  instead of just asserting it in a comment. */}
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Search customer, service, notes..."
-                className="flex-1 min-w-0 sm:w-64 sm:flex-none"
-              />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search name, service or notes…"
+              className="w-full md:w-auto md:flex-1 md:min-w-[220px]"
+            />
 
-              {/* Filter Trigger Button — clean, never collides, opens drawer */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              aria-label="Booking status"
+              className={`${TOOLBAR_SELECT} ${statusFilter !== 'all' ? 'border-taupe text-taupe-dark' : ''}`}
+            >
+              {STATUS_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>{label} ({statusCount(value)})</option>
+              ))}
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as AppointmentType | 'all')}
+              aria-label="Visit type"
+              className={`${TOOLBAR_SELECT} ${typeFilter !== 'all' ? 'border-taupe text-taupe-dark' : ''}`}
+            >
+              <option value="all">All visit types</option>
+              {APPOINTMENT_TYPES.map((t) => (
+                <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
+              ))}
+            </select>
+
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as AppointmentDateFilter)}
+              aria-label="Date"
+              className={`${TOOLBAR_SELECT} ${dateFilter !== 'any' ? 'border-taupe text-taupe-dark' : ''}`}
+            >
+              {DATE_FILTER_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+
+            {isPlainStaff ? (
+              // Staff: their own appointments first (on by default), one tap to see the whole branch.
               <button
                 type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`h-[38px] flex items-center gap-1.5 px-3.5 rounded-lg border text-xs font-bold transition-all shrink-0 ${
-                  showFilters || activeFiltersCount > 0
-                    ? 'bg-taupe text-white border-taupe shadow-xs'
-                    : 'bg-canvas text-ink border-line hover:bg-sunken'
-                }`}
+                aria-pressed={assignedToMe ?? true}
+                onClick={() => setAssignedToMe(!(assignedToMe ?? true))}
+                className={`h-[38px] px-3.5 rounded-lg text-xs font-semibold border whitespace-nowrap transition-colors cursor-pointer ${(assignedToMe ?? true) ? 'bg-taupe text-white border-taupe' : 'bg-surface text-ink-body border-line hover:border-taupe/50'}`}
               >
-                <SlidersHorizontal size={14} />
-                <span>Filters</span>
-                {activeFiltersCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-white text-taupe text-[10px] font-black flex items-center justify-center">
-                    {activeFiltersCount}
-                  </span>
-                )}
+                Assigned to me
               </button>
+            ) : (
+              // Owners and managers: one person's schedule, or bookings nobody has taken yet.
+              <select
+                value={String(assigneeFilter)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setAssigneeFilter(v === 'everyone' || v === 'unassigned' ? v : Number(v));
+                }}
+                aria-label="Assigned to"
+                className={`${TOOLBAR_SELECT} ${assigneeFilter !== 'everyone' ? 'border-taupe text-taupe-dark' : ''}`}
+              >
+                <option value="everyone">Everyone</option>
+                <option value="unassigned">Not assigned yet</option>
+                {assigneeOptions.map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            )}
 
-              {/* Active Filter Indicators on desktop */}
-              {statusFilter !== 'all' && (
-                <div className="hidden md:flex h-[38px] items-center gap-1.5 text-xs bg-taupe/10 border border-taupe/20 text-taupe px-3 rounded-lg font-semibold shrink-0">
-                  <span className="capitalize">{statusFilter.replace(/_/g, ' ')}</span>
-                  <button type="button" onClick={() => setStatusFilter('all')} className="hover:text-ink ml-1 font-bold">×</button>
-                </div>
-              )}
+            {activeFiltersCount > 0 && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="h-[38px] px-2 text-xs font-semibold text-taupe flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <RotateCcw size={12} /> Clear
+              </button>
+            )}
 
-              {typeFilter !== 'all' && (
-                <div className="hidden md:flex h-[38px] items-center gap-1.5 text-xs bg-taupe/10 border border-taupe/20 text-taupe px-3 rounded-lg font-semibold shrink-0">
-                  <span className="capitalize">{typeFilter}</span>
-                  <button type="button" onClick={() => setTypeFilter('all')} className="hover:text-ink ml-1 font-bold">×</button>
-                </div>
-              )}
+            {currentBranch && (
+              <span className="hidden xl:flex h-[38px] items-center gap-1.5 text-xs text-taupe bg-taupe/10 border border-taupe/20 px-2.5 rounded-lg font-semibold">
+                <Building2 size={12} /> {currentBranch.name}
+              </span>
+            )}
 
-              {currentBranch && (
-                <div className="hidden xl:flex items-center gap-1.5 text-xs text-taupe bg-taupe/10 border border-taupe/20 px-2.5 py-1 rounded-lg font-semibold shrink-0">
-                  <Building2 size={12} />
-                  <span>{currentBranch.name}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Right: View Switcher Pill (ALWAYS on the Right Side!) */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="ml-auto">
               <ViewSwitcherPill />
             </div>
           </div>
-
-          {/* Collapsible Filter Panel (Clean, spacious, responsive drawer) */}
-          {showFilters && (
-            <div className="mt-3.5 pt-3.5 border-t border-line/80 space-y-3.5 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-ink uppercase tracking-wider">Filter Bookings</span>
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="text-[11px] font-semibold text-taupe flex items-center gap-1 hover:underline"
-                  >
-                    <RotateCcw size={11} /> Reset All Filters
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6">
-                {/* Appointment Type Select (Adjustable compact combobox) */}
-                <div className="w-full lg:w-56 xl:w-64 shrink-0">
-                  <label className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
-                    Type of Session
-                  </label>
-                  <select
-                    value={typeFilter}
-                    onChange={e => setTypeFilter(e.target.value as AppointmentType | 'all')}
-                    className="w-full h-[38px] text-xs font-medium border border-line rounded-lg px-3 bg-surface text-ink focus:outline-none focus:border-taupe shadow-2xs"
-                  >
-                    <option value="all">All Appointment Types</option>
-                    {APPOINTMENT_TYPES.map(t => (
-                      <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Mine only — staff start here; owners/managers can narrow to a person's own work too */}
-                <div className="shrink-0">
-                  <span className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">Show</span>
-                  <button
-                    type="button"
-                    aria-pressed={assignedToMe ?? isPlainStaff}
-                    onClick={() => setAssignedToMe(!(assignedToMe ?? isPlainStaff))}
-                    className={`h-[44px] md:h-[38px] px-3 rounded-lg text-xs font-semibold border whitespace-nowrap cursor-pointer ${(assignedToMe ?? isPlainStaff) ? 'bg-taupe text-white border-taupe' : 'bg-surface text-ink-body border-line hover:border-taupe/50'}`}
-                  >
-                    Assigned to me
-                  </button>
-                </div>
-
-                {/* Status Selection Pills (Full horizontal row) */}
-                <div className="flex-1 min-w-0">
-                  <label className="block text-[11px] font-bold text-ink-muted uppercase tracking-wider mb-1.5">
-                    Booking Status
-                  </label>
-                  <div className="flex items-center gap-1.5 flex-wrap xl:flex-nowrap">
-                    {(['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rejected', 'no_show'] as const).map(s => {
-                      let tabLabel = '';
-                      let count = 0;
-                      if (s === 'all') {
-                        tabLabel = 'All';
-                        count = stats.totalCount;
-                      } else if (s === 'in_progress') {
-                        tabLabel = 'In Progress';
-                        count = stats.inProgressCount;
-                      } else if (s === 'no_show') {
-                        tabLabel = 'No Show';
-                        count = stats.noShowCount;
-                      } else {
-                        tabLabel = STATUS_CONFIG[s]?.label || '';
-                        if (s === 'pending') count = stats.pendingCount;
-                        if (s === 'confirmed') count = stats.confirmedCount;
-                        if (s === 'completed') count = stats.completedCount;
-                        if (s === 'cancelled') count = stats.cancelledCount;
-                        if (s === 'rejected') count = stats.rejectedCount;
-                      }
-
-                      const isActive = statusFilter === s;
-
-                      return (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setStatusFilter(s)}
-                          className={`h-[38px] px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap shrink-0 ${
-                            isActive
-                              ? 'bg-taupe text-white border-taupe shadow-xs'
-                              : 'bg-surface text-ink-body border-line hover:border-taupe/50'
-                          }`}
-                        >
-                          <span>{tabLabel}</span>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full tabular-nums ${
-                            isActive ? 'bg-white/20 text-white' : 'bg-sunken text-ink-faint'
-                          }`}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* View Mode Content */}

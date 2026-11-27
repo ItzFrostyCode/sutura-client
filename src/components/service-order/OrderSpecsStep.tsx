@@ -25,7 +25,14 @@ export default function OrderSpecsStep({ o }: Readonly<{ o: ServiceOrderState }>
         </div>
         <div className="min-w-0">
           <p className="text-base font-semibold text-ink truncate">{service.name}</p>
-          <p className="text-sm text-ink-muted">{o.unitPrice > 0 ? `${peso(o.unitPrice)} each` : 'Price confirmed by the shop'}</p>
+          {o.pkg ? (
+            <>
+              <p className="text-sm text-ink-muted">{o.unitPrice > 0 ? `${peso(o.unitPrice)} for the set` : 'Price confirmed by the shop'}</p>
+              <p className="text-xs text-ink-muted mt-0.5 line-clamp-2">Includes {o.pkg.services.map((s) => s.name).join(', ')}</p>
+            </>
+          ) : (
+            <p className="text-sm text-ink-muted">{o.unitPrice > 0 ? `${peso(o.unitPrice)} each` : 'Price confirmed by the shop'}</p>
+          )}
         </div>
       </div>
 

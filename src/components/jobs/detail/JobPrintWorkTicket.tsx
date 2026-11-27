@@ -3,6 +3,7 @@
 import React from 'react';
 import { Job } from '../jobTypes';
 import { GARMENT_CATEGORY_LABELS } from '../jobHelpers';
+import { profileMeasurements } from '@/components/measurements/measurementHelpers';
 
 interface JobPrintWorkTicketProps {
   job: Job;
@@ -18,7 +19,7 @@ const PRINT_LABELS: Record<string, string> = {
 
 export default function JobPrintWorkTicket({ job, store }: JobPrintWorkTicketProps) {
   const measurementMetrics = job.measurement?.metrics || {};
-  const metricEntries = Object.entries(measurementMetrics);
+  const metricEntries = profileMeasurements(measurementMetrics).entries;
 
   const customSpecEntries = job.custom_order_data
     ? Object.entries(job.custom_order_data).filter(

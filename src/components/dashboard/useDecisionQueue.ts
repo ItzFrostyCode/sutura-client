@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
 import { getErrorMessage } from '@/lib/apiError';
@@ -34,11 +35,9 @@ export function useDecisionQueue(storeId: number | undefined, enabled: boolean) 
       .finally(() => setLoading(false));
   }, [storeId, enabled, selectedBranchId]);
 
-  useEffect(() => {
-    load();
-    window.addEventListener('focus', load);
-    return () => window.removeEventListener('focus', load);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+  // Refreshes on new activity, on returning to the tab, and every 30s while visible.
+  useLiveRefresh(['appointments', 'payments', 'jobs'], load);
 
   const approve = async (id: number) => {
     if (!storeId) return;

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { type AppNotification, getTypeConfig, relativeTime } from '@/lib/notificationHelpers';
+import { type AppNotification, getSenderInfo, getHeadline, getContextLine, relativeTime } from '@/lib/notificationHelpers';
+import NotificationAvatar from './NotificationAvatar';
 
 const VISIBLE_MS = 5000;
 const EXIT_MS = 280;
@@ -67,9 +68,10 @@ function NotificationToast({ notif, onDismiss, onOpen }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per card
   }, []);
 
-  const { icon: Icon, bg, color } = getTypeConfig(notif.data?.type);
-  const title = notif.data?.title || 'New notification';
-  const message = notif.data?.message && notif.data.message !== title ? notif.data.message : null;
+  // Same reading as the bell: who it's from, what happened, then the details to scan.
+  const sender = getSenderInfo(notif);
+  const headline = getHeadline(notif);
+  const contextLine = getContextLine(notif);
 
   return (
     <div
@@ -85,12 +87,15 @@ function NotificationToast({ notif, onDismiss, onOpen }: {
         onClick={() => { onOpen(notif); leave(); }}
         className="flex w-full items-start gap-3 rounded-2xl p-3.5 pr-11 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-taupe cursor-pointer"
       >
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg}`}>
-          <Icon size={17} className={color} aria-hidden="true" />
-        </span>
+        <NotificationAvatar sender={sender} />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold leading-snug text-ink line-clamp-2">{title}</span>
-          {message && <span className="mt-0.5 block text-[13px] leading-snug text-ink-body line-clamp-2">{message}</span>}
+          <span className="block truncate text-sm font-bold leading-tight text-ink">{sender.name}</span>
+          <span className="mt-0.5 block text-[13px] font-medium leading-snug text-ink-body line-clamp-2">{headline}</span>
+          {contextLine && (
+            <span className="mt-0.5 block truncate text-xs font-medium leading-snug text-ink-muted tabular-nums" title={contextLine}>
+              {contextLine}
+            </span>
+          )}
           <time dateTime={notif.created_at} className="mt-1 block text-[11px] text-ink-muted">{relativeTime(notif.created_at)}</time>
         </span>
       </button>

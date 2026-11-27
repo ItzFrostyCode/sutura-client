@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { useToast } from '@/context/ToastContext';
 import {
   type MyAppointment,
@@ -21,8 +22,8 @@ export function useAppointmentsList() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
 
-  const fetchAppointments = () => {
-    setLoading(true);
+  const fetchAppointments = (silent = false) => {
+    if (!silent) setLoading(true);
     api.get('/my-appointments', { params: { per_page: 100 } })
       .then((res) => setAppointments(res.data.data ?? []))
       .catch(() => setAppointments([]))
@@ -32,6 +33,9 @@ export function useAppointmentsList() {
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  // The shop confirms, moves or declines: the list updates on its own.
+  useLiveRefresh(['appointments'], () => fetchAppointments(true));
 
   const hasActiveAppointment = useMemo(
     () => appointments.some((a) => a.status === 'pending' || a.status === 'confirmed'),

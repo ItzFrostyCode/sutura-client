@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/axios';
 import NoGcashAlert from './NoGcashAlert';
+import { useShopAccount } from '@/hooks/useShopAccount';
 
 // One check per shop per page load: does it have an active GCash account (any branch)?
 const gcashCheck = new Map<string, Promise<boolean>>();
@@ -53,9 +54,24 @@ export default function OnlineOrderLink({
   onClick?: () => void;
   children: React.ReactNode;
 }>) {
+  const { isShopAccount } = useShopAccount();
   const repair = href.includes('/repair-request');
   const hasGcash = useShopHasGcash(repair || !paymentRequired ? null : storeSlug);
   const [alertOpen, setAlertOpen] = useState(false);
+
+  // Shop logins can't order (ShopRouteGuard sends them back to the dashboard).
+  // On their own shop page the button is a preview of what customers see.
+  if (isShopAccount) {
+    return (
+      <span
+        aria-disabled="true"
+        title="Customers order from here. Shop accounts can't place orders."
+        className={`${className ?? ''} opacity-60 cursor-not-allowed`}
+      >
+        {children}
+      </span>
+    );
+  }
 
   return (
     <>

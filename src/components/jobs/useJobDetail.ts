@@ -2,6 +2,7 @@ import { depositFraction, paymentPolicyLabel } from './requirements';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { logUnexpectedError } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
@@ -87,6 +88,27 @@ export function useJobDetail(jobId: string) {
     }
   };
 
+  // Someone else moved the stage or a payment came in: show it without a refresh.
+  // Fields this person is editing keep what they typed; untouched ones follow the server.
+  useLiveRefresh(['jobs', 'payments'], () => {
+    if (!store || !jobId || !job) return;
+    const before = job;
+    api.get(`/stores/${store.id}/jobs/${jobId}`)
+      .then(res => {
+        const fresh = res.data.data;
+        if (!fresh) return;
+        setJob(fresh);
+        if (status === before.status) setStatus(fresh.status);
+        if (paymentStatus === before.payment_status) setPaymentStatus(fresh.payment_status);
+        if (String(balance) === String(before.balance)) setBalance(fresh.balance);
+        if (notes === (before.notes || '')) setNotes(fresh.notes || '');
+        if (completionPhotoUrl === (before.completion_photo_url || '')) setCompletionPhotoUrl(fresh.completion_photo_url || '');
+        if (estimatedReadyAt === toDatetimeLocal(before.estimated_ready_at)) setEstimatedReadyAt(toDatetimeLocal(fresh.estimated_ready_at));
+        if (customerMaterialStatus === (before.customer_material_status || '')) setCustomerMaterialStatus(fresh.customer_material_status || '');
+      })
+      .catch(() => {});
+  }, { enabled: !!store && !!jobId });
+
   // Practical Dirty Checking: track exactly which tab and fields have unsaved modifications
   const dirtyTabs = {
     overview: Boolean(job && notes !== (job.notes || '')),
@@ -162,7 +184,7 @@ export function useJobDetail(jobId: string) {
     }
   };
 
-  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string, cashTendered?: number) => {
+  const handleChargePayment = async (amount: number, method: string, notesVal: string, reference?: string, receiptPath?: string) => {
     if (!store || !job) return;
     setSaving(true);
     try {
@@ -172,7 +194,6 @@ export function useJobDetail(jobId: string) {
         reference: reference || undefined,
         notes: notesVal || undefined,
         receipt_path: receiptPath || undefined,
-        cash_tendered: cashTendered,
       });
       const res = await api.get(`/stores/${store.id}/jobs/${job.id}`);
       const updatedJob = res.data.data;

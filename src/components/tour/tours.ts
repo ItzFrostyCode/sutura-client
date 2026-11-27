@@ -210,6 +210,15 @@ export const TOURS: Record<TourId, Tour> = {
 
 export const isTourId = (v: string | null): v is TourId => v !== null && v in TOURS;
 
+/** The Welcome Guide's order. A chained tour (?chain=1) goes on to the next one when finished. */
+export const TOUR_ORDER: TourId[] = ['profile', 'branches', 'services', 'catalog', 'staff', 'appointments', 'jobs', 'payments'];
+
+/** Where a chained tour goes after `id`: the next tour's page, or back to the Welcome Guide after the last. */
+export function nextTourHref(id: TourId): string {
+  const next = TOUR_ORDER[TOUR_ORDER.indexOf(id) + 1];
+  return next ? `${TOURS[next].path}?tour=${next}&chain=1` : '/dashboard?tab=welcome';
+}
+
 // Progress is kept in this browser (per signed-in user): finishing or skipping a tour marks it done.
 const key = (userId: number | string | undefined) => `sutura_tours_done:${userId ?? 'guest'}`;
 

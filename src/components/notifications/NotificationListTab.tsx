@@ -8,11 +8,14 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import SearchInput from '@/components/shared/SearchInput';
+import NotificationAvatar from './NotificationAvatar';
 import { scrollToListTop } from '@/lib/scrollToListTop';
 import EmptyState from '@/components/shared/EmptyState';
 import {
   type AppNotification,
   getSenderInfo,
+  getHeadline,
+  getContextLine,
   formatDateTime,
 } from '@/lib/notificationHelpers';
 
@@ -176,9 +179,7 @@ export default function NotificationListTab({
 
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl bg-canvas border border-line flex items-center justify-center text-xs font-black text-taupe shrink-0 shadow-2xs">
-                            {sender.initial}
-                          </div>
+                          <NotificationAvatar sender={sender} size="sm" />
                           <span className="font-semibold text-ink text-[13px] truncate">
                             {sender.name}
                           </span>
@@ -191,8 +192,11 @@ export default function NotificationListTab({
                           onClick={() => onOpenDetail(notif)}
                           className="text-left font-medium text-[13px] text-[#0B7D8C] hover:text-[#096774] hover:underline cursor-pointer line-clamp-1 group-hover:underline transition-colors"
                         >
-                          {notif.data?.title || notif.data?.message || 'Notification Update'}
+                          {getHeadline(notif)}
                         </button>
+                        {getContextLine(notif) && (
+                          <p className="text-[11px] text-ink-muted mt-0.5 line-clamp-1 tabular-nums">{getContextLine(notif)}</p>
+                        )}
                       </td>
 
                       <td className="py-3.5 px-4 text-xs text-ink-muted whitespace-nowrap">

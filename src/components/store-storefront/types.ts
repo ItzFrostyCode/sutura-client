@@ -88,6 +88,8 @@ export interface PublicServicePackage {
   reviews_count?: number;
   reviews_avg_rating?: number | null;
   services: { id: number; name: string; base_price: string | null }[];
+  /** What ordering the set asks for (payment up front, fitting…); same shape as a service's. */
+  order_requirements?: PublicService['order_requirements'];
 }
 
 export interface CatalogItemImage {

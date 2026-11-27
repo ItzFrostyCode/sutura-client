@@ -241,13 +241,13 @@ export default function JobKanbanBoard({
     }
     const btn = 'min-h-9 px-3 rounded-lg text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap transition-colors active:scale-[0.98] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-taupe/40';
     const quiet = `${btn} border border-line-strong bg-surface text-ink hover:bg-ink hover:border-ink hover:text-white`;
-    const go = (to: string, label: React.ReactNode, cls = quiet) => (
+    const go = (to: string, label: React.ReactNode, cls = quiet, hint?: string) => (
       <button
         type="button"
         {...previewTarget(to)}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStatusChange(job, to); }}
         disabled={readOnly}
-        title={readOnly ? readOnlyHint : undefined}
+        title={readOnly ? readOnlyHint : hint}
         className={`${cls} ${compact ? '' : 'flex-1'} disabled:cursor-not-allowed disabled:opacity-50`}
       >
         {label}
@@ -288,7 +288,17 @@ export default function JobKanbanBoard({
       );
     }
     if (norm === 'production') return go('quality_check', <>{compact ? 'To QC' : 'To quality check'} →</>);
-    if (norm === 'quality_check') return go('ready_for_fitting', <>{compact ? 'To fitting' : 'Ready for fitting'} →</>);
+    // Didn't pass QC: send it back to production. The list view has room for one
+    // button, so there it stays in the "…" menu (same as Adjustments below).
+    if (norm === 'quality_check' && compact) return go('ready_for_fitting', <>To fitting →</>);
+    if (norm === 'quality_check') {
+      return (
+        <>
+          {go('production', <>← Production</>, `${btn} border border-line-strong bg-surface text-ink hover:bg-sunken`, "Didn't pass QC? Send it back to production")}
+          {go('ready_for_fitting', <>Ready for fitting →</>)}
+        </>
+      );
+    }
     // The list view has room for one button; Adjustments stays in the "…" menu there.
     if (norm === 'ready_for_fitting' && compact) return go('ready_for_pickup', <>Fitting OK →</>);
     if (norm === 'ready_for_fitting') {

@@ -90,7 +90,24 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
     streamRef.current = null;
   }, []);
 
-  useEffect(() => stopCamera, [stopCamera]);
+  // False once the step is left, so a camera that finishes starting afterwards is switched off.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; stopCamera(); };
+  }, [stopCamera]);
+
+  // Connects the camera to the <video> the moment the element exists. It used
+  // to wait one animation frame after switching to "live"; when React took
+  // longer than that (the page busy loading the face check), the video was
+  // never connected and the box stayed black.
+  const attachVideo = useCallback((video: HTMLVideoElement | null) => {
+    videoRef.current = video;
+    const stream = streamRef.current;
+    if (!video || !stream || video.srcObject === stream) return;
+    video.srcObject = stream;
+    video.play().catch(() => { /* retried on loadedmetadata below */ });
+  }, []);
 
   const startCamera = async () => {
     setMessage('');
@@ -110,23 +127,33 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
         .catch(() => { detectorRef.current = { detector: null, failed: true }; });
     }
     preloadFaceMatch();
+    stopCamera(); // a Retake while an older stream is still open
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } },
         audio: false,
       });
+      // Left the step while the browser was asking for permission: don't leave the camera on.
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       streamRef.current = stream;
-      setPhase('live');
-      // The <video> mounts with the live phase.
-      requestAnimationFrame(() => {
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          video.play().catch(() => { /* autoplay is muted + playsInline, so this only fails if the stream already ended */ });
-        }
+      // The camera can stop on its own (another app took it, the phone locked):
+      // say so instead of leaving a black box.
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+        if (streamRef.current !== stream || !mountedRef.current) return;
+        stopCamera();
+        setPhase('error');
+        setMessage('The camera stopped. Tap Try again to turn it back on.');
       });
+      setPhase('live');
+      // If the <video> is already on the page (e.g. a retake from "live"), connect it now;
+      // otherwise attachVideo does it when the element mounts.
+      attachVideo(videoRef.current);
     } catch (err) {
       stopCamera();
+      if (!mountedRef.current) return;
       setPhase('error');
       setMessage(cameraErrorMessage(err));
     }
@@ -202,21 +229,33 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
   const idName = idType || 'government ID';
 
   return (
-    <div>
-      <p className="text-sm text-ink mb-1" id={`${id}-label`}>
-        Selfie holding your ID<RequirementTag value="Required" />
-      </p>
-      <p className="mobile-caption text-ink-muted mb-3">
-        Take a photo of yourself holding your {idName} next to your face, front side toward the camera. Your device
-        compares your face with the ID photo (only the result is sent, never your face data), and our review team
-        checks it too. Camera only; photos from your gallery can&apos;t be used.
-      </p>
+    <div data-field={id}>
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(45,42,38,0.04)]" aria-labelledby={`${id}-label`}>
+        <div className="px-5 pt-5 sm:px-6 sm:pt-6">
+          <p className="text-sm font-medium text-ink" id={`${id}-label`}>
+            Selfie holding your ID<RequirementTag value="Required" />
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+            Hold your {idName} next to your face, front side toward the camera. Your device compares your face with the
+            ID photo (only the result is sent, never your face data), and our review team checks it too. Camera only;
+            photos from your gallery can&apos;t be used.
+          </p>
+        </div>
 
-      <div className="border border-line-strong bg-surface" aria-labelledby={`${id}-label`}>
+        <div className="px-5 py-5 sm:px-6">
         {(phase === 'live' || phase === 'checking') && (
-          <div className="relative aspect-[4/3] w-full overflow-hidden bg-ink">
+          <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-xl bg-ink">
             {/* Mirrored like a mirror, which is easier to line up; the saved photo isn't. */}
-            <video ref={videoRef} muted playsInline className="h-full w-full -scale-x-100 object-cover" aria-label="Live camera preview" />
+            <video
+              ref={attachVideo}
+              autoPlay
+              muted
+              playsInline
+              // A play() that failed early (tab in the background for a moment) is retried once the picture is ready.
+              onLoadedMetadata={(e) => { if (e.currentTarget.paused) e.currentTarget.play().catch(() => {}); }}
+              className="h-full w-full -scale-x-100 object-cover"
+              aria-label="Live camera preview"
+            />
             {phase === 'checking' && (
               <div className="absolute inset-0 flex items-center justify-center bg-ink/50">
                 <span className="flex items-center gap-2 bg-surface px-3.5 py-2 text-sm text-ink">
@@ -229,11 +268,11 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
 
         {phase === 'done' && preview && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Your selfie holding your ID" className="aspect-[4/3] w-full bg-sunken object-contain" />
+          <img src={preview} alt="Your selfie holding your ID" className="mx-auto aspect-[4/3] w-full max-w-md rounded-xl bg-sunken object-cover" />
         )}
 
         {(phase === 'idle' || phase === 'starting' || phase === 'error') && (
-          <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 bg-sunken px-6 text-center">
+          <div className="mx-auto flex aspect-[4/3] w-full max-w-md flex-col items-center justify-center gap-3 rounded-xl bg-sunken px-6 text-center">
             <Camera size={32} className="text-ink-muted" aria-hidden="true" />
             <ul className="mobile-caption text-ink-body space-y-1">
               <li>Find good light and remove sunglasses or a cap.</li>
@@ -243,12 +282,14 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
           </div>
         )}
 
-        <div className="flex min-h-14 flex-wrap items-center gap-3 border-t border-line px-4 py-3">
+        </div>
+
+        <div className="flex min-h-14 flex-wrap items-center gap-3 border-t border-line px-5 py-3 sm:px-6">
           {phase === 'done' ? (
             <>
               <CheckCircle2 size={18} className="shrink-0 text-sage" aria-hidden="true" />
-              <span className="min-w-0 flex-1 text-sm text-ink">Selfie taken</span>
-              <button type="button" onClick={retake} className="inline-flex min-h-11 items-center gap-2 border border-line-strong px-4 text-sm text-ink hover:bg-sunken">
+              <span className="min-w-0 flex-1 text-sm font-medium text-ink">Selfie taken</span>
+              <button type="button" onClick={retake} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-sunken px-4 text-xs font-semibold text-ink hover:bg-sunken-hover">
                 <RotateCcw size={16} aria-hidden="true" /> Retake
               </button>
             </>
@@ -256,13 +297,13 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
             <>
               <span className="min-w-0 flex-1 mobile-caption text-ink-muted">Hold still, then take the photo.</span>
               <button type="button" onClick={capture} disabled={phase === 'checking'}
-                className="inline-flex min-h-11 items-center gap-2 bg-ink px-5 text-sm font-semibold uppercase tracking-widest text-white disabled:opacity-50">
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-ink px-5 text-sm font-semibold text-white hover:bg-ink/85 disabled:opacity-50">
                 <Camera size={16} aria-hidden="true" /> Take photo
               </button>
             </>
           ) : (
             <button type="button" onClick={startCamera} disabled={phase === 'starting'}
-              className="inline-flex min-h-11 items-center gap-2 border border-ink px-5 text-sm font-semibold uppercase tracking-widest text-ink hover:bg-sunken disabled:opacity-50">
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-ink px-5 text-sm font-semibold text-white hover:bg-ink/85 disabled:opacity-50">
               {phase === 'starting' ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Camera size={16} aria-hidden="true" />}
               {phase === 'starting' ? 'Starting camera…' : phase === 'error' ? 'Try again' : 'Open camera'}
             </button>
@@ -270,9 +311,9 @@ export default function SelfieCapture({ id, file, idType, onChange }: {
         </div>
       </div>
 
-      {message && <p role="alert" className="mt-2 text-xs text-danger">{message}</p>}
-      {hint && phase === 'done' && <p role="status" className="mt-2 text-xs text-amber-800">{hint}</p>}
-      {note && phase === 'done' && <p role="status" className="mt-2 text-xs text-ink-muted">{note}</p>}
+      {message && <p role="alert" className="mt-2.5 rounded-xl border border-danger/25 bg-danger/5 px-4 py-2.5 text-xs text-danger">{message}</p>}
+      {hint && phase === 'done' && <p role="status" className="mt-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs leading-relaxed text-amber-900">{hint}</p>}
+      {note && phase === 'done' && <p role="status" className="mt-2.5 px-1 text-xs text-ink-muted">{note}</p>}
     </div>
   );
 }

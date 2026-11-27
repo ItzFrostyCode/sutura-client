@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
+import { shrinkImage } from '@/lib/shrinkImage';
 import { appendFaceMatch } from './faceMatch';
 import {
   EMPTY_OWNER, EMPTY_SHOP,
@@ -37,6 +38,8 @@ export function useStoreApplication() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // While submitting: null = shrinking photos, 0–100 = upload progress.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   // Set once submitted — the owner can't sign in until a System Admin
   // approves and emails their shop login here.
   const [submittedTo, setSubmittedTo] = useState<string | null>(null);
@@ -75,7 +78,15 @@ export function useStoreApplication() {
     if (!privacyConsent) { setError('Please agree to the privacy consent on the Documents step.'); return; }
     if (!termsAccepted) { setError('Please agree to the Terms of Service before submitting.'); return; }
     setSubmitting(true);
+    setUploadProgress(null);
     setError('');
+
+    // Phone photos go up at ~1/10 the size (lib/shrinkImage). Not the selfie:
+    // it's already a small capture and its face-match result is keyed to that File.
+    const docEntries = await Promise.all(
+      Object.entries(files).map(async ([key, file]) => [key, key === 'selfie_with_id' ? file : await shrinkImage(file)] as const),
+    );
+    const permitFiles = await Promise.all(permits.map(shrinkImage));
 
     const form = new FormData();
     Object.entries(owner).forEach(([key, value]) => { if (value) form.append(key, value); });
@@ -99,11 +110,11 @@ export function useStoreApplication() {
       if (b.area.district_code) form.append(`branches[${i}][district_code]`, b.area.district_code);
       form.append(`branches[${i}][barangay_code]`, b.area.barangay_code);
     });
-    Object.entries(files).forEach(([key, file]) => {
+    docEntries.forEach(([key, file]) => {
       if (key === 'payment_receipt' && (payOnline || freeTrial)) return;
       form.append(key, file);
     });
-    permits.forEach((file) => form.append('business_permits[]', file));
+    permitFiles.forEach((file) => form.append('business_permits[]', file));
     form.append('government_id_type', governmentIdType);
     appendFaceMatch(form, files.selfie_with_id);
     form.append('plan_id', String(planId));
@@ -120,6 +131,9 @@ export function useStoreApplication() {
     try {
       const res = await api.post('/store-applications', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          if (e.total) setUploadProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+        },
       });
       const payment = res.data.data.payment as { token: string; checkout_url: string | null } | null;
       if (payment) {
@@ -139,7 +153,7 @@ export function useStoreApplication() {
   return {
     step, goTo, owner, setOwner, shop, setShop, files, setFile, permits, setPermits,
     governmentIdType, setGovernmentIdType, plans, planId, setPlanId, billingCycle, setBillingCycle,
-    paymentMethod, setPaymentMethod, payOnline, setPayOnline, freeTrial, setFreeTrial, error, setError, submitting, submit, submittedTo,
+    paymentMethod, setPaymentMethod, payOnline, setPayOnline, freeTrial, setFreeTrial, error, setError, submitting, uploadProgress, submit, submittedTo,
     privacyConsent, setPrivacyConsent, termsAccepted, setTermsAccepted,
   };
 }

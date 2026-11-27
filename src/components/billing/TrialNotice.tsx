@@ -22,17 +22,27 @@ export function TrialBanner({ sub, showLink = true }: { readonly sub: Sub | null
 
   if (sub.status === 'trial' && sub.ends_at) {
     const left = daysLeft(sub.ends_at);
+    // Calm while there's time (the old solid orange strained eyes); a warmer
+    // tint in the last 3 days so it still stands out when it matters.
+    const urgent = left <= 3;
     return (
-      <div role="status" className="flex flex-col gap-3 rounded-lg border-2 border-orange-400 bg-orange-100 px-4 py-3.5 text-sm text-ink sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-start gap-2.5">
-          <Clock size={18} className="mt-0.5 shrink-0 text-orange-800" aria-hidden="true" />
+      <div
+        role="status"
+        className={`flex flex-col gap-3 rounded-lg border px-4 py-3.5 text-sm text-ink-body shadow-[0_1px_3px_rgba(45,42,38,0.06)] sm:flex-row sm:items-center sm:justify-between ${
+          urgent ? 'border-amber-300 bg-amber-50' : 'border-line-strong bg-surface'
+        }`}
+      >
+        <p className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <Clock size={18} aria-hidden="true" />
+          </span>
           <span>
-            <strong className="font-semibold">Free trial: {left === 0 ? 'last day' : `${left} day${left === 1 ? '' : 's'} left`}.</strong>{' '}
+            <strong className="font-semibold text-ink">Free trial: {left === 0 ? 'last day' : `${left} day${left === 1 ? '' : 's'} left`}.</strong>{' '}
             Choose a plan before {day(sub.ends_at)} to keep your shop open.
           </span>
         </p>
         {showLink && (
-          <Link href="/dashboard/billing" className="inline-flex min-h-11 shrink-0 items-center self-start rounded-full bg-orange-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 sm:self-auto">
+          <Link href="/dashboard/billing" className="inline-flex min-h-11 shrink-0 items-center self-start rounded-full bg-ink px-5 text-sm font-semibold text-white transition-colors hover:bg-ink/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:self-auto">
             Choose a Plan
           </Link>
         )}

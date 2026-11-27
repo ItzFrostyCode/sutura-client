@@ -24,8 +24,6 @@ interface LogPaymentModalProps {
   setPayReceiptPath: (val: string) => void;
   payReceiptUploading: boolean;
   handlePayReceiptUpload: (file: File) => Promise<void>;
-  payCashTendered: string;
-  setPayCashTendered: (val: string) => void;
   payReviewing: boolean;
   setPayReviewing: (val: boolean) => void;
   handleLogPayment: () => void;
@@ -52,8 +50,6 @@ export default function LogPaymentModal({
   setPayReceiptPath,
   payReceiptUploading,
   handlePayReceiptUpload,
-  payCashTendered,
-  setPayCashTendered,
   payReviewing,
   setPayReviewing,
   handleLogPayment,
@@ -62,11 +58,8 @@ export default function LogPaymentModal({
   if (!logPaymentJob) return null;
 
   const parsedAmount = Number.parseFloat(payAmount) || 0;
-  const parsedTendered = Number.parseFloat(payCashTendered) || 0;
-  const change = payMethod === 'cash' ? Math.max(0, parsedTendered - parsedAmount) : 0;
-  const cashShortfall = payMethod === 'cash' && payCashTendered !== '' && parsedTendered < parsedAmount;
   const canReview = !!payAmount && parsedAmount > 0
-    && (payMethod === 'cash' ? (!!payCashTendered && !cashShortfall) : !!payReceiptPath);
+    && (payMethod === 'cash' || !!payReceiptPath);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
@@ -94,15 +87,8 @@ export default function LogPaymentModal({
             <div className="p-4 space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-ink-muted">Amount</span><strong className="text-ink">₱{parsedAmount.toFixed(2)}</strong></div>
               <div className="flex justify-between"><span className="text-ink-muted">Method</span><strong className="text-ink">{payMethod === 'gcash' ? 'GCash' : 'Cash'}</strong></div>
-              {payMethod === 'cash' ? (
-                <>
-                  <div className="flex justify-between"><span className="text-ink-muted">Cash Tendered</span><strong className="text-ink">₱{parsedTendered.toFixed(2)}</strong></div>
-                  <div className="flex justify-between border-t border-line pt-2"><span className="text-ink-muted">Change</span><strong className="text-emerald-700">₱{change.toFixed(2)}</strong></div>
-                </>
-              ) : (
-                payReference && (
+              {payMethod !== 'cash' && payReference && (
                   <div className="flex justify-between"><span className="text-ink-muted">Reference #</span><strong className="text-ink font-mono">{payReference}</strong></div>
-                )
               )}
               {payMethod !== 'cash' && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-800 mt-2">
@@ -206,36 +192,6 @@ export default function LogPaymentModal({
                   <option value="balance">Remaining balance</option>
                 </select>
               </div>
-
-              {/* Cash Tendered & Change */}
-              {payMethod === 'cash' && (
-                <div className="space-y-1">
-                  <label htmlFor="pay-cash-tendered" className="text-xs font-bold text-ink">
-                    Cash Tendered <span className="text-danger">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-bold text-xs">₱</span>
-                    <input
-                      id="pay-cash-tendered"
-                      type="number"
-                      step="0.01"
-                      min={payAmount || '0'}
-                      value={payCashTendered}
-                      onChange={e => setPayCashTendered(e.target.value)}
-                      className={`w-full pl-7 pr-3 py-1.5 border rounded-lg text-xs font-bold bg-canvas focus:outline-none ${cashShortfall ? 'border-danger text-danger' : 'border-line focus:border-taupe'}`}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  {cashShortfall ? (
-                    <p className="text-[10px] font-semibold text-danger">Cash tendered can&apos;t be less than the amount.</p>
-                  ) : (
-                    <div className="flex justify-between text-[11px] pt-0.5">
-                      <span className="text-ink-muted">Change</span>
-                      <strong className="text-emerald-700">₱{change.toFixed(2)}</strong>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Reference # & Receipt for GCash / PayMaya */}
               {payMethod !== 'cash' && (

@@ -25,10 +25,9 @@ interface PaymentAuditLedgerProps {
   readonly setMenuOpenPaymentId: React.Dispatch<React.SetStateAction<number | null>>;
   readonly rejectingPaymentId: number | null;
   readonly setRejectingPaymentId: (id: number | null) => void;
-  readonly rejectReason: string;
   readonly setRejectReason: (r: string) => void;
   readonly submittingReject: boolean;
-  readonly onSubmitReject: (paymentId: number) => Promise<void>;
+  readonly onSubmitReject: (paymentId: number, reason?: string) => Promise<void>;
 }
 
 export function PaymentAuditLedger({
@@ -52,7 +51,6 @@ export function PaymentAuditLedger({
   setMenuOpenPaymentId,
   rejectingPaymentId,
   setRejectingPaymentId,
-  rejectReason,
   setRejectReason,
   submittingReject,
   onSubmitReject,
@@ -114,10 +112,8 @@ export function PaymentAuditLedger({
                 setRejectingPaymentId(null);
                 setRejectReason('');
               }}
-              rejectReason={rejectReason}
-              setRejectReason={setRejectReason}
               submittingReject={submittingReject}
-              onSubmitReject={() => onSubmitReject(payment.id)}
+              onSubmitReject={(reason) => onSubmitReject(payment.id, reason)}
             />
           ))}
         </div>

@@ -44,8 +44,6 @@ export default function PaymentQueuePage() {
     setPayReceiptPath,
     payReceiptUploading,
     handlePayReceiptUpload,
-    payCashTendered,
-    setPayCashTendered,
     payReviewing,
     setPayReviewing,
     paySubmitting,
@@ -120,7 +118,8 @@ export default function PaymentQueuePage() {
   const confirmRejection = async () => {
     if (!rejectingItem) return;
     // Job-order payments record why they were rejected (the reason shows on the order).
-    const reason = rejectionCustomText.trim() || rejectionReason;
+    const note = rejectionCustomText.trim();
+    const reason = note ? `${rejectionReason}. ${note}` : rejectionReason;
     await handleVerify(rejectingItem, 'rejected', reason);
     setRejectingItem(null);
     setRejectionCustomText('');
@@ -208,7 +207,6 @@ export default function PaymentQueuePage() {
           setPayNotes('');
           setPayReference('');
           setPayReceiptPath('');
-          setPayCashTendered('');
           setPayReviewing(false);
         }}
         payAmount={payAmount}
@@ -228,8 +226,6 @@ export default function PaymentQueuePage() {
         setPayReceiptPath={setPayReceiptPath}
         payReceiptUploading={payReceiptUploading}
         handlePayReceiptUpload={handlePayReceiptUpload}
-        payCashTendered={payCashTendered}
-        setPayCashTendered={setPayCashTendered}
         payReviewing={payReviewing}
         setPayReviewing={setPayReviewing}
         handleLogPayment={handleLogPayment}

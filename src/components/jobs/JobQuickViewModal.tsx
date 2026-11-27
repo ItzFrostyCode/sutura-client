@@ -606,7 +606,7 @@ export default function JobQuickViewModal({
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {Object.entries(individualMeasurements)
-                      .filter(([key, val]) => key !== 'unit' && val && String(val).trim() !== '')
+                      .filter(([key, val]) => key !== 'unit' && key !== 'garment' && val && String(val).trim() !== '')
                       .map(([key, val]) => (
                         <div
                           key={key}

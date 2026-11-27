@@ -205,19 +205,29 @@ export function StatusBadge({ status, scheduledAt, outcome }: { readonly status:
  * matching the Overdue badge's derivation pattern above. Renders nothing
  * until Staff has actually checked the client in.
  */
-export function CheckInBadge({ checkedInAt, scheduledAt }: { readonly checkedInAt?: string | null; readonly scheduledAt?: string }) {
+export function CheckInBadge({ checkedInAt, scheduledAt, arrivalStatus, earlyDecision }: {
+  readonly checkedInAt?: string | null;
+  readonly scheduledAt?: string;
+  /** The server's own reading (early / on_time / late, with a 5-minute grace). Preferred when present. */
+  readonly arrivalStatus?: string | null;
+  /** For an early arrival: 'waiting' shows "Early · waiting" so the list says who's waiting. */
+  readonly earlyDecision?: string | null;
+}) {
   if (!checkedInAt) return null;
-  const isLate = !!scheduledAt && new Date(checkedInAt) > new Date(scheduledAt);
+  const derived = !!scheduledAt && new Date(checkedInAt) > new Date(scheduledAt) ? 'late' : 'on_time';
+  const status = arrivalStatus === 'early' || arrivalStatus === 'late' || arrivalStatus === 'on_time' ? arrivalStatus : derived;
+  const style = {
+    early: 'bg-sky-50 text-sky-800 border-sky-200',
+    late: 'bg-amber-50 text-amber-800 border-amber-200',
+    on_time: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  }[status];
+  const label = status === 'early' && earlyDecision === 'waiting' ? 'Early · waiting' : { early: 'Early', late: 'Late', on_time: 'On Time' }[status];
   return (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border ${
-        isLate
-          ? 'bg-amber-50 text-amber-800 border-amber-200'
-          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-      }`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border ${style}`}
       title={`Checked in at ${new Date(checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
     >
-      {isLate ? 'Late' : 'On Time'}
+      {label}
     </span>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { use, Suspense } from 'react';
+import { use, Suspense, useState } from 'react';
+import { revealField } from '@/lib/revealField';
 import { Loader2, MapPin, ClipboardList, CalendarDays as CalendarDaysIcon, CheckCircle2 } from 'lucide-react';
 import BookingHeader from '@/components/booking/BookingHeader';
 import BookingSuccessState from '@/components/booking/BookingSuccessState';
@@ -28,6 +29,8 @@ const BOOKING_STAGES: StepperStage[] = [
 function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id: string }> }>) {
   const { store_id: storeId } = use(params);
   const b = useBookingWizard(storeId);
+  // The step where Next was pressed with something missing: its message shows above the button until fixed.
+  const [triedStep, setTriedStep] = useState<number | null>(null);
 
   if (b.loading) {
     return (
@@ -213,6 +216,14 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
       <BookingActionBar
         step={b.step}
         onNextStep={() => {
+          // Something missing: take the customer to it instead of a dead button.
+          const miss = b.missingOnStep(b.step);
+          if (miss) {
+            setTriedStep(b.step);
+            revealField(miss.field);
+            return;
+          }
+          setTriedStep(null);
           if (b.returnToReview && b.step < 3) {
             b.setStep(3);
             b.setReturnToReview(false);
@@ -220,8 +231,7 @@ function BookingWizardContent({ params }: Readonly<{ params: Promise<{ store_id:
             b.setStep(b.step + 1);
           }
         }}
-        step1NextDisabled={b.step1NextDisabled}
-        step2NextDisabled={b.step2NextDisabled}
+        hint={triedStep === b.step ? b.missingOnStep(b.step)?.message : null}
         submitting={b.submitting}
         uploadingReceipt={b.uploadingReceipt}
         returnToReview={b.returnToReview}

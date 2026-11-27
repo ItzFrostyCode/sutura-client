@@ -1,6 +1,7 @@
 import React from 'react';
 import { Ruler } from 'lucide-react';
 import { MeasurementProfile } from '../customerTypes';
+import { profileMeasurements } from '@/components/measurements/measurementHelpers';
 
 interface CustomerMeasurementsCardProps {
   readonly measurements: MeasurementProfile[];
@@ -66,7 +67,7 @@ export default function CustomerMeasurementsCard({
       ) : (
         <div className="space-y-4">
           {measurements.slice(0, 2).map((m) => {
-            const entries = Object.entries(m.metrics || {});
+            const entries = profileMeasurements(m.metrics).entries;
             return (
               <div key={m.id} className="p-3.5 bg-canvas border border-line rounded-xl space-y-3 shadow-2xs">
                 <div className="flex items-center justify-between">

@@ -942,3 +942,30 @@ label:has(> input[type="file"].sr-only) {
 @media (prefers-reduced-motion: reduce) {
   .driver-fade .driver-overlay, .driver-fade .driver-popover { animation: none; }
 }
+
+/* ── Missing / invalid fields ──────────────────────────────────────────────
+   1. When a form is sent, the browser scrolls to the first empty required
+      field; this margin keeps it clear of the sticky headers.
+   2. After a send attempt (or once the person has left the field), an empty
+      required / invalid field keeps a red border until it's filled, instead
+      of relying only on the browser's short-lived bubble.
+   3. `[data-attention]` is the brief ring lib/revealField.ts puts around a
+      field the form's own check sends the person to. */
+:where(input, select, textarea, [data-field]) {
+  scroll-margin-block: 7rem;
+}
+:where(input, select, textarea):user-invalid {
+  border-color: var(--color-danger) !important;
+}
+[data-attention] {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 3px;
+  animation: field-attention 1.2s ease-out 1;
+}
+@keyframes field-attention {
+  0% { outline-offset: 8px; outline-color: transparent; }
+  100% { outline-offset: 3px; outline-color: var(--color-danger); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-attention] { animation: none; }
+}

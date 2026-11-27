@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { FIELD, LABEL } from '@/components/catalog/editable/editors/fieldStyles';
 import type { Service } from '../serviceHelpers';
 import ImageUploadField from '../detail/ImageUploadField';
-import { SERVICE_CATEGORIES, SERVICE_CATEGORY_LABELS } from '@/lib/canonicalTaxonomy';
 import { pricedTotal, suggestPackageCategory, type PackageDraft } from './packageEditing';
 
 export interface PackageDraftEdit {
@@ -23,6 +22,11 @@ const usePatch = (edit: PackageDraftEdit) => ({
 export function PackageInfoEditor({ edit }: Readonly<{ edit: PackageDraftEdit }>) {
   const { d, patch } = usePatch(edit);
   const total = pricedTotal(edit.services.filter(s => d.selectedIds.includes(s.id)));
+  // No price yet: start from what the chosen services add up to.
+  useEffect(() => {
+    if (d.bundlePrice.trim() === '' && total > 0) patch({ bundlePrice: String(total) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="sm:col-span-2">
@@ -31,9 +35,13 @@ export function PackageInfoEditor({ edit }: Readonly<{ edit: PackageDraftEdit }>
       </div>
       <div className="sm:col-span-2">
         <label htmlFor="pkg-price" className={LABEL}>Bundle price (PHP)</label>
-        <input id="pkg-price" type="number" min="0" value={d.bundlePrice} onChange={e => patch({ bundlePrice: e.target.value })} placeholder="Leave empty to use the services' total" className={FIELD} />
-        <p className="text-xs text-ink-faint mt-1.5">
-          {total > 0 ? `The chosen services add up to ₱${total.toLocaleString()}. ` : ''}One flat price for the whole set.
+        <input id="pkg-price" type="number" min="0" value={d.bundlePrice} onChange={e => patch({ bundlePrice: e.target.value })} placeholder={total > 0 ? String(total) : 'e.g. 1500'} className={FIELD} />
+        <p className="text-sm text-ink-body mt-2">
+          {total > 0
+            ? Number(d.bundlePrice) > 0 && Number(d.bundlePrice) < total
+              ? <><strong className="font-semibold text-sage">₱{(total - Number(d.bundlePrice)).toLocaleString()} off</strong> the <strong className="font-semibold text-ink">₱{total.toLocaleString()}</strong> the services cost on their own.</>
+              : <>The chosen services add up to <strong className="font-semibold text-ink">₱{total.toLocaleString()}</strong>. Lower it to give the set a discount.</>
+            : 'One flat price for the whole set.'}
         </p>
       </div>
     </div>
@@ -47,9 +55,17 @@ export function PackageServicesEditor({ edit }: Readonly<{ edit: PackageDraftEdi
   const options = edit.services.filter(s => !d.selectedIds.includes(s.id) && s.name.toLowerCase().includes(search.toLowerCase()));
   const missingPrice = chosen.filter(s => s.base_price == null);
   // The category follows the chosen services until the owner picks a different one.
+  // So does the bundle price: it tracks the services' total until the owner types their own.
   const setIds = (ids: number[]) => {
-    const wasAuto = !d.service_category || d.service_category === suggestPackageCategory(edit.services, d.selectedIds);
-    patch({ selectedIds: ids, ...(wasAuto ? { service_category: suggestPackageCategory(edit.services, ids) } : {}) });
+    const oldTotal = pricedTotal(edit.services.filter(s => d.selectedIds.includes(s.id)));
+    const newTotal = pricedTotal(edit.services.filter(s => ids.includes(s.id)));
+    const priceWasAuto = d.bundlePrice.trim() === '' || Number(d.bundlePrice) === oldTotal;
+    patch({
+      selectedIds: ids,
+      // The category (used by search and the shop's Combo Packages) comes from the services.
+      service_category: suggestPackageCategory(edit.services, ids),
+      ...(priceWasAuto ? { bundlePrice: newTotal > 0 ? String(newTotal) : '' } : {}),
+    });
   };
   return (
     <div className="space-y-4">
@@ -71,14 +87,6 @@ export function PackageServicesEditor({ edit }: Readonly<{ edit: PackageDraftEdi
         {missingPrice.length > 0 && (
           <p className="text-xs text-amber-700 mt-2">{missingPrice.map(s => s.name).join(', ')} {missingPrice.length === 1 ? 'has' : 'have'} no fixed price, so the total above leaves {missingPrice.length === 1 ? 'it' : 'them'} out.</p>
         )}
-      </div>
-      <div>
-        <label htmlFor="pkg-cat" className={LABEL}>Category <span className="text-red-600">*</span></label>
-        <select id="pkg-cat" value={d.service_category} onChange={e => patch({ service_category: e.target.value })} className={FIELD}>
-          <option value="">Select a category…</option>
-          {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{SERVICE_CATEGORY_LABELS[c]}</option>)}
-        </select>
-        <p className="text-[11px] text-ink-faint mt-1.5">Filled in from the services you pick — change it if the set belongs somewhere else.</p>
       </div>
       <div>
         <div className="relative">

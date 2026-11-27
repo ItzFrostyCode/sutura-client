@@ -47,7 +47,7 @@ export const STAGE_STYLE: Record<string, { chip: string; dot: string; accent: st
 export const NEXT_STAGES: Record<string, readonly string[]> = {
   pending: ['production'],
   production: ['quality_check'],
-  quality_check: ['ready_for_fitting'],
+  quality_check: ['production', 'ready_for_fitting'],
   ready_for_fitting: ['adjustments', 'ready_for_pickup'],
   adjustments: ['quality_check'],
   ready_for_pickup: ['completed'],

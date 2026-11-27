@@ -17,12 +17,15 @@ import { bindNotificationSoundUnlock, playNotificationSound } from '@/lib/notifi
 import {
   AppNotification,
   getSenderInfo,
+  getHeadline,
+  getContextLine,
   formatDateTime,
-  relativeTime,
 } from '@/lib/notificationHelpers';
+import NotificationAvatar from '@/components/notifications/NotificationAvatar';
 import NotificationDetailModal from '@/components/notifications/NotificationDetailModal';
 import NotificationToasts from '@/components/notifications/NotificationToasts';
 import { useOptionalBranch } from '@/context/BranchContext';
+import { announceLiveUpdate, topicsForNotificationType, type LiveTopic } from '@/lib/liveUpdates';
 
 interface NotificationBellProps {
   /** "See all" in the panel footer. */
@@ -90,7 +93,11 @@ export default function NotificationBell({
       if (seenIds.current) {
         const seen = seenIds.current;
         const fresh = list.filter(n => !n.read_at && !seen.has(n.id));
-        if (fresh.length) setToasts(prev => [...fresh.slice(0, 3), ...prev].slice(0, 4));
+        if (fresh.length) {
+          setToasts(prev => [...fresh.slice(0, 3), ...prev].slice(0, 4));
+          // Let the page reload whatever these are about (orders, appointments, payments…).
+          announceLiveUpdate(['notifications', ...fresh.flatMap(n => topicsForNotificationType(String(n.data?.type ?? '')))] as LiveTopic[]);
+        }
       }
       seenIds.current = new Set(list.map(n => n.id));
 
@@ -116,13 +123,27 @@ export default function NotificationBell({
     seenIds.current = null;
     lastCount.current = null;
     void fetchList();
-    // Checked every 15s so a new order or payment pops up while the shop is
-    // working, without waiting for someone to open the bell.
-    const interval = setInterval(() => {
+    // Checked every 10s while the tab is on screen, so a new order or payment
+    // pops up while the shop is working. A hidden tab doesn't poll; it catches
+    // up the moment it's shown again.
+    let lastFetch = Date.now();
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return;
+      lastFetch = Date.now();
       void fetchList();
-    }, 15_000);
+    };
+    const interval = setInterval(tick, 10_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetch > 3_000) tick();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
     // fetchList reads the branch from this render; re-run when it changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBranchId]);
@@ -339,6 +360,7 @@ export default function NotificationBell({
                 const sender = getSenderInfo(notif);
                 const isDismissing = dismissing === notif.id;
                 const isRead = !!notif.read_at;
+                const contextLine = getContextLine(notif);
 
                 return (
                   <div
@@ -348,11 +370,9 @@ export default function NotificationBell({
                     } ${!isRead ? 'bg-amber-50/25' : ''}`}
                     onClick={() => handleItemClick(notif)}
                   >
-                    {/* Sender Avatar — identical to SUTURA Client Profile style */}
+                    {/* Sender: their photo or shop logo, else their initial */}
                     <div className="relative shrink-0 mt-0.5">
-                      <div className="w-10 h-10 rounded-xl bg-canvas border border-line flex items-center justify-center shadow-2xs">
-                        <span className="text-sm font-black text-taupe">{sender.initial}</span>
-                      </div>
+                      <NotificationAvatar sender={sender} />
                       {!isRead && (
                         <span
                           className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#E41E3F] rounded-full border-2 border-white"
@@ -368,10 +388,17 @@ export default function NotificationBell({
                         {sender.name}
                       </p>
 
-                      {/* Subject/Action line */}
+                      {/* What happened, in a plain sentence */}
                       <p className="text-[12px] text-ink-body font-medium leading-snug mt-0.5 line-clamp-2">
-                        {notif.data?.title || notif.data?.message || 'New update'}
+                        {getHeadline(notif)}
                       </p>
+
+                      {/* Details to scan: order, what's being made, amount, time */}
+                      {contextLine && (
+                        <p className="text-[11px] text-ink-muted font-medium leading-snug mt-0.5 truncate tabular-nums" title={contextLine}>
+                          {contextLine}
+                        </p>
+                      )}
 
                       {/* Timestamp */}
                       <p className="text-[11px] text-ink-muted mt-1 font-normal">

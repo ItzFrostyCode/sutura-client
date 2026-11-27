@@ -12,6 +12,8 @@ import {
   Trash2,
   Star,
   Eye,
+  EyeOff,
+  Store,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { StoreBranch, StatusBadge, getMapUrl } from './branchHelpers';
@@ -22,12 +24,14 @@ interface BranchCardProps {
   readonly onEdit: (branch: StoreBranch) => void;
   readonly onDelete?: (id: number) => void;
   readonly onSetMain?: (branch: StoreBranch) => void;
+  /** Owner only: hide a branch shop from customers, or show it again. */
+  readonly onToggleHidden?: (branch: StoreBranch) => void;
   /** Open branch shops (swap choices) and a reload, for a branch the plan locked. */
   readonly openBranches?: { id: number; name: string }[];
   readonly onPlanLockChange?: () => void;
 }
 
-export default function BranchCard({ branch, onEdit, onDelete, onSetMain, openBranches = [], onPlanLockChange }: Readonly<BranchCardProps>) {
+export default function BranchCard({ branch, onEdit, onDelete, onSetMain, onToggleHidden, openBranches = [], onPlanLockChange }: Readonly<BranchCardProps>) {
   const { store } = useAuthStore();
   const publicProfileUrl = store?.slug && branch.slug ? `/store/${store.slug}?branch=${branch.slug}` : '#';
 
@@ -173,7 +177,7 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain, openBr
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {!branch.is_main && onSetMain && (
+          {!branch.is_main && onSetMain && branch.status === 'active' && (
             <button
               type="button"
               onClick={() => onSetMain(branch)}
@@ -188,25 +192,38 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain, openBr
             href={publicProfileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            title="Preview Customer View"
-            className="p-1.5 text-ink-faint hover:text-taupe transition-colors rounded"
+            title="See it as a customer"
+            aria-label={`See ${branch.name} as a customer`}
+            className="p-1.5 rounded-md text-taupe hover:bg-taupe/10 transition-colors"
           >
-            <Eye size={15} />
+            {/* A shop front, not an eye: the eye icons are Hide / Show. */}
+            <Store size={15} />
           </a>
           <a
             href={getMapUrl(branch)}
             target="_blank"
             rel="noopener noreferrer"
             title="View on Map"
-            className="p-1.5 text-ink-faint hover:text-taupe transition-colors rounded"
+            className="p-1.5 rounded-md text-sky-700 hover:bg-sky-50 transition-colors"
           >
             <ExternalLink size={15} />
           </a>
+          {!branch.is_main && !branch.plan_locked_at && onToggleHidden && (
+            <button
+              type="button"
+              onClick={() => onToggleHidden(branch)}
+              title={branch.status === 'active' ? 'Hide from customers' : 'Show to customers again'}
+              aria-label={branch.status === 'active' ? `Hide ${branch.name} from customers` : `Show ${branch.name} to customers again`}
+              className="p-1.5 rounded-md text-amber-700 hover:bg-amber-50 transition-colors"
+            >
+              {branch.status === 'active' ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onEdit(branch)}
             title="Edit Branch"
-            className="p-1.5 text-ink-faint hover:text-ink transition-colors rounded"
+            className="p-1.5 rounded-md text-ink-body hover:bg-sunken transition-colors"
           >
             <Pencil size={15} />
           </button>
@@ -215,7 +232,7 @@ export default function BranchCard({ branch, onEdit, onDelete, onSetMain, openBr
               type="button"
               onClick={() => onDelete(branch.id)}
               title="Delete Branch"
-              className="p-1.5 text-ink-faint hover:text-red-500 transition-colors rounded"
+              className="p-1.5 rounded-md text-rose-600 hover:bg-rose-50 transition-colors"
             >
               <Trash2 size={15} />
             </button>

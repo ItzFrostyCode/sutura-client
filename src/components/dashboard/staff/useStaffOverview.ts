@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 
 export interface StaffQueueJob {
   id: number; order_number: string; customer: string | null; what: string | null; status: string;
@@ -26,11 +27,9 @@ export function useStaffOverview(storeId: number | undefined) {
       .finally(() => setLoading(false));
   }, [storeId]);
 
-  useEffect(() => {
-    load();
-    window.addEventListener('focus', load);
-    return () => window.removeEventListener('focus', load);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+  // Refreshes on new activity, on returning to the tab, and every 30s while visible.
+  useLiveRefresh(['jobs', 'appointments'], load);
 
   return { data, loading, failed, reload: load };
 }

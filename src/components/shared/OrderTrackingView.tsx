@@ -1,10 +1,12 @@
+import type React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import StatusStepper, { type StepperStage } from '@/components/shared/StatusStepper';
+import CopyTrackingButton from '@/components/shared/CopyTrackingButton';
 import { getMediaUrl } from '@/lib/media';
 import {
   Clock, Palette, Printer, Ruler, Scissors, Shirt, Wrench, Sparkles, Package, Flag,
-  Ban, AlertCircle, PauseCircle, CalendarDays, Wallet, Store, CalendarClock, Wrench as NoteIcon,
+  Ban, AlertCircle, PauseCircle, Store, CalendarClock, Wrench as NoteIcon,
 } from 'lucide-react';
 
 export interface TrackedAppointment {
@@ -190,200 +192,279 @@ interface OrderTrackingViewProps {
   /** Forwarded to StatusStepper — 'horizontal' (default, /track's compact
    *  guest view) or 'vertical' (/account/orders/[id]'s customer view). */
   readonly stepperLayout?: 'horizontal' | 'vertical';
+  /** Optional extra card(s) stacked inside the right summary column (e.g. OrderClaimsSection). */
+  readonly asideExtra?: React.ReactNode;
 }
 
-export default function OrderTrackingView({ order, stepperLayout = 'horizontal' }: OrderTrackingViewProps) {
+const PHASE_BADGE_TONE: Record<string, string> = {
+  'Order Received': 'text-ink-muted bg-sunken border-line',
+  'In Production': 'text-taupe bg-taupe/10 border-taupe/20',
+  'Quality Check': 'text-taupe bg-taupe/10 border-taupe/20',
+  'Ready for Fitting': 'text-taupe bg-taupe/10 border-taupe/20',
+  Adjustments: 'text-taupe bg-taupe/10 border-taupe/20',
+  'Ready for Pickup': 'text-sage bg-sage/10 border-sage/20',
+  Completed: 'text-sage bg-sage/10 border-sage/20',
+};
+
+export default function OrderTrackingView({ order, stepperLayout = 'horizontal', asideExtra }: OrderTrackingViewProps) {
   const itemName = order.catalog_item_name ?? order.service_package?.name ?? order.service_name ?? order.garment_category ?? 'Garment';
-  const phase = order.status in TERMINAL_STATUSES ? null : getCustomerPhase(order.status);
+  const isTerminal = order.status in TERMINAL_STATUSES;
+  const phase = isTerminal ? null : getCustomerPhase(order.status);
+  const terminalMeta = isTerminal ? TERMINAL_STATUSES[order.status] : null;
   const hasMaterialNote = order.customer_material_status && order.customer_material_status !== 'safe';
+  const isPaid = order.balance <= 0 || order.payment_status === 'paid';
+  const hasRightColumn = (order.appointments && order.appointments.length > 0) || Boolean(asideExtra);
 
   return (
-    // Own max-width lives here now, not on whichever page happens to embed
-    // this — /account/orders/[id] used to inherit AccountLayout's max-w-7xl
-    // while /track/[code] wrapped it in a page-level max-w-2xl, so the same
-    // component rendered at two different widths depending on the caller.
-    // At md:+ (768px) the single card stack becomes a two-column layout:
-    // order info + the production stepper (the actual "saan na ang order
-    // ko?" answer) get the wider left column, appointments become a sticky
-    // right-side summary — more room for the stepper's per-stage timestamps
-    // instead of a long single-column scroll.
-    <div className="md:max-w-3xl md:mx-auto md:grid md:grid-cols-5 md:gap-4 md:items-start">
-    <div className="space-y-3 md:col-span-3">
-      <div className="bg-surface border border-line p-4">
-        <div className="flex gap-3 mb-2">
-          <div className="w-[52px] h-[52px] rounded-full bg-sunken overflow-hidden relative shrink-0 border border-line">
-            {order.store?.logo_path ? (
-              <Image
-                src={getMediaUrl(order.store.logo_path)}
-                alt=""
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Store size={20} className="text-ink-faint" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-0.5">
+    <div className="max-w-4xl mx-auto space-y-4">
+      {/* Top Order Summary Card */}
+      <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+        {/* Header: store + order number + status pill */}
+        <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-full bg-sunken border border-line overflow-hidden relative shrink-0 flex items-center justify-center">
+              {order.store?.logo_path ? (
+                <Image
+                  src={getMediaUrl(order.store.logo_path)}
+                  alt=""
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <Store size={18} className="text-ink-faint" />
+              )}
+            </div>
+
+            <div className="min-w-0">
               {order.store?.slug ? (
-                <Link href={`/store/${order.store.slug}`} className="mobile-overline text-taupe hover:text-taupe-hover py-1 inline-flex items-center">
+                <Link
+                  href={`/store/${order.store.slug}`}
+                  className="text-xs font-medium text-ink-muted hover:text-taupe transition-colors truncate block"
+                >
                   {order.store.name}
                 </Link>
               ) : (
-                <p className="mobile-overline text-taupe">Order</p>
+                <p className="text-xs font-medium text-ink-muted">Order</p>
               )}
-              {order.is_rush && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-danger/10 text-danger border border-danger/20 shrink-0">
-                  Rush
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold tracking-tight text-ink tabular-nums">
+                  {order.order_number}
+                </h2>
+                {order.is_rush && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-danger/10 text-danger border border-danger/20 shrink-0">
+                    Rush
+                  </span>
+                )}
+              </div>
             </div>
-            <h3 className="mobile-h3 font-semibold text-ink">{order.order_number}</h3>
           </div>
+
+          {terminalMeta ? (
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shrink-0 ${terminalMeta.tone}`}>
+              {terminalMeta.label}
+            </span>
+          ) : phase ? (
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border shrink-0 ${PHASE_BADGE_TONE[phase] ?? 'text-taupe bg-taupe/10 border-taupe/20'}`}>
+              {phase}
+            </span>
+          ) : null}
         </div>
 
-        {phase && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-taupe/10 text-taupe border border-taupe/20 mb-2">
-            {phase}
-          </span>
-        )}
-
-        {order.status === 'ready_for_fitting' && (
-          <div className="mb-3 p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-ink space-y-1 animate-in fade-in duration-200">
-            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider">
-              <Ruler size={15} />
-              <span>Ready for Fitting</span>
-            </div>
-            {/* The shop's own message (Booking Flow Setup), with days and date filled in. */}
-            <p className="text-xs text-ink-muted leading-relaxed">
-              {order.fitting_message
-                || `Your garment is ready for fitting. Please visit our tailoring shop within ${order.fitting_visit_days ?? 7} days.`}
-            </p>
-          </div>
-        )}
-
-        {/* "Have the shop measure me": waiting for the shop to book the visit, then when to come in. */}
-        {order.measurement_source === 'shop'
+        {/* Contextual alert banners */}
+        {(order.status === 'ready_for_fitting' || (
+          order.measurement_source === 'shop'
           && order.measurement_visit?.status !== 'completed'
-          && !['completed', 'cancelled', 'rejected'].includes(order.status) && (
-          <div className="mb-3 p-3.5 rounded-xl bg-taupe/10 border border-taupe/25 text-ink space-y-1">
-            <div className="flex items-center gap-2 text-taupe-dark font-bold text-xs uppercase tracking-wider">
-              <Ruler size={15} aria-hidden="true" />
-              <span>Measurement visit</span>
-            </div>
-            <p className="text-xs text-ink-body leading-relaxed">
-              {order.measurement_visit
-                ? <>Please come to the shop on <strong className="font-semibold text-ink">{new Date(order.measurement_visit.scheduled_at).toLocaleString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}</strong> so they can take your measurements.</>
-                : 'Waiting for the shop to set your measurement visit. You\'ll be notified once it\'s booked.'}
-            </p>
-          </div>
-        )}
+          && !['completed', 'cancelled', 'rejected'].includes(order.status)
+        )) && (
+          <div className="px-4 sm:px-5 pb-4 space-y-2.5">
+            {order.status === 'ready_for_fitting' && (
+              <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-ink space-y-1">
+                <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider">
+                  <Ruler size={15} />
+                  <span>Ready for Fitting</span>
+                </div>
+                <p className="text-xs text-ink-muted leading-relaxed">
+                  {order.fitting_message
+                    || `Your garment is ready for fitting. Please visit our tailoring shop within ${order.fitting_visit_days ?? 7} days.`}
+                </p>
+              </div>
+            )}
 
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 mobile-body-sm text-ink font-normal">
-            <Shirt size={16} className="text-ink-faint shrink-0" />
-            <span>{itemName}</span>
-            {(order.quantity ?? 1) > 1 && (
-              <span className="text-ink-muted">× {order.quantity}</span>
+            {order.measurement_source === 'shop'
+              && order.measurement_visit?.status !== 'completed'
+              && !['completed', 'cancelled', 'rejected'].includes(order.status) && (
+              <div className="p-3.5 rounded-xl bg-taupe/10 border border-taupe/25 text-ink space-y-1">
+                <div className="flex items-center gap-2 text-taupe-dark font-bold text-xs uppercase tracking-wider">
+                  <Ruler size={15} aria-hidden="true" />
+                  <span>Measurement visit</span>
+                </div>
+                <p className="text-xs text-ink-body leading-relaxed">
+                  {order.measurement_visit
+                    ? <>Please come to the shop on <strong className="font-semibold text-ink">{new Date(order.measurement_visit.scheduled_at).toLocaleString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}</strong> so they can take your measurements.</>
+                    : 'Waiting for the shop to set your measurement visit. You\'ll be notified once it\'s booked.'}
+                </p>
+              </div>
             )}
           </div>
-          {order.service_package && (order.service_package.services?.length ?? 0) > 0 && (
-            <p className="mobile-caption text-ink-muted font-normal pl-6">Package · includes {order.service_package.services!.join(', ')}</p>
-          )}
-          {order.due_date && (
-            <div className="flex items-center gap-2 mobile-body-sm text-ink-muted font-normal">
-              <CalendarDays size={16} className="text-ink-faint shrink-0" />
-              Due {new Date(order.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </div>
-          )}
-          {order.estimated_ready_at && (
-            <div className="flex items-center gap-2 mobile-body-sm text-ink-muted font-normal">
-              <CalendarClock size={16} className="text-ink-faint shrink-0" />
-              Estimated ready {new Date(order.estimated_ready_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-            </div>
-          )}
-          <div className="flex items-center gap-2 mobile-body-sm text-ink-muted font-normal">
-            <Wallet size={16} className="text-ink-faint shrink-0" />
-            ₱{order.balance.toLocaleString()} balance of ₱{order.total_amount.toLocaleString()} ({order.payment_status})
-          </div>
-          {!!order.pending_payment_amount && order.pending_payment_amount > 0 && (
-            <div className="mobile-caption text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-              ₱{order.pending_payment_amount.toLocaleString()} payment submitted — pending shop verification, not yet reflected above
-            </div>
-          )}
-        </div>
-
-        {order.repair_note && (
-          <div className="mt-3 pt-3 border-t border-line">
-            <div className="flex items-center gap-2 mobile-caption font-semibold text-ink-muted mb-1">
-              <NoteIcon size={14} className="text-ink-faint" />
-              Repair request
-            </div>
-            <p className="mobile-body-sm text-ink font-normal">&ldquo;{order.repair_note}&rdquo;</p>
-          </div>
         )}
 
-        {hasMaterialNote && (
-          <div className="mt-3 pt-3 border-t border-line mobile-body-sm">
-            <span className="font-semibold text-ink">Your material: </span>
-            <span className="text-ink-muted capitalize">{order.customer_material_status}</span>
+        {/* 3-Column Summary Strip: ITEM / DUE / PAYMENT */}
+        <div className="px-4 sm:px-5 py-4 border-t border-line grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Item</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-xl bg-sunken border border-line overflow-hidden relative shrink-0 flex items-center justify-center">
+                {order.store?.logo_path ? (
+                  <Image
+                    src={getMediaUrl(order.store.logo_path)}
+                    alt={itemName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <Shirt size={18} className="text-ink-faint" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink leading-snug">
+                  {itemName}
+                  {(order.quantity ?? 1) > 1 && (
+                    <span className="text-ink-muted font-medium tabular-nums"> × {order.quantity}</span>
+                  )}
+                </p>
+                {order.service_package && (order.service_package.services?.length ?? 0) > 0 && (
+                  <p className="text-xs text-ink-muted mt-0.5 line-clamp-2">
+                    Includes {order.service_package.services!.join(', ')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Due</p>
+            {order.due_date ? (
+              <p className="text-sm font-semibold text-ink tabular-nums">
+                {new Date(order.due_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-ink-muted">No due date set</p>
+            )}
+            {order.estimated_ready_at && (
+              <p className="text-xs text-ink-muted mt-0.5 tabular-nums">
+                Est. ready {new Date(order.estimated_ready_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Payment</p>
+            <p className="text-sm font-semibold text-ink tabular-nums">
+              {isPaid ? (
+                <>Fully paid · ₱{order.total_amount.toLocaleString()}</>
+              ) : (
+                <>₱{order.balance.toLocaleString()} left of ₱{order.total_amount.toLocaleString()}</>
+              )}
+            </p>
+            {!!order.pending_payment_amount && order.pending_payment_amount > 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-1.5 tabular-nums">
+                ₱{order.pending_payment_amount.toLocaleString()} pending verification
+              </p>
+            )}
+          </div>
+        </div>
+
+        {(order.repair_note || hasMaterialNote) && (
+          <div className="px-4 sm:px-5 py-3.5 border-t border-line space-y-2">
+            {order.repair_note && (
+              <div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-ink-muted mb-0.5">
+                  <NoteIcon size={13} className="text-ink-faint" />
+                  <span>Repair request</span>
+                </div>
+                <p className="text-sm text-ink">&ldquo;{order.repair_note}&rdquo;</p>
+              </div>
+            )}
+            {hasMaterialNote && (
+              <p className="text-xs text-ink-muted">
+                <span className="font-semibold text-ink">Your material: </span>
+                <span className="capitalize">{order.customer_material_status}</span>
+              </p>
+            )}
           </div>
         )}
 
         {order.tracking_code && (
-          <div className="mt-3 pt-3 border-t border-line mobile-caption text-ink-faint">
-            Tracking code: <span className="font-mono font-medium text-ink-muted">{order.tracking_code}</span>
+          <div className="px-4 sm:px-5 py-3 border-t border-line flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0 text-xs">
+              <span className="text-ink-muted shrink-0">Tracking code</span>
+              <span className="font-mono font-semibold text-ink truncate">{order.tracking_code}</span>
+            </div>
+            <CopyTrackingButton code={order.tracking_code} />
           </div>
         )}
       </div>
 
-      <div className="bg-surface border border-line p-4">
-        {order.status in TERMINAL_STATUSES ? (
-          (() => {
-            const t = TERMINAL_STATUSES[order.status];
-            const TIcon = t.Icon;
-            return (
-              <div className={`flex items-center gap-3 px-4 py-3 border ${t.tone}`}>
-                <TIcon size={20} />
-                <span className="text-sm font-semibold">{t.label}</span>
-              </div>
-            );
-          })()
-        ) : (
-          <StatusStepper stages={buildStages(order.status, order.stage_timestamps, order.pipeline)} currentKey={order.status} layout={stepperLayout} />
-        )}
-      </div>
-    </div>
-
-      {order.appointments && order.appointments.length > 0 && (
-        <div className="bg-surface border border-line p-4 mt-3 md:mt-0 md:col-span-2 md:sticky md:top-4">
-          <h4 className="mobile-caption font-semibold text-ink-muted mb-2">
-            Related appointment{order.appointments.length > 1 ? 's' : ''}
-          </h4>
-          <div className="space-y-2">
-            {order.appointments.map((appt) => (
-              <div key={appt.id} className="flex items-center gap-3 py-2 border-t border-line first:border-t-0 first:pt-0">
-                <CalendarClock size={16} className="text-ink-faint shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="mobile-body-sm text-ink font-medium capitalize">
-                    {appt.appointment_type}
-                    {appt.service_name ? ` — ${appt.service_name}` : ''}
-                  </p>
-                  <p className="mobile-caption text-ink-muted font-normal">
-                    {new Date(appt.scheduled_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                    {appt.branch?.name ? ` · ${appt.branch.name}` : ''}
-                  </p>
+      {/* Bottom 2-Column Section: Progress left, Visit + Extra (Claims) right */}
+      <div className={hasRightColumn ? 'grid grid-cols-1 lg:grid-cols-12 gap-4 items-start' : 'space-y-4'}>
+        <div className={`bg-surface border border-line rounded-2xl p-4 sm:p-5 ${hasRightColumn ? 'lg:col-span-7' : ''}`}>
+          <h3 className="text-sm font-bold text-ink mb-4">Progress</h3>
+          {isTerminal ? (
+            (() => {
+              const t = TERMINAL_STATUSES[order.status];
+              const TIcon = t.Icon;
+              return (
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${t.tone}`}>
+                  <TIcon size={18} />
+                  <span className="text-sm font-semibold">{t.label}</span>
                 </div>
-                <span className="mobile-caption font-semibold text-ink-muted capitalize shrink-0">
-                  {appt.status.replace(/_/g, ' ')}
-                </span>
-              </div>
-            ))}
-          </div>
+              );
+            })()
+          ) : (
+            <StatusStepper
+              stages={buildStages(order.status, order.stage_timestamps, order.pipeline)}
+              currentKey={order.status}
+              layout={stepperLayout}
+            />
+          )}
         </div>
-      )}
+
+        {hasRightColumn && (
+          <div className="space-y-4 lg:col-span-5 lg:sticky lg:top-20">
+            {order.appointments && order.appointments.length > 0 && (
+              <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5">
+                <h3 className="text-sm font-bold text-ink mb-3">
+                  {order.appointments.length > 1 ? 'Visits' : 'Visit'}
+                </h3>
+                <div className="divide-y divide-line">
+                  {order.appointments.map((appt) => (
+                    <div key={appt.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <CalendarClock size={16} className="text-ink-faint shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-ink capitalize truncate">
+                            {appt.appointment_type}
+                            {appt.service_name ? ` — ${appt.service_name}` : ''}
+                          </p>
+                          <p className="text-xs text-ink-muted truncate tabular-nums">
+                            {new Date(appt.scheduled_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            {appt.branch?.name ? ` · ${appt.branch.name}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sunken text-ink-muted border border-line capitalize shrink-0">
+                        {appt.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {asideExtra}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

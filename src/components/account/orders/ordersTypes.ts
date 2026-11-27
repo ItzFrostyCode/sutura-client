@@ -57,6 +57,9 @@ export const IN_PRODUCTION = new Set([
 const PHASE_TONE: Record<string, { Icon: typeof Clock; tone: string }> = {
   'Order Received': { Icon: Clock, tone: 'text-ink-muted bg-sunken border-line' },
   'In Production': { Icon: Shirt, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  'Quality Check': { Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  'Ready for Fitting': { Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
+  Adjustments: { Icon: Wrench, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   'Fitting / Adjustment': { Icon: Ruler, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   Finalizing: { Icon: Sparkles, tone: 'text-taupe bg-taupe/10 border-taupe/20' },
   'Ready for Pickup': { Icon: Package, tone: 'text-sage bg-sage/10 border-sage/20' },

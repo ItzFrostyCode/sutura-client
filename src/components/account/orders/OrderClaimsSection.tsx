@@ -62,21 +62,30 @@ export default function OrderClaimsSection({ orderId, storeSlug, status }: Props
   };
 
   return (
-    <section className="bg-surface border border-line p-4 mt-4 space-y-4" aria-label="Problems with this order">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="mobile-h4 font-semibold text-ink">Problem with your order?</h2>
-          {data.can_file && data.window_ends_at && (
-            <p className="mobile-body-sm text-ink-muted font-normal mt-1">
-              You can report poor stitching or other issues until <span className="font-semibold text-ink">{claimDate(data.window_ends_at)}</span>. Choose a free repair or a refund.
-            </p>
+    <section className="bg-surface border border-line rounded-2xl p-4 sm:p-5 space-y-4" aria-label="Problems with this order">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-full bg-sunken border border-line flex items-center justify-center shrink-0 mt-0.5">
+          <AlertTriangle size={16} className="text-ink-muted" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div>
+            <h2 className="text-sm font-bold text-ink">Problem with your order?</h2>
+            {data.can_file && data.window_ends_at && (
+              <p className="text-xs text-ink-muted leading-relaxed mt-1">
+                Report poor stitching or other issues until <span className="font-semibold text-ink">{claimDate(data.window_ends_at)}</span>, for a free repair or a refund.
+              </p>
+            )}
+          </div>
+          {data.can_file && (
+            <button
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="inline-flex items-center justify-center h-9 px-4 rounded-full border border-line-strong bg-surface hover:bg-sunken text-ink text-xs font-semibold transition-colors duration-150 active:scale-[0.97] cursor-pointer"
+            >
+              Report a problem
+            </button>
           )}
         </div>
-        {data.can_file && (
-          <button type="button" onClick={() => setFormOpen(true)} className="min-h-11 px-4 border border-ink text-ink text-sm font-semibold flex items-center gap-2 hover:bg-sunken">
-            <AlertTriangle size={16} /> Report a problem
-          </button>
-        )}
       </div>
 
       {data.claims.length > 0 && (

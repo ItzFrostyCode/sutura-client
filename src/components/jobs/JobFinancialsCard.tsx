@@ -36,8 +36,6 @@ export default function JobFinancialsCard({
     charging,
     handleChargeSubmit,
     uploadReceipt,
-    cashTendered,
-    setCashTendered,
     reviewingCharge,
     confirmCharge,
     cancelChargeReview,
@@ -58,7 +56,6 @@ export default function JobFinancialsCard({
     setMenuOpenPaymentId,
     rejectingPaymentId,
     setRejectingPaymentId,
-    rejectReason,
     setRejectReason,
     submittingReject,
     handleSubmitReject,
@@ -102,7 +99,6 @@ export default function JobFinancialsCard({
             setMenuOpenPaymentId={setMenuOpenPaymentId}
             rejectingPaymentId={rejectingPaymentId}
             setRejectingPaymentId={setRejectingPaymentId}
-            rejectReason={rejectReason}
             setRejectReason={setRejectReason}
             submittingReject={submittingReject}
             onSubmitReject={handleSubmitReject}
@@ -130,8 +126,6 @@ export default function JobFinancialsCard({
             charging={charging}
             onChargeSubmit={handleChargeSubmit}
             uploadReceipt={uploadReceipt}
-            cashTendered={cashTendered}
-            setCashTendered={setCashTendered}
             reviewingCharge={reviewingCharge}
             onConfirmCharge={confirmCharge}
             onCancelChargeReview={cancelChargeReview}

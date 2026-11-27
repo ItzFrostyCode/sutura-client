@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { User, ShoppingBag, Store, Sparkles } from 'lucide-react';
 import CollapsibleSection from '@/components/jobs/CollapsibleSection';
 import { serviceHasType } from '@/components/jobs/jobHelpers';
-import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
+import { MetricPill, humanizeMetricKey, profileMeasurements } from '@/components/measurements/measurementHelpers';
 import SearchableCombobox, { ComboboxOption } from '@/components/shared/SearchableCombobox';
 import { CustomerData, CustomerMeasurement, JobCreateFormData, ServiceData } from './types';
 import { CatalogItem } from '@/components/catalog/catalogHelpers';
@@ -113,7 +113,7 @@ export default function CustomerServiceSection({
     const selected = customerMeasurements.find((m) => m.id.toString() === formData.measurement_id);
     if (!selected) return null;
 
-    const filledMetrics = Object.entries(selected.metrics || {}).filter(([, v]) => v);
+    const { entries: filledMetrics, unit } = profileMeasurements(selected.metrics);
 
     return (
       <div className="bg-canvas/60 border border-line/60 rounded-xl p-3.5 space-y-2">
@@ -131,7 +131,7 @@ export default function CustomerServiceSection({
         {filledMetrics.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {filledMetrics.map(([key, value]) => (
-              <MetricPill key={key} label={humanizeMetricKey(key)} value={value} />
+              <MetricPill key={key} label={humanizeMetricKey(key)} value={value} unit={unit} />
             ))}
           </div>
         ) : (

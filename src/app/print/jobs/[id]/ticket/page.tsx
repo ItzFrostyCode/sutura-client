@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { usePrintAuthGuard } from '@/hooks/usePrintAuthGuard';
 import { GARMENT_CATEGORY_LABELS } from '@/components/jobs/jobHelpers';
 import { customerEmail } from '@/components/customers/customerHelpers';
+import { profileMeasurements } from '@/components/measurements/measurementHelpers';
 
 interface RosterItem { name?: string; print_name?: string; number?: string | number; size?: string; completed?: boolean; }
 
@@ -107,7 +108,8 @@ export default function PrintWorkTicketPage() {
   const createdFmt = new Date(job.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const meas = job.measurement;
-  const measEntries = Object.entries(meas?.metrics || {});
+  // The saved unit and garment aren't measurements; leave them off the ticket.
+  const measEntries = profileMeasurements(meas?.metrics).entries;
 
   const materialSourceLabel = job.material_source === 'customer_supplied'
     ? 'Customer-Supplied — do not cut from shop stock'

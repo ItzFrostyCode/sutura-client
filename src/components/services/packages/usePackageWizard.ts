@@ -9,10 +9,10 @@ import { buildPackagePayload, emptyPackageDraft, validatePackageSection, type Pa
 
 export const PACKAGE_STEPS: { key: PackageSection; title: string; hint: string; optional?: boolean }[] = [
   { key: 'photo', title: 'Photo', hint: 'The first thing customers see.', optional: true },
-  { key: 'info', title: 'Basics', hint: 'Name the set and give it one flat price.' },
+  // Services before the price, so the bundle price can start from their total.
   { key: 'services', title: 'Included services', hint: 'Pick the services customers get in this set.' },
+  { key: 'info', title: 'Name and price', hint: "Name the set. The price starts at the services' total; lower it to give a discount." },
   { key: 'description', title: 'Description', hint: 'What it includes and who it is for.', optional: true },
-  { key: 'requirements', title: 'Requirements', hint: 'Measurements, fitting and payment first. Leave on the shop default if unsure.', optional: true },
 ];
 
 export function usePackageWizard() {

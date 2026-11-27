@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Ruler, AlertTriangle, Lock } from 'lucide-react';
 import { Job } from '../jobTypes';
 import { STAGES_REQUIRING_DOWNPAYMENT } from '../jobHelpers';
+import { profileMeasurements } from '@/components/measurements/measurementHelpers';
 
 interface JobMeasurementCardProps {
   job: Job;
@@ -15,7 +16,7 @@ export default function JobMeasurementCard({ job, onUseCurrentMeasurement }: Job
   if (!job.measurement) return null;
 
   const metrics = job.measurement.metrics || {};
-  const metricEntries = Object.entries(metrics);
+  const metricEntries = profileMeasurements(metrics).entries;
 
   // Mirrors JobOrderController::update()'s measurement snapshot lock exactly
   // — same STAGES_REQUIRING_DOWNPAYMENT boundary as "No DP, No Cut". Once

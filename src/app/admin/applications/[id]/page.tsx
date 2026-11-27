@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Check, Clock, PencilLine, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Clock, PencilLine, X } from 'lucide-react';
 import Badge, { type BadgeVariant } from '@/components/shared/Badge';
 import FreeTrialTag from '@/components/admin/applications/FreeTrialTag';
 import { useToast } from '@/context/ToastContext';
@@ -143,6 +143,25 @@ export default function ApplicationDetailPage({ params }: Readonly<{ params: Pro
               <li key={key} className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">{labelOf(key)}</li>
             ))}
           </ul>
+          {/* Owner / shop details the owner changed this round, old → new (documents compare below). */}
+          {(() => {
+            const changes = app.change_history?.at(-1)?.changes ?? [];
+            if (changes.length === 0) return null;
+            return (
+              <dl className="mt-4 divide-y divide-emerald-100 overflow-hidden rounded-xl border border-emerald-200 bg-surface">
+                {changes.map((c) => (
+                  <div key={`${c.section}-${c.label}`} className="grid gap-1 px-4 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">
+                    <dt className="text-ink-muted">{c.label}</dt>
+                    <dd className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="break-words text-ink-muted line-through decoration-ink-faint">{c.before ?? 'Empty'}</span>
+                      <ArrowRight size={14} className="shrink-0 self-center text-ink-faint" aria-label="changed to" />
+                      <span className="break-words font-semibold text-ink">{c.after ?? 'Empty'}</span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            );
+          })()}
         </section>
       )}
       {manualLink && (

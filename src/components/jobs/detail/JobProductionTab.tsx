@@ -38,7 +38,6 @@ export default function JobProductionTab({
   setCustomerMaterialStatus,
   setCancellationReason,
   setHoldReason,
-  refreshJob,
 }: JobProductionTabProps) {
   const collectedAmount =
     Number.parseFloat(String(job.total_amount)) -
@@ -60,7 +59,6 @@ export default function JobProductionTab({
           setCancellationReason={setCancellationReason}
           setHoldReason={setHoldReason}
           collectedAmount={collectedAmount}
-          onProgressPhotoAdded={refreshJob}
         />
       </div>
 

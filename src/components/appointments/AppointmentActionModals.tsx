@@ -508,7 +508,7 @@ export default function AppointmentActionModals({
                 <TypeBadge type={viewApt.appointment_type} label={viewApt.purpose_label} />
                 <div className="flex items-center gap-1.5">
                   <StatusBadge status={viewApt.status} scheduledAt={viewApt.scheduled_at} />
-                  <CheckInBadge checkedInAt={viewApt.checked_in_at} scheduledAt={viewApt.scheduled_at} />
+                  <CheckInBadge checkedInAt={viewApt.checked_in_at} scheduledAt={viewApt.scheduled_at} arrivalStatus={viewApt.arrival_status} earlyDecision={viewApt.early_arrival_decision} />
                 </div>
               </div>
             </div>
@@ -534,16 +534,22 @@ export default function AppointmentActionModals({
                   </p>
                 </div>
               )}
-              {viewApt.arrival_status === 'early' && (
+              {/* Early arrival is a decision to make after check-in and BEFORE Start:
+                  once the appointment is under way (or done), only the record of an
+                  accommodated early start stays. */}
+              {viewApt.arrival_status === 'early' && (viewApt.status === 'confirmed' || (viewApt.early_arrival_decision === 'accommodated' && !!viewApt.actual_service_start_at)) && (
                 <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
                   <p className="text-[11px] text-amber-800 font-bold uppercase tracking-wider">
-                    Arrived Early{viewApt.early_arrival_decision ? ` — ${viewApt.early_arrival_decision.replace('_', ' ')}` : ''}
+                    {viewApt.early_arrival_decision === 'waiting' ? 'Arrived early · waiting'
+                      : viewApt.early_arrival_decision === 'accommodated' ? 'Arrived early · taken early'
+                      : 'Arrived early'}
                   </p>
                   <p className="text-xs text-amber-700">
-                    Scheduled for {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}.
-                    {' '}The customer&apos;s original appointment time is unchanged unless accommodated below.
+                    {viewApt.early_arrival_decision === 'waiting'
+                      ? <>The customer was asked to wait for their {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })} slot. If the branch frees up sooner, you can still take them now.</>
+                      : <>Booked for {new Date(viewApt.scheduled_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}. Take them now if the branch is free, or ask them to wait. Their booked time stays the same either way.</>}
                   </p>
-                  {viewApt.early_arrival_decision !== 'accommodated' && (onAccommodateEarly || onAskToWait) && (
+                  {viewApt.status === 'confirmed' && viewApt.early_arrival_decision !== 'accommodated' && (onAccommodateEarly || onAskToWait) && (
                     <div className="flex gap-2">
                       {onAccommodateEarly && (
                         <button
@@ -555,7 +561,7 @@ export default function AppointmentActionModals({
                           Accommodate Now
                         </button>
                       )}
-                      {onAskToWait && (
+                      {onAskToWait && viewApt.early_arrival_decision !== 'waiting' && (
                         <button
                           type="button"
                           onClick={() => onAskToWait(viewApt.id)}

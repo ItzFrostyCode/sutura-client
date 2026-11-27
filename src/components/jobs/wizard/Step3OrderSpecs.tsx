@@ -429,6 +429,7 @@ export default function Step3OrderSpecs({
             Type of Service <span className="text-danger">*</span>
           </label>
           <select
+            id="job-service"
             value={selectedServiceId}
             onChange={(e) => onSelectService(e.target.value)}
             className="w-full h-11 px-3.5 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:border-taupe focus:ring-1 focus:ring-taupe cursor-pointer shadow-2xs"

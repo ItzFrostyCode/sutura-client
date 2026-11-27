@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import {
   type MyOrder,
   type MyAppointment,
@@ -13,6 +14,17 @@ export function useAccountHub(isAuthenticated: boolean) {
   const [appointments, setAppointments] = useState<MyAppointment[] | null>(null);
   const [measurementCount, setMeasurementCount] = useState<number | null>(null);
   const [apptView, setApptView] = useState<'list' | 'calendar'>('list');
+
+  const loadActivity = () => {
+    api.get('/my-orders', { params: { per_page: 100 } })
+      .then((res) => setOrders(res.data.data ?? []))
+      .catch(() => {});
+    api.get('/my-appointments', { params: { per_page: 100 } })
+      .then((res) => setAppointments(res.data.data ?? []))
+      .catch(() => {});
+  };
+  // Order stages and appointment changes update on their own.
+  useLiveRefresh(['jobs', 'orders', 'appointments'], loadActivity, { enabled: isAuthenticated });
 
   useEffect(() => {
     if (!isAuthenticated) return;

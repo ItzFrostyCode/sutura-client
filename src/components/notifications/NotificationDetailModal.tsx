@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Modal from '@/components/Modal';
 import NotificationBannerGraphic from './NotificationBannerGraphic';
+import NotificationAvatar from './NotificationAvatar';
 import {
   AppNotification,
   getSenderInfo,
@@ -113,9 +114,7 @@ export default function NotificationDetailModal({
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-ink-muted w-14 shrink-0">From:</span>
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
-              <div className="w-8 h-8 rounded-xl bg-canvas border border-line flex items-center justify-center text-xs font-black text-taupe shrink-0 shadow-2xs">
-                {sender.initial}
-              </div>
+              <NotificationAvatar sender={sender} size="sm" />
               <span className="text-sm font-semibold text-[#0B7D8C] hover:underline cursor-default truncate">
                 {sender.name}
               </span>

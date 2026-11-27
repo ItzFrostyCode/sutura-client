@@ -28,11 +28,6 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
   );
   const [triggerNewMeasurementModal, setTriggerNewMeasurementModal] = useState(false);
 
-  const handleOpenMeasurementsModal = () => {
-    setActiveTab('measurements');
-    setTriggerNewMeasurementModal(true);
-  };
-
   useEffect(() => {
     if (requestedTab && ['overview', 'measurements', 'orders', 'appointments', 'history'].includes(requestedTab)) {
       setActiveTab(requestedTab);
@@ -81,8 +76,6 @@ export default function CustomerProfilePage({ params }: Readonly<{ params: Promi
         customer={customer}
         onBack={() => router.back()}
         onEditProfile={() => setIsEditingProfile(true)}
-        onViewMeasurements={() => setActiveTab('measurements')}
-        onOpenNewMeasurementModal={handleOpenMeasurementsModal}
       />
 
       {/* Stats Summary 5-Column Grid */}

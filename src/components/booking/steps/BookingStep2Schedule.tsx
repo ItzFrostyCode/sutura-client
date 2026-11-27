@@ -130,7 +130,7 @@ export default function BookingStep2Schedule({
       />
 
       {/* Interactive Date & Time Picker */}
-      <div className="space-y-2 pt-1">
+      <div className="space-y-2 pt-1" data-field="booking-datetime">
         <label className="mobile-h4 text-ink block">
           Select Date & Time <span className="text-danger">*</span>
         </label>

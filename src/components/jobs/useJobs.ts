@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { logUnexpectedError } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/context/ToastContext';
@@ -110,6 +111,15 @@ export function useJobs() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, user, selectedBranchId, myJobsOnly]);
+
+  // New orders, stage moves and payments show up without a refresh (no skeleton):
+  // at once when a notification about them arrives, and every 15s otherwise
+  // (staff moves send the owner a notification; owner moves don't notify staff).
+  // Skipped while a card move is still saving, so the card doesn't jump back.
+  useLiveRefresh(['jobs', 'payments'], () => {
+    if (actionLoadingId !== null) return;
+    fetchJobs({ silent: true });
+  }, { enabled: !!store, intervalMs: 15_000 });
 
   // Debounced re-fetch when the search term changes, so typing doesn't fire
   // a request per keystroke — the branch/store effect above still runs

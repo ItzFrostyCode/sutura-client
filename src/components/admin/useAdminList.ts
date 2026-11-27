@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import adminApi from '@/lib/adminApi';
 import { getErrorMessage } from '@/lib/apiError';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 
 export interface PageMeta {
   current_page: number;
@@ -31,10 +32,14 @@ export function useAdminList<T>(path: string, params: Record<string, string | nu
   const [error, setError] = useState('');
   const key = JSON.stringify(params);
 
-  const load = useCallback(async () => {
-    if (loadedOnce.current) setRefreshing(true);
-    else setLoading(true);
-    setError('');
+  // `silent`: the background re-check below. No spinner, and a failed check keeps the rows.
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = !!opts?.silent && loadedOnce.current;
+    if (!silent) {
+      if (loadedOnce.current) setRefreshing(true);
+      else setLoading(true);
+      setError('');
+    }
     try {
       const clean = Object.fromEntries(Object.entries(JSON.parse(key)).filter(([, v]) => v !== '' && v !== undefined));
       const res = await adminApi.get(path, { params: clean });
@@ -42,7 +47,7 @@ export function useAdminList<T>(path: string, params: Record<string, string | nu
       setMeta(res.data.meta ?? null);
       setRaw(res.data);
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not load this list.'));
+      if (!silent) setError(getErrorMessage(err, 'Could not load this list.'));
     } finally {
       loadedOnce.current = true;
       setLoading(false);
@@ -51,6 +56,9 @@ export function useAdminList<T>(path: string, params: Record<string, string | nu
   }, [path, key]);
 
   useEffect(() => { load(); }, [load]);
+  // New applications, tickets and payments appear without a refresh
+  // (every 30s while the tab is visible, and on coming back to it).
+  useLiveRefresh(['store', 'billing', 'support'], () => { void load({ silent: true }); });
 
   return { items, setItems, meta, raw, loading, refreshing, error, reload: load };
 }

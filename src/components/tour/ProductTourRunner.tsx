@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { useAuthStore } from '@/store/useAuthStore';
-import { TOURS, isTourId, markTourDone } from './tours';
+import { TOURS, isTourId, markTourDone, nextTourHref } from './tours';
 
 const WAIT_MS = 8000;
 
@@ -30,15 +30,22 @@ const visible = (selector: string) => {
 /**
  * Runs the product tour named in ?tour= on the page it belongs to. Mounted once
  * in the dashboard layout, so pages only need `data-tour` attributes. Finishing
- * or skipping marks the tour done (the Welcome Guide shows ✓ Done / Replay).
+ * a tour marks it done, which ticks its step in the Welcome Guide (✓ Done /
+ * Replay). Closing it early doesn't, so the step still says "Configure now".
+ *
+ * With ?chain=1 (started from the welcome pop-up or the guide's "Configure
+ * now") finishing a tour opens the next step's tour, and the last one returns
+ * to the Welcome Guide. Closing it early (✕ / Esc) stops the chain.
  */
 export default function ProductTourRunner() {
   const params = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuthStore();
   const starting = useRef(false);
   const active = useRef<Driver | null>(null);
   const tourParam = params.get('tour');
+  const chain = params.get('chain') === '1';
 
   useEffect(() => {
     if (!isTourId(tourParam) || starting.current || active.current) return;
@@ -52,16 +59,25 @@ export default function ProductTourRunner() {
       await Promise.race(tour.stops.map((s) => waitFor(s.element)));
       await new Promise((r) => setTimeout(r, 300));
       const stops = tour.stops.filter((s) => visible(s.element));
-      if (aborted || stops.length === 0) { starting.current = false; return; }
+      if (aborted) { starting.current = false; return; }
+      if (stops.length === 0) {
+        starting.current = false;
+        // Nothing to point at on this page (e.g. an empty list): count it as seen, and carry on
+        // with the chain instead of stopping.
+        markTourDone(user?.id, tour.id);
+        if (chain) router.replace(nextTourHref(tour.id));
+        return;
+      }
 
       const { driver } = await import('driver.js');
+      let finished = false;
       if (aborted) { starting.current = false; return; }
       const d = driver({
         showProgress: stops.length > 1,
         progressText: '{{current}} of {{total}}',
         nextBtnText: 'Next',
         prevBtnText: 'Back',
-        doneBtnText: 'Done',
+        doneBtnText: chain ? 'Next step →' : 'Done',
         allowClose: true,
         overlayColor: '#2D2A26',
         overlayOpacity: 0.55,
@@ -70,9 +86,15 @@ export default function ProductTourRunner() {
         popoverClass: 'sutura-tour',
         smoothScroll: true,
         steps: stops.map((s) => ({ element: s.element, popover: { title: s.title, description: s.text } })),
+        // Pressing Next on the last stop = finished (as opposed to closing it early).
+        onNextClick: (_el, _step, { driver: drv }) => {
+          if (drv.isLastStep()) finished = true;
+          drv.moveNext();
+        },
         onDestroyed: () => {
-          markTourDone(user?.id, tour.id);
+          if (finished) markTourDone(user?.id, tour.id);
           active.current = null;
+          if (chain && finished) router.push(nextTourHref(tour.id));
         },
       });
       active.current = d;
@@ -82,13 +104,14 @@ export default function ProductTourRunner() {
       // Take ?tour= off the address so a refresh doesn't restart it (the tour keeps running).
       const clean = new URLSearchParams(window.location.search);
       clean.delete('tour');
+      clean.delete('chain');
       window.history.replaceState(window.history.state, '', `${window.location.pathname}${clean.toString() ? `?${clean}` : ''}`);
     })();
 
     // Only abandons a tour that hasn't opened yet; a running tour isn't closed by the address change above.
     // (Clearing `starting` lets the re-run that follows, e.g. once the user loads, start it instead.)
     return () => { if (!active.current) { aborted = true; starting.current = false; } };
-  }, [tourParam, pathname, user?.id]);
+  }, [tourParam, chain, pathname, user?.id, router]);
 
   // Leaving the page closes the tour.
   useEffect(() => () => { active.current?.destroy(); }, [pathname]);

@@ -83,10 +83,12 @@ export default function AddressSelect({
 
   return (
     <div className="relative">
-      <label htmlFor={id} className="block text-sm text-ink mb-2">
-        {label}
-        {required && <span className="text-danger">*</span>}
-        {optional && <span className="text-ink-muted"> (optional)</span>}
+      <label htmlFor={id} className="mb-2 flex items-baseline justify-between gap-3 text-sm font-medium text-ink-body">
+        <span>
+          {label}
+          {required && <span className="text-danger" aria-hidden="true"> *</span>}
+        </span>
+        {optional && <span className="text-xs font-normal text-ink-faint">Optional</span>}
       </label>
       <div className="relative">
         <input
@@ -110,8 +112,8 @@ export default function AddressSelect({
           onClick={() => setOpen(true)}
           onBlur={() => setTimeout(close, 120)}
           onKeyDown={onKeyDown}
-          className={`w-full min-h-12 py-3 pl-3.5 pr-10 border bg-surface text-ink text-base placeholder:text-ink-faint focus:outline-none transition-colors disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted ${
-            error || loadError ? 'border-danger focus:border-danger' : 'border-line-strong focus:border-ink'
+          className={`w-full min-h-12 rounded-xl py-3 pl-4 pr-10 border bg-surface text-ink text-base placeholder:text-ink-faint focus:outline-none focus:ring-2 transition-colors disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-muted ${
+            error || loadError ? 'border-danger focus:border-danger focus:ring-danger/10' : 'border-line-strong focus:border-ink focus:ring-ink/10'
           }`}
         />
         <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted">
@@ -124,7 +126,7 @@ export default function AddressSelect({
             id={listId}
             role="listbox"
             aria-label={label}
-            className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto border border-ink bg-surface shadow-lg"
+            className="absolute z-30 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-line-strong bg-surface py-1 shadow-lg"
           >
             {shown.length === 0 ? (
               <li className="px-3.5 py-3 text-sm text-ink-muted">No match. Check the spelling, or pick from the list.</li>

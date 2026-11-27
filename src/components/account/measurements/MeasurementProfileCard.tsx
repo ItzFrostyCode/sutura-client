@@ -1,19 +1,18 @@
 'use client';
 
-import { MeasurementStatusBadge } from '@/components/measurements/MeasurementStatus';
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Store, Ruler, ChevronDown } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
-import { MetricPill, humanizeMetricKey } from '@/components/measurements/measurementHelpers';
+import { MetricPill, humanizeMetricKey, profileMeasurements } from '@/components/measurements/measurementHelpers';
 import { type ProfileGroup, SOURCE_LABELS } from './measurementAccountTypes';
 
 export default function MeasurementProfileCard({ group }: Readonly<{ group: ProfileGroup }>) {
   const [selectedId, setSelectedId] = useState(group.versions.at(-1)!.id);
   const active = group.versions.find((v) => v.id === selectedId) ?? group.versions.at(-1)!;
   const activeIndex = group.versions.indexOf(active);
-  const metricEntries = Object.entries(active.metrics || {}).filter(([, v]) => v);
+  const { entries: metricEntries, unit } = profileMeasurements(active.metrics);
 
   return (
     <div className="bg-surface border border-line p-4">
@@ -67,7 +66,6 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
         <Ruler size={16} className="text-taupe shrink-0" />
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="mobile-h4 font-semibold text-ink leading-snug">{group.profileName}</h3>
-          <MeasurementStatusBadge status={active.status} />
         </div>
       </div>
 
@@ -80,7 +78,7 @@ export default function MeasurementProfileCard({ group }: Readonly<{ group: Prof
       {metricEntries.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {metricEntries.map(([key, value]) => (
-            <MetricPill key={key} label={humanizeMetricKey(key)} value={value} />
+            <MetricPill key={key} label={humanizeMetricKey(key)} value={value} unit={unit} />
           ))}
         </div>
       ) : (

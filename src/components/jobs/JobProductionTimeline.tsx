@@ -42,7 +42,6 @@ interface JobProductionTimelineProps {
   readonly setCancellationReason: (reason: string) => void;
   readonly setHoldReason: (reason: string) => void;
   readonly collectedAmount: number;
-  readonly onProgressPhotoAdded: () => void;
 }
 
 export default function JobProductionTimeline({
@@ -56,12 +55,9 @@ export default function JobProductionTimeline({
   setCancellationReason,
   setHoldReason,
   collectedAmount,
-  onProgressPhotoAdded,
 }: JobProductionTimelineProps) {
   const { store } = useAuthStore();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState(false);
-  const [deletingPhotoUrl, setDeletingPhotoUrl] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showHoldModal, setShowHoldModal] = useState(false);
 
@@ -79,41 +75,6 @@ export default function JobProductionTimeline({
       alert(getErrorMessage(err, 'Failed to upload completion photo.'));
     } finally {
       setUploadingPhoto(false);
-    }
-  };
-
-  const handleProgressPhotoUpload = async (file: File | undefined) => {
-    if (!file || !store) return;
-    setUploadingProgressPhoto(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      const uploadRes = await api.post(`/stores/${store.id}/upload`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const url = uploadRes.data?.data?.url || uploadRes.data?.url;
-      if (!url) throw new Error('No URL returned from upload');
-      await api.post(`/stores/${store.id}/jobs/${job.id}/progress-photos`, { url });
-      onProgressPhotoAdded();
-    } catch (err) {
-      alert(getErrorMessage(err, 'Failed to upload progress photo.'));
-    } finally {
-      setUploadingProgressPhoto(false);
-    }
-  };
-
-  const handleDeleteProgressPhoto = async (url: string) => {
-    if (!store || deletingPhotoUrl) return;
-    setDeletingPhotoUrl(url);
-    try {
-      await api.delete(`/stores/${store.id}/jobs/${job.id}/progress-photos`, {
-        data: { url },
-      });
-      onProgressPhotoAdded();
-    } catch {
-      alert('Failed to remove progress photo.');
-    } finally {
-      setDeletingPhotoUrl(null);
     }
   };
 
@@ -144,6 +105,9 @@ export default function JobProductionTimeline({
   const prevStage = currentIdx > 0 ? STAGES[currentIdx - 1] : null;
   const qcIdx = STAGES.findIndex(s => s.key === 'quality_check');
   const atOrPastQC = currentIdx >= qcIdx;
+  // Saved as completed (not just picked in the dropdown): the order is finished,
+  // so the stage is locked.
+  const isFinished = job.status === 'completed';
 
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 sm:p-6 shadow-2xs space-y-6">
@@ -173,11 +137,16 @@ export default function JobProductionTimeline({
             )}
           </div>
         ) : (
-          <StatusStepper stages={STAGES} currentKey={status} onStageClick={setStatus} />
+          <StatusStepper stages={STAGES} currentKey={status} onStageClick={isFinished ? undefined : setStatus} />
         )}
       </div>
 
       <div className="space-y-4 pt-2 border-t border-line">
+        {isFinished ? (
+          <p className="text-xs text-ink-muted bg-canvas border border-line rounded-xl px-3.5 py-2.5">
+            This order is completed. Its stage can&apos;t be changed anymore.
+          </p>
+        ) : (
         <div className="space-y-1.5">
           <label htmlFor="update-production-phase" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
             Update Production Phase
@@ -219,12 +188,15 @@ export default function JobProductionTimeline({
             </select>
           </div>
         </div>
+        )}
 
         {job.material_source === 'customer_supplied' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 text-amber-900">
-            <AlertTriangle size={16} className="text-amber-700 shrink-0" />
-            <p className="text-xs font-bold uppercase tracking-wide">
-              Customer-supplied fabric/garment — do not cut from shop stock
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 text-amber-900">
+            <AlertTriangle size={16} className="text-amber-700 shrink-0 mt-0.5" />
+            <p className="text-sm">
+              {isRepair
+                ? <><span className="font-semibold">This is the customer&apos;s own garment.</span> Take care of it and give it back with the order.</>
+                : <><span className="font-semibold">The customer brought their own fabric.</span> Use theirs, not the shop&apos;s.</>}
             </p>
           </div>
         )}
@@ -261,74 +233,6 @@ export default function JobProductionTimeline({
           </div>
         )}
 
-        <div className="space-y-2 border-t border-line pt-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
-                <Camera size={14} className="text-sage" />
-                Progress Photos <span className="text-[11px] font-normal text-ink-faint lowercase">(optional)</span>
-              </span>
-              <p className="text-[11px] text-ink-faint mt-0.5">
-                Proof of real progress at whatever stage the job is currently in — builds customer trust and doubles as a production log. Each upload is tagged with the current stage automatically.
-              </p>
-            </div>
-          </div>
-
-          {job.progress_photos && job.progress_photos.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-1">
-              {job.progress_photos.map((photo) => (
-                <div key={photo.url + photo.uploaded_at} className="relative group/photo">
-                  <a
-                    href={photo.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.url}
-                      alt={`Progress at ${photo.stage}`}
-                      className="h-20 w-20 object-cover rounded-lg border border-line hover:opacity-80 transition-opacity"
-                    />
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-semibold text-center py-0.5 rounded-b-lg capitalize">
-                      {STAGES.find(s => s.key === photo.stage)?.label ?? photo.stage.replaceAll('_', ' ')}
-                    </span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (confirm('Are you sure you want to remove this progress photo?')) {
-                        handleDeleteProgressPhoto(photo.url);
-                      }
-                    }}
-                    disabled={deletingPhotoUrl === photo.url}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-surface border border-line text-ink-muted hover:text-danger hover:border-danger/30 rounded-full flex items-center justify-center shadow-xs transition-colors"
-                    title="Remove progress photo"
-                  >
-                    {deletingPhotoUrl === photo.url ? (
-                      <Loader2 size={10} className="animate-spin text-danger" />
-                    ) : (
-                      <X size={11} />
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-sage hover:text-[#6B7C67] bg-sage/5 hover:bg-sage/10 border border-sage/20 px-3 py-1.5 rounded-lg transition-colors mt-1">
-            {uploadingProgressPhoto ? <Loader2 size={14} className="animate-spin text-sage" /> : <Camera size={14} />}
-            <span>{uploadingProgressPhoto ? 'Uploading...' : 'Add a progress photo'}</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              disabled={uploadingProgressPhoto}
-              onChange={e => handleProgressPhotoUpload(e.target.files?.[0])}
-            />
-          </label>
-        </div>
 
         <div className="space-y-1 border-t border-line pt-4">
           <label htmlFor="notes-remarks" className="text-xs font-bold uppercase tracking-wider text-ink-muted">Notes / Remarks</label>

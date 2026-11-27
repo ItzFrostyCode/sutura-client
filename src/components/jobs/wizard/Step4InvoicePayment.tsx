@@ -155,6 +155,7 @@ export default function Step4InvoicePayment({
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none"
               />
               <input
+                id="job-due-date"
                 type="date"
                 required
                 value={formData.due_date}

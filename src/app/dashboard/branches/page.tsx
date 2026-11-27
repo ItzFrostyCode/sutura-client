@@ -4,13 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import Link from 'next/link';
 import { Lock, Plus, Map as MapIcon, LayoutGrid } from 'lucide-react';
 import { useSubscriptionTier } from '@/hooks/useSubscriptionTier';
 import { StoreBranch, EMPTY_FORM, branchPayload, type BranchManagerCredentials } from '@/components/branches/branchHelpers';
 import BranchCredentialsModal from '@/components/branches/BranchCredentialsModal';
 import BranchFormModal from '@/components/branches/BranchFormModal';
 import BranchDeleteModal from '@/components/branches/BranchDeleteModal';
+import BranchVisibilityModal from '@/components/branches/BranchVisibilityModal';
 import BranchListView from '@/components/branches/BranchListView';
 import { useToast } from '@/context/ToastContext';
 import { useBranch } from '@/context/BranchContext';
@@ -181,6 +181,27 @@ export default function BranchesPage() {
     }
   };
 
+  // Hide / Show a branch shop (owner only), after the confirmation popup.
+  const [visibilityBranch, setVisibilityBranch] = useState<StoreBranch | null>(null);
+  const [savingVisibility, setSavingVisibility] = useState(false);
+  const confirmVisibility = async () => {
+    if (!store || !visibilityBranch) return;
+    const hide = visibilityBranch.status === 'active';
+    setSavingVisibility(true);
+    try {
+      await api.put(`/stores/${store.id}/branches/${visibilityBranch.id}/visibility`, { hidden: hide });
+      toast.success(hide ? `${visibilityBranch.name} is hidden from customers.` : `${visibilityBranch.name} is visible to customers again.`);
+      setVisibilityBranch(null);
+      fetchBranches();
+      refreshBranches();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || "Couldn't change this branch. Try again.");
+    } finally {
+      setSavingVisibility(false);
+    }
+  };
+
   const handleDeleteClick = (id: number) => {
     setDeletingId(id);
     setIsDeleteModalOpen(true);
@@ -278,15 +299,14 @@ export default function BranchesPage() {
               </button>
             </div>
             {isStoreOwner && (addLocked ? (
-              <Link
+              <span
                 data-tour="branches-create"
-                href="/dashboard/billing"
-                title={`${limitText}. Upgrade to add more.`}
-                className="flex items-center gap-2 border border-line bg-surface hover:bg-sunken text-ink px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors min-h-[44px]"
+                title={`${limitText}.`}
+                className="flex items-center gap-2 border border-line bg-surface text-ink-muted px-4 py-2.5 rounded-lg font-semibold text-sm min-h-[44px] cursor-default"
               >
                 <Lock size={16} />
-                Branch limit reached · Upgrade
-              </Link>
+                Branch limit reached
+              </span>
             ) : (
               <button
                 type="button"
@@ -314,6 +334,7 @@ export default function BranchesPage() {
           onEdit={handleEditClickGated}
           onDelete={isStoreOwner ? handleDeleteClick : undefined}
           onSetMain={isStoreOwner ? handleSetMain : undefined}
+          onToggleHidden={isStoreOwner ? setVisibilityBranch : undefined}
           onPlanLockChange={isStoreOwner ? () => { fetchBranches(); refreshBranches(); } : undefined}
         />
         </div>
@@ -333,6 +354,13 @@ export default function BranchesPage() {
       />
 
       <BranchCredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />
+
+      <BranchVisibilityModal
+        branch={visibilityBranch}
+        onClose={() => setVisibilityBranch(null)}
+        onConfirm={confirmVisibility}
+        isSubmitting={savingVisibility}
+      />
 
       {/* Delete Modal */}
       <BranchDeleteModal

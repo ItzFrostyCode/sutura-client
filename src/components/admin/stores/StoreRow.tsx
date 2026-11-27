@@ -27,6 +27,8 @@ interface StoreRowProps {
   readonly store: DirectoryStore;
   readonly onHide: (store: DirectoryStore) => void;
   readonly onRestore: (store: DirectoryStore) => void;
+  /** Opens the shop details pop-up. */
+  readonly onOpen: (store: DirectoryStore) => void;
 }
 
 
@@ -49,19 +51,25 @@ function subscriptionPeriod(sub: DirectoryStore['subscription']) {
   return { range, state };
 }
 
-export default function StoreRow({ store, onHide, onRestore }: StoreRowProps) {
+export default function StoreRow({ store, onHide, onRestore, onOpen }: StoreRowProps) {
   const adminHidden = Boolean(store.admin_hidden_at);
   const live = store.status === 'approved';
   const planName = store.subscription?.plan?.name ?? null;
   const period = subscriptionPeriod(store.subscription);
 
   return (
-    <li className="flex flex-wrap items-center gap-x-6 gap-y-3 admin-card px-5 py-4 transition-[box-shadow,border-color] hover:border-[#C9BDB0] hover:shadow-md">
+    // The whole card opens the details pop-up; its own links and buttons keep doing their own thing.
+    <li
+      onClick={(e) => { if (!(e.target as HTMLElement).closest('a, button')) onOpen(store); }}
+      className="flex cursor-pointer flex-wrap items-center gap-x-6 gap-y-3 admin-card px-5 py-4 transition-[box-shadow,border-color] hover:border-[#C9BDB0] hover:shadow-md"
+    >
       {/* Shop + owner */}
       <div className="min-w-0 flex-1 basis-64">
         <div className="flex flex-wrap items-center gap-2">
           {live ? (
-            <p className="truncate font-semibold text-ink">{store.name}</p>
+            <button type="button" onClick={() => onOpen(store)} className="truncate text-left font-semibold text-ink hover:underline underline-offset-2 focus-visible:underline">
+              {store.name}
+            </button>
           ) : (
             <Link href={`/admin/applications/${store.id}`} className="truncate font-semibold text-ink underline underline-offset-2">{store.name}</Link>
           )}

@@ -6,7 +6,10 @@ import { ReceiptItem } from '../usePayments';
 import { REJECT_PRESET_REASONS } from '../paymentHelpers';
 
 interface RejectReasonModalProps {
-  rejectingItem: ReceiptItem | null;
+  /** The Payments page passes its receipt; the order page passes just these fields. */
+  rejectingItem: (Pick<ReceiptItem, 'id' | 'itemName'> & { customer_name?: string }) | null;
+  /** What happens after rejecting, shown under the question. */
+  description?: React.ReactNode;
   onClose: () => void;
   rejectionReason: string;
   setRejectionReason: (reason: string) => void;
@@ -25,6 +28,7 @@ export default function RejectReasonModal({
   setRejectionCustomText,
   onConfirmRejection,
   processingId,
+  description,
 }: RejectReasonModalProps) {
   if (!rejectingItem) return null;
 
@@ -49,10 +53,10 @@ export default function RejectReasonModal({
         <div className="p-5 space-y-3.5 text-xs">
           <div>
             <p className="text-ink font-semibold">
-              Reject proof for <span className="font-bold text-taupe">{rejectingItem.itemName}</span> ({rejectingItem.customer_name})?
+              Reject proof for <span className="font-bold text-taupe">{rejectingItem.itemName}</span>{rejectingItem.customer_name ? ` (${rejectingItem.customer_name})` : ''}?
             </p>
             <p className="text-ink-muted mt-0.5">
-              This moves the receipt to the <strong>Rejected Proofs History</strong> tab and asks the customer to resubmit a valid proof.
+              {description ?? <>This moves the receipt to the <strong>Rejected Proofs History</strong> tab and asks the customer to resubmit a valid proof.</>}
             </p>
           </div>
 

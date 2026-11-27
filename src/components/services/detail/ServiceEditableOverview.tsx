@@ -11,9 +11,6 @@ import { getMediaUrl } from '@/lib/media';
 import type { Service } from '../serviceHelpers';
 import { toPublicService } from './serviceEditing';
 import { ServicePhotoEditor, ServiceInfoEditor, ServiceSpecEditor, ServiceDescriptionEditor } from './ServiceEditors';
-import { ServiceBookingEditor, ServiceBookingView } from './ServiceBookingEditor';
-import RequirementsEditor from '@/components/requirements/RequirementsEditor';
-import RequirementsView from '@/components/requirements/RequirementsView';
 import type { ServiceSectionEdit } from './useServiceSectionEdit';
 
 const PAD = 'px-4 min-[375px]:px-6 min-[600px]:px-0';
@@ -95,14 +92,6 @@ export default function ServiceEditableOverview({ service, edit }: Readonly<Serv
 
         <EditableBox control={edit.control('description')} label="description" title="Description" badge={3} view={<ServiceDescriptionBlock service={ps} />}>
           <ServiceDescriptionEditor edit={edit} />
-        </EditableBox>
-
-        <EditableBox control={edit.control('booking')} label="booking form" title="Booking Form" badge={4} view={<ServiceBookingView customFields={service.custom_fields} rosterFields={service.roster_fields} />}>
-          <ServiceBookingEditor edit={edit} />
-        </EditableBox>
-
-        <EditableBox control={edit.control('requirements')} label="requirements" title="Requirements" badge={5} view={<RequirementsView value={service} />}>
-          {edit.draft && <RequirementsEditor value={edit.draft.requirements} onChange={(requirements) => edit.setDraft(d => (d ? { ...d, requirements } : d))} inheritLabel="Use the shop default" />}
         </EditableBox>
       </div>
     </div>

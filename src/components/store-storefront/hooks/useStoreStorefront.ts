@@ -394,6 +394,13 @@ export function useStoreStorefront(storeId: string) {
 
   const activeBranch = store?.branches?.find(b => b.slug === selectedBranchSlug);
 
+  // Remember which branch the customer is looking at, so an order placed from
+  // this shop's services or packages starts on that branch (main when none).
+  useEffect(() => {
+    if (!store?.slug) return;
+    try { sessionStorage.setItem(`sutura_viewing_branch_${store.slug}`, activeBranch ? String(activeBranch.id) : ''); } catch { /* storage blocked */ }
+  }, [store?.slug, activeBranch]);
+
   const fetchStore = useCallback(() => {
     api.get(`/public/stores/${storeId}`)
       .then(res => {

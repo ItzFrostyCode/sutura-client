@@ -26,7 +26,7 @@ const playfair = Playfair_Display({
 // preview image gets an absolute URL.
 export const metadata: Metadata = {
   metadataBase: process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL) : undefined,
-  title: "Sutura | Premium Tailoring Software",
+  title: "SUTURA",
   description: "Enterprise management for modern tailoring businesses.",
   applicationName: "SUTURA",
   openGraph: { siteName: "SUTURA", type: "website" },

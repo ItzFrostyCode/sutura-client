@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { cleanName, nameError as checkName, NAME_HINT } from '@/lib/nameRules';
 import { ageFrom } from '@/lib/age';
-import { StepActions, TextField, type FieldStatus } from './ApplicationFields';
+import { Section, StepActions, TextField, type FieldStatus } from './ApplicationFields';
 import type { StoreApplicationState } from './useStoreApplication';
 import type { OwnerFields } from './applicationTypes';
 import { EMAIL_PATTERN, PH_MOBILE_PATTERN, useAvailabilityCheck, type AvailabilityState } from './useAvailabilityCheck';
@@ -90,17 +90,18 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
         if (!isEmail(owner.email.trim())) { email.checkNow(); return; }
         if (canContinue) goTo(2);
       }}
-      className="space-y-5"
+      className="space-y-8"
     >
-      <div className="grid gap-5 sm:grid-cols-2">
-        <TextField id="app-first" label="First Name" required autoComplete="given-name" maxLength={100} {...nameField('first_name')} />
-        <TextField id="app-middle" label="Middle Name (optional)" autoComplete="additional-name" maxLength={100} {...nameField('middle_name')} />
-        <TextField id="app-last" label="Last Name" required autoComplete="family-name" maxLength={100} {...nameField('last_name')} />
-        <TextField id="app-suffix" label="Suffix (Jr., Sr.) (optional)" maxLength={20} {...nameField('suffix')} />
-        <TextField id="app-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} status={ageStatus(owner.birthday)} />
+      <Section label="Personal details">
+      <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+        <TextField id="app-first" label="First name" required autoComplete="given-name" maxLength={100} {...nameField('first_name')} />
+        <TextField id="app-middle" label="Middle name" optional autoComplete="additional-name" maxLength={100} {...nameField('middle_name')} />
+        <TextField id="app-last" label="Last name" required autoComplete="family-name" maxLength={100} {...nameField('last_name')} />
+        <TextField id="app-suffix" label="Suffix" optional placeholder="Jr., Sr., III" maxLength={20} {...nameField('suffix')} />
+        <TextField id="app-birthday" label="Date of birth" type="date" required max={MAX_BIRTHDAY} {...bind('birthday')} status={ageStatus(owner.birthday)} />
         <TextField
           id="app-phone"
-          label="Contact Number"
+          label="Mobile number"
           type="tel"
           inputMode="numeric"
           required
@@ -114,11 +115,15 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
           status={statusFor(phone.state, 'Contact number', 'Enter 11 digits starting with 09, e.g. 09663946888.')}
         />
       </div>
+      </Section>
 
-      <div className="border-t border-line pt-5 space-y-2">
+      <Section
+        label="Email"
+        note="Once your shop is approved, we’ll send your shop login and a temporary password here. It can be the same email you use as a customer."
+      >
         <TextField
           id="app-email"
-          label="Your Email"
+          label="Email address"
           type="email"
           required
           autoComplete="email"
@@ -127,11 +132,7 @@ export default function OwnerStep({ app }: { readonly app: StoreApplicationState
           onBlur={email.checkNow}
           status={statusFor(email.state, 'Email', 'Enter a valid email address, e.g. you@gmail.com.')}
         />
-        <p className="mobile-body-sm text-ink-muted">
-          Once your shop is approved, we&apos;ll send your shop login and a temporary password here. It can be the same
-          email you use as a customer.
-        </p>
-      </div>
+      </Section>
 
       <StepActions nextLabel="Continue" busy={!canContinue || !namesValid} />
     </form>

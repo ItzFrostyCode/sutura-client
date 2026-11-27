@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { PublicService, StoreBranch, StoreProfile } from '@/components/store-storefront/types';
+import type { PublicService, PublicServicePackage, StoreBranch, StoreProfile } from '@/components/store-storefront/types';
 import type { ShopPaymentMethod } from '@/components/account/orders/usePayForOrder';
 import { hasAnyMeasurement, measurementsFromMetrics, pickMeasurements } from '@/lib/garmentMeasurements';
 import { usePeopleList } from '@/components/order-people/usePeopleList';
@@ -43,7 +43,13 @@ export function useServiceOrder(storeId: string) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const serviceId = searchParams.get('service_id');
+  const serviceIdParam = searchParams.get('service_id');
+  // "Place order" on a combo package: the whole set is one order at the bundle price.
+  const packageId = searchParams.get('package_id');
+  const [pkg, setPkg] = useState<PublicServicePackage | null>(null);
+  // The service the order form works from (its questions and sizing): the one in the
+  // link, or the package's first service.
+  const serviceId = serviceIdParam ?? (pkg ? String(pkg.services[0]?.id ?? '') : null);
   // Set when the order starts from a design ("Place Order" in the design modal).
   const designName = searchParams.get('design');
   const designImage = searchParams.get('design_image');
@@ -122,15 +128,43 @@ export function useServiceOrder(storeId: string) {
   }, [user?.phone]);
 
   useEffect(() => {
-    if (!serviceId) {
+    if (!serviceIdParam && !packageId) {
       setLoading(false);
       return;
     }
-    Promise.all([api.get(`/public/stores/${storeId}`), api.get(`/public/stores/${storeId}/services`)])
-      .then(([storeRes, servicesRes]) => {
+    Promise.all([
+      api.get(`/public/stores/${storeId}`),
+      api.get(`/public/stores/${storeId}/services`),
+      packageId ? api.get(`/public/stores/${storeId}/service-packages`) : Promise.resolve(null),
+    ])
+      .then(([storeRes, servicesRes, packagesRes]) => {
         setStore(storeRes.data.data);
-        const found: PublicService | null =
-          (servicesRes.data.data ?? []).find((s: PublicService) => s.id === Number(serviceId)) ?? null;
+        const all: PublicService[] = servicesRes.data.data ?? [];
+        const thePackage: PublicServicePackage | null = packagesRes
+          ? ((packagesRes.data.data ?? []) as PublicServicePackage[]).find((p) => p.id === Number(packageId)) ?? null
+          : null;
+        setPkg(thePackage);
+        const baseId = serviceIdParam ? Number(serviceIdParam) : thePackage?.services.map((s) => s.id).find((id) => all.some((s) => s.id === id));
+        let found: PublicService | null = all.find((s) => s.id === baseId) ?? null;
+        if (thePackage && found) {
+          // Shown and priced as the package: its name, one bundle price, no per-service
+          // price options or fabric deduction, and the package's own requirements.
+          const bundle = thePackage.bundle_price !== null
+            ? Number(thePackage.bundle_price)
+            : thePackage.services.reduce((sum, s) => sum + (Number(s.base_price) || 0), 0);
+          found = {
+            ...found,
+            name: thePackage.name,
+            base_price: String(bundle),
+            sale_price: null,
+            sale_percent: null,
+            pricing: [],
+            own_fabric_deduction: null,
+            order_requirements: thePackage.order_requirements ?? found.order_requirements,
+          };
+        } else if (packageId) {
+          found = null;
+        }
         setService(found);
         if (found) {
           setQuantity(Math.max(1, found.min_order_qty ?? 1));
@@ -143,7 +177,7 @@ export function useServiceOrder(storeId: string) {
       })
       .catch(() => setService(null))
       .finally(() => setLoading(false));
-  }, [storeId, serviceId]);
+  }, [storeId, serviceIdParam, packageId]);
 
   // Measurements this shop already has for the customer (latest version of each profile).
   useEffect(() => {
@@ -159,6 +193,22 @@ export function useServiceOrder(storeId: string) {
   }, [user, storeId]);
 
   const branches: StoreBranch[] = store?.branches ?? [];
+
+  // Start on the branch the customer ordered from: ?branch= in the link, else the
+  // branch they were viewing on the shop page, else the main branch. They can still change it.
+  useEffect(() => {
+    if (branchId !== null || branches.length === 0 || !store?.slug) return;
+    const param = searchParams.get('branch');
+    let viewed: string | null = null;
+    try { viewed = sessionStorage.getItem(`sutura_viewing_branch_${store.slug}`); } catch { /* storage blocked */ }
+    const pick =
+      branches.find((b) => param && (b.slug === param || String(b.id) === param))
+      ?? branches.find((b) => viewed && String(b.id) === viewed)
+      ?? branches.find((b) => Boolean(b.is_main))
+      ?? branches[0];
+    if (pick) setBranchId(pick.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.slug, branches.length]);
   // The branch the order goes to: the picked one, else the shop's main branch (same as the server).
   const orderBranchId = branchId ?? branches.find((b) => Boolean(b.is_main))?.id ?? branches[0]?.id ?? null;
 
@@ -315,6 +365,7 @@ export function useServiceOrder(storeId: string) {
     try {
       const res = await api.post(`/stores/${store.slug}/service-orders`, {
         service_id: service.id,
+        service_package_id: pkg?.id,
         contact_phone: contactPhone.trim(),
         store_branch_id: branchId ?? undefined,
         order_mode: orderMode,
@@ -436,6 +487,7 @@ export function useServiceOrder(storeId: string) {
     depositPercent,
     requirements,
     unitPrice,
+    pkg,
     fabricDeductionEach,
     fabricDeduction,
     estimatedTotal,

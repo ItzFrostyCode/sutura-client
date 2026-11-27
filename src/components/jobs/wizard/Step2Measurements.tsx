@@ -16,6 +16,7 @@ import {
 import type { CustomerMeasurement } from '../form/types';
 import { GARMENT_TYPE_OPTIONS, GARMENT_CATEGORY_LABELS } from '../jobHelpers';
 import { measurementFieldsFor, type BodyMeasurements } from '@/lib/garmentMeasurements';
+import { humanizeMetricKey } from '@/components/measurements/measurementHelpers';
 import type { PeopleListState } from '@/components/order-people/usePeopleList';
 import {
   PeopleList,
@@ -36,6 +37,9 @@ interface Step2MeasurementsProps {
   // Individual Measurements
   measurements: IndividualMeasurements;
   setMeasurements: React.Dispatch<React.SetStateAction<IndividualMeasurements>>;
+  /** The loaded profile's own extra measurements (armhole, cuff…). */
+  extraMeasurements: Record<string, string>;
+  setExtraMeasurements: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   customerMeasurements: CustomerMeasurement[];
   selectedMeasurementProfileId: string;
   onSelectSavedProfile: (id: string) => void;
@@ -62,6 +66,8 @@ export default function Step2Measurements({
   setGarmentCategory,
   measurements,
   setMeasurements,
+  extraMeasurements,
+  setExtraMeasurements,
   customerMeasurements,
   selectedMeasurementProfileId,
   onSelectSavedProfile,
@@ -265,6 +271,30 @@ export default function Step2Measurements({
               </div>
             ))}
           </div>
+
+          {/* The loaded profile's own extra measurements, saved with the order too. */}
+          {Object.keys(extraMeasurements).length > 0 && (
+            <div className="space-y-3 pt-4 border-t border-line">
+              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">Other measurements</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+                {Object.entries(extraMeasurements).map(([key, value]) => (
+                  <div key={key}>
+                    <label htmlFor={`mx-${key}`} className="block text-xs font-semibold text-ink mb-1">
+                      {humanizeMetricKey(key)} ({measurements.unit})
+                    </label>
+                    <input
+                      id={`mx-${key}`}
+                      type="number"
+                      step="0.25"
+                      value={value}
+                      onChange={(e) => setExtraMeasurements((prev) => ({ ...prev, [key]: e.target.value }))}
+                      className="w-full h-10 px-3 bg-surface border border-line rounded-xl text-xs sm:text-sm text-ink focus:outline-none focus:ring-1 focus:ring-taupe focus:border-taupe shadow-2xs"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* BULK: same people list + editor as the customer's online order. */
@@ -286,7 +316,9 @@ export default function Step2Measurements({
 
           <PeopleList people={people} garmentType={garmentCategory} />
 
-          <PersonEditor people={people} sizes={BULK_SIZES} garmentType={garmentCategory} showPrintFields />
+          <div data-field="job-people">
+            <PersonEditor people={people} sizes={BULK_SIZES} garmentType={garmentCategory} showPrintFields />
+          </div>
 
           <UnsavedDraftNote people={people} />
 

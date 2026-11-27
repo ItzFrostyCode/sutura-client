@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import api from '@/lib/axios';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -59,37 +59,27 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
   // Only the owner may change branch; for anyone else this is a no-op, so no
   // page can move a manager or staff member off their assigned branch.
   const canSwitchBranch = isStoreOwner;
+  // The pick is remembered (per tab, per shop) only here, when the owner
+  // actually chooses a branch. It used to be saved by an effect that also
+  // caught automatic resets: when the signed-in data briefly reloaded (store
+  // or roles empty for a moment), the selector fell back to "All Branches"
+  // and that got saved as if the owner had picked it.
   const setSelectedBranchId = useCallback((id: number | null) => {
-    if (canSwitchBranch) setSelectedBranchIdRaw(id);
-  }, [canSwitchBranch]);
+    if (!canSwitchBranch) return;
+    setSelectedBranchIdRaw(id);
+    if (storeId) {
+      try { sessionStorage.setItem(`sutura_branch_${storeId}`, id === null ? 'all' : id.toString()); } catch { /* storage blocked */ }
+    }
+  }, [canSwitchBranch, storeId]);
   const [loadingBranches, setLoadingBranches] = useState(false);
-  // Guards the localStorage-write effect below. Without it, that effect fires
-  // on the very first render (storeId truthy, selectedBranchId still its
-  // initial `null`) and writes 'all' to localStorage *before* refreshBranches
-  // has resolved the real default — which then reads that just-written 'all'
-  // back as if it were a genuine saved preference and short-circuits its own
-  // "fall back to main branch" logic. Net effect: every first-ever visit
-  // (fresh browser/cleared storage) permanently landed on "All Branches"
-  // instead of the intended main-branch default. Confirmed live via an
-  // actual browser session, not just API calls — this loop never shows up
-  // in a request/response test since it's purely a client-side render-order
-  // race with localStorage.
-  const hasResolvedInitialRef = useRef(false);
 
   const refreshBranches = useCallback(async () => {
     await Promise.resolve();
-    // !storeId is not a real resolution — on a hard reload, auth/store takes a
-    // beat to rehydrate, so storeId is transiently falsy before it's actually
-    // known. Marking hasResolvedInitialRef true here (as an earlier version
-    // of this fix did) let the persist-effect write 'all' during that
-    // transient flash, permanently clobbering a real cached selection before
-    // the real fetch below ever got to read it. Bail out inert instead —
-    // this effect re-fires on its own once storeId arrives, since
-    // refreshBranches itself changes identity when storeId changes.
+    // No shop yet, or the signed-in data is reloading for a moment (store or
+    // roles briefly empty): leave the current pick alone. This re-runs once the
+    // data is back and restores the owner's saved pick.
     if (!storeId || !canAccessBranches) {
       setBranches([]);
-      setSelectedBranchIdRaw(null);
-      hasResolvedInitialRef.current = true;
       return;
     }
     // Admin-issued temporary password not replaced yet: the API refuses
@@ -109,18 +99,17 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
         if (!isStoreOwner && staffProfile?.store_branch_id) {
           setSelectedBranchIdRaw(staffProfile.store_branch_id);
           setLoadingBranches(false);
-          hasResolvedInitialRef.current = true;
           return;
         }
 
-        // Restore from localStorage or default to main branch
-        const cached = sessionStorage.getItem(`sutura_branch_${storeId}`);
+        // The owner's last pick in this tab, else the main branch.
+        let cached: string | null = null;
+        try { cached = sessionStorage.getItem(`sutura_branch_${storeId}`); } catch { /* storage blocked */ }
         if (cached) {
           const parsed = cached === 'all' ? null : Number.parseInt(cached, 10);
           if (parsed === null || list.some(b => b.id === parsed)) {
             setSelectedBranchIdRaw(parsed);
             setLoadingBranches(false);
-            hasResolvedInitialRef.current = true;
             return;
           }
         }
@@ -139,7 +128,6 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       console.error('Failed to load branches:', err);
     } finally {
       setLoadingBranches(false);
-      hasResolvedInitialRef.current = true;
     }
   }, [storeId, canAccessBranches, isStoreOwner, isBranchManager, staffProfile, mustChangePassword]);
 
@@ -148,12 +136,6 @@ export function BranchProvider({ children }: { readonly children: React.ReactNod
       refreshBranches();
     });
   }, [refreshBranches]);
-
-  useEffect(() => {
-    if (storeId && hasResolvedInitialRef.current) {
-      sessionStorage.setItem(`sutura_branch_${storeId}`, selectedBranchId === null ? 'all' : selectedBranchId.toString());
-    }
-  }, [storeId, selectedBranchId]);
 
   const contextValue = useMemo<BranchContextValue>(() => ({
     branches,

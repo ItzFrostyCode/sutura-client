@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { CheckCircle2, FileText, X } from 'lucide-react';
+import { CheckCircle2, FileText, Plus, X } from 'lucide-react';
 import PinTools from '@/components/shared/PinTools';
 import api from '@/lib/axios';
 import { getErrorMessage } from '@/lib/apiError';
+import { shrinkImage } from '@/lib/shrinkImage';
+import { revealField } from '@/lib/revealField';
 import type { SavedLocation } from '@/lib/customerLocation';
-import { FileField, INPUT_CLASS, TextField } from './ApplicationFields';
+import { FIELD_CLASS, FieldLabel, FileField, Section, TextField } from './ApplicationFields';
 import SelfieCapture from './SelfieCapture';
 import { ageStatus } from './OwnerStep';
 import AddressFields, { addressErrors } from './AddressFields';
@@ -104,18 +106,20 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
 
   if (done) {
     return (
-      <div className="py-10 text-center">
-        <CheckCircle2 size={40} className="mx-auto text-sage" aria-hidden="true" />
-        <h2 className="mobile-h2 text-ink mt-4">Updates sent</h2>
-        <p className="mobile-body-md text-ink-muted mt-2 mx-auto max-w-md">{done}</p>
+      <div role="status" className="mt-8 rounded-2xl border border-line bg-surface px-6 py-9 text-center shadow-[0_1px_2px_rgba(45,42,38,0.04)] sm:px-10">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sage text-white">
+          <CheckCircle2 size={26} aria-hidden="true" />
+        </span>
+        <h2 className="mt-5 text-xl font-bold text-ink">Updates sent</h2>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-ink-body">{done}</p>
       </div>
     );
   }
   if (loadError) {
-    return <div role="alert" className="mt-6 border border-danger/30 bg-danger/5 p-4 text-sm text-danger">{loadError}</div>;
+    return <div role="alert" className="mt-8 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{loadError}</div>;
   }
   if (!request) {
-    return <p className="mt-6 text-sm text-ink-muted" aria-busy="true">Loading your application…</p>;
+    return <p className="mt-8 text-sm text-ink-muted" aria-busy="true">Loading your application…</p>;
   }
 
   const has = (key: string) => request.items.some((i) => i.key === key);
@@ -126,13 +130,16 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // Each check also takes the person to the field (lib/revealField); the message shows by the button.
+    const stop = (message: string, field: string) => { setError(message); revealField(field); };
     if (has('shop')) {
       setShowAreaErrors(true);
-      if (Object.keys(addressErrors(area, areaDistrictRequired)).length > 0) return setError('Choose your province, city or municipality, and barangay.');
+      const areaProblem = Object.keys(addressErrors(area, areaDistrictRequired))[0];
+      if (areaProblem) return stop('Choose your province, city or municipality, and barangay.', `upd-area-${areaProblem.replace('_code', '')}`);
     }
-    if (has('shop') && !location) return setError('Pin your shop on the map.');
-    if (has('permits') && permits.length === 0) return setError('Attach at least one business permit.');
-    if (has('selfie') && !files.selfie_with_id) return setError('Take a new selfie holding your ID.');
+    if (has('shop') && !location) return stop('Pin your shop on the map.', 'upd-pin');
+    if (has('permits') && permits.length === 0) return stop('Attach at least one business permit.', 'upd-permits');
+    if (has('selfie') && !files.selfie_with_id) return stop('Take a new selfie holding your ID.', 'upd-selfie');
 
     const form = new FormData();
     form.append('token', token);
@@ -150,11 +157,15 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
     }
     if (has('payment')) form.append('payment_method', paymentMethod);
     if (has('government-id')) form.append('government_id_type', govIdType);
-    Object.entries(files).forEach(([field, file]) => form.append(field, file));
-    if (has('selfie')) appendFaceMatch(form, files.selfie_with_id);
-    permits.forEach((file) => form.append('business_permits[]', file));
-
     setSubmitting(true);
+    // Same as the application: photos shrunk before upload, the selfie left as captured.
+    const docEntries = await Promise.all(
+      Object.entries(files).map(async ([field, file]) => [field, field === 'selfie_with_id' ? file : await shrinkImage(file)] as const),
+    );
+    docEntries.forEach(([field, file]) => form.append(field, file));
+    if (has('selfie')) appendFaceMatch(form, files.selfie_with_id);
+    (await Promise.all(permits.map(shrinkImage))).forEach((file) => form.append('business_permits[]', file));
+
     try {
       const res = await api.post('/store-applications/update', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       setDone(res.data.message);
@@ -167,115 +178,144 @@ export default function ApplicationUpdateForm({ token }: { readonly token: strin
   };
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-8">
-      <section className="border-l-2 border-alert bg-alert/5 px-4 py-3.5">
+    <form onSubmit={submit} className="mt-8 space-y-8">
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 sm:px-6">
         <p className="text-sm font-semibold text-ink">SUTURA asked you to update {request.items.length === 1 ? 'this' : 'these'}:</p>
-        <ul className="mt-1.5 list-disc pl-5 text-sm text-ink">
-          {request.items.map((i) => <li key={i.key}>{i.label}</li>)}
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {request.items.map((i) => (
+            <li key={i.key} className="rounded-full border border-amber-200 bg-surface px-3 py-1 text-xs font-medium text-ink">{i.label}</li>
+          ))}
         </ul>
-        <p className="mt-3 whitespace-pre-line text-sm text-ink-body">&ldquo;{request.note}&rdquo;</p>
-        <p className="mt-3 mobile-caption text-ink-muted">Everything else stays as you sent it. This link works until {longDate(request.expires_at)}.</p>
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink-body">&ldquo;{request.note}&rdquo;</p>
+        <p className="mt-3 text-xs text-ink-muted">Everything else stays as you sent it. This link works until {longDate(request.expires_at)}.</p>
       </section>
 
       {has('owner') && (
-        <fieldset className="space-y-5">
-          <legend className="mobile-h3 text-ink mb-4">Owner details</legend>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <TextField id="upd-first" label="First Name" required {...bindOwner('first_name')} />
-            <TextField id="upd-middle" label="Middle Name" {...bindOwner('middle_name')} />
-            <TextField id="upd-last" label="Last Name" required {...bindOwner('last_name')} />
-            <TextField id="upd-suffix" label="Suffix (Jr., Sr.)" {...bindOwner('suffix')} />
-            <TextField id="upd-birthday" label="Date of Birth" type="date" required max={MAX_BIRTHDAY} {...bindOwner('birthday')} status={ageStatus(owner.birthday ?? '')} />
-            <TextField id="upd-phone" label="Contact Number" type="tel" required {...bindOwner('contact_number')} />
+        <Section label="Owner details">
+          <div className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextField id="upd-first" label="First name" required {...bindOwner('first_name')} />
+              <TextField id="upd-middle" label="Middle name" optional {...bindOwner('middle_name')} />
+              <TextField id="upd-last" label="Last name" required {...bindOwner('last_name')} />
+              <TextField id="upd-suffix" label="Suffix" optional placeholder="Jr., Sr., III" {...bindOwner('suffix')} />
+              <TextField id="upd-birthday" label="Date of birth" type="date" required max={MAX_BIRTHDAY} {...bindOwner('birthday')} status={ageStatus(owner.birthday ?? '')} />
+              <TextField id="upd-phone" label="Mobile number" type="tel" required {...bindOwner('contact_number')} />
+            </div>
+            <TextField id="upd-email" label="Email address" type="email" required {...bindOwner('email')} />
           </div>
-          <TextField id="upd-email" label="Your Email" type="email" required {...bindOwner('email')} />
-        </fieldset>
+        </Section>
       )}
 
       {has('shop') && (
-        <fieldset className="space-y-5">
-          <legend className="mobile-h3 text-ink mb-4">Shop details</legend>
-          <TextField id="upd-shop" label="Shop Name" required value={shopName} onChange={(e) => setShopName(e.target.value)} />
-          <AddressFields idPrefix="upd-area" value={area} onChange={setArea} showErrors={showAreaErrors} onDistrictRequiredChange={setAreaDistrictRequired} />
-          <TextField id="upd-address" label="Street Address" required placeholder="Unit, building, street" value={address} onChange={(e) => setAddress(e.target.value)} />
-          <div>
-            <p className="text-sm text-ink mb-2">Map Pin<span className="text-danger">*</span></p>
-            <PinTools variant="square" current={location} onPickOnMap={() => setPickerOpen(true)} onPin={setLocation} />
-          </div>
-        </fieldset>
+        <>
+          <Section label="Shop details">
+            <div className="space-y-5">
+              <TextField id="upd-shop" label="Shop name" required value={shopName} onChange={(e) => setShopName(e.target.value)} />
+              <AddressFields idPrefix="upd-area" value={area} onChange={setArea} showErrors={showAreaErrors} onDistrictRequiredChange={setAreaDistrictRequired} />
+              <TextField id="upd-address" label="Street address" required placeholder="Unit, building, street" value={address} onChange={(e) => setAddress(e.target.value)} />
+            </div>
+          </Section>
+          <section data-field="upd-pin">
+            <h3 className="mb-2.5 px-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              Map pin<span className="text-danger" aria-hidden="true">*</span>
+            </h3>
+            <PinTools variant="list" current={location} onPickOnMap={() => setPickerOpen(true)} onPin={setLocation} />
+          </section>
+        </>
       )}
 
-      {(FILE_ITEMS.some(([key]) => has(key)) || has('government-id') || has('selfie') || has('permits')) && (
-        <fieldset className="space-y-6">
-          <legend className="mobile-h3 text-ink mb-4">Documents</legend>
-          {FILE_ITEMS.filter(([key]) => has(key)).map(([key, field, label, hint, accept]) => (
-            <FileField key={key} id={`upd-${field}`} label={label} hint={hint} accept={accept} file={files[field]} onChange={(f) => setFile(field, f)} />
-          ))}
-          {has('government-id') && (
-            <div className="space-y-3">
-              <label htmlFor="upd-gov-type" className="block text-sm text-ink">Government ID type<span className="text-danger">*</span></label>
-              <select id="upd-gov-type" required value={govIdType} onChange={(e) => setGovIdType(e.target.value)} className={INPUT_CLASS}>
+      {FILE_ITEMS.some(([key]) => has(key)) && (
+        <Section label="Business documents" flush>
+          <div className="divide-y divide-line">
+            {FILE_ITEMS.filter(([key]) => has(key)).map(([key, field, label, hint, accept]) => (
+              <FileField key={key} id={`upd-${field}`} label={label} hint={hint} accept={accept} file={files[field]} onChange={(f) => setFile(field, f)} />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {has('government-id') && (
+        <Section label="Your identity" flush>
+          <div className="divide-y divide-line">
+            <div className="p-4 sm:p-5">
+              <FieldLabel htmlFor="upd-gov-type" label="Government ID type" required />
+              <select id="upd-gov-type" required value={govIdType} onChange={(e) => setGovIdType(e.target.value)} className={FIELD_CLASS}>
                 <option value="" disabled>Select ID type</option>
                 {GOVERNMENT_ID_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
-              <FileField id="upd-government_id" label="Government ID" hint="Front of the ID — photo or PDF" accept="image/*,.pdf" file={files.government_id} onChange={(f) => setFile('government_id', f)} />
             </div>
-          )}
-          {has('selfie') && (
-            <div>
-              <SelfieCapture id="upd-selfie" idType={govIdType} file={files.selfie_with_id} onChange={(f) => setFile('selfie_with_id', f)} />
-              <p className="mt-2 mobile-caption text-ink-muted">
-                Covered by the privacy consent you gave when you applied. The selfie is deleted 30 days after your application is decided.
-              </p>
-            </div>
-          )}
-          {has('permits') && (
-            <div>
-              <p className="text-sm text-ink mb-1">Business permits<span className="text-danger">*</span></p>
-              <p className="mobile-caption text-ink-muted mb-2">These replace the permits you sent before. Up to 5 files.</p>
-              {permits.length > 0 && (
-                <ul className="mb-2 divide-y divide-line border border-line">
-                  {permits.map((file, i) => (
-                    <li key={`${file.name}-${i}`} className="flex items-center gap-3 px-3 py-2 text-sm text-ink">
-                      <FileText size={16} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                      <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                      <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setPermits(permits.filter((_, j) => j !== i))}
-                        className="flex h-9 w-9 items-center justify-center text-ink-muted hover:text-ink"><X size={16} aria-hidden="true" /></button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <FileField id="upd-government_id" label="Owner's government ID" hint="Front of the ID — photo or PDF" accept="image/*,.pdf" file={files.government_id} onChange={(f) => setFile('government_id', f)} />
+          </div>
+        </Section>
+      )}
+
+      {has('selfie') && (
+        <div>
+          <SelfieCapture id="upd-selfie" idType={govIdType} file={files.selfie_with_id} onChange={(f) => setFile('selfie_with_id', f)} />
+          <p className="mt-2 px-1 text-xs text-ink-muted">
+            Covered by the privacy consent you gave when you applied. The selfie is deleted 30 days after your application is decided.
+          </p>
+        </div>
+      )}
+
+      {has('permits') && (
+        <div data-field="upd-permits">
+          <Section
+            label={<>Business permits<span className="text-danger" aria-hidden="true">*</span></>}
+            note="These replace the permits you sent before. Up to 5 files (photos or PDFs)."
+            flush
+          >
+            <ul className="divide-y divide-line">
+              {permits.map((file, i) => (
+                <li key={`${file.name}-${i}`} className="flex min-h-14 items-center gap-3.5 px-4 sm:px-5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sunken text-ink-muted">
+                    <FileText size={16} aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-ink">{file.name}</span>
+                  <button type="button" aria-label={`Remove ${file.name}`} onClick={() => setPermits(permits.filter((_, j) => j !== i))}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-ink-muted hover:bg-sunken hover:text-ink">
+                    <X size={17} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
               {permits.length < 5 && (
-                <label className="inline-flex min-h-11 cursor-pointer items-center border border-dashed border-ink/60 px-3.5 text-sm text-ink hover:border-ink">
-                  Add permit file
-                  <input type="file" accept="image/*,.pdf" multiple className="sr-only"
-                    onChange={(e) => { setPermits([...permits, ...Array.from(e.target.files ?? [])].slice(0, 5)); e.target.value = ''; }} />
-                </label>
+                <li>
+                  <label className="flex min-h-14 cursor-pointer items-center gap-3.5 px-4 text-sm font-medium text-ink transition-colors hover:bg-sunken/60 sm:px-5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-dashed border-line-strong text-ink-muted">
+                      <Plus size={16} aria-hidden="true" />
+                    </span>
+                    {permits.length === 0 ? 'Add permit file' : 'Add another file'}
+                    <input type="file" accept="image/*,.pdf" multiple className="sr-only"
+                      onChange={(e) => { setPermits([...permits, ...Array.from(e.target.files ?? [])].slice(0, 5)); e.target.value = ''; }} />
+                  </label>
+                </li>
               )}
-            </div>
-          )}
-        </fieldset>
+            </ul>
+          </Section>
+        </div>
       )}
 
       {has('payment') && (
-        <fieldset className="space-y-5">
-          <legend className="mobile-h3 text-ink mb-4">Payment</legend>
-          <div className="flex gap-2">
-            {(['gcash'] as const).map((m) => (
-              <button key={m} type="button" aria-pressed={paymentMethod === m} onClick={() => setPaymentMethod(m)}
-                className={`min-h-11 flex-1 border px-4 text-sm ${paymentMethod === m ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink hover:border-ink'}`}>
-                {m === 'gcash' ? 'GCash' : 'Bank Transfer'}
-              </button>
-            ))}
+        <Section label="Payment" flush>
+          <div className="divide-y divide-line">
+            <div className="flex gap-2 p-4 sm:p-5">
+              {(['gcash'] as const).map((m) => (
+                <button key={m} type="button" aria-pressed={paymentMethod === m} onClick={() => setPaymentMethod(m)}
+                  className={`min-h-11 flex-1 rounded-xl border px-4 text-sm font-medium transition-colors ${paymentMethod === m ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink hover:border-ink'}`}>
+                  {m === 'gcash' ? 'GCash' : 'Bank Transfer'}
+                </button>
+              ))}
+            </div>
+            <FileField id="upd-payment_receipt" label="Payment receipt" hint="A clear screenshot of the completed payment" accept="image/*" file={files.payment_receipt} onChange={(f) => setFile('payment_receipt', f)} />
           </div>
-          <FileField id="upd-payment_receipt" label="Payment Receipt" hint="A clear screenshot of the completed payment" accept="image/*" file={files.payment_receipt} onChange={(f) => setFile('payment_receipt', f)} />
-        </fieldset>
+        </Section>
       )}
 
-      {error && <div role="alert" className="border border-danger/30 bg-danger/5 p-3.5 text-sm text-danger">{error}</div>}
+      {error && <div role="alert" className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{error}</div>}
 
-      <button type="submit" disabled={submitting} className="btn-primary-mobile w-full rounded-none! bg-ink text-white uppercase tracking-widest text-sm disabled:opacity-50">
-        {submitting ? 'Sending…' : 'Send Updates'}
+      <button type="submit" disabled={submitting}
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-ink px-12 text-sm font-semibold text-white transition-colors hover:bg-ink/85 disabled:opacity-50 sm:ml-auto sm:flex sm:w-auto">
+        {submitting ? 'Sending…' : 'Send updates'}
       </button>
 
       {pickerOpen && (

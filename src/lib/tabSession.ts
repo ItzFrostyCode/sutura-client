@@ -6,8 +6,17 @@
  *
  * This lets a new, empty tab borrow the login of an already-open SUTURA tab
  * (same site only — BroadcastChannel never crosses origins). If several tabs
- * answer with different accounts, the one used most recently wins. After the
- * hand-off the new tab owns its copy, so later sign-ins/outs stay per-tab.
+ * answer with different accounts, the one used most recently wins.
+ *
+ * Isolation rules (sessions used to leak between windows):
+ *  - Only a tab OPENED FROM a SUTURA page borrows (same-site referrer, e.g.
+ *    "Open link in new tab"). A fresh window, a second Incognito window, a
+ *    typed address or a bookmark starts as a guest. Every window of one browser
+ *    profile (all Incognito windows count as one) shares BroadcastChannel, so
+ *    without this they all signed each other in.
+ *  - The borrowed token is traded for the tab's OWN token
+ *    (POST /auth/tab-token). Two tabs used to share one token, so signing out
+ *    in one deleted it and signed the other out too.
  * A tab that signed out on purpose never borrows a login back.
  */
 
@@ -26,6 +35,32 @@ const SCOPE_KEYS: Record<Scope, { token: string; keys: string[] }> = {
 };
 
 const supported = () => typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined';
+
+/** Opened from a SUTURA page (a link / "Open in new tab"), not a fresh window, typed URL or bookmark. */
+function openedFromThisSite(): boolean {
+  try {
+    return !!document.referrer && new URL(document.referrer).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
+
+/** Trades a borrowed token for this tab's own (same user, same abilities). Null if the server refuses. */
+async function ownToken(borrowed: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/auth/tab-token`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${borrowed}` },
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return typeof body?.data?.token === 'string' ? body.data.token : null;
+  } catch {
+    return null;
+  }
+}
 
 let lastUsedAt = 0;
 let serving = false;
@@ -58,9 +93,18 @@ export function serveTabSessions(): void {
  * If this tab has no login of its own, ask the other open tabs for one and copy
  * it into this tab. Resolves true when a login was borrowed.
  */
+// One borrow per scope per page load: React runs startup effects twice in development, which
+// asked the server for two tab tokens and left one unused.
+const inflight: Partial<Record<Scope, Promise<boolean>>> = {};
+
 export function borrowTabSession(scope: Scope, waitMs = 250): Promise<boolean> {
+  inflight[scope] ??= borrowOnce(scope, waitMs);
+  return inflight[scope];
+}
+
+function borrowOnce(scope: Scope, waitMs: number): Promise<boolean> {
   const { token, keys } = SCOPE_KEYS[scope];
-  if (!supported() || sessionStorage.getItem(token) || sessionStorage.getItem(`${SIGNED_OUT_FLAG}_${scope}`)) {
+  if (!supported() || !openedFromThisSite() || sessionStorage.getItem(token) || sessionStorage.getItem(`${SIGNED_OUT_FLAG}_${scope}`)) {
     return Promise.resolve(false);
   }
   return new Promise((resolve) => {
@@ -74,15 +118,16 @@ export function borrowTabSession(scope: Scope, waitMs = 250): Promise<boolean> {
       }
     };
     channel.postMessage({ type: 'request', id, scope } satisfies Msg);
-    setTimeout(() => {
+    setTimeout(async () => {
       channel.close();
+      const found = best as { data: Record<string, string>; usedAt: number } | null;
+      if (!found || sessionStorage.getItem(token)) { resolve(false); return; }
+      // This tab's own token, so its sign-out never ends the other tab's session.
+      const mine = await ownToken(found.data[token]);
       // Only copy the keys this scope owns, and never over a login this tab got meanwhile.
-      if (best && !sessionStorage.getItem(token)) {
-        for (const k of keys) if (best.data[k] !== undefined) sessionStorage.setItem(k, best.data[k]);
-        resolve(true);
-      } else {
-        resolve(false);
-      }
+      if (!mine || sessionStorage.getItem(token)) { resolve(false); return; }
+      for (const k of keys) if (found.data[k] !== undefined) sessionStorage.setItem(k, k === token ? mine : found.data[k]);
+      resolve(true);
     }, waitMs);
   });
 }

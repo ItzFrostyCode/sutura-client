@@ -42,7 +42,6 @@ export function buildPackagePayload(d: PackageDraft, isActive = true) {
 export function validatePackageSection(section: PackageSection, d: PackageDraft): string | null {
   if (section === 'info' && !d.name.trim()) return 'The package needs a name.';
   if (section === 'services' && d.selectedIds.length < 2) return 'Pick at least 2 services to bundle.';
-  if (section === 'services' && !d.service_category) return 'Pick the category this package belongs to.';
   if (section === 'requirements') return validateRequirements(d.requirements);
   return null;
 }

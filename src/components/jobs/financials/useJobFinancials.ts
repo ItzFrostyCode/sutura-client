@@ -25,9 +25,6 @@ export function useJobFinancials(
   const [receiptUrl, setReceiptUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [charging, setCharging] = useState(false);
-  // Cash only — the amount physically handed over, so change can be
-  // computed instead of the cashier doing mental math at the counter.
-  const [cashTendered, setCashTendered] = useState('');
   // A charge is a two-step process: fill in the details, review a summary
   // (amount/change/method, and for gcash/paymaya a note that it lands as
   // Pending Verification, not applied yet), then confirm. Nothing is sent
@@ -106,11 +103,12 @@ export function useJobFinancials(
     }
   };
 
-  const handleSubmitReject = async (paymentId: number) => {
-    if (!rejectReason.trim()) return;
+  const handleSubmitReject = async (paymentId: number, reasonFromPopup?: string) => {
+    const reason = (reasonFromPopup ?? rejectReason).trim();
+    if (!reason) return;
     setSubmittingReject(true);
     try {
-      await onRejectPayment(paymentId, rejectReason.trim());
+      await onRejectPayment(paymentId, reason);
       setRejectingPaymentId(null);
       setRejectReason('');
     } finally {
@@ -123,7 +121,6 @@ export function useJobFinancials(
     e.preventDefault();
     const amt = Number.parseFloat(amount);
     if (!amt || amt <= 0) return;
-    if (method === 'cash' && (!cashTendered || Number.parseFloat(cashTendered) < amt)) return;
     if (method !== 'cash' && !receiptUrl) return;
     setReviewingCharge(true);
   };
@@ -134,13 +131,11 @@ export function useJobFinancials(
     if (!amt || amt <= 0) return;
     setCharging(true);
     try {
-      const tendered = method === 'cash' ? Number.parseFloat(cashTendered) : undefined;
-      await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined, tendered);
+      await onCharge(amt, method, notes, reference || undefined, receiptUrl || undefined);
       setAmount('');
       setReference('');
       setNotes('');
       setReceiptUrl('');
-      setCashTendered('');
       setReviewingCharge(false);
     } finally {
       setCharging(false);
@@ -185,8 +180,6 @@ export function useJobFinancials(
     charging,
     handleChargeSubmit,
     uploadReceipt,
-    cashTendered,
-    setCashTendered,
     reviewingCharge,
     confirmCharge,
     cancelChargeReview,

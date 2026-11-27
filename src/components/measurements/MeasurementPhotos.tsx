@@ -37,23 +37,26 @@ export default function MeasurementPhotos({ urls, onChange, storeId }: Readonly<
 
   return (
     <div>
-      <p className="block text-sm font-medium text-ink-body mb-1.5">Photos of the paper sheet <span className="text-ink-faint font-normal">(optional · up to {MAX})</span></p>
-      <div className="grid grid-cols-3 gap-2">
-        {urls.map((u, i) => (
-          <div key={u} className="relative aspect-square border border-line bg-sunken overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={getMediaUrl(u)} alt={`Measurement sheet ${i + 1}`} className="w-full h-full object-cover" />
-            <button type="button" onClick={() => onChange(urls.filter((x) => x !== u))} aria-label="Remove photo" className="absolute top-1 right-1 w-8 h-8 bg-ink/70 text-white flex items-center justify-center cursor-pointer"><X size={14} /></button>
-          </div>
-        ))}
-        {urls.length < MAX && (
-          <label className="aspect-square border border-dashed border-line-strong bg-canvas flex flex-col items-center justify-center gap-1 text-ink-muted cursor-pointer hover:bg-sunken">
-            {busy ? <Loader2 size={20} className="animate-spin text-taupe" /> : <Camera size={22} />}
-            <span className="text-[11px] font-medium">{busy ? 'Uploading…' : 'Add photo'}</span>
-            <input type="file" accept="image/*" capture="environment" multiple className="sr-only" disabled={busy} onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
-          </label>
-        )}
-      </div>
+      <p className="block text-sm font-medium text-ink-body">Measurement sheet <span className="text-ink-faint font-normal">(optional)</span></p>
+      <p className="text-xs text-ink-muted mt-0.5 mb-2.5">Wrote the measurements on paper? Attach a photo of it. You can add up to {MAX}.</p>
+      {urls.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+          {urls.map((u, i) => (
+            <div key={u} className="relative aspect-square rounded-lg border border-line bg-sunken overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={getMediaUrl(u)} alt={`Measurement sheet ${i + 1}`} className="w-full h-full object-cover" />
+              <button type="button" onClick={() => onChange(urls.filter((x) => x !== u))} aria-label={`Remove photo ${i + 1}`} className="absolute top-1 right-1 w-8 h-8 rounded-md bg-ink/70 text-white flex items-center justify-center cursor-pointer"><X size={14} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      {urls.length < MAX && (
+        <label className={`h-10 px-4 rounded-lg border border-line-strong bg-surface text-sm font-semibold text-ink inline-flex items-center gap-2 transition-colors ${busy ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:bg-sunken'}`}>
+          {busy ? <Loader2 size={16} className="animate-spin text-taupe" /> : <Camera size={16} className="text-taupe" />}
+          {busy ? 'Uploading…' : urls.length ? 'Add another photo' : 'Add a photo'}
+          <input type="file" accept="image/*" capture="environment" multiple className="sr-only" disabled={busy} onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
+        </label>
+      )}
       {error && <p className="text-xs text-danger mt-1.5">{error}</p>}
     </div>
   );

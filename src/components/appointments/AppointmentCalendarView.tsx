@@ -416,7 +416,7 @@ export default function AppointmentCalendarView({
                       )}
                       <TypeBadge type={apt.appointment_type} label={apt.purpose_label} />
                       <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
-                      <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
+                      <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} arrivalStatus={apt.arrival_status} earlyDecision={apt.early_arrival_decision} />
                     </div>
 
                     {isPending && apt.intake_channel === 'online' && (

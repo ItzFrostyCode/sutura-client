@@ -4,6 +4,8 @@ import { CreditCard, Printer, MoreVertical, Pencil, Flag, Check, Receipt, Loader
 import { Payment } from '../jobTypes';
 import { METHOD_CONFIG } from './financialsTypes';
 import ImageViewerModal from '@/components/shared/ImageViewerModal';
+import RejectReasonModal from '@/components/payments/modals/RejectReasonModal';
+import { REJECT_PRESET_REASONS } from '@/components/payments/paymentHelpers';
 
 interface PaymentItemRowProps {
   readonly payment: Payment;
@@ -28,10 +30,8 @@ interface PaymentItemRowProps {
   readonly isRejecting: boolean;
   readonly onStartReject: () => void;
   readonly onCancelReject: () => void;
-  readonly rejectReason: string;
-  readonly setRejectReason: (r: string) => void;
   readonly submittingReject: boolean;
-  readonly onSubmitReject: () => Promise<void>;
+  readonly onSubmitReject: (reason: string) => Promise<void>;
 }
 
 export function PaymentItemRow({
@@ -57,12 +57,14 @@ export function PaymentItemRow({
   isRejecting,
   onStartReject,
   onCancelReject,
-  rejectReason,
-  setRejectReason,
   submittingReject,
   onSubmitReject,
 }: PaymentItemRowProps) {
   const [viewingReceipt, setViewingReceipt] = React.useState(false);
+  // Same popup and preset reasons as the Payments page.
+  const [presetReason, setPresetReason] = React.useState<string>(REJECT_PRESET_REASONS[0]);
+  const [rejectNote, setRejectNote] = React.useState('');
+  const amountLabel = `₱${Number.parseFloat(String(payment.amount)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const cfg = METHOD_CONFIG[payment.payment_method] ?? {
     label: payment.payment_method,
     icon: <CreditCard size={14} />,
@@ -200,11 +202,6 @@ export function PaymentItemRow({
           </div>
 
           <div className="flex items-center gap-2">
-            {payment.payment_method === 'cash' && payment.change_amount != null && (
-              <span className="bg-surface px-1.5 py-0.5 rounded border border-line text-ink-body">
-                Tendered ₱{Number.parseFloat(String(payment.cash_tendered)).toFixed(2)} · Change ₱{Number.parseFloat(String(payment.change_amount)).toFixed(2)}
-              </span>
-            )}
             {payment.reference && (
               <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-line text-ink-body">
                 Ref: {payment.reference}
@@ -241,36 +238,21 @@ export function PaymentItemRow({
         </div>
       )}
 
-      {/* Reject Form Drawer */}
-      {isRejecting && (
-        <div className="space-y-2 mt-2 pt-2 border-t border-rose-200 bg-rose-50/50 p-2.5 rounded-lg">
-          <p className="text-[11px] font-bold text-rose-800">Reason for rejecting this transaction:</p>
-          <input
-            type="text"
-            value={rejectReason}
-            onChange={e => setRejectReason(e.target.value)}
-            placeholder="e.g. GCash screenshot forged / reference invalid"
-            className="w-full px-2.5 py-1.5 bg-surface border border-rose-300 rounded-lg text-xs text-ink focus:outline-none focus:border-rose-500"
-          />
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onCancelReject}
-              className="px-2.5 py-1 rounded-lg text-xs text-ink-muted hover:text-ink cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={submittingReject || !rejectReason.trim()}
-              onClick={onSubmitReject}
-              className="px-3 py-1 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs cursor-pointer"
-            >
-              {submittingReject ? 'Rejecting…' : 'Confirm Rejection'}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Reject: the same popup as the Payments page */}
+      <RejectReasonModal
+        rejectingItem={isRejecting ? { id: payment.id, itemName: `this ${amountLabel} ${cfg.label} payment` } : null}
+        description="It stays on the order marked Rejected and won't count toward the balance. The customer is told why so they can send a new proof."
+        onClose={() => { onCancelReject(); setRejectNote(''); }}
+        rejectionReason={presetReason}
+        setRejectionReason={setPresetReason}
+        rejectionCustomText={rejectNote}
+        setRejectionCustomText={setRejectNote}
+        onConfirmRejection={() => {
+          const note = rejectNote.trim();
+          void onSubmitReject(note ? `${presetReason}. ${note}` : presetReason).then(() => setRejectNote(''));
+        }}
+        processingId={submittingReject ? payment.id : null}
+      />
 
       <ImageViewerModal
         src={viewingReceipt ? payment.receipt_path ?? null : null}

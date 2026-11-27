@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useMemo, FormEvent } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
+import { useToast } from '@/context/ToastContext';
+import { getErrorMessage, logUnexpectedError } from '@/lib/apiError';
 import { useAuthStore } from '@/store/useAuthStore';
 import { MessageSquare, Ruler, Shirt, Scissors, Package } from 'lucide-react';
 import {
@@ -21,6 +23,7 @@ const TYPES_REQUIRING_SERVICE = ['measurement', 'alteration'];
 
 export function useBookingWizard(storeId: string) {
   const router = useRouter();
+  const toast = useToast();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, hydrated } = useAuthStore();
@@ -437,6 +440,28 @@ export function useBookingWizard(storeId: string) {
 
   const step1NextDisabled = appointmentType === 'other' && purposeLabel.trim() === '';
 
+  /**
+   * The first thing still missing on a step, in page order, as the field to
+   * take the customer to (an element id or data-field) and what to tell them.
+   * Same rules as step1NextDisabled / step2NextDisabled.
+   */
+  const missingOnStep = (s: number): { field: string; message: string } | null => {
+    if (s === 1 && step1NextDisabled) return { field: 'purpose-label', message: 'Say what the visit is for.' };
+    if (s !== 2) return null;
+    if (TYPES_REQUIRING_SERVICE.includes(appointmentType) && needsServicePicker && !selectedServiceId) {
+      return { field: 'booking-service', message: 'Choose the service for this visit.' };
+    }
+    if (storeSettings?.branches && storeSettings.branches.length > 0 && !selectedBranchId) {
+      return { field: 'booking-branch', message: 'Choose a branch.' };
+    }
+    if (!date) return { field: 'booking-datetime', message: 'Pick a date.' };
+    if (getSpecialHoursForDate(date)?.is_closed) return { field: 'booking-datetime', message: 'The shop is closed on that date. Pick another day.' };
+    if (!time) return { field: 'booking-datetime', message: 'Pick a time.' };
+    const q = (selectedService?.custom_fields ?? []).find((f) => f.required && f.type !== 'checkbox' && f.label?.trim() && !(answers[f.label] ?? '').trim());
+    if (q) return { field: `svc-q-${q.id}`, message: `Answer "${q.label}".` };
+    return null;
+  };
+
   const step2NextDisabled =
     !date ||
     !time ||
@@ -498,8 +523,8 @@ export function useBookingWizard(storeId: string) {
         setPaymentReceiptUrl(res.data.data.url);
       }
     } catch (err) {
-      console.error('Failed to upload receipt:', err);
-      alert('Failed to upload receipt. Please make sure it is a valid image (PNG/JPG/JPEG).');
+      logUnexpectedError('Failed to upload receipt:', err);
+      toast.error(getErrorMessage(err, 'That receipt didn’t upload. Try a JPG or PNG photo.'));
       e.target.value = '';
     } finally {
       setUploadingReceipt(false);
@@ -566,12 +591,10 @@ export function useBookingWizard(storeId: string) {
       });
       setSuccess(true);
     } catch (err) {
-      console.error('Failed to book appointment:', err);
-      // Say what the server actually objected to (an existing active booking, a taken slot,
-      // a missing answer…) instead of a generic message.
-      const res = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data;
-      const detail = res?.message ?? Object.values(res?.errors ?? {})[0]?.[0];
-      alert(detail ? `Could not book: ${detail}` : 'Failed to book appointment. Please check all fields.');
+      // A refusal from the server (slot taken, an existing booking, a missing answer…) is
+      // shown in the app's own error message; only unexpected failures are logged.
+      logUnexpectedError('Failed to book appointment:', err);
+      toast.error(getErrorMessage(err, 'We couldn’t book this. Check your details and try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -644,6 +667,7 @@ export function useBookingWizard(storeId: string) {
     durationMinutes,
     specialHoursForDate: date ? getSpecialHoursForDate(date) : null,
     step1NextDisabled,
+    missingOnStep,
     step2NextDisabled,
     purposeLabel,
     setPurposeLabel,

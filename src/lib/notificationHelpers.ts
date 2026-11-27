@@ -32,6 +32,12 @@ export interface AppNotification {
   created_at: string;
   read_at: string | null;
   data: NotifData;
+  /** Who it's from or about, worked out by the server (NotificationPresenter). */
+  sender?: { kind: 'customer' | 'shop' | 'platform' | 'other'; name: string | null; avatar: string | null };
+  /** One plain sentence about what happened; null means use the title. */
+  summary?: string | null;
+  /** Details to scan: order number, what's being made, amount, time. */
+  context?: string[];
 }
 
 export interface NotificationSender {
@@ -39,15 +45,22 @@ export interface NotificationSender {
   initial: string;
   initials: string;
   colorClass: string;
+  /** Their profile picture or shop logo (raw path; resolve with getMediaUrl). */
+  avatar: string | null;
+  /** SUTURA itself: shown with the brand mark instead of an initial. */
+  isPlatform: boolean;
 }
 
 export function getSenderInfo(notif: AppNotification): NotificationSender {
   const data = notif.data || {};
+  const store = data.store as { name?: string; logo_path?: string | null } | null | undefined;
   let rawName =
+    notif.sender?.name ||
     data.sender_name ||
     data.customer_name ||
     data.staff_name ||
-    data.store_name;
+    data.store_name ||
+    store?.name;
 
   if (!rawName) {
     const type = data.type || '';
@@ -66,7 +79,20 @@ export function getSenderInfo(notif: AppNotification): NotificationSender {
     initial,
     initials: initial,
     colorClass: 'bg-canvas border border-line text-taupe',
+    avatar: notif.sender?.avatar ?? store?.logo_path ?? null,
+    isPlatform: notif.sender?.kind === 'platform',
   };
+}
+
+/** The line under the sender's name: the plain summary, else the stored title. */
+export function getHeadline(notif: AppNotification): string {
+  const data = notif.data || {};
+  return notif.summary || data.title || data.message || 'New update';
+}
+
+/** "ORD-0026 · Barong Tagalog · ₱525.00", or '' when there's nothing to add. */
+export function getContextLine(notif: AppNotification): string {
+  return (notif.context ?? []).filter(Boolean).join(' · ');
 }
 
 export function formatDateTime(dateStr: string): string {

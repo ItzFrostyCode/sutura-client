@@ -24,8 +24,6 @@ interface JobCashierDeskProps {
   readonly charging: boolean;
   readonly onChargeSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => void;
   readonly uploadReceipt: (file: File | undefined, onDone: (url: string) => void, setUploading: (v: boolean) => void) => Promise<void>;
-  readonly cashTendered: string;
-  readonly setCashTendered: (v: string) => void;
   readonly reviewingCharge: boolean;
   readonly onConfirmCharge: () => Promise<void>;
   readonly onCancelChargeReview: () => void;
@@ -50,17 +48,20 @@ export function JobCashierDesk({
   charging,
   onChargeSubmit,
   uploadReceipt,
-  cashTendered,
-  setCashTendered,
   reviewingCharge,
   onConfirmCharge,
   onCancelChargeReview,
 }: JobCashierDeskProps) {
   const { remainingBalance, totalAmount, amountPaid, isDownpaymentMet, requiredDeposit, depositLabel } = financials;
+  // GCash/Maya payments still waiting for verification count against what's left
+  // (the server checks the same), so two waiting payments can't add up to more
+  // than is owed.
+  const pendingAmount = (job.payments ?? [])
+    .filter(p => p.status === 'pending_verification')
+    .reduce((sum, p) => sum + (Number.parseFloat(String(p.amount)) || 0), 0);
+  const collectible = Math.max(0, Math.round((remainingBalance - pendingAmount) * 100) / 100);
+  const peso = (v: number) => `₱${v.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const parsedAmount = Number.parseFloat(amount) || 0;
-  const parsedTendered = Number.parseFloat(cashTendered) || 0;
-  const change = method === 'cash' ? Math.max(0, parsedTendered - parsedAmount) : 0;
-  const cashShortfall = method === 'cash' && cashTendered !== '' && parsedTendered < parsedAmount;
 
   if (reviewingCharge) {
     return (
@@ -78,12 +79,6 @@ export function JobCashierDesk({
         <div className="space-y-2 text-sm">
           <div className="flex justify-between"><span className="text-ink-muted">Amount</span><strong className="text-ink">₱{parsedAmount.toFixed(2)}</strong></div>
           <div className="flex justify-between"><span className="text-ink-muted">Method</span><strong className="text-ink capitalize">{method}</strong></div>
-          {method === 'cash' && (
-            <>
-              <div className="flex justify-between"><span className="text-ink-muted">Cash Tendered</span><strong className="text-ink">₱{parsedTendered.toFixed(2)}</strong></div>
-              <div className="flex justify-between border-t border-line pt-2"><span className="text-ink-muted">Change</span><strong className="text-emerald-700">₱{change.toFixed(2)}</strong></div>
-            </>
-          )}
           {method !== 'cash' && reference && (
             <div className="flex justify-between"><span className="text-ink-muted">Reference #</span><strong className="text-ink font-mono">{reference}</strong></div>
           )}
@@ -130,31 +125,43 @@ export function JobCashierDesk({
             <p className="text-[11px] text-ink-muted">Record deposit or settlement</p>
           </div>
         </div>
-        {remainingBalance > 0 && (
+        {collectible > 0 && (
           <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-            Due: ₱{remainingBalance.toFixed(2)}
+            Due: ₱{collectible.toFixed(2)}
           </span>
         )}
       </div>
 
-      {remainingBalance > 0 ? (
+      {remainingBalance > 0 && collectible <= 0 ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-1">
+          <p className="text-sm font-semibold text-amber-900">Nothing more to collect for now</p>
+          <p className="text-xs text-amber-800">
+            {peso(pendingAmount)} is waiting for verification and covers what&apos;s left. Verify it in the payment history, or reject it if it never arrived.
+          </p>
+        </div>
+      ) : remainingBalance > 0 ? (
         <form onSubmit={onChargeSubmit} className="space-y-4">
+          {pendingAmount > 0 && (
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              {peso(pendingAmount)} is waiting for verification, so only {peso(collectible)} is left to collect.
+            </p>
+          )}
           {/* Quick Fill Chips */}
           <div className="space-y-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Quick Amount Presets</span>
             <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
-                onClick={() => setAmount(remainingBalance.toFixed(2))}
+                onClick={() => setAmount(collectible.toFixed(2))}
                 className="px-2.5 py-1 rounded-lg text-xs font-bold bg-canvas hover:bg-surface border border-line text-ink hover:border-taupe transition-colors shadow-2xs cursor-pointer"
               >
-                Full Balance (₱{remainingBalance.toFixed(2)})
+                {pendingAmount > 0 ? 'Rest of balance' : 'Full Balance'} (₱{collectible.toFixed(2)})
               </button>
               {!isDownpaymentMet && requiredDeposit > 0 && requiredDeposit < totalAmount && (
                 <button
                   type="button"
                   onClick={() => {
-                    const dpShortfall = Math.max(0, requiredDeposit - amountPaid);
+                    const dpShortfall = Math.min(collectible, Math.max(0, requiredDeposit - amountPaid - pendingAmount));
                     if (dpShortfall > 0) setAmount(dpShortfall.toFixed(2));
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-bold bg-sage/10 hover:bg-sage/20 border border-sage/30 text-sage transition-colors shadow-2xs cursor-pointer"
@@ -177,7 +184,7 @@ export function JobCashierDesk({
                 type="number"
                 step="0.01"
                 min="0.01"
-                max={remainingBalance}
+                max={collectible}
                 required
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
@@ -191,36 +198,6 @@ export function JobCashierDesk({
           <CashierMethodSelector method={method} setMethod={setMethod} />
 
           {/* Cash Tendered & Change */}
-          {method === 'cash' && (
-            <div className="space-y-1.5 p-3 bg-canvas border border-line rounded-xl">
-              <label htmlFor="cash-tendered" className="text-[11px] font-bold text-ink-muted uppercase">
-                Cash Tendered <span className="text-danger">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint font-bold text-sm">₱</span>
-                <input
-                  id="cash-tendered"
-                  type="number"
-                  step="0.01"
-                  min={amount || '0'}
-                  required
-                  value={cashTendered}
-                  onChange={e => setCashTendered(e.target.value)}
-                  placeholder="0.00"
-                  className={`w-full pl-7 pr-3 py-2 bg-surface border rounded-lg text-sm font-bold focus:outline-none ${cashShortfall ? 'border-danger text-danger' : 'border-line text-ink focus:border-taupe'}`}
-                />
-              </div>
-              {cashShortfall ? (
-                <p className="text-[11px] font-semibold text-danger">Cash tendered can&apos;t be less than the amount being paid.</p>
-              ) : (
-                <div className="flex justify-between text-xs pt-1">
-                  <span className="text-ink-muted">Change</span>
-                  <strong className="text-emerald-700">₱{change.toFixed(2)}</strong>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Reference & Receipt Screenshot */}
           {method !== 'cash' && (
             <div className="space-y-3 p-3 bg-canvas border border-line rounded-xl">
@@ -291,7 +268,7 @@ export function JobCashierDesk({
             type="submit"
             disabled={
               saving || charging || !amount || parsedAmount <= 0 ||
-              (method === 'cash' ? (!cashTendered || cashShortfall) : !receiptUrl)
+              (method !== 'cash' && !receiptUrl)
             }
             className="w-full h-11 bg-taupe hover:bg-taupe-hover text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 active:scale-95 cursor-pointer"
           >

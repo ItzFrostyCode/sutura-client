@@ -6,6 +6,10 @@ Capstone project, BSIT, STI College Davao. Team: Joshua Wayman A. Arabejo, Jossu
 
 This is the Next.js frontend. The backend lives in the sibling `sutura-server` repo (Laravel) — same thesis, separate git history.
 
+## Wording
+
+Write anything people will read the way a person would say it: screen text, error messages, notifications, and notes in this CLAUDE.md. Short sentences, sentence case, no all-caps warnings. Say what happened and what to do next. Skip filler words like "seamlessly", "robust" or "ensure".
+
 ## Git workflow — commit directly to `main` (as of 2026-11-26)
 
 Jossua A. Bongo (leader) works on the whole system and commits **directly to `main`** in both `sutura-client` and `sutura-server`. Don't create, suggest or switch to feature branches, and don't sort changes by module for git purposes.

@@ -12,6 +12,7 @@ import { buildSavePayload } from '../catalogHelpers';
 import { validateCatalogSection } from '../editable/catalogSectionValidation';
 import GalleryEditor from '../editable/editors/GalleryEditor';
 import { FIELD, LABEL } from '../editable/editors/fieldStyles';
+import { revealField } from '@/lib/revealField';
 
 interface ServiceOption {
   id: number;
@@ -54,9 +55,15 @@ export default function CatalogCreateModal({ isOpen, onClose, onCreated }: Reado
 
   const publish = async () => {
     if (!store?.id) return;
-    if (!selected) return toast.error('Pick a service.');
+    if (!selected) {
+      revealField('new-design-service');
+      return toast.error('Pick a service.');
+    }
     const problem = validateCatalogSection('gallery', form);
-    if (problem) return toast.error(problem);
+    if (problem) {
+      revealField('new-design-photos');
+      return toast.error(problem);
+    }
     setSaving(true);
     try {
       const payload = buildSavePayload(
@@ -121,7 +128,9 @@ export default function CatalogCreateModal({ isOpen, onClose, onCreated }: Reado
           )}
         </div>
 
-        <GalleryEditor edit={{ form, storeId: store?.id ?? 0, itemId: 0 }} showColors={false} />
+        <div data-field="new-design-photos">
+          <GalleryEditor edit={{ form, storeId: store?.id ?? 0, itemId: 0 }} showColors={false} />
+        </div>
 
         <div className="border-t border-line pt-4">
           <label htmlFor="new-design-desc" className={LABEL}>Description</label>

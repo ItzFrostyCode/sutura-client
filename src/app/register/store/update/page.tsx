@@ -17,9 +17,10 @@ export default function StoreApplicationUpdatePage() {
     <div className="min-h-dvh flex flex-col bg-canvas">
       <PublicNav />
       <main className="flex-1 mobile-screen-margins py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-2xl sm:border sm:border-line sm:bg-surface sm:p-8">
-          <h1 className="mobile-h1 text-ink">Update your shop application</h1>
-          <Suspense fallback={<p className="mt-6 text-sm text-ink-muted">Loading your application…</p>}>
+        <div className="mx-auto w-full max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-taupe">Open a Shop</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Update your shop application</h1>
+          <Suspense fallback={<p className="mt-8 text-sm text-ink-muted">Loading your application…</p>}>
             <UpdateApplication />
           </Suspense>
         </div>

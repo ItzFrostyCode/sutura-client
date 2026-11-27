@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import type { AppNotification } from '@/lib/notificationHelpers';
 import type { PreferenceItem } from './notificationTypes';
 import { useOptionalBranch } from '@/context/BranchContext';
@@ -39,8 +40,8 @@ export function useNotificationsHub() {
   const [prefsSavedMessage, setPrefsSavedMessage] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(
-    async (page = 1, search = '') => {
-      setLoading(true);
+    async (page = 1, search = '', silent = false) => {
+      if (!silent) setLoading(true);
       try {
         const params = new URLSearchParams();
         params.set('page', String(page));
@@ -76,6 +77,9 @@ export function useNotificationsHub() {
       void fetchNotifications(currentPage, searchQuery);
     }
   }, [activeTab, currentPage, searchQuery, fetchNotifications]);
+
+  // New notifications appear in the list without a refresh.
+  useLiveRefresh(['notifications'], () => { void fetchNotifications(currentPage, searchQuery, true); }, { enabled: activeTab === 'list' });
 
   const fetchPreferences = useCallback(async () => {
     setPrefsLoading(true);

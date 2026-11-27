@@ -2,12 +2,14 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CalendarDays, ChevronRight, HelpCircle, Home, Image as ImageIcon, Loader2, MoreHorizontal, Package, Share2, Star } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, ChevronRight, HelpCircle, Home, Image as ImageIcon, Loader2, MoreHorizontal, Package, Share2, Star } from 'lucide-react';
 import api from '@/lib/axios';
 import { getMediaUrl } from '@/lib/media';
 import { SERVICE_CATEGORY_LABELS, type ServiceCategory } from '@/lib/canonicalTaxonomy';
 import { useToast } from '@/context/ToastContext';
 import { PublicServicePackage, StoreProfile } from '@/components/store-storefront/types';
+import OnlineOrderLink from '@/components/service-order/OnlineOrderLink';
+import { useShopViewingOwnStore } from '@/hooks/useShopAccount';
 
 export default function StorePackageDetailPage({
   params,
@@ -15,6 +17,7 @@ export default function StorePackageDetailPage({
   const { store_id: storeId, package_id: packageId } = use(params);
   const toast = useToast();
   const [store, setStore] = useState<StoreProfile | null>(null);
+  const isShopViewing = useShopViewingOwnStore(storeId);
   const [servicePackage, setServicePackage] = useState<PublicServicePackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -232,12 +235,17 @@ export default function StorePackageDetailPage({
               </ul>
             </div>
 
-            <Link
-              href={`/store/${storeId}/book?package_id=${servicePackage.id}`}
+            <OnlineOrderLink
+              href={`/store/${storeId}/order?package_id=${servicePackage.id}`}
+              storeSlug={store?.slug ?? storeId}
+              paymentRequired={(servicePackage.order_requirements?.payment_policy ?? 'deposit') !== 'none'}
               className="mt-7 flex h-13 w-full items-center justify-center gap-2 bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-taupe"
             >
-              <CalendarDays size={17} /> Book this package
-            </Link>
+              <ShoppingBag size={17} /> Place order
+            </OnlineOrderLink>
+            {isShopViewing && (
+              <p className="mt-2 text-xs text-ink-muted text-center">This is what customers see. Shop accounts can&apos;t place orders.</p>
+            )}
           </section>
         </div>
       </main>

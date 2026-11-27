@@ -415,7 +415,7 @@ export default function AppointmentListView({
           <td className="px-4 py-3.5 align-middle whitespace-nowrap">
             <div className="flex flex-col items-start gap-1">
               <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
-              <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
+              <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} arrivalStatus={apt.arrival_status} earlyDecision={apt.early_arrival_decision} />
             </div>
           </td>
 
@@ -504,7 +504,7 @@ export default function AppointmentListView({
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <StatusBadge status={apt.status} scheduledAt={apt.scheduled_at} outcome={apt.outcome} />
-                    <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} />
+                    <CheckInBadge checkedInAt={apt.checked_in_at} scheduledAt={apt.scheduled_at} arrivalStatus={apt.arrival_status} earlyDecision={apt.early_arrival_decision} />
                   </div>
                 </div>
 

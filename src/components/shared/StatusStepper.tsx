@@ -15,7 +15,7 @@ function formatStageTimestamp(iso: string): string {
   const d = new Date(iso);
   const date = d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
   const time = d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
-  return `${date} at ${time}`;
+  return `${date}, ${time}`;
 }
 
 interface StatusStepperProps {
@@ -50,11 +50,11 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
             iconClass = 'bg-taupe border-taupe text-white ring-2 ring-taupe/25';
           }
 
-          let labelColor = 'text-ink-faint';
+          let labelColor = 'text-ink-faint font-medium';
           if (isCurrent) {
             labelColor = 'text-taupe font-bold';
           } else if (isDone) {
-            labelColor = 'text-sage font-semibold';
+            labelColor = 'text-ink font-semibold';
           }
 
           const StageIcon = isDone ? Check : stage.Icon;
@@ -64,20 +64,20 @@ export default function StatusStepper({ stages, currentKey, onStageClick, layout
           return (
             <div key={stage.key} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors border-2 shrink-0 ${iconClass}`}>
-                  <StageIcon size={15} strokeWidth={2.4} />
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors border-2 shrink-0 ${iconClass}`}>
+                  <StageIcon size={13} strokeWidth={2.5} />
                 </div>
-                {!isLast && <div className={`w-0.5 flex-1 min-h-[20px] ${idx < currentIdx ? 'bg-sage' : 'bg-line'}`} />}
+                {!isLast && <div className={`w-0.5 flex-1 min-h-[22px] ${idx < currentIdx ? 'bg-sage' : 'bg-line'}`} />}
               </div>
               <button
                 type="button"
                 onClick={clickable ? () => onStageClick(stage.key) : undefined}
                 disabled={!clickable}
-                className={`pb-5 pt-1.5 text-left ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 ${isLast ? 'pb-0.5' : 'pb-4'} pt-0.5 text-left ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
               >
-                <span className={`block text-sm ${labelColor}`}>{stage.label}</span>
+                <span className={`text-sm leading-snug ${labelColor}`}>{stage.label}</span>
                 {stage.timestamp && (
-                  <span className="block text-xs text-ink-faint mt-0.5">{formatStageTimestamp(stage.timestamp)}</span>
+                  <span className="text-xs text-ink-muted tabular-nums shrink-0">{formatStageTimestamp(stage.timestamp)}</span>
                 )}
               </button>
             </div>

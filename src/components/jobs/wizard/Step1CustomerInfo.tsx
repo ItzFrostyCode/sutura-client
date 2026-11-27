@@ -41,6 +41,10 @@ export default function Step1CustomerInfo({
   const [errorMsg, setErrorMsg] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<CustomerData[]>(customers);
+  // The search box and list close once a customer is picked; "Change" opens them again.
+  const [pickerOpen, setPickerOpen] = useState(!selectedCustomerId);
+  const selectedCustomer = customers.find((c) => c.id.toString() === selectedCustomerId)
+    ?? searchResults.find((c) => c.id.toString() === selectedCustomerId);
 
   // Sync initial customers
   useEffect(() => {
@@ -88,6 +92,7 @@ export default function Step1CustomerInfo({
 
   const handleSelectExisting = (cust: CustomerData) => {
     onSelectCustomer(cust);
+    setPickerOpen(false);
     setFullName(cust.name);
     setEmail(customerEmail(cust));
     setPhone(cust.phone || '');
@@ -179,6 +184,27 @@ export default function Step1CustomerInfo({
             )}
           </div>
 
+          {!pickerOpen && selectedCustomer ? (
+            <div className="flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-xl border border-taupe/40 bg-taupe/10">
+              <div className="min-w-0 flex items-center gap-2.5">
+                <CheckCircle2 size={18} className="text-emerald-700 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-ink truncate">{selectedCustomer.name}</p>
+                  <p className="text-[11px] text-ink-muted truncate">
+                    {[selectedCustomer.phone, customerEmail(selectedCustomer)].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="shrink-0 h-9 px-3.5 rounded-lg border border-line bg-surface text-xs font-semibold text-ink hover:bg-sunken transition-colors cursor-pointer"
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="relative">
             <Search
               size={15}
@@ -255,6 +281,8 @@ export default function Step1CustomerInfo({
               })
             )}
           </div>
+          </>
+          )}
         </div>
       )}
 
@@ -271,6 +299,7 @@ export default function Step1CustomerInfo({
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none"
             />
             <input
+              id="job-customer-name"
               type="text"
               required
               value={fullName}

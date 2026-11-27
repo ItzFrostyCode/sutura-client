@@ -1,9 +1,10 @@
 'use client';
 
 import StaffHome from '@/components/dashboard/staff/StaffHome';
-import { Suspense, useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
+import { useLiveRefresh } from '@/lib/liveUpdates';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBranch } from '@/context/BranchContext';
 import Link from 'next/link';
@@ -17,7 +18,8 @@ import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import StaffOnline from '@/components/dashboard/StaffOnline';
 import NewsView from '@/components/dashboard/NewsView';
 import WelcomeView from '@/components/dashboard/WelcomeView';
-import { markWelcomeSeen, shouldAutoOpenWelcome } from '@/components/tour/welcome';
+import { clearWelcomePending, isWelcomePending, markWelcomePending, markWelcomeSeen, shouldAutoOpenWelcome } from '@/components/tour/welcome';
+import WelcomeModal from '@/components/tour/WelcomeModal';
 import { dismissWhatsNew } from '@/components/WhatsNewTour';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
@@ -29,6 +31,7 @@ function DashboardPageContent() {
   const { store, user } = useAuthStore();
   const { selectedBranchId } = useBranch();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const roleName = user?.roles?.[0]?.name;
   const isStoreOwner = roleName === 'store_owner';
   // Matches the backend's role:store_owner,branch_manager gate on GET /analytics
@@ -54,16 +57,25 @@ function DashboardPageContent() {
     }
   }, [tabParam]);
 
-  // A brand-new shop's owner lands on the Welcome Guide once (instead of the
-  // What's New pop-up, which the guide makes redundant for a new shop).
+  // A brand-new shop's owner gets the welcome pop-up once (instead of the
+  // What's New pop-up, which it makes redundant for a new shop). "Start the
+  // tour" opens Shop Profile with its tour; "Later" shows the Welcome Guide.
+  const [showWelcome, setShowWelcome] = useState(false);
   useEffect(() => {
     if (tabParam || !isStoreOwner || !store?.id) return;
-    if (!shouldAutoOpenWelcome(store.id, store.created_at)) return;
+    // Opened earlier in this tab but the page was remounted before an answer: open it again.
+    if (isWelcomePending(store.id)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowWelcome(true);
+      return;
+    }
+    if (!shouldAutoOpenWelcome(store.id, store.created_at, store.welcome_seen_at)) return;
     markWelcomeSeen(store.id);
+    markWelcomePending(store.id);
     dismissWhatsNew();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveTab('welcome');
-  }, [tabParam, isStoreOwner, store?.id, store?.created_at]);
+    setShowWelcome(true);
+  }, [tabParam, isStoreOwner, store?.id, store?.created_at, store?.welcome_seen_at]);
 
   // Visibility toggle
   const [storeVisible, setStoreVisible] = useState<boolean | null>(null);
@@ -78,6 +90,8 @@ function DashboardPageContent() {
   const [presenceCheckedAt, setPresenceCheckedAt] = useState(0);
 
   const storeId = store?.id;
+  // The analytics query in use (branch + chart period), so a live refresh asks for the same view.
+  const analyticsParams = useRef<Record<string, string | number>>({});
 
   const fetchOnlineStaff = useCallback(() => {
     // GET /stores/{store}/staff is shared by store_owner AND branch_manager
@@ -129,6 +143,7 @@ function DashboardPageContent() {
     }
 
     let isMounted = true;
+    analyticsParams.current = params;
 
     if (canViewAnalytics) {
       api.get(`/stores/${storeId}/analytics`, { params })
@@ -159,6 +174,18 @@ function DashboardPageContent() {
       isMounted = false;
     };
   }, [storeId, canViewAnalytics, isStoreOwner, selectedBranchId]);
+
+  // New orders, payments and bookings update Home's numbers without a refresh,
+  // keeping whatever chart period is picked.
+  useLiveRefresh(['jobs', 'payments', 'appointments', 'orders'], () => {
+    if (!storeId) return;
+    api.get(`/stores/${storeId}/analytics`, { params: analyticsParams.current })
+      .then(res => {
+        setData(res.data.data);
+        setUnpaidJobs(res.data.data?.completed_unpaid_jobs || []);
+      })
+      .catch(() => {});
+  }, { enabled: !!storeId && canViewAnalytics });
 
   // Periodic online staff poll (every 30s)
   useEffect(() => {
@@ -211,6 +238,7 @@ function DashboardPageContent() {
     if (selectedBranchId !== null) {
       params.branch_id = selectedBranchId;
     }
+    analyticsParams.current = params;
     api.get(`/stores/${store.id}/analytics`, { params })
       .then(res => setData(res.data.data))
       .catch(() => {});
@@ -277,6 +305,13 @@ function DashboardPageContent() {
 
       {activeTab === 'news' && <NewsView />}
       {activeTab === 'welcome' && <WelcomeView />}
+
+      <WelcomeModal
+        isOpen={showWelcome}
+        shopName={store?.name}
+        onStart={() => { clearWelcomePending(store?.id); setShowWelcome(false); router.push('/dashboard/profile?tour=profile&chain=1'); }}
+        onLater={() => { clearWelcomePending(store?.id); setShowWelcome(false); setActiveTab('welcome'); }}
+      />
 
       {activeTab === 'dashboard' && !canViewAnalytics && (
         // Plain staff can't call GET /analytics (owner/manager only), so they get their own

@@ -31,8 +31,6 @@ interface CashRow {
   customer: string | null;
   type: string | null;
   amount: number;
-  cash_tendered: number | null;
-  change_amount: number | null;
   received_by: string | null;
   branch: string | null;
   notes: string | null;
@@ -275,7 +273,6 @@ export default function CashTab() {
                   {r.paid_at && <span>{day(r.paid_at)}, {time(r.paid_at)}</span>}
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {r.cash_tendered !== null && <>Given {peso(r.cash_tendered)} · change {peso(r.change_amount ?? 0)} · </>}
                   {r.received_by ?? 'Unknown'}{showBranch && r.branch ? ` · ${branchLabel(r.branch)}` : ''}
                 </p>
                 </button>
@@ -293,8 +290,6 @@ export default function CashTab() {
                   <th className="px-3 py-3 font-bold">Customer</th>
                   <th className="px-3 py-3 font-bold">Payment</th>
                   <th className="px-3 py-3 text-right font-bold">Amount</th>
-                  <th className="px-3 py-3 text-right font-bold">Cash given</th>
-                  <th className="px-3 py-3 text-right font-bold">Change</th>
                   <th className="px-3 py-3 font-bold">Received by</th>
                   {showBranch && <th className="px-3 py-3 font-bold">Branch</th>}
                   <th className="px-3 py-3 font-bold">Order</th>
@@ -311,8 +306,6 @@ export default function CashTab() {
                     <td className="max-w-[180px] truncate px-3 py-3.5 text-ink">{r.customer ?? 'Walk-in customer'}</td>
                     <td className="px-3 py-3.5"><TypeTag type={r.type} /></td>
                     <td className="whitespace-nowrap px-3 py-3.5 text-right font-bold tabular-nums text-[#3F6B3A]">{peso(r.amount)}</td>
-                    <td className="whitespace-nowrap px-3 py-3.5 text-right tabular-nums text-ink-body">{r.cash_tendered !== null ? peso(r.cash_tendered) : <span className="text-ink-faint">—</span>}</td>
-                    <td className="whitespace-nowrap px-3 py-3.5 text-right tabular-nums text-ink-body">{r.change_amount !== null && r.cash_tendered !== null ? peso(r.change_amount) : <span className="text-ink-faint">—</span>}</td>
                     <td className="max-w-[170px] truncate px-3 py-3.5 text-ink-body">{r.received_by ?? 'Unknown'}</td>
                     {showBranch && <td className="max-w-[180px] truncate px-3 py-3.5 text-ink-body" title={r.branch ?? ''}>{branchLabel(r.branch)}</td>}
                     <td className="px-3 py-3.5"><StatusTag status={r.order_payment_status} /></td>
@@ -404,8 +397,6 @@ function CashPaymentModal({ row, branchLabel, onClose }: Readonly<{
 
           <dl className="divide-y divide-line">
             {line('Customer', r.customer ?? 'Walk-in customer')}
-            {line('Cash given', r.cash_tendered !== null ? peso(r.cash_tendered) : <span className="text-ink-faint">Not recorded</span>)}
-            {line('Change', r.cash_tendered !== null ? peso(r.change_amount ?? 0) : <span className="text-ink-faint">Not recorded</span>)}
             {line('Received by', r.received_by ?? 'Unknown')}
             {branchLabel && r.branch && line('Branch', branchLabel(r.branch))}
           </dl>
