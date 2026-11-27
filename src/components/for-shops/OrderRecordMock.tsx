@@ -1,9 +1,11 @@
+// Same flow as the real system: booking → measurements → job order with the
+// downpayment → production stages → balance at pickup. No customer quote step.
 const ROWS = [
-  { label: 'Booked a fitting', value: 'Mon, 9:12 AM', sub: 'Customer account', done: true },
-  { label: 'Measured', value: 'Sat, 2:24 PM', sub: 'Chest, waist, length', done: true },
-  { label: 'Quote approved', value: '₱3,200', sub: 'Deposit ₱1,600 verified', done: true },
-  { label: 'Being made', value: 'Sewing', sub: 'Moved by staff', done: false },
-  { label: 'Balance', value: '₱1,600', sub: 'Paid at handover', done: false },
+  { label: 'Booked a fitting', value: 'Mon, 9:12 AM', sub: 'Booked online', done: true },
+  { label: 'Measured', value: 'Sat, 2:24 PM', sub: 'Saved to her profile', done: true },
+  { label: 'Job order created', value: '₱3,200', sub: 'Downpayment ₱1,600 verified', done: true },
+  { label: 'In Production', value: 'Sewing', sub: 'Moved by staff', done: false },
+  { label: 'Balance', value: '₱1,600', sub: 'Paid at pickup', done: false },
 ] as const;
 
 /** One sample order, drawn the way the shop sees it. Fictional names and figures; the caption says so. */
@@ -21,7 +23,7 @@ export default function OrderRecordMock() {
               <p className="text-xl font-semibold text-ink">Ana R.</p>
               <p className="mobile-body-sm text-ink-muted">Barong Tagalog · 1 piece · Davao City</p>
             </div>
-            <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Being made</span>
+            <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">In Production</span>
           </div>
           <ul className="mt-4">
             {ROWS.map((r) => (

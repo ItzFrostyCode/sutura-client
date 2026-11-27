@@ -5,7 +5,7 @@ import { HOME_COLUMN } from './homeLayout';
 
 const COLUMNS = [
   { title: 'Discover', links: [{ href: '/search', label: 'Search shops' }, { href: '/search?tab=store', label: 'Browse the map' }, { href: '/track', label: 'Track an order' }] },
-  { title: 'Account', links: [{ href: '/login', label: 'Sign in' }, { href: '/register', label: 'Create an account' }, { href: '/for-shops', label: 'Register your shop' }] },
+  { title: 'Account', links: [{ href: '/login', label: 'Sign in' }, { href: '/register', label: 'Create an account' }, { href: '/register/store?trial=1', label: 'Start free trial' }] },
   { title: 'Help', links: [{ href: '/ask', label: 'Ask SUTURA' }, { href: '/about', label: 'About SUTURA' }, { href: '/terms', label: 'Terms' }, { href: '/privacy', label: 'Privacy' }] },
 ];
 

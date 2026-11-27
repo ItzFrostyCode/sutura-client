@@ -6,7 +6,8 @@ const SERVICES = [
   { name: 'Alterations', meta: 'Hem, waist · ₱150' },
 ] as const;
 
-const STAGES = ['Request sent', 'Quote approved', 'Being made', 'Ready for pickup'] as const;
+// The customer tracker's own phase names.
+const STAGES = ['Order Received', 'In Production', 'Fitting', 'Ready for Pickup'] as const;
 
 /** What the customer sees on their phone: a shop page, and the order tracker. Illustrative. */
 export default function CustomerPhones() {

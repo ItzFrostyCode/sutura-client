@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import SuturaLogo from '@/components/brand/SuturaLogo';
 import ShopsContainer from './ShopsContainer';
-import { APPLY_HREF, SECTION_LINKS, SIGN_IN_HREF } from './shopsLinks';
+import { SECTION_LINKS, SIGN_IN_HREF, TRIAL_HREF } from './shopsLinks';
 
 /** Frosted sticky header: logo (back to the main site), section links from tablet up, and the two actions. Same container as every section. */
 export default function ShopsNav() {
@@ -24,9 +24,9 @@ export default function ShopsNav() {
           <Link href={SIGN_IN_HREF} className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-ink transition-colors hover:bg-sunken">
             Sign in
           </Link>
-          <Link href={APPLY_HREF} className="flex min-h-11 items-center rounded-[10px] bg-ink px-4 text-sm font-semibold text-white transition-transform hover:bg-espresso active:scale-[0.98]">
-            <span className="sm:hidden">Register</span>
-            <span className="hidden sm:inline">Register your shop</span>
+          <Link href={TRIAL_HREF} className="flex min-h-11 items-center rounded-[10px] bg-ink px-4 text-sm font-semibold text-white transition-transform hover:bg-espresso active:scale-[0.98]">
+            <span className="sm:hidden">Free trial</span>
+            <span className="hidden sm:inline">Start free trial</span>
           </Link>
         </div>
       </ShopsContainer>

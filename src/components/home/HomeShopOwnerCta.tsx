@@ -3,7 +3,8 @@ import { Store } from 'lucide-react';
 
 /**
  * Thesis objective "Subscription and Account Management: shops register and pick Basic, Pro or Premium". The last
- * section of Discover, kept slim: one line naming the plans and one button to the shop-owner overview page.
+ * section of Discover, kept slim: one line naming the plans, a button to the shop-owner overview page, and one to
+ * the application with the free trial already chosen.
  */
 export default function HomeShopOwnerCta() {
   return (
@@ -15,9 +16,14 @@ export default function HomeShopOwnerCta() {
           <p className="mobile-body-sm mt-1 text-white/80">List your shop on Basic, Pro or Premium. Try it free for 14 days.</p>
         </div>
       </div>
-      <Link href="/for-shops" className="flex h-[52px] shrink-0 items-center justify-center rounded-xl bg-white px-6 text-base font-semibold text-espresso transition-colors hover:bg-nav-inactive">
-        Register your shop
-      </Link>
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+        <Link href="/for-shops" className="flex h-[52px] items-center justify-center rounded-xl border border-white/30 px-6 text-base font-semibold text-white transition-colors hover:border-white/60 hover:bg-white/5">
+          See how it works
+        </Link>
+        <Link href="/register/store?trial=1" className="flex h-[52px] items-center justify-center rounded-xl bg-white px-6 text-base font-semibold text-espresso transition-colors hover:bg-nav-inactive">
+          Start free trial
+        </Link>
+      </div>
     </aside>
   );
 }

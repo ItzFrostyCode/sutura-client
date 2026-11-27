@@ -104,7 +104,7 @@ export const COMPARE_ROWS = [
   { label: 'Branch Comparison Reports', basic: '—', pro: '—', premium: 'Included' },
   { label: 'Receipt & Statement Export (CSV/ZIP)', basic: '—', pro: '—', premium: 'Included' },
   { label: 'SMS Notifications to Customers', basic: '—', pro: 'Included', premium: 'Included' },
-  { label: 'Featured Visibility (Top Placement)', basic: '—', pro: '—', premium: 'Included' },
+  { label: 'Featured Store Visibility', basic: '—', pro: '—', premium: 'Included' },
 ];
 
 export interface UpgradeRequest {

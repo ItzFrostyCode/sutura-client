@@ -29,6 +29,16 @@ export function useLegalReader(sections: readonly LegalSectionData[]) {
     requestAnimationFrame(() => document.getElementById(`s${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }, []);
 
+  // A link like /terms#s3 opens that section and jumps to it (no animation on page load).
+  useEffect(() => {
+    const m = /^#s(\d+)$/.exec(window.location.hash);
+    if (!m) return;
+    const n = Number(m[1]);
+    setOpen((cur) => new Set(cur).add(n));
+    const t = window.setTimeout(() => document.getElementById(`s${n}`)?.scrollIntoView({ block: 'start' }), 50);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // Follow the reader: the section nearest the top of the screen is the active one.
   useEffect(() => {
     const els = visible.map((s) => document.getElementById(`s${s.n}`)).filter((e): e is HTMLElement => !!e);

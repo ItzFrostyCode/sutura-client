@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import ShopsContainer from './ShopsContainer';
 import SectionHead from './SectionHead';
+import { SHOP_TERMS_VERIFICATION_HREF } from './shopsLinks';
 
 const STEPS = [
   { title: 'Apply', body: 'Tell us about you and your shop, pin its location, and upload your DTI, TIN, barangay clearance and a government ID.', when: 'Today' },
@@ -25,6 +27,12 @@ export default function ShopsSteps() {
             </li>
           ))}
         </ol>
+        <p className="mobile-body-sm mt-2 border-t border-line pt-5 text-ink-muted">
+          What the team checks, and what you agree to:{' '}
+          <Link href={SHOP_TERMS_VERIFICATION_HREF} className="font-semibold text-ink underline underline-offset-2 hover:text-taupe">
+            Read the shop terms
+          </Link>
+        </p>
       </ShopsContainer>
     </section>
   );

@@ -7,7 +7,8 @@ export default function PlanCard({ plan, cycle, featured }: { readonly plan: Pub
   const yearly = cycle === 'yearly';
   const price = yearly ? plan.price_yearly : plan.price_monthly;
   const saved = Number(plan.price_monthly) * 12 - Number(plan.price_yearly);
-  const features = (plan.display_features ?? plan.features ?? []).slice(0, 7);
+  // Every line: the limits (staff, branches, services) come first, and a cut-off list would hide real features.
+  const features = plan.display_features ?? plan.features ?? [];
 
   return (
     <article className={`flex flex-col rounded-2xl border p-5 sm:p-6 ${featured ? 'border-espresso bg-espresso text-white' : 'border-line bg-surface text-ink'}`}>

@@ -1,7 +1,8 @@
+// Same sample board as the team lead's For Shops page (real stage names: cutting, sewing, ready).
 const COLUMNS = [
-  { name: 'Request', jobs: [{ who: 'Carla M.', what: 'Filipiniana' }] },
-  { name: 'Getting ready', jobs: [{ who: 'Joy D.', what: 'School uniform' }, { who: 'Ben T.', what: 'Polo' }] },
-  { name: 'Being made', jobs: [{ who: 'Ana R.', what: 'Barong Tagalog' }, { who: 'Lito P.', what: 'Suit' }] },
+  { name: 'New requests', jobs: [{ who: 'Carlo M.', what: 'Uniform set' }] },
+  { name: 'Cutting', jobs: [{ who: 'Joy D.', what: 'Filipiniana' }, { who: 'Ben T.', what: 'Suit' }] },
+  { name: 'Sewing', jobs: [{ who: 'Ana R.', what: 'Barong Tagalog' }, { who: 'Lito R.', what: 'Hemming' }] },
   { name: 'Ready', jobs: [{ who: 'Mia S.', what: 'Gown' }] },
 ] as const;
 
@@ -15,8 +16,8 @@ export default function JobBoardMock() {
           {COLUMNS.map((c) => (
             <div key={c.name} className="min-w-0">
               <p className="flex items-center justify-between border-b border-line-strong pb-2 mobile-overline text-ink-muted">
-                <span className="truncate">{c.name}</span>
-                <span className="ml-2 tabular-nums">{c.jobs.length}</span>
+                <span className="min-w-0 whitespace-nowrap tracking-normal">{c.name}</span>
+                <span className="ml-2 shrink-0 tabular-nums">{c.jobs.length}</span>
               </p>
               <ul>
                 {c.jobs.map((j) => (
@@ -30,7 +31,7 @@ export default function JobBoardMock() {
           ))}
         </div>
       </div>
-      <figcaption className="mobile-caption mt-3 text-ink-muted">A sample board. Each stage ends in one button.</figcaption>
+      <figcaption className="mobile-caption mt-3 text-ink-muted">A sample board. Cards move as your staff work.</figcaption>
     </figure>
   );
 }

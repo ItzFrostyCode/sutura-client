@@ -6,7 +6,7 @@ import JobBoardMock from './JobBoardMock';
 const MAIN: readonly FeatureRow[] = [
   { title: 'Appointments and fittings', body: 'Customers book a time; your front desk sees it, confirms it and checks them in.' },
   { title: 'Measurements', body: 'Typed in by your staff and kept on the customer, ready for the next order.' },
-  { title: 'Job orders', body: 'A quote the customer approves, then each stage on one board, moved with one button.' },
+  { title: 'Job orders', body: 'Created after the measurements, then each stage on one board, moved with one button.' },
   { title: 'Payments, tracked', body: 'Record deposits and balances, verify the proof, and see what is still owed.' },
 ];
 
