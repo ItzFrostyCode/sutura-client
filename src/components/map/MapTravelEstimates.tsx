@@ -1,7 +1,6 @@
 'use client';
 
 import { Bike, Car, Footprints } from 'lucide-react';
-import { haversineKm } from '@/lib/customerLocation';
 import { formatDistance, formatDuration } from './useDirections';
 import { useTravelEstimates } from './useTravelEstimates';
 
@@ -13,26 +12,20 @@ const MODES = [
   { key: 'walk', label: 'Walk', Icon: Footprints },
 ] as const;
 
-const fmtKm = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`);
-
 /**
  * Road distance + drive / bike / walk times for the tapped shop, from the
  * same route service as Active navigation, so both always show the same km.
- * The straight-line distance from the list stays underneath for reference.
  */
 export default function MapTravelEstimates({ from, to }: {
   readonly from: LatLng;
   readonly to: LatLng;
 }) {
   const state = useTravelEstimates(from, to);
-  // Same formula as the list card's distance, so the two always agree.
-  const straight = `${fmtKm(haversineKm(from.lat, from.lng, to.lat, to.lng))} straight line`;
 
   if (state.status === 'failed') {
     return (
       <div className="rounded-xl border border-line bg-surface p-3 text-xs">
-        <p className="font-semibold tabular-nums text-ink">{straight}</p>
-        <p className="mt-0.5 text-ink-muted">Road distance isn&apos;t available right now. Directions will try again.</p>
+        <p className="text-ink-muted">Road distance isn&apos;t available right now. Directions will try again.</p>
       </div>
     );
   }
@@ -51,7 +44,6 @@ export default function MapTravelEstimates({ from, to }: {
         ) : (
           <p className="text-xs text-ink-muted">Checking the road distance…</p>
         )}
-        <p className="text-[11px] tabular-nums text-ink-faint">{straight}</p>
       </div>
 
       <dl className="mt-3 grid grid-cols-3 divide-x divide-line border-t border-line">

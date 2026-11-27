@@ -8,6 +8,16 @@ Capstone project, BSIT, STI College Davao. Team: Joshua Wayman A. Arabejo, Jossu
 
 This is the Next.js frontend. The backend lives in the sibling `sutura-server` repo (Laravel) — same thesis, separate git history.
 
+## Git workflow — commit directly to `main` (as of 2026-11-26)
+
+Jossua A. Bongo (leader) works on the whole system and commits **directly to `main`** in both `sutura-client` and `sutura-server`. Don't create, suggest or switch to feature branches, and don't sort changes by module for git purposes.
+
+- Commit and push only when asked, straight to `main`.
+- The old `feature/customer-module`, `feature/admin-module`, `feature/shop-owner-module` and `feature/staff-module` branches (created 2026-08-12 for a branch-per-module workflow) are no longer the workflow. Leave them alone; don't merge them or delete them unless asked.
+
+> [!NOTE]
+> **Who does what:** **Jossua A. Bongo (leader) works on the whole system** — every module, frontend and backend. Joshua Wayman A. Arabejo also develops Shop Owner, Customer and Staff (full-stack, AI-assisted). Renalyn C. Bulotano's real role is documentation/wording for the thesis papers, and Clareynz June A. Masudog's real role is finance/logistics (Claude AI subscription costs, printing/bond-paper for defense materials), not module development. The formal module split (Shop Owner: Arabejo, Customer: Bulotano, Staff: Masudog, Admin: Bongo) is for the thesis papers only. Any module's code is in scope — don't withhold edits on "this is a teammate's module" grounds.
+
 ## What SUTURA actually is
 
 A subscription-tiered (Basic/Pro/Premium), multi-branch platform connecting Davao City tailoring shops with customers. It solves two problems at once: customers can't find a shop that does their specific garment (Barong Tagalog, Filipiniana, school uniforms, etc.), and shop owners currently track orders manually — a physical job ticket pinned to a fabric bundle, vague "on going pa po" replies to "sa na po ba?" messages, no real visibility until pickup day.
