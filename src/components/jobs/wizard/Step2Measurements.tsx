@@ -337,10 +337,10 @@ export default function Step2Measurements({
       <div className="space-y-3">
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted">
-            Photos of Measurement Card or Paper Sheet (&quot;Sulat sa Papel&quot;)
+            Measurement sheet <span className="normal-case tracking-normal font-normal">(optional)</span>
           </label>
           <p className="text-xs text-ink-muted mt-0.5">
-            Snap a photo of the client&apos;s handwritten measurement paper, notebook, or tailoring card.
+            Wrote the measurements on paper or a card? Attach a photo of it.
           </p>
         </div>
 
@@ -368,10 +368,10 @@ export default function Step2Measurements({
 
           <div>
             <p className="text-xs sm:text-sm font-bold text-ink">
-              {uploadingSheet ? 'Uploading photo...' : 'Click or drag photo of handwritten paper'}
+              {uploadingSheet ? 'Uploading…' : 'Add a photo'}
             </p>
             <p className="text-[11px] text-ink-muted mt-0.5">
-              Supports JPEG, PNG, WEBP from camera or gallery
+              Take one now or pick from your gallery
             </p>
           </div>
         </div>
